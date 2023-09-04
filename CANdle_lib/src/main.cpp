@@ -9,6 +9,7 @@
 #include <memory>
 #include <mutex>
 #include <thread>
+#include <atomic>
 
 #include "libusb.h"
 
@@ -24,9 +25,22 @@ static int ep_in_addr = 0x81;
 static int ep_out_addr = 0x01;
 
 std::mutex mtx;
-const unsigned int size = 64;
+const unsigned int size = 1023;
 uint8_t txbuf[size];
 uint8_t rxbuf[size];
+
+std::atomic<bool> sent;
+
+typedef union CANFrame
+{
+	struct
+	{
+		uint32_t canId;
+		uint8_t length;
+		uint8_t payload[64];
+	} s;
+	uint8_t data[sizeof(s)];
+} CANFrame;
 
 void Delay(double seconds)
 {
@@ -51,22 +65,50 @@ void writeData()
 	uint8_t localrx[size];
 	uint8_t localtx[size];
 
+	uint32_t every = 0;
+
+	CANFrame canFrame;
+	canFrame.s.canId = 0x664;
+	canFrame.s.length = 8;
+	uint8_t payload[]{0x40, 0xC5, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00};
+	memcpy(canFrame.s.payload, payload, canFrame.s.length);
+
 	while (1)
 	{
+		// std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		Delay(0.002);
 		/* create tx data */
-		for (uint32_t i = 0; i < size - 1; i++)
-			localtx[i] = i % UINT8_MAX;
+		if (every % 10 == 0)
+		{
+			every = 0;
+			*(CANFrame *)&localtx[0] = canFrame;
+
+			std::unique_lock<std::mutex> lock(mtx);
+			std::memcpy(txbuf, localtx, size - 1);
+			lock.unlock();
+			sent.store(false);
+		}
 
 		std::unique_lock<std::mutex> lock(mtx);
-		std::memcpy(txbuf, localtx, size - 1);
 		std::memcpy(localrx, rxbuf, size - 1);
+		memset(rxbuf, 0, sizeof(rxbuf));
 		lock.unlock();
 
-		/* use rx data */
-		uint32_t sum = 0.0;
+		every++;
 
-		for (uint32_t i = 0; i < size - 1; i++)
-			sum += localrx[i];
+		/* use rx data */
+		uint32_t k = 0;
+		while (k < sizeof(localrx) && localrx[k] != 0x00)
+		{
+			for (int i = 0; i < 10; i++)
+				std::cout << std::hex << " 0x" << (int)localrx[k + i] << " ";
+			std::cout << "\r\n";
+			localrx[k] = 0;
+			k += 69;
+		}
+
+		if (k)
+			std::cout << "------------------" << std::endl;
 	}
 }
 
@@ -83,22 +125,22 @@ void readData()
 
 		std::unique_lock<std::mutex> lock(mtx);
 		std::memcpy(tx, txbuf, size - 1);
+		memset(txbuf, 0, sizeof(txbuf));
 		lock.unlock();
 
-		if (libusb_bulk_transfer(devh, ep_out_addr, tx, size - 1, &actual_length, 10) < 0)
-		{
-			fprintf(stderr, "Error while sending\n");
-		}
+		if (int ret = libusb_bulk_transfer(devh, ep_out_addr, tx, size - 1, &actual_length, 10) < 0)
+			fprintf(stderr, "Error while sending %d \n", ret);
+		else
+			sent.store(true);
 
 		if (int ret = libusb_bulk_transfer(devh, ep_in_addr, rx, size, &receivedLen, 1000) < 0)
-		{
-			fprintf(stderr, "Error while receiving %d\n", ret);
-		}
+			fprintf(stderr, "Error while receiving %d  transferred %d\n", ret, receivedLen);
 		else
 		{
 			std::unique_lock<std::mutex> lock(mtx);
-			std::memcpy(rxbuf, rx, size - 1);
+			std::memcpy(rxbuf, rx, receivedLen);
 			lock.unlock();
+			memset(rx, 0, sizeof(rx));
 		}
 	}
 }
