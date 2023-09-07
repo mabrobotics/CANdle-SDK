@@ -10,8 +10,9 @@
 #include <mutex>
 #include <thread>
 #include <atomic>
-
+#include <array>
 #include "libusb.h"
+#include "main.hpp"
 
 #define VENDOR_ID 105
 #define PRODUCT_ID 4096
@@ -31,16 +32,33 @@ uint8_t rxbuf[size];
 
 std::atomic<bool> sent;
 
-typedef union CANFrame
+#pragma pack(push, 4)
+
+struct CANFrame
 {
-	struct
+	struct Header
 	{
-		uint32_t canId;
+		uint16_t canId;
 		uint8_t length;
-		uint8_t payload[64];
-	} s;
-	uint8_t data[sizeof(s)];
-} CANFrame;
+	} header;
+	std::array<uint8_t, 64> payload;
+};
+
+#pragma pack(pop)
+
+#pragma pack(push, 4)
+
+struct USBFrame
+{
+	struct Header
+	{
+		uint8_t id;
+		uint8_t length;
+	} header;
+	std::array<uint8_t, 100> payload;
+};
+
+#pragma pack(pop)
 
 void Delay(double seconds)
 {
@@ -59,62 +77,79 @@ void Delay(double seconds)
 	} while (static_cast<double>(current.QuadPart - start.QuadPart) < interval);
 }
 
-void writeData()
+void processDataThread()
 {
-	std::cout << "CREATED TX" << std::endl;
-	uint8_t localrx[size];
-	uint8_t localtx[size];
-
-	uint32_t every = 0;
+	uint8_t localrx[size]{};
+	uint8_t localtx[size]{};
 
 	CANFrame canFrame;
-	canFrame.s.canId = 0x664;
-	canFrame.s.length = 8;
-	uint8_t payload[]{0x40, 0xC5, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00};
-	memcpy(canFrame.s.payload, payload, canFrame.s.length);
+	canFrame.header.canId = 0x664;
+	canFrame.header.length = 8;
+	canFrame.payload = {0x40, 0xC5, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+	int every = 0;
+	int cnt = 0;
 
 	while (1)
 	{
 		// std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		Delay(0.002);
+
 		/* create tx data */
-		if (every % 10 == 0)
+		if (every % 10000000 == 0)
 		{
 			every = 0;
-			*(CANFrame *)&localtx[0] = canFrame;
+
+			USBFrame usbFrame{};
+
+			usbFrame.header.id = 0x01;
+			usbFrame.header.length = sizeof(CANFrame::Header) + canFrame.header.length;
+			auto canFrameArray = std::bit_cast<std::array<uint8_t, sizeof(CANFrame)>>(canFrame);
+			std::copy(canFrameArray.begin(), canFrameArray.begin() + usbFrame.header.length, usbFrame.payload.begin());
+
+			auto usbFrameArray = std::bit_cast<std::array<uint8_t, sizeof(USBFrame)>>(usbFrame);
+
+			memcpy(localtx, (void *)usbFrameArray.data(), usbFrame.header.length + sizeof(USBFrame::Header));
 
 			std::unique_lock<std::mutex> lock(mtx);
 			std::memcpy(txbuf, localtx, size - 1);
 			lock.unlock();
-			sent.store(false);
+			sent = false;
 		}
+
+		every++;
 
 		std::unique_lock<std::mutex> lock(mtx);
 		std::memcpy(localrx, rxbuf, size - 1);
 		memset(rxbuf, 0, sizeof(rxbuf));
 		lock.unlock();
 
-		every++;
+		auto localRxArray = std::to_array(localrx);
+		auto it = localRxArray.begin();
 
-		/* use rx data */
-		uint32_t k = 0;
-		while (k < sizeof(localrx) && localrx[k] != 0x00)
+		while (it < localRxArray.end())
 		{
-			for (int i = 0; i < 10; i++)
-				std::cout << std::hex << " 0x" << (int)localrx[k + i] << " ";
-			std::cout << "\r\n";
-			localrx[k] = 0;
-			k += 69;
-		}
+			auto header = getHeaderFromArray<USBFrame::Header>(it);
 
-		if (k)
-			std::cout << "------------------" << std::endl;
+			if (header.id == 0x01)
+			{
+				it += sizeof(header);
+				auto canHeader = getHeaderFromArray<CANFrame::Header>(it);
+				it += sizeof(canHeader);
+
+				std::cout << "ID: " << (int)canHeader.canId << " Len: " << (int)canHeader.length << " Data: ";
+
+				for (int i = 0; i < canHeader.length; i++)
+					std::cout << std::hex << " 0x" << (int)*it++ << " ";
+				std::cout << std::endl;
+			}
+			else
+				break;
+		}
 	}
 }
 
-void readData()
+void UsbThread()
 {
-	std::cout << "CREATED RX" << std::endl;
 	uint8_t rx[size];
 	uint8_t tx[size];
 
@@ -173,16 +208,16 @@ int main(int argc, char **argv)
 			fprintf(stderr, "Error claiming interface: %s\n", libusb_error_name(rc));
 	}
 
-	std::thread TX(writeData);
-	std::thread RX(readData);
+	std::thread process(processDataThread);
+	std::thread communication(UsbThread);
 
 	while (1)
 	{
 		std::this_thread::sleep_for(std::chrono::seconds(1));
 	}
 
-	TX.join();
-	RX.join();
+	process.join();
+	communication.join();
 
 	libusb_release_interface(devh, 0);
 	if (devh)

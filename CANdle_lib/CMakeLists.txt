@@ -21,7 +21,7 @@ project(CANdle_lib)
 set(CANDLE_LIB 0.0.1)
 
 set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 add_compile_options(-Wall
     -Wextra
@@ -49,6 +49,9 @@ add_executable(${EXECUTABLE} ${PROJECT_SOURCES})
 
 target_include_directories(${EXECUTABLE} SYSTEM PRIVATE
     ${LIBUSB_INCLUDE_DIR})
+
+target_include_directories(${EXECUTABLE} PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/)
 
 if(UNIX)
     target_link_libraries(${EXECUTABLE} ${LIBUSB_LIBRARY} ${SPDLOG_LINUX} pthread)
