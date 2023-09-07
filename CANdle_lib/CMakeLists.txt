@@ -41,7 +41,8 @@ if(WIN32)
 endif()
 
 set(PROJECT_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/BusHandler/UsbHandler.cpp)
 
 set(EXECUTABLE ${CMAKE_PROJECT_NAME})
 
@@ -51,7 +52,9 @@ target_include_directories(${EXECUTABLE} SYSTEM PRIVATE
     ${LIBUSB_INCLUDE_DIR})
 
 target_include_directories(${EXECUTABLE} PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/BusHandler/
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/CircularBuffer/)
 
 if(UNIX)
     target_link_libraries(${EXECUTABLE} ${LIBUSB_LIBRARY} ${SPDLOG_LINUX} pthread)
