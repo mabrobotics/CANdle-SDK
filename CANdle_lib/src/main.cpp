@@ -3,9 +3,11 @@
 #include <memory>
 #include <mutex>
 #include <thread>
+#include <algorithm>
 #include <array>
 #include "UsbHandler.hpp"
 #include "main.hpp"
+#include "Commons/Deserializer.hpp"
 
 #pragma pack(push, 4)
 
@@ -42,7 +44,7 @@ struct SettingsFrame
 
 std::unique_ptr<IBusHandler> busHandler;
 
-IBusHandler::BusFrame makeBusFrameFromCan(CANFrame &canFrame)
+IBusHandler::BusFrame makeBusFrameFromCan(const CANFrame &canFrame)
 {
 	IBusHandler::BusFrame usbFrame{};
 	usbFrame.header.id = 0x01;
@@ -50,23 +52,6 @@ IBusHandler::BusFrame makeBusFrameFromCan(CANFrame &canFrame)
 	auto canFrameArray = std::bit_cast<std::array<uint8_t, sizeof(CANFrame)>>(canFrame);
 	std::copy(canFrameArray.begin(), canFrameArray.begin() + usbFrame.header.length, usbFrame.payload.begin());
 	return usbFrame;
-}
-
-template <typename T, typename Iterator>
-T deserialize(Iterator it)
-{
-	std::array<uint8_t, sizeof(T)> byteArray{};
-	std::copy(it, it + byteArray.size(), byteArray.begin());
-	T frame = std::bit_cast<T>(byteArray);
-	return frame;
-}
-
-template <typename T, typename Iterator>
-void serialize(T frame, Iterator it)
-{
-	std::array<uint8_t, sizeof(T)> byteArray{};
-	byteArray = std::bit_cast<decltype(byteArray)>(frame);
-	std::copy(byteArray.begin(), byteArray.end(), it);
 }
 
 void processDataThread()

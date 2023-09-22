@@ -54,7 +54,8 @@ target_include_directories(${EXECUTABLE} SYSTEM PRIVATE
 target_include_directories(${EXECUTABLE} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BusHandler/
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/CircularBuffer/)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/CircularBuffer/
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Commons/)
 
 if(UNIX)
     target_link_libraries(${EXECUTABLE} ${LIBUSB_LIBRARY} ${SPDLOG_LINUX} pthread)
