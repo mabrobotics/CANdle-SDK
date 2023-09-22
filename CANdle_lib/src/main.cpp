@@ -49,7 +49,7 @@ IBusHandler::BusFrame makeBusFrameFromCan(const CANFrame &canFrame)
 	IBusHandler::BusFrame usbFrame{};
 	usbFrame.header.id = 0x01;
 	usbFrame.header.length = sizeof(CANFrame::Header) + canFrame.header.length;
-	auto canFrameArray = std::bit_cast<std::array<uint8_t, sizeof(CANFrame)>>(canFrame);
+	auto canFrameArray = bit_cast<std::array<uint8_t, sizeof(CANFrame)>>(canFrame);
 	std::copy(canFrameArray.begin(), canFrameArray.begin() + usbFrame.header.length, usbFrame.payload.begin());
 	return usbFrame;
 }
@@ -79,12 +79,12 @@ void processDataThread()
 		}
 		else if (frame->header.id == 0x02)
 		{
-			auto status = deserialize<StatusFrame>(frame->payload.begin());
-			std::cout << "CAN Status: " << (int)status.statistics.averageRxFifoOccupancyPercent << " "
-					  << (int)status.statistics.averageTxFifoOccupancyPercent << " "
-					  << (int)status.statistics.maxRxFifoOccupancyPercent << " "
-					  << (int)status.statistics.maxTxFifoOccupancyPercent << " "
-					  << (int)status.busStatus << std::endl;
+			// auto status = deserialize<StatusFrame>(frame->payload.begin());
+			// std::cout << "CAN Status: " << (int)status.statistics.averageRxFifoOccupancyPercent << " "
+			// 		  << (int)status.statistics.averageTxFifoOccupancyPercent << " "
+			// 		  << (int)status.statistics.maxRxFifoOccupancyPercent << " "
+			// 		  << (int)status.statistics.maxTxFifoOccupancyPercent << " "
+			// 		  << (int)status.busStatus << std::endl;
 		}
 	}
 }

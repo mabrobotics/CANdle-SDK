@@ -1,5 +1,5 @@
 #include "UsbHandler.hpp"
-#include <bit>
+#include "Commons/BitCast.hpp"
 #include <algorithm>
 #include <iostream>
 
@@ -43,7 +43,7 @@ bool UsbHandler::init()
             fprintf(stderr, "Error claiming interface: %s\n", libusb_error_name(rc));
     }
 
-    handlerThread = std::thread(dataHandler, this);
+    handlerThread = std::thread(&UsbHandler::dataHandler, this);
 
     return true;
 }
@@ -95,7 +95,7 @@ void UsbHandler::copyInputBufToElements(std::array<uint8_t, 1025> &buf, int rece
         /* prepare and copy USB header*/
         std::array<uint8_t, sizeof(BusFrame::Header)> usbHeaderArray;
         std::copy(it, it + usbHeaderArray.size(), usbHeaderArray.begin());
-        usbEntry.header = std::bit_cast<BusFrame::Header>(usbHeaderArray);
+        usbEntry.header = bit_cast<BusFrame::Header>(usbHeaderArray);
         it += usbHeaderArray.size();
         /* prepare and copy USB payload */
         std::copy(it, it + usbEntry.header.length, usbEntry.payload.begin());
@@ -119,7 +119,7 @@ void UsbHandler::copyElementsToOutputBuf(std::array<uint8_t, 1025> &buf, uint32_
             break;
 
         auto usbEntry = elem.value();
-        auto usbFrameArray = std::bit_cast<std::array<uint8_t, sizeof(BusFrame)>>(usbEntry);
+        auto usbFrameArray = bit_cast<std::array<uint8_t, sizeof(BusFrame)>>(usbEntry);
 
         uint8_t usbFrameSize = usbEntry.header.length + sizeof(BusFrame::Header);
         auto copied = std::copy(usbFrameArray.begin(), usbFrameArray.begin() + usbFrameSize, it);
