@@ -16,15 +16,14 @@ T deserialize(Iterator it)
 {
 	std::array<uint8_t, sizeof(T)> byteArray{};
 	std::copy(it, it + byteArray.size(), byteArray.begin());
-	T frame = bit_cast<T>(byteArray);
-	return frame;
+	return bit_cast_<T, std::array<uint8_t, sizeof(T)>>(byteArray);
 }
 
 template <typename T, typename Iterator>
 void serialize(T frame, Iterator it)
 {
 	std::array<uint8_t, sizeof(T)> byteArray{};
-	byteArray = bit_cast<decltype(byteArray)>(frame);
+	byteArray = bit_cast_<decltype(byteArray)>(frame);
 	std::copy(byteArray.begin(), byteArray.end(), it);
 }
 
