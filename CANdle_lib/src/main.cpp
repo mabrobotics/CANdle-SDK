@@ -1,13 +1,15 @@
+#include "main.hpp"
+
+#include <algorithm>
+#include <array>
 #include <cstring>
 #include <iostream>
 #include <memory>
 #include <mutex>
 #include <thread>
-#include <algorithm>
-#include <array>
-#include "UsbHandler.hpp"
-#include "main.hpp"
+
 #include "Commons/Deserializer.hpp"
+#include "UsbHandler.hpp"
 
 #pragma pack(push, 4)
 
@@ -44,7 +46,7 @@ struct SettingsFrame
 
 std::unique_ptr<IBusHandler> busHandler;
 
-IBusHandler::BusFrame makeBusFrameFromCan(const CANFrame &canFrame)
+IBusHandler::BusFrame makeBusFrameFromCan(const CANFrame& canFrame)
 {
 	IBusHandler::BusFrame usbFrame{};
 	usbFrame.header.id = 0x01;
@@ -56,7 +58,6 @@ IBusHandler::BusFrame makeBusFrameFromCan(const CANFrame &canFrame)
 
 void processDataThread()
 {
-
 	std::array<uint32_t, 10> stats{1};
 
 	while (1)
@@ -126,7 +127,7 @@ void commandDataThread()
 	usbSettingsFrame.header.id = 0x04;
 	usbSettingsFrame.header.length = sizeof(SettingsFrame);
 	SettingsFrame settings{};
-	settings.baudrate = 8000000;
+	settings.baudrate = 1000000;
 	settings.bitRateSwitch = 0x00100000U;
 	settings.fdFormat = 0x00200000U;
 	serialize(settings, usbSettingsFrame.payload.begin());
@@ -153,9 +154,8 @@ void commandDataThread()
 	}
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
-
 	busHandler = std::make_unique<UsbHandler>();
 	busHandler->init();
 

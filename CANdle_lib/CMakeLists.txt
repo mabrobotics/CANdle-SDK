@@ -22,6 +22,7 @@ set(CANDLE_LIB 0.0.1)
 
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 add_compile_options(-Wall
     -Wextra
@@ -41,12 +42,10 @@ if(WIN32)
 endif()
 
 set(PROJECT_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BusHandler/UsbHandler.cpp)
 
 set(EXECUTABLE ${CMAKE_PROJECT_NAME})
-
-add_executable(${EXECUTABLE} ${PROJECT_SOURCES})
+add_library(${EXECUTABLE} SHARED ${PROJECT_SOURCES})
 
 target_include_directories(${EXECUTABLE} SYSTEM PRIVATE
     ${LIBUSB_INCLUDE_DIR})

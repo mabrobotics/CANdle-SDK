@@ -3,6 +3,7 @@ build
 install
 log
 bin
+CANdle_lib/.cache
 
 # Prerequisites
 *.d
