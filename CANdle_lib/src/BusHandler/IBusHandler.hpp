@@ -7,25 +7,24 @@
 
 class IBusHandler
 {
-
-public:
+   public:
 #pragma pack(push, 4)
-    struct BusFrame
-    {
-        struct Header
-        {
-            uint8_t id;
-            uint8_t length;
-        } header;
-        std::array<uint8_t, 100> payload;
-    };
+	struct BusFrame
+	{
+		struct Header
+		{
+			uint8_t id;
+			uint8_t length;
+		} header;
+		std::array<uint8_t, 100> payload;
+	};
 #pragma pack(pop)
 
-    virtual ~IBusHandler() = default;
+	virtual ~IBusHandler() = default;
 
-    virtual bool init() = 0;
-    virtual std::optional<BusFrame> getFromFifo() const = 0;
-    virtual bool addToFifo(BusFrame &busFrame) = 0;
+	virtual bool init() = 0;
+	virtual std::optional<BusFrame> getFromFifo() const = 0;
+	virtual bool addToFifo(BusFrame& busFrame) = 0;
 };
 
 #endif
