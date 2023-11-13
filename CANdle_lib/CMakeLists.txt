@@ -41,7 +41,8 @@ if(WIN32)
 endif()
 
 set(PROJECT_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/BusHandler/UsbHandler.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/BusHandler/UsbHandler.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Communication/Candle.cpp)
 
 add_library(${EXECUTABLE} STATIC ${PROJECT_SOURCES})
 
@@ -52,7 +53,8 @@ target_include_directories(${EXECUTABLE} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BusHandler/
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CircularBuffer/
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/Commons/)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Commons/
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Communication/)
 
 if(UNIX)
     target_link_libraries(${EXECUTABLE} ${LIBUSB_LIBRARY} ${SPDLOG_LINUX} pthread)

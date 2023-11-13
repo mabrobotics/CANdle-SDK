@@ -9,6 +9,7 @@
 #define MAB_COMMONS_DESERIALIZER_HPP_
 
 #include <algorithm>
+
 #include "BitCast.hpp"
 
 template <typename T, typename Iterator>
@@ -20,11 +21,12 @@ T deserialize(Iterator it)
 }
 
 template <typename T, typename Iterator>
-void serialize(T frame, Iterator it)
+size_t serialize(T frame, Iterator it)
 {
 	std::array<uint8_t, sizeof(T)> byteArray{};
 	byteArray = bit_cast_<decltype(byteArray)>(frame);
 	std::copy(byteArray.begin(), byteArray.end(), it);
+	return byteArray.size();
 }
 
 #endif /* MAB_COMMONS_DESERIALIZER_HPP_ */
