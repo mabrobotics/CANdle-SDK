@@ -25,12 +25,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 add_compile_options(-Wall
     -Wextra
-	-Wpedantic
+    -Wpedantic
     -Wno-unused-parameter
     -Wno-missing-field-initializers)
 
 if(UNIX)
-    set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/modules)
+    set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
     include(${CMAKE_MODULE_PATH}/Findlibusb.cmake)
     find_package(libusb REQUIRED)
 endif()
