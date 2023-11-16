@@ -36,7 +36,8 @@ if(UNIX)
 endif()
 
 if(WIN32)
-    set(LIBUSB_WINDOWS ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/lib/windows/libusb-1.0.dll)
+    set(LIBUSB_WINDOWS_DYNAMIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/lib/windows/libusb-1.0.dll)
+    set(LIBUSB_WINDOWS_STATIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/lib/windows/libusb-1.0.a)
     set(LIBUSB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/inc/libusb-1.0)
 endif()
 
@@ -59,12 +60,12 @@ target_include_directories(${EXECUTABLE} PUBLIC
 if(UNIX)
     target_link_libraries(${EXECUTABLE} ${LIBUSB_LIBRARY} ${SPDLOG_LINUX} pthread)
 elseif(WIN32)
-    target_link_libraries(${EXECUTABLE} ${LIBUSB_WINDOWS} ${SPDLOG_WINDOWS} ssp)
+    target_link_libraries(${EXECUTABLE} ${LIBUSB_WINDOWS_STATIC} ${SPDLOG_WINDOWS} ssp)
 endif()
 
 if(WIN32)
     add_custom_command(TARGET ${EXECUTABLE} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
-        ${LIBUSB_WINDOWS}
+        ${LIBUSB_WINDOWS_DYNAMIC}
         ${CMAKE_BINARY_DIR}/libusb-1.0.dll)
 endif()
