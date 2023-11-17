@@ -29,7 +29,6 @@ CANdle_lib/.cache
 # Compiled Static libraries
 *.lai
 *.la
-*.a
 
 # Executables
 *.exe
