@@ -6,7 +6,8 @@ Candle::Candle(std::unique_ptr<IBusHandler> busHandler) : busHandler(std::move(b
 
 bool Candle::setupInterface(SettingsFrame& settings)
 {
-	busHandler->init();
+	if (!busHandler->init())
+		return false;
 
 	IBusHandler::BusFrame usbSettingsFrame{};
 	usbSettingsFrame.header.id = 0x04;
