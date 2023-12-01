@@ -8,9 +8,12 @@
 #include "IObjectDictionaryParser.hpp"
 #include "third_party/mINI/inc/ini.h"
 
-class ObjectDictionaryParserEDS : public IObjectDictionaryParser
+class ObjectDictionaryParserEDS : public IODParser
 {
    public:
+	const std::map<std::string, IODParser::AccessSDO> strToAccessType = {
+		{"no", IODParser::AccessSDO::no}, {"ro", IODParser::AccessSDO::ro}, {"wo", IODParser::AccessSDO::wo}, {"rw", IODParser::AccessSDO::rw}};
+
 	bool parseFile(const std::string& filePath, std::map<uint32_t, std::shared_ptr<Entry>>& objectDictionary) override
 	{
 		mINI::INIFile file(filePath);
@@ -39,12 +42,13 @@ class ObjectDictionaryParserEDS : public IObjectDictionaryParser
 			stream << std::hex << entry.first;
 			std::string key = stream.str();
 
-			auto objectType = ini[key]["objecttype"];
-			auto dataType = ini[key]["datatype"];
+			auto access = ini[key]["accesstype"];
+			IODParser::AccessSDO accessType = strToAccessType.count(key) ? strToAccessType.at(access) : IODParser::AccessSDO::no;
 
 			entry.second->parameterName = ini[key]["parametername"];
-			entry.second->objectType = static_cast<IObjectDictionaryParser::ObjectType>(strtol(objectType.data(), nullptr, 0));
-			entry.second->datatype = static_cast<IObjectDictionaryParser::DataType>(strtol(dataType.data(), nullptr, 0));
+			entry.second->objectType = static_cast<IODParser::ObjectType>(strtol(ini[key]["objecttype"].data(), nullptr, 0));
+			entry.second->datatype = static_cast<IODParser::DataType>(strtol(ini[key]["datatype"].data(), nullptr, 0));
+			entry.second->accessType = accessType;
 		}
 	}
 };

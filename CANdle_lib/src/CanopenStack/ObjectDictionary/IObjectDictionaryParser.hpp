@@ -4,7 +4,7 @@
 #include <map>
 #include <string>
 
-class IObjectDictionaryParser
+class IODParser
 {
    public:
 	enum class DataType
@@ -44,10 +44,10 @@ class IObjectDictionaryParser
 
 	enum class AccessSDO
 	{
-		no,
-		ro,
-		wo,
-		rw
+		no = 0,
+		ro = 1,
+		wo = 2,
+		rw = 3
 	};
 
 	struct Entry
@@ -60,7 +60,7 @@ class IObjectDictionaryParser
 		void* defaultValue = nullptr;
 	};
 
-	virtual ~IObjectDictionaryParser() = default;
+	virtual ~IODParser() = default;
 
 	virtual bool parseFile(const std::string& filePath, std::map<uint32_t, std::shared_ptr<Entry>>& objectDictionary) = 0;
 };
