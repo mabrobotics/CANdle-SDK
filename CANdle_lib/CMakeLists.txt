@@ -41,6 +41,8 @@ if(WIN32)
     set(LIBUSB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/inc/libusb-1.0)
 endif()
 
+set(mINI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/CanopenStack/third_party/mINI/inc/)
+
 set(PROJECT_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BusHandler/UsbHandler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Communication/Candle.cpp)
@@ -48,14 +50,17 @@ set(PROJECT_SOURCES
 add_library(${EXECUTABLE} STATIC ${PROJECT_SOURCES})
 
 target_include_directories(${EXECUTABLE} SYSTEM PRIVATE
-    ${LIBUSB_INCLUDE_DIR})
+    ${LIBUSB_INCLUDE_DIR}
+    ${mINI_INCLUDE_DIR})
 
 target_include_directories(${EXECUTABLE} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BusHandler/
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CircularBuffer/
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Commons/
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/Communication/)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Communication/
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/CanopenStack/
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/CanopenStack/ObjectDictionary/)
 
 if(UNIX)
     target_link_libraries(${EXECUTABLE} ${LIBUSB_LIBRARY} ${SPDLOG_LINUX} pthread)
