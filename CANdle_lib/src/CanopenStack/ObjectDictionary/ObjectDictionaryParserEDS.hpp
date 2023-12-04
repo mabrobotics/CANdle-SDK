@@ -14,7 +14,7 @@ class ObjectDictionaryParserEDS : public IODParser
 	const std::map<std::string, IODParser::AccessSDO> strToAccessType = {
 		{"no", IODParser::AccessSDO::no}, {"ro", IODParser::AccessSDO::ro}, {"wo", IODParser::AccessSDO::wo}, {"rw", IODParser::AccessSDO::rw}};
 
-	bool parseFile(const std::string& filePath, std::map<uint32_t, std::shared_ptr<Entry>>& objectDictionary) override
+	bool parseFile(const std::string& filePath, std::map<std::string, std::shared_ptr<Entry>>& objectDictionary) override
 	{
 		mINI::INIFile file(filePath);
 		mINI::INIStructure ini;
@@ -22,15 +22,26 @@ class ObjectDictionaryParserEDS : public IODParser
 
 		auto insertEntires = [&](const char* category)
 		{
-			for (size_t i = 1; i < 200; i++)
+			size_t i = 0;
+			while (1)
 			{
-				std::string a = ini.get(category).get(std::to_string(i));
-
-				if (a.size() < 4)
+				if (!ini.get(category).has(std::to_string(++i)))
 					break;
 
-				objectDictionary.insert({strtol(a.data(), nullptr, 0), std::make_shared<Entry>()});
+				std::string key = ini.get(category).get(std::to_string(i));
+				objectDictionary.insert({key.substr(2, 4), std::make_shared<Entry>()});
 			}
+		};
+
+		auto fillInEntryFields = [&](const std::string& key, Entry& entry)
+		{
+			auto access = ini[key]["accesstype"];
+			IODParser::AccessSDO accessType = strToAccessType.count(key) ? strToAccessType.at(access) : IODParser::AccessSDO::no;
+
+			entry.parameterName = ini[key]["parametername"];
+			entry.objectType = static_cast<IODParser::ObjectType>(strtol(ini[key]["objecttype"].data(), nullptr, 0));
+			entry.datatype = static_cast<IODParser::DataType>(strtol(ini[key]["datatype"].data(), nullptr, 0));
+			entry.accessType = accessType;
 		};
 
 		insertEntires("mandatoryobjects");
@@ -38,18 +49,24 @@ class ObjectDictionaryParserEDS : public IODParser
 
 		for (auto& entry : objectDictionary)
 		{
-			std::stringstream stream;
-			stream << std::hex << entry.first;
-			std::string key = stream.str();
+			std::string key = entry.first;
+			fillInEntryFields(key, *entry.second);
 
-			auto access = ini[key]["accesstype"];
-			IODParser::AccessSDO accessType = strToAccessType.count(key) ? strToAccessType.at(access) : IODParser::AccessSDO::no;
-
-			entry.second->parameterName = ini[key]["parametername"];
-			entry.second->objectType = static_cast<IODParser::ObjectType>(strtol(ini[key]["objecttype"].data(), nullptr, 0));
-			entry.second->datatype = static_cast<IODParser::DataType>(strtol(ini[key]["datatype"].data(), nullptr, 0));
-			entry.second->accessType = accessType;
+			if (entry.second->objectType == IODParser::ObjectType::ARRAY || entry.second->objectType == IODParser::ObjectType::REC)
+			{
+				size_t i = 0;
+				while (1)
+				{
+					auto subkey = key + "sub" + std::to_string(++i);
+					if (!ini.has(subkey))
+						break;
+					objectDictionary.insert({subkey, std::make_shared<Entry>()});
+					fillInEntryFields(subkey, *objectDictionary[subkey]);
+				}
+			}
 		}
+
+		return false;
 	}
 };
 

@@ -5,7 +5,7 @@
 Candle::Candle(std::unique_ptr<IBusHandler> busHandler) : busHandler(std::move(busHandler))
 {
 	ObjectDictionaryParserEDS parser{};
-	std::map<uint32_t, std::shared_ptr<IODParser::Entry>> OD;
+	std::map<std::string, std::shared_ptr<IODParser::Entry>> OD;
 	parser.parseFile("C:/Users/klonyyy/PROJECTS/MAB/projects/MD80/code/md80_firmware/CANopenNode_STM32/MD80_DS402.eds", OD);
 }
 

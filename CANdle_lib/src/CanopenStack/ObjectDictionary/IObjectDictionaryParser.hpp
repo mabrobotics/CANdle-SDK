@@ -62,7 +62,7 @@ class IODParser
 
 	virtual ~IODParser() = default;
 
-	virtual bool parseFile(const std::string& filePath, std::map<uint32_t, std::shared_ptr<Entry>>& objectDictionary) = 0;
+	virtual bool parseFile(const std::string& filePath, std::map<std::string, std::shared_ptr<Entry>>& objectDictionary) = 0;
 };
 
 #endif
