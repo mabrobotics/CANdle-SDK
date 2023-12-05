@@ -49,7 +49,7 @@ std::optional<ICommunication::CANFrame> CandleInterface::receiveCanFrame()
 
 		CANFrame canFrame{};
 		canFrame.header = canHeader;
-		std::copy(it, it + 5, canFrame.payload.begin());
+		std::copy(it, it + canHeader.length, canFrame.payload.begin());
 		return canFrame;
 	}
 	else if (frame->header.id == 0x02)
