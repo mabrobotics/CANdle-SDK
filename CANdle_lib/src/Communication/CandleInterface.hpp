@@ -1,18 +1,19 @@
-#ifndef CANDLE_HPP
-#define CANDLE_HPP
+#ifndef CANDLEINTERFACE_HPP
+#define CANDLEINTERFACE_HPP
 
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <vector>
 
 #include "Commons/Deserializer.hpp"
 #include "IBusHandler.hpp"
 #include "ICommunication.hpp"
 
-class Candle : public ICommunication
+class CandleInterface : public ICommunication
 {
    public:
-	Candle(std::unique_ptr<IBusHandler> busHandler);
+	CandleInterface(std::unique_ptr<IBusHandler> busHandler);
 
 	bool setupInterface(SettingsFrame& settings) override;
 	bool sendCanFrame(const CANFrame& canFrame) override;

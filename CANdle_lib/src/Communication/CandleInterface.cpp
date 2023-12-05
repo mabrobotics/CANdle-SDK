@@ -1,15 +1,10 @@
-#include "Candle.hpp"
+#include "CandleInterface.hpp"
 
-#include "ObjectDictionary/ObjectDictionaryParserEDS.hpp"
-
-Candle::Candle(std::unique_ptr<IBusHandler> busHandler) : busHandler(std::move(busHandler))
+CandleInterface::CandleInterface(std::unique_ptr<IBusHandler> busHandler) : busHandler(std::move(busHandler))
 {
-	ObjectDictionaryParserEDS parser{};
-	std::map<std::string, std::shared_ptr<IODParser::Entry>> OD;
-	parser.parseFile("C:/Users/klonyyy/PROJECTS/MAB/projects/MD80/code/md80_firmware/CANopenNode_STM32/MD80_DS402.eds", OD);
 }
 
-bool Candle::setupInterface(SettingsFrame& settings)
+bool CandleInterface::setupInterface(SettingsFrame& settings)
 {
 	if (!busHandler->init())
 		return false;
@@ -21,7 +16,7 @@ bool Candle::setupInterface(SettingsFrame& settings)
 	return busHandler->addToFifo(usbSettingsFrame);
 }
 
-bool Candle::sendCanFrame(const CANFrame& canFrame)
+bool CandleInterface::sendCanFrame(const CANFrame& canFrame)
 {
 	IBusHandler::BusFrame usbFrame{};
 	usbFrame.header.id = 0x01;
@@ -31,7 +26,7 @@ bool Candle::sendCanFrame(const CANFrame& canFrame)
 	return busHandler->addToFifo(usbFrame);
 }
 
-std::optional<ICommunication::CANFrame> Candle::receiveCanFrame()
+std::optional<ICommunication::CANFrame> CandleInterface::receiveCanFrame()
 {
 	auto frame = busHandler->getFromFifo();
 

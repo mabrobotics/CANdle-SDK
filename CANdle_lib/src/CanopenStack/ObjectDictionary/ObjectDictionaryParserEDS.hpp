@@ -14,11 +14,16 @@ class ObjectDictionaryParserEDS : public IODParser
 	const std::map<std::string, IODParser::AccessSDO> strToAccessType = {
 		{"no", IODParser::AccessSDO::no}, {"ro", IODParser::AccessSDO::ro}, {"wo", IODParser::AccessSDO::wo}, {"rw", IODParser::AccessSDO::rw}};
 
-	bool parseFile(const std::string& filePath, std::map<std::string, std::shared_ptr<Entry>>& objectDictionary) override
+	bool parseFile(const std::string& filePath, std::map<uint32_t, std::shared_ptr<Entry>>& objectDictionary) override
 	{
 		mINI::INIFile file(filePath);
 		mINI::INIStructure ini;
 		file.read(ini);
+
+		auto stringToInt = [](std::string str) -> int32_t
+		{
+			return strtol(str.data(), nullptr, 0);
+		};
 
 		auto insertEntires = [&](const char* category)
 		{
@@ -29,11 +34,11 @@ class ObjectDictionaryParserEDS : public IODParser
 					break;
 
 				std::string key = ini.get(category).get(std::to_string(i));
-				objectDictionary.insert({key.substr(2, 4), std::make_shared<Entry>()});
+				objectDictionary.insert({stringToInt(key), std::make_shared<Entry>()});
 			}
 		};
 
-		auto fillInEntryFields = [&](const std::string& key, Entry& entry)
+		auto fillInEntryFields = [&](std::string key, Entry& entry)
 		{
 			auto access = ini[key]["accesstype"];
 			IODParser::AccessSDO accessType = strToAccessType.count(key) ? strToAccessType.at(access) : IODParser::AccessSDO::no;
@@ -49,19 +54,24 @@ class ObjectDictionaryParserEDS : public IODParser
 
 		for (auto& entry : objectDictionary)
 		{
-			std::string key = entry.first;
-			fillInEntryFields(key, *entry.second);
+			auto key = entry.first;
+
+			std::stringstream stream;
+			stream << std::hex << key;
+			std::string keyString = stream.str();
+
+			fillInEntryFields(keyString, *entry.second);
 
 			if (entry.second->objectType == IODParser::ObjectType::ARRAY || entry.second->objectType == IODParser::ObjectType::REC)
 			{
 				size_t i = 0;
 				while (1)
 				{
-					auto subkey = key + "sub" + std::to_string(++i);
+					auto subkey = keyString + "sub" + std::to_string(++i);
 					if (!ini.has(subkey))
 						break;
-					objectDictionary.insert({subkey, std::make_shared<Entry>()});
-					fillInEntryFields(subkey, *objectDictionary[subkey]);
+					objectDictionary[key]->subEntries.insert({i, std::make_shared<Entry>()});
+					fillInEntryFields(subkey, *objectDictionary[key]->subEntries[i]);
 				}
 			}
 		}

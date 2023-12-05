@@ -3,10 +3,13 @@
 
 #include <map>
 #include <string>
+#include <variant>
 
 class IODParser
 {
    public:
+	typedef std::variant<uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, float, double, std::string> ValueType;
+
 	enum class DataType
 	{
 		UNKNOWN = 0,
@@ -57,12 +60,12 @@ class IODParser
 		DataType datatype;
 		AccessSDO accessType;
 		size_t highestSubindex = 0;
-		void* defaultValue = nullptr;
+		std::map<uint32_t, std::shared_ptr<Entry>> subEntries;
+		ValueType value;
 	};
 
 	virtual ~IODParser() = default;
-
-	virtual bool parseFile(const std::string& filePath, std::map<std::string, std::shared_ptr<Entry>>& objectDictionary) = 0;
+	virtual bool parseFile(const std::string& filePath, std::map<uint32_t, std::shared_ptr<Entry>>& objectDictionary) = 0;
 };
 
 #endif
