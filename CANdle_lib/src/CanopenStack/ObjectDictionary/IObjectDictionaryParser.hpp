@@ -2,6 +2,7 @@
 #define IOBJECTDICTIONARYPARSER_HPP
 
 #include <map>
+#include <memory>
 #include <string>
 #include <variant>
 

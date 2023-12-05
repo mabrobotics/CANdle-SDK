@@ -1,5 +1,8 @@
 #include "CandleInterface.hpp"
 
+#include <algorithm>
+#include <utility>
+
 CandleInterface::CandleInterface(std::unique_ptr<IBusHandler> busHandler) : busHandler(std::move(busHandler))
 {
 }

@@ -11,7 +11,7 @@
 class Candle
 {
    public:
-	Candle(ICommunication* interface)
+	explicit Candle(ICommunication* interface)
 	{
 		canopenStack = std::make_unique<CanopenStack>(interface);
 	}
@@ -22,9 +22,11 @@ class Candle
 
 		for (size_t i = 1; i < 10; i++)
 		{
-			IODParser::ValueType deviceType = 0;
-			if (canopenStack->readSDO(i, 0x1000, 0x00, deviceType))
+			uint32_t deviceType = 0;
+			if (canopenStack->readSDO(i, 0x1A00, 0x01, deviceType))
 				ids.push_back(i);
+
+			std::cout << (int)deviceType << std::endl;
 		}
 
 		return ids;
