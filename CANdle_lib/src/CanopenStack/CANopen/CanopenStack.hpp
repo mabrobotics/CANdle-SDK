@@ -18,6 +18,7 @@ class CanopenStack
 
 	~CanopenStack()
 	{
+		done = true;
 		if (receiveThread.joinable())
 			receiveThread.join();
 	}
@@ -50,12 +51,14 @@ class CanopenStack
 
 	void receiveHandler()
 	{
-		while (1)
+		while (!done)
 		{
 			auto maybeFrame = interface->receiveCanFrame();
 
 			if (!maybeFrame.has_value())
 				continue;
+
+			std::cout << "FRAME RECEIVED!" << std::endl;
 
 			auto frame = maybeFrame.value();
 
@@ -66,10 +69,8 @@ class CanopenStack
 				index = deserialize<uint16_t>(&frame.payload[1]);
 				subindex = frame.payload[3];
 
-				std::cout << "CANID: " << (int)driveId << std::endl;
+				std::cout << "CANID: " << (int)frame.header.canId << " index:" << (int)index << std::endl;
 			}
-
-			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		}
 	}
 
@@ -81,6 +82,8 @@ class CanopenStack
 	std::atomic<uint16_t> index = 0;
 	std::atomic<uint8_t> subindex = 0;
 	std::atomic<uint32_t> driveId = 0;
+
+	std::atomic<bool> done = false;
 
 	bool waitForActionWithTimeout(std::function<bool()> condition, uint32_t timeoutMs)
 	{
