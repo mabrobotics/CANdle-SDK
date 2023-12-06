@@ -7,16 +7,23 @@ CandleInterface::CandleInterface(IBusHandler* busHandler) : busHandler(busHandle
 {
 }
 
-bool CandleInterface::setupInterface(SettingsFrame& settings)
+bool CandleInterface::setupInterface(Settings& settings)
 {
+	this->settings = settings;
+
 	if (!busHandler->init())
 		return false;
 
 	IBusHandler::BusFrame usbSettingsFrame{};
 	usbSettingsFrame.header.id = 0x04;
-	usbSettingsFrame.header.length = sizeof(SettingsFrame);
+	usbSettingsFrame.header.length = sizeof(Settings);
 	serialize(settings, usbSettingsFrame.payload.begin());
 	return busHandler->addToFifo(usbSettingsFrame);
+}
+
+ICommunication::Settings CandleInterface::getSettings() const
+{
+	return settings;
 }
 
 bool CandleInterface::sendCanFrame(const CANFrame& canFrame)

@@ -15,12 +15,14 @@ class CandleInterface : public ICommunication
    public:
 	explicit CandleInterface(IBusHandler* busHandler);
 
-	bool setupInterface(SettingsFrame& settings) override;
+	bool setupInterface(Settings& settings) override;
+	Settings getSettings() const override;
 	bool sendCanFrame(const CANFrame& canFrame) override;
 	std::optional<CANFrame> receiveCanFrame() override;
 
    private:
 	IBusHandler* busHandler;
+	Settings settings;
 };
 
 #endif

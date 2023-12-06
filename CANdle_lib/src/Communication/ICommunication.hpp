@@ -31,7 +31,7 @@ class ICommunication
 		uint32_t busStatus;
 	};
 
-	struct SettingsFrame
+	struct Settings
 	{
 		uint32_t baudrate;
 		uint32_t fdFormat;
@@ -39,7 +39,8 @@ class ICommunication
 	};
 #pragma pack(pop)
 	virtual ~ICommunication() = default;
-	virtual bool setupInterface(SettingsFrame& settings) = 0;
+	virtual bool setupInterface(Settings& settings) = 0;
+	virtual Settings getSettings() const = 0;
 	virtual bool sendCanFrame(const CANFrame& canFrame) = 0;
 	virtual std::optional<CANFrame> receiveCanFrame() = 0;
 };

@@ -39,7 +39,6 @@ class CanopenStack
 		std::atomic<bool> SDOvalid = false;
 		processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data)
 		{
-			std::cout << "CANID: " << (int)driveId << " size: " << (int)data.size() << std::endl;
 			value = deserialize<T>(data.begin());
 			if (index == index_ && subindex == subindex_ && driveId == id)
 				SDOvalid = true;

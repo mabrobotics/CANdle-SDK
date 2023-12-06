@@ -25,7 +25,7 @@ class Candle
 
 	bool init(Baud baud = Baud::BAUD_1M)
 	{
-		ICommunication::SettingsFrame settings;
+		ICommunication::Settings settings;
 
 		if (baud == Baud::BAUD_8M)
 		{
