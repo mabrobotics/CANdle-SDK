@@ -97,10 +97,7 @@ class CanopenStack
 		while (condition())
 		{
 			if (std::chrono::high_resolution_clock::now() >= end_time)
-			{
-				std::cout << "Timeout!" << std::endl;
 				return false;
-			}
 		}
 		return true;
 	}

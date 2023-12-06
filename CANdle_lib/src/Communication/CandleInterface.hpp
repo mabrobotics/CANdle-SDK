@@ -13,14 +13,14 @@
 class CandleInterface : public ICommunication
 {
    public:
-	explicit CandleInterface(std::unique_ptr<IBusHandler> busHandler);
+	explicit CandleInterface(IBusHandler* busHandler);
 
 	bool setupInterface(SettingsFrame& settings) override;
 	bool sendCanFrame(const CANFrame& canFrame) override;
 	std::optional<CANFrame> receiveCanFrame() override;
 
    private:
-	std::unique_ptr<IBusHandler> busHandler;
+	IBusHandler* busHandler;
 };
 
 #endif
