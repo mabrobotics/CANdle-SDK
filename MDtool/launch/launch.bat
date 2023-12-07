@@ -1,0 +1,1 @@
+C:\\msys64\\mingw64\\bin\\gdbserver.exe localhost:2000 ./build/MDtool/MDtool.exe

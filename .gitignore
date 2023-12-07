@@ -1,0 +1,15 @@
+MAB_CAN_Flasher/*.bin
+MAB_CAN_Flasher/include/md80_bin.h
+MAB_CAN_Flasher/build/**
+Debug/**
+Release/**
+build/
+build*/
+*.launch
+.settings/**
+.cache/
+STM32_bootloader/Core/Mab/Version/gitversion.h
+STM32_bootloader/.settings/
+STM32_bootloader/Debug/
+STM32_bootloader/Release/
+

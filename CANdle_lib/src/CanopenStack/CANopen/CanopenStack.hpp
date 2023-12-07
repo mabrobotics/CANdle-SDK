@@ -15,14 +15,6 @@ class CanopenStack
    public:
 	explicit CanopenStack(ICommunication* interface) : interface(interface)
 	{
-		receiveThread = std::thread(&CanopenStack::receiveHandler, this);
-	}
-
-	~CanopenStack()
-	{
-		done = true;
-		if (receiveThread.joinable())
-			receiveThread.join();
 	}
 
 	template <typename T>
@@ -47,16 +39,13 @@ class CanopenStack
 		if (!interface->sendCanFrame(frame))
 			return false;
 
-		if (!waitForActionWithTimeout([&]() -> bool
-									  { return !SDOvalid; },
-									  10))
-			return false;
-
-		return true;
+		return waitForActionWithTimeout([&]() -> bool
+										{ return !SDOvalid; },
+										10);
 	}
 
 	template <typename T>
-	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T& value)
+	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T&& value)
 	{
 		ICommunication::CANFrame frame{};
 		frame.header.canId = 0x600 + id;
@@ -77,45 +66,36 @@ class CanopenStack
 		if (!interface->sendCanFrame(frame))
 			return false;
 
-		if (!waitForActionWithTimeout([&]() -> bool
-									  { return !SDOvalid; },
-									  10))
-			return false;
-
-		return true;
+		return waitForActionWithTimeout([&]() -> bool
+										{ return !SDOvalid; },
+										10);
 	}
 
-	void receiveHandler()
+	bool sendSYNC()
 	{
-		while (!done)
+		ICommunication::CANFrame frame{};
+		frame.header.canId = 0x80;
+		frame.header.length = 0;
+		return interface->sendCanFrame(frame);
+	}
+
+	void parse(ICommunication::CANFrame& frame)
+	{
+		if (frame.header.canId >= 0x580 && frame.header.canId < 0x600)
 		{
-			auto maybeFrame = interface->receiveCanFrame();
+			uint32_t driveId = frame.header.canId - 0x580;
+			size_t dataSize = 4 - ((frame.payload[0] >> 2) & 0b00000011);
+			uint16_t index = deserialize<uint16_t>(&frame.payload[1]);
+			uint8_t subindex = frame.payload[3];
+			std::span<uint8_t> data(&frame.payload[4], dataSize);
 
-			if (!maybeFrame.has_value())
-				continue;
-
-			auto frame = maybeFrame.value();
-
-			if (frame.header.canId >= 0x580 && frame.header.canId < 0x600)
-			{
-				uint32_t driveId = frame.header.canId - 0x580;
-				size_t dataSize = 4 - ((frame.payload[0] >> 2) & 0b00000011);
-				uint16_t index = deserialize<uint16_t>(&frame.payload[1]);
-				uint8_t subindex = frame.payload[3];
-				std::span<uint8_t> data(&frame.payload[4], dataSize);
-
-				if (processSDO)
-					processSDO(driveId, index, subindex, data);
-			}
+			if (processSDO)
+				processSDO(driveId, index, subindex, data);
 		}
 	}
 
    private:
-	std::thread receiveThread;
-
 	ICommunication* interface;
-	std::atomic<bool> done = false;
-
 	std::function<void(uint32_t, uint32_t, uint8_t, std::span<uint8_t>&)> processSDO;
 
 	bool waitForActionWithTimeout(std::function<bool()> condition, uint32_t timeoutMs)

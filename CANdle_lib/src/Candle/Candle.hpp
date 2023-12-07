@@ -18,9 +18,21 @@ class Candle
 		BAUD_8M = 8,
 	};
 
+	enum class ModesOfOperation : int8_t
+	{
+		SERVICE = -2,
+		IDLE = 0,
+		PROFILE_POSITION = 1,
+		PROFILE_VELOCITY = 2,
+		CYCLIC_SYNC_POSITION = 8,
+		CYCLIC_SYNCH_VELOCTIY = 9,
+	};
+
 	explicit Candle(ICommunication* interface) : interface(interface)
 	{
 		canopenStack = std::make_unique<CanopenStack>(interface);
+		receiveThread = std::thread(&Candle::receiveHandler, this);
+		transmitThread = std::thread(&Candle::transmitHandler, this);
 	}
 
 	bool init(Baud baud = Baud::BAUD_1M)
@@ -45,7 +57,11 @@ class Candle
 
 	void deInit()
 	{
-		canopenStack.reset();
+		done = true;
+		if (receiveThread.joinable())
+			receiveThread.join();
+		if (transmitThread.joinable())
+			transmitThread.join();
 	}
 
 	std::vector<uint32_t> ping()
@@ -62,10 +78,67 @@ class Candle
 		return ids;
 	}
 
+	bool enterOperational(uint32_t id)
+	{
+		return canopenStack->writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0080)) &&
+			   canopenStack->writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0006)) &&
+			   canopenStack->writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x000f));
+	}
+
+	bool enterSwitchOnDisabled(uint32_t id)
+	{
+		return canopenStack->writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0008));
+	}
+
+	bool setModeOfOperation(uint32_t id, ModesOfOperation mode)
+	{
+		return canopenStack->writeSDO(id, 0x6060, 0x00, static_cast<int8_t>(mode));
+	}
+
+	bool setTargetPosition(uint32_t id, uint32_t target)
+	{
+		return canopenStack->writeSDO(id, 0x607A, 0x00, std::move(target));
+	}
+
+	bool startCalibration(uint32_t id)
+	{
+		return enterOperational(id) &&
+			   canopenStack->writeSDO(id, 0x6060, 0x00, static_cast<int8_t>(-2)) &&
+			   canopenStack->writeSDO(id, 0x2003, 0x03, static_cast<uint8_t>(1));
+	}
+
+   private:
+	void receiveHandler()
+	{
+		while (!done)
+		{
+			auto maybeFrame = interface->receiveCanFrame();
+
+			if (!maybeFrame.has_value())
+				continue;
+
+			canopenStack->parse(maybeFrame.value());
+		}
+	}
+
+	void transmitHandler()
+	{
+		while (!done)
+		{
+			canopenStack->sendSYNC();
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		}
+	}
+
    public:
 	std::unique_ptr<CanopenStack> canopenStack;
 
    private:
+	std::thread receiveThread;
+	std::thread transmitThread;
+
+	std::atomic<bool> done = false;
+
 	std::vector<MD80> md80s;
 	ICommunication* interface;
 };
