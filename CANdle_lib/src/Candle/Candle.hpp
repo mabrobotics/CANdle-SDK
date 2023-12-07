@@ -62,9 +62,11 @@ class Candle
 		return ids;
 	}
 
+   public:
+	std::unique_ptr<CanopenStack> canopenStack;
+
    private:
 	std::vector<MD80> md80s;
-	std::unique_ptr<CanopenStack> canopenStack;
 	ICommunication* interface;
 };
 

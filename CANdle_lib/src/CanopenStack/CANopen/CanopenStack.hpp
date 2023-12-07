@@ -13,7 +13,7 @@
 class CanopenStack
 {
    public:
-	CanopenStack(ICommunication* interface) : interface(interface)
+	explicit CanopenStack(ICommunication* interface) : interface(interface)
 	{
 		receiveThread = std::thread(&CanopenStack::receiveHandler, this);
 	}
@@ -40,6 +40,36 @@ class CanopenStack
 		processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data)
 		{
 			value = deserialize<T>(data.begin());
+			if (index == index_ && subindex == subindex_ && driveId == id)
+				SDOvalid = true;
+		};
+
+		if (!interface->sendCanFrame(frame))
+			return false;
+
+		if (!waitForActionWithTimeout([&]() -> bool
+									  { return !SDOvalid; },
+									  10))
+			return false;
+
+		return true;
+	}
+
+	template <typename T>
+	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T& value)
+	{
+		ICommunication::CANFrame frame{};
+		frame.header.canId = 0x600 + id;
+		frame.header.length = 8;
+
+		frame.payload[0] = 0b00100011 | ((4 - sizeof(T)) << 2);
+		serialize(index_, &frame.payload[1]);
+		frame.payload[3] = subindex_;
+		serialize(value, &frame.payload[4]);
+
+		std::atomic<bool> SDOvalid = false;
+		processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data)
+		{
 			if (index == index_ && subindex == subindex_ && driveId == id)
 				SDOvalid = true;
 		};
