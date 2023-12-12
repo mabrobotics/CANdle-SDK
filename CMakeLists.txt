@@ -16,6 +16,18 @@ project(CANdle_SDK)
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_STANDARD 20)
 
+set(CMAKE_C_COMPILER "clang")
+set(CMAKE_CXX_COMPILER "clang++")
+
+# # Set the path to LLVM's bin directory containing lld
+# set(LLVM_DIR "C:/msys64/mingw64/bin")
+
+# # Add LLVM's bin directory to the PATH environment variable
+# set(CMAKE_PREFIX_PATH ${LLVM_DIR} ${CMAKE_PREFIX_PATH})
+
+# # Set the path to lld explicitly for CMake
+# set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
+
 add_compile_options(-Wall
     -Wextra
     -Wpedantic
