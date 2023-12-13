@@ -6,10 +6,10 @@
 #include <utility>
 
 #include "BusHandler/IBusHandler.hpp"
-#include "Checksum.hpp"
+#include "Checksum/Checksum.hpp"
 #include "Communication/CandleInterface.hpp"
 
-Downloader::Downloader(ICommunication *interface, spdlog::logger *logger) : interface(interface), logger(logger)
+Downloader::Downloader(ICommunication* interface, spdlog::logger* logger) : interface(interface), logger(logger)
 {
 	receiveThread = std::thread(&Downloader::receiveHandler, this);
 }
@@ -21,7 +21,7 @@ Downloader::~Downloader()
 		receiveThread.join();
 }
 
-Downloader::Status Downloader::doLoad(std::span<const uint8_t> &&firmwareData, uint32_t id, bool recover, uint32_t address, bool secondaryBootloader)
+Downloader::Status Downloader::doLoad(std::span<const uint8_t>&& firmwareData, uint32_t id, bool recover, uint32_t address, bool secondaryBootloader)
 {
 	deviceId = id;
 
@@ -116,7 +116,7 @@ bool Downloader::waitForActionWithTimeout(std::function<bool()> condition, uint3
 	return true;
 }
 
-bool Downloader::sendFrameWaitForResponse(ICommunication::CANFrame &frame, Response expectedResponse, uint32_t timeout)
+bool Downloader::sendFrameWaitForResponse(ICommunication::CANFrame& frame, Response expectedResponse, uint32_t timeout)
 {
 	lastResponse = Response::NONE;
 	if (!interface->sendCanFrame(frame))
@@ -163,15 +163,14 @@ bool Downloader::sendFirmware(std::span<const uint8_t> firmwareData)
 	frame.header.canId = canIdCommand;
 	frame.header.length = frameSize;
 
-	size_t size = ((firmwareData.size() / pageSize) + 1) * pageSize;
+	size_t size = firmwareData.size();
 
 	if (size > maxFirmwareSizeSafeUpdate)
 		mode = Mode::UNSAFE;
 
 	size_t remainingSize = firmwareData.size();
 
-	logger->debug("Binary size: {}", remainingSize);
-	logger->debug("Binary loop size: {}", size);
+	logger->debug("Binary size: {}", size);
 
 	float progress = 0.0f;
 
@@ -234,6 +233,8 @@ bool Downloader::sendFirmware(std::span<const uint8_t> firmwareData)
 		else
 			logger->info("Programming OK");
 	}
+
+	progressBar(1.0f);
 	return true;
 }
 bool Downloader::sendWriteCmd()

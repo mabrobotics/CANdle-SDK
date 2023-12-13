@@ -12,8 +12,8 @@ add_executable(${EXECUTABLE} ${PROJECT_SOURCES})
 
 target_include_directories(${EXECUTABLE} SYSTEM PRIVATE
 ${CMAKE_CURRENT_SOURCE_DIR}/
+${CMAKE_CURRENT_SOURCE_DIR}/src/MD80_Flasher/
 ${CMAKE_CURRENT_SOURCE_DIR}/src/MD80_Flasher/Downloader/
-${CMAKE_CURRENT_SOURCE_DIR}/src/MD80_Flasher/Checksum/
 ${CMAKE_CURRENT_SOURCE_DIR}/third_party
 ${CMAKE_CURRENT_SOURCE_DIR}/third_party/CLI11/include)
 
