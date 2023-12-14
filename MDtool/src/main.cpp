@@ -1,6 +1,7 @@
 #include <iostream>
 #include <span>
 
+#include "BinaryParser.hpp"
 #include "CLI11.hpp"
 #include "Candle.hpp"
 #include "CandleInterface.hpp"
@@ -36,77 +37,58 @@ class Mdtool
 			logger->info(std::to_string(md80));
 	}
 
-	bool updateMd80(uint32_t id, bool recover, bool all)
+	bool updateMd80(std::string& filePath, uint32_t id, bool recover, bool all)
 	{
-		std::ifstream file("md80.md80", std::ios::binary);
+		auto status = BinaryParser::processFile(filePath, logger);
 
-		if (!file.is_open())
-		{
-			std::cerr << "Failed to open file!" << std::endl;
-			return false;
-		}
+		// std::vector<std::pair<uint32_t, Downloader::Status>> ids = {};
 
-		file.seekg(0, std::ios::end);
-		const std::streamsize fileSize = file.tellg();
-		file.seekg(0, std::ios::beg);
+		// if (all)
+		// {
+		// 	logger->info("Pinging drives at baudrate {}M...", static_cast<uint32_t>(baudrate));
 
-		std::vector<uint8_t> buffer(fileSize);
-		file.read((char*)buffer.data(), fileSize);
+		// 	for (auto id : candle->ping())
+		// 		ids.push_back({id, Downloader::Status::OK});
 
-		if (!file)
-		{
-			std::cerr << "Failed to read file!" << std::endl;
-			return false;
-		}
+		// 	if (ids.empty())
+		// 		logger->info("No drives found!");
+		// 	else
+		// 		logger->info("Found {} drives!", ids.size());
+		// }
+		// else
+		// 	ids.push_back({id, Downloader::Status::OK});
 
-		std::vector<std::pair<uint32_t, Downloader::Status>> ids = {};
+		// candle->deInit();
+		// Downloader downloader(interface, logger);
 
-		if (all)
-		{
-			logger->info("Pinging drives at baudrate {}M...", static_cast<uint32_t>(baudrate));
+		// for (auto& [id, status] : ids)
+		// {
+		// 	logger->info("Preparing to update drive ID {} at baudrate {}M...", id, static_cast<uint32_t>(baudrate));
+		// 	status = downloader.doLoad(std::span<uint8_t>(buffer), id, recover, 0, false);
 
-			for (auto id : candle->ping())
-				ids.push_back({id, Downloader::Status::OK});
+		// 	if (status != Downloader::Status::OK)
+		// 		logger->error("Status: {}", static_cast<uint8_t>(status));
+		// }
 
-			if (ids.empty())
-				logger->info("No drives found!");
-			else
-				logger->info("Found {} drives!", ids.size());
-		}
-		else
-			ids.push_back({id, Downloader::Status::OK});
+		// auto updateOk = std::count_if(ids.begin(), ids.end(),
+		// 							  [](const auto& md80)
+		// 							  { return md80.second == Downloader::Status::OK; });
 
-		candle->deInit();
-		Downloader downloader(interface, logger);
+		// logger->info("Update successful for {} drive(s)", updateOk);
 
-		for (auto& [id, status] : ids)
-		{
-			logger->info("Preparing to update drive ID {} at baudrate {}M...", id, static_cast<uint32_t>(baudrate));
-			status = downloader.doLoad(std::span<uint8_t>(buffer), id, recover, 0, false);
+		// for (auto md80 : ids)
+		// {
+		// 	if (md80.second == Downloader::Status::OK)
+		// 		logger->info("ID {}", md80.first);
+		// }
 
-			if (status != Downloader::Status::OK)
-				logger->error("Status: {}", static_cast<uint8_t>(status));
-		}
+		// logger->info("Update failed for {} drive(s) ", ids.size() - updateOk);
 
-		auto updateOk = std::count_if(ids.begin(), ids.end(),
-									  [](const auto& md80)
-									  { return md80.second == Downloader::Status::OK; });
-
-		logger->info("Update successful for {} drive(s)", updateOk);
-
-		for (auto md80 : ids)
-		{
-			if (md80.second == Downloader::Status::OK)
-				logger->info("ID {}", md80.first);
-		}
-
-		logger->info("Update failed for {} drive(s) ", ids.size() - updateOk);
-
-		for (auto& [id, status] : ids)
-		{
-			if (status != Downloader::Status::OK)
-				logger->error("ID {} with status {}", id, static_cast<uint8_t>(status));
-		}
+		// for (auto& [id, status] : ids)
+		// {
+		// 	if (status != Downloader::Status::OK)
+		// 		logger->error("ID {} with status {}", id, static_cast<uint8_t>(status));
+		// }
 
 		return true;
 	}
@@ -139,6 +121,9 @@ int main(int argc, char** argv)
 	uint32_t id = 1;
 	updateMD80->add_option("-i,--id", id, "ID of the drive")->check(CLI::Range(1, 31))->excludes(all_option);
 
+	std::string filePath;
+	updateMD80->add_option("-f,--file", filePath, "Update filename");
+
 	bool recover = false;
 	updateMD80->add_flag("-r,--recover", recover, "Use if the MD80 is already in bootloader mode");
 
@@ -160,7 +145,7 @@ int main(int argc, char** argv)
 		mdtool.ping();
 
 	else if (app.got_subcommand("update_md80"))
-		mdtool.updateMd80(id, recover, all);
+		mdtool.updateMd80(filePath, id, recover, all);
 
 	return 0;
 }

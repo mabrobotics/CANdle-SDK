@@ -1,1 +1,1 @@
-C:\\msys64\\mingw64\\bin\\gdbserver.exe localhost:2000 ./build/MDtool/MDtool.exe ping -b 1
+C:\\msys64\\mingw64\\bin\\gdbserver.exe localhost:2000 ./build/MDtool/MDtool.exe update_md80 -f C:/Users/klonyyy/PROJECTS/MAB/projects/CANdle-SDK/CANdle-SDK/build/MDtool/md80.ini

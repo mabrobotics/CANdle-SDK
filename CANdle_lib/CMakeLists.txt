@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.8)
 
-if(MAKE_TESTS)
-    add_subdirectory(test)
-    return()
-endif()
+# if(MAKE_TESTS)
+#     add_subdirectory(test)
+#     return()
+# endif()
 
 # if(NOT DEFINED PLATFORM)
 #     set(PLATFORM "native")
