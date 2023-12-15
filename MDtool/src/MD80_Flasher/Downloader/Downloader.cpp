@@ -153,8 +153,8 @@ bool Downloader::sendInitCmd(Command initCommand)
 }
 bool Downloader::sendFirmware(std::span<const uint8_t> firmwareData)
 {
+	const size_t ivSize = 16;
 	auto it = firmwareData.begin();
-	auto itLastCrc = it;
 	const uint8_t frameSize = interface->getSettings().baudrate == 1000000 ? 8 : 64;
 	const size_t pageSize = 2048;
 	Mode mode = Mode::SAFE;
@@ -163,17 +163,28 @@ bool Downloader::sendFirmware(std::span<const uint8_t> firmwareData)
 	frame.header.canId = canIdCommand;
 	frame.header.length = frameSize;
 
-	size_t size = firmwareData.size();
+	size_t size = firmwareData.size() - ivSize;
 
 	if (size > maxFirmwareSizeSafeUpdate)
 		mode = Mode::UNSAFE;
 
 	size_t remainingSize = firmwareData.size();
-
 	logger->debug("Binary size: {}", size);
-
 	float progress = 0.0f;
 
+	/* send 16 byte IV first */
+	frame.header.length = 8;
+	for (size_t i = 0; i < ivSize / frame.header.length; i++)
+	{
+		std::copy(it, it + frame.header.length, frame.payload.begin());
+		if (!sendFrameWaitForResponse(frame, Response::CHUNK_OK, 100))
+			return false;
+		it += frame.header.length;
+	}
+
+	auto itLastCrc = it;
+
+	/* then proceed with the rest of the firmware*/
 	for (size_t i = 0; i <= size; i += frameSize)
 	{
 		if (i % pageSize == 0 && i > 0)
