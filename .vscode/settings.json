@@ -75,7 +75,10 @@
         "iomanip": "cpp",
         "numeric": "cpp",
         "set": "cpp",
-        "xlocbuf": "cpp"
+        "xlocbuf": "cpp",
+        "any": "cpp",
+        "deque": "cpp",
+        "unordered_set": "cpp"
     },
     "cmake.sourceDirectory": "C:/Users/klonyyy/PROJECTS/MAB/projects/CANdle-SDK/CANdle-SDK/CANdle_lib"
 }

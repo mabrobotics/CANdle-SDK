@@ -51,14 +51,29 @@ class BinaryParser
 			firmwareEntry2 = parseFirmwareEntry(ini, std::string("header2"));
 			if (firmwareEntry1.tag == "boot_primary" && firmwareEntry2.tag == "boot_secondary")
 				fileType = Type::BOOT;
+			else
+				return Status::ERROR_TAG;
 		}
-		else
-			return Status::ERROR_TAG;
 
 		if (firmwareEntry1.status == Status::ERROR_CHECKSUM || firmwareEntry2.status == Status::ERROR_CHECKSUM)
 			return Status::ERROR_CHECKSUM;
 
 		return Status::OK;
+	}
+
+	static std::vector<uint8_t> getPrimaryFirmwareFile()
+	{
+		return firmwareEntry1.binary;
+	}
+
+	static std::vector<uint8_t> getSecondaryFirmwareFile()
+	{
+		return firmwareEntry2.binary;
+	}
+
+	static BinaryParser::Type getFirmwareFileType()
+	{
+		return fileType;
 	}
 
    private:
