@@ -205,7 +205,8 @@ int main(int argc, char** argv)
 	std::unique_ptr<IBusHandler> busHandler = std::make_unique<UsbHandler>();
 	std::unique_ptr<ICommunication> candleInterface = std::make_unique<CandleInterface>(busHandler.get());
 
-	mdtool.init(candleInterface.get(), logger.get(), static_cast<Candle::Baud>(baud));
+	if (!mdtool.init(candleInterface.get(), logger.get(), static_cast<Candle::Baud>(baud)))
+		return false;
 
 	if (app.got_subcommand("ping"))
 		mdtool.ping();
