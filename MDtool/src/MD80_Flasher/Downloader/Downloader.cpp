@@ -149,7 +149,7 @@ bool Downloader::sendInitCmd(Command initCommand)
 	frame.payload = {static_cast<uint8_t>(initCommand)};
 	serialize(bootAddress, &frame.payload[1]);
 
-	return sendFrameWaitForResponse(frame, Response::HOST_INIT_OK, 10);
+	return sendFrameWaitForResponse(frame, Response::HOST_INIT_OK, 50);
 }
 bool Downloader::sendFirmware(std::span<const uint8_t> firmwareData)
 {
@@ -183,12 +183,28 @@ bool Downloader::sendFirmware(std::span<const uint8_t> firmwareData)
 	}
 
 	auto itLastCrc = it;
+	size_t sentSize = 0;
 
 	/* then proceed with the rest of the firmware*/
 	for (size_t i = 0; i <= size; i += frameSize)
 	{
-		if ((i % pageSize == 0 && i > 0) || (size - i < frameSize))
+		frame.payload = {0xff};
+		size_t copySize = remainingSize >= frameSize ? frameSize : remainingSize;
+		std::copy(it, it + copySize, frame.payload.begin());
+		it += copySize;
+		sentSize += copySize;
+
+		if (!sendFrameWaitForResponse(frame, Response::CHUNK_OK, 100))
 		{
+			if (progress < 1.0f)
+				std::cout << std::endl;
+			logger->error("Sending data failed!");
+			return false;
+		}
+
+		if (sentSize >= pageSize || (size - i < frameSize))
+		{
+			logger->debug("sent {} bytes", i);
 			progress = static_cast<float>(i) / static_cast<float>(size);
 			progressBar(progress);
 
@@ -218,19 +234,7 @@ bool Downloader::sendFirmware(std::span<const uint8_t> firmwareData)
 				}
 			}
 			itLastCrc = it;
-		}
-
-		frame.payload = {0xff};
-		size_t copySize = remainingSize >= frameSize ? frameSize : remainingSize;
-		std::copy(it, it + copySize, frame.payload.begin());
-		it += copySize;
-
-		if (!sendFrameWaitForResponse(frame, Response::CHUNK_OK, 100))
-		{
-			if (progress < 1.0f)
-				std::cout << std::endl;
-			logger->error("Sending data failed!");
-			return false;
+			sentSize = 0;
 		}
 	}
 
