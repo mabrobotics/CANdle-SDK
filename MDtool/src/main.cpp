@@ -111,7 +111,50 @@ class Mdtool
 		return true;
 	}
 
+	bool updateBootloader(std::string& filePath, uint32_t id, bool recover)
+	{
+		auto status = BinaryParser::processFile(filePath);
+
+		if (status == BinaryParser::Status::ERROR_FILE)
+		{
+			logger->error("Error opening file: {}", filePath);
+			return false;
+		}
+		else if (status != BinaryParser::Status::OK)
+		{
+			logger->error("Error while parsing firmware file! Error code: {}", static_cast<std::underlying_type<BinaryParser::Status>::type>(status));
+			return false;
+		}
+
+		if (BinaryParser::getFirmwareFileType() != BinaryParser::Type::BOOT)
+		{
+			logger->error("Wrong file type! Please make sure the file is intended for MD80 controller bootlaoder.");
+			return false;
+		}
+
+		candle->deInit();
+		Downloader downloader(interface, logger);
+
+		logger->info("Preparing to update the secondary bootloader of drive ID {}", id);
+		auto buffer = BinaryParser::getSecondaryFirmwareFile();
+		auto updateStatus = downloader.doLoad(std::span<uint8_t>(buffer), id, recover, secondaryBootloaderAddress, false);
+
+		if (updateStatus != Downloader::Status::OK)
+			logger->error("Status: {}", static_cast<uint8_t>(updateStatus));
+
+		logger->info("Preparing to update the primary bootloader of drive ID {}", id);
+		buffer = BinaryParser::getPrimaryFirmwareFile();
+		updateStatus = downloader.doLoad(std::span<uint8_t>(buffer), id, recover, primaryBootloaderAddress, true);
+
+		if (updateStatus != Downloader::Status::OK)
+			logger->error("Status: {}", static_cast<uint8_t>(updateStatus));
+
+		return true;
+	}
+
    private:
+	static constexpr uint32_t secondaryBootloaderAddress = 0x8005000;
+	static constexpr uint32_t primaryBootloaderAddress = 0x8000000;
 	std::unique_ptr<Candle> candle;
 	ICommunication* interface;
 	spdlog::logger* logger;
@@ -125,6 +168,7 @@ int main(int argc, char** argv)
 	auto* ping = app.add_subcommand("ping", "Discovers all drives connected to CANdle");
 	auto* updateMD80 = app.add_subcommand("update_md80", "Use to update MD80");
 	auto* updateCANdle = app.add_subcommand("update_candle", "Use to update CANdle");
+	auto* updateBootloader = app.add_subcommand("update_bootloader", "Use to update MD80 bootloader");
 
 	auto logger = spdlog::stdout_color_mt("console");
 	logger->set_pattern("[%^%l%$] %v");
@@ -132,18 +176,22 @@ int main(int argc, char** argv)
 	uint32_t baud = 1;
 	ping->add_option("-b,--baud", baud, "CAN Baudrate in Mbps used to setup CANdle");
 	updateMD80->add_option("-b,--baud", baud, "CAN Baudrate in Mbps used to setup CANdle");
+	updateBootloader->add_option("-b,--baud", baud, "CAN Baudrate in Mbps used to setup CANdle");
 
 	bool all = false;
 	auto* all_option = updateMD80->add_flag("-a,--all", all, "Use to update all drives detected by ping() method");
 
 	uint32_t id = 1;
 	updateMD80->add_option("-i,--id", id, "ID of the drive")->check(CLI::Range(1, 31))->excludes(all_option);
+	updateBootloader->add_option("-i,--id", id, "ID of the drive")->check(CLI::Range(1, 31))->excludes(all_option);
 
 	std::string filePath;
 	updateMD80->add_option("-f,--file", filePath, "Update filename")->required();
+	updateBootloader->add_option("-f,--file", filePath, "Update filename")->required();
 
 	bool recover = false;
 	updateMD80->add_flag("-r,--recover", recover, "Use if the MD80 is already in bootloader mode");
+	updateBootloader->add_flag("-r,--recover", recover, "Use if the MD80 is already in bootloader mode");
 
 	bool verbose = false;
 	app.add_flag("-v,--verbose", verbose, "Use for verbose mode");
@@ -161,9 +209,10 @@ int main(int argc, char** argv)
 
 	if (app.got_subcommand("ping"))
 		mdtool.ping();
-
 	else if (app.got_subcommand("update_md80"))
 		mdtool.updateMd80(filePath, id, recover, all);
+	else if (app.got_subcommand("update_bootloader"))
+		mdtool.updateBootloader(filePath, id, recover);
 
 	return 0;
 }

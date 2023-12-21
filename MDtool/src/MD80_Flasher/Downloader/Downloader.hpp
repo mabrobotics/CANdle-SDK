@@ -39,7 +39,7 @@ class Downloader
 	{
 		OK = 0,
 		ERROR_RESET = 1,
-		ERROR_INIT = 2,
+		ERROR_INIT = 2, /*!< will be set when decription fails */
 		ERROR_FIRMWARE = 3,
 		ERROR_PROG = 4,
 		ERROR_BOOT = 5,

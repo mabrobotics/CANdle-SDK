@@ -187,7 +187,7 @@ bool Downloader::sendFirmware(std::span<const uint8_t> firmwareData)
 	/* then proceed with the rest of the firmware*/
 	for (size_t i = 0; i <= size; i += frameSize)
 	{
-		if (i % pageSize == 0 && i > 0)
+		if ((i % pageSize == 0 && i > 0) || (size - i < frameSize))
 		{
 			progress = static_cast<float>(i) / static_cast<float>(size);
 			progressBar(progress);

@@ -43,10 +43,7 @@ class BinaryParser
 			fileType = Type::MD80;
 		else if (firmwareEntry1.tag == "candle")
 			fileType = Type::CANDLE;
-		else
-			return Status::ERROR_TAG;
-
-		if (ini.has("header2"))
+		else if (ini.has("header2"))
 		{
 			firmwareEntry2 = parseFirmwareEntry(ini, std::string("header2"));
 			if (firmwareEntry1.tag == "boot_primary" && firmwareEntry2.tag == "boot_secondary")
@@ -54,6 +51,8 @@ class BinaryParser
 			else
 				return Status::ERROR_TAG;
 		}
+		else
+			return Status::ERROR_TAG;
 
 		if (firmwareEntry1.status == Status::ERROR_CHECKSUM || firmwareEntry2.status == Status::ERROR_CHECKSUM)
 			return Status::ERROR_CHECKSUM;
