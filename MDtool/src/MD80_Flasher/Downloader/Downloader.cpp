@@ -60,7 +60,7 @@ Downloader::Status Downloader::doLoad(std::span<const uint8_t>&& firmwareData, u
 
 	if (!recover)
 	{
-		for (int i = 0; i < 30; i++)
+		for (int i = 0; i < 10; i++)
 		{
 			success = sendInitCmd(initCommand);
 			if (success)
@@ -149,9 +149,9 @@ bool Downloader::sendInitCmd(Command initCommand)
 	frame.payload = {static_cast<uint8_t>(initCommand)};
 	serialize(bootAddress, &frame.payload[1]);
 
-	return sendFrameWaitForResponse(frame, Response::HOST_INIT_OK, 50);
+	return sendFrameWaitForResponse(frame, Response::HOST_INIT_OK, 500);
 }
-bool Downloader::sendFirmware(std::span<const uint8_t> firmwareData)
+bool Downloader::doSendFirmware(std::span<const uint8_t> firmwareData)
 {
 	const size_t ivSize = 16;
 	auto it = firmwareData.begin();
@@ -196,15 +196,12 @@ bool Downloader::sendFirmware(std::span<const uint8_t> firmwareData)
 
 		if (!sendFrameWaitForResponse(frame, Response::CHUNK_OK, 100))
 		{
-			if (progress < 1.0f)
-				std::cout << std::endl;
 			logger->error("Sending data failed!");
 			return false;
 		}
 
 		if (sentSize >= pageSize || (size - i < frameSize))
 		{
-			logger->debug("sent {} bytes", i);
 			progress = static_cast<float>(i) / static_cast<float>(size);
 			progressBar(progress);
 
@@ -218,8 +215,7 @@ bool Downloader::sendFirmware(std::span<const uint8_t> firmwareData)
 
 			if (!sendFrameWaitForResponse(frame, Response::CRC_OK, 100))
 			{
-				if (progress < 1.0f)
-					std::cout << std::endl;
+				logger->error("CRC check failed!");
 				return false;
 			}
 
@@ -227,8 +223,6 @@ bool Downloader::sendFirmware(std::span<const uint8_t> firmwareData)
 			{
 				if (!sendWriteCmd())
 				{
-					if (progress < 1.0f)
-						std::cout << std::endl;
 					logger->error("Programming failed!");
 					return false;
 				}
@@ -249,9 +243,16 @@ bool Downloader::sendFirmware(std::span<const uint8_t> firmwareData)
 			logger->info("Programming OK");
 	}
 
-	progressBar(1.0f);
 	return true;
 }
+
+bool Downloader::sendFirmware(std::span<const uint8_t> firmwareData)
+{
+	bool result = doSendFirmware(firmwareData);
+	std::cout << std::endl;
+	return result;
+}
+
 bool Downloader::sendWriteCmd()
 {
 	ICommunication::CANFrame frame{};

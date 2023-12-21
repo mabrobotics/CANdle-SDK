@@ -83,6 +83,7 @@ class Downloader
 
 	bool sendResetCmd();
 	bool sendInitCmd(Command initCommand);
+	bool doSendFirmware(std::span<const uint8_t> firmwareData);
 	bool sendFirmware(std::span<const uint8_t> firmwareData);
 	bool sendWriteCmd();
 	bool sendBootCmd();
