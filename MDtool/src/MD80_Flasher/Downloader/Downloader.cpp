@@ -232,6 +232,8 @@ bool Downloader::doSendFirmware(std::span<const uint8_t> firmwareData)
 		}
 	}
 
+	progressBar(1.0f);
+
 	if (mode == Mode::SAFE)
 	{
 		if (!sendWriteCmd())
@@ -239,8 +241,6 @@ bool Downloader::doSendFirmware(std::span<const uint8_t> firmwareData)
 			logger->error("Programming failed!");
 			return false;
 		}
-		else
-			logger->info("Programming OK");
 	}
 
 	return true;
@@ -249,7 +249,8 @@ bool Downloader::doSendFirmware(std::span<const uint8_t> firmwareData)
 bool Downloader::sendFirmware(std::span<const uint8_t> firmwareData)
 {
 	bool result = doSendFirmware(firmwareData);
-	std::cout << std::endl;
+	if (!result)
+		std::cout << std::endl;
 	return result;
 }
 
@@ -293,6 +294,6 @@ void Downloader::progressBar(float progress)
 	std::cout << "] " << int(progress * 100.0) << " %\r";
 	std::cout.flush();
 
-	if (progress == 1.0)
-		std::cout << std::endl;
+	// if (progress == 1.0)
+	// 	std::cout << std::endl;
 }

@@ -113,6 +113,17 @@ class Mdtool
 
 	bool updateBootloader(std::string& filePath, uint32_t id, bool recover)
 	{
+		logger->warn("You're about to update the MD80 bootloader. Ensure proper power supply. Disconnecting the power mid-update can brick the MD80! Please type \"iamaware\" to continue:");
+
+		std::string safetyCode;
+		std::cin >> safetyCode;
+
+		if (safetyCode != "iamaware")
+		{
+			logger->error("Wrong passphrase. Exiting...");
+			return false;
+		}
+
 		auto status = BinaryParser::processFile(filePath);
 
 		if (status == BinaryParser::Status::ERROR_FILE)
