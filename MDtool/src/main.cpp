@@ -163,6 +163,20 @@ class Mdtool
 		return true;
 	}
 
+	bool readSDO(uint32_t id, uint32_t index, uint32_t subindex)
+	{
+		candle->addMd80(id);
+
+		// auto value = candle->getMd80(id)->OD.at(index)->subEntries.at(subindex)->value;
+
+		uint32_t value = 0;
+
+		if (!candle->canopenStack->readSDO(id, index, subindex, value))
+			return false;
+
+		logger->info("SDO value: {}", value);
+	}
+
    private:
 	static constexpr uint32_t secondaryBootloaderAddress = 0x8005000;
 	static constexpr uint32_t primaryBootloaderAddress = 0x8000000;
@@ -181,20 +195,19 @@ int main(int argc, char** argv)
 	auto* updateCANdle = app.add_subcommand("update_candle", "Use to update CANdle");
 	auto* updateBootloader = app.add_subcommand("update_bootloader", "Use to update MD80 bootloader");
 
+	auto* readSDO = app.add_subcommand("readSDO", "Use to read SDO value");
+
 	auto logger = spdlog::stdout_color_mt("console");
 	logger->set_pattern("[%^%l%$] %v");
 
 	uint32_t baud = 1;
-	ping->add_option("-b,--baud", baud, "CAN Baudrate in Mbps used to setup CANdle");
-	updateMD80->add_option("-b,--baud", baud, "CAN Baudrate in Mbps used to setup CANdle");
-	updateBootloader->add_option("-b,--baud", baud, "CAN Baudrate in Mbps used to setup CANdle");
+	app.add_option("-b,--baud", baud, "CAN Baudrate in Mbps used to setup CANdle");
 
 	bool all = false;
 	auto* all_option = updateMD80->add_flag("-a,--all", all, "Use to update all drives detected by ping() method");
 
 	uint32_t id = 1;
-	updateMD80->add_option("-i,--id", id, "ID of the drive")->check(CLI::Range(1, 31))->excludes(all_option);
-	updateBootloader->add_option("-i,--id", id, "ID of the drive")->check(CLI::Range(1, 31))->excludes(all_option);
+	app.add_option("-i,--id", id, "ID of the drive")->check(CLI::Range(1, 31))->excludes(all_option);
 
 	std::string filePath;
 	updateMD80->add_option("-f,--file", filePath, "Update filename")->required();
@@ -202,10 +215,14 @@ int main(int argc, char** argv)
 
 	bool recover = false;
 	updateMD80->add_flag("-r,--recover", recover, "Use if the MD80 is already in bootloader mode");
-	updateBootloader->add_flag("-r,--recover", recover, "Use if the MD80 is already in bootloader mode");
 
 	bool verbose = false;
 	app.add_flag("-v,--verbose", verbose, "Use for verbose mode");
+
+	uint32_t index = 0;
+	uint32_t subindex = 0;
+	readSDO->add_option("--idx", index, "SDO index")->required();
+	readSDO->add_option("--subidx", subindex, "SDO subindex")->required();
 
 	CLI11_PARSE(app, argc, argv);
 
@@ -225,6 +242,8 @@ int main(int argc, char** argv)
 		mdtool.updateMd80(filePath, id, recover, all);
 	else if (app.got_subcommand("update_bootloader"))
 		mdtool.updateBootloader(filePath, id, recover);
+	else if (app.got_subcommand("readSDO"))
+		mdtool.readSDO(id, index, subindex);
 
 	return 0;
 }

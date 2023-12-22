@@ -2,6 +2,7 @@
 #define CANDLE_HPP
 
 #include <memory>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -78,6 +79,16 @@ class Candle
 		return ids;
 	}
 
+	void addMd80(uint32_t id)
+	{
+		md80s[id] = std::make_unique<MD80>();
+	}
+
+	MD80* getMd80(uint32_t id) const
+	{
+		return md80s.at(id).get();
+	}
+
 	bool enterOperational(uint32_t id)
 	{
 		return canopenStack->writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0080)) &&
@@ -139,7 +150,7 @@ class Candle
 
 	std::atomic<bool> done = false;
 
-	std::vector<MD80> md80s;
+	std::unordered_map<uint32_t, std::unique_ptr<MD80>> md80s;
 	ICommunication* interface;
 };
 
