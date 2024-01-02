@@ -171,11 +171,17 @@ class Mdtool
 		// auto value = candle->getMd80(id)->OD.at(index)->subEntries.at(subindex)->value;
 
 		uint32_t value = 0;
+		uint32_t errorCode = 0;
 
-		if (!candle->canopenStack->readSDO(id, index, subindex, value))
+		if (!candle->canopenStack->readSDO(id, index, subindex, value, errorCode))
 			return false;
 
-		logger->info("SDO value: {}", value);
+		if (errorCode)
+			logger->error("SDO read error! Error code: {}", value);
+		else
+			logger->info("SDO value: {}", value);
+
+		return true;
 	}
 
    private:

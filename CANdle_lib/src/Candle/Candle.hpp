@@ -73,7 +73,9 @@ class Candle
 		for (size_t i = 1; i < 10; i++)
 		{
 			uint32_t deviceType = 0;
-			if (canopenStack->readSDO(i, 0x1000, 0x00, deviceType))
+			uint32_t errorCode = 0;
+
+			if (canopenStack->readSDO(i, 0x1000, 0x00, deviceType, errorCode))
 				ids.push_back(i);
 		}
 
@@ -138,7 +140,7 @@ class Candle
 		while (!done)
 		{
 			canopenStack->sendSYNC();
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 		}
 	}
 

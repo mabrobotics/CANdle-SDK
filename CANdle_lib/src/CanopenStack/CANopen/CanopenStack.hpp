@@ -18,7 +18,7 @@ class CanopenStack
 	}
 
 	template <typename T>
-	bool readSDO(uint32_t id, uint16_t index_, uint8_t subindex_, T& value)
+	bool readSDO(uint32_t id, uint16_t index_, uint8_t subindex_, T& value, uint32_t& errorCode)
 	{
 		ICommunication::CANFrame frame{};
 		frame.header.canId = 0x600 + id;
@@ -29,11 +29,15 @@ class CanopenStack
 		frame.payload[3] = subindex_;
 
 		std::atomic<bool> SDOvalid = false;
-		processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data)
+		processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, bool error)
 		{
 			value = deserialize<T>(data.begin());
 			if (index == index_ && subindex == subindex_ && driveId == id)
+			{
+				if (error)
+					errorCode = value;
 				SDOvalid = true;
+			}
 		};
 
 		if (!interface->sendCanFrame(frame))
@@ -57,7 +61,7 @@ class CanopenStack
 		serialize(value, &frame.payload[4]);
 
 		std::atomic<bool> SDOvalid = false;
-		processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data)
+		processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, bool error)
 		{
 			if (index == index_ && subindex == subindex_ && driveId == id)
 				SDOvalid = true;
@@ -83,20 +87,21 @@ class CanopenStack
 	{
 		if (frame.header.canId >= 0x580 && frame.header.canId < 0x600)
 		{
+			uint8_t command = frame.payload[0];
 			uint32_t driveId = frame.header.canId - 0x580;
-			size_t dataSize = 4 - ((frame.payload[0] >> 2) & 0b00000011);
+			size_t dataSize = 4 - ((command >> 2) & 0b00000011);
 			uint16_t index = deserialize<uint16_t>(&frame.payload[1]);
 			uint8_t subindex = frame.payload[3];
 			std::span<uint8_t> data(&frame.payload[4], dataSize);
 
 			if (processSDO)
-				processSDO(driveId, index, subindex, data);
+				processSDO(driveId, index, subindex, data, command == 0x80);
 		}
 	}
 
    private:
 	ICommunication* interface;
-	std::function<void(uint32_t, uint32_t, uint8_t, std::span<uint8_t>&)> processSDO;
+	std::function<void(uint32_t, uint16_t, uint8_t, std::span<uint8_t>&, bool error)> processSDO;
 
 	bool waitForActionWithTimeout(std::function<bool()> condition, uint32_t timeoutMs)
 	{
