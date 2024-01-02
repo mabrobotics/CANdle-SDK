@@ -8,13 +8,18 @@
 
 UsbHandler::~UsbHandler()
 {
+	std::cout << "deinitializing USB handler module..." << std::endl;
+
 	done = true;
 	if (handlerThread.joinable())
 		handlerThread.join();
 
-	libusb_release_interface(devh, 0);
 	if (devh)
+	{
+		libusb_release_interface(devh, 0);
 		libusb_close(devh);
+	}
+
 	libusb_exit(NULL);
 }
 

@@ -58,6 +58,7 @@ class Candle
 
 	void deInit()
 	{
+		std::cout << "deinitializing Candle module..." << std::endl;
 		done = true;
 		if (receiveThread.joinable())
 			receiveThread.join();

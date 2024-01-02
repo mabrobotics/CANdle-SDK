@@ -15,6 +15,7 @@ class Mdtool
    public:
 	~Mdtool()
 	{
+		std::cout << "deinitializing MDtool..." << std::endl;
 		candle->deInit();
 	}
 
@@ -229,10 +230,10 @@ int main(int argc, char** argv)
 	if (verbose)
 		logger->set_level(spdlog::level::debug);
 
-	Mdtool mdtool;
 	std::unique_ptr<IBusHandler> busHandler = std::make_unique<UsbHandler>();
 	std::unique_ptr<ICommunication> candleInterface = std::make_unique<CandleInterface>(busHandler.get());
 
+	Mdtool mdtool;
 	if (!mdtool.init(candleInterface.get(), logger.get(), static_cast<Candle::Baud>(baud)))
 		return false;
 
