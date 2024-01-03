@@ -68,11 +68,13 @@ class ObjectDictionaryParserEDS : public IODParser
 				size_t i = 0;
 				while (1)
 				{
-					auto subkey = keyString + "sub" + std::to_string(++i);
+					auto subkey = keyString + "sub" + std::to_string(i);
 					if (!ini.has(subkey))
 						break;
+
 					objectDictionary[key]->subEntries.insert({i, std::make_shared<Entry>()});
 					fillInEntryFields(subkey, *objectDictionary[key]->subEntries[i]);
+					i++;
 				}
 			}
 		}
