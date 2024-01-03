@@ -1,3 +1,3 @@
 :: C:\\msys64\\mingw64\\bin\\gdbserver.exe localhost:2000 ./build/MDtool/MDtool.exe update_md80 -f C:/Users/klonyyy/PROJECTS/MAB/projects/CANdle-SDK/CANdle-SDK/build/MDtool/md80.mab
 :: C:\\msys64\\mingw64\\bin\\gdbserver.exe localhost:2000 ./build/MDtool/MDtool.exe -v update_bootloader -f C:/Users/klonyyy/PROJECTS/MAB/projects/CANdle-SDK/CANdle-SDK/build/MDtool/boot_50f348.mab
-C:\\msys64\\mingw64\\bin\\gdbserver.exe localhost:2000 ./build/MDtool/MDtool.exe --id 1 readSDO --idx 0x200B --subidx 1
+C:\\msys64\\mingw64\\bin\\gdbserver.exe localhost:2000 ./build/MDtool/MDtool.exe --id 1 readSDO --idx 0x2006 --subidx 0

@@ -35,7 +35,7 @@ class CanopenStack
 			if (index == index_ && subindex == subindex_ && driveId == id)
 			{
 				if (error)
-					errorCode = value;
+					errorCode = deserialize<uint32_t>(data.begin());
 				SDOvalid = true;
 			}
 		};

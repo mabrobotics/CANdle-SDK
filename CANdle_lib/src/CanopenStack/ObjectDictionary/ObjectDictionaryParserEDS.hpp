@@ -51,6 +51,7 @@ class ObjectDictionaryParserEDS : public IODParser
 
 		insertEntires("mandatoryobjects");
 		insertEntires("optionalobjects");
+		insertEntires("manufacturerobjects");
 
 		for (auto& entry : objectDictionary)
 		{

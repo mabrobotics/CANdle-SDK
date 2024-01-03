@@ -1,6 +1,7 @@
 #ifndef IOBJECTDICTIONARYPARSER_HPP
 #define IOBJECTDICTIONARYPARSER_HPP
 
+#include <array>
 #include <map>
 #include <memory>
 #include <string>
@@ -9,7 +10,7 @@
 class IODParser
 {
    public:
-	typedef std::variant<uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, float, double, std::string> ValueType;
+	typedef std::variant<uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, float, double, std::array<uint8_t, 4>> ValueType;
 
 	enum class DataType
 	{

@@ -7,8 +7,31 @@
 #include "CandleInterface.hpp"
 #include "Downloader.hpp"
 #include "UsbHandler.hpp"
+#include "spdlog/fmt/ostr.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
+
+namespace fmt
+{
+template <typename T, std::size_t N>
+struct formatter<std::array<T, N>> : formatter<std::string_view>
+{
+	template <typename FormatContext>
+	auto format(const std::array<T, N>& arr, FormatContext& ctx)
+	{
+		std::string result = "[";
+		for (const auto& element : arr)
+		{
+			result += (std::isprint(static_cast<unsigned char>(element)) ? element : '?');
+			result += ", ";
+		}
+		result.pop_back();
+		result.pop_back();
+		result += "]";
+		return formatter<std::string_view>::format(result, ctx);
+	}
+};
+}  // namespace fmt
 
 class Mdtool
 {
@@ -168,20 +191,28 @@ class Mdtool
 	{
 		candle->addMd80(id);
 
-		// auto value = candle->getMd80(id)->OD.at(index)->subEntries.at(subindex)->value;
+		auto& value = candle->getMd80(id)->OD.at(index)->subEntries.at(subindex)->value;
+		value = getTypeBasedOnTag(candle->getMd80(id)->OD.at(index)->subEntries.at(subindex)->datatype);
 
-		uint32_t value = 0;
 		uint32_t errorCode = 0;
 
-		if (!candle->canopenStack->readSDO(id, index, subindex, value, errorCode))
-			return false;
+		auto lambdaFunc = [&](auto& arg)
+		{
+					   if (!candle->canopenStack->readSDO(id, index, subindex, arg, errorCode))
+						   return false;
 
-		if (errorCode)
-			logger->error("SDO read error! Error code: {}", value);
-		else
-			logger->info("SDO value: {}", value);
+					     if (errorCode)
+						 {
+					      logger->error("SDO read error! Error code: {}", arg);
+						  return false;
+						 }
+					     else
+						 {
+					      logger->info("SDO value: {}", arg); 
+						  return true;
+						  } };
 
-		return true;
+		return std::visit(lambdaFunc, value);
 	}
 
    private:
@@ -192,6 +223,34 @@ class Mdtool
 	spdlog::logger* logger;
 
 	Candle::Baud baudrate = Candle::Baud::BAUD_1M;
+
+   private:
+	IODParser::ValueType getTypeBasedOnTag(IODParser::DataType tag)
+	{
+		switch (tag)
+		{
+			case IODParser::DataType::BOOLEAN:
+				[[fallthrough]];
+			case IODParser::DataType::UNSIGNED8:
+				return uint8_t{};
+			case IODParser::DataType::INTEGER8:
+				return int8_t{};
+			case IODParser::DataType::UNSIGNED16:
+				return uint16_t{};
+			case IODParser::DataType::INTEGER16:
+				return int16_t{};
+			case IODParser::DataType::UNSIGNED32:
+				return uint32_t{};
+			case IODParser::DataType::INTEGER32:
+				return int32_t{};
+			case IODParser::DataType::REAL32:
+				return float{};
+			case IODParser::DataType::VISIBLE_STRING:
+				return std::array<uint8_t, 4>{};
+			default:
+				return uint32_t{};
+		}
+	}
 };
 
 int main(int argc, char** argv)
