@@ -1,0 +1,28 @@
+#include "Candle.hpp"
+#include "Downloader.hpp"
+#include "UsbHandler.hpp"
+#include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/spdlog.h"
+
+class Mdtool
+{
+   public:
+	~Mdtool();
+	bool init(ICommunication* interface, spdlog::logger* logger, Candle::Baud baud);
+	void ping();
+	bool updateMd80(std::string& filePath, uint32_t id, bool recover, bool all);
+	bool updateBootloader(std::string& filePath, uint32_t id, bool recover);
+	bool readSDO(uint32_t id, uint32_t index, uint32_t subindex);
+
+   private:
+	static constexpr uint32_t secondaryBootloaderAddress = 0x8005000;
+	static constexpr uint32_t primaryBootloaderAddress = 0x8000000;
+	std::unique_ptr<Candle> candle;
+	ICommunication* interface;
+	spdlog::logger* logger;
+
+	Candle::Baud baudrate = Candle::Baud::BAUD_1M;
+
+   private:
+	IODParser::ValueType getTypeBasedOnTag(IODParser::DataType tag);
+};

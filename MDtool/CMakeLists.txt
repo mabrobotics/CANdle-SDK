@@ -16,6 +16,7 @@ set(SPDLOG_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/)
 
 set(PROJECT_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mdtool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/MD80_Flasher/Downloader/Downloader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/MD80_Flasher/Checksum/Checksum.cpp)
 

@@ -1,6 +1,7 @@
 #ifndef CANDLE_HPP
 #define CANDLE_HPP
 
+#include <iostream>
 #include <memory>
 #include <unordered_map>
 #include <utility>
