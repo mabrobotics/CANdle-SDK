@@ -40,8 +40,16 @@ class CanopenStack
 		frame.payload[3] = subindex_;
 
 		std::atomic<bool> SDOvalid = false;
-		processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, bool error)
+		std::atomic<bool> SDOfragmented = false;
+
+		uint32_t fragmentedDataSize = 0;
+
+		processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, uint8_t command)
 		{
+			bool error = command == 0x80;
+			SDOfragmented = command == 0x41;
+
+			value = deserialize<T>(data.begin());
 			if (index == index_ && subindex == subindex_ && driveId == id)
 			{
 				if (error)
@@ -54,9 +62,44 @@ class CanopenStack
 		if (!interface->sendCanFrame(frame))
 			return false;
 
-		return waitForActionWithTimeout([&]() -> bool
-										{ return !SDOvalid; },
-										10);
+		if (!SDOfragmented && !waitForActionWithTimeout([&]() -> bool
+														{ return !SDOvalid; },
+														10))
+			return false;
+
+		if (SDOfragmented)
+		{
+			std::cout << "Segmented transfer detected! Size = " << fragmentedDataSize << std::endl;
+
+			bool toggleBit = false;
+			// auto it = &value;
+			uint8_t* it = &value;
+
+			std::atomic<bool> lastSegment = false;
+
+			processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, uint8_t command)
+			{
+				bool error = command == 0x80;
+
+				if (error)
+					errorCode = deserialize<uint32_t>(data.begin());
+
+				if ((command & 0xe1) == 0x01)
+					lastSegment = true;
+
+				std::copy(data.begin(), data.end(), it);
+				it += data.size();
+			};
+
+			while (fragmentedDataSize > 0)
+			{
+				frame = {};
+				/* flip 5th bit - the toggle bit */
+				frame.payload[0] ^= 0x61 & (1 << 4);
+			}
+		}
+
+		return true;
 	}
 
 	template <typename T>
@@ -72,7 +115,7 @@ class CanopenStack
 		serialize(value, &frame.payload[4]);
 
 		std::atomic<bool> SDOvalid = false;
-		processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, bool error)
+		processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, uint8_t command)
 		{
 			if (index == index_ && subindex == subindex_ && driveId == id)
 				SDOvalid = true;
@@ -100,19 +143,28 @@ class CanopenStack
 		{
 			uint8_t command = frame.payload[0];
 			uint32_t driveId = frame.header.canId - 0x580;
-			size_t dataSize = 4 - ((command >> 2) & 0b00000011);
-			uint16_t index = deserialize<uint16_t>(&frame.payload[1]);
-			uint8_t subindex = frame.payload[3];
-			std::span<uint8_t> data(&frame.payload[4], dataSize);
+
+			size_t dataSize = 0;
+			uint16_t index = 0;
+			uint8_t subindex = 0;
+			std::span<uint8_t> data;
+
+			if (command)
+			{
+				size_t dataSize = 4 - ((command >> 2) & 0b00000011);
+				uint16_t index = deserialize<uint16_t>(&frame.payload[1]);
+				uint8_t subindex = frame.payload[3];
+				data = std::span<uint8_t>(&frame.payload[4], dataSize);
+			}
 
 			if (processSDO)
-				processSDO(driveId, index, subindex, data, command == 0x80);
+				processSDO(driveId, index, subindex, data, command);
 		}
 	}
 
    private:
 	ICommunication* interface;
-	std::function<void(uint32_t, uint16_t, uint8_t, std::span<uint8_t>&, bool error)> processSDO;
+	std::function<void(uint32_t, uint16_t, uint8_t, std::span<uint8_t>&, uint8_t command)> processSDO;
 
 	bool waitForActionWithTimeout(std::function<bool()> condition, uint32_t timeoutMs)
 	{
