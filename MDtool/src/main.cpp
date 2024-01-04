@@ -21,6 +21,7 @@ int main(int argc, char** argv)
 	auto* updateBootloader = app.add_subcommand("update_bootloader", "Use to update MD80 bootloader");
 
 	auto* readSDO = app.add_subcommand("readSDO", "Use to read SDO value");
+	auto* writeSDO = app.add_subcommand("writeSDO", "Use to write SDO value");
 
 	auto logger = spdlog::stdout_color_mt("console");
 	logger->set_pattern("[%^%l%$] %v");
@@ -46,10 +47,45 @@ int main(int argc, char** argv)
 
 	uint32_t index = 0;
 	uint32_t subindex = 0;
-	readSDO->add_option("--idx", index, "SDO index")->required();
-	readSDO->add_option("--subidx", subindex, "SDO subindex")->required();
+	readSDO->add_option("idx", index, "SDO index")->required();
+	readSDO->add_option("subidx", subindex, "SDO subindex")->required();
+
+	IODParser::ValueType value;
+	std::string valueStr{};
+	std::string valueType{};
+	writeSDO->add_option("idx", index, "SDO index")->required();
+	writeSDO->add_option("subidx", subindex, "SDO subindex")->required();
+	writeSDO->add_option("value", valueStr, "SDO value to be written")->required();
+	writeSDO->add_option("type", valueType, "SDO value type to be written")->required();
 
 	CLI11_PARSE(app, argc, argv);
+
+	if (writeSDO->count("type") > 0)
+	{
+		if (valueType == "f32")
+			value = std::stof(valueStr);
+		else if (valueType == "i8")
+			value = static_cast<int8_t>(std::stoi(valueStr, nullptr, 0));
+		else if (valueType == "u16")
+			value = static_cast<uint16_t>(std::stoi(valueStr, nullptr, 0));
+		else if (valueType == "i16")
+			value = static_cast<int16_t>(std::stoi(valueStr, nullptr, 0));
+		else if (valueType == "u32")
+			value = static_cast<uint32_t>(std::stoul(valueStr, nullptr, 0));
+		else if (valueType == "i32")
+			value = static_cast<uint32_t>(std::stoi(valueStr, nullptr, 0));
+		else if (valueType == "str")
+		{
+			std::array<uint8_t, 4> arr{};
+			std::copy(valueStr.begin(), valueStr.end(), arr.begin());
+			value = arr;
+		}
+		else
+		{
+			logger->error("Wrong --type argument!");
+			return 0;
+		}
+	}
 
 	if (verbose)
 		logger->set_level(spdlog::level::debug);
@@ -69,6 +105,8 @@ int main(int argc, char** argv)
 		mdtool.updateBootloader(filePath, id, recover);
 	else if (app.got_subcommand("readSDO"))
 		mdtool.readSDO(id, index, subindex);
+	else if (app.got_subcommand("writeSDO"))
+		mdtool.writeSDO(id, index, subindex, value);
 
 	return 0;
 }

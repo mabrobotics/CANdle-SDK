@@ -13,6 +13,7 @@ class Mdtool
 	bool updateMd80(std::string& filePath, uint32_t id, bool recover, bool all);
 	bool updateBootloader(std::string& filePath, uint32_t id, bool recover);
 	bool readSDO(uint32_t id, uint32_t index, uint32_t subindex);
+	bool writeSDO(uint32_t id, uint32_t index, uint32_t subindex, IODParser::ValueType& value);
 
    private:
 	static constexpr uint32_t secondaryBootloaderAddress = 0x8005000;

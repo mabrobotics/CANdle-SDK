@@ -204,6 +204,18 @@ bool Mdtool::readSDO(uint32_t id, uint32_t index, uint32_t subindex)
 	return std::visit(lambdaFunc, value);
 }
 
+bool Mdtool::writeSDO(uint32_t id, uint32_t index, uint32_t subindex, IODParser::ValueType& value)
+{
+	candle->addMd80(id);
+
+	auto lambdaFunc = [&](auto& arg)
+	{
+		return !candle->canopenStack->writeSDO(id, index, subindex, std::move(arg));
+	};
+
+	return std::visit(lambdaFunc, value);
+}
+
 IODParser::ValueType Mdtool::getTypeBasedOnTag(IODParser::DataType tag)
 {
 	switch (tag)
