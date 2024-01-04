@@ -10,7 +10,7 @@
 class IODParser
 {
    public:
-	typedef std::variant<uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, float, std::array<uint8_t, 4>> ValueType;
+	typedef std::variant<uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, float, std::array<uint8_t, 24>> ValueType;
 
 	enum class DataType
 	{

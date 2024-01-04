@@ -11,15 +11,14 @@ struct formatter<std::array<T, N>> : formatter<std::string_view>
 	template <typename FormatContext>
 	auto format(const std::array<T, N>& arr, FormatContext& ctx)
 	{
-		std::string result = "[";
-		for (const auto& element : arr)
+		std::string result = "";
+		auto it = arr.begin();
+		while (it != arr.end() && *it != 0)
 		{
-			result += (std::isprint(static_cast<unsigned char>(element)) ? element : '?');
-			result += ", ";
+			result += (std::isprint(static_cast<unsigned char>(*it)) ? *it : '?');
+			it++;
 		}
-		result.pop_back();
-		result.pop_back();
-		result += "]";
+
 		return formatter<std::string_view>::format(result, ctx);
 	}
 };
@@ -192,7 +191,7 @@ bool Mdtool::readSDO(uint32_t id, uint32_t index, uint32_t subindex)
 
 					     if (errorCode)
 						 {
-					      logger->error("SDO read error! Error code: {}", arg);
+					      logger->error("SDO read error! Error code: {}", errorCode);
 						  return false;
 						 }
 					     else
@@ -237,7 +236,7 @@ IODParser::ValueType Mdtool::getTypeBasedOnTag(IODParser::DataType tag)
 		case IODParser::DataType::REAL32:
 			return float{};
 		case IODParser::DataType::VISIBLE_STRING:
-			return std::array<uint8_t, 4>{};
+			return std::array<uint8_t, 24>{};
 		default:
 			return uint32_t{};
 	}

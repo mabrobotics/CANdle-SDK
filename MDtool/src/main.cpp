@@ -76,7 +76,7 @@ int main(int argc, char** argv)
 			value = static_cast<uint32_t>(std::stoi(valueStr, nullptr, 0));
 		else if (valueType == "str")
 		{
-			std::array<uint8_t, 4> arr{};
+			std::array<uint8_t, 24> arr{};
 			std::copy(valueStr.begin(), valueStr.end(), arr.begin());
 			value = arr;
 		}

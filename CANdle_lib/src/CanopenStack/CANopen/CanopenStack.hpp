@@ -21,7 +21,9 @@ class CanopenStack
 	bool readSDO(uint32_t id, uint16_t index_, uint8_t subindex_, T& value, uint32_t& errorCode)
 	{
 		std::vector<uint8_t> data;
-		data.reserve(100);
+		/* ensure at least as many elements as there are in the largest element (sizeof(T)) */
+		data.resize(100, 0);
+
 		if (!readSdoToBytes(id, index_, subindex_, data, errorCode))
 			return false;
 
@@ -49,13 +51,15 @@ class CanopenStack
 			bool error = command == 0x80;
 			SDOfragmented = command == 0x41;
 
-			value = deserialize<T>(data.begin());
 			if (index == index_ && subindex == subindex_ && driveId == id)
 			{
 				if (error)
 					errorCode = deserialize<uint32_t>(data.begin());
 				std::copy(data.begin(), data.end(), dataOut.begin());
 				SDOvalid = true;
+
+				if (SDOfragmented)
+					fragmentedDataSize = deserialize<uint32_t>(data.begin());
 			}
 		};
 
@@ -69,12 +73,10 @@ class CanopenStack
 
 		if (SDOfragmented)
 		{
+			fragmentedReadOngoing = true;
 			std::cout << "Segmented transfer detected! Size = " << fragmentedDataSize << std::endl;
 
-			bool toggleBit = false;
-			// auto it = &value;
-			uint8_t* it = &value;
-
+			auto it = dataOut.begin();
 			std::atomic<bool> lastSegment = false;
 
 			processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, uint8_t command)
@@ -82,22 +84,42 @@ class CanopenStack
 				bool error = command == 0x80;
 
 				if (error)
-					errorCode = deserialize<uint32_t>(data.begin());
+					errorCode = deserialize<uint32_t>(data.begin() + 3);
 
 				if ((command & 0xe1) == 0x01)
 					lastSegment = true;
 
 				std::copy(data.begin(), data.end(), it);
 				it += data.size();
+
+				SDOvalid = true;
 			};
 
-			while (fragmentedDataSize > 0)
+			bool result = true;
+			bool toggleBit = false;
+
+			while (!lastSegment & result)
 			{
-				frame = {};
+				frame.payload = {};
+				frame.payload[0] = 0x60;
+
 				/* flip 5th bit - the toggle bit */
-				frame.payload[0] ^= 0x61 & (1 << 4);
+				if (toggleBit)
+					frame.payload[0] ^= (1 << 4);
+
+				if (!interface->sendCanFrame(frame))
+					return false;
+
+				SDOvalid = false;
+				result = waitForActionWithTimeout([&]() -> bool
+												  { return !SDOvalid; },
+												  10);
+
+				toggleBit = !toggleBit;
 			}
 		}
+
+		fragmentedReadOngoing = false;
 
 		return true;
 	}
@@ -149,11 +171,16 @@ class CanopenStack
 			uint8_t subindex = 0;
 			std::span<uint8_t> data;
 
-			if (command)
+			if (fragmentedReadOngoing)
 			{
-				size_t dataSize = 4 - ((command >> 2) & 0b00000011);
-				uint16_t index = deserialize<uint16_t>(&frame.payload[1]);
-				uint8_t subindex = frame.payload[3];
+				dataSize = 7 - ((command >> 1) & 0b00000111);
+				data = std::span<uint8_t>(&frame.payload[1], dataSize);
+			}
+			else
+			{
+				dataSize = 4 - ((command >> 2) & 0b00000011);
+				index = deserialize<uint16_t>(&frame.payload[1]);
+				subindex = frame.payload[3];
 				data = std::span<uint8_t>(&frame.payload[4], dataSize);
 			}
 
@@ -165,6 +192,7 @@ class CanopenStack
    private:
 	ICommunication* interface;
 	std::function<void(uint32_t, uint16_t, uint8_t, std::span<uint8_t>&, uint8_t command)> processSDO;
+	std::atomic<bool> fragmentedReadOngoing = false;
 
 	bool waitForActionWithTimeout(std::function<bool()> condition, uint32_t timeoutMs)
 	{
