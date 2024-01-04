@@ -20,6 +20,17 @@ class CanopenStack
 	template <typename T>
 	bool readSDO(uint32_t id, uint16_t index_, uint8_t subindex_, T& value, uint32_t& errorCode)
 	{
+		std::vector<uint8_t> data;
+		data.reserve(100);
+		if (!readSdoToBytes(id, index_, subindex_, data, errorCode))
+			return false;
+
+		value = deserialize<T>(data.data());
+		return true;
+	}
+
+	bool readSdoToBytes(uint32_t id, uint16_t index_, uint8_t subindex_, std::vector<uint8_t>& dataOut, uint32_t& errorCode)
+	{
 		ICommunication::CANFrame frame{};
 		frame.header.canId = 0x600 + id;
 		frame.header.length = 8;
@@ -31,11 +42,11 @@ class CanopenStack
 		std::atomic<bool> SDOvalid = false;
 		processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, bool error)
 		{
-			value = deserialize<T>(data.begin());
 			if (index == index_ && subindex == subindex_ && driveId == id)
 			{
 				if (error)
 					errorCode = deserialize<uint32_t>(data.begin());
+				std::copy(data.begin(), data.end(), dataOut.begin());
 				SDOvalid = true;
 			}
 		};
