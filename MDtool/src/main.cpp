@@ -64,6 +64,8 @@ int main(int argc, char** argv)
 	{
 		if (valueType == "f32")
 			value = std::stof(valueStr);
+		else if (valueType == "u8")
+			value = static_cast<uint8_t>(std::stoi(valueStr, nullptr, 0));
 		else if (valueType == "i8")
 			value = static_cast<int8_t>(std::stoi(valueStr, nullptr, 0));
 		else if (valueType == "u16")
