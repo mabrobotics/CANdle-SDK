@@ -68,7 +68,10 @@ class ObjectDictionaryParserEDS : public IODParser
 				size_t i = 0;
 				while (1)
 				{
-					auto subkey = keyString + "sub" + std::to_string(i);
+					std::stringstream subIdx;
+					subIdx << std::hex << i;
+
+					auto subkey = keyString + "sub" + subIdx.str();
 					if (!ini.has(subkey))
 						break;
 
