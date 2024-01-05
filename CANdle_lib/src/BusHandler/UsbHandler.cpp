@@ -8,8 +8,6 @@
 
 UsbHandler::~UsbHandler()
 {
-	std::cout << "deinitializing USB handler module..." << std::endl;
-
 	done = true;
 	if (handlerThread.joinable())
 		handlerThread.join();

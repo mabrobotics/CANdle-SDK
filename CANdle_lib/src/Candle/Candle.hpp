@@ -30,9 +30,9 @@ class Candle
 		CYCLIC_SYNCH_VELOCTIY = 9,
 	};
 
-	explicit Candle(ICommunication* interface) : interface(interface)
+	explicit Candle(ICommunication* interface, spdlog::logger* logger) : interface(interface), logger(logger)
 	{
-		canopenStack = std::make_unique<CanopenStack>(interface);
+		canopenStack = std::make_unique<CanopenStack>(interface, logger);
 		receiveThread = std::thread(&Candle::receiveHandler, this);
 		transmitThread = std::thread(&Candle::transmitHandler, this);
 	}
@@ -59,7 +59,6 @@ class Candle
 
 	void deInit()
 	{
-		std::cout << "deinitializing Candle module..." << std::endl;
 		done = true;
 		if (receiveThread.joinable())
 			receiveThread.join();
@@ -161,6 +160,7 @@ class Candle
 
 	std::unordered_map<uint32_t, std::unique_ptr<MD80>> md80s;
 	ICommunication* interface;
+	spdlog::logger* logger;
 };
 
 #endif

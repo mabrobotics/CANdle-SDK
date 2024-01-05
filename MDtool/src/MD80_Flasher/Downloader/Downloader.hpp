@@ -10,7 +10,6 @@
 
 #include "Communication/CandleInterface.hpp"
 #include "IBusHandler.hpp"
-#include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
 
 class Downloader

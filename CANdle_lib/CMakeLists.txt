@@ -39,6 +39,7 @@ if(WIN32)
     set(LIBUSB_WINDOWS_DYNAMIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/lib/windows/libusb-1.0.dll)
     set(LIBUSB_WINDOWS_STATIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/lib/windows/libusb-1.0.a)
     set(LIBUSB_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/inc/libusb-1.0)
+    set(SPDLOG_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/)
 endif()
 
 set(mINI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/CanopenStack/third_party/mINI/inc/)
@@ -51,7 +52,8 @@ add_library(${EXECUTABLE} STATIC ${PROJECT_SOURCES})
 
 target_include_directories(${EXECUTABLE} SYSTEM PRIVATE
     ${LIBUSB_INCLUDE_DIR}
-    ${mINI_INCLUDE_DIR})
+    ${mINI_INCLUDE_DIR}
+    ${SPDLOG_INCLUDE_DIR})
 
 target_include_directories(${EXECUTABLE} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/
@@ -59,6 +61,7 @@ target_include_directories(${EXECUTABLE} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BusHandler/
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CircularBuffer/
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Candle/
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Logger/
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Commons/
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Communication/
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CanopenStack/

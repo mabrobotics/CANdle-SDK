@@ -9,11 +9,12 @@
 #include "Commons/Deserializer.hpp"
 #include "ICommunication.hpp"
 #include "IObjectDictionaryParser.hpp"
+#include "spdlog/spdlog.h"
 
 class CanopenStack
 {
    public:
-	explicit CanopenStack(ICommunication* interface) : interface(interface)
+	explicit CanopenStack(ICommunication* interface, spdlog::logger* logger) : interface(interface), logger(logger)
 	{
 	}
 
@@ -66,18 +67,13 @@ class CanopenStack
 			}
 		};
 
-		if (!interface->sendCanFrame(frame))
-			return false;
-
-		if (!waitForActionWithTimeout([&]() -> bool
-									  { return !SDOvalid; },
-									  10))
+		if (!sendFrameWaitForCompletion(frame, SDOvalid, defaultSdoTimeout))
 			return false;
 
 		if (segmentedTransfer)
 		{
 			segmentedReadOngoing = true;
-			std::cout << "Segmented transfer detected! Size = " << segmentedDataSize << std::endl;
+			logger->debug("Segmented transfer detected! Size = {}", segmentedDataSize);
 
 			auto it = dataOut.begin();
 			std::atomic<bool> lastSegment = false;
@@ -111,19 +107,11 @@ class CanopenStack
 				if (toggleBit)
 					frame.payload[0] ^= (1 << 4);
 
-				if (!interface->sendCanFrame(frame))
-					return false;
-
-				SDOvalid = false;
-				result = waitForActionWithTimeout([&]() -> bool
-												  { return !SDOvalid; },
-												  10);
+				result = sendFrameWaitForCompletion(frame, SDOvalid, defaultSdoTimeout);
 				toggleBit = !toggleBit;
 			}
 		}
-
 		segmentedReadOngoing = false;
-
 		return true;
 	}
 
@@ -142,7 +130,7 @@ class CanopenStack
 		return true;
 	}
 
-	bool writeSdoBytes(uint32_t id, uint16_t index_, uint8_t subindex_, std::vector<uint8_t>& dataIn, uint32_t size, uint32_t& errorCode)
+	bool writeSdoBytes(uint32_t id, uint16_t index_, uint8_t subindex_, const std::vector<uint8_t>& dataIn, uint32_t size, uint32_t& errorCode)
 	{
 		bool segmentedTransfer = false;
 
@@ -181,17 +169,12 @@ class CanopenStack
 				SDOvalid = true;
 		};
 
-		if (!interface->sendCanFrame(frame))
-			return false;
-
-		if (!waitForActionWithTimeout([&]() -> bool
-									  { return !SDOvalid; },
-									  10))
+		if (!sendFrameWaitForCompletion(frame, SDOvalid, defaultSdoTimeout))
 			return false;
 
 		if (segmentedTransfer)
 		{
-			std::cout << "Segmented transfer detected! Size = " << size << std::endl;
+			logger->debug("Segmented transfer detected! Size = {}", size);
 
 			processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, uint8_t command, uint32_t errorCode_)
 			{
@@ -228,19 +211,12 @@ class CanopenStack
 
 				std::copy(it, it + currentSize, &frame.payload[1]);
 
-				std::cout << "size: " << size << std::endl;
+				logger->debug("remaining size = {}", size);
 
 				size -= currentSize;
 				it += currentSize;
 
-				SDOvalid = false;
-
-				if (!interface->sendCanFrame(frame))
-					return false;
-
-				result = waitForActionWithTimeout([&]() -> bool
-												  { return !SDOvalid; },
-												  10);
+				result = sendFrameWaitForCompletion(frame, SDOvalid, defaultSdoTimeout);
 
 				toggleBit = !toggleBit;
 			}
@@ -296,8 +272,22 @@ class CanopenStack
 
    private:
 	ICommunication* interface;
+	spdlog::logger* logger;
 	std::function<void(uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, uint8_t command, uint32_t errorCode_)> processSDO;
 	std::atomic<bool> segmentedReadOngoing = false;
+	static constexpr uint32_t defaultSdoTimeout = 10;
+
+	bool sendFrameWaitForCompletion(const ICommunication::CANFrame& frame, std::atomic<bool>& conditionVar, uint32_t timeoutMs)
+	{
+		conditionVar = false;
+
+		if (!interface->sendCanFrame(frame))
+			return false;
+
+		return waitForActionWithTimeout([&]() -> bool
+										{ return !conditionVar; },
+										timeoutMs);
+	}
 
 	bool waitForActionWithTimeout(std::function<bool()> condition, uint32_t timeoutMs)
 	{

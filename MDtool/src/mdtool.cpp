@@ -26,17 +26,16 @@ struct formatter<std::array<T, N>> : formatter<std::string_view>
 
 Mdtool::~Mdtool()
 {
-	std::cout << "deinitializing MDtool..." << std::endl;
 	candle->deInit();
 }
 
 bool Mdtool::init(ICommunication* interface, spdlog::logger* logger, Candle::Baud baud)
 {
-	logger->info("Initalizing...");
+	logger->debug("Initalizing...");
 	this->logger = logger;
 	this->interface = interface;
 	this->baudrate = baud;
-	candle = std::make_unique<Candle>(interface);
+	candle = std::make_unique<Candle>(interface, logger);
 	return candle->init(baud);
 }
 
@@ -214,13 +213,11 @@ bool Mdtool::writeSDO(uint32_t id, uint32_t index, uint32_t subindex, IODParser:
 		using T = std::decay_t<decltype(arg)>;
 		if constexpr (std::is_same_v<T, std::array<uint8_t, 24>>)
 		{
-			std::cout << "SENDING ARRAY" << std::endl;
 			if (!candle->canopenStack->writeSDO(id, index, subindex, std::move(arg), errorCode, strlen(reinterpret_cast<const char*>(arg.data()))))
 				return false;
 		}
 		else
 		{
-			std::cout << "SENDING REGULAR VALUE" << std::endl;
 			if (!candle->canopenStack->writeSDO(id, index, subindex, std::move(arg), errorCode))
 				return false;
 		}

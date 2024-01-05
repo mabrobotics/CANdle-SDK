@@ -1,8 +1,6 @@
 #include "Candle.hpp"
 #include "Downloader.hpp"
 #include "UsbHandler.hpp"
-#include "spdlog/sinks/stdout_color_sinks.h"
-#include "spdlog/spdlog.h"
 
 class Mdtool
 {
