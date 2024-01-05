@@ -186,19 +186,20 @@ bool Mdtool::readSDO(uint32_t id, uint32_t index, uint32_t subindex)
 
 	auto lambdaFunc = [&](auto& arg)
 	{
-					   if (!candle->canopenStack->readSDO(id, index, subindex, arg, errorCode))
-						   return false;
+		if (!candle->canopenStack->readSDO(id, index, subindex, arg, errorCode))
+			return false;
 
-					     if (errorCode)
-						 {
-					      logger->error("SDO read error! Error code: {}", errorCode);
-						  return false;
-						 }
-					     else
-						 {
-					      logger->info("SDO value: {}", arg); 
-						  return true;
-						  } };
+		if (errorCode)
+		{
+			logger->error("SDO read error! Error code: {}", errorCode);
+			return false;
+		}
+		else
+		{
+			logger->info("SDO value: {}", arg);
+			return true;
+		}
+	};
 
 	return std::visit(lambdaFunc, value);
 }
@@ -206,10 +207,34 @@ bool Mdtool::readSDO(uint32_t id, uint32_t index, uint32_t subindex)
 bool Mdtool::writeSDO(uint32_t id, uint32_t index, uint32_t subindex, IODParser::ValueType& value)
 {
 	candle->addMd80(id);
+	uint32_t errorCode = 0;
 
 	auto lambdaFunc = [&](auto& arg)
 	{
-		return !candle->canopenStack->writeSDO(id, index, subindex, std::move(arg));
+		using T = std::decay_t<decltype(arg)>;
+		if constexpr (std::is_same_v<T, std::array<uint8_t, 24>>)
+		{
+			std::cout << "SENDING ARRAY" << std::endl;
+			if (!candle->canopenStack->writeSDO(id, index, subindex, std::move(arg), strlen(reinterpret_cast<const char*>(arg.data())), errorCode))
+				return false;
+		}
+		else
+		{
+			std::cout << "SENDING REGULAR VALUE" << std::endl;
+			if (!candle->canopenStack->writeSDO(id, index, subindex, std::move(arg), sizeof(arg), errorCode))
+				return false;
+		}
+
+		if (errorCode)
+		{
+			logger->error("SDO write error! Error code: {}", errorCode);
+			return false;
+		}
+		else
+		{
+			logger->info("SDO value: {}", arg);
+			return true;
+		}
 	};
 
 	return std::visit(lambdaFunc, value);
