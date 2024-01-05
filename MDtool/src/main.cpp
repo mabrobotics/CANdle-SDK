@@ -15,9 +15,9 @@
 int main(int argc, char** argv)
 {
 	CLI::App app{"MDtool"};
-	auto* ping = app.add_subcommand("ping", "Discovers all drives connected to CANdle");
+	app.add_subcommand("ping", "Discovers all drives connected to CANdle");
 	auto* updateMD80 = app.add_subcommand("update_md80", "Use to update MD80");
-	auto* updateCANdle = app.add_subcommand("update_candle", "Use to update CANdle");
+	app.add_subcommand("update_candle", "Use to update CANdle");
 	auto* updateBootloader = app.add_subcommand("update_bootloader", "Use to update MD80 bootloader");
 
 	auto* readSDO = app.add_subcommand("readSDO", "Use to read SDO value");

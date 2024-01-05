@@ -42,24 +42,27 @@ class CanopenStack
 		frame.payload[3] = subindex_;
 
 		std::atomic<bool> SDOvalid = false;
-		std::atomic<bool> SDOfragmented = false;
+		std::atomic<bool> segmentedTransfer = false;
 
-		uint32_t fragmentedDataSize = 0;
+		uint32_t segmentedDataSize = 0;
 
-		processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, uint8_t command)
+		processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, uint8_t command, uint32_t errorCode_)
 		{
-			bool error = command == 0x80;
-			SDOfragmented = command == 0x41;
+			segmentedTransfer = command == 0x41;
+
+			if (errorCode_)
+			{
+				errorCode = errorCode_;
+				return;
+			}
 
 			if (index == index_ && subindex == subindex_ && driveId == id)
 			{
-				if (error)
-					errorCode = deserialize<uint32_t>(data.begin());
 				std::copy(data.begin(), data.end(), dataOut.begin());
 				SDOvalid = true;
 
-				if (SDOfragmented)
-					fragmentedDataSize = deserialize<uint32_t>(data.begin());
+				if (segmentedTransfer)
+					segmentedDataSize = deserialize<uint32_t>(data.begin());
 			}
 		};
 
@@ -71,18 +74,21 @@ class CanopenStack
 									  10))
 			return false;
 
-		if (SDOfragmented)
+		if (segmentedTransfer)
 		{
-			fragmentedReadOngoing = true;
-			std::cout << "Segmented transfer detected! Size = " << fragmentedDataSize << std::endl;
+			segmentedReadOngoing = true;
+			std::cout << "Segmented transfer detected! Size = " << segmentedDataSize << std::endl;
 
 			auto it = dataOut.begin();
 			std::atomic<bool> lastSegment = false;
 
-			processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, uint8_t command)
+			processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, uint8_t command, uint32_t errorCode_)
 			{
-				if (command == 0x80)
-					errorCode = deserialize<uint32_t>(data.begin());
+				if (errorCode_)
+				{
+					errorCode = errorCode_;
+					return;
+				}
 
 				if ((command & 0xe1) == 0x01)
 					lastSegment = true;
@@ -112,18 +118,17 @@ class CanopenStack
 				result = waitForActionWithTimeout([&]() -> bool
 												  { return !SDOvalid; },
 												  10);
-
 				toggleBit = !toggleBit;
 			}
 		}
 
-		fragmentedReadOngoing = false;
+		segmentedReadOngoing = false;
 
 		return true;
 	}
 
 	template <typename T>
-	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T&& value, uint32_t size, uint32_t& errorCode)
+	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T&& value, uint32_t& errorCode, uint32_t size = sizeof(T))
 	{
 		std::vector<uint8_t> data;
 		/* ensure at least as many elements as there are in the largest element (sizeof(T)) */
@@ -164,14 +169,16 @@ class CanopenStack
 		}
 
 		std::atomic<bool> SDOvalid = false;
-		processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, uint8_t command)
+		processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, uint8_t command, uint32_t errorCode_)
 		{
-			if (index == index_ && subindex == subindex_ && driveId == id)
+			if (errorCode_)
 			{
-				if (command == 0x80)
-					errorCode = deserialize<uint32_t>(data.begin());
-				SDOvalid = true;
+				errorCode = errorCode_;
+				return;
 			}
+
+			if (index == index_ && subindex == subindex_ && driveId == id)
+				SDOvalid = true;
 		};
 
 		if (!interface->sendCanFrame(frame))
@@ -186,12 +193,13 @@ class CanopenStack
 		{
 			std::cout << "Segmented transfer detected! Size = " << size << std::endl;
 
-			processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, uint8_t command)
+			processSDO = [&](uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, uint8_t command, uint32_t errorCode_)
 			{
-				bool error = command == 0x80;
-
-				if (error)
-					errorCode = deserialize<uint32_t>(data.begin());
+				if (errorCode_)
+				{
+					errorCode = errorCode_;
+					return;
+				}
 
 				if ((command & 0xef) == 0x20)
 					SDOvalid = true;
@@ -261,7 +269,10 @@ class CanopenStack
 			uint8_t subindex = 0;
 			std::span<uint8_t> data;
 
-			if (fragmentedReadOngoing && command != 0x80)
+			uint32_t errorCode = 0;
+			bool error = command == 0x80;
+
+			if (segmentedReadOngoing && !error)
 			{
 				dataSize = 7 - ((command >> 1) & 0b00000111);
 				data = std::span<uint8_t>(&frame.payload[1], dataSize);
@@ -271,18 +282,22 @@ class CanopenStack
 				dataSize = 4 - ((command >> 2) & 0b00000011);
 				index = deserialize<uint16_t>(&frame.payload[1]);
 				subindex = frame.payload[3];
-				data = std::span<uint8_t>(&frame.payload[4], dataSize);
+
+				if (!error)
+					data = std::span<uint8_t>(&frame.payload[4], dataSize);
+				else
+					errorCode = deserialize<uint32_t>(&frame.payload[4]);
 			}
 
 			if (processSDO)
-				processSDO(driveId, index, subindex, data, command);
+				processSDO(driveId, index, subindex, data, command, errorCode);
 		}
 	}
 
    private:
 	ICommunication* interface;
-	std::function<void(uint32_t, uint16_t, uint8_t, std::span<uint8_t>&, uint8_t command)> processSDO;
-	std::atomic<bool> fragmentedReadOngoing = false;
+	std::function<void(uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, uint8_t command, uint32_t errorCode_)> processSDO;
+	std::atomic<bool> segmentedReadOngoing = false;
 
 	bool waitForActionWithTimeout(std::function<bool()> condition, uint32_t timeoutMs)
 	{

@@ -215,13 +215,13 @@ bool Mdtool::writeSDO(uint32_t id, uint32_t index, uint32_t subindex, IODParser:
 		if constexpr (std::is_same_v<T, std::array<uint8_t, 24>>)
 		{
 			std::cout << "SENDING ARRAY" << std::endl;
-			if (!candle->canopenStack->writeSDO(id, index, subindex, std::move(arg), strlen(reinterpret_cast<const char*>(arg.data())), errorCode))
+			if (!candle->canopenStack->writeSDO(id, index, subindex, std::move(arg), errorCode, strlen(reinterpret_cast<const char*>(arg.data()))))
 				return false;
 		}
 		else
 		{
 			std::cout << "SENDING REGULAR VALUE" << std::endl;
-			if (!candle->canopenStack->writeSDO(id, index, subindex, std::move(arg), sizeof(arg), errorCode))
+			if (!candle->canopenStack->writeSDO(id, index, subindex, std::move(arg), errorCode))
 				return false;
 		}
 

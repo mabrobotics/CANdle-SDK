@@ -96,35 +96,35 @@ class Candle
 	bool enterOperational(uint32_t id)
 	{
 		uint32_t errorCode = 0;
-		return canopenStack->writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0080), 2, errorCode) &&
-			   canopenStack->writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0006), 2, errorCode) &&
-			   canopenStack->writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x000f), 2, errorCode);
+		return canopenStack->writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0080), errorCode) &&
+			   canopenStack->writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0006), errorCode) &&
+			   canopenStack->writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x000f), errorCode);
 	}
 
 	bool enterSwitchOnDisabled(uint32_t id)
 	{
 		uint32_t errorCode = 0;
-		return canopenStack->writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0008), 2, errorCode);
+		return canopenStack->writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0008), errorCode);
 	}
 
 	bool setModeOfOperation(uint32_t id, ModesOfOperation mode)
 	{
 		uint32_t errorCode = 0;
-		return canopenStack->writeSDO(id, 0x6060, 0x00, static_cast<int8_t>(mode), 1, errorCode);
+		return canopenStack->writeSDO(id, 0x6060, 0x00, static_cast<int8_t>(mode), errorCode);
 	}
 
 	bool setTargetPosition(uint32_t id, uint32_t target)
 	{
 		uint32_t errorCode = 0;
-		return canopenStack->writeSDO(id, 0x607A, 0x00, std::move(target), 4, errorCode);
+		return canopenStack->writeSDO(id, 0x607A, 0x00, std::move(target), errorCode);
 	}
 
 	bool startCalibration(uint32_t id)
 	{
 		uint32_t errorCode = 0;
 		return enterOperational(id) &&
-			   canopenStack->writeSDO(id, 0x6060, 0x00, static_cast<int8_t>(-2), 1, errorCode) &&
-			   canopenStack->writeSDO(id, 0x2003, 0x03, static_cast<uint8_t>(1), 1, errorCode);
+			   canopenStack->writeSDO(id, 0x6060, 0x00, static_cast<int8_t>(-2), errorCode) &&
+			   canopenStack->writeSDO(id, 0x2003, 0x03, static_cast<uint8_t>(1), errorCode);
 	}
 
    private:
