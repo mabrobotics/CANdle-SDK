@@ -6,11 +6,14 @@
 
 #include "CircularBuffer.hpp"
 #include "IBusHandler.hpp"
+#include "spdlog/spdlog.h"
 
 class UsbHandler : public IBusHandler
 {
    public:
+	UsbHandler(spdlog::logger* logger);
 	~UsbHandler();
+
 	bool init() override;
 	std::optional<IBusHandler::BusFrame> getFromFifo() const override;
 	bool addToFifo(BusFrame& busFrame) override;
@@ -25,6 +28,9 @@ class UsbHandler : public IBusHandler
 	CircularBuffer<BusFrame, 50> toUsbBuffer;
 	CircularBuffer<BusFrame, 50> fromUsbBuffer;
 	std::thread handlerThread;
+
+   private:
+	spdlog::logger* logger;
 
    private:
 	void dataHandler();

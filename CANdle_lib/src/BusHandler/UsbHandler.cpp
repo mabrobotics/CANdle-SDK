@@ -6,6 +6,10 @@
 #include "Commons/BitCast.hpp"
 #include "libusb.h"
 
+UsbHandler::UsbHandler(spdlog::logger* logger) : logger(logger)
+{
+}
+
 UsbHandler::~UsbHandler()
 {
 	done = true;
@@ -26,7 +30,7 @@ bool UsbHandler::init()
 	int rc = libusb_init(NULL);
 	if (rc < 0)
 	{
-		fprintf(stderr, "Error initializing libusb: %s\n", libusb_error_name(rc));
+		logger->error("Error initializing libusb: {}", libusb_error_name(rc));
 		return false;
 	}
 
@@ -34,7 +38,7 @@ bool UsbHandler::init()
 
 	if (!devh)
 	{
-		fprintf(stderr, "Error finding USB device\n");
+		logger->error("Error finding USB device");
 		return false;
 	}
 
@@ -46,7 +50,7 @@ bool UsbHandler::init()
 		rc = libusb_claim_interface(devh, if_num);
 
 		if (rc < 0)
-			fprintf(stderr, "Error claiming interface: %s\n", libusb_error_name(rc));
+			logger->error("Error claiming interface: {}", libusb_error_name(rc));
 	}
 
 	handlerThread = std::thread(&UsbHandler::dataHandler, this);
@@ -82,10 +86,10 @@ void UsbHandler::dataHandler()
 		copyElementsToOutputBuf(txBuf, sendLen);
 
 		if (int ret = libusb_bulk_transfer(devh, outEndpointAdr, txBuf.data(), sendLen, &sendLenActual, 10) < 0)
-			fprintf(stderr, "Error while sending %d \n", ret);
+			logger->error("Error while sending: {}", ret);
 
 		if (int ret = libusb_bulk_transfer(devh, inEndpointAdr, rxBuf.data(), size, &receivedLen, 1000) < 0)
-			fprintf(stderr, "Error while receiving %d  transferred %d\n", ret, receivedLen);
+			logger->error("Error while receiving {}  transferred {}", ret, receivedLen);
 		else
 			copyInputBufToElements(rxBuf, receivedLen);
 	}

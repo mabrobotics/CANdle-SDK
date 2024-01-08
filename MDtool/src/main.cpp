@@ -92,7 +92,7 @@ int main(int argc, char** argv)
 	if (verbose)
 		logger->set_level(spdlog::level::debug);
 
-	std::unique_ptr<IBusHandler> busHandler = std::make_unique<UsbHandler>();
+	std::unique_ptr<IBusHandler> busHandler = std::make_unique<UsbHandler>(logger.get());
 	std::unique_ptr<ICommunication> candleInterface = std::make_unique<CandleInterface>(busHandler.get());
 
 	Mdtool mdtool;
