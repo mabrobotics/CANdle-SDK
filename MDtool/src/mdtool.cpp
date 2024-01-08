@@ -177,9 +177,14 @@ bool Mdtool::updateBootloader(std::string& filePath, uint32_t id, bool recover)
 bool Mdtool::readSDO(uint32_t id, uint32_t index, uint32_t subindex)
 {
 	candle->addMd80(id);
+	auto md80 = candle->getMd80(id);
+	auto maybeEntry = checkEntryExists(md80, index, subindex);
 
-	auto& value = candle->getMd80(id)->OD.at(index)->subEntries.at(subindex)->value;
-	value = getTypeBasedOnTag(candle->getMd80(id)->OD.at(index)->subEntries.at(subindex)->datatype);
+	if (!maybeEntry.has_value())
+		return false;
+
+	auto& value = maybeEntry.value()->value;
+	value = getTypeBasedOnTag(maybeEntry.value()->datatype);
 
 	uint32_t errorCode = 0;
 
@@ -190,7 +195,7 @@ bool Mdtool::readSDO(uint32_t id, uint32_t index, uint32_t subindex)
 
 		if (errorCode)
 		{
-			logger->error("SDO read error! Error code: {}", errorCode);
+			logger->error("SDO read error! Error code: 0x{:x}", errorCode);
 			return false;
 		}
 		else
@@ -203,10 +208,18 @@ bool Mdtool::readSDO(uint32_t id, uint32_t index, uint32_t subindex)
 	return std::visit(lambdaFunc, value);
 }
 
-bool Mdtool::writeSDO(uint32_t id, uint32_t index, uint32_t subindex, IODParser::ValueType& value)
+bool Mdtool::writeSDO(uint32_t id, uint32_t index, uint32_t subindex, const IODParser::ValueType& value)
 {
 	candle->addMd80(id);
 	uint32_t errorCode = 0;
+
+	auto md80 = candle->getMd80(id);
+	auto maybeEntry = checkEntryExists(md80, index, subindex);
+
+	if (!maybeEntry.has_value())
+		return false;
+
+	maybeEntry.value()->value = value;
 
 	auto lambdaFunc = [&](auto& arg)
 	{
@@ -214,24 +227,22 @@ bool Mdtool::writeSDO(uint32_t id, uint32_t index, uint32_t subindex, IODParser:
 		if constexpr (std::is_same_v<T, std::array<uint8_t, 24>>)
 		{
 			if (!candle->canopenStack->writeSDO(id, index, subindex, std::move(arg), errorCode, strlen(reinterpret_cast<const char*>(arg.data()))))
+			{
+				logger->error("SDO write error! Error code: 0x{:x}", errorCode);
 				return false;
+			}
 		}
 		else
 		{
 			if (!candle->canopenStack->writeSDO(id, index, subindex, std::move(arg), errorCode))
+			{
+				logger->error("SDO write error! Error code: 0x{:x}", errorCode);
 				return false;
+			}
 		}
 
-		if (errorCode)
-		{
-			logger->error("SDO write error! Error code: {}", errorCode);
-			return false;
-		}
-		else
-		{
-			logger->info("SDO value: {}", arg);
-			return true;
-		}
+		logger->info("Writing successful! 0x{:x}:0x{:x} ({}) = {}", index, subindex, maybeEntry.value()->parameterName, arg);
+		return true;
 	};
 
 	return std::visit(lambdaFunc, value);
@@ -262,4 +273,23 @@ IODParser::ValueType Mdtool::getTypeBasedOnTag(IODParser::DataType tag)
 		default:
 			return uint32_t{};
 	}
+}
+
+std::optional<IODParser::Entry*> Mdtool::checkEntryExists(MD80* md80, uint16_t index, uint8_t subindex)
+{
+	if (!md80->OD.contains(index))
+	{
+		logger->error("Entry index not found in OD (0x{:x})", index);
+		return std::nullopt;
+	}
+	else if (md80->OD.contains(index) && md80->OD.at(index)->objectType == IODParser::ObjectType::VAR)
+		return md80->OD.at(index).get();
+
+	if (!md80->OD.at(index)->subEntries.contains(subindex))
+	{
+		logger->error("Entry subindex not found in OD (0x{:x}:0x{:x})", index, subindex);
+		return std::nullopt;
+	}
+
+	return md80->OD.at(index)->subEntries.at(subindex).get();
 }

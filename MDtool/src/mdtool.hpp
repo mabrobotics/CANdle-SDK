@@ -1,3 +1,5 @@
+#include <optional>
+
 #include "Candle.hpp"
 #include "Downloader.hpp"
 #include "UsbHandler.hpp"
@@ -11,7 +13,7 @@ class Mdtool
 	bool updateMd80(std::string& filePath, uint32_t id, bool recover, bool all);
 	bool updateBootloader(std::string& filePath, uint32_t id, bool recover);
 	bool readSDO(uint32_t id, uint32_t index, uint32_t subindex);
-	bool writeSDO(uint32_t id, uint32_t index, uint32_t subindex, IODParser::ValueType& value);
+	bool writeSDO(uint32_t id, uint32_t index, uint32_t subindex, const IODParser::ValueType& value);
 
    private:
 	static constexpr uint32_t secondaryBootloaderAddress = 0x8005000;
@@ -24,4 +26,5 @@ class Mdtool
 
    private:
 	IODParser::ValueType getTypeBasedOnTag(IODParser::DataType tag);
+	std::optional<IODParser::Entry*> checkEntryExists(MD80* md80, uint16_t index, uint8_t subindex);
 };
