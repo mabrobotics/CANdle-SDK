@@ -1,3 +1,6 @@
+#ifndef _MDTOOL_HPP
+#define _MDTOOL_HPP
+
 #include <optional>
 
 #include "Candle.hpp"
@@ -28,3 +31,5 @@ class Mdtool
 	IODParser::ValueType getTypeBasedOnTag(IODParser::DataType tag);
 	std::optional<IODParser::Entry*> checkEntryExists(MD80* md80, uint16_t index, uint8_t subindex);
 };
+
+#endif

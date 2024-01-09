@@ -30,11 +30,33 @@ class Candle
 		CYCLIC_SYNCH_VELOCTIY = 9,
 	};
 
-	explicit Candle(ICommunication* interface, spdlog::logger* logger) : interface(interface), logger(logger)
+	enum class RPDO : uint16_t
+	{
+		RPDO1 = 0x200,
+		RPDO2 = 0x300,
+		RPDO3 = 0x400,
+		RPDO4 = 0x500
+	};
+
+	enum class TPDO : uint16_t
+	{
+		TPDO1 = 0x180,
+		TPDO2 = 0x280,
+		TPDO3 = 0x380,
+		TPDO4 = 0x480
+	};
+
+	explicit Candle(ICommunication* interface, spdlog::logger* logger) : interface(interface),
+																		 logger(logger)
 	{
 		canopenStack = std::make_unique<CanopenStack>(interface, logger);
 		receiveThread = std::thread(&Candle::receiveHandler, this);
 		transmitThread = std::thread(&Candle::transmitHandler, this);
+	}
+
+	~Candle()
+	{
+		deInit();
 	}
 
 	bool init(Baud baud = Baud::BAUD_1M)
@@ -126,6 +148,41 @@ class Candle
 			   canopenStack->writeSDO(id, 0x2003, 0x03, static_cast<uint8_t>(1), errorCode);
 	}
 
+	bool setupResponse(uint32_t id, TPDO tpdoID, std::vector<std::pair<uint16_t, uint8_t>>& fields)
+	{
+		uint32_t errorCode = 0;
+		uint32_t COBID = static_cast<uint32_t>(tpdoID) + id;
+
+		/*  disable PDO (set 31 bit to 1)*/
+		if (!canopenStack->writeSDO(id, 0x1400, 0x01, (0x80000000 & COBID), errorCode))
+			return false;
+
+		/* set transsmission type to synch 1*/
+		if (!canopenStack->writeSDO(id, 0x1400, 0x02, static_cast<uint8_t>(1), errorCode))
+			return false;
+
+		/* set PDO mapping objects count to zero */
+		if (!canopenStack->writeSDO(id, 0x1600, 0x00, static_cast<uint8_t>(0), errorCode))
+			return false;
+
+		uint8_t mapRegsubidx = 0;
+		for (auto& [idx, subidx] : fields)
+		{
+			uint32_t mappedObject = 0;
+
+			auto entry = checkEntryExists(md80s[id].get(), idx, subidx);
+
+			if (!entry.has_value())
+				return false;
+
+			mappedObject = idx << 16 | subidx << 8 | sizeof(getTypeBasedOnTag(entry.value()->dataType));
+
+			/* set PDO mapping objects count to zero */
+			if (!canopenStack->writeSDO(id, 0x1600, mapRegsubidx, std::move(mappedObject), errorCode))
+				return false;
+		}
+	}
+
    private:
 	void receiveHandler()
 	{
@@ -146,6 +203,52 @@ class Candle
 		{
 			canopenStack->sendSYNC();
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		}
+	}
+
+	std::optional<IODParser::Entry*> checkEntryExists(MD80* md80, uint16_t index, uint8_t subindex)
+	{
+		if (!md80->OD.contains(index))
+		{
+			logger->error("Entry index not found in OD (0x{:x})", index);
+			return std::nullopt;
+		}
+		else if (md80->OD.contains(index) && md80->OD.at(index)->objectType == IODParser::ObjectType::VAR)
+			return md80->OD.at(index).get();
+
+		if (!md80->OD.at(index)->subEntries.contains(subindex))
+		{
+			logger->error("Entry subindex not found in OD (0x{:x}:0x{:x})", index, subindex);
+			return std::nullopt;
+		}
+
+		return md80->OD.at(index)->subEntries.at(subindex).get();
+	}
+
+	IODParser::ValueType getTypeBasedOnTag(IODParser::DataType tag)
+	{
+		switch (tag)
+		{
+			case IODParser::DataType::BOOLEAN:
+				[[fallthrough]];
+			case IODParser::DataType::UNSIGNED8:
+				return uint8_t{};
+			case IODParser::DataType::INTEGER8:
+				return int8_t{};
+			case IODParser::DataType::UNSIGNED16:
+				return uint16_t{};
+			case IODParser::DataType::INTEGER16:
+				return int16_t{};
+			case IODParser::DataType::UNSIGNED32:
+				return uint32_t{};
+			case IODParser::DataType::INTEGER32:
+				return int32_t{};
+			case IODParser::DataType::REAL32:
+				return float{};
+			case IODParser::DataType::VISIBLE_STRING:
+				return std::array<uint8_t, 24>{};
+			default:
+				return uint32_t{};
 		}
 	}
 

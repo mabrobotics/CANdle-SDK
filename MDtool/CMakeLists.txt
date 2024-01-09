@@ -22,7 +22,7 @@ set(PROJECT_SOURCES
 
 add_executable(${EXECUTABLE} ${PROJECT_SOURCES})
 
-target_include_directories(${EXECUTABLE} SYSTEM PRIVATE
+target_include_directories(${EXECUTABLE} PRIVATE
 ${CMAKE_CURRENT_SOURCE_DIR}/
 ${CMAKE_CURRENT_SOURCE_DIR}/src/MD80_Flasher/
 ${CMAKE_CURRENT_SOURCE_DIR}/src/MD80_Flasher/Downloader/

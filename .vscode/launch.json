@@ -8,7 +8,7 @@
             "name": "Remote Debug",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/MDtool/MDtool",
+            "program": "${workspaceFolder}/build/Examples/Examples",
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

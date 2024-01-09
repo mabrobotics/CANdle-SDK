@@ -59,7 +59,7 @@ class IODParser
 	{
 		std::string parameterName;
 		ObjectType objectType;
-		DataType datatype;
+		DataType dataType;
 		AccessSDO accessType;
 		size_t highestSubindex = 0;
 		std::map<uint32_t, std::shared_ptr<Entry>> subEntries;

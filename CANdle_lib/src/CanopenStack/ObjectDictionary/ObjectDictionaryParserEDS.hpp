@@ -45,7 +45,7 @@ class ObjectDictionaryParserEDS : public IODParser
 
 			entry.parameterName = ini[key]["parametername"];
 			entry.objectType = static_cast<IODParser::ObjectType>(strtol(ini[key]["objecttype"].data(), nullptr, 0));
-			entry.datatype = static_cast<IODParser::DataType>(strtol(ini[key]["datatype"].data(), nullptr, 0));
+			entry.dataType = static_cast<IODParser::DataType>(strtol(ini[key]["datatype"].data(), nullptr, 0));
 			entry.accessType = accessType;
 		};
 

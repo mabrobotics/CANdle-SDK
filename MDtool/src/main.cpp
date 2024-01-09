@@ -1,7 +1,3 @@
-#include <iostream>
-#include <span>
-
-#include "BinaryParser.hpp"
 #include "CLI11.hpp"
 #include "Candle.hpp"
 #include "CandleInterface.hpp"

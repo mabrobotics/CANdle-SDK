@@ -184,7 +184,7 @@ bool Mdtool::readSDO(uint32_t id, uint32_t index, uint32_t subindex)
 		return false;
 
 	auto& value = maybeEntry.value()->value;
-	value = getTypeBasedOnTag(maybeEntry.value()->datatype);
+	value = getTypeBasedOnTag(maybeEntry.value()->dataType);
 
 	uint32_t errorCode = 0;
 
