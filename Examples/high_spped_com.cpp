@@ -27,12 +27,14 @@ int main(int argc, char** argv)
 
 	auto md80 = candle.getMd80(2);
 
-	// while (1)
-	// {
-	// 	uint32_t position = std::get<uint32_t>(md80->OD[0x6064]->value);
-	// 	std::cout << position << std::endl;
-	// 	std::this_thread::sleep_for(std::chrono::milliseconds(1));
-	// }
+	candle.setSendSync(true);
+
+	while (1)
+	{
+		// uint32_t position = std::get<uint32_t>(md80->OD[0x6064]->value);
+		// std::cout << position << std::endl;
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	}
 
 	return 0;
 }

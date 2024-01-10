@@ -24,8 +24,6 @@ class IODParser
 		UNSIGNED32 = 7,
 		REAL32 = 8,
 		VISIBLE_STRING = 9,
-		INTEGER64 = 0x15,
-		UNSIGNED64 = 0x1B,
 	};
 
 	enum class ObjectType
@@ -66,8 +64,10 @@ class IODParser
 		ValueType value;
 	};
 
+	using ODType = std::map<uint32_t, std::shared_ptr<Entry>>;
+
 	virtual ~IODParser() = default;
-	virtual bool parseFile(const std::string& filePath, std::map<uint32_t, std::shared_ptr<Entry>>& objectDictionary) = 0;
+	virtual bool parseFile(const std::string& filePath, ODType& objectDictionary) = 0;
 };
 
 #endif

@@ -10,16 +10,6 @@ elseif("${PLATFORM}" STREQUAL "WIN")
     set(CMAKE_SYSTEM_NAME Windows)
 endif()
 
-set(CCACHE_FOUND FALSE)
-find_program(CCACHE_EXECUTABLE ccache)
-if(CCACHE_EXECUTABLE)
-    set(CCACHE_FOUND TRUE)
-    set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_EXECUTABLE}")
-    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_EXECUTABLE}")
-    message("CCACHE found!")
-endif()
-
-
 project(CANdle_SDK)
 
 set(CMAKE_BUILD_TYPE Debug)

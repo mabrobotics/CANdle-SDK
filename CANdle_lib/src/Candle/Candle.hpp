@@ -89,6 +89,11 @@ class Candle
 			transmitThread.join();
 	}
 
+	void setSendSync(bool state)
+	{
+		sendSync = state;
+	}
+
 	std::vector<uint32_t> ping()
 	{
 		std::vector<uint32_t> ids{};
@@ -108,6 +113,7 @@ class Candle
 	void addMd80(uint32_t id)
 	{
 		md80s[id] = std::make_unique<MD80>();
+		canopenStack->setOD(md80s[id]->OD);
 	}
 
 	MD80* getMd80(uint32_t id) const
@@ -171,7 +177,7 @@ class Candle
 		{
 			mapRegsubidx++;
 
-			auto entry = checkEntryExists(md80s[id].get(), idx, subidx);
+			auto entry = checkEntryExists(md80s[id].get()->OD, idx, subidx);
 
 			if (!entry.has_value())
 				return false;
@@ -219,28 +225,29 @@ class Candle
 	{
 		while (!done)
 		{
-			canopenStack->sendSYNC();
+			if (sendSync)
+				canopenStack->sendSYNC();
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
 	}
 
-	std::optional<IODParser::Entry*> checkEntryExists(MD80* md80, uint16_t index, uint8_t subindex)
+	std::optional<IODParser::Entry*> checkEntryExists(IODParser::ODType& OD, uint16_t index, uint8_t subindex)
 	{
-		if (!md80->OD.contains(index))
+		if (!OD.contains(index))
 		{
 			logger->error("Entry index not found in OD (0x{:x})", index);
 			return std::nullopt;
 		}
-		else if (md80->OD.contains(index) && md80->OD.at(index)->objectType == IODParser::ObjectType::VAR)
-			return md80->OD.at(index).get();
+		else if (OD.contains(index) && OD.at(index)->objectType == IODParser::ObjectType::VAR)
+			return OD.at(index).get();
 
-		if (!md80->OD.at(index)->subEntries.contains(subindex))
+		if (!OD.at(index)->subEntries.contains(subindex))
 		{
 			logger->error("Entry subindex not found in OD (0x{:x}:0x{:x})", index, subindex);
 			return std::nullopt;
 		}
 
-		return md80->OD.at(index)->subEntries.at(subindex).get();
+		return OD.at(index)->subEntries.at(subindex).get();
 	}
 
 	IODParser::ValueType getTypeBasedOnTag(IODParser::DataType tag)
@@ -278,6 +285,7 @@ class Candle
 	std::thread transmitThread;
 
 	std::atomic<bool> done = false;
+	std::atomic<bool> sendSync = false;
 
 	std::unordered_map<uint32_t, std::unique_ptr<MD80>> md80s;
 	ICommunication* interface;

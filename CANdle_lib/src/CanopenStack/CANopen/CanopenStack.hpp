@@ -14,8 +14,29 @@
 class CanopenStack
 {
    public:
+	enum RPDO : uint16_t
+	{
+		RPDO1 = 0x200,
+		RPDO2 = 0x300,
+		RPDO3 = 0x400,
+		RPDO4 = 0x500
+	};
+
+	enum TPDO : uint16_t
+	{
+		TPDO1 = 0x180,
+		TPDO2 = 0x280,
+		TPDO3 = 0x380,
+		TPDO4 = 0x480
+	};
+
 	explicit CanopenStack(ICommunication* interface, spdlog::logger* logger) : interface(interface), logger(logger)
 	{
+	}
+
+	void setOD(IODParser::ODType& OD)
+	{
+		this->OD = &OD;
 	}
 
 	template <typename T>
@@ -235,13 +256,8 @@ class CanopenStack
 
 	void parse(ICommunication::CANFrame& frame)
 	{
-		if (frame.header.canId >= 0x180 && frame.header.canId < 0x480)
-		{
-			logger->info("received data");
-
-			for (int i = 0; i < 8; i++)
-				std::cout << (int)frame.payload[i] << std::endl;
-		}
+		if (frame.header.canId >= static_cast<uint16_t>(TPDO::TPDO1) && frame.header.canId < static_cast<uint16_t>(TPDO::TPDO4))
+			fillODBasedOnTPDO(frame);
 
 		if (frame.header.canId >= 0x580 && frame.header.canId < 0x600)
 		{
@@ -284,6 +300,53 @@ class CanopenStack
 	std::function<void(uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, uint8_t command, uint32_t errorCode_)> processSDO;
 	std::atomic<bool> segmentedReadOngoing = false;
 	static constexpr uint32_t defaultSdoTimeout = 10;
+	IODParser::ODType* OD = nullptr;
+
+	static constexpr uint16_t TPDOComunicationParamIndex = 0x1800;
+	static constexpr uint16_t TPDOMappingParamIndex = 0x1A00;
+
+	bool fillODBasedOnTPDO(const ICommunication::CANFrame& frame)
+	{
+		if (OD == nullptr)
+			return false;
+		/* offset - 0 for 0x180, 1 for 0x280, 2 for 0x380, 3 for 0x480 */
+		uint16_t offset = ((frame.header.canId & 0xff00) >> 8) - 1;
+
+		uint32_t driveID = frame.header.canId & 0xEF;
+		auto value = OD->at(TPDOComunicationParamIndex + offset).get()->subEntries.at(0x01).get()->value;
+		uint16_t COBID = std::get<uint32_t>(value);
+
+		/* validate the received canID with OD's TPDO COBID */
+		if ((COBID | driveID) != frame.header.canId)
+			return false;
+
+		uint8_t numberOfObjects = std::get<uint8_t>(OD->at(TPDOMappingParamIndex + offset).get()->subEntries.at(0x00).get()->value);
+
+		auto it = frame.payload.begin();
+
+		for (int i = 1; i <= numberOfObjects; i++)
+		{
+			uint32_t mappedObject = std::get<uint32_t>(OD->at(TPDOMappingParamIndex + offset).get()->subEntries.at(i).get()->value);
+			uint16_t index = mappedObject >> 16;
+			uint8_t subindex = (mappedObject & 0x0000ff00) >> 8;
+
+			auto entry = checkEntryExists(*OD, index, subindex);
+
+			if (!entry.has_value())
+				return false;
+
+			auto lambdaFunc = [&](auto& arg)
+			{
+				using T = std::decay_t<decltype(arg)>;
+				arg = deserialize<T>(it);
+				it += sizeof(T);
+			};
+
+			std::visit(lambdaFunc, entry.value()->value);
+		}
+
+		return true;
+	}
 
 	bool sendFrameWaitForCompletion(const ICommunication::CANFrame& frame, std::atomic<bool>& conditionVar, uint32_t timeoutMs)
 	{
@@ -308,6 +371,20 @@ class CanopenStack
 				return false;
 		}
 		return true;
+	}
+
+	std::optional<IODParser::Entry*> checkEntryExists(IODParser::ODType& OD, uint16_t index, uint8_t subindex)
+	{
+		if (!OD.contains(index))
+			return std::nullopt;
+
+		else if (OD.contains(index) && OD.at(index)->objectType == IODParser::ObjectType::VAR)
+			return OD.at(index).get();
+
+		if (!OD.at(index)->subEntries.contains(subindex))
+			return std::nullopt;
+
+		return OD.at(index)->subEntries.at(subindex).get();
 	}
 };
 
