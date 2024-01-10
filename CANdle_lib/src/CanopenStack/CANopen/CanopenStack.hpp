@@ -5,6 +5,7 @@
 #include <functional>
 #include <span>
 #include <thread>
+#include <unordered_map>
 
 #include "Commons/Deserializer.hpp"
 #include "ICommunication.hpp"
@@ -34,9 +35,9 @@ class CanopenStack
 	{
 	}
 
-	void setOD(IODParser::ODType& OD)
+	void setOD(uint32_t id, IODParser::ODType* OD)
 	{
-		this->OD = &OD;
+		ODmap[id] = OD;
 	}
 
 	template <typename T>
@@ -46,10 +47,17 @@ class CanopenStack
 		/* ensure at least as many elements as there are in the largest element (sizeof(T)) */
 		data.resize(100, 0);
 
+		auto maybeEntry = checkEntryExists(ODmap.at(id), index_, subindex_);
+
+		if (!maybeEntry.has_value())
+			return false;
+
 		if (!readSdoToBytes(id, index_, subindex_, data, errorCode))
 			return false;
 
 		value = deserialize<T>(data.data());
+		maybeEntry.value()->value = value;
+
 		return true;
 	}
 
@@ -143,10 +151,17 @@ class CanopenStack
 		/* ensure at least as many elements as there are in the largest element (sizeof(T)) */
 		data.resize(100, 0);
 
+		auto maybeEntry = checkEntryExists(ODmap.at(id), index_, subindex_);
+
+		if (!maybeEntry.has_value())
+			return false;
+
 		serialize(value, data.begin());
 
 		if (!writeSdoBytes(id, index_, subindex_, data, size, errorCode))
 			return false;
+
+		maybeEntry.value()->value = value;
 
 		return true;
 	}
@@ -294,43 +309,62 @@ class CanopenStack
 		}
 	}
 
+	std::optional<IODParser::Entry*> checkEntryExists(IODParser::ODType* OD, uint16_t index, uint8_t subindex)
+	{
+		if (!OD->contains(index))
+		{
+			logger->error("Entry index not found in OD (0x{:x})", index);
+			return std::nullopt;
+		}
+
+		else if (OD->contains(index) && OD->at(index)->objectType == IODParser::ObjectType::VAR)
+			return OD->at(index).get();
+
+		if (!OD->at(index)->subEntries.contains(subindex))
+		{
+			logger->error("Entry subindex not found in OD (0x{:x}:0x{:x})", index, subindex);
+			return std::nullopt;
+		}
+
+		return OD->at(index)->subEntries.at(subindex).get();
+	}
+
    private:
 	ICommunication* interface;
 	spdlog::logger* logger;
 	std::function<void(uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, uint8_t command, uint32_t errorCode_)> processSDO;
 	std::atomic<bool> segmentedReadOngoing = false;
 	static constexpr uint32_t defaultSdoTimeout = 10;
-	IODParser::ODType* OD = nullptr;
+
+	std::unordered_map<uint32_t, IODParser::ODType*> ODmap;
 
 	static constexpr uint16_t TPDOComunicationParamIndex = 0x1800;
 	static constexpr uint16_t TPDOMappingParamIndex = 0x1A00;
 
 	bool fillODBasedOnTPDO(const ICommunication::CANFrame& frame)
 	{
-		if (OD == nullptr)
-			return false;
 		/* offset - 0 for 0x180, 1 for 0x280, 2 for 0x380, 3 for 0x480 */
 		uint16_t offset = ((frame.header.canId & 0xff00) >> 8) - 1;
 
-		uint32_t driveID = frame.header.canId & 0xEF;
-		auto value = OD->at(TPDOComunicationParamIndex + offset).get()->subEntries.at(0x01).get()->value;
+		uint32_t driveId = frame.header.canId & 0x1F;
+		auto value = ODmap[driveId]->at(TPDOComunicationParamIndex + offset).get()->subEntries.at(0x01).get()->value;
 		uint16_t COBID = std::get<uint32_t>(value);
 
 		/* validate the received canID with OD's TPDO COBID */
-		if ((COBID | driveID) != frame.header.canId)
+		if ((COBID | driveId) != frame.header.canId)
 			return false;
 
-		uint8_t numberOfObjects = std::get<uint8_t>(OD->at(TPDOMappingParamIndex + offset).get()->subEntries.at(0x00).get()->value);
+		uint8_t numberOfObjects = std::get<uint8_t>(ODmap[driveId]->at(TPDOMappingParamIndex + offset).get()->subEntries.at(0x00).get()->value);
 
 		auto it = frame.payload.begin();
 
 		for (int i = 1; i <= numberOfObjects; i++)
 		{
-			uint32_t mappedObject = std::get<uint32_t>(OD->at(TPDOMappingParamIndex + offset).get()->subEntries.at(i).get()->value);
+			uint32_t mappedObject = std::get<uint32_t>(ODmap[driveId]->at(TPDOMappingParamIndex + offset).get()->subEntries.at(i).get()->value);
 			uint16_t index = mappedObject >> 16;
 			uint8_t subindex = (mappedObject & 0x0000ff00) >> 8;
 
-			auto entry = checkEntryExists(*OD, index, subindex);
+			auto entry = checkEntryExists(ODmap[driveId], index, subindex);
 
 			if (!entry.has_value())
 				return false;
@@ -371,20 +405,6 @@ class CanopenStack
 				return false;
 		}
 		return true;
-	}
-
-	std::optional<IODParser::Entry*> checkEntryExists(IODParser::ODType& OD, uint16_t index, uint8_t subindex)
-	{
-		if (!OD.contains(index))
-			return std::nullopt;
-
-		else if (OD.contains(index) && OD.at(index)->objectType == IODParser::ObjectType::VAR)
-			return OD.at(index).get();
-
-		if (!OD.at(index)->subEntries.contains(subindex))
-			return std::nullopt;
-
-		return OD.at(index)->subEntries.at(subindex).get();
 	}
 };
 

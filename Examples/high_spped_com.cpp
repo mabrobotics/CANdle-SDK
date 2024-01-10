@@ -31,9 +31,9 @@ int main(int argc, char** argv)
 
 	while (1)
 	{
-		// uint32_t position = std::get<uint32_t>(md80->OD[0x6064]->value);
-		// std::cout << position << std::endl;
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		int32_t position = std::get<int32_t>(md80->OD.at(0x6064)->value);
+		std::cout << position << std::endl;
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 
 	return 0;

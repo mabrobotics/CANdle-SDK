@@ -213,35 +213,11 @@ bool Mdtool::writeSDO(uint32_t id, uint32_t index, uint32_t subindex, const IODP
 	candle->addMd80(id);
 	uint32_t errorCode = 0;
 
-	auto md80 = candle->getMd80(id);
-	auto maybeEntry = checkEntryExists(md80, index, subindex);
-
-	if (!maybeEntry.has_value())
-		return false;
-
-	maybeEntry.value()->value = value;
-
-	auto lambdaFunc = [&](auto& arg)
+	auto lambdaFunc = [&](auto& arg) -> bool
 	{
-		using T = std::decay_t<decltype(arg)>;
-		if constexpr (std::is_same_v<T, std::array<uint8_t, 24>>)
-		{
-			if (!candle->canopenStack->writeSDO(id, index, subindex, std::move(arg), errorCode, strlen(reinterpret_cast<const char*>(arg.data()))))
-			{
-				logger->error("SDO write error! Error code: 0x{:x}", errorCode);
-				return false;
-			}
-		}
-		else
-		{
-			if (!candle->canopenStack->writeSDO(id, index, subindex, std::move(arg), errorCode))
-			{
-				logger->error("SDO write error! Error code: 0x{:x}", errorCode);
-				return false;
-			}
-		}
-
-		logger->info("Writing successful! 0x{:x}:0x{:x} ({}) = {}", index, subindex, maybeEntry.value()->parameterName, arg);
+		if (!candle->canopenStack->writeSDO(id, index, subindex, std::move(arg), errorCode))
+			return false;
+		logger->info("Writing successful! 0x{:x}:0x{:x} = {}", index, subindex, arg);
 		return true;
 	};
 

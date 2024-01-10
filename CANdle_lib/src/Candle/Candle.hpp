@@ -113,7 +113,7 @@ class Candle
 	void addMd80(uint32_t id)
 	{
 		md80s[id] = std::make_unique<MD80>();
-		canopenStack->setOD(md80s[id]->OD);
+		canopenStack->setOD(id, &md80s[id]->OD);
 	}
 
 	MD80* getMd80(uint32_t id) const
@@ -177,7 +177,7 @@ class Candle
 		{
 			mapRegsubidx++;
 
-			auto entry = checkEntryExists(md80s[id].get()->OD, idx, subidx);
+			auto entry = canopenStack->checkEntryExists(&md80s[id].get()->OD, idx, subidx);
 
 			if (!entry.has_value())
 				return false;
@@ -227,27 +227,12 @@ class Candle
 		{
 			if (sendSync)
 				canopenStack->sendSYNC();
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		}
-	}
 
-	std::optional<IODParser::Entry*> checkEntryExists(IODParser::ODType& OD, uint16_t index, uint8_t subindex)
-	{
-		if (!OD.contains(index))
-		{
-			logger->error("Entry index not found in OD (0x{:x})", index);
-			return std::nullopt;
+			auto end_time = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(1);
+			while (std::chrono::high_resolution_clock::now() < end_time)
+			{
+			}
 		}
-		else if (OD.contains(index) && OD.at(index)->objectType == IODParser::ObjectType::VAR)
-			return OD.at(index).get();
-
-		if (!OD.at(index)->subEntries.contains(subindex))
-		{
-			logger->error("Entry subindex not found in OD (0x{:x}:0x{:x})", index, subindex);
-			return std::nullopt;
-		}
-
-		return OD.at(index)->subEntries.at(subindex).get();
 	}
 
 	IODParser::ValueType getTypeBasedOnTag(IODParser::DataType tag)
