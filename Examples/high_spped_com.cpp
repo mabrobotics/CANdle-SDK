@@ -16,16 +16,23 @@ int main(int argc, char** argv)
 
 	candle.init();
 
-	auto md80s = candle.ping();
-
-	for (auto& elem : md80s)
-		std::cout << elem << std::endl;
+	candle.addMd80(2);
 
 	std::vector<std::pair<uint16_t, uint8_t>> fields;
 
 	fields.push_back({0x6064, 0x00});
+	fields.push_back({0x6064, 0x00});
 
-	candle.setupResponse(md80s[1], Candle::TPDO::TPDO1, fields);
+	candle.setupResponse(2, Candle::TPDO::TPDO1, fields);
+
+	auto md80 = candle.getMd80(2);
+
+	// while (1)
+	// {
+	// 	uint32_t position = std::get<uint32_t>(md80->OD[0x6064]->value);
+	// 	std::cout << position << std::endl;
+	// 	std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	// }
 
 	return 0;
 }

@@ -5,6 +5,7 @@
 #include <memory>
 #include <unordered_map>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "CanopenStack/CANopen/CanopenStack.hpp"
@@ -154,33 +155,50 @@ class Candle
 		uint32_t COBID = static_cast<uint32_t>(tpdoID) + id;
 
 		/*  disable PDO (set 31 bit to 1)*/
-		if (!canopenStack->writeSDO(id, 0x1400, 0x01, (0x80000000 & COBID), errorCode))
+		if (!canopenStack->writeSDO(id, 0x1800, 0x01, static_cast<uint32_t>(0x80000000 | COBID), errorCode))
 			return false;
 
 		/* set transsmission type to synch 1*/
-		if (!canopenStack->writeSDO(id, 0x1400, 0x02, static_cast<uint8_t>(1), errorCode))
+		if (!canopenStack->writeSDO(id, 0x1800, 0x02, static_cast<uint8_t>(1), errorCode))
 			return false;
 
 		/* set PDO mapping objects count to zero */
-		if (!canopenStack->writeSDO(id, 0x1600, 0x00, static_cast<uint8_t>(0), errorCode))
+		if (!canopenStack->writeSDO(id, 0x1A00, 0x00, static_cast<uint8_t>(0), errorCode))
 			return false;
 
 		uint8_t mapRegsubidx = 0;
 		for (auto& [idx, subidx] : fields)
 		{
-			uint32_t mappedObject = 0;
+			mapRegsubidx++;
 
 			auto entry = checkEntryExists(md80s[id].get(), idx, subidx);
 
 			if (!entry.has_value())
 				return false;
 
-			mappedObject = idx << 16 | subidx << 8 | sizeof(getTypeBasedOnTag(entry.value()->dataType));
+			entry.value()->value = getTypeBasedOnTag(entry.value()->dataType);
+
+			uint8_t currentlyHeldFieldSize = std::visit([](const auto& value) -> uint8_t
+														{ return sizeof(std::decay_t<decltype(value)>); },
+														entry.value()->value);
+
+			/* size by 8 to get size in bits */
+			uint32_t mappedObject = idx << 16 | subidx << 8 | (currentlyHeldFieldSize * 8);
 
 			/* set PDO mapping objects count to zero */
-			if (!canopenStack->writeSDO(id, 0x1600, mapRegsubidx, std::move(mappedObject), errorCode))
+			if (!canopenStack->writeSDO(id, 0x1A00, mapRegsubidx, std::move(mappedObject), errorCode))
 				return false;
 		}
+
+		/* set PDO mapping objects count to zero */
+		if (!canopenStack->writeSDO(id, 0x1A00, 0x00, static_cast<uint8_t>(mapRegsubidx), errorCode))
+			return false;
+
+		/*  enable PDO (set 31 bit to 0)*/
+		if (!canopenStack->writeSDO(id, 0x1800, 0x01, std::move(COBID), errorCode))
+			return false;
+
+		return true;
 	}
 
    private:

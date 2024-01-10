@@ -235,6 +235,14 @@ class CanopenStack
 
 	void parse(ICommunication::CANFrame& frame)
 	{
+		if (frame.header.canId >= 0x180 && frame.header.canId < 0x480)
+		{
+			logger->info("received data");
+
+			for (int i = 0; i < 8; i++)
+				std::cout << (int)frame.payload[i] << std::endl;
+		}
+
 		if (frame.header.canId >= 0x580 && frame.header.canId < 0x600)
 		{
 			uint8_t command = frame.payload[0];
