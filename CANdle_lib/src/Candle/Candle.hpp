@@ -73,9 +73,10 @@ class Candle
 			transmitThread.join();
 	}
 
-	void setSendSync(bool state)
+	void setSendSync(bool state, uint32_t intervalUs)
 	{
 		sendSync = state;
+		syncIntervalUs = intervalUs;
 	}
 
 	std::vector<uint32_t> ping()
@@ -197,7 +198,7 @@ class Candle
 			if (sendSync)
 				canopenStack->sendSYNC();
 
-			auto end_time = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(1);
+			auto end_time = std::chrono::high_resolution_clock::now() + std::chrono::microseconds(syncIntervalUs);
 			while (std::chrono::high_resolution_clock::now() < end_time)
 			{
 			}
@@ -213,6 +214,8 @@ class Candle
 
 	std::atomic<bool> done = false;
 	std::atomic<bool> sendSync = false;
+
+	std::atomic<uint32_t> syncIntervalUs = 10000;
 
 	std::unordered_map<uint32_t, std::unique_ptr<MD80>> md80s;
 	ICommunication* interface;

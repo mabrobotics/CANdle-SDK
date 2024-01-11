@@ -9,10 +9,9 @@ int main(int argc, char** argv)
 	auto logger = spdlog::stdout_color_mt("console");
 	logger->set_pattern("[%^%l%$] %v");
 
-	std::unique_ptr<IBusHandler> busHandler = std::make_unique<UsbHandler>(logger.get());
-	std::unique_ptr<ICommunication> candleInterface = std::make_unique<CandleInterface>(busHandler.get());
-
-	Candle candle(candleInterface.get(), logger.get());
+	UsbHandler busHandler(logger.get());
+	CandleInterface candleInterface(&busHandler);
+	Candle candle(&candleInterface, logger.get());
 
 	candle.init();
 
@@ -21,12 +20,12 @@ int main(int argc, char** argv)
 
 	std::vector<std::pair<uint16_t, uint8_t>> fields{{0x2009, 0x01}, {0x2009, 0x02}};
 
-	candle.setupResponse(1, CanopenStack::TPDO::TPDO1, fields);
+	candle.setupResponse(1, CanopenStack::TPDO::TPDO1, {{0x2009, 0x01}, {0x2009, 0x02}});
 	candle.setupResponse(2, CanopenStack::TPDO::TPDO1, fields);
 
 	auto md80 = candle.getMd80(2);
 
-	candle.setSendSync(true);
+	candle.setSendSync(true, 2000);
 
 	while (1)
 	{
