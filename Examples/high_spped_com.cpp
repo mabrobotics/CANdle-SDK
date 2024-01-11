@@ -19,13 +19,10 @@ int main(int argc, char** argv)
 	candle.addMd80(1);
 	candle.addMd80(2);
 
-	std::vector<std::pair<uint16_t, uint8_t>> fields;
+	std::vector<std::pair<uint16_t, uint8_t>> fields{{0x2009, 0x01}, {0x2009, 0x02}};
 
-	fields.push_back({0x2009, 0x01});
-	fields.push_back({0x2009, 0x02});
-
-	candle.setupResponse(1, Candle::TPDO::TPDO1, fields);
-	candle.setupResponse(2, Candle::TPDO::TPDO1, fields);
+	candle.setupResponse(1, CanopenStack::TPDO::TPDO1, fields);
+	candle.setupResponse(2, CanopenStack::TPDO::TPDO1, fields);
 
 	auto md80 = candle.getMd80(2);
 

@@ -266,6 +266,57 @@ class CanopenStack
 		return true;
 	}
 
+	bool setupTPDO(uint32_t id, TPDO tpdoID, std::vector<std::pair<uint16_t, uint8_t>>& fields)
+	{
+		uint32_t COBID = static_cast<uint32_t>(tpdoID) + id;
+		uint32_t errorCode = 0;
+		/*  disable PDO (set 31 bit to 1)*/
+		if (!writeSDO(id, 0x1800, 0x01, static_cast<uint32_t>(0x80000000 | COBID), errorCode))
+			return false;
+
+		/* set transsmission type to synch 1*/
+		if (!writeSDO(id, 0x1800, 0x02, static_cast<uint8_t>(1), errorCode))
+			return false;
+
+		/* set PDO mapping objects count to zero */
+		if (!writeSDO(id, 0x1A00, 0x00, static_cast<uint8_t>(0), errorCode))
+			return false;
+
+		uint8_t mapRegsubidx = 0;
+		for (auto& [idx, subidx] : fields)
+		{
+			mapRegsubidx++;
+
+			auto entry = checkEntryExists(ODmap[id], idx, subidx);
+
+			if (!entry.has_value())
+				return false;
+
+			entry.value()->value = getTypeBasedOnTag(entry.value()->dataType);
+
+			uint8_t currentlyHeldFieldSize = std::visit([](const auto& value) -> uint8_t
+														{ return sizeof(std::decay_t<decltype(value)>); },
+														entry.value()->value);
+
+			/* size by 8 to get size in bits */
+			uint32_t mappedObject = idx << 16 | subidx << 8 | (currentlyHeldFieldSize * 8);
+
+			/* set PDO mapping objects count to zero */
+			if (!writeSDO(id, 0x1A00, mapRegsubidx, mappedObject, errorCode))
+				return false;
+		}
+
+		/* set PDO mapping objects count to zero */
+		if (!writeSDO(id, 0x1A00, 0x00, static_cast<uint8_t>(mapRegsubidx), errorCode))
+			return false;
+
+		/*  enable PDO (set 31 bit to 0)*/
+		if (!writeSDO(id, 0x1800, 0x01, COBID, errorCode))
+			return false;
+
+		return true;
+	}
+
 	bool sendSYNC()
 	{
 		ICommunication::CANFrame frame{};

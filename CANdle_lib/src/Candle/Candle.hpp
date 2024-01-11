@@ -31,22 +31,6 @@ class Candle
 		CYCLIC_SYNCH_VELOCTIY = 9,
 	};
 
-	enum class RPDO : uint16_t
-	{
-		RPDO1 = 0x200,
-		RPDO2 = 0x300,
-		RPDO3 = 0x400,
-		RPDO4 = 0x500
-	};
-
-	enum class TPDO : uint16_t
-	{
-		TPDO1 = 0x180,
-		TPDO2 = 0x280,
-		TPDO3 = 0x380,
-		TPDO4 = 0x480
-	};
-
 	explicit Candle(ICommunication* interface, spdlog::logger* logger) : interface(interface),
 																		 logger(logger)
 	{
@@ -97,14 +81,11 @@ class Candle
 	std::vector<uint32_t> ping()
 	{
 		std::vector<uint32_t> ids{};
+		uint32_t deviceType = 0;
 
 		for (size_t i = 1; i < 10; i++)
-		{
-			uint32_t deviceType = 0;
-
 			if (readSDO(i, 0x1000, 0x00, deviceType, false))
 				ids.push_back(i);
-		}
 
 		return ids;
 	}
@@ -149,55 +130,14 @@ class Candle
 			   writeSDO(id, 0x2003, 0x03, static_cast<uint8_t>(1));
 	}
 
-	bool setupResponse(uint32_t id, TPDO tpdoID, std::vector<std::pair<uint16_t, uint8_t>>& fields)
+	bool setupResponse(uint32_t id, CanopenStack::TPDO tpdoID, std::vector<std::pair<uint16_t, uint8_t>>& fields)
 	{
-		uint32_t COBID = static_cast<uint32_t>(tpdoID) + id;
+		return setupResponse(id, tpdoID, std::move(fields));
+	}
 
-		/*  disable PDO (set 31 bit to 1)*/
-		if (!writeSDO(id, 0x1800, 0x01, static_cast<uint32_t>(0x80000000 | COBID)))
-			return false;
-
-		/* set transsmission type to synch 1*/
-		if (!writeSDO(id, 0x1800, 0x02, static_cast<uint8_t>(1)))
-			return false;
-
-		/* set PDO mapping objects count to zero */
-		if (!writeSDO(id, 0x1A00, 0x00, static_cast<uint8_t>(0)))
-			return false;
-
-		uint8_t mapRegsubidx = 0;
-		for (auto& [idx, subidx] : fields)
-		{
-			mapRegsubidx++;
-
-			auto entry = canopenStack->checkEntryExists(&md80s[id].get()->OD, idx, subidx);
-
-			if (!entry.has_value())
-				return false;
-
-			entry.value()->value = getTypeBasedOnTag(entry.value()->dataType);
-
-			uint8_t currentlyHeldFieldSize = std::visit([](const auto& value) -> uint8_t
-														{ return sizeof(std::decay_t<decltype(value)>); },
-														entry.value()->value);
-
-			/* size by 8 to get size in bits */
-			uint32_t mappedObject = idx << 16 | subidx << 8 | (currentlyHeldFieldSize * 8);
-
-			/* set PDO mapping objects count to zero */
-			if (!writeSDO(id, 0x1A00, mapRegsubidx, mappedObject))
-				return false;
-		}
-
-		/* set PDO mapping objects count to zero */
-		if (!writeSDO(id, 0x1A00, 0x00, static_cast<uint8_t>(mapRegsubidx)))
-			return false;
-
-		/*  enable PDO (set 31 bit to 0)*/
-		if (!writeSDO(id, 0x1800, 0x01, COBID))
-			return false;
-
-		return true;
+	bool setupResponse(uint32_t id, CanopenStack::TPDO tpdoID, std::vector<std::pair<uint16_t, uint8_t>>&& fields)
+	{
+		return canopenStack->setupTPDO(id, tpdoID, fields);
 	}
 
 	template <typename T>
@@ -261,33 +201,6 @@ class Candle
 			while (std::chrono::high_resolution_clock::now() < end_time)
 			{
 			}
-		}
-	}
-
-	IODParser::ValueType getTypeBasedOnTag(IODParser::DataType tag)
-	{
-		switch (tag)
-		{
-			case IODParser::DataType::BOOLEAN:
-				[[fallthrough]];
-			case IODParser::DataType::UNSIGNED8:
-				return uint8_t{};
-			case IODParser::DataType::INTEGER8:
-				return int8_t{};
-			case IODParser::DataType::UNSIGNED16:
-				return uint16_t{};
-			case IODParser::DataType::INTEGER16:
-				return int16_t{};
-			case IODParser::DataType::UNSIGNED32:
-				return uint32_t{};
-			case IODParser::DataType::INTEGER32:
-				return int32_t{};
-			case IODParser::DataType::REAL32:
-				return float{};
-			case IODParser::DataType::VISIBLE_STRING:
-				return std::array<uint8_t, 24>{};
-			default:
-				return uint32_t{};
 		}
 	}
 
