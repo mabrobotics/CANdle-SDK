@@ -45,7 +45,7 @@ class CanopenStack
 	{
 		std::vector<uint8_t> data;
 		/* ensure at least as many elements as there are in the largest element (sizeof(T)) */
-		data.resize(100, 0);
+		data.resize(maxSingleFieldSize, 0);
 
 		std::optional<IODParser::Entry*> maybeEntry;
 
@@ -151,11 +151,11 @@ class CanopenStack
 	}
 
 	template <typename T>
-	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T&& value, uint32_t& errorCode, uint32_t size = sizeof(T))
+	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T& value, uint32_t& errorCode, uint32_t size = sizeof(T))
 	{
 		std::vector<uint8_t> data;
 		/* ensure at least as many elements as there are in the largest element (sizeof(T)) */
-		data.resize(100, 0);
+		data.resize(maxSingleFieldSize, 0);
 
 		auto maybeEntry = checkEntryExists(ODmap.at(id), index_, subindex_);
 
@@ -168,7 +168,6 @@ class CanopenStack
 			return false;
 
 		maybeEntry.value()->value = value;
-
 		return true;
 	}
 
@@ -335,12 +334,40 @@ class CanopenStack
 		return OD->at(index)->subEntries.at(subindex).get();
 	}
 
+	IODParser::ValueType getTypeBasedOnTag(IODParser::DataType tag)
+	{
+		switch (tag)
+		{
+			case IODParser::DataType::BOOLEAN:
+				[[fallthrough]];
+			case IODParser::DataType::UNSIGNED8:
+				return uint8_t{};
+			case IODParser::DataType::INTEGER8:
+				return int8_t{};
+			case IODParser::DataType::UNSIGNED16:
+				return uint16_t{};
+			case IODParser::DataType::INTEGER16:
+				return int16_t{};
+			case IODParser::DataType::UNSIGNED32:
+				return uint32_t{};
+			case IODParser::DataType::INTEGER32:
+				return int32_t{};
+			case IODParser::DataType::REAL32:
+				return float{};
+			case IODParser::DataType::VISIBLE_STRING:
+				return std::array<uint8_t, 24>{};
+			default:
+				return uint32_t{};
+		}
+	}
+
    private:
 	ICommunication* interface;
 	spdlog::logger* logger;
 	std::function<void(uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, uint8_t command, uint32_t errorCode_)> processSDO;
 	std::atomic<bool> segmentedReadOngoing = false;
 	static constexpr uint32_t defaultSdoTimeout = 10;
+	static constexpr uint32_t maxSingleFieldSize = 100;
 
 	std::unordered_map<uint32_t, IODParser::ODType*> ODmap;
 

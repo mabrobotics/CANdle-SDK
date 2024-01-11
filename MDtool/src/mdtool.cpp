@@ -174,98 +174,43 @@ bool Mdtool::updateBootloader(std::string& filePath, uint32_t id, bool recover)
 	return true;
 }
 
-bool Mdtool::readSDO(uint32_t id, uint32_t index, uint32_t subindex)
+bool Mdtool::readSDO(uint32_t id, uint16_t index, uint8_t subindex)
 {
 	candle->addMd80(id);
 	auto md80 = candle->getMd80(id);
-	auto maybeEntry = checkEntryExists(md80, index, subindex);
+
+	auto maybeEntry = candle->canopenStack->checkEntryExists(&md80->OD, index, subindex);
 
 	if (!maybeEntry.has_value())
 		return false;
 
 	auto& value = maybeEntry.value()->value;
-	value = getTypeBasedOnTag(maybeEntry.value()->dataType);
-
-	uint32_t errorCode = 0;
+	value = candle->canopenStack->getTypeBasedOnTag(maybeEntry.value()->dataType);
 
 	auto lambdaFunc = [&](auto& arg)
 	{
-		if (!candle->canopenStack->readSDO(id, index, subindex, arg, errorCode))
+		if (!candle->readSDO(id, index, subindex, arg))
 			return false;
 
-		if (errorCode)
-		{
-			logger->error("SDO read error! Error code: 0x{:x}", errorCode);
-			return false;
-		}
-		else
-		{
-			logger->info("SDO value: {}", arg);
-			return true;
-		}
-	};
-
-	return std::visit(lambdaFunc, value);
-}
-
-bool Mdtool::writeSDO(uint32_t id, uint32_t index, uint32_t subindex, const IODParser::ValueType& value)
-{
-	candle->addMd80(id);
-	uint32_t errorCode = 0;
-
-	auto lambdaFunc = [&](auto& arg) -> bool
-	{
-		if (!candle->canopenStack->writeSDO(id, index, subindex, std::move(arg), errorCode))
-			return false;
-		logger->info("Writing successful! 0x{:x}:0x{:x} = {}", index, subindex, arg);
+		logger->info("SDO value: {}", arg);
 		return true;
 	};
 
 	return std::visit(lambdaFunc, value);
 }
 
-IODParser::ValueType Mdtool::getTypeBasedOnTag(IODParser::DataType tag)
+bool Mdtool::writeSDO(uint32_t id, uint16_t index, uint8_t subindex, const IODParser::ValueType& value)
 {
-	switch (tag)
-	{
-		case IODParser::DataType::BOOLEAN:
-			[[fallthrough]];
-		case IODParser::DataType::UNSIGNED8:
-			return uint8_t{};
-		case IODParser::DataType::INTEGER8:
-			return int8_t{};
-		case IODParser::DataType::UNSIGNED16:
-			return uint16_t{};
-		case IODParser::DataType::INTEGER16:
-			return int16_t{};
-		case IODParser::DataType::UNSIGNED32:
-			return uint32_t{};
-		case IODParser::DataType::INTEGER32:
-			return int32_t{};
-		case IODParser::DataType::REAL32:
-			return float{};
-		case IODParser::DataType::VISIBLE_STRING:
-			return std::array<uint8_t, 24>{};
-		default:
-			return uint32_t{};
-	}
-}
+	candle->addMd80(id);
 
-std::optional<IODParser::Entry*> Mdtool::checkEntryExists(MD80* md80, uint16_t index, uint8_t subindex)
-{
-	if (!md80->OD.contains(index))
+	auto lambdaFunc = [&](auto& arg) -> bool
 	{
-		logger->error("Entry index not found in OD (0x{:x})", index);
-		return std::nullopt;
-	}
-	else if (md80->OD.contains(index) && md80->OD.at(index)->objectType == IODParser::ObjectType::VAR)
-		return md80->OD.at(index).get();
+		if (!candle->writeSDO(id, index, subindex, std::move(arg)))
+			return false;
 
-	if (!md80->OD.at(index)->subEntries.contains(subindex))
-	{
-		logger->error("Entry subindex not found in OD (0x{:x}:0x{:x})", index, subindex);
-		return std::nullopt;
-	}
+		logger->info("Writing successful! 0x{:x}:0x{:x} = {}", index, subindex, arg);
+		return true;
+	};
 
-	return md80->OD.at(index)->subEntries.at(subindex).get();
+	return std::visit(lambdaFunc, value);
 }

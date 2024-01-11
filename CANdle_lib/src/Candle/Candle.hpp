@@ -103,7 +103,7 @@ class Candle
 			uint32_t deviceType = 0;
 			uint32_t errorCode = 0;
 
-			if (canopenStack->readSDO(i, 0x1000, 0x00, deviceType, errorCode, false))
+			if (readSDO(i, 0x1000, 0x00, deviceType, false))
 				ids.push_back(i);
 		}
 
@@ -123,53 +123,47 @@ class Candle
 
 	bool enterOperational(uint32_t id)
 	{
-		uint32_t errorCode = 0;
-		return canopenStack->writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0080), errorCode) &&
-			   canopenStack->writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0006), errorCode) &&
-			   canopenStack->writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x000f), errorCode);
+		return writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0080)) &&
+			   writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0006)) &&
+			   writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x000f));
 	}
 
 	bool enterSwitchOnDisabled(uint32_t id)
 	{
-		uint32_t errorCode = 0;
-		return canopenStack->writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0008), errorCode);
+		return writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0008));
 	}
 
 	bool setModeOfOperation(uint32_t id, ModesOfOperation mode)
 	{
-		uint32_t errorCode = 0;
-		return canopenStack->writeSDO(id, 0x6060, 0x00, static_cast<int8_t>(mode), errorCode);
+		return writeSDO(id, 0x6060, 0x00, static_cast<int8_t>(mode));
 	}
 
 	bool setTargetPosition(uint32_t id, uint32_t target)
 	{
-		uint32_t errorCode = 0;
-		return canopenStack->writeSDO(id, 0x607A, 0x00, std::move(target), errorCode);
+		return writeSDO(id, 0x607A, 0x00, target);
 	}
 
 	bool startCalibration(uint32_t id)
 	{
-		uint32_t errorCode = 0;
 		return enterOperational(id) &&
-			   canopenStack->writeSDO(id, 0x6060, 0x00, static_cast<int8_t>(-2), errorCode) &&
-			   canopenStack->writeSDO(id, 0x2003, 0x03, static_cast<uint8_t>(1), errorCode);
+			   writeSDO(id, 0x6060, 0x00, static_cast<int8_t>(-2)) &&
+			   writeSDO(id, 0x2003, 0x03, static_cast<uint8_t>(1));
 	}
 
 	bool setupResponse(uint32_t id, TPDO tpdoID, std::vector<std::pair<uint16_t, uint8_t>>& fields)
 	{
-		uint32_t errorCode = 0;
 		uint32_t COBID = static_cast<uint32_t>(tpdoID) + id;
 
 		/*  disable PDO (set 31 bit to 1)*/
-		if (!canopenStack->writeSDO(id, 0x1800, 0x01, static_cast<uint32_t>(0x80000000 | COBID), errorCode))
+		if (!writeSDO(id, 0x1800, 0x01, static_cast<uint32_t>(0x80000000 | COBID)))
 			return false;
 
 		/* set transsmission type to synch 1*/
-		if (!canopenStack->writeSDO(id, 0x1800, 0x02, static_cast<uint8_t>(1), errorCode))
+		if (!writeSDO(id, 0x1800, 0x02, static_cast<uint8_t>(1)))
 			return false;
 
 		/* set PDO mapping objects count to zero */
-		if (!canopenStack->writeSDO(id, 0x1A00, 0x00, static_cast<uint8_t>(0), errorCode))
+		if (!writeSDO(id, 0x1A00, 0x00, static_cast<uint8_t>(0)))
 			return false;
 
 		uint8_t mapRegsubidx = 0;
@@ -192,19 +186,55 @@ class Candle
 			uint32_t mappedObject = idx << 16 | subidx << 8 | (currentlyHeldFieldSize * 8);
 
 			/* set PDO mapping objects count to zero */
-			if (!canopenStack->writeSDO(id, 0x1A00, mapRegsubidx, std::move(mappedObject), errorCode))
+			if (!writeSDO(id, 0x1A00, mapRegsubidx, mappedObject))
 				return false;
 		}
 
 		/* set PDO mapping objects count to zero */
-		if (!canopenStack->writeSDO(id, 0x1A00, 0x00, static_cast<uint8_t>(mapRegsubidx), errorCode))
+		if (!writeSDO(id, 0x1A00, 0x00, static_cast<uint8_t>(mapRegsubidx)))
 			return false;
 
 		/*  enable PDO (set 31 bit to 0)*/
-		if (!canopenStack->writeSDO(id, 0x1800, 0x01, std::move(COBID), errorCode))
+		if (!writeSDO(id, 0x1800, 0x01, COBID))
 			return false;
 
 		return true;
+	}
+
+	template <typename T>
+	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T&& value)
+	{
+		uint32_t errorCode = 0;
+		bool result = canopenStack->writeSDO(id, index_, subindex_, value, errorCode);
+
+		if (errorCode)
+		{
+			logger->error("SDO write error! Code {:x}", errorCode);
+			return false;
+		}
+
+		return result;
+	}
+
+	template <typename T>
+	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T& value)
+	{
+		return writeSDO(id, index_, subindex_, std::move(value));
+	}
+
+	template <typename T>
+	bool readSDO(uint32_t id, uint16_t index_, uint8_t subindex_, T& value, bool checkOD = true)
+	{
+		uint32_t errorCode = 0;
+		bool result = canopenStack->readSDO(id, index_, subindex_, value, errorCode, checkOD);
+
+		if (errorCode)
+		{
+			logger->error("SDO read error! Error code: 0x{:x}", errorCode);
+			return false;
+		}
+
+		return result;
 	}
 
    private:

@@ -37,7 +37,7 @@ int main(int argc, char** argv)
 		float velocity = std::get<float>(md80->OD.at(0x2009)->subEntries.at(0x02)->value);
 
 		std::cout << position << "   " << velocity << std::endl;
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 
 	return 0;
