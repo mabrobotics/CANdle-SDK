@@ -16,13 +16,15 @@ int main(int argc, char** argv)
 
 	candle.init();
 
+	candle.addMd80(1);
 	candle.addMd80(2);
 
 	std::vector<std::pair<uint16_t, uint8_t>> fields;
 
-	fields.push_back({0x6064, 0x00});
-	fields.push_back({0x6064, 0x00});
+	fields.push_back({0x2009, 0x01});
+	fields.push_back({0x2009, 0x02});
 
+	candle.setupResponse(1, Candle::TPDO::TPDO1, fields);
 	candle.setupResponse(2, Candle::TPDO::TPDO1, fields);
 
 	auto md80 = candle.getMd80(2);
@@ -31,8 +33,10 @@ int main(int argc, char** argv)
 
 	while (1)
 	{
-		int32_t position = std::get<int32_t>(md80->OD.at(0x6064)->value);
-		std::cout << position << std::endl;
+		float position = std::get<float>(md80->OD.at(0x2009)->subEntries.at(0x01)->value);
+		float velocity = std::get<float>(md80->OD.at(0x2009)->subEntries.at(0x02)->value);
+
+		std::cout << position << "   " << velocity << std::endl;
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 

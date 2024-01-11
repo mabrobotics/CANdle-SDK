@@ -103,7 +103,7 @@ class Candle
 			uint32_t deviceType = 0;
 			uint32_t errorCode = 0;
 
-			if (canopenStack->readSDO(i, 0x1000, 0x00, deviceType, errorCode))
+			if (canopenStack->readSDO(i, 0x1000, 0x00, deviceType, errorCode, false))
 				ids.push_back(i);
 		}
 

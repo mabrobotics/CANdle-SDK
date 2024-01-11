@@ -41,22 +41,28 @@ class CanopenStack
 	}
 
 	template <typename T>
-	bool readSDO(uint32_t id, uint16_t index_, uint8_t subindex_, T& value, uint32_t& errorCode)
+	bool readSDO(uint32_t id, uint16_t index_, uint8_t subindex_, T& value, uint32_t& errorCode, bool checkOD = true)
 	{
 		std::vector<uint8_t> data;
 		/* ensure at least as many elements as there are in the largest element (sizeof(T)) */
 		data.resize(100, 0);
 
-		auto maybeEntry = checkEntryExists(ODmap.at(id), index_, subindex_);
+		std::optional<IODParser::Entry*> maybeEntry;
 
-		if (!maybeEntry.has_value())
-			return false;
+		if (checkOD)
+		{
+			maybeEntry = checkEntryExists(ODmap.at(id), index_, subindex_);
+			if (!maybeEntry.has_value())
+				return false;
+		}
 
 		if (!readSdoToBytes(id, index_, subindex_, data, errorCode))
 			return false;
 
 		value = deserialize<T>(data.data());
-		maybeEntry.value()->value = value;
+
+		if (checkOD)
+			maybeEntry.value()->value = value;
 
 		return true;
 	}
