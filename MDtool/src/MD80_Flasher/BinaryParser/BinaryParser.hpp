@@ -1,7 +1,7 @@
 #ifndef BINARY_PARSER_HPP
 #define BINARY_PARSER_HPP
 
-#include <openssl/sha.h>
+#include <openssl/evp.h>
 
 #include <fstream>
 #include <string>
@@ -108,15 +108,25 @@ class BinaryParser
 
 	static bool validateChecksum(std::vector<uint8_t>& data, std::string& expectedChecksum)
 	{
-		SHA256_CTX sha256Context;
-		SHA256_Init(&sha256Context);
-		SHA256_Update(&sha256Context, data.data(), data.size());
-		unsigned char calculateChecksum[SHA256_DIGEST_LENGTH];
-		SHA256_Final(calculateChecksum, &sha256Context);
+		constexpr size_t sha256DigestLength = 32;
+		EVP_MD_CTX* mdctx = EVP_MD_CTX_new();
+
+		if (mdctx == NULL)
+			return false;
+
+		EVP_DigestInit(mdctx, EVP_sha256());
+		EVP_DigestUpdate(mdctx, data.data(), data.size());
+		uint32_t calculateChecksumLength;
+		uint8_t calculateChecksum[sha256DigestLength];
+		if (EVP_DigestFinal(mdctx, calculateChecksum, &calculateChecksumLength) != 1)
+		{
+			EVP_MD_CTX_free(mdctx);
+			return false;
+		}
 
 		auto expectedChecksumBytes = hexStringToBytes(expectedChecksum);
 
-		for (size_t i = 0; i < SHA256_DIGEST_LENGTH; i++)
+		for (size_t i = 0; i < sha256DigestLength; i++)
 		{
 			if (expectedChecksumBytes[i] != calculateChecksum[i])
 				return false;

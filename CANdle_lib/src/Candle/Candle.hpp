@@ -101,7 +101,6 @@ class Candle
 		for (size_t i = 1; i < 10; i++)
 		{
 			uint32_t deviceType = 0;
-			uint32_t errorCode = 0;
 
 			if (readSDO(i, 0x1000, 0x00, deviceType, false))
 				ids.push_back(i);

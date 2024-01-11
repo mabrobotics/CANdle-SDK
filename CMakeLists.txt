@@ -23,6 +23,7 @@ if(WIN32 AND "${PLATFORM}" STREQUAL "native")
 endif()
 
 add_compile_options(-Wall
+    -municode
     -Wextra
     -Wpedantic
     -Wno-unused-parameter
