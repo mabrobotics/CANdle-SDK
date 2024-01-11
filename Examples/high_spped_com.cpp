@@ -25,7 +25,7 @@ int main(int argc, char** argv)
 
 	auto md80 = candle.getMd80(2);
 
-	candle.setSendSync(true, 2000);
+	candle.setSendSync(true, 1000);
 
 	while (1)
 	{
@@ -33,7 +33,7 @@ int main(int argc, char** argv)
 		float velocity = std::get<float>(md80->OD.at(0x2009)->subEntries.at(0x02)->value);
 
 		std::cout << position << "   " << velocity << std::endl;
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 
 	return 0;

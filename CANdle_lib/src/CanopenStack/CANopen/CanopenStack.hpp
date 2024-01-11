@@ -330,7 +330,7 @@ class CanopenStack
 		if (frame.header.canId >= static_cast<uint16_t>(TPDO::TPDO1) && frame.header.canId < static_cast<uint16_t>(TPDO::TPDO4))
 			fillODBasedOnTPDO(frame);
 
-		if (frame.header.canId >= 0x580 && frame.header.canId < 0x600)
+		else if (frame.header.canId >= 0x580 && frame.header.canId < 0x600)
 		{
 			uint8_t command = frame.payload[0];
 			uint32_t driveId = frame.header.canId - 0x580;
@@ -362,6 +362,13 @@ class CanopenStack
 
 			if (processSDO)
 				processSDO(driveId, index, subindex, data, command, errorCode);
+		}
+		else if (frame.header.canId >= 0x080 && frame.header.canId < (0x080 + maxDevices))
+		{
+			uint8_t id = frame.header.canId & 0x1f;
+			uint16_t errorCode = deserialize<uint16_t>(&frame.payload[0]);
+			uint16_t errorIndex = deserialize<uint16_t>(&frame.payload[2]);
+			logger->error("Emergency frame received ID 0x{:x}! Error code (0x{:x}) error index (0x{:x})", id, errorCode, errorIndex);
 		}
 	}
 
@@ -417,6 +424,8 @@ class CanopenStack
 	spdlog::logger* logger;
 	std::function<void(uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, uint8_t command, uint32_t errorCode_)> processSDO;
 	std::atomic<bool> segmentedReadOngoing = false;
+
+	static constexpr uint8_t maxDevices = 31;
 	static constexpr uint32_t defaultSdoTimeout = 10;
 	static constexpr uint32_t maxSingleFieldSize = 100;
 
