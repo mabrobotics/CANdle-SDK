@@ -29,10 +29,7 @@ int main(int argc, char** argv)
 
 	while (1)
 	{
-		float position = std::get<float>(md80->OD.at(0x2009)->subEntries.at(0x01)->value);
-		float velocity = std::get<float>(md80->OD.at(0x2009)->subEntries.at(0x02)->value);
-
-		std::cout << position << "   " << velocity << std::endl;
+		std::cout << md80->getOutputPosition() << "   " << md80->getOutputVelocity() << std::endl;
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 

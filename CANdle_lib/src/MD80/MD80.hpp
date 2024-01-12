@@ -16,6 +16,21 @@ class MD80
 		parser.parseFile("C:/Users/klonyyy/PROJECTS/MAB/projects/MD80/code/md80_firmware/CANopenNode_STM32/MD80_DS402.eds", OD);
 	}
 
+	float getOutputPosition() const
+	{
+		return std::get<float>(OD.at(0x2009)->subEntries.at(0x01)->value);
+	}
+
+	float getOutputVelocity() const
+	{
+		return std::get<float>(OD.at(0x2009)->subEntries.at(0x02)->value);
+	}
+
+	float getOutputTorque() const
+	{
+		return std::get<float>(OD.at(0x2009)->subEntries.at(0x03)->value);
+	}
+
 	IODParser::ODType OD;
 };
 
