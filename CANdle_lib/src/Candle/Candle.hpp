@@ -131,14 +131,24 @@ class Candle
 			   writeSDO(id, 0x2003, 0x03, static_cast<uint8_t>(1));
 	}
 
-	bool setupResponse(uint32_t id, CanopenStack::TPDO tpdoID, std::vector<std::pair<uint16_t, uint8_t>>& fields)
+	bool setupResponse(uint32_t id, CanopenStack::PDO pdoID, std::vector<std::pair<uint16_t, uint8_t>>& fields)
 	{
-		return setupResponse(id, tpdoID, std::move(fields));
+		return setupResponse(id, pdoID, std::move(fields));
 	}
 
-	bool setupResponse(uint32_t id, CanopenStack::TPDO tpdoID, std::vector<std::pair<uint16_t, uint8_t>>&& fields)
+	bool setupResponse(uint32_t id, CanopenStack::PDO pdoID, std::vector<std::pair<uint16_t, uint8_t>>&& fields)
 	{
-		return canopenStack->setupTPDO(id, tpdoID, fields);
+		return canopenStack->setupPDO(id, pdoID, fields);
+	}
+
+	bool setupCommand(uint32_t id, CanopenStack::PDO pdoID, std::vector<std::pair<uint16_t, uint8_t>>& fields)
+	{
+		return setupCommand(id, pdoID, std::move(fields));
+	}
+
+	bool setupCommand(uint32_t id, CanopenStack::PDO pdoID, std::vector<std::pair<uint16_t, uint8_t>>&& fields)
+	{
+		return canopenStack->setupPDO(id, pdoID, fields);
 	}
 
 	template <typename T>
@@ -184,7 +194,7 @@ class Candle
 		{
 			auto maybeFrame = interface->receiveCanFrame();
 
-			if (!maybeFrame.has_value() || md80s.empty())
+			if (!maybeFrame.has_value())
 				continue;
 
 			canopenStack->parse(maybeFrame.value());

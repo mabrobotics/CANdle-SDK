@@ -18,10 +18,13 @@ int main(int argc, char** argv)
 	candle.addMd80(1);
 	candle.addMd80(2);
 
-	std::vector<std::pair<uint16_t, uint8_t>> fields{{0x2009, 0x01}, {0x2009, 0x02}};
+	std::vector<std::pair<uint16_t, uint8_t>> TPDO{{0x2009, 0x01}, {0x2009, 0x02}};
+	candle.setupResponse(1, CanopenStack::PDO::TPDO1, TPDO);
+	candle.setupResponse(2, CanopenStack::PDO::TPDO1, TPDO);
 
-	candle.setupResponse(1, CanopenStack::TPDO::TPDO1, fields);
-	candle.setupResponse(2, CanopenStack::TPDO::TPDO1, fields);
+	std::vector<std::pair<uint16_t, uint8_t>> RPDO{{0x2008, 0x09}, {0x2008, 0x0A}};
+	candle.setupResponse(1, CanopenStack::PDO::RPDO1, RPDO);
+	candle.setupResponse(2, CanopenStack::PDO::RPDO1, RPDO);
 
 	auto md80 = candle.getMd80(2);
 
@@ -29,6 +32,7 @@ int main(int argc, char** argv)
 
 	while (1)
 	{
+		md80->setPositionTarget(21.37f);
 		std::cout << md80->getOutputPosition() << "   " << md80->getOutputVelocity() << std::endl;
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}

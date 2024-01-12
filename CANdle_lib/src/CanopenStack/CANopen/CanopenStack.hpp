@@ -15,23 +15,26 @@
 class CanopenStack
 {
    public:
-	enum RPDO : uint16_t
+	enum PDO : uint16_t
 	{
 		RPDO1 = 0x200,
 		RPDO2 = 0x300,
 		RPDO3 = 0x400,
-		RPDO4 = 0x500
-	};
-
-	enum TPDO : uint16_t
-	{
+		RPDO4 = 0x500,
 		TPDO1 = 0x180,
 		TPDO2 = 0x280,
 		TPDO3 = 0x380,
 		TPDO4 = 0x480
 	};
 
-	explicit CanopenStack(ICommunication* interface, spdlog::logger* logger) : interface(interface), logger(logger)
+	enum PDOType
+	{
+		RPDO = 1,
+		TPDO = 2,
+	};
+
+	explicit CanopenStack(ICommunication* interface, spdlog::logger* logger) : interface(interface),
+																			   logger(logger)
 	{
 	}
 
@@ -266,20 +269,25 @@ class CanopenStack
 		return true;
 	}
 
-	bool setupTPDO(uint32_t id, TPDO tpdoID, std::vector<std::pair<uint16_t, uint8_t>>& fields)
+	bool setupPDO(uint32_t id, PDO pdoId, std::vector<std::pair<uint16_t, uint8_t>>& fields)
 	{
-		uint32_t COBID = static_cast<uint32_t>(tpdoID) + id;
+		auto pdoType = getPDOType(pdoId);
+
+		uint16_t commParamIdx = pdoType == PDOType::RPDO ? RPDOComunicationParamIndex : TPDOComunicationParamIndex;
+		uint16_t mapParamIdx = pdoType == PDOType::RPDO ? RPDOMappingParamIndex : TPDOMappingParamIndex;
+
+		uint32_t COBID = static_cast<uint32_t>(pdoId) + id;
 		uint32_t errorCode = 0;
 		/*  disable PDO (set 31 bit to 1)*/
-		if (!writeSDO(id, 0x1800, 0x01, static_cast<uint32_t>(0x80000000 | COBID), errorCode))
+		if (!writeSDO(id, commParamIdx, 0x01, static_cast<uint32_t>(0x80000000 | COBID), errorCode))
 			return false;
 
 		/* set transsmission type to synch 1*/
-		if (!writeSDO(id, 0x1800, 0x02, static_cast<uint8_t>(1), errorCode))
+		if (!writeSDO(id, commParamIdx, 0x02, static_cast<uint8_t>(1), errorCode))
 			return false;
 
 		/* set PDO mapping objects count to zero */
-		if (!writeSDO(id, 0x1A00, 0x00, static_cast<uint8_t>(0), errorCode))
+		if (!writeSDO(id, mapParamIdx, 0x00, static_cast<uint8_t>(0), errorCode))
 			return false;
 
 		uint8_t mapRegsubidx = 0;
@@ -302,16 +310,16 @@ class CanopenStack
 			uint32_t mappedObject = idx << 16 | subidx << 8 | (currentlyHeldFieldSize * 8);
 
 			/* set PDO mapping objects count to zero */
-			if (!writeSDO(id, 0x1A00, mapRegsubidx, mappedObject, errorCode))
+			if (!writeSDO(id, mapParamIdx, mapRegsubidx, mappedObject, errorCode))
 				return false;
 		}
 
 		/* set PDO mapping objects count to zero */
-		if (!writeSDO(id, 0x1A00, 0x00, static_cast<uint8_t>(mapRegsubidx), errorCode))
+		if (!writeSDO(id, mapParamIdx, 0x00, static_cast<uint8_t>(mapRegsubidx), errorCode))
 			return false;
 
 		/*  enable PDO (set 31 bit to 0)*/
-		if (!writeSDO(id, 0x1800, 0x01, COBID, errorCode))
+		if (!writeSDO(id, commParamIdx, 0x01, COBID, errorCode))
 			return false;
 
 		return true;
@@ -334,10 +342,10 @@ class CanopenStack
 				auto transmissionType = std::get<uint8_t>(OD->at(0x1400 + i)->subEntries.at(0x02)->value);
 
 				/* TODO base it on SYNC as it should be */
-				if (transmissionType > 0)
+				if (transmissionType > 0 && transmissionType < 250)
 				{
 					auto canFrame = prepareRPDO(OD, i);
-					canFrame.header.canId = RPDO::RPDO1 | deviceId;
+					canFrame.header.canId |= deviceId;
 					interface->sendCanFrame(canFrame);
 				}
 			}
@@ -348,7 +356,7 @@ class CanopenStack
 
 	void parse(ICommunication::CANFrame& frame)
 	{
-		if (frame.header.canId >= static_cast<uint16_t>(TPDO::TPDO1) && frame.header.canId < static_cast<uint16_t>(TPDO::TPDO4))
+		if (frame.header.canId >= static_cast<uint16_t>(PDO::TPDO1) && frame.header.canId < static_cast<uint16_t>(PDO::TPDO4))
 			fillODBasedOnTPDO(frame);
 
 		else if (frame.header.canId >= 0x580 && frame.header.canId < 0x600)
@@ -455,8 +463,8 @@ class CanopenStack
 	static constexpr uint16_t TPDOComunicationParamIndex = 0x1800;
 	static constexpr uint16_t TPDOMappingParamIndex = 0x1A00;
 
-	static constexpr uint16_t RPDOComunicationParamIndex = 0x1800;
-	static constexpr uint16_t RPDOMappingParamIndex = 0x1A00;
+	static constexpr uint16_t RPDOComunicationParamIndex = 0x1400;
+	static constexpr uint16_t RPDOMappingParamIndex = 0x1600;
 
 	bool fillODBasedOnTPDO(const ICommunication::CANFrame& frame)
 	{
@@ -502,7 +510,9 @@ class CanopenStack
 	ICommunication::CANFrame prepareRPDO(IODParser::ODType* OD, uint8_t offset)
 	{
 		ICommunication::CANFrame canFrame{};
-		uint8_t numberOfMappedObjects = std::get<uint8_t>(OD->at(0x1600 + offset)->subEntries.at(0x00)->value);
+
+		canFrame.header.canId = std::get<uint32_t>(OD->at(RPDOComunicationParamIndex + offset)->subEntries.at(0x01)->value);
+		uint8_t numberOfMappedObjects = std::get<uint8_t>(OD->at(RPDOMappingParamIndex + offset)->subEntries.at(0x00)->value);
 
 		auto it = canFrame.payload.begin();
 
@@ -528,6 +538,31 @@ class CanopenStack
 		canFrame.header.length = it - canFrame.payload.begin();
 
 		return canFrame;
+	}
+
+	PDOType getPDOType(PDO pdoId)
+	{
+		switch (pdoId)
+		{
+			case PDO::RPDO1:
+				[[fallthrough]];
+			case PDO::RPDO2:
+				[[fallthrough]];
+			case PDO::RPDO3:
+				[[fallthrough]];
+			case PDO::RPDO4:
+				return PDOType::RPDO;
+			case PDO::TPDO1:
+				[[fallthrough]];
+			case PDO::TPDO2:
+				[[fallthrough]];
+			case PDO::TPDO3:
+				[[fallthrough]];
+			case PDO::TPDO4:
+				return PDOType::TPDO;
+			default:
+				return PDOType::TPDO;
+		}
 	}
 
 	bool sendFrameWaitForCompletion(const ICommunication::CANFrame& frame, std::atomic<bool>& conditionVar, uint32_t timeoutMs)

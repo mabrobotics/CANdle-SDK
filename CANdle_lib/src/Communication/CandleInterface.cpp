@@ -51,7 +51,7 @@ bool CandleInterface::reset()
 bool CandleInterface::sendSettingsFrame(const Settings& settings_)
 {
 	IBusHandler::BusFrame usbSettingsFrame{};
-	usbSettingsFrame.header.id = BusFrameId::CANFRAME;
+	usbSettingsFrame.header.id = BusFrameId::CHANGE_CAN_SETTINGS;
 	usbSettingsFrame.header.length = sizeof(Settings);
 	serialize(settings_, usbSettingsFrame.payload.begin());
 	return busHandler->addToFifo(usbSettingsFrame);

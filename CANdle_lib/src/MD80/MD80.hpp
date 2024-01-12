@@ -31,6 +31,21 @@ class MD80
 		return std::get<float>(OD.at(0x2009)->subEntries.at(0x03)->value);
 	}
 
+	void setPositionTarget(float position)
+	{
+		OD.at(0x2008)->subEntries.at(0x09)->value = position;
+	}
+
+	void setVelocityTarget(float velocity)
+	{
+		OD.at(0x2008)->subEntries.at(0x0A)->value = velocity;
+	}
+
+	void setTorqueTarget(float torque)
+	{
+		OD.at(0x2008)->subEntries.at(0x0B)->value = torque;
+	}
+
 	IODParser::ODType OD;
 };
 
