@@ -195,6 +195,9 @@ class Candle
 	{
 		while (!done)
 		{
+			/* SEND RPDOs */
+			canopenStack->sendRPDOs();
+
 			if (sendSync)
 				canopenStack->sendSYNC();
 

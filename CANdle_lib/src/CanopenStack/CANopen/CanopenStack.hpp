@@ -325,6 +325,27 @@ class CanopenStack
 		return interface->sendCanFrame(frame);
 	}
 
+	bool sendRPDOs()
+	{
+		for (auto& [deviceId, OD] : ODmap)
+		{
+			for (uint16_t i = 0; i < 4; i++)
+			{
+				auto transmissionType = std::get<uint8_t>(OD->at(0x1400 + i)->subEntries.at(0x02)->value);
+
+				/* TODO base it on SYNC as it should be */
+				if (transmissionType > 0)
+				{
+					auto canFrame = prepareRPDO(OD, i);
+					canFrame.header.canId = RPDO::RPDO1 | deviceId;
+					interface->sendCanFrame(canFrame);
+				}
+			}
+		}
+
+		return true;
+	}
+
 	void parse(ICommunication::CANFrame& frame)
 	{
 		if (frame.header.canId >= static_cast<uint16_t>(TPDO::TPDO1) && frame.header.canId < static_cast<uint16_t>(TPDO::TPDO4))
@@ -434,6 +455,9 @@ class CanopenStack
 	static constexpr uint16_t TPDOComunicationParamIndex = 0x1800;
 	static constexpr uint16_t TPDOMappingParamIndex = 0x1A00;
 
+	static constexpr uint16_t RPDOComunicationParamIndex = 0x1800;
+	static constexpr uint16_t RPDOMappingParamIndex = 0x1A00;
+
 	bool fillODBasedOnTPDO(const ICommunication::CANFrame& frame)
 	{
 		/* offset - 0 for 0x180, 1 for 0x280, 2 for 0x380, 3 for 0x480 */
@@ -473,6 +497,37 @@ class CanopenStack
 		}
 
 		return true;
+	}
+
+	ICommunication::CANFrame prepareRPDO(IODParser::ODType* OD, uint8_t offset)
+	{
+		ICommunication::CANFrame canFrame{};
+		uint8_t numberOfMappedObjects = std::get<uint8_t>(OD->at(0x1600 + offset)->subEntries.at(0x00)->value);
+
+		auto it = canFrame.payload.begin();
+
+		for (uint8_t i = 1; i <= numberOfMappedObjects; i++)
+		{
+			uint32_t mappedObject = std::get<uint32_t>(OD->at(RPDOMappingParamIndex + offset).get()->subEntries.at(i).get()->value);
+			uint16_t index = mappedObject >> 16;
+			uint8_t subindex = (mappedObject & 0x0000ff00) >> 8;
+
+			auto entry = checkEntryExists(OD, index, subindex);
+
+			if (!entry.has_value())
+				return ICommunication::CANFrame{};
+
+			auto lambdaFunc = [&](auto& arg)
+			{
+				it += serialize(arg, it);
+			};
+
+			std::visit(lambdaFunc, entry.value()->value);
+		}
+
+		canFrame.header.length = it - canFrame.payload.begin();
+
+		return canFrame;
 	}
 
 	bool sendFrameWaitForCompletion(const ICommunication::CANFrame& frame, std::atomic<bool>& conditionVar, uint32_t timeoutMs)
