@@ -1,9 +1,9 @@
 #ifndef OBJECTDICTIONARYPARSEREDS_HPP
 #define OBJECTDICTIONARYPARSEREDS_HPP
 
-#include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 
 #include "IObjectDictionaryParser.hpp"
 #include "third_party/mINI/inc/ini.h"
@@ -11,10 +11,10 @@
 class ObjectDictionaryParserEDS : public IODParser
 {
    public:
-	const std::map<std::string, IODParser::AccessSDO> strToAccessType = {
+	const std::unordered_map<std::string, IODParser::AccessSDO> strToAccessType = {
 		{"no", IODParser::AccessSDO::no}, {"ro", IODParser::AccessSDO::ro}, {"wo", IODParser::AccessSDO::wo}, {"rw", IODParser::AccessSDO::rw}};
 
-	bool parseFile(const std::string& filePath, std::map<uint32_t, std::shared_ptr<Entry>>& objectDictionary) override
+	bool parseFile(const std::string& filePath, ODType& objectDictionary) override
 	{
 		mINI::INIFile file(filePath);
 		mINI::INIStructure ini;

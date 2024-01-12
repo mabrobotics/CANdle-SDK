@@ -2,7 +2,7 @@
 #define IOBJECTDICTIONARYPARSER_HPP
 
 #include <array>
-#include <map>
+#include <unordered_map>
 #include <memory>
 #include <string>
 #include <variant>
@@ -60,11 +60,11 @@ class IODParser
 		DataType dataType;
 		AccessSDO accessType;
 		size_t highestSubindex = 0;
-		std::map<uint32_t, std::shared_ptr<Entry>> subEntries;
+		std::unordered_map<uint32_t, std::shared_ptr<Entry>> subEntries;
 		ValueType value;
 	};
 
-	using ODType = std::map<uint32_t, std::shared_ptr<Entry>>;
+	using ODType = std::unordered_map<uint32_t, std::shared_ptr<Entry>>;
 
 	virtual ~IODParser() = default;
 	virtual bool parseFile(const std::string& filePath, ODType& objectDictionary) = 0;
