@@ -184,7 +184,7 @@ class Candle
 		{
 			auto maybeFrame = interface->receiveCanFrame();
 
-			if (!maybeFrame.has_value())
+			if (!maybeFrame.has_value() || md80s.empty())
 				continue;
 
 			canopenStack->parse(maybeFrame.value());

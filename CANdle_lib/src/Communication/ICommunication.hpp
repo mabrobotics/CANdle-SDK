@@ -19,7 +19,7 @@ class ICommunication
 		std::array<uint8_t, 64> payload;
 	};
 
-	struct StatusFrame
+	struct Status
 	{
 		struct Statistics
 		{
@@ -43,6 +43,9 @@ class ICommunication
 	virtual Settings getSettings() const = 0;
 	virtual bool sendCanFrame(const CANFrame& canFrame) = 0;
 	virtual std::optional<CANFrame> receiveCanFrame() = 0;
+
+	virtual Status getStatus() const = 0;
+	virtual bool reset() = 0;
 };
 
 #endif

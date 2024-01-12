@@ -20,12 +20,12 @@ int main(int argc, char** argv)
 
 	std::vector<std::pair<uint16_t, uint8_t>> fields{{0x2009, 0x01}, {0x2009, 0x02}};
 
-	candle.setupResponse(1, CanopenStack::TPDO::TPDO1, {{0x2009, 0x01}, {0x2009, 0x02}});
+	candle.setupResponse(1, CanopenStack::TPDO::TPDO1, fields);
 	candle.setupResponse(2, CanopenStack::TPDO::TPDO1, fields);
 
 	auto md80 = candle.getMd80(2);
 
-	candle.setSendSync(true, 1000);
+	candle.setSendSync(true, 2000);
 
 	while (1)
 	{
