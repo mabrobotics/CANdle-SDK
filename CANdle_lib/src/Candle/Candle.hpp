@@ -91,10 +91,19 @@ class Candle
 		return ids;
 	}
 
-	void addMd80(uint32_t id)
+	bool addMd80(uint32_t id)
 	{
+		uint32_t deviceType = 0;
+		if (!readSDO(id, 0x1000, 0x00, deviceType, false))
+		{
+			logger->error("Unable to add MD80 with ID {}", id);
+			return false;
+		}
+
 		md80s[id] = std::make_unique<MD80>();
 		canopenStack->setOD(id, &md80s[id]->OD);
+
+		return true;
 	}
 
 	MD80* getMd80(uint32_t id) const

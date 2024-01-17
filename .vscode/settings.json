@@ -80,5 +80,6 @@
         "deque": "cpp",
         "unordered_set": "cpp"
     },
-    "cmake.sourceDirectory": "C:/Users/klonyyy/PROJECTS/MAB/projects/CANdle-SDK/CANdle-SDK/CANdle_lib"
+    "cmake.sourceDirectory": "C:/Users/klonyyy/PROJECTS/MAB/projects/CANdle-SDK/CANdle-SDK/CANdle_lib",
+    "C_Cpp.default.compilerPath": "C:\\msys64\\mingw64\\bin\\g++.exe"
 }

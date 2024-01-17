@@ -1,5 +1,8 @@
 #include "mdtool.hpp"
 
+#include <array>
+#include <utility>
+
 #include "BinaryParser.hpp"
 #include "spdlog/fmt/ostr.h"
 
@@ -213,4 +216,51 @@ bool Mdtool::writeSDO(uint32_t id, uint16_t index, uint8_t subindex, const IODPa
 	};
 
 	return std::visit(lambdaFunc, value);
+}
+
+bool Mdtool::calibrate(uint32_t id)
+{
+	return candle->addMd80(id) &&
+		   candle->enterOperational(id) &&
+		   candle->setModeOfOperation(id, Candle::ModesOfOperation::SERVICE) &&
+		   candle->writeSDO(id, 0x2003, 0x03, true);
+}
+
+bool Mdtool::save(uint32_t id)
+{
+	return candle->addMd80(id) && candle->writeSDO(id, 0x1010, 0x01, static_cast<uint32_t>(0x65766173));
+}
+
+bool Mdtool::status(uint32_t id)
+{
+	if (!candle->addMd80(id))
+		return false;
+
+	auto printErrors = [&](uint32_t status, errorMapType map)
+	{
+		for (auto& [name, mask] : map)
+		{
+			if (status & mask)
+				logger->error(name);
+		}
+	};
+
+	std::array<std::pair<std::string, errorMapType>, 8> errorMapList = {{{"main encoder errors", encoderErrorList},
+																		 {"output encoder errors", encoderErrorList},
+																		 {"calibration errors", calibrationErrorList},
+																		 {"bridge errors", bridgeErrorList},
+																		 {"hardware errors", hardwareErrorList},
+																		 {"communication errors", communicationErrorList},
+																		 {"homing errors", homingErrorList},
+																		 {"motion errors", motionErrorList}}};
+
+	for (uint32_t i = 0; i < errorMapList.size(); i++)
+	{
+		uint32_t status = 0;
+		candle->readSDO(id, 0x2004, i + 1, status);
+		logger->info("{}: 0x{:x}", errorMapList[i].first, status);
+		printErrors(status, errorMapList[i].second);
+	}
+
+	return true;
 }

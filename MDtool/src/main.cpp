@@ -18,6 +18,9 @@ int main(int argc, char** argv)
 
 	auto* readSDO = app.add_subcommand("readSDO", "Use to read SDO value");
 	auto* writeSDO = app.add_subcommand("writeSDO", "Use to write SDO value");
+	app.add_subcommand("calibrate", "Use to calibrate the motor");
+	app.add_subcommand("save", "Use to save the motor parameters");
+	app.add_subcommand("status", "Use to read motor status");
 
 	auto logger = spdlog::stdout_color_mt("console");
 	logger->set_pattern("[%^%l%$] %v");
@@ -105,6 +108,12 @@ int main(int argc, char** argv)
 		mdtool.readSDO(id, index, subindex);
 	else if (app.got_subcommand("writeSDO"))
 		mdtool.writeSDO(id, index, subindex, value);
+	else if (app.got_subcommand("calibrate"))
+		mdtool.calibrate(id);
+	else if (app.got_subcommand("save"))
+		mdtool.save(id);
+	else if (app.got_subcommand("status"))
+		mdtool.status(id);
 
 	return 0;
 }

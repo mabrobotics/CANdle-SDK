@@ -26,15 +26,22 @@ int main(int argc, char** argv)
 	candle.setupResponse(1, CanopenStack::PDO::RPDO1, RPDO);
 	candle.setupResponse(2, CanopenStack::PDO::RPDO1, RPDO);
 
+	candle.setModeOfOperation(2, Candle::ModesOfOperation::CYCLIC_SYNC_POSITION);
+	candle.enterOperational(2);
+
 	auto md80 = candle.getMd80(2);
 
 	candle.setSendSync(true, 2000);
 
+	float x = 0;
+
 	while (1)
 	{
-		md80->setPositionTarget(21.37f);
-		std::cout << md80->getOutputPosition() << "   " << md80->getOutputVelocity() << std::endl;
+		md80->setPositionTarget(5 * sin(x));
+		std::cout << md80->getOutputPosition() << "   " << md80->getOutputVelocity() << "setpoint pos: " << 20 * sin(x) << std::endl;
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+		x += 0.01;
 	}
 
 	return 0;
