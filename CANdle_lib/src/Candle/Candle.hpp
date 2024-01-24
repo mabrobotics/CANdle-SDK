@@ -28,7 +28,7 @@ class Candle
 		PROFILE_POSITION = 1,
 		PROFILE_VELOCITY = 2,
 		CYCLIC_SYNC_POSITION = 8,
-		CYCLIC_SYNCH_VELOCTIY = 9,
+		CYCLIC_SYNC_VELOCTIY = 9,
 	};
 
 	explicit Candle(ICommunication* interface, spdlog::logger* logger) : interface(interface),

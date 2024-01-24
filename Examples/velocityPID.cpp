@@ -16,17 +16,13 @@ int main(int argc, char** argv)
 	candle.init();
 
 	candle.addMd80(1);
-	// candle.addMd80(2);
 
 	std::vector<std::pair<uint16_t, uint8_t>> TPDO{{0x2009, 0x01}, {0x2009, 0x02}};
 	candle.setupResponse(1, CanopenStack::PDO::TPDO1, TPDO);
-	// candle.setupResponse(2, CanopenStack::PDO::TPDO1, TPDO);
-
 	std::vector<std::pair<uint16_t, uint8_t>> RPDO{{0x2008, 0x09}, {0x2008, 0x0A}};
 	candle.setupResponse(1, CanopenStack::PDO::RPDO1, RPDO);
-	// candle.setupResponse(2, CanopenStack::PDO::RPDO1, RPDO);
 
-	candle.setModeOfOperation(1, Candle::ModesOfOperation::CYCLIC_SYNC_POSITION);
+	candle.setModeOfOperation(1, Candle::ModesOfOperation::CYCLIC_SYNC_VELOCTIY);
 	candle.enterOperational(1);
 
 	auto md80 = candle.getMd80(1);
@@ -37,10 +33,9 @@ int main(int argc, char** argv)
 
 	while (1)
 	{
-		md80->setPositionTarget(5 * sin(x));
-		std::cout << md80->getOutputPosition() << "   " << md80->getOutputVelocity() << " setpoint pos: " << 20 * sin(x) << std::endl;
+		md80->setVelocityTarget(50 * sin(x));
+		std::cout << md80->getOutputVelocity() << " setpoint velocity: " << 50 * sin(x) << std::endl;
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
 		x += 0.01;
 	}
 
