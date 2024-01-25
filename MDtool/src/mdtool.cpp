@@ -226,6 +226,14 @@ bool Mdtool::calibrate(uint32_t id)
 		   candle->writeSDO(id, 0x2003, 0x03, true);
 }
 
+bool Mdtool::home(uint32_t id)
+{
+	return candle->addMd80(id) &&
+		   candle->enterOperational(id) &&
+		   candle->setModeOfOperation(id, Candle::ModesOfOperation::SERVICE) &&
+		   candle->writeSDO(id, 0x2003, 0x0E, true);
+}
+
 bool Mdtool::save(uint32_t id)
 {
 	return candle->addMd80(id) && candle->writeSDO(id, 0x1010, 0x01, static_cast<uint32_t>(0x65766173));
@@ -250,9 +258,9 @@ bool Mdtool::status(uint32_t id)
 																		 {"calibration errors", calibrationErrorList},
 																		 {"bridge errors", bridgeErrorList},
 																		 {"hardware errors", hardwareErrorList},
-																		 {"communication errors", communicationErrorList},
 																		 {"homing errors", homingErrorList},
-																		 {"motion errors", motionErrorList}}};
+																		 {"motion errors", motionErrorList},
+																		 {"communication errors", communicationErrorList}}};
 
 	for (uint32_t i = 0; i < errorMapList.size(); i++)
 	{

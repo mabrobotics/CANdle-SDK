@@ -2,6 +2,7 @@
 #define _MDTOOL_HPP
 
 #include <optional>
+#include <unordered_map>
 
 #include "Candle.hpp"
 #include "Downloader.hpp"
@@ -18,6 +19,7 @@ class Mdtool
 	bool readSDO(uint32_t id, uint16_t index, uint8_t subindex);
 	bool writeSDO(uint32_t id, uint16_t index, uint8_t subindex, const IODParser::ValueType& value);
 	bool calibrate(uint32_t id);
+	bool home(uint32_t id);
 	bool save(uint32_t id);
 	bool status(uint32_t id);
 
@@ -34,7 +36,7 @@ class Mdtool
 	IODParser::ValueType getTypeBasedOnTag(IODParser::DataType tag);
 	std::optional<IODParser::Entry*> checkEntryExists(MD80* md80, uint16_t index, uint8_t subindex);
 
-	using errorMapType = const std::map<std::string, uint32_t>;
+	using errorMapType = const std::unordered_map<std::string, uint32_t>;
 
 	errorMapType encoderErrorList = {{"ERROR_COMMUNICATION", (1 << 0)},
 									 {"ERROR_WRONG_DIRECTION", (1 << 1)},

@@ -21,6 +21,7 @@ int main(int argc, char** argv)
 	app.add_subcommand("calibrate", "Use to calibrate the motor");
 	app.add_subcommand("save", "Use to save the motor parameters");
 	app.add_subcommand("status", "Use to read motor status");
+	app.add_subcommand("home", "Use to run homing");
 
 	auto logger = spdlog::stdout_color_mt("console");
 	logger->set_pattern("[%^%l%$] %v");
@@ -114,6 +115,8 @@ int main(int argc, char** argv)
 		mdtool.save(id);
 	else if (app.got_subcommand("status"))
 		mdtool.status(id);
+	else if (app.got_subcommand("home"))
+		mdtool.home(id);
 
 	return 0;
 }
