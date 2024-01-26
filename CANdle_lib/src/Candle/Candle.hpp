@@ -84,7 +84,7 @@ class Candle
 		std::vector<uint32_t> ids{};
 		uint32_t deviceType = 0;
 
-		for (size_t i = 1; i < 10; i++)
+		for (size_t i = 1; i < 31; i++)
 			if (readSDO(i, 0x1000, 0x00, deviceType, false))
 				ids.push_back(i);
 

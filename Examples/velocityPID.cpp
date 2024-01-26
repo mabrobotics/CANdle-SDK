@@ -13,19 +13,21 @@ int main(int argc, char** argv)
 	CandleInterface candleInterface(&busHandler);
 	Candle candle(&candleInterface, logger.get());
 
+	const uint32_t id = 1;
+
 	candle.init();
 
-	candle.addMd80(1);
+	candle.addMd80(id);
 
 	std::vector<std::pair<uint16_t, uint8_t>> TPDO{{0x2009, 0x01}, {0x2009, 0x02}};
-	candle.setupResponse(1, CanopenStack::PDO::TPDO1, TPDO);
+	candle.setupResponse(id, CanopenStack::PDO::TPDO1, TPDO);
 	std::vector<std::pair<uint16_t, uint8_t>> RPDO{{0x2008, 0x09}, {0x2008, 0x0A}};
-	candle.setupResponse(1, CanopenStack::PDO::RPDO1, RPDO);
+	candle.setupResponse(id, CanopenStack::PDO::RPDO1, RPDO);
 
-	candle.setModeOfOperation(1, Candle::ModesOfOperation::CYCLIC_SYNC_VELOCTIY);
-	candle.enterOperational(1);
+	candle.setModeOfOperation(id, Candle::ModesOfOperation::CYCLIC_SYNC_VELOCTIY);
+	candle.enterOperational(id);
 
-	auto md80 = candle.getMd80(1);
+	auto md80 = candle.getMd80(id);
 
 	candle.setSendSync(true, 2000);
 

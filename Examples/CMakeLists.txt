@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 
 project(Examples)
-set(EXECUTABLE Examples)
 
 if(WIN32)
     set(SPDLOG_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/)

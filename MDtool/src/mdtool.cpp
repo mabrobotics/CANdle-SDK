@@ -272,3 +272,10 @@ bool Mdtool::status(uint32_t id)
 
 	return true;
 }
+
+bool Mdtool::changeId(uint32_t id, uint32_t newId)
+{
+	return candle->addMd80(id) &&
+		   candle->writeSDO(id, 0x2000, 0x0A, newId) &&
+		   candle->writeSDO(id, 0x1010, 0x01, static_cast<uint32_t>(0x65766173));
+}
