@@ -293,7 +293,4 @@ void Downloader::progressBar(float progress)
 	}
 	std::cout << "] " << int(progress * 100.0) << " %\r";
 	std::cout.flush();
-
-	// if (progress == 1.0)
-	// 	std::cout << std::endl;
 }
