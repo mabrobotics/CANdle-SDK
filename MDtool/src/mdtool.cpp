@@ -249,7 +249,12 @@ bool Mdtool::status(uint32_t id)
 		for (auto& [name, mask] : map)
 		{
 			if (status & mask)
-				logger->error(name);
+			{
+				if (name.find("WARNING") != std::string::npos)
+					logger->warn(name);
+				else
+					logger->error(name);
+			}
 		}
 	};
 
