@@ -25,6 +25,10 @@ int main(int argc, char** argv)
 	auto* changeID = app.add_subcommand("changeID", "Use to change ID");
 	auto* changeBaud = app.add_subcommand("changeBaud", "Use to change baudrate ");
 
+	auto* clear = app.add_subcommand("clear", "Use clear errors or warnings");
+	clear->add_subcommand("error", "Use clear errors");
+	clear->add_subcommand("warning", "Use clear warnings");
+
 	auto logger = spdlog::stdout_color_mt("console");
 	logger->set_pattern("[%^%l%$] %v");
 
@@ -129,6 +133,13 @@ int main(int argc, char** argv)
 		mdtool.changeId(id, newID);
 	else if (app.got_subcommand("changeBaud"))
 		mdtool.changeBaud(id, newBaud * 1000000);
+	else if (app.got_subcommand("clear"))
+	{
+		if (clear->got_subcommand("error"))
+			mdtool.clearError(id);
+		else if (clear->got_subcommand("warning"))
+			mdtool.clearWarning(id);
+	}
 
 	return 0;
 }

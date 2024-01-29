@@ -291,3 +291,15 @@ bool Mdtool::changeBaud(uint32_t id, uint32_t newBaud)
 		   candle->writeSDO(id, 0x2000, 0x0B, newBaud) &&
 		   candle->writeSDO(id, 0x1010, 0x01, static_cast<uint32_t>(0x65766173));
 }
+
+bool Mdtool::clearError(uint32_t id)
+{
+	return candle->addMd80(id) &&
+		   candle->writeSDO(id, 0x2003, 0x0B, static_cast<uint8_t>(1));
+}
+
+bool Mdtool::clearWarning(uint32_t id)
+{
+	return candle->addMd80(id) &&
+		   candle->writeSDO(id, 0x2003, 0x0C, static_cast<uint8_t>(1));
+}
