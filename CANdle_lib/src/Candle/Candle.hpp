@@ -49,17 +49,9 @@ class Candle
 		ICommunication::Settings settings;
 
 		if (baud == Baud::BAUD_8M)
-		{
 			settings.baudrate = 8000000;
-			settings.bitRateSwitch = 0x00100000U;
-			settings.fdFormat = 0x00200000U;
-		}
 		else
-		{
 			settings.baudrate = 1000000;
-			settings.bitRateSwitch = 0;
-			settings.fdFormat = 0;
-		}
 
 		return interface->setupInterface(settings);
 	}

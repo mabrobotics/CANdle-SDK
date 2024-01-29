@@ -34,8 +34,6 @@ class ICommunication
 	struct Settings
 	{
 		uint32_t baudrate;
-		uint32_t fdFormat;
-		uint32_t bitRateSwitch;
 	};
 #pragma pack(pop)
 	virtual ~ICommunication() = default;
