@@ -22,7 +22,8 @@ int main(int argc, char** argv)
 	app.add_subcommand("save", "Use to save the motor parameters");
 	app.add_subcommand("status", "Use to read motor status");
 	app.add_subcommand("home", "Use to run homing");
-	auto* chageID = app.add_subcommand("changeID", "Use to change ID");
+	auto* changeID = app.add_subcommand("changeID", "Use to change ID");
+	auto* changeBaud = app.add_subcommand("changeBaud", "Use to change baudrate ");
 
 	auto logger = spdlog::stdout_color_mt("console");
 	logger->set_pattern("[%^%l%$] %v");
@@ -47,7 +48,10 @@ int main(int argc, char** argv)
 	app.add_flag("-v,--verbose", verbose, "Use for verbose mode");
 
 	uint32_t newID = 0;
-	chageID->add_option("newid", newID, "new ID")->required();
+	changeID->add_option("newid", newID, "new ID")->required();
+
+	uint32_t newBaud = 1;
+	changeBaud->add_option("newBaud", newBaud, "new baud")->required();
 
 	uint32_t index = 0;
 	uint32_t subindex = 0;
@@ -123,6 +127,8 @@ int main(int argc, char** argv)
 		mdtool.home(id);
 	else if (app.got_subcommand("changeID"))
 		mdtool.changeId(id, newID);
+	else if (app.got_subcommand("changeBaud"))
+		mdtool.changeBaud(id, newBaud * 1000000);
 
 	return 0;
 }
