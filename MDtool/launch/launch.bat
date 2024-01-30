@@ -6,4 +6,4 @@
 :: C:\\msys64\\mingw64\\bin\\gdbserver.exe localhost:2000 ./build/MDtool/MDtool.exe --id 2 writeSDO 0x6075 0x00 10000 u32
 :: C:\\msys64\\mingw64\\bin\\gdbserver.exe localhost:2000 ./build/Examples/Examples.exe
 
-C:\\msys64\\mingw64\\bin\\gdbserver.exe localhost:2000 ./build/MDtool/MDtool.exe -i 2 status
+C:\\msys64\\mingw64\\bin\\gdbserver.exe localhost:2000 ./build/MDtool/MDtool.exe status

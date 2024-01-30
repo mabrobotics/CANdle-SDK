@@ -1,6 +1,8 @@
 #include "CandleInterface.hpp"
 
+#include <Deserializer.hpp>
 #include <algorithm>
+#include <chrono>
 #include <utility>
 
 CandleInterface::CandleInterface(IBusHandler* busHandler) : busHandler(busHandler)
@@ -17,7 +19,12 @@ bool CandleInterface::setupInterface(Settings& settings)
 	if (!sendSettingsFrame(settings))
 		return false;
 
-	if (!sendCommandFrame(Command::RESET_STATISTICS))
+	if (!sendCommandFrame(Command::GET_FIRMWARE_INFO))
+		return false;
+
+	if (!waitForActionWithTimeout([&]() -> bool
+								  { return newResponse == false; },
+								  10))
 		return false;
 
 	return true;
@@ -61,7 +68,9 @@ bool CandleInterface::sendCommandFrame(Command cmd)
 {
 	IBusHandler::BusFrame usbFrame{};
 	usbFrame.header.id = BusFrameId::COMMAND;
-	usbFrame.header.length = static_cast<uint8_t>(cmd);
+	usbFrame.header.length = 1;
+	usbFrame.payload[0] = static_cast<uint8_t>(cmd);
+	newResponse = false;
 	return busHandler->addToFifo(usbFrame);
 }
 
@@ -97,6 +106,39 @@ std::optional<ICommunication::CANFrame> CandleInterface::receiveCanFrame()
 		// 		  << (int)status.statistics.maxTxFifoOccupancyPercent << " "
 		// 		  << (int)status.busStatus << std::endl;
 	}
+	else if (frame->header.id == BusFrameId::COMMAND_RESPONSE)
+	{
+		newResponse = true;
+		processCommandResponse(static_cast<Command>(frame->payload[0]), frame->payload.begin() + 1);
+	}
 
 	return std::nullopt;
+}
+
+template <typename Iterator>
+void CandleInterface::processCommandResponse(Command responseForCommand, Iterator it)
+{
+	switch (responseForCommand)
+	{
+		case Command::GET_FIRMWARE_INFO:
+		{
+			firmwareInfo = deserialize<FirmwareInfo>(it);
+			break;
+		}
+		default:
+			break;
+	}
+}
+
+bool CandleInterface::waitForActionWithTimeout(std::function<bool()> condition, uint32_t timeoutMs)
+{
+	auto start_time = std::chrono::high_resolution_clock::now();
+	auto end_time = start_time + std::chrono::milliseconds(timeoutMs);
+
+	while (condition())
+	{
+		if (std::chrono::high_resolution_clock::now() >= end_time)
+			return false;
+	}
+	return true;
 }

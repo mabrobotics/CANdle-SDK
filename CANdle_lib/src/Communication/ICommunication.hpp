@@ -35,7 +35,9 @@ class ICommunication
 	{
 		uint32_t baudrate;
 	};
+
 #pragma pack(pop)
+
 	virtual ~ICommunication() = default;
 	virtual bool setupInterface(Settings& settings) = 0;
 	virtual Settings getSettings() const = 0;
@@ -44,6 +46,10 @@ class ICommunication
 
 	virtual Status getStatus() const = 0;
 	virtual bool reset() = 0;
+
+	virtual uint32_t getFirmwareVersion() const = 0;
+	virtual uint32_t getBuildDate() const = 0;
+	virtual std::array<uint8_t, 8> getCommitHash() const = 0;
 };
 
 #endif
