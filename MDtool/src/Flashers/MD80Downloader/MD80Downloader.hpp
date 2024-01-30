@@ -1,5 +1,5 @@
-#ifndef DOWNLOADER_H
-#define DOWNLOADER_H
+#ifndef MD80DOWNLOADER_H
+#define MD80DOWNLOADER_H
 
 #include <atomic>
 #include <cstdint>
@@ -12,7 +12,7 @@
 #include "IBusHandler.hpp"
 #include "spdlog/spdlog.h"
 
-class Downloader
+class MD80Downloader
 {
    public:
 	enum class Command : uint8_t
@@ -50,8 +50,8 @@ class Downloader
 		SAFE = 1,
 	};
 
-	Downloader(ICommunication* interface, spdlog::logger* logger);
-	~Downloader();
+	MD80Downloader(ICommunication* interface, spdlog::logger* logger);
+	~MD80Downloader();
 
 	Status doLoad(std::span<const uint8_t>&& firmwareData, uint32_t id, bool recover, uint32_t address, bool secondaryBootloader);
 

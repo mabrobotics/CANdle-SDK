@@ -5,7 +5,6 @@
 #include <unordered_map>
 
 #include "Candle.hpp"
-#include "Downloader.hpp"
 #include "UsbHandler.hpp"
 
 class Mdtool
@@ -16,6 +15,7 @@ class Mdtool
 	void ping();
 	bool updateMd80(std::string& filePath, uint32_t id, bool recover, bool all);
 	bool updateBootloader(std::string& filePath, uint32_t id, bool recover);
+	bool updateCANdle(std::string& filePath, bool recover);
 	bool readSDO(uint32_t id, uint16_t index, uint8_t subindex);
 	bool writeSDO(uint32_t id, uint16_t index, uint8_t subindex, const IODParser::ValueType& value);
 	bool calibrate(uint32_t id);

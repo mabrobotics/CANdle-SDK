@@ -4,6 +4,8 @@
 #include <utility>
 
 #include "BinaryParser.hpp"
+#include "CANdleDownloader.hpp"
+#include "MD80Downloader.hpp"
 #include "spdlog/fmt/ostr.h"
 
 namespace fmt
@@ -72,14 +74,14 @@ bool Mdtool::updateMd80(std::string& filePath, uint32_t id, bool recover, bool a
 		return false;
 	}
 
-	std::vector<std::pair<uint32_t, Downloader::Status>> ids = {};
+	std::vector<std::pair<uint32_t, MD80Downloader::Status>> ids = {};
 
 	if (all)
 	{
 		logger->info("Pinging drives at baudrate {}M...", static_cast<uint32_t>(baudrate));
 
 		for (auto id : candle->ping())
-			ids.push_back({id, Downloader::Status::OK});
+			ids.push_back({id, MD80Downloader::Status::OK});
 
 		if (ids.empty())
 			logger->info("No drives found!");
@@ -87,10 +89,10 @@ bool Mdtool::updateMd80(std::string& filePath, uint32_t id, bool recover, bool a
 			logger->info("Found {} drives!", ids.size());
 	}
 	else
-		ids.push_back({id, Downloader::Status::OK});
+		ids.push_back({id, MD80Downloader::Status::OK});
 
 	candle->deInit();
-	Downloader downloader(interface, logger);
+	MD80Downloader downloader(interface, logger);
 
 	for (auto& [id, status] : ids)
 	{
@@ -98,19 +100,19 @@ bool Mdtool::updateMd80(std::string& filePath, uint32_t id, bool recover, bool a
 		auto buffer = BinaryParser::getPrimaryFirmwareFile();
 		status = downloader.doLoad(std::span<uint8_t>(buffer), id, recover, 0, false);
 
-		if (status != Downloader::Status::OK)
+		if (status != MD80Downloader::Status::OK)
 			logger->error("Status: {}", static_cast<uint8_t>(status));
 	}
 
 	auto updateOk = std::count_if(ids.begin(), ids.end(),
 								  [](const auto& md80)
-								  { return md80.second == Downloader::Status::OK; });
+								  { return md80.second == MD80Downloader::Status::OK; });
 
 	logger->info("Update successful for {} drive(s)", updateOk);
 
 	for (auto md80 : ids)
 	{
-		if (md80.second == Downloader::Status::OK)
+		if (md80.second == MD80Downloader::Status::OK)
 			logger->info("ID {}", md80.first);
 	}
 
@@ -118,7 +120,7 @@ bool Mdtool::updateMd80(std::string& filePath, uint32_t id, bool recover, bool a
 
 	for (auto& [id, status] : ids)
 	{
-		if (status != Downloader::Status::OK)
+		if (status != MD80Downloader::Status::OK)
 			logger->error("ID {} with status {}", id, static_cast<uint8_t>(status));
 	}
 
@@ -158,21 +160,54 @@ bool Mdtool::updateBootloader(std::string& filePath, uint32_t id, bool recover)
 	}
 
 	candle->deInit();
-	Downloader downloader(interface, logger);
+	MD80Downloader downloader(interface, logger);
 
 	logger->info("Preparing to update the secondary bootloader of drive ID {}", id);
 	auto buffer = BinaryParser::getSecondaryFirmwareFile();
 	auto updateStatus = downloader.doLoad(std::span<uint8_t>(buffer), id, recover, secondaryBootloaderAddress, false);
 
-	if (updateStatus != Downloader::Status::OK)
+	if (updateStatus != MD80Downloader::Status::OK)
 		logger->error("Status: {}", static_cast<uint8_t>(updateStatus));
 
 	logger->info("Preparing to update the primary bootloader of drive ID {}", id);
 	buffer = BinaryParser::getPrimaryFirmwareFile();
 	updateStatus = downloader.doLoad(std::span<uint8_t>(buffer), id, recover, primaryBootloaderAddress, true);
 
-	if (updateStatus != Downloader::Status::OK)
+	if (updateStatus != MD80Downloader::Status::OK)
 		logger->error("Status: {}", static_cast<uint8_t>(updateStatus));
+
+	return true;
+}
+
+bool Mdtool::updateCANdle(std::string& filePath, bool recover)
+{
+	auto status = BinaryParser::processFile(filePath);
+
+	if (status == BinaryParser::Status::ERROR_FILE)
+	{
+		logger->error("Error opening file: {}", filePath);
+		return false;
+	}
+	else if (status != BinaryParser::Status::OK)
+	{
+		logger->error("Error while parsing firmware file! Error code: {}", static_cast<std::underlying_type<BinaryParser::Status>::type>(status));
+		return false;
+	}
+
+	if (BinaryParser::getFirmwareFileType() != BinaryParser::Type::CANDLE)
+	{
+		logger->error("Wrong file type! Please make sure the file is intended for CANdle communication dongle.");
+		return false;
+	}
+
+	candle->deInit();
+	CANdleDownloader downloader(interface->busHandler, logger);
+
+	auto buffer = BinaryParser::getPrimaryFirmwareFile();
+	auto downloadStatus = downloader.doLoad(std::span<uint8_t>(buffer), recover);
+
+	if (downloadStatus != CANdleDownloader::Status::OK)
+		logger->error("Status: {}", static_cast<uint8_t>(downloadStatus));
 
 	return true;
 }

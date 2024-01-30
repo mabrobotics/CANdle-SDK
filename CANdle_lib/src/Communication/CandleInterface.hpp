@@ -65,7 +65,6 @@ class CandleInterface : public ICommunication
 	}
 
    private:
-	IBusHandler* busHandler;
 	Settings settings{};
 	Status status{};
 	FirmwareInfo firmwareInfo{};

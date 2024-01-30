@@ -1,4 +1,4 @@
-#include "Downloader.hpp"
+#include "MD80Downloader.hpp"
 
 #include <algorithm>
 #include <functional>
@@ -9,19 +9,19 @@
 #include "Checksum/Checksum.hpp"
 #include "Communication/CandleInterface.hpp"
 
-Downloader::Downloader(ICommunication* interface, spdlog::logger* logger) : interface(interface), logger(logger)
+MD80Downloader::MD80Downloader(ICommunication* interface, spdlog::logger* logger) : interface(interface), logger(logger)
 {
-	receiveThread = std::thread(&Downloader::receiveHandler, this);
+	receiveThread = std::thread(&MD80Downloader::receiveHandler, this);
 }
 
-Downloader::~Downloader()
+MD80Downloader::~MD80Downloader()
 {
 	done = true;
 	if (receiveThread.joinable())
 		receiveThread.join();
 }
 
-Downloader::Status Downloader::doLoad(std::span<const uint8_t>&& firmwareData, uint32_t id, bool recover, uint32_t address, bool secondaryBootloader)
+MD80Downloader::Status MD80Downloader::doLoad(std::span<const uint8_t>&& firmwareData, uint32_t id, bool recover, uint32_t address, bool secondaryBootloader)
 {
 	deviceId = id;
 
@@ -85,7 +85,7 @@ Downloader::Status Downloader::doLoad(std::span<const uint8_t>&& firmwareData, u
 	return Status::OK;
 }
 
-void Downloader::receiveHandler()
+void MD80Downloader::receiveHandler()
 {
 	while (!done)
 	{
@@ -100,7 +100,7 @@ void Downloader::receiveHandler()
 	}
 }
 
-bool Downloader::waitForActionWithTimeout(std::function<bool()> condition, uint32_t timeoutMs)
+bool MD80Downloader::waitForActionWithTimeout(std::function<bool()> condition, uint32_t timeoutMs)
 {
 	auto start_time = std::chrono::high_resolution_clock::now();
 	auto end_time = start_time + std::chrono::milliseconds(timeoutMs);
@@ -116,7 +116,7 @@ bool Downloader::waitForActionWithTimeout(std::function<bool()> condition, uint3
 	return true;
 }
 
-bool Downloader::sendFrameWaitForResponse(ICommunication::CANFrame& frame, Response expectedResponse, uint32_t timeout)
+bool MD80Downloader::sendFrameWaitForResponse(ICommunication::CANFrame& frame, Response expectedResponse, uint32_t timeout)
 {
 	lastResponse = Response::NONE;
 	if (!interface->sendCanFrame(frame))
@@ -130,7 +130,7 @@ bool Downloader::sendFrameWaitForResponse(ICommunication::CANFrame& frame, Respo
 	return true;
 }
 
-bool Downloader::sendResetCmd()
+bool MD80Downloader::sendResetCmd()
 {
 	logger->debug("Resetting...");
 	ICommunication::CANFrame frame{};
@@ -141,7 +141,7 @@ bool Downloader::sendResetCmd()
 	return interface->sendCanFrame(frame);
 }
 
-bool Downloader::sendInitCmd(Command initCommand)
+bool MD80Downloader::sendInitCmd(Command initCommand)
 {
 	ICommunication::CANFrame frame{};
 	frame.header.canId = canIdCommand;
@@ -151,7 +151,7 @@ bool Downloader::sendInitCmd(Command initCommand)
 
 	return sendFrameWaitForResponse(frame, Response::HOST_INIT_OK, 500);
 }
-bool Downloader::doSendFirmware(std::span<const uint8_t> firmwareData)
+bool MD80Downloader::doSendFirmware(std::span<const uint8_t> firmwareData)
 {
 	const size_t ivSize = 16;
 	auto it = firmwareData.begin();
@@ -246,7 +246,7 @@ bool Downloader::doSendFirmware(std::span<const uint8_t> firmwareData)
 	return true;
 }
 
-bool Downloader::sendFirmware(std::span<const uint8_t> firmwareData)
+bool MD80Downloader::sendFirmware(std::span<const uint8_t> firmwareData)
 {
 	bool result = doSendFirmware(firmwareData);
 	if (!result)
@@ -254,7 +254,7 @@ bool Downloader::sendFirmware(std::span<const uint8_t> firmwareData)
 	return result;
 }
 
-bool Downloader::sendWriteCmd()
+bool MD80Downloader::sendWriteCmd()
 {
 	ICommunication::CANFrame frame{};
 	frame.header.canId = canIdCommand;
@@ -263,7 +263,7 @@ bool Downloader::sendWriteCmd()
 
 	return sendFrameWaitForResponse(frame, Response::PROG_OK, 3000);
 }
-bool Downloader::sendBootCmd()
+bool MD80Downloader::sendBootCmd()
 {
 	ICommunication::CANFrame frame{};
 	frame.header.canId = canIdCommand;
@@ -273,7 +273,7 @@ bool Downloader::sendBootCmd()
 	return sendFrameWaitForResponse(frame, Response::BOOT_OK, 100);
 }
 
-void Downloader::progressBar(float progress)
+void MD80Downloader::progressBar(float progress)
 {
 	if (progress > 1.0)
 		return;

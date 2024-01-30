@@ -5,8 +5,9 @@
 #include <chrono>
 #include <utility>
 
-CandleInterface::CandleInterface(IBusHandler* busHandler) : busHandler(busHandler)
+CandleInterface::CandleInterface(IBusHandler* busHandler)
 {
+	this->busHandler = busHandler;
 }
 
 bool CandleInterface::setupInterface(Settings& settings)

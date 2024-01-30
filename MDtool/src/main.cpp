@@ -1,7 +1,6 @@
 #include "CLI11.hpp"
 #include "Candle.hpp"
 #include "CandleInterface.hpp"
-#include "Downloader.hpp"
 #include "UsbHandler.hpp"
 #include "mdtool.hpp"
 #include "spdlog/fmt/ostr.h"
@@ -13,7 +12,7 @@ int main(int argc, char** argv)
 	CLI::App app{"MDtool"};
 	app.add_subcommand("ping", "Discovers all drives connected to CANdle");
 	auto* updateMD80 = app.add_subcommand("update_md80", "Use to update MD80");
-	app.add_subcommand("update_candle", "Use to update CANdle");
+	auto* updateCANdle = app.add_subcommand("update_candle", "Use to update CANdle");
 	auto* updateBootloader = app.add_subcommand("update_bootloader", "Use to update MD80 bootloader");
 
 	auto* readSDO = app.add_subcommand("readSDO", "Use to read SDO value");
@@ -42,11 +41,13 @@ int main(int argc, char** argv)
 	app.add_option("-i,--id", id, "ID of the drive")->check(CLI::Range(1, 31))->excludes(all_option);
 
 	std::string filePath;
-	updateMD80->add_option("-f,--file", filePath, "Update filename")->required();
-	updateBootloader->add_option("-f,--file", filePath, "Update filename")->required();
+	updateMD80->add_option("-f,--file", filePath, "Update filename (*.mab)")->required();
+	updateBootloader->add_option("-f,--file", filePath, "Update filename (*.mab)")->required();
+	updateCANdle->add_option("-f,--file", filePath, "Update filename (*.mab)")->required();
 
 	bool recover = false;
 	updateMD80->add_flag("-r,--recover", recover, "Use if the MD80 is already in bootloader mode");
+	updateCANdle->add_flag("-r,--recover", recover, "Use if CANdle is already in bootloader mode");
 
 	bool verbose = false;
 	app.add_flag("-v,--verbose", verbose, "Use for verbose mode");
@@ -117,6 +118,8 @@ int main(int argc, char** argv)
 		mdtool.updateMd80(filePath, id, recover, all);
 	else if (app.got_subcommand("update_bootloader"))
 		mdtool.updateBootloader(filePath, id, recover);
+	else if (app.got_subcommand("update_candle"))
+		mdtool.updateCANdle(filePath, recover);
 	else if (app.got_subcommand("readSDO"))
 		mdtool.readSDO(id, index, subindex);
 	else if (app.got_subcommand("writeSDO"))

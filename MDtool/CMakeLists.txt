@@ -17,16 +17,19 @@ set(SPDLOG_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/)
 set(PROJECT_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/mdtool.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/MD80_Flasher/Downloader/Downloader.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/MD80_Flasher/Checksum/Checksum.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Flashers/MD80Downloader/MD80Downloader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Flashers/CANdleDownloader/CANdleDownloader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Flashers/Checksum/Checksum.cpp)
 
 add_executable(${EXECUTABLE} ${PROJECT_SOURCES})
 
 target_include_directories(${EXECUTABLE} PRIVATE
 ${CMAKE_CURRENT_SOURCE_DIR}/
-${CMAKE_CURRENT_SOURCE_DIR}/src/MD80_Flasher/
-${CMAKE_CURRENT_SOURCE_DIR}/src/MD80_Flasher/Downloader/
-${CMAKE_CURRENT_SOURCE_DIR}/src/MD80_Flasher/BinaryParser/)
+${CMAKE_CURRENT_SOURCE_DIR}/src/Flashers/
+${CMAKE_CURRENT_SOURCE_DIR}/src/Flashers/CANdleDownloader/
+${CMAKE_CURRENT_SOURCE_DIR}/src/Flashers/MD80Downloader/
+${CMAKE_CURRENT_SOURCE_DIR}/src/Flashers/BinaryParser/
+${CMAKE_CURRENT_SOURCE_DIR}/src/Flashers/Checksum/)
 
 target_include_directories(${EXECUTABLE} SYSTEM PRIVATE
     ${CLI11_INCLUDE_DIR}
