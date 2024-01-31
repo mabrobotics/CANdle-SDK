@@ -15,7 +15,7 @@ UsbHandler::~UsbHandler()
 	deinit();
 }
 
-bool UsbHandler::init(uint16_t vid, uint16_t pid)
+bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode)
 {
 	if (isInitialized)
 		return false;
@@ -46,7 +46,8 @@ bool UsbHandler::init(uint16_t vid, uint16_t pid)
 			logger->error("Error claiming interface: {}", libusb_error_name(rc));
 	}
 
-	handlerThread = std::thread(&UsbHandler::dataHandler, this);
+	if (manualMode)
+		handlerThread = std::thread(&UsbHandler::dataHandler, this);
 
 	isInitialized = true;
 	return true;
@@ -159,4 +160,31 @@ void UsbHandler::copyElementsToOutputBuf(std::array<uint8_t, 1025>& buf, uint32_
 		sendLen = 65;
 	else if (sendLen % 64 == 0)
 		sendLen++;
+}
+
+bool UsbHandler::sendDataDirectly(std::span<uint8_t> data)
+{
+	/* TODO check sendLenActual */
+	int sendLenActual = 0;
+
+	if (int ret = libusb_bulk_transfer(devh, outEndpointAdr, data.data(), data.size(), &sendLenActual, 10) < 0)
+	{
+		logger->error("Error while sending: {}", ret);
+		return false;
+	}
+	return true;
+}
+
+bool UsbHandler::receiveDataDirectly(std::span<uint8_t>& data)
+{
+	/* TODO check receivedLen */
+	int receivedLen = 0;
+
+	if (int ret = libusb_bulk_transfer(devh, inEndpointAdr, data.data(), data.size(), &receivedLen, 1000) < 0)
+	{
+		logger->error("Error while receiving {}  transferred {}", ret, receivedLen);
+		return false;
+	}
+
+	return true;
 }

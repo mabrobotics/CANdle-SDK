@@ -2,6 +2,7 @@
 #define _USBHANDLER_HPP
 
 #include <atomic>
+#include <span>
 #include <thread>
 
 #include "CircularBuffer.hpp"
@@ -19,7 +20,9 @@ class UsbHandler : public IBusHandler
 	std::optional<IBusHandler::BusFrame> getFromFifo() const override;
 	bool addToFifo(BusFrame& busFrame) override;
 
-	bool init(uint16_t vid, uint16_t pid);
+	bool init(uint16_t vid, uint16_t pid, bool manualMode = false);
+	bool sendDataDirectly(std::span<uint8_t> data);
+	bool receiveDataDirectly(std::span<uint8_t>& data);
 
    private:
 	static constexpr uint16_t VID = 105;

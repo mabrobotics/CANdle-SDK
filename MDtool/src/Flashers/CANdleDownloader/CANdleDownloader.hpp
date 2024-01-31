@@ -47,7 +47,7 @@ class CANdleDownloader
 	std::thread receiveThread;
 
 	std::atomic<bool> response = false;
-	std::atomic<BootloaderFrameId> expectedId = BootloaderFrameId::NONE;
+	std::atomic<uint8_t> expectedId = BootloaderFrameId::NONE;
 
    private:
 	void receiveHandler();
@@ -55,6 +55,7 @@ class CANdleDownloader
 
 	bool sendResetCmd();
 	bool sendInitCmd();
+	bool sendPage();
 };
 
 #endif

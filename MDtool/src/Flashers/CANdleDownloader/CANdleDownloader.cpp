@@ -45,14 +45,20 @@ CANdleDownloader::Status CANdleDownloader::doLoad(std::span<const uint8_t>&& fir
 		return Status::ERROR_INIT;
 
 	logger->debug("Init bootloder OK");
-
 	receiveThread = std::thread(&CANdleDownloader::receiveHandler, this);
-
 	auto success = sendInitCmd();
 
-	waitForActionWithTimeout([&]() -> bool
-							 { return response == false; },
-							 100);
+	if (!waitForActionWithTimeout([&]() -> bool
+								  { return response; },
+								  100))
+		return Status::ERROR_INIT;
+
+	success = sendPage();
+
+	if (!waitForActionWithTimeout([&]() -> bool
+								  { return response; },
+								  100))
+		return Status::ERROR_INIT;
 
 	logger->debug("Boot OK");
 	return Status::OK;
@@ -60,18 +66,16 @@ CANdleDownloader::Status CANdleDownloader::doLoad(std::span<const uint8_t>&& fir
 
 void CANdleDownloader::receiveHandler()
 {
+	std::array<uint8_t, 3> buf;
+	std::span<uint8_t> data(buf.data(), buf.size());
+
 	while (!done)
 	{
-		auto frame = usbHandler->getFromFifo();
-
-		if (!frame.has_value())
+		if (!usbHandler->receiveDataDirectly(data))
 			continue;
 
-		auto busFrame = frame.value();
-
-		auto id = static_cast<BootloaderFrameId>(busFrame.header.id);
-
-		if (id == expectedId && busFrame.header.length == 'O')
+		auto id = static_cast<BootloaderFrameId>(data[0]);
+		if (id == expectedId && data[1] == 'O' && data[2] == 'K')
 			response = true;
 	}
 }
@@ -104,10 +108,30 @@ bool CANdleDownloader::sendResetCmd()
 
 bool CANdleDownloader::sendInitCmd()
 {
+	std::array<uint8_t, 3> buf;
+	std::span<uint8_t> data(buf.data(), buf.size());
+
 	response = false;
-	IBusHandler::BusFrame frame{};
-	frame.header.id = 100;
-	frame.header.length = 1;
-	frame.payload[0] = 100;
-	return usbHandler->addToFifo(frame);
+	expectedId = 100;
+
+	buf[0] = 100;
+	buf[1] = 0xaa;
+	buf[2] = 0xaa;
+
+	return usbHandler->sendDataDirectly(data);
+}
+
+bool CANdleDownloader::sendPage()
+{
+	std::array<uint8_t, 3> buf;
+	std::span<uint8_t> data(buf.data(), buf.size());
+
+	response = false;
+	expectedId = 100;
+
+	buf[0] = 101;
+	buf[1] = 0xaa;
+	buf[2] = 0xaa;
+
+	return usbHandler->sendDataDirectly(data);
 }
