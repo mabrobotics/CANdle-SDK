@@ -46,7 +46,7 @@ bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode)
 			logger->error("Error claiming interface: {}", libusb_error_name(rc));
 	}
 
-	if (manualMode)
+	if (!manualMode)
 		handlerThread = std::thread(&UsbHandler::dataHandler, this);
 
 	isInitialized = true;

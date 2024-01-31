@@ -41,7 +41,7 @@ CANdleDownloader::Status CANdleDownloader::doLoad(std::span<const uint8_t>&& fir
 
 	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-	if (!usbHandler->init(0x0069, 0x2000))
+	if (!usbHandler->init(0x0069, 0x2000, true))
 		return Status::ERROR_INIT;
 
 	logger->debug("Init bootloder OK");
