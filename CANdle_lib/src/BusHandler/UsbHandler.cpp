@@ -12,21 +12,14 @@ UsbHandler::UsbHandler(spdlog::logger* logger) : logger(logger)
 
 UsbHandler::~UsbHandler()
 {
-	done = true;
-	if (handlerThread.joinable())
-		handlerThread.join();
-
-	if (devh)
-	{
-		libusb_release_interface(devh, 0);
-		libusb_close(devh);
-	}
-
-	libusb_exit(NULL);
+	deinit();
 }
 
-bool UsbHandler::init()
+bool UsbHandler::init(uint16_t vid, uint16_t pid)
 {
+	if (isInitialized)
+		return false;
+
 	int rc = libusb_init(NULL);
 	if (rc < 0)
 	{
@@ -34,7 +27,7 @@ bool UsbHandler::init()
 		return false;
 	}
 
-	devh = libusb_open_device_with_vid_pid(NULL, VID, PID);
+	devh = libusb_open_device_with_vid_pid(NULL, vid, pid);
 
 	if (!devh)
 	{
@@ -55,6 +48,30 @@ bool UsbHandler::init()
 
 	handlerThread = std::thread(&UsbHandler::dataHandler, this);
 
+	isInitialized = true;
+	return true;
+}
+
+bool UsbHandler::init()
+{
+	return init(VID, PID);
+}
+
+bool UsbHandler::deinit()
+{
+	done = true;
+	if (handlerThread.joinable())
+		handlerThread.join();
+
+	if (devh)
+	{
+		libusb_release_interface(devh, 0);
+		libusb_close(devh);
+	}
+
+	libusb_exit(NULL);
+
+	isInitialized = false;
 	return true;
 }
 

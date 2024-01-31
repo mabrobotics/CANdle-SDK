@@ -10,7 +10,7 @@ CandleInterface::CandleInterface(IBusHandler* busHandler)
 	this->busHandler = busHandler;
 }
 
-bool CandleInterface::setupInterface(Settings& settings)
+bool CandleInterface::init(Settings& settings)
 {
 	this->settings = settings;
 
@@ -29,6 +29,11 @@ bool CandleInterface::setupInterface(Settings& settings)
 		return false;
 
 	return true;
+}
+
+bool CandleInterface::deinit()
+{
+	return busHandler->deinit();
 }
 
 ICommunication::Settings CandleInterface::getSettings() const

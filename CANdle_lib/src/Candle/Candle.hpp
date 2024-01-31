@@ -53,7 +53,7 @@ class Candle
 		else
 			settings.baudrate = 1000000;
 
-		return interface->setupInterface(settings);
+		return interface->init(settings);
 	}
 
 	void deInit()
@@ -63,6 +63,8 @@ class Candle
 			receiveThread.join();
 		if (transmitThread.joinable())
 			transmitThread.join();
+
+		interface->deinit();
 	}
 
 	void setSendSync(bool state, uint32_t intervalUs)

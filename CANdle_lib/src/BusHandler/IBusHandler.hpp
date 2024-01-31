@@ -23,6 +23,7 @@ class IBusHandler
 	virtual ~IBusHandler() = default;
 
 	virtual bool init() = 0;
+	virtual bool deinit() = 0;
 	virtual std::optional<BusFrame> getFromFifo() const = 0;
 	virtual bool addToFifo(BusFrame& busFrame) = 0;
 };

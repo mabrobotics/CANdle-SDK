@@ -43,7 +43,8 @@ class CandleInterface : public ICommunication
 
 	explicit CandleInterface(IBusHandler* busHandler);
 
-	bool setupInterface(Settings& settings) override;
+	bool init(Settings& settings) override;
+	bool deinit() override;
 	Settings getSettings() const override;
 	bool sendCanFrame(const CANFrame& canFrame) override;
 	std::optional<CANFrame> receiveCanFrame() override;

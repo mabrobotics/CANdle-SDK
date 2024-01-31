@@ -8,30 +8,20 @@
 #include <span>
 #include <thread>
 
+#include "BusHandler/UsbHandler.hpp"
 #include "Communication/CandleInterface.hpp"
-#include "IBusHandler.hpp"
 #include "spdlog/spdlog.h"
 
 class CANdleDownloader
 {
    public:
-	enum class Command : uint8_t
+	enum BootloaderFrameId
 	{
-		HOST_INIT = 0xA0,
-		HOST_INIT_SECONDARY = 0xA9,
-		PROG = 0xA1,
-		BOOT = 0xA2,
-		CHECK_CRC = 0xA3
-	};
-
-	enum class Response : uint8_t
-	{
-		NONE = 0x00,
-		HOST_INIT_OK = 0xB0,
-		PROG_OK = 0xB1,
-		BOOT_OK = 0xB2,
-		CRC_OK = 0xB3,
-		CHUNK_OK = 0xB4,
+		NONE = 0,
+		CHECK_ENTERED = 100,
+		SEND_PAGE = 101,
+		WRITE_PAGE = 102,
+		BOOT_TO_APP = 103,
 	};
 
 	enum class Status : uint8_t
@@ -44,25 +34,27 @@ class CANdleDownloader
 		ERROR_BOOT = 5,
 	};
 
-	CANdleDownloader(IBusHandler* busHandler, spdlog::logger* logger);
+	CANdleDownloader(spdlog::logger* logger);
 	~CANdleDownloader();
 
 	Status doLoad(std::span<const uint8_t>&& firmwareData, bool recover);
 
    private:
-	IBusHandler* busHandler;
+	std::unique_ptr<UsbHandler> usbHandler;
 	spdlog::logger* logger;
 
 	std::atomic<bool> done = false;
 	std::thread receiveThread;
 
+	std::atomic<bool> response = false;
+	std::atomic<BootloaderFrameId> expectedId = BootloaderFrameId::NONE;
+
    private:
 	void receiveHandler();
 	bool waitForActionWithTimeout(std::function<bool()> condition, uint32_t timeoutMs);
-	bool sendFrameWaitForResponse(ICommunication::CANFrame& frame, Response expectedResponse, uint32_t timeout);
 
 	bool sendResetCmd();
-	bool sendInitCmd(Command initCommand);
+	bool sendInitCmd();
 };
 
 #endif

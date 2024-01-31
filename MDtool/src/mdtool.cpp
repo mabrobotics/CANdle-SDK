@@ -29,15 +29,19 @@ struct formatter<std::array<T, N>> : formatter<std::string_view>
 };
 }  // namespace fmt
 
+Mdtool::Mdtool(spdlog::logger* logger)
+{
+	this->logger = logger;
+}
+
 Mdtool::~Mdtool()
 {
 	candle->deInit();
 }
 
-bool Mdtool::init(ICommunication* interface, spdlog::logger* logger, Candle::Baud baud)
+bool Mdtool::init(ICommunication* interface, Candle::Baud baud)
 {
 	logger->debug("Initalizing...");
-	this->logger = logger;
 	this->interface = interface;
 	this->baudrate = baud;
 	candle = std::make_unique<Candle>(interface, logger);
@@ -200,8 +204,7 @@ bool Mdtool::updateCANdle(std::string& filePath, bool recover)
 		return false;
 	}
 
-	candle->deInit();
-	CANdleDownloader downloader(interface->busHandler, logger);
+	CANdleDownloader downloader(logger);
 
 	auto buffer = BinaryParser::getPrimaryFirmwareFile();
 	auto downloadStatus = downloader.doLoad(std::span<uint8_t>(buffer), recover);

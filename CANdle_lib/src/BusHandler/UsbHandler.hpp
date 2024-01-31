@@ -15,12 +15,15 @@ class UsbHandler : public IBusHandler
 	~UsbHandler();
 
 	bool init() override;
+	bool deinit() override;
 	std::optional<IBusHandler::BusFrame> getFromFifo() const override;
 	bool addToFifo(BusFrame& busFrame) override;
 
+	bool init(uint16_t vid, uint16_t pid);
+
    private:
-	static constexpr int VID = 105;
-	static constexpr int PID = 4096;
+	static constexpr uint16_t VID = 105;
+	static constexpr uint16_t PID = 4096;
 	static constexpr int inEndpointAdr = 0x81;
 	static constexpr int outEndpointAdr = 0x01;
 	struct libusb_device_handle* devh = NULL;
@@ -28,9 +31,8 @@ class UsbHandler : public IBusHandler
 	CircularBuffer<BusFrame, 50> toUsbBuffer;
 	CircularBuffer<BusFrame, 50> fromUsbBuffer;
 	std::thread handlerThread;
-
-   private:
 	spdlog::logger* logger;
+	bool isInitialized = false;
 
    private:
 	void dataHandler();

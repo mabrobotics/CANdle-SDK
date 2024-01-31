@@ -40,7 +40,7 @@ int main(int argc, char** argv)
 	while (1)
 	{
 		md80->setPositionTarget(5 * sin(x));
-		std::cout << md80->getOutputPosition() << "   " << md80->getOutputVelocity() << " setpoint pos: " << 20 * sin(x) << std::endl;
+		// std::cout << md80->getOutputPosition() << "   " << md80->getOutputVelocity() << " setpoint pos: " << 20 * sin(x) << std::endl;
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
 		x += 0.01;

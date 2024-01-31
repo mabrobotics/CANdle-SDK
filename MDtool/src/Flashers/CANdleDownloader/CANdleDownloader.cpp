@@ -5,12 +5,11 @@
 #include <thread>
 #include <utility>
 
-#include "BusHandler/IBusHandler.hpp"
+#include "BusHandler/UsbHandler.hpp"
 #include "Checksum/Checksum.hpp"
 
-CANdleDownloader::CANdleDownloader(IBusHandler* busHandler, spdlog::logger* logger) : busHandler(busHandler), logger(logger)
+CANdleDownloader::CANdleDownloader(spdlog::logger* logger) : logger(logger)
 {
-	receiveThread = std::thread(&CANdleDownloader::receiveHandler, this);
 }
 
 CANdleDownloader::~CANdleDownloader()
@@ -24,43 +23,36 @@ CANdleDownloader::Status CANdleDownloader::doLoad(std::span<const uint8_t>&& fir
 {
 	if (!recover)
 	{
+		usbHandler = std::make_unique<UsbHandler>(logger);
+
+		if (!usbHandler->init())
+			return Status::ERROR_INIT;
+
 		if (!sendResetCmd())
 			return Status::ERROR_RESET;
 
 		logger->debug("Reset OK");
 	}
 
-	// bool success = false;
-	// auto initCommand = secondaryBootloader ? Command::HOST_INIT_SECONDARY : Command::HOST_INIT;
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-	// if (secondaryBootloader)
-	// 	bootAddress = 0x8000000;
+	usbHandler.reset();
+	usbHandler = std::make_unique<UsbHandler>(logger);
 
-	// while (recover && !success)
-	// 	success = sendInitCmd(initCommand);
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-	// if (!recover)
-	// {
-	// 	for (int i = 0; i < 10; i++)
-	// 	{
-	// 		success = sendInitCmd(initCommand);
-	// 		if (success)
-	// 			break;
-	// 	}
-	// }
+	if (!usbHandler->init(0x0069, 0x2000))
+		return Status::ERROR_INIT;
 
-	// if (!success)
-	// 	return Status::ERROR_INIT;
+	logger->debug("Init bootloder OK");
 
-	// logger->debug("Init OK");
+	receiveThread = std::thread(&CANdleDownloader::receiveHandler, this);
 
-	// if (!sendFirmware(firmwareData))
-	// 	return Status::ERROR_FIRMWARE;
+	auto success = sendInitCmd();
 
-	// logger->debug("Firmware OK");
-
-	// if (!sendBootCmd())
-	// 	return Status::ERROR_BOOT;
+	waitForActionWithTimeout([&]() -> bool
+							 { return response == false; },
+							 100);
 
 	logger->debug("Boot OK");
 	return Status::OK;
@@ -70,14 +62,17 @@ void CANdleDownloader::receiveHandler()
 {
 	while (!done)
 	{
-		auto frame = busHandler->getFromFifo();
+		auto frame = usbHandler->getFromFifo();
 
 		if (!frame.has_value())
 			continue;
 
-		// auto canFrame = frame.value();
-		// if (canFrame.header.canId == canIdResponse && canFrame.header.length == 5)
-		// 	lastResponse = static_cast<Response>(canFrame.payload[0]);
+		auto busFrame = frame.value();
+
+		auto id = static_cast<BootloaderFrameId>(busFrame.header.id);
+
+		if (id == expectedId && busFrame.header.length == 'O')
+			response = true;
 	}
 }
 
@@ -97,11 +92,6 @@ bool CANdleDownloader::waitForActionWithTimeout(std::function<bool()> condition,
 	return true;
 }
 
-bool CANdleDownloader::sendFrameWaitForResponse(ICommunication::CANFrame& frame, Response expectedResponse, uint32_t timeout)
-{
-	return true;
-}
-
 bool CANdleDownloader::sendResetCmd()
 {
 	logger->debug("Resetting...");
@@ -109,10 +99,15 @@ bool CANdleDownloader::sendResetCmd()
 	IBusHandler::BusFrame frame{};
 	frame.header.id = 10;
 	frame.header.length = 1;
-	return busHandler->addToFifo(frame);
+	return usbHandler->addToFifo(frame);
 }
 
-bool CANdleDownloader::sendInitCmd(Command initCommand)
+bool CANdleDownloader::sendInitCmd()
 {
-	return true;
+	response = false;
+	IBusHandler::BusFrame frame{};
+	frame.header.id = 100;
+	frame.header.length = 1;
+	frame.payload[0] = 100;
+	return usbHandler->addToFifo(frame);
 }

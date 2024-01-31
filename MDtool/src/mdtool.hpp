@@ -10,8 +10,11 @@
 class Mdtool
 {
    public:
+	Mdtool() = delete;
+	Mdtool(spdlog::logger* logger);
 	~Mdtool();
-	bool init(ICommunication* interface, spdlog::logger* logger, Candle::Baud baud);
+
+	bool init(ICommunication* interface, Candle::Baud baud);
 	void ping();
 	bool updateMd80(std::string& filePath, uint32_t id, bool recover, bool all);
 	bool updateBootloader(std::string& filePath, uint32_t id, bool recover);
