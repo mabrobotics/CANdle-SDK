@@ -53,12 +53,7 @@ CANdleDownloader::Status CANdleDownloader::doLoad(std::span<const uint8_t>&& fir
 								  100))
 		return Status::ERROR_INIT;
 
-	success = sendPage();
-
-	if (!waitForActionWithTimeout([&]() -> bool
-								  { return response; },
-								  100))
-		return Status::ERROR_INIT;
+	sendFirmware(firmwareData);
 
 	logger->debug("Boot OK");
 	return Status::OK;
@@ -76,7 +71,10 @@ void CANdleDownloader::receiveHandler()
 
 		auto id = static_cast<BootloaderFrameId>(data[0]);
 		if (id == expectedId && data[1] == 'O' && data[2] == 'K')
+		{
+			logger->debug("OK reveiced!");
 			response = true;
+		}
 	}
 }
 
@@ -121,17 +119,90 @@ bool CANdleDownloader::sendInitCmd()
 	return usbHandler->sendDataDirectly(data);
 }
 
-bool CANdleDownloader::sendPage()
+bool CANdleDownloader::sendPageCmd(std::span<const uint8_t> payload)
 {
-	std::array<uint8_t, 3> buf;
-	std::span<uint8_t> data(buf.data(), buf.size());
+	constexpr size_t headerSize = 3;
+	std::array<uint8_t, 2051> buf;
+	std::span<uint8_t> data(buf.data(), payload.size() + headerSize);
 
 	response = false;
-	expectedId = 100;
+	expectedId = 101;
 
 	buf[0] = 101;
 	buf[1] = 0xaa;
 	buf[2] = 0xaa;
 
+	std::copy(payload.begin(), payload.end(), &buf[headerSize]);
 	return usbHandler->sendDataDirectly(data);
+}
+
+bool CANdleDownloader::sendCheckCRCAndWriteCmd(std::span<const uint8_t> firmwareChunk)
+{
+	constexpr size_t headerSize = 3;
+	std::array<uint8_t, 7> buf;
+	std::span<uint8_t> data(buf.data(), buf.size());
+
+	auto calculatedCrc = Checksum::crc32(&*firmwareChunk.begin(), firmwareChunk.size());
+	serialize(calculatedCrc, &buf[headerSize]);
+
+	response = false;
+	expectedId = 102;
+
+	buf[0] = 102;
+	buf[1] = 0xaa;
+	buf[2] = 0xaa;
+
+	return usbHandler->sendDataDirectly(data);
+}
+
+bool CANdleDownloader::sendFirmware(std::span<const uint8_t> firmwareData)
+{
+	auto it = firmwareData.begin();
+	const size_t chunkSize = 1024;
+	const size_t pageSize = 2048;
+
+	size_t size = firmwareData.size();
+	size_t remainingSize = size;
+	logger->debug("Binary size: {}", size);
+	float progress = 0.0f;
+
+	/* then proceed with the rest of the firmware*/
+	for (size_t i = 0; i <= size; i += pageSize)
+	{
+		auto begin = it;
+
+		for (size_t j = 0; j < pageSize / chunkSize; j++)
+		{
+			std::span<const uint8_t> firmwareChunk(it, chunkSize);
+			sendPageCmd(firmwareChunk);
+
+			if (!waitForActionWithTimeout([&]() -> bool
+										  { return !response; },
+										  100))
+				return false;
+
+			it += chunkSize;
+		}
+
+		sendCheckCRCAndWriteCmd(std::span<const uint8_t>(begin, pageSize));
+
+		if (!waitForActionWithTimeout([&]() -> bool
+									  { return !response; },
+									  100))
+			return false;
+
+		logger->debug("sent: {} bytes", it - begin);
+	}
+
+	// progressBar(1.0f);
+	// if (mode == Mode::SAFE)
+	// {
+	// 	if (!sendWriteCmd())
+	// 	{
+	// 		logger->error("Programming failed!");
+	// 		return false;
+	// 	}
+	// }
+
+	return true;
 }

@@ -55,7 +55,9 @@ class CANdleDownloader
 
 	bool sendResetCmd();
 	bool sendInitCmd();
-	bool sendPage();
+	bool sendPageCmd(std::span<const uint8_t> payload);
+	bool sendFirmware(std::span<const uint8_t> firmwareData);
+	bool sendCheckCRCAndWriteCmd(std::span<const uint8_t> firmwareChunk);
 };
 
 #endif
