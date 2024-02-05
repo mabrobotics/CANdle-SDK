@@ -15,10 +15,10 @@ UsbHandler::~UsbHandler()
 	deinit();
 }
 
-bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode)
+bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode, bool deviceNotFoundError)
 {
 	if (isInitialized)
-		return false;
+		return true;
 
 	int rc = libusb_init(NULL);
 	if (rc < 0)
@@ -31,7 +31,8 @@ bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode)
 
 	if (!devh)
 	{
-		logger->error("Error finding USB device");
+		if (deviceNotFoundError)
+			logger->error("Error finding USB device");
 		return false;
 	}
 
@@ -85,6 +86,8 @@ bool UsbHandler::addToFifo(BusFrame& busFrame)
 {
 	if (toUsbBuffer.full())
 		return false;
+
+	outputFifoEmpty = false;
 	toUsbBuffer.put(busFrame);
 	return true;
 }
@@ -144,7 +147,10 @@ void UsbHandler::copyElementsToOutputBuf(std::array<uint8_t, 1025>& buf, uint32_
 	{
 		auto elem = toUsbBuffer.get();
 		if (!elem.has_value())
+		{
+			outputFifoEmpty = true;
 			break;
+		}
 
 		auto usbEntry = elem.value();
 		auto usbFrameArray = bit_cast_<std::array<uint8_t, sizeof(BusFrame)>>(usbEntry);
@@ -187,4 +193,9 @@ bool UsbHandler::receiveDataDirectly(std::span<uint8_t>& data)
 	}
 
 	return true;
+}
+
+bool UsbHandler::isOutputFifoEmpty() const
+{
+	return outputFifoEmpty;
 }

@@ -32,34 +32,34 @@ CANdleDownloader::Status CANdleDownloader::doLoad(std::span<const uint8_t>&& fir
 			return Status::ERROR_RESET;
 
 		logger->debug("Reset OK");
-	}
 
-	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		while (!usbHandler->isOutputFifoEmpty())
+			;
+	}
 
 	usbHandler.reset();
 	usbHandler = std::make_unique<UsbHandler>(logger);
 
-	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	for (size_t i = 0; i < 100; i++)
+	{
+		if (usbHandler->init(BOOTLOADER_VID, BOOTLOADER_PID, true, false))
+			break;
+	}
 
-	if (!usbHandler->init(0x0069, 0x2000, true))
+	if (!usbHandler->init(BOOTLOADER_VID, BOOTLOADER_PID, true))
 		return Status::ERROR_INIT;
 
 	logger->debug("Init bootloder OK");
 	receiveThread = std::thread(&CANdleDownloader::receiveHandler, this);
-	auto success = sendInitCmd();
 
-	if (!waitForActionWithTimeout([&]() -> bool
-								  { return response; },
-								  100))
+	if (!executeAndWaitForResponse([&]()
+								   { sendInitCmd(); }))
 		return Status::ERROR_INIT;
 
 	sendFirmware(firmwareData);
 
-	sendBootCmd();
-
-	if (!waitForActionWithTimeout([&]() -> bool
-								  { return response; },
-								  100))
+	if (!executeAndWaitForResponse([&]()
+								   { sendBootCmd(); }))
 		return Status::ERROR_BOOT;
 
 	logger->debug("Boot OK");
@@ -79,7 +79,7 @@ void CANdleDownloader::receiveHandler()
 		auto id = static_cast<BootloaderFrameId>(data[0]);
 		if (id == expectedId && data[1] == 'O' && data[2] == 'K')
 		{
-			logger->debug("OK reveiced!");
+			logger->debug("OK received!");
 			response = true;
 		}
 	}
@@ -94,7 +94,7 @@ bool CANdleDownloader::waitForActionWithTimeout(std::function<bool()> condition,
 	{
 		if (std::chrono::high_resolution_clock::now() >= end_time)
 		{
-			logger->debug("Timeout!");
+			logger->warn("Timeout!");
 			return false;
 		}
 	}
@@ -180,25 +180,22 @@ bool CANdleDownloader::sendFirmware(std::span<const uint8_t> firmwareData)
 
 		for (size_t j = 0; j < pageSize / chunkSize; j++)
 		{
-			std::span<const uint8_t> firmwareChunk(it, chunkSize);
-			sendPageCmd(firmwareChunk);
+			auto sizeToSend = remainingSize > chunkSize ? chunkSize : remainingSize;
+			std::span<const uint8_t> firmwareChunk(it, sizeToSend);
 
-			if (!waitForActionWithTimeout([&]() -> bool
-										  { return !response; },
-										  100))
+			if (!executeAndWaitForResponse([&]()
+										   { sendPageCmd(firmwareChunk); }))
 				return false;
 
-			it += chunkSize;
+			remainingSize -= sizeToSend;
+			it += sizeToSend;
 		}
 
-		sendCheckCRCAndWriteCmd(std::span<const uint8_t>(begin, pageSize));
-
-		if (!waitForActionWithTimeout([&]() -> bool
-									  { return !response; },
-									  100))
+		if (!executeAndWaitForResponse([&]()
+									   { sendCheckCRCAndWriteCmd(std::span<const uint8_t>(begin, pageSize)); }))
 			return false;
 
-		logger->debug("sent: {} bytes", it - begin);
+		logger->debug("sent: {} bytes, remainingSize {}", it - begin, remainingSize);
 	}
 
 	// progressBar(1.0f);
@@ -227,4 +224,14 @@ bool CANdleDownloader::sendBootCmd()
 	buf[2] = 0xaa;
 
 	return usbHandler->sendDataDirectly(data);
+}
+
+bool CANdleDownloader::executeAndWaitForResponse(std::function<void()> function)
+{
+	if (function)
+		function();
+
+	return waitForActionWithTimeout([&]() -> bool
+									{ return !response; },
+									100);
 }

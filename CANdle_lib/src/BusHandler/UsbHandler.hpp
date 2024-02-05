@@ -20,17 +20,20 @@ class UsbHandler : public IBusHandler
 	std::optional<IBusHandler::BusFrame> getFromFifo() const override;
 	bool addToFifo(BusFrame& busFrame) override;
 
-	bool init(uint16_t vid, uint16_t pid, bool manualMode = false);
+	bool init(uint16_t vid, uint16_t pid, bool manualMode = false, bool deviceNotFoundError = true);
 	bool sendDataDirectly(std::span<uint8_t> data);
 	bool receiveDataDirectly(std::span<uint8_t>& data);
 
+	bool isOutputFifoEmpty() const;
+
    private:
-	static constexpr uint16_t VID = 105;
-	static constexpr uint16_t PID = 4096;
+	static constexpr uint16_t VID = 0x0069;
+	static constexpr uint16_t PID = 0x1000;
 	static constexpr int inEndpointAdr = 0x81;
 	static constexpr int outEndpointAdr = 0x01;
 	struct libusb_device_handle* devh = NULL;
 	std::atomic<bool> done;
+	std::atomic<bool> outputFifoEmpty;
 	CircularBuffer<BusFrame, 50> toUsbBuffer;
 	CircularBuffer<BusFrame, 50> fromUsbBuffer;
 	std::thread handlerThread;

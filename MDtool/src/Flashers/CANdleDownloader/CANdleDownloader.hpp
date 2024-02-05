@@ -40,6 +40,9 @@ class CANdleDownloader
 	Status doLoad(std::span<const uint8_t>&& firmwareData, bool recover);
 
    private:
+	static constexpr uint16_t BOOTLOADER_VID = 0x0069;
+	static constexpr uint16_t BOOTLOADER_PID = 0x2000;
+
 	std::unique_ptr<UsbHandler> usbHandler;
 	spdlog::logger* logger;
 
@@ -59,6 +62,8 @@ class CANdleDownloader
 	bool sendFirmware(std::span<const uint8_t> firmwareData);
 	bool sendCheckCRCAndWriteCmd(std::span<const uint8_t> firmwareChunk);
 	bool sendBootCmd();
+
+	bool executeAndWaitForResponse(std::function<void()> function);
 };
 
 #endif
