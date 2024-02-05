@@ -55,6 +55,13 @@ CANdleDownloader::Status CANdleDownloader::doLoad(std::span<const uint8_t>&& fir
 
 	sendFirmware(firmwareData);
 
+	sendBootCmd();
+
+	if (!waitForActionWithTimeout([&]() -> bool
+								  { return response; },
+								  100))
+		return Status::ERROR_BOOT;
+
 	logger->debug("Boot OK");
 	return Status::OK;
 }
@@ -205,4 +212,19 @@ bool CANdleDownloader::sendFirmware(std::span<const uint8_t> firmwareData)
 	// }
 
 	return true;
+}
+
+bool CANdleDownloader::sendBootCmd()
+{
+	std::array<uint8_t, 3> buf;
+	std::span<uint8_t> data(buf.data(), buf.size());
+
+	response = false;
+	expectedId = 103;
+
+	buf[0] = 103;
+	buf[1] = 0xaa;
+	buf[2] = 0xaa;
+
+	return usbHandler->sendDataDirectly(data);
 }
