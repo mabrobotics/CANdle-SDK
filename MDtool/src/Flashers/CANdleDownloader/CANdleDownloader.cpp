@@ -22,6 +22,15 @@ CANdleDownloader::~CANdleDownloader()
 
 CANdleDownloader::Status CANdleDownloader::doLoad(std::span<const uint8_t>&& firmwareData, bool recover)
 {
+	auto status = perform(std::forward<std::span<const uint8_t>>(firmwareData), recover);
+	/* we have to remember about newline or the progress bar will be overwritten */
+	if (status == Status::OK)
+		std::cout << std::endl;
+	return status;
+}
+
+CANdleDownloader::Status CANdleDownloader::perform(std::span<const uint8_t>&& firmwareData, bool recover)
+{
 	if (!recover)
 	{
 		usbHandler = std::make_unique<UsbHandler>(logger);
@@ -50,8 +59,7 @@ CANdleDownloader::Status CANdleDownloader::doLoad(std::span<const uint8_t>&& fir
 	logger->debug("Init bootloder OK");
 	receiveThread = std::thread(&CANdleDownloader::receiveHandler, this);
 
-	if (!executeAndWaitForResponse([&]()
-								   { sendInitCmd(); }))
+	if (!sendInitCmd() || !waitForResponse())
 		return Status::ERROR_INIT;
 
 	if (!sendFirmware(firmwareData))
@@ -60,8 +68,7 @@ CANdleDownloader::Status CANdleDownloader::doLoad(std::span<const uint8_t>&& fir
 	/* make sure the receiving thread ends after boot command as we're about to switch to application usb device */
 	done = true;
 
-	if (!executeAndWaitForResponse([&]()
-								   { sendBootCmd(); }))
+	if (!sendBootCmd() || !waitForResponse())
 		return Status::ERROR_BOOT;
 
 	logger->debug("Boot OK");
@@ -76,7 +83,7 @@ void CANdleDownloader::receiveHandler()
 	while (!done)
 	{
 		if (!usbHandler->receiveDataDirectly(data))
-			continue;
+			break;
 
 		auto id = static_cast<BootloaderFrameId>(data[0]);
 		if (id == expectedId && data[1] == 'O' && data[2] == 'K')
@@ -85,6 +92,7 @@ void CANdleDownloader::receiveHandler()
 			response = true;
 		}
 	}
+	logger->debug("Closing receive thread...");
 }
 
 bool CANdleDownloader::waitForActionWithTimeout(std::function<bool()> condition, uint32_t timeoutMs)
@@ -123,9 +131,9 @@ bool CANdleDownloader::sendInitCmd()
 	std::span<uint8_t> data(buf.data(), buf.size());
 
 	response = false;
-	expectedId = 100;
+	expectedId = CHECK_ENTERED;
 
-	buf[0] = 100;
+	buf[0] = CHECK_ENTERED;
 	buf[1] = 0xaa;
 	buf[2] = 0xaa;
 
@@ -139,9 +147,9 @@ bool CANdleDownloader::sendPageCmd(std::span<const uint8_t> payload)
 	std::span<uint8_t> data(buf.data(), payload.size() + headerSize);
 
 	response = false;
-	expectedId = 101;
+	expectedId = SEND_PAGE;
 
-	buf[0] = 101;
+	buf[0] = SEND_PAGE;
 	buf[1] = 0xaa;
 	buf[2] = 0xaa;
 
@@ -159,9 +167,9 @@ bool CANdleDownloader::sendCheckCRCAndWriteCmd(std::span<const uint8_t> firmware
 	serialize(calculatedCrc, &buf[headerSize]);
 
 	response = false;
-	expectedId = 102;
+	expectedId = WRITE_PAGE;
 
-	buf[0] = 102;
+	buf[0] = WRITE_PAGE;
 	buf[1] = 0xaa;
 	buf[2] = 0xaa;
 
@@ -188,8 +196,7 @@ bool CANdleDownloader::sendFirmware(std::span<const uint8_t> firmwareData)
 			auto sizeToSend = remainingSize > chunkSize ? chunkSize : remainingSize;
 			std::span<const uint8_t> firmwareChunk(it, sizeToSend);
 
-			if (!executeAndWaitForResponse([&]()
-										   { sendPageCmd(firmwareChunk); }))
+			if (!sendPageCmd(firmwareChunk) || !waitForResponse())
 				return false;
 
 			remainingSize -= sizeToSend;
@@ -199,8 +206,8 @@ bool CANdleDownloader::sendFirmware(std::span<const uint8_t> firmwareData)
 		auto sentChunkSize = it - begin;
 
 		logger->debug("checking CRC");
-		if (!executeAndWaitForResponse([&]()
-									   { sendCheckCRCAndWriteCmd(std::span<const uint8_t>(begin, sentChunkSize)); }))
+
+		if (!sendCheckCRCAndWriteCmd(std::span<const uint8_t>(begin, sentChunkSize)) || !waitForResponse())
 			return false;
 
 		logger->debug("sent: {} bytes, remainingSize {}", sentChunkSize, remainingSize);
@@ -218,20 +225,17 @@ bool CANdleDownloader::sendBootCmd()
 	std::span<uint8_t> data(buf.data(), buf.size());
 
 	response = false;
-	expectedId = 103;
+	expectedId = BOOT_TO_APP;
 
-	buf[0] = 103;
+	buf[0] = BOOT_TO_APP;
 	buf[1] = 0xaa;
 	buf[2] = 0xaa;
 
 	return usbHandler->sendDataDirectly(data);
 }
 
-bool CANdleDownloader::executeAndWaitForResponse(std::function<void()> function)
+bool CANdleDownloader::waitForResponse()
 {
-	if (function)
-		function();
-
 	return waitForActionWithTimeout([&]() -> bool
 									{ return !response; },
 									defaultTimeout);

@@ -46,7 +46,7 @@ class CANdleDownloader
 	static constexpr uint16_t APP_VID = 0x0069;
 	static constexpr uint16_t APP_PID = 0x1000;
 
-	static constexpr uint32_t defaultTimeout = 50;
+	static constexpr uint32_t defaultTimeout = 100;
 
 	std::unique_ptr<UsbHandler> usbHandler;
 	spdlog::logger* logger;
@@ -58,6 +58,8 @@ class CANdleDownloader
 	std::atomic<uint8_t> expectedId = BootloaderFrameId::NONE;
 
    private:
+	CANdleDownloader::Status perform(std::span<const uint8_t>&& firmwareData, bool recover);
+
 	void receiveHandler();
 	bool waitForActionWithTimeout(std::function<bool()> condition, uint32_t timeoutMs);
 
@@ -68,7 +70,7 @@ class CANdleDownloader
 	bool sendCheckCRCAndWriteCmd(std::span<const uint8_t> firmwareChunk);
 	bool sendBootCmd();
 
-	bool executeAndWaitForResponse(std::function<void()> function);
+	bool waitForResponse();
 };
 
 #endif

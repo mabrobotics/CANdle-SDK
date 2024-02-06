@@ -171,7 +171,7 @@ bool UsbHandler::sendDataDirectly(std::span<uint8_t> data)
 
 	if (int ret = libusb_bulk_transfer(devh, outEndpointAdr, data.data(), data.size(), &sendLenActual, 10) < 0)
 	{
-		logger->warn("Error while sending: {}", ret);
+		logger->error("Error while sending: {}", ret);
 		return false;
 	}
 	return true;
@@ -184,7 +184,7 @@ bool UsbHandler::receiveDataDirectly(std::span<uint8_t>& data)
 
 	if (int ret = libusb_bulk_transfer(devh, inEndpointAdr, data.data(), data.size(), &receivedLen, 1000) < 0)
 	{
-		logger->warn("Error while receiving {}  transferred {}", ret, receivedLen);
+		logger->error("Error while receiving {}  transferred {}", ret, receivedLen);
 		return false;
 	}
 
