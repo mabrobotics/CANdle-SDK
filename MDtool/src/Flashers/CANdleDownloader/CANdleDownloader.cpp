@@ -47,9 +47,9 @@ CANdleDownloader::Status CANdleDownloader::perform(std::span<const uint8_t>&& fi
 
 	usbHandler = std::make_unique<UsbHandler>(logger);
 
-	for (size_t i = 0; i < 2000; i++)
+	for (size_t i = 0; i < 100; i++)
 	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		std::this_thread::sleep_for(std::chrono::milliseconds(20));
 		if (usbHandler->init(BOOTLOADER_VID, BOOTLOADER_PID, true, false))
 			break;
 	}
