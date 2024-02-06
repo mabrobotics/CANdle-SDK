@@ -53,11 +53,19 @@ class Candle
 		else
 			settings.baudrate = 1000000;
 
-		return interface->init(settings);
+		auto status = interface->init(settings);
+
+		if (status)
+			isInitialized = true;
+
+		return status;
 	}
 
 	void deInit()
 	{
+		if (!isInitialized)
+			return;
+
 		done = true;
 		if (receiveThread.joinable())
 			receiveThread.join();
@@ -232,6 +240,8 @@ class Candle
 	std::atomic<bool> sendSync = false;
 
 	std::atomic<uint32_t> syncIntervalUs = 10000;
+
+	bool isInitialized = false;
 
 	std::unordered_map<uint32_t, std::unique_ptr<MD80>> md80s;
 	ICommunication* interface;

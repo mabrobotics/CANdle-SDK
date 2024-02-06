@@ -34,11 +34,6 @@ Mdtool::Mdtool(spdlog::logger* logger)
 	this->logger = logger;
 }
 
-Mdtool::~Mdtool()
-{
-	candle->deInit();
-}
-
 bool Mdtool::init(ICommunication* interface, Candle::Baud baud)
 {
 	logger->debug("Initalizing...");

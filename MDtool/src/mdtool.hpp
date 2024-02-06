@@ -12,7 +12,6 @@ class Mdtool
    public:
 	Mdtool() = delete;
 	Mdtool(spdlog::logger* logger);
-	~Mdtool();
 
 	bool init(ICommunication* interface, Candle::Baud baud);
 	void ping();

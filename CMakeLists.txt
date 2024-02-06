@@ -22,12 +22,18 @@ if(WIN32 AND "${PLATFORM}" STREQUAL "native")
     set(CMAKE_AR "C:/msys64/mingw64/bin/llvm-ar.exe")
 endif()
 
-add_compile_options(-Wall
-    -municode
+set(COMPILE_OPTIONS -Wall
+
     -Wextra
     -Wpedantic
     -Wno-unused-parameter
     -Wno-missing-field-initializers)
+
+if(WIN32)
+    add_compile_options(-municode ${COMPILE_OPTIONS})
+else()
+    add_compile_options(${COMPILE_OPTIONS})
+endif()
 
 add_subdirectory(CANdle_lib)
 add_subdirectory(MDtool)
