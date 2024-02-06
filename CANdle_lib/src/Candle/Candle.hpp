@@ -63,14 +63,14 @@ class Candle
 
 	void deInit()
 	{
-		if (!isInitialized)
-			return;
-
 		done = true;
 		if (receiveThread.joinable())
 			receiveThread.join();
 		if (transmitThread.joinable())
 			transmitThread.join();
+
+		if (!isInitialized)
+			return;
 
 		interface->deinit();
 	}
