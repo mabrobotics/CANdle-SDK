@@ -50,7 +50,7 @@ class MD80Downloader
 		SAFE = 1,
 	};
 
-	MD80Downloader(ICommunication* interface, spdlog::logger* logger);
+	MD80Downloader(std::shared_ptr<ICommunication> interface, std::shared_ptr<spdlog::logger> logger);
 	~MD80Downloader();
 
 	Status doLoad(std::span<const uint8_t>&& firmwareData, uint32_t id, bool recover, uint32_t address, bool secondaryBootloader);
@@ -65,8 +65,9 @@ class MD80Downloader
 	uint32_t deviceId = 1;
 	uint32_t bootAddress = 0x8005000;
 
-	ICommunication* interface;
-	spdlog::logger* logger;
+	std::shared_ptr<ICommunication> interface;
+	std::shared_ptr<spdlog::logger> logger;
+
 	uint32_t canIdCommand = BASE_CMD_ID;
 	uint32_t canIdResponse = BASE_RESP_ID;
 

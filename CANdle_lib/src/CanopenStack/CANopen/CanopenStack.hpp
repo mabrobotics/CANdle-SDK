@@ -33,8 +33,8 @@ class CanopenStack
 		TPDO = 2,
 	};
 
-	explicit CanopenStack(ICommunication* interface, spdlog::logger* logger) : interface(interface),
-																			   logger(logger)
+	explicit CanopenStack(std::shared_ptr<ICommunication> interface, std::shared_ptr<spdlog::logger> logger) : interface(interface),
+																											   logger(logger)
 	{
 	}
 
@@ -449,8 +449,8 @@ class CanopenStack
 	}
 
    private:
-	ICommunication* interface;
-	spdlog::logger* logger;
+	std::shared_ptr<ICommunication> interface;
+	std::shared_ptr<spdlog::logger> logger;
 	std::function<void(uint32_t driveId, uint16_t index, uint8_t subindex, std::span<uint8_t>& data, uint8_t command, uint32_t errorCode_)> processSDO;
 	std::atomic<bool> segmentedReadOngoing = false;
 

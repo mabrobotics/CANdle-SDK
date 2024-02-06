@@ -6,7 +6,7 @@
 #include "Commons/BitCast.hpp"
 #include "libusb.h"
 
-UsbHandler::UsbHandler(spdlog::logger* logger) : logger(logger)
+UsbHandler::UsbHandler(std::shared_ptr<spdlog::logger> logger) : logger(logger)
 {
 }
 

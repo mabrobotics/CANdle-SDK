@@ -8,9 +8,13 @@
 #include <variant>
 #include <vector>
 
+#include "BusHandler/UsbHandler.hpp"
 #include "CanopenStack/CANopen/CanopenStack.hpp"
+#include "Communication/CandleInterface.hpp"
 #include "ICommunication.hpp"
 #include "MD80.hpp"
+#include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/spdlog.h"
 
 class Candle
 {
@@ -31,8 +35,18 @@ class Candle
 		CYCLIC_SYNC_VELOCTIY = 9,
 	};
 
-	explicit Candle(ICommunication* interface, spdlog::logger* logger) : interface(interface),
-																		 logger(logger)
+	Candle()
+	{
+		logger = spdlog::stdout_color_mt("console");
+		logger->set_pattern("[%^%l%$] %v");
+		interface = std::make_shared<CandleInterface>(std::make_unique<UsbHandler>(logger));
+		canopenStack = std::make_unique<CanopenStack>(interface, logger);
+		receiveThread = std::thread(&Candle::receiveHandler, this);
+		transmitThread = std::thread(&Candle::transmitHandler, this);
+	}
+
+	Candle(std::shared_ptr<ICommunication> interface, std::shared_ptr<spdlog::logger> logger) : interface(interface),
+																								logger(logger)
 	{
 		canopenStack = std::make_unique<CanopenStack>(interface, logger);
 		receiveThread = std::thread(&Candle::receiveHandler, this);
@@ -244,8 +258,8 @@ class Candle
 	bool isInitialized = false;
 
 	std::unordered_map<uint32_t, std::unique_ptr<MD80>> md80s;
-	ICommunication* interface;
-	spdlog::logger* logger;
+	std::shared_ptr<ICommunication> interface;
+	std::shared_ptr<spdlog::logger> logger;
 };
 
 #endif

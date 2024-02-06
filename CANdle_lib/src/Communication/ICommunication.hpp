@@ -53,9 +53,6 @@ class ICommunication
 	virtual uint32_t getFirmwareVersion() const = 0;
 	virtual uint32_t getBuildDate() const = 0;
 	virtual std::array<uint8_t, 8> getCommitHash() const = 0;
-
-   public:
-	IBusHandler* busHandler{};
 };
 
 #endif

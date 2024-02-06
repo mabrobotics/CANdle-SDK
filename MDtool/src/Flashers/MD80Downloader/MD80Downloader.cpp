@@ -10,7 +10,7 @@
 #include "Commons/FlasherCommons.hpp"
 #include "Communication/CandleInterface.hpp"
 
-MD80Downloader::MD80Downloader(ICommunication* interface, spdlog::logger* logger) : interface(interface), logger(logger)
+MD80Downloader::MD80Downloader(std::shared_ptr<ICommunication> interface, std::shared_ptr<spdlog::logger> logger) : interface(interface), logger(logger)
 {
 	receiveThread = std::thread(&MD80Downloader::receiveHandler, this);
 }

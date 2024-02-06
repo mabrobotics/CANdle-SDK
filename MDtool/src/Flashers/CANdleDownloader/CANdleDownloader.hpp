@@ -34,7 +34,7 @@ class CANdleDownloader
 		ERROR_BOOT = 5,
 	};
 
-	CANdleDownloader(spdlog::logger* logger);
+	CANdleDownloader(std::shared_ptr<spdlog::logger> logger);
 	~CANdleDownloader();
 
 	Status doLoad(std::span<const uint8_t>&& firmwareData, bool recover);
@@ -49,7 +49,7 @@ class CANdleDownloader
 	static constexpr uint32_t defaultTimeout = 100;
 
 	std::unique_ptr<UsbHandler> usbHandler;
-	spdlog::logger* logger;
+	std::shared_ptr<spdlog::logger> logger;
 
 	std::atomic<bool> done = false;
 	std::thread receiveThread;

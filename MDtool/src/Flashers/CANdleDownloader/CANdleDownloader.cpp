@@ -9,7 +9,7 @@
 #include "Checksum/Checksum.hpp"
 #include "Commons/FlasherCommons.hpp"
 
-CANdleDownloader::CANdleDownloader(spdlog::logger* logger) : logger(logger)
+CANdleDownloader::CANdleDownloader(std::shared_ptr<spdlog::logger> logger) : logger(logger)
 {
 }
 

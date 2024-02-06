@@ -5,9 +5,8 @@
 #include <chrono>
 #include <utility>
 
-CandleInterface::CandleInterface(IBusHandler* busHandler)
+CandleInterface::CandleInterface(std::unique_ptr<IBusHandler> busHandler) : busHandler(std::move(busHandler))
 {
-	this->busHandler = busHandler;
 }
 
 bool CandleInterface::init(Settings& settings)

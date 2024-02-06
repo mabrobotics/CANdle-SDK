@@ -1,6 +1,7 @@
 #ifndef _MDTOOL_HPP
 #define _MDTOOL_HPP
 
+#include <memory>
 #include <optional>
 #include <unordered_map>
 
@@ -11,9 +12,9 @@ class Mdtool
 {
    public:
 	Mdtool() = delete;
-	Mdtool(spdlog::logger* logger);
+	Mdtool(std::shared_ptr<spdlog::logger> logger);
 
-	bool init(ICommunication* interface, Candle::Baud baud);
+	bool init(std::shared_ptr<ICommunication> interface, Candle::Baud baud);
 	void ping();
 	bool updateMd80(std::string& filePath, uint32_t id, bool recover, bool all);
 	bool updateBootloader(std::string& filePath, uint32_t id, bool recover);
@@ -33,8 +34,8 @@ class Mdtool
 	static constexpr uint32_t secondaryBootloaderAddress = 0x8005000;
 	static constexpr uint32_t primaryBootloaderAddress = 0x8000000;
 	std::unique_ptr<Candle> candle;
-	ICommunication* interface;
-	spdlog::logger* logger;
+	std::shared_ptr<ICommunication> interface;
+	std::shared_ptr<spdlog::logger> logger;
 
 	Candle::Baud baudrate = Candle::Baud::BAUD_1M;
 

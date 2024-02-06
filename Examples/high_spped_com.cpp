@@ -1,21 +1,13 @@
 #include "Candle.hpp"
-#include "CandleInterface.hpp"
-#include "UsbHandler.hpp"
-#include "spdlog/sinks/stdout_color_sinks.h"
-#include "spdlog/spdlog.h"
 
 int main(int argc, char** argv)
 {
-	auto logger = spdlog::stdout_color_mt("console");
-	logger->set_pattern("[%^%l%$] %v");
-
-	UsbHandler busHandler(logger.get());
-	CandleInterface candleInterface(&busHandler);
-	Candle candle(&candleInterface, logger.get());
-
 	const uint32_t id = 1;
 
-	candle.init();
+	Candle candle;
+
+	if (!candle.init())
+		return -1;
 
 	candle.addMd80(id);
 	// candle.addMd80(2);
@@ -40,7 +32,7 @@ int main(int argc, char** argv)
 	while (1)
 	{
 		md80->setPositionTarget(5 * sin(x));
-		// std::cout << md80->getOutputPosition() << "   " << md80->getOutputVelocity() << " setpoint pos: " << 20 * sin(x) << std::endl;
+		std::cout << md80->getOutputPosition() << "   " << md80->getOutputVelocity() << " setpoint pos: " << 20 * sin(x) << std::endl;
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
 		x += 0.01;

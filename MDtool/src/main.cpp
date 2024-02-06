@@ -105,10 +105,9 @@ int main(int argc, char** argv)
 	if (verbose)
 		logger->set_level(spdlog::level::debug);
 
-	std::unique_ptr<IBusHandler> busHandler = std::make_unique<UsbHandler>(logger.get());
-	std::unique_ptr<ICommunication> candleInterface = std::make_unique<CandleInterface>(busHandler.get());
+	std::shared_ptr<ICommunication> candleInterface = std::make_shared<CandleInterface>(std::make_unique<UsbHandler>(logger));
 
-	Mdtool mdtool(logger.get());
+	Mdtool mdtool(logger);
 
 	/* dont init candle when we're updating candle (we need to switch vid/pid dynamically) */
 	if (app.got_subcommand("update_candle"))
@@ -119,7 +118,7 @@ int main(int argc, char** argv)
 			return -1;
 	}
 
-	if (!mdtool.init(candleInterface.get(), static_cast<Candle::Baud>(baud)))
+	if (!mdtool.init(candleInterface, static_cast<Candle::Baud>(baud)))
 		return -1;
 
 	if (app.got_subcommand("ping"))

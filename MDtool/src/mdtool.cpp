@@ -29,12 +29,11 @@ struct formatter<std::array<T, N>> : formatter<std::string_view>
 };
 }  // namespace fmt
 
-Mdtool::Mdtool(spdlog::logger* logger)
+Mdtool::Mdtool(std::shared_ptr<spdlog::logger> logger) : logger(logger)
 {
-	this->logger = logger;
 }
 
-bool Mdtool::init(ICommunication* interface, Candle::Baud baud)
+bool Mdtool::init(std::shared_ptr<ICommunication> interface, Candle::Baud baud)
 {
 	logger->debug("Initalizing...");
 	this->interface = interface;

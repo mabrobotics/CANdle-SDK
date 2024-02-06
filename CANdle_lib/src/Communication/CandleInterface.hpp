@@ -41,7 +41,7 @@ class CandleInterface : public ICommunication
 		uint32_t firmwareVersion;
 	};
 
-	explicit CandleInterface(IBusHandler* busHandler);
+	explicit CandleInterface(std::unique_ptr<IBusHandler> busHandler);
 
 	bool init(Settings& settings) override;
 	bool deinit() override;
@@ -71,6 +71,7 @@ class CandleInterface : public ICommunication
 	FirmwareInfo firmwareInfo{};
 
 	std::atomic<bool> newResponse = false;
+	std::unique_ptr<IBusHandler> busHandler;
 
    private:
 	bool sendSettingsFrame(const Settings& settings_);

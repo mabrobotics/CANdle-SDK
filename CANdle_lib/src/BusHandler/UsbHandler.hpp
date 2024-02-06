@@ -2,6 +2,7 @@
 #define _USBHANDLER_HPP
 
 #include <atomic>
+#include <memory>
 #include <span>
 #include <thread>
 
@@ -12,7 +13,7 @@
 class UsbHandler : public IBusHandler
 {
    public:
-	UsbHandler(spdlog::logger* logger);
+	UsbHandler(std::shared_ptr<spdlog::logger> logger);
 	~UsbHandler();
 
 	bool init() override;
@@ -34,7 +35,7 @@ class UsbHandler : public IBusHandler
 	CircularBuffer<BusFrame, 50> toUsbBuffer;
 	CircularBuffer<BusFrame, 50> fromUsbBuffer;
 	std::thread handlerThread;
-	spdlog::logger* logger;
+	std::shared_ptr<spdlog::logger> logger;
 	bool isInitialized = false;
 
    private:
