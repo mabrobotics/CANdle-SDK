@@ -42,13 +42,14 @@ CANdleDownloader::Status CANdleDownloader::perform(std::span<const uint8_t>&& fi
 			return Status::ERROR_RESET;
 
 		logger->debug("Reset OK");
+		usbHandler.reset();
 	}
 
-	usbHandler.reset();
 	usbHandler = std::make_unique<UsbHandler>(logger);
 
-	for (size_t i = 0; i < 100; i++)
+	for (size_t i = 0; i < 2000; i++)
 	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		if (usbHandler->init(BOOTLOADER_VID, BOOTLOADER_PID, true, false))
 			break;
 	}

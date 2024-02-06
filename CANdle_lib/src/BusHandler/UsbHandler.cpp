@@ -61,6 +61,9 @@ bool UsbHandler::init()
 
 bool UsbHandler::deinit()
 {
+	if (!isInitialized)
+		return true;
+
 	done = true;
 	if (handlerThread.joinable())
 		handlerThread.join();
