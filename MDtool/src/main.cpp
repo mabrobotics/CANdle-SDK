@@ -109,12 +109,18 @@ int main(int argc, char** argv)
 	std::unique_ptr<ICommunication> candleInterface = std::make_unique<CandleInterface>(busHandler.get());
 
 	Mdtool mdtool(logger.get());
+
 	/* dont init candle when we're updating candle (we need to switch vid/pid dynamically) */
 	if (app.got_subcommand("update_candle"))
-		return mdtool.updateCANdle(filePath, recover);
+	{
+		if (mdtool.updateCANdle(filePath, recover))
+			return 0;
+		else
+			return -1;
+	}
 
 	if (!mdtool.init(candleInterface.get(), static_cast<Candle::Baud>(baud)))
-		return false;
+		return -1;
 
 	if (app.got_subcommand("ping"))
 		mdtool.ping();
@@ -145,6 +151,5 @@ int main(int argc, char** argv)
 		else if (clear->got_subcommand("warning"))
 			mdtool.clearWarning(id);
 	}
-
 	return 0;
 }
