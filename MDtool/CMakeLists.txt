@@ -29,7 +29,8 @@ ${CMAKE_CURRENT_SOURCE_DIR}/src/Flashers/
 ${CMAKE_CURRENT_SOURCE_DIR}/src/Flashers/CANdleDownloader/
 ${CMAKE_CURRENT_SOURCE_DIR}/src/Flashers/MD80Downloader/
 ${CMAKE_CURRENT_SOURCE_DIR}/src/Flashers/BinaryParser/
-${CMAKE_CURRENT_SOURCE_DIR}/src/Flashers/Checksum/)
+${CMAKE_CURRENT_SOURCE_DIR}/src/Flashers/Checksum/
+${CMAKE_CURRENT_SOURCE_DIR}/src/Flashers/Commons/)
 
 target_include_directories(${EXECUTABLE} SYSTEM PRIVATE
     ${CLI11_INCLUDE_DIR}

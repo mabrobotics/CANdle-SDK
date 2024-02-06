@@ -86,8 +86,6 @@ class MD80Downloader
 	bool sendFirmware(std::span<const uint8_t> firmwareData);
 	bool sendWriteCmd();
 	bool sendBootCmd();
-
-	void progressBar(float progress);
 };
 
 #endif

@@ -24,8 +24,6 @@ class UsbHandler : public IBusHandler
 	bool sendDataDirectly(std::span<uint8_t> data);
 	bool receiveDataDirectly(std::span<uint8_t>& data);
 
-	bool isOutputFifoEmpty() const;
-
    private:
 	static constexpr uint16_t VID = 0x0069;
 	static constexpr uint16_t PID = 0x1000;
@@ -33,7 +31,6 @@ class UsbHandler : public IBusHandler
 	static constexpr int outEndpointAdr = 0x01;
 	struct libusb_device_handle* devh = NULL;
 	std::atomic<bool> done;
-	std::atomic<bool> outputFifoEmpty;
 	CircularBuffer<BusFrame, 50> toUsbBuffer;
 	CircularBuffer<BusFrame, 50> fromUsbBuffer;
 	std::thread handlerThread;

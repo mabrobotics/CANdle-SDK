@@ -7,6 +7,7 @@
 
 #include "BusHandler/UsbHandler.hpp"
 #include "Checksum/Checksum.hpp"
+#include "Commons/FlasherCommons.hpp"
 
 CANdleDownloader::CANdleDownloader(spdlog::logger* logger) : logger(logger)
 {
@@ -25,16 +26,13 @@ CANdleDownloader::Status CANdleDownloader::doLoad(std::span<const uint8_t>&& fir
 	{
 		usbHandler = std::make_unique<UsbHandler>(logger);
 
-		if (!usbHandler->init())
+		if (!usbHandler->init(APP_VID, APP_PID, true))
 			return Status::ERROR_INIT;
 
 		if (!sendResetCmd())
 			return Status::ERROR_RESET;
 
 		logger->debug("Reset OK");
-
-		while (!usbHandler->isOutputFifoEmpty())
-			;
 	}
 
 	usbHandler.reset();
@@ -56,7 +54,11 @@ CANdleDownloader::Status CANdleDownloader::doLoad(std::span<const uint8_t>&& fir
 								   { sendInitCmd(); }))
 		return Status::ERROR_INIT;
 
-	sendFirmware(firmwareData);
+	if (!sendFirmware(firmwareData))
+		return Status::ERROR_FIRMWARE;
+
+	/* make sure the receiving thread ends after boot command as we're about to switch to application usb device */
+	done = true;
 
 	if (!executeAndWaitForResponse([&]()
 								   { sendBootCmd(); }))
@@ -105,10 +107,14 @@ bool CANdleDownloader::sendResetCmd()
 {
 	logger->debug("Resetting...");
 
-	IBusHandler::BusFrame frame{};
-	frame.header.id = 10;
-	frame.header.length = 1;
-	return usbHandler->addToFifo(frame);
+	std::array<uint8_t, 3> buf;
+	std::span<uint8_t> data(buf.data(), buf.size());
+
+	buf[0] = 10;
+	buf[1] = 0;
+	buf[2] = 1;
+
+	return usbHandler->sendDataDirectly(data);
 }
 
 bool CANdleDownloader::sendInitCmd()
@@ -171,7 +177,6 @@ bool CANdleDownloader::sendFirmware(std::span<const uint8_t> firmwareData)
 	size_t size = firmwareData.size();
 	size_t remainingSize = size;
 	logger->debug("Binary size: {}", size);
-	float progress = 0.0f;
 
 	/* then proceed with the rest of the firmware*/
 	for (size_t i = 0; i <= size; i += pageSize)
@@ -191,22 +196,18 @@ bool CANdleDownloader::sendFirmware(std::span<const uint8_t> firmwareData)
 			it += sizeToSend;
 		}
 
+		auto sentChunkSize = it - begin;
+
+		logger->debug("checking CRC");
 		if (!executeAndWaitForResponse([&]()
-									   { sendCheckCRCAndWriteCmd(std::span<const uint8_t>(begin, pageSize)); }))
+									   { sendCheckCRCAndWriteCmd(std::span<const uint8_t>(begin, sentChunkSize)); }))
 			return false;
 
-		logger->debug("sent: {} bytes, remainingSize {}", it - begin, remainingSize);
+		logger->debug("sent: {} bytes, remainingSize {}", sentChunkSize, remainingSize);
+		FlasherCommons::progressBar(static_cast<float>(i) / static_cast<float>(size));
 	}
 
-	// progressBar(1.0f);
-	// if (mode == Mode::SAFE)
-	// {
-	// 	if (!sendWriteCmd())
-	// 	{
-	// 		logger->error("Programming failed!");
-	// 		return false;
-	// 	}
-	// }
+	FlasherCommons::progressBar(1.0f);
 
 	return true;
 }
@@ -233,5 +234,5 @@ bool CANdleDownloader::executeAndWaitForResponse(std::function<void()> function)
 
 	return waitForActionWithTimeout([&]() -> bool
 									{ return !response; },
-									100);
+									defaultTimeout);
 }

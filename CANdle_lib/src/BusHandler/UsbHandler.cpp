@@ -87,7 +87,6 @@ bool UsbHandler::addToFifo(BusFrame& busFrame)
 	if (toUsbBuffer.full())
 		return false;
 
-	outputFifoEmpty = false;
 	toUsbBuffer.put(busFrame);
 	return true;
 }
@@ -147,10 +146,7 @@ void UsbHandler::copyElementsToOutputBuf(std::array<uint8_t, 1025>& buf, uint32_
 	{
 		auto elem = toUsbBuffer.get();
 		if (!elem.has_value())
-		{
-			outputFifoEmpty = true;
 			break;
-		}
 
 		auto usbEntry = elem.value();
 		auto usbFrameArray = bit_cast_<std::array<uint8_t, sizeof(BusFrame)>>(usbEntry);
@@ -175,7 +171,7 @@ bool UsbHandler::sendDataDirectly(std::span<uint8_t> data)
 
 	if (int ret = libusb_bulk_transfer(devh, outEndpointAdr, data.data(), data.size(), &sendLenActual, 10) < 0)
 	{
-		logger->error("Error while sending: {}", ret);
+		logger->warn("Error while sending: {}", ret);
 		return false;
 	}
 	return true;
@@ -188,14 +184,9 @@ bool UsbHandler::receiveDataDirectly(std::span<uint8_t>& data)
 
 	if (int ret = libusb_bulk_transfer(devh, inEndpointAdr, data.data(), data.size(), &receivedLen, 1000) < 0)
 	{
-		logger->error("Error while receiving {}  transferred {}", ret, receivedLen);
+		logger->warn("Error while receiving {}  transferred {}", ret, receivedLen);
 		return false;
 	}
 
 	return true;
-}
-
-bool UsbHandler::isOutputFifoEmpty() const
-{
-	return outputFifoEmpty;
 }

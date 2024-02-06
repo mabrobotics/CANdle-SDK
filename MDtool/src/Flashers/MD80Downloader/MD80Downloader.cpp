@@ -7,6 +7,7 @@
 
 #include "BusHandler/IBusHandler.hpp"
 #include "Checksum/Checksum.hpp"
+#include "Commons/FlasherCommons.hpp"
 #include "Communication/CandleInterface.hpp"
 
 MD80Downloader::MD80Downloader(ICommunication* interface, spdlog::logger* logger) : interface(interface), logger(logger)
@@ -170,7 +171,6 @@ bool MD80Downloader::doSendFirmware(std::span<const uint8_t> firmwareData)
 
 	size_t remainingSize = firmwareData.size();
 	logger->debug("Binary size: {}", size);
-	float progress = 0.0f;
 
 	/* send 16 byte IV first */
 	frame.header.length = 8;
@@ -202,8 +202,7 @@ bool MD80Downloader::doSendFirmware(std::span<const uint8_t> firmwareData)
 
 		if (sentSize >= pageSize || (size - i < frameSize))
 		{
-			progress = static_cast<float>(i) / static_cast<float>(size);
-			progressBar(progress);
+			FlasherCommons::progressBar(static_cast<float>(i) / static_cast<float>(size));
 
 			ICommunication::CANFrame frame{};
 			frame.header.canId = canIdCommand;
@@ -232,7 +231,7 @@ bool MD80Downloader::doSendFirmware(std::span<const uint8_t> firmwareData)
 		}
 	}
 
-	progressBar(1.0f);
+	FlasherCommons::progressBar(1.0f);
 
 	if (mode == Mode::SAFE)
 	{
@@ -271,26 +270,4 @@ bool MD80Downloader::sendBootCmd()
 	frame.payload = {static_cast<uint8_t>(Command::BOOT)};
 
 	return sendFrameWaitForResponse(frame, Response::BOOT_OK, 100);
-}
-
-void MD80Downloader::progressBar(float progress)
-{
-	if (progress > 1.0)
-		return;
-
-	int barWidth = 50;
-
-	std::cout << "[";
-	int pos = barWidth * progress;
-	for (int i = 0; i < barWidth; ++i)
-	{
-		if (i < pos)
-			std::cout << "=";
-		else if (i == pos)
-			std::cout << ">";
-		else
-			std::cout << " ";
-	}
-	std::cout << "] " << int(progress * 100.0) << " %\r";
-	std::cout.flush();
 }

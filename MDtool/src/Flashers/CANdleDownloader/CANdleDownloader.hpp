@@ -43,6 +43,11 @@ class CANdleDownloader
 	static constexpr uint16_t BOOTLOADER_VID = 0x0069;
 	static constexpr uint16_t BOOTLOADER_PID = 0x2000;
 
+	static constexpr uint16_t APP_VID = 0x0069;
+	static constexpr uint16_t APP_PID = 0x1000;
+
+	static constexpr uint32_t defaultTimeout = 50;
+
 	std::unique_ptr<UsbHandler> usbHandler;
 	spdlog::logger* logger;
 
