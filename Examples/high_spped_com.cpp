@@ -9,7 +9,8 @@ int main(int argc, char** argv)
 	if (!candle.init())
 		return -1;
 
-	candle.addMd80(id);
+	if (candle.addMd80(id))
+		return -1;
 	// candle.addMd80(2);
 
 	std::vector<std::pair<uint16_t, uint8_t>> TPDO{{0x2009, 0x01}, {0x2009, 0x02}};

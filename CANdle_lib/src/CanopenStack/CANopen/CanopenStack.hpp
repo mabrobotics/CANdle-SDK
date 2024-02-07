@@ -269,7 +269,7 @@ class CanopenStack
 		return true;
 	}
 
-	bool setupPDO(uint32_t id, PDO pdoId, std::vector<std::pair<uint16_t, uint8_t>>& fields)
+	bool setupPDO(uint32_t id, PDO pdoId, const std::vector<std::pair<uint16_t, uint8_t>>& fields)
 	{
 		auto pdoType = getPDOType(pdoId);
 

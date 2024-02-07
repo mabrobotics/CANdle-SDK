@@ -51,10 +51,8 @@ class Candle
 	bool setTargetPosition(uint32_t id, uint32_t target);
 	bool startCalibration(uint32_t id);
 
-	bool setupResponse(uint32_t id, CanopenStack::PDO pdoID, std::vector<std::pair<uint16_t, uint8_t>>& fields);
-	bool setupResponse(uint32_t id, CanopenStack::PDO pdoID, std::vector<std::pair<uint16_t, uint8_t>>&& fields);
-	bool setupCommand(uint32_t id, CanopenStack::PDO pdoID, std::vector<std::pair<uint16_t, uint8_t>>& fields);
-	bool setupCommand(uint32_t id, CanopenStack::PDO pdoID, std::vector<std::pair<uint16_t, uint8_t>>&& fields);
+	bool setupResponse(uint32_t id, CanopenStack::PDO pdoID, const std::vector<std::pair<uint16_t, uint8_t>>& fields);
+	bool setupCommand(uint32_t id, CanopenStack::PDO pdoID, const std::vector<std::pair<uint16_t, uint8_t>>& fields);
 
 	template <typename T>
 	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T&& value)
