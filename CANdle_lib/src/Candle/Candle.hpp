@@ -35,146 +35,26 @@ class Candle
 		CYCLIC_SYNC_VELOCTIY = 9,
 	};
 
-	Candle()
-	{
-		logger = spdlog::stdout_color_mt("console");
-		logger->set_pattern("[%^%l%$] %v");
-		interface = std::make_shared<CandleInterface>(std::make_unique<UsbHandler>(logger));
-		canopenStack = std::make_unique<CanopenStack>(interface, logger);
-		receiveThread = std::thread(&Candle::receiveHandler, this);
-		transmitThread = std::thread(&Candle::transmitHandler, this);
-	}
+	Candle();
+	Candle(std::shared_ptr<ICommunication> interface, std::shared_ptr<spdlog::logger> logger);
+	~Candle();
 
-	Candle(std::shared_ptr<ICommunication> interface, std::shared_ptr<spdlog::logger> logger) : interface(interface),
-																								logger(logger)
-	{
-		canopenStack = std::make_unique<CanopenStack>(interface, logger);
-		receiveThread = std::thread(&Candle::receiveHandler, this);
-		transmitThread = std::thread(&Candle::transmitHandler, this);
-	}
+	bool init(Baud baud = Baud::BAUD_1M);
+	void deInit();
+	void setSendSync(bool state, uint32_t intervalUs);
+	std::vector<uint32_t> ping();
+	bool addMd80(uint32_t id);
+	MD80* getMd80(uint32_t id) const;
+	bool enterOperational(uint32_t id);
+	bool enterSwitchOnDisabled(uint32_t id);
+	bool setModeOfOperation(uint32_t id, ModesOfOperation mode);
+	bool setTargetPosition(uint32_t id, uint32_t target);
+	bool startCalibration(uint32_t id);
 
-	~Candle()
-	{
-		deInit();
-	}
-
-	bool init(Baud baud = Baud::BAUD_1M)
-	{
-		ICommunication::Settings settings;
-
-		if (baud == Baud::BAUD_8M)
-			settings.baudrate = 8000000;
-		else
-			settings.baudrate = 1000000;
-
-		auto status = interface->init(settings);
-
-		if (status)
-			isInitialized = true;
-
-		return status;
-	}
-
-	void deInit()
-	{
-		done = true;
-		if (receiveThread.joinable())
-			receiveThread.join();
-		if (transmitThread.joinable())
-			transmitThread.join();
-
-		if (!isInitialized)
-			return;
-
-		interface->deinit();
-	}
-
-	void setSendSync(bool state, uint32_t intervalUs)
-	{
-		sendSync = state;
-		syncIntervalUs = intervalUs;
-	}
-
-	std::vector<uint32_t> ping()
-	{
-		std::vector<uint32_t> ids{};
-		uint32_t deviceType = 0;
-
-		for (size_t i = 1; i < 31; i++)
-			if (readSDO(i, 0x1000, 0x00, deviceType, false))
-				ids.push_back(i);
-
-		return ids;
-	}
-
-	bool addMd80(uint32_t id)
-	{
-		uint32_t deviceType = 0;
-		if (!readSDO(id, 0x1000, 0x00, deviceType, false))
-		{
-			logger->error("Unable to add MD80 with ID {}", id);
-			return false;
-		}
-
-		md80s[id] = std::make_unique<MD80>();
-		canopenStack->setOD(id, &md80s[id]->OD);
-
-		return true;
-	}
-
-	MD80* getMd80(uint32_t id) const
-	{
-		return md80s.at(id).get();
-	}
-
-	bool enterOperational(uint32_t id)
-	{
-		return writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0080)) &&
-			   writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0006)) &&
-			   writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x000f));
-	}
-
-	bool enterSwitchOnDisabled(uint32_t id)
-	{
-		return writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0008));
-	}
-
-	bool setModeOfOperation(uint32_t id, ModesOfOperation mode)
-	{
-		return writeSDO(id, 0x6060, 0x00, static_cast<int8_t>(mode));
-	}
-
-	bool setTargetPosition(uint32_t id, uint32_t target)
-	{
-		return writeSDO(id, 0x607A, 0x00, target);
-	}
-
-	bool startCalibration(uint32_t id)
-	{
-		return enterOperational(id) &&
-			   writeSDO(id, 0x6060, 0x00, static_cast<int8_t>(-2)) &&
-			   writeSDO(id, 0x2003, 0x03, static_cast<uint8_t>(1));
-	}
-
-	bool setupResponse(uint32_t id, CanopenStack::PDO pdoID, std::vector<std::pair<uint16_t, uint8_t>>& fields)
-	{
-		return setupResponse(id, pdoID, std::move(fields));
-	}
-
-	bool setupResponse(uint32_t id, CanopenStack::PDO pdoID, std::vector<std::pair<uint16_t, uint8_t>>&& fields)
-	{
-		return canopenStack->setupPDO(id, pdoID, fields);
-	}
-
-	bool setupCommand(uint32_t id, CanopenStack::PDO pdoID, std::vector<std::pair<uint16_t, uint8_t>>& fields)
-	{
-		return setupCommand(id, pdoID, std::move(fields));
-	}
-
-	bool setupCommand(uint32_t id, CanopenStack::PDO pdoID, std::vector<std::pair<uint16_t, uint8_t>>&& fields)
-	{
-		return canopenStack->setupPDO(id, pdoID, fields);
-	}
+	bool setupResponse(uint32_t id, CanopenStack::PDO pdoID, std::vector<std::pair<uint16_t, uint8_t>>& fields);
+	bool setupResponse(uint32_t id, CanopenStack::PDO pdoID, std::vector<std::pair<uint16_t, uint8_t>>&& fields);
+	bool setupCommand(uint32_t id, CanopenStack::PDO pdoID, std::vector<std::pair<uint16_t, uint8_t>>& fields);
+	bool setupCommand(uint32_t id, CanopenStack::PDO pdoID, std::vector<std::pair<uint16_t, uint8_t>>&& fields);
 
 	template <typename T>
 	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T&& value)
@@ -213,35 +93,8 @@ class Candle
 	}
 
    private:
-	void receiveHandler()
-	{
-		while (!done)
-		{
-			auto maybeFrame = interface->receiveCanFrame();
-
-			if (!maybeFrame.has_value())
-				continue;
-
-			canopenStack->parse(maybeFrame.value());
-		}
-	}
-
-	void transmitHandler()
-	{
-		while (!done)
-		{
-			/* SEND RPDOs */
-			canopenStack->sendRPDOs();
-
-			if (sendSync)
-				canopenStack->sendSYNC();
-
-			auto end_time = std::chrono::high_resolution_clock::now() + std::chrono::microseconds(syncIntervalUs);
-			while (std::chrono::high_resolution_clock::now() < end_time)
-			{
-			}
-		}
-	}
+	void receiveHandler();
+	void transmitHandler();
 
    public:
 	std::unique_ptr<CanopenStack> canopenStack;

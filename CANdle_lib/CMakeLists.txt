@@ -46,7 +46,8 @@ set(mINI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/CanopenStack/third_party/mI
 
 set(PROJECT_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BusHandler/UsbHandler.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/Communication/CandleInterface.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Communication/CandleInterface.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Candle/Candle.cpp)
 
 add_library(${EXECUTABLE} STATIC ${PROJECT_SOURCES})
 
