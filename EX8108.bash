@@ -22,6 +22,7 @@
 ./build/MDtool/Mdtool.exe --id $1 writeSDO 0x2002 0x03 0.0 f32
 ./build/MDtool/Mdtool.exe --id $1 writeSDO 0x2002 0x04 1.0 f32 
 
+./build/MDtool/Mdtool.exe --id $1 writeSDO 0x2007 0x01 1.0 f32
 ./build/MDtool/Mdtool.exe --id $1 writeSDO 0x2007 0x06 -1000.0 f32
 ./build/MDtool/Mdtool.exe --id $1 writeSDO 0x2007 0x05 1000.0 f32 
 

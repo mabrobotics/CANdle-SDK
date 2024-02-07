@@ -47,11 +47,6 @@ void Candle::deInit()
 		receiveThread.join();
 	if (transmitThread.joinable())
 		transmitThread.join();
-
-	if (!isInitialized)
-		return;
-
-	interface->deinit();
 }
 
 void Candle::setSendSync(bool state, uint32_t intervalUs)
