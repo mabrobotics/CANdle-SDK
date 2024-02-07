@@ -3,6 +3,7 @@
 #include <Deserializer.hpp>
 #include <algorithm>
 #include <chrono>
+#include <thread>
 #include <utility>
 
 CandleInterface::CandleInterface(std::unique_ptr<IBusHandler> busHandler) : busHandler(std::move(busHandler))
@@ -19,11 +20,19 @@ bool CandleInterface::init(Settings& settings)
 	if (!sendSettingsFrame(settings))
 		return false;
 
+	/* TODO: refactor. The delay is to allow for the communication to receive frames
+	that had been already put to fifos on CANdle side and havent been sent in the
+	previous communication cycle. Sending the settings frame should reset the fifos,
+	but before that some frames are going to be received and should be disposed off */
+
+	std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	busHandler->resetFifos();
+
 	if (!sendCommandFrame(Command::GET_FIRMWARE_INFO))
 		return false;
 
 	if (!waitForActionWithTimeout([&]() -> bool
-								  { return newResponse == false; },
+								  { return newResponse; },
 								  10))
 		return false;
 

@@ -20,6 +20,7 @@ class UsbHandler : public IBusHandler
 	bool deinit() override;
 	std::optional<IBusHandler::BusFrame> getFromFifo() const override;
 	bool addToFifo(BusFrame& busFrame) override;
+	void resetFifos() override;
 
 	bool init(uint16_t vid, uint16_t pid, bool manualMode = false, bool deviceNotFoundError = true);
 	bool sendDataDirectly(std::span<uint8_t> data);

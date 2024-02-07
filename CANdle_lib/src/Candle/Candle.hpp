@@ -27,6 +27,7 @@ class Candle
 
 	enum class ModesOfOperation : int8_t
 	{
+		IMPEDANCE = -3,
 		SERVICE = -2,
 		IDLE = 0,
 		PROFILE_POSITION = 1,

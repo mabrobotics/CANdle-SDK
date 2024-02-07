@@ -5,17 +5,11 @@ Candle::Candle()
 	logger = spdlog::stdout_color_mt("console");
 	logger->set_pattern("[%^%l%$] %v");
 	interface = std::make_shared<CandleInterface>(std::make_unique<UsbHandler>(logger));
-	canopenStack = std::make_unique<CanopenStack>(interface, logger);
-	receiveThread = std::thread(&Candle::receiveHandler, this);
-	transmitThread = std::thread(&Candle::transmitHandler, this);
 }
 
 Candle::Candle(std::shared_ptr<ICommunication> interface, std::shared_ptr<spdlog::logger> logger) : interface(interface),
 																									logger(logger)
 {
-	canopenStack = std::make_unique<CanopenStack>(interface, logger);
-	receiveThread = std::thread(&Candle::receiveHandler, this);
-	transmitThread = std::thread(&Candle::transmitHandler, this);
 }
 
 Candle::~Candle()
@@ -34,8 +28,13 @@ bool Candle::init(Baud baud)
 
 	auto status = interface->init(settings);
 
-	if (status)
-		isInitialized = true;
+	if (!status)
+		return false;
+
+	canopenStack = std::make_unique<CanopenStack>(interface, logger);
+	receiveThread = std::thread(&Candle::receiveHandler, this);
+	transmitThread = std::thread(&Candle::transmitHandler, this);
+	isInitialized = true;
 
 	return status;
 }

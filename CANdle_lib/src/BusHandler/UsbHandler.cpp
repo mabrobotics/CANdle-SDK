@@ -94,6 +94,12 @@ bool UsbHandler::addToFifo(BusFrame& busFrame)
 	return true;
 }
 
+void UsbHandler::resetFifos()
+{
+	toUsbBuffer.reset();
+	fromUsbBuffer.reset();
+}
+
 void UsbHandler::dataHandler()
 {
 	static constexpr uint32_t size = 1025;
