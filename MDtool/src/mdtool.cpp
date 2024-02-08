@@ -352,6 +352,9 @@ bool Mdtool::setupInfo(uint32_t id)
 
 		for (auto& [subindex, subentry] : entry->subEntries)
 		{
+			if (subentry->parameterName.find("Highest sub-index supported") != std::string::npos)
+				continue;
+
 			auto value = candle->canopenStack->getTypeBasedOnTag(subentry->dataType);
 
 			auto lambdaFunc = [&](auto& arg)
