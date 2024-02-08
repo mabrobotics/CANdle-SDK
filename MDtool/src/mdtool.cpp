@@ -335,3 +335,38 @@ bool Mdtool::clearWarning(uint32_t id)
 	return candle->addMd80(id) &&
 		   candle->writeSDO(id, 0x2003, 0x0C, static_cast<uint8_t>(1));
 }
+/* TODO: refactor when OD read situation is clear */
+bool Mdtool::setupInfo(uint32_t id)
+{
+	if (!candle->addMd80(id))
+		return false;
+
+	auto md80 = candle->getMd80(id);
+
+	for (auto& [index, entry] : md80->OD)
+	{
+		if (index < 0x2000 || index > 0x2100)
+			continue;
+
+		logger->info("{}", entry->parameterName);
+
+		for (auto& [subindex, subentry] : entry->subEntries)
+		{
+			auto value = candle->canopenStack->getTypeBasedOnTag(subentry->dataType);
+
+			auto lambdaFunc = [&](auto& arg)
+			{
+				if (!candle->readSDO(id, index, subindex, arg))
+					return false;
+
+				logger->info("     {} = {}", subentry->parameterName, arg);
+				return true;
+			};
+
+			if (!std::visit(lambdaFunc, value))
+				continue;
+		}
+	}
+
+	return true;
+}

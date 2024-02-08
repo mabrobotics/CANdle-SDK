@@ -21,6 +21,7 @@ int main(int argc, char** argv)
 	app.add_subcommand("save", "Use to save the motor parameters");
 	app.add_subcommand("status", "Use to read motor status");
 	app.add_subcommand("home", "Use to run homing");
+	app.add_subcommand("info", "Use list all registers");
 	auto* changeID = app.add_subcommand("changeID", "Use to change ID");
 	auto* changeBaud = app.add_subcommand("changeBaud", "Use to change baudrate ");
 
@@ -149,6 +150,10 @@ int main(int argc, char** argv)
 			mdtool.clearError(id);
 		else if (clear->got_subcommand("warning"))
 			mdtool.clearWarning(id);
+	}
+	else if (app.got_subcommand("info"))
+	{
+		mdtool.setupInfo(id);
 	}
 	return 0;
 }

@@ -86,9 +86,9 @@ bool Candle::addMd80(uint32_t id)
 	return true;
 }
 
-MD80* Candle::getMd80(uint32_t id) const
+std::shared_ptr<MD80> Candle::getMd80(uint32_t id) const
 {
-	return md80s.at(id).get();
+	return md80s.at(id);
 }
 
 bool Candle::enterOperational(uint32_t id)

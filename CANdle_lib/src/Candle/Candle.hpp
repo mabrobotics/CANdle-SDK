@@ -46,7 +46,7 @@ class Candle
 	void setSendSync(bool state, uint32_t intervalUs);
 	std::vector<uint32_t> ping();
 	bool addMd80(uint32_t id);
-	MD80* getMd80(uint32_t id) const;
+	std::shared_ptr<MD80> getMd80(uint32_t id) const;
 	bool enterOperational(uint32_t id);
 	bool enterSwitchOnDisabled(uint32_t id);
 	bool setModeOfOperation(uint32_t id, ModesOfOperation mode);
@@ -111,7 +111,7 @@ class Candle
 
 	bool isInitialized = false;
 
-	std::unordered_map<uint32_t, std::unique_ptr<MD80>> md80s;
+	std::unordered_map<uint32_t, std::shared_ptr<MD80>> md80s;
 	std::shared_ptr<ICommunication> interface;
 	std::shared_ptr<spdlog::logger> logger;
 };
