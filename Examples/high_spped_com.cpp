@@ -9,6 +9,8 @@ int main(int argc, char** argv)
 	if (!candle.init())
 		return -1;
 
+	std::cout << "CANdle init successful!" << std::endl;
+
 	if (!candle.addMd80(id))
 		return -1;
 	// candle.addMd80(2);

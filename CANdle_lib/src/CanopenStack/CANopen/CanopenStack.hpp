@@ -470,8 +470,11 @@ class CanopenStack
 	{
 		/* offset - 0 for 0x180, 1 for 0x280, 2 for 0x380, 3 for 0x480 */
 		uint16_t offset = ((frame.header.canId & 0xff00) >> 8) - 1;
-
 		uint32_t driveId = frame.header.canId & 0x1F;
+
+		if (!ODmap.contains(driveId))
+			return false;
+
 		auto value = ODmap[driveId]->at(TPDOComunicationParamIndex + offset).get()->subEntries.at(0x01).get()->value;
 		uint16_t COBID = std::get<uint32_t>(value);
 

@@ -9,7 +9,12 @@ int main(int argc, char** argv)
 	if (!candle.init())
 		return -1;
 
-	candle.addMd80(id);
+	std::cout << "CANdle init successful!" << std::endl;
+
+	if (!candle.addMd80(id))
+		return -1;
+
+	std::cout << "Added MD80 succesfully!" << std::endl;
 
 	std::vector<std::pair<uint16_t, uint8_t>> TPDO{{0x2009, 0x01}, {0x2009, 0x02}};
 	candle.setupResponse(id, CanopenStack::PDO::TPDO1, TPDO);
