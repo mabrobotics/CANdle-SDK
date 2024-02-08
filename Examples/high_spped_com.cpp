@@ -9,7 +9,7 @@ int main(int argc, char** argv)
 	if (!candle.init())
 		return -1;
 
-	if (candle.addMd80(id))
+	if (!candle.addMd80(id))
 		return -1;
 	// candle.addMd80(2);
 

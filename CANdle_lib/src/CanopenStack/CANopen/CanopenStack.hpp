@@ -197,7 +197,7 @@ class CanopenStack
 			frame.payload[0] = 0b00100011 | ((4 - size) << 2);
 			serialize(index_, &frame.payload[1]);
 			frame.payload[3] = subindex_;
-			std::copy(dataIn.begin(), dataIn.end(), &frame.payload[4]);
+			std::copy(dataIn.begin(), dataIn.begin() + size, &frame.payload[4]);
 		}
 
 		std::atomic<bool> SDOvalid = false;
