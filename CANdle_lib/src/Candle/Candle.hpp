@@ -8,6 +8,7 @@
 #include <variant>
 #include <vector>
 
+#include "Barrier.hpp"
 #include "BusHandler/UsbHandler.hpp"
 #include "CanopenStack/CANopen/CanopenStack.hpp"
 #include "Communication/CandleInterface.hpp"
@@ -101,6 +102,7 @@ class Candle
    private:
 	std::thread receiveThread;
 	std::thread transmitThread;
+	Barrier syncPoint;
 
 	std::atomic<bool> done = false;
 	std::atomic<bool> sendSync = false;

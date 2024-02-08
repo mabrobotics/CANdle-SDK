@@ -17,8 +17,6 @@ int main(int argc, char** argv)
 
 	std::cout << "CANdle init successful!" << std::endl;
 
-	// std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
 	for (auto id : ids)
 	{
 		candle.addMd80(id);

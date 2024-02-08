@@ -1,14 +1,16 @@
 #include "Candle.hpp"
 
-Candle::Candle()
+Candle::Candle() : syncPoint(3)
 {
 	logger = spdlog::stdout_color_mt("console");
 	logger->set_pattern("[%^%l%$] %v");
 	interface = std::make_shared<CandleInterface>(std::make_unique<UsbHandler>(logger));
 }
 
-Candle::Candle(std::shared_ptr<ICommunication> interface, std::shared_ptr<spdlog::logger> logger) : interface(interface),
+Candle::Candle(std::shared_ptr<ICommunication> interface, std::shared_ptr<spdlog::logger> logger) : syncPoint(3),
+																									interface(interface),
 																									logger(logger)
+
 {
 }
 
@@ -34,6 +36,9 @@ bool Candle::init(Baud baud)
 	canopenStack = std::make_unique<CanopenStack>(interface, logger);
 	receiveThread = std::thread(&Candle::receiveHandler, this);
 	transmitThread = std::thread(&Candle::transmitHandler, this);
+
+	syncPoint.wait();
+
 	isInitialized = true;
 
 	return status;
@@ -127,6 +132,9 @@ bool Candle::setupCommand(uint32_t id, CanopenStack::PDO pdoID, const std::vecto
 
 void Candle::receiveHandler()
 {
+	logger->debug("Starting candle receive thread...");
+
+	syncPoint.wait();
 	while (!done)
 	{
 		auto maybeFrame = interface->receiveCanFrame();
@@ -136,10 +144,15 @@ void Candle::receiveHandler()
 
 		canopenStack->parse(maybeFrame.value());
 	}
+
+	logger->debug("Ending candle receive thread...");
 }
 
 void Candle::transmitHandler()
 {
+	logger->debug("Starting candle transmit thread...");
+
+	syncPoint.wait();
 	while (!done)
 	{
 		/* SEND RPDOs */
@@ -153,4 +166,5 @@ void Candle::transmitHandler()
 		{
 		}
 	}
+	logger->debug("Ending candle transmit thread...");
 }
