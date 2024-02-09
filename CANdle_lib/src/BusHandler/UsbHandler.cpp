@@ -6,7 +6,7 @@
 #include "Commons/BitCast.hpp"
 #include "libusb.h"
 
-UsbHandler::UsbHandler(std::shared_ptr<spdlog::logger> logger) : logger(logger)
+UsbHandler::UsbHandler(std::shared_ptr<spdlog::logger> logger) : logger(logger), syncPoint(2)
 {
 }
 
@@ -48,7 +48,10 @@ bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode, bool deviceNo
 	}
 
 	if (!manualMode)
+	{
 		handlerThread = std::thread(&UsbHandler::dataHandler, this);
+		syncPoint.wait();
+	}
 
 	isInitialized = true;
 	return true;
@@ -109,6 +112,8 @@ void UsbHandler::dataHandler()
 	uint32_t sendLen = 0;
 	int receivedLen = 0;
 	int sendLenActual = 0;
+
+	syncPoint.wait();
 
 	while (!done)
 	{

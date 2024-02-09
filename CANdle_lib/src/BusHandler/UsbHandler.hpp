@@ -6,6 +6,7 @@
 #include <span>
 #include <thread>
 
+#include "Barrier.hpp"
 #include "CircularBuffer.hpp"
 #include "IBusHandler.hpp"
 #include "spdlog/spdlog.h"
@@ -42,6 +43,7 @@ class UsbHandler : public IBusHandler
 	std::thread handlerThread;
 	std::shared_ptr<spdlog::logger> logger;
 	bool isInitialized = false;
+	Barrier syncPoint;
 
    private:
 	void dataHandler();

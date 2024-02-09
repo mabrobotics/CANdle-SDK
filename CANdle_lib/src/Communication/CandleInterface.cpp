@@ -17,15 +17,11 @@ bool CandleInterface::init(Settings& settings)
 	if (!busHandler->init())
 		return false;
 
+	/* settings frame reinits can and clears all fifos. Make sure we clear our fifos right after it
+	 if there are ny problems, make sure that reset fifos wait at leas one full communication c*/
 	if (!sendSettingsFrame(settings))
 		return false;
 
-	/* TODO: refactor. The delay is to allow for the communication to receive frames
-	that had been already put to fifos on CANdle side and havent been sent in the
-	previous communication cycle. Sending the settings frame should reset the fifos,
-	but before that some frames are going to be received and should be disposed off */
-
-	std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	busHandler->resetFifos();
 
 	if (!sendCommandFrame(Command::GET_FIRMWARE_INFO))

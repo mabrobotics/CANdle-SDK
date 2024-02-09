@@ -36,8 +36,8 @@ int main(int argc, char** argv)
 
 	while (1)
 	{
-		md80_1->setPositionTarget(0.0f);
-		md80_2->setPositionTarget(0.0f);
+		md80_1->setPositionTarget(md80_2->getOutputPosition());
+		md80_2->setPositionTarget(md80_1->getOutputPosition());
 	}
 
 	return 0;
