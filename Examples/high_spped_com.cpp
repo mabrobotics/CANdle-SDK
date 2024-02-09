@@ -13,16 +13,9 @@ int main(int argc, char** argv)
 
 	if (!candle.addMd80(id))
 		return -1;
-	// candle.addMd80(2);
 
-	std::vector<std::pair<uint16_t, uint8_t>> TPDO{{0x2009, 0x01}, {0x2009, 0x02}};
-	candle.setupResponse(id, CanopenStack::PDO::TPDO1, TPDO);
-	// candle.setupResponse(2, CanopenStack::PDO::TPDO1, TPDO);
-
-	std::vector<std::pair<uint16_t, uint8_t>> RPDO{{0x2008, 0x09}, {0x2008, 0x0A}};
-	candle.setupResponse(id, CanopenStack::PDO::RPDO1, RPDO);
-	// candle.setupResponse(2, CanopenStack::PDO::RPDO1, RPDO);
-
+	candle.setupPDO(id, CanopenStack::PDO::TPDO1, {{0x2009, 0x01}, {0x2009, 0x02}});
+	candle.setupPDO(id, CanopenStack::PDO::RPDO1, {{0x2008, 0x09}, {0x2008, 0x0A}});
 	candle.setModeOfOperation(id, Candle::ModesOfOperation::CYCLIC_SYNC_POSITION);
 	candle.enterOperational(id);
 
