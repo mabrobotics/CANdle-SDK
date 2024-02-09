@@ -114,11 +114,15 @@ void UsbHandler::dataHandler()
 	{
 		copyElementsToOutputBuf(txBuf, sendLen);
 
-		if (int ret = libusb_bulk_transfer(devh, outEndpointAdr, txBuf.data(), sendLen, &sendLenActual, 10) < 0)
-			logger->error("Error while sending: {}", ret);
+		int ret = libusb_bulk_transfer(devh, outEndpointAdr, txBuf.data(), sendLen, &sendLenActual, sendTimeout);
 
-		if (int ret = libusb_bulk_transfer(devh, inEndpointAdr, rxBuf.data(), size, &receivedLen, 1000) < 0)
-			logger->error("Error while receiving {}  transferred {}", ret, receivedLen);
+		if (ret < 0)
+			logger->error("Error while sending: {}", libusb_strerror(static_cast<libusb_error>(ret)));
+
+		ret = libusb_bulk_transfer(devh, inEndpointAdr, rxBuf.data(), size, &receivedLen, receiveTimeout);
+
+		if (ret < 0)
+			logger->error("Error while receiving {}  transferred {}", libusb_strerror(static_cast<libusb_error>(ret)), receivedLen);
 		else
 			copyInputBufToElements(rxBuf, receivedLen);
 	}
@@ -177,10 +181,11 @@ bool UsbHandler::sendDataDirectly(std::span<uint8_t> data)
 {
 	/* TODO check sendLenActual */
 	int sendLenActual = 0;
+	int ret = libusb_bulk_transfer(devh, outEndpointAdr, data.data(), data.size(), &sendLenActual, sendTimeout);
 
-	if (int ret = libusb_bulk_transfer(devh, outEndpointAdr, data.data(), data.size(), &sendLenActual, 10) < 0)
+	if (ret < 0)
 	{
-		logger->error("Error while sending: {}", ret);
+		logger->error("Error while sending: {}", libusb_strerror(static_cast<libusb_error>(ret)));
 		return false;
 	}
 	return true;
@@ -190,12 +195,12 @@ bool UsbHandler::receiveDataDirectly(std::span<uint8_t>& data)
 {
 	/* TODO check receivedLen */
 	int receivedLen = 0;
+	int ret = libusb_bulk_transfer(devh, inEndpointAdr, data.data(), data.size(), &receivedLen, receiveTimeout);
 
-	if (int ret = libusb_bulk_transfer(devh, inEndpointAdr, data.data(), data.size(), &receivedLen, 1000) < 0)
+	if (ret < 0)
 	{
-		logger->error("Error while receiving {}  transferred {}", ret, receivedLen);
+		logger->error("Error while receiving {}  transferred {}", libusb_strerror(static_cast<libusb_error>(ret)), receivedLen);
 		return false;
 	}
-
 	return true;
 }

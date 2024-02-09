@@ -31,6 +31,10 @@ class UsbHandler : public IBusHandler
 	static constexpr uint16_t PID = 0x1000;
 	static constexpr int inEndpointAdr = 0x81;
 	static constexpr int outEndpointAdr = 0x01;
+
+	static constexpr uint32_t sendTimeout = 15;
+	static constexpr uint32_t receiveTimeout = 1000;
+
 	struct libusb_device_handle* devh = NULL;
 	std::atomic<bool> done;
 	CircularBuffer<BusFrame, 50> toUsbBuffer;
