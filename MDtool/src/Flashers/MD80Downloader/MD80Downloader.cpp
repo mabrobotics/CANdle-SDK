@@ -248,7 +248,7 @@ bool MD80Downloader::doSendFirmware(std::span<const uint8_t> firmwareData)
 bool MD80Downloader::sendFirmware(std::span<const uint8_t> firmwareData)
 {
 	bool result = doSendFirmware(firmwareData);
-	if (!result)
+	if (result)
 		std::cout << std::endl;
 	return result;
 }
