@@ -99,6 +99,14 @@ bool UsbHandler::addToFifo(BusFrame& busFrame)
 
 void UsbHandler::resetFifos()
 {
+	/* wait at least one communication cycle so that a previous command is sent, not flushed immediately */
+	cycleCompleted = false;
+	while (!cycleCompleted && !done)
+		;
+	cycleCompleted = false;
+	while (!cycleCompleted && !done)
+		;
+
 	toUsbBuffer.reset();
 	fromUsbBuffer.reset();
 }
@@ -130,6 +138,8 @@ void UsbHandler::dataHandler()
 			logger->error("Error while receiving {}  transferred {}", libusb_strerror(static_cast<libusb_error>(ret)), receivedLen);
 		else
 			copyInputBufToElements(rxBuf, receivedLen);
+
+		cycleCompleted = true;
 	}
 }
 

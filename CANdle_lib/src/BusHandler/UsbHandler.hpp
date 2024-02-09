@@ -44,6 +44,7 @@ class UsbHandler : public IBusHandler
 	std::shared_ptr<spdlog::logger> logger;
 	bool isInitialized = false;
 	Barrier syncPoint;
+	std::atomic<bool> cycleCompleted = false;
 
    private:
 	void dataHandler();
