@@ -388,3 +388,8 @@ bool Mdtool::setupInfo(uint32_t id)
 
 	return true;
 }
+
+bool Mdtool::setZero(uint32_t id)
+{
+	return candle->addMd80(id) && candle->setZeroPosition(id);
+}

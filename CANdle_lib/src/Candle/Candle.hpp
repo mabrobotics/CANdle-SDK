@@ -52,6 +52,7 @@ class Candle
 	bool setModeOfOperation(uint32_t id, ModesOfOperation mode);
 	bool setTargetPosition(uint32_t id, uint32_t target);
 	bool startCalibration(uint32_t id);
+	bool setZeroPosition(uint32_t id);
 
 	bool setupPDO(uint32_t id, CanopenStack::PDO pdoID, const std::vector<std::pair<uint16_t, uint8_t>>& fields);
 

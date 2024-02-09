@@ -30,6 +30,8 @@ int main(int argc, char** argv)
 	clear->add_subcommand("error", "Use clear errors");
 	clear->add_subcommand("warning", "Use clear warnings");
 
+	app.add_subcommand("zero", "Use to set current position as zero");
+
 	auto logger = spdlog::stdout_color_mt("console");
 	logger->set_pattern("[%^%l%$] %v");
 
@@ -123,38 +125,46 @@ int main(int argc, char** argv)
 	if (!mdtool.init(candleInterface, static_cast<Candle::Baud>(baud)))
 		return -1;
 
+	bool success = false;
+
 	if (app.got_subcommand("ping"))
 		mdtool.ping();
 	else if (app.got_subcommand("update_md80"))
-		mdtool.updateMd80(filePath, id, recover, all);
+		success = mdtool.updateMd80(filePath, id, recover, all);
 	else if (app.got_subcommand("update_bootloader"))
-		mdtool.updateBootloader(filePath, id, recover);
+		success = mdtool.updateBootloader(filePath, id, recover);
 	else if (app.got_subcommand("readSDO"))
-		mdtool.readSDO(id, index, subindex);
+		success = mdtool.readSDO(id, index, subindex);
 	else if (app.got_subcommand("writeSDO"))
-		mdtool.writeSDO(id, index, subindex, value);
+		success = mdtool.writeSDO(id, index, subindex, value);
 	else if (app.got_subcommand("calibrate"))
-		mdtool.calibrate(id);
+		success = mdtool.calibrate(id);
 	else if (app.got_subcommand("save"))
-		mdtool.save(id);
+		success = mdtool.save(id);
 	else if (app.got_subcommand("status"))
-		mdtool.status(id);
+		success = mdtool.status(id);
 	else if (app.got_subcommand("home"))
-		mdtool.home(id);
+		success = mdtool.home(id);
 	else if (app.got_subcommand("changeID"))
-		mdtool.changeId(id, newID);
+		success = mdtool.changeId(id, newID);
 	else if (app.got_subcommand("changeBaud"))
-		mdtool.changeBaud(id, newBaud * 1000000);
+		success = mdtool.changeBaud(id, newBaud * 1000000);
 	else if (app.got_subcommand("clear"))
 	{
 		if (clear->got_subcommand("error"))
-			mdtool.clearError(id);
+			success = mdtool.clearError(id);
 		else if (clear->got_subcommand("warning"))
-			mdtool.clearWarning(id);
+			success = mdtool.clearWarning(id);
 	}
 	else if (app.got_subcommand("info"))
-	{
-		mdtool.setupInfo(id);
-	}
+		success = mdtool.setupInfo(id);
+	else if (app.got_subcommand("zero"))
+		success = mdtool.setZero(id);
+
+	if (success)
+		logger->info("Success!");
+	else
+		logger->error("Command Failed!");
+
 	return 0;
 }

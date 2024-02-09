@@ -26,6 +26,7 @@ int main(int argc, char** argv)
 		candle.writeSDO(id, 0x2003, 0x05, true);
 		candle.writeSDO(id, 0x200C, 0x01, kp);
 		candle.writeSDO(id, 0x200C, 0x02, kd);
+		candle.setZeroPosition(id);
 		candle.enterOperational(id);
 	}
 

@@ -19,6 +19,7 @@ int main(int argc, char** argv)
 	candle.setupPDO(id, CanopenStack::PDO::TPDO1, {{0x2009, 0x01}, {0x2009, 0x02}});
 	candle.setupPDO(id, CanopenStack::PDO::RPDO1, {{0x2008, 0x09}, {0x2008, 0x0A}});
 	candle.setModeOfOperation(id, Candle::ModesOfOperation::CYCLIC_SYNC_VELOCTIY);
+	candle.setZeroPosition(id);
 	candle.enterOperational(id);
 
 	auto md80 = candle.getMd80(id);

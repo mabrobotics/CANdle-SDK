@@ -30,6 +30,7 @@ class Mdtool
 	bool clearError(uint32_t id);
 	bool clearWarning(uint32_t id);
 	bool setupInfo(uint32_t id);
+	bool setZero(uint32_t id);
 
    private:
 	static constexpr uint32_t secondaryBootloaderAddress = 0x8005000;
