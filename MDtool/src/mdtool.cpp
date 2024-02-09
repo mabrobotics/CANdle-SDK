@@ -153,7 +153,7 @@ bool Mdtool::updateBootloader(std::string& filePath, uint32_t id, bool recover)
 
 	if (BinaryParser::getFirmwareFileType() != BinaryParser::Type::BOOT)
 	{
-		logger->error("Wrong file type! Please make sure the file is intended for MD80 controller bootlaoder.");
+		logger->error("Wrong file type! Please make sure the file is intended for MD80 controller bootloader.");
 		return false;
 	}
 
@@ -165,14 +165,22 @@ bool Mdtool::updateBootloader(std::string& filePath, uint32_t id, bool recover)
 	auto updateStatus = downloader.doLoad(std::span<uint8_t>(buffer), id, recover, secondaryBootloaderAddress, false);
 
 	if (updateStatus != MD80Downloader::Status::OK)
-		logger->error("Status: {}", static_cast<uint8_t>(updateStatus));
+	{
+		logger->error("Update failed! Status: {}", static_cast<uint8_t>(updateStatus));
+		return false;
+	}
 
 	logger->info("Preparing to update the primary bootloader of drive ID {}", id);
 	buffer = BinaryParser::getPrimaryFirmwareFile();
 	updateStatus = downloader.doLoad(std::span<uint8_t>(buffer), id, recover, primaryBootloaderAddress, true);
 
 	if (updateStatus != MD80Downloader::Status::OK)
-		logger->error("Status: {}", static_cast<uint8_t>(updateStatus));
+	{
+		logger->error("Update failed! Status: {}", static_cast<uint8_t>(updateStatus));
+		return false;
+	}
+	else
+		logger->info("Bootloader update successful! Now please update MD80 firmware using \"update_md80\" command.");
 
 	return true;
 }
@@ -200,11 +208,18 @@ bool Mdtool::updateCANdle(std::string& filePath, bool recover)
 
 	CANdleDownloader downloader(logger);
 
+	logger->info("Preparing to update CANdle device...");
+
 	auto buffer = BinaryParser::getPrimaryFirmwareFile();
 	auto downloadStatus = downloader.doLoad(std::span<uint8_t>(buffer), recover);
 
 	if (downloadStatus != CANdleDownloader::Status::OK)
-		logger->error("Status: {}", static_cast<uint8_t>(downloadStatus));
+	{
+		logger->error("Update failed! Status: {}", static_cast<uint8_t>(downloadStatus));
+		return false;
+	}
+	else
+		logger->info("Update successful!");
 
 	return true;
 }
