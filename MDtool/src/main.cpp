@@ -19,12 +19,13 @@ int main(int argc, char** argv)
 	auto* readSDO = app.add_subcommand("readSDO", "Use to read SDO value");
 	auto* writeSDO = app.add_subcommand("writeSDO", "Use to write SDO value");
 	app.add_subcommand("calibrate", "Use to calibrate the motor");
-	app.add_subcommand("save", "Use to save the motor parameters");
+	auto* save = app.add_subcommand("save", "Use to save the motor parameters");
 	app.add_subcommand("status", "Use to read motor status");
 	app.add_subcommand("home", "Use to run homing");
 	app.add_subcommand("info", "Use list all registers");
+	app.add_subcommand("reset", "Use to reset a drive");
 	auto* changeID = app.add_subcommand("changeID", "Use to change ID");
-	auto* changeBaud = app.add_subcommand("changeBaud", "Use to change baudrate ");
+	auto* changeBaud = app.add_subcommand("changeBaud", "Use to change baudrate");
 
 	auto* clear = app.add_subcommand("clear", "Use clear errors or warnings");
 	clear->add_subcommand("error", "Use clear errors");
@@ -40,6 +41,7 @@ int main(int argc, char** argv)
 
 	bool all = false;
 	auto* all_option = updateMD80->add_flag("-a,--all", all, "Use to update all drives detected by ping() method");
+	save->add_flag("-a,--all", all, "Use to save config on all connected drives");
 
 	uint32_t id = 1;
 	app.add_option("-i,--id", id, "ID of the drive")->check(CLI::Range(1, 31))->excludes(all_option);
@@ -140,7 +142,7 @@ int main(int argc, char** argv)
 	else if (app.got_subcommand("calibrate"))
 		success = mdtool.calibrate(id);
 	else if (app.got_subcommand("save"))
-		success = mdtool.save(id);
+		success = mdtool.save(id, all);
 	else if (app.got_subcommand("status"))
 		success = mdtool.status(id);
 	else if (app.got_subcommand("home"))
@@ -160,6 +162,8 @@ int main(int argc, char** argv)
 		success = mdtool.setupInfo(id);
 	else if (app.got_subcommand("zero"))
 		success = mdtool.setZero(id);
+	else if (app.got_subcommand("reset"))
+		success = mdtool.reset(id);
 
 	if (success)
 		logger->info("Success!");

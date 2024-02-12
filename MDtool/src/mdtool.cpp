@@ -283,8 +283,23 @@ bool Mdtool::home(uint32_t id)
 		   candle->writeSDO(id, 0x2003, 0x0E, true);
 }
 
-bool Mdtool::save(uint32_t id)
+bool Mdtool::save(uint32_t id, bool all)
 {
+	if (all)
+	{
+		auto drives = candle->ping();
+
+		logger->info("Saving config on drives: ");
+
+		for (auto& id : drives)
+		{
+			logger->info(std::to_string(id));
+			candle->addMd80(id) && candle->writeSDO(id, 0x1010, 0x01, static_cast<uint32_t>(0x65766173));
+		}
+
+		return true;
+	}
+
 	return candle->addMd80(id) && candle->writeSDO(id, 0x1010, 0x01, static_cast<uint32_t>(0x65766173));
 }
 
@@ -337,8 +352,7 @@ bool Mdtool::changeId(uint32_t id, uint32_t newId)
 bool Mdtool::changeBaud(uint32_t id, uint32_t newBaud)
 {
 	return candle->addMd80(id) &&
-		   candle->writeSDO(id, 0x2000, 0x0B, newBaud) &&
-		   candle->writeSDO(id, 0x1010, 0x01, static_cast<uint32_t>(0x65766173));
+		   candle->writeSDO(id, 0x2000, 0x0B, newBaud);
 }
 
 bool Mdtool::clearError(uint32_t id)
@@ -394,4 +408,9 @@ bool Mdtool::setupInfo(uint32_t id)
 bool Mdtool::setZero(uint32_t id)
 {
 	return candle->addMd80(id) && candle->setZeroPosition(id);
+}
+
+bool Mdtool::reset(uint32_t id)
+{
+	return candle->addMd80(id) && candle->reset(id);
 }

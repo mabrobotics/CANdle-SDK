@@ -125,6 +125,11 @@ bool Candle::setZeroPosition(uint32_t id)
 	return writeSDO(id, 0x2003, 0x05, true);
 }
 
+bool Candle::reset(uint32_t id)
+{
+	return writeSDO(id, 0x2003, 0x02, true);
+}
+
 bool Candle::setupPDO(uint32_t id, CanopenStack::PDO pdoID, const std::vector<std::pair<uint16_t, uint8_t>>& fields)
 {
 	return canopenStack->setupPDO(id, pdoID, fields);

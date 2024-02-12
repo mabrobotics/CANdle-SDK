@@ -23,7 +23,7 @@ class Mdtool
 	bool writeSDO(uint32_t id, uint16_t index, uint8_t subindex, const IODParser::ValueType& value);
 	bool calibrate(uint32_t id);
 	bool home(uint32_t id);
-	bool save(uint32_t id);
+	bool save(uint32_t id, bool all = false);
 	bool status(uint32_t id);
 	bool changeId(uint32_t id, uint32_t newId);
 	bool changeBaud(uint32_t id, uint32_t newBaud);
@@ -31,6 +31,7 @@ class Mdtool
 	bool clearWarning(uint32_t id);
 	bool setupInfo(uint32_t id);
 	bool setZero(uint32_t id);
+	bool reset(uint32_t id);
 
    private:
 	static constexpr uint32_t secondaryBootloaderAddress = 0x8005000;
