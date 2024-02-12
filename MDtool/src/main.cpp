@@ -128,7 +128,7 @@ int main(int argc, char** argv)
 	bool success = false;
 
 	if (app.got_subcommand("ping"))
-		mdtool.ping();
+		success = mdtool.ping();
 	else if (app.got_subcommand("update_md80"))
 		success = mdtool.updateMd80(filePath, id, recover, all);
 	else if (app.got_subcommand("update_bootloader"))

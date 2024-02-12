@@ -42,13 +42,15 @@ bool Mdtool::init(std::shared_ptr<ICommunication> interface, Candle::Baud baud)
 	return candle->init(baud);
 }
 
-void Mdtool::ping()
+bool Mdtool::ping()
 {
 	auto drives = candle->ping();
 	logger->info("Found drives: ");
 
 	for (auto& md80 : drives)
 		logger->info(std::to_string(md80));
+
+	return true;
 }
 
 bool Mdtool::updateMd80(std::string& filePath, uint32_t id, bool recover, bool all)
