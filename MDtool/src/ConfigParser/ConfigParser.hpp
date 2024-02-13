@@ -5,6 +5,7 @@
 #include <array>
 #include <cctype>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <unordered_set>
@@ -47,43 +48,58 @@ class ConfigParser
 		{
 			bool mandatory = field.mandatory;
 
-			if (mandatory && !ini.has(field.category))
+			if (!ini.has(field.category))
 			{
-				logger->error("Missing mandatory category: [{}]", field.category);
-				return std::nullopt;
+				if (mandatory)
+				{
+					logger->error("Missing mandatory category: [{}]", field.category);
+					return std::nullopt;
+				}
+				continue;
 			}
 
-			if (mandatory && !ini[field.category].has(field.fieldName))
+			if (!ini[field.category].has(field.fieldName))
 			{
-				logger->error("Missing mandatory field: [{}] {}", field.category, field.fieldName);
-				return std::nullopt;
+				if (mandatory)
+				{
+					logger->error("Missing mandatory field: [{}] {}", field.category, field.fieldName);
+					return std::nullopt;
+				}
+				continue;
 			}
 
 			/* this is not very efficient, but we do no need to optimize here */
 			for (auto& [index, entry] : *OD)
 			{
-				if (iequals(entry->parameterName, field.category))
+				if (!iequals(entry->parameterName, field.category))
+					continue;
+
+				logger->debug("Category matched!");
+
+				for (auto& [subindex, subentry] : entry->subEntries)
 				{
-					logger->debug("Category matched!");
-					for (auto& [subindex, subentry] : entry->subEntries)
+					if (!iequals(subentry->parameterName, field.fieldName))
+						continue;
+
+					logger->debug("Field matched!");
+
+					auto valueStr = ini.get(field.category).get(field.fieldName);
+
+					if (specialTreatmentMap.contains(toLower(field.category) + toLower(field.fieldName)))
 					{
-						if (iequals(subentry->parameterName, field.fieldName))
-						{
-							logger->debug("Field matched!");
-							auto valueStr = ini.get(field.category).get(field.fieldName);
-
-							try
-							{
-								subentry->value = ObjectDictionaryParserEDS::fillDefaultValue(valueStr, subentry->dataType);
-							}
-							catch (...)
-							{
-								logger->warn("exception while parsing 0x{:x}:0x{:x} ({}:{})", index, subindex, entry->parameterName, subentry->parameterName);
-							}
-
-							ODindexes.push_back({index, subindex});
-						}
+						logger->warn("special treatment field!! [{}]:[{}]", field.category, field.fieldName);
 					}
+
+					try
+					{
+						subentry->value = ObjectDictionaryParserEDS::fillDefaultValue(valueStr, subentry->dataType);
+					}
+					catch (...)
+					{
+						logger->warn("exception while parsing 0x{:x}:0x{:x} ({}:{})", index, subindex, entry->parameterName, subentry->parameterName);
+					}
+
+					ODindexes.push_back({index, subindex});
 				}
 			}
 		}
@@ -100,10 +116,30 @@ class ConfigParser
 														   std::tolower(static_cast<unsigned char>(b)); });
 	}
 
+	std::string toLower(std::string str)
+	{
+		std::transform(str.begin(), str.end(), str.begin(),
+					   [](unsigned char c)
+					   { return std::tolower(c); });
+
+		return str;
+	}
+
    private:
 	mINI::INIStructure ini;
 	std::shared_ptr<spdlog::logger> logger;
 	IODParser::ODType* OD;
+
+	const std::set<std::string> encoderTypes = {"NONE", "AS5047_CENTER", "AS5047_OFFAXIS", "MB053SFA17BENT00", "CM_OFFAXIS", "M24B_CENTER", "M24B_OFFAXIS"};
+	const std::set<std::string> encoderModes = {"NONE", "STARTUP", "MOTION", "REPORT", "MAIN"};
+	const std::set<std::string> encoderCalibrationModes = {"FULL", "DIRONLY"};
+	const std::set<std::string> motorCalibrationModes = {"FULL", "NOPPDET"};
+	const std::set<std::string> homingModes = {"OFF", "SENSORLESS"};
+	const std::set<std::string> brakeModes = {"OFF", "AUTO", "MANUAL"};
+
+	std::unordered_map<std::string, const std::set<std::string>> specialTreatmentMap{
+		{"output encodertype", encoderTypes},
+		{"output encodermode", encoderModes}};
 
 	std::array<ConfigField, 100> Fields{
 		ConfigField{"motor settings", "motor name", true},
@@ -129,8 +165,8 @@ class ConfigParser
 		ConfigField{"motion", "velocity window", false},
 		ConfigField{"motion", "quick stop deceleration", false},
 
-		ConfigField{"output encoder", "type", true},
-		ConfigField{"output encoder", "mode", true},
+		ConfigField{"output encoder", "type", false},
+		ConfigField{"output encoder", "mode", false},
 
 		ConfigField{"position pid controller", "kp", true},
 		ConfigField{"position pid controller", "ki", true},
@@ -144,6 +180,11 @@ class ConfigParser
 
 		ConfigField{"impedance pd controller", "kp", true},
 		ConfigField{"impedance pd controller", "kd", true},
+
+		ConfigField{"homing", "mode", false},
+		ConfigField{"homing", "max travel", false},
+		ConfigField{"homing", "max velocity", false},
+		ConfigField{"homing", "max torque", false},
 	};
 };
 
