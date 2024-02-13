@@ -7,4 +7,5 @@
 @REM C:\\msys64\\mingw64\\bin\\gdbserver.exe localhost:2000 ./build/Examples/velocityPID.exe
 @REM C:\\msys64\\mingw64\\bin\\gdbserver.exe localhost:2000 ./build/MDtool/MDtool.exe status
 @REM C:\\msys64\\mingw64\\bin\\gdbserver.exe localhost:2000 ./build/MDtool/MDtool.exe update_candle -f C:/Users/klonyyy/PROJECTS/MAB/projects/CANdle-SDK/CANdle-SDK/build/MDtool/CANdle_d2f616.mab -r
-C:\\msys64\\mingw64\\bin\\gdbserver.exe localhost:2000 ./build/MDtool/MDtool.exe info
+@REM C:\\msys64\\mingw64\\bin\\gdbserver.exe localhost:2000 ./build/MDtool/MDtool.exe info
+C:\\msys64\\mingw64\\bin\\gdbserver.exe localhost:2000 ./build_test/MDtool/test/run_tests.exe

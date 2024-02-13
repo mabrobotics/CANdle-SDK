@@ -5,6 +5,7 @@
 
 #include "BinaryParser.hpp"
 #include "CANdleDownloader.hpp"
+#include "ConfigParser/ConfigParser.hpp"
 #include "MD80Downloader.hpp"
 #include "spdlog/fmt/ostr.h"
 

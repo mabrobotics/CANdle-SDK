@@ -6,7 +6,7 @@
 #include <unordered_map>
 
 #include "IObjectDictionaryParser.hpp"
-#include "third_party/mINI/inc/ini.h"
+#include "ini.h"
 
 class ObjectDictionaryParserEDS : public IODParser
 {
@@ -88,7 +88,7 @@ class ObjectDictionaryParserEDS : public IODParser
 		return false;
 	}
 
-	IODParser::ValueType fillDefaultValue(std::string& value, IODParser::DataType dataType)
+	static IODParser::ValueType fillDefaultValue(std::string& value, IODParser::DataType dataType)
 	{
 		switch (dataType)
 		{
