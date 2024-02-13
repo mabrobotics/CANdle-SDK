@@ -39,3 +39,7 @@ target_include_directories(${EXECUTABLE} SYSTEM PRIVATE
     ${SPDLOG_INCLUDE_DIR})
 
 target_link_libraries(${EXECUTABLE} pthread CANdle_lib -static-libstdc++ -static-libgcc OpenSSL::SSL OpenSSL::Crypto)
+
+add_custom_command(TARGET ${EXECUTABLE} PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/MDtool/configs $<TARGET_FILE_DIR:${EXECUTABLE}>)

@@ -12,7 +12,7 @@ endif()
 
 project(CANdle_SDK)
 
-set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_STANDARD 20)
 
 if(WIN32 AND "${PLATFORM}" STREQUAL "native")
@@ -22,8 +22,8 @@ if(WIN32 AND "${PLATFORM}" STREQUAL "native")
     set(CMAKE_AR "C:/msys64/mingw64/bin/llvm-ar.exe")
 endif()
 
-set(COMPILE_OPTIONS -Wall
-
+set(COMPILE_OPTIONS 
+    -Wall
     -Wextra
     -Wpedantic
     -Wno-unused-parameter
@@ -34,6 +34,8 @@ if(WIN32)
 else()
     add_compile_options(${COMPILE_OPTIONS})
 endif()
+
+set(mINI_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/mINI/inc/)
 
 add_subdirectory(CANdle_lib)
 add_subdirectory(MDtool)

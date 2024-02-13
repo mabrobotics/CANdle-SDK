@@ -59,19 +59,28 @@ class ConfigParser
 				return std::nullopt;
 			}
 
+			/* this is not very efficient, but we do no need to optimize here */
 			for (auto& [index, entry] : *OD)
 			{
 				if (iequals(entry->parameterName, field.category))
 				{
-					logger->info("Category matched!");
-
+					logger->debug("Category matched!");
 					for (auto& [subindex, subentry] : entry->subEntries)
 					{
 						if (iequals(subentry->parameterName, field.fieldName))
 						{
-							logger->info("Field matched!");
+							logger->debug("Field matched!");
 							auto valueStr = ini.get(field.category).get(field.fieldName);
-							subentry->value = ObjectDictionaryParserEDS::fillDefaultValue(valueStr, subentry->dataType);
+
+							try
+							{
+								subentry->value = ObjectDictionaryParserEDS::fillDefaultValue(valueStr, subentry->dataType);
+							}
+							catch (...)
+							{
+								logger->warn("exception while parsing 0x{:x}:0x{:x} ({}:{})", index, subindex, entry->parameterName, subentry->parameterName);
+							}
+
 							ODindexes.push_back({index, subindex});
 						}
 					}
@@ -96,9 +105,46 @@ class ConfigParser
 	std::shared_ptr<spdlog::logger> logger;
 	IODParser::ODType* OD;
 
-	std::array<ConfigField, 2> Fields{
+	std::array<ConfigField, 100> Fields{
 		ConfigField{"motor settings", "motor name", true},
-		ConfigField{"motor settings", "pole pairs", true}};
+		ConfigField{"motor settings", "pole pairs", true},
+		ConfigField{"motor settings", "torque constant", true},
+		ConfigField{"motor settings", "KV", false},
+		ConfigField{"motor settings", "gear ratio", true},
+		ConfigField{"motor settings", "torque bandwidth", true},
+		ConfigField{"motor settings", "motor shutdown temperature", true},
+
+		ConfigField{"limits", "max torque", true},
+		ConfigField{"limits", "max velocity", true},
+		ConfigField{"limits", "max position", true},
+		ConfigField{"limits", "min position", true},
+		ConfigField{"limits", "max acceleration", true},
+		ConfigField{"limits", "min deceleration", true},
+		ConfigField{"limits", "max current", true},
+
+		ConfigField{"motion", "profile velocity", true},
+		ConfigField{"motion", "profile acceleration", true},
+		ConfigField{"motion", "profile deceleration", true},
+		ConfigField{"motion", "position window", false},
+		ConfigField{"motion", "velocity window", false},
+		ConfigField{"motion", "quick stop deceleration", false},
+
+		ConfigField{"output encoder", "type", true},
+		ConfigField{"output encoder", "mode", true},
+
+		ConfigField{"position pid controller", "kp", true},
+		ConfigField{"position pid controller", "ki", true},
+		ConfigField{"position pid controller", "kd", true},
+		ConfigField{"position pid controller", "integral limit", true},
+
+		ConfigField{"velocity pid controller", "kp", true},
+		ConfigField{"velocity pid controller", "ki", true},
+		ConfigField{"velocity pid controller", "kd", true},
+		ConfigField{"velocity pid controller", "integral limit", true},
+
+		ConfigField{"impedance pd controller", "kp", true},
+		ConfigField{"impedance pd controller", "kd", true},
+	};
 };
 
 #endif
