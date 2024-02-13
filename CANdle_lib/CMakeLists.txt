@@ -1,21 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
 
-# if(MAKE_TESTS)
-#     add_subdirectory(test)
-#     return()
-# endif()
-
-# if(NOT DEFINED PLATFORM)
-#     set(PLATFORM "native")
-#     message("Compiling for native system")
-# elseif("${PLATFORM}" STREQUAL "WIN")
-#     message("Cross - compiling for Windows")
-#     set(CMAKE_CXX_COMPILER /usr/bin/x86_64-w64-mingw32-g++-posix)
-#     set(CMAKE_C_COMPILER /usr/bin/x86_64-w64-mingw32-gcc-posix)
-#     set(CMAKE_RC_COMPILER /usr/bin/x86_64-w64-mingw32-windres)
-#     set(CMAKE_SYSTEM_NAME Windows)
-# endif()
-
 set(EXECUTABLE CANdle_lib)
 set(CANDLE_LIB 0.0.1)
 
@@ -42,8 +26,6 @@ if(WIN32)
     set(SPDLOG_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/)
 endif()
 
-set(mINI_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/CanopenStack/third_party/mINI/inc/)
-
 set(PROJECT_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BusHandler/UsbHandler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Communication/CandleInterface.cpp
@@ -65,7 +47,7 @@ target_include_directories(${EXECUTABLE} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Logger/
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Commons/
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Communication/
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/CanopenStack/
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/CanopenStack/CANopen/
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CanopenStack/ObjectDictionary/)
 
 if(UNIX)

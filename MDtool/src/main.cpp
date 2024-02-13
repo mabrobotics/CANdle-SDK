@@ -26,6 +26,7 @@ int main(int argc, char** argv)
 	app.add_subcommand("reset", "Use to reset a drive");
 	auto* changeID = app.add_subcommand("changeID", "Use to change ID");
 	auto* changeBaud = app.add_subcommand("changeBaud", "Use to change baudrate");
+	auto* setupMotor = app.add_subcommand("setup", "Use to setup a motor using the selected config file");
 
 	auto* clear = app.add_subcommand("clear", "Use clear errors or warnings");
 	clear->add_subcommand("error", "Use clear errors");
@@ -47,9 +48,10 @@ int main(int argc, char** argv)
 	app.add_option("-i,--id", id, "ID of the drive")->check(CLI::Range(1, 31))->excludes(all_option);
 
 	std::string filePath;
-	updateMD80->add_option("-f,--file", filePath, "Update filename (*.mab)")->required();
-	updateBootloader->add_option("-f,--file", filePath, "Update filename (*.mab)")->required();
-	updateCANdle->add_option("-f,--file", filePath, "Update filename (*.mab)")->required();
+	updateMD80->add_option("-f,--file", filePath, "MD80 update filepath (*.mab)")->required();
+	updateBootloader->add_option("-f,--file", filePath, "MD80 bootloader update filepath (*.mab)")->required();
+	updateCANdle->add_option("-f,--file", filePath, "CANdle update filepath (*.mab)")->required();
+	setupMotor->add_option("-f,--file", filePath, "Motor config filepath (*.cfg)")->required();
 
 	bool recover = false;
 	updateMD80->add_flag("-r,--recover", recover, "Use if the MD80 is already in bootloader mode");
@@ -164,6 +166,8 @@ int main(int argc, char** argv)
 		success = mdtool.setZero(id);
 	else if (app.got_subcommand("reset"))
 		success = mdtool.reset(id);
+	else if (app.got_subcommand("setup"))
+		success = mdtool.setupMotor(id, filePath);
 
 	if (success)
 		logger->info("Success!");

@@ -32,6 +32,7 @@ class Mdtool
 	bool setupInfo(uint32_t id);
 	bool setZero(uint32_t id);
 	bool reset(uint32_t id);
+	bool setupMotor(uint32_t id, const std::string& filePath);
 
    private:
 	static constexpr uint32_t secondaryBootloaderAddress = 0x8005000;

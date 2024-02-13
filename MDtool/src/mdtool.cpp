@@ -415,3 +415,44 @@ bool Mdtool::reset(uint32_t id)
 {
 	return candle->addMd80(id) && candle->reset(id);
 }
+
+bool Mdtool::setupMotor(uint32_t id, const std::string& filePath)
+{
+	if (!candle->addMd80(id))
+		return false;
+
+	auto& OD = candle->getMd80(id)->OD;
+
+	ConfigParser CP(logger, &OD);
+
+	if (!CP.openFile(filePath))
+	{
+		logger->error("Error opening file: {}", filePath);
+		return false;
+	}
+
+	auto ODentries = CP.parseFile();
+
+	if (!ODentries.has_value())
+	{
+		logger->error("Error parsing file: {}", filePath);
+		return false;
+	}
+
+	for (auto& [index, subindex] : ODentries.value())
+	{
+		auto lambdaFunc = [&](auto& arg) -> bool
+		{
+			if (!candle->writeSDO(id, index, subindex, std::move(arg)))
+				return false;
+
+			logger->info("Writing successful! 0x{:x}:0x{:x} = {}", index, subindex, arg);
+			return true;
+		};
+
+		if (!std::visit(lambdaFunc, OD[index]->subEntries[subindex]->value))
+			return false;
+	}
+
+	return true;
+}

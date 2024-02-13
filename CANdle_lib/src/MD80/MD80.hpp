@@ -1,11 +1,12 @@
 #ifndef MD80_HPP
 #define MD80_HPP
 
-#include <IObjectDictionaryParser.hpp>
-#include <ObjectDictionaryParserEDS.hpp>
 #include <cstdint>
 #include <map>
 #include <memory>
+
+#include "IObjectDictionaryParser.hpp"
+#include "ObjectDictionaryParserEDS.hpp"
 
 class MD80
 {
