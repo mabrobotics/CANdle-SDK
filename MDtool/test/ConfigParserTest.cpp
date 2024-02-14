@@ -52,3 +52,19 @@ TEST_F(ConfigParserTest, testParseMissingFields)
 	auto statusParse = CP.parseFile();
 	ASSERT_EQ(statusParse, std::nullopt);
 }
+
+TEST_F(ConfigParserTest, testParseWrongValues)
+{
+	ConfigParser CP(logger, OD);
+	CP.openFile("EX8108_wrong_values.cfg");
+	auto statusParse = CP.parseFile();
+	ASSERT_EQ(statusParse, std::nullopt);
+}
+
+TEST_F(ConfigParserTest, testParseWrongNumericValues)
+{
+	ConfigParser CP(logger, OD);
+	CP.openFile("EX8108_wrong_numeric_values.cfg");
+	auto statusParse = CP.parseFile();
+	ASSERT_EQ(statusParse, std::nullopt);
+}

@@ -2,9 +2,9 @@
 #define IOBJECTDICTIONARYPARSER_HPP
 
 #include <array>
-#include <unordered_map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <variant>
 
 class IODParser
@@ -61,6 +61,8 @@ class IODParser
 		AccessSDO accessType;
 		size_t highestSubindex = 0;
 		std::unordered_map<uint32_t, std::shared_ptr<Entry>> subEntries;
+		ValueType highLimit;
+		ValueType lowLimit;
 		ValueType value;
 	};
 

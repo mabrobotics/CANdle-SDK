@@ -49,7 +49,15 @@ class ObjectDictionaryParserEDS : public IODParser
 			entry.accessType = accessType;
 			auto defaultValueStr = ini[key]["defaultvalue"];
 			if (!defaultValueStr.empty())
-				entry.value = fillDefaultValue(defaultValueStr, entry.dataType);
+				entry.value = fillValue(defaultValueStr, entry.dataType);
+
+			auto lowLimit = ini[key]["lowlimit"];
+			if (!lowLimit.empty())
+				entry.lowLimit = fillValue(lowLimit, entry.dataType);
+
+			auto highLimit = ini[key]["highlimit"];
+			if (!highLimit.empty())
+				entry.lowLimit = fillValue(highLimit, entry.dataType);
 		};
 
 		insertEntires("mandatoryobjects");
@@ -88,7 +96,7 @@ class ObjectDictionaryParserEDS : public IODParser
 		return false;
 	}
 
-	static IODParser::ValueType fillDefaultValue(std::string& value, IODParser::DataType dataType)
+	static IODParser::ValueType fillValue(std::string& value, IODParser::DataType dataType)
 	{
 		switch (dataType)
 		{

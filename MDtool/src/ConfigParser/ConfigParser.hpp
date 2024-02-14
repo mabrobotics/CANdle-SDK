@@ -62,7 +62,7 @@ class ConfigParser
 			{
 				if (mandatory)
 				{
-					logger->error("Missing mandatory field: [{}] {}", field.category, field.fieldName);
+					logger->error("Missing mandatory field: [{}][{}]", field.category, field.fieldName);
 					return std::nullopt;
 				}
 				continue;
@@ -74,20 +74,30 @@ class ConfigParser
 				if (!iequals(entry->parameterName, field.category))
 					continue;
 
-				logger->debug("Category matched!");
-
 				for (auto& [subindex, subentry] : entry->subEntries)
 				{
 					if (!iequals(subentry->parameterName, field.fieldName))
 						continue;
 
-					logger->debug("Field matched!");
-
 					auto valueStr = ini.get(field.category).get(field.fieldName);
 
-					if (specialTreatmentMap.contains(toLower(field.category) + toLower(field.fieldName)))
+					/* parse special text values */
+					auto specialKey = toLower(field.category) + toLower(field.fieldName);
+					if (specialTreatmentMap.contains(specialKey))
 					{
-						logger->warn("special treatment field!! [{}]:[{}]", field.category, field.fieldName);
+						if (!specialTreatmentMap[specialKey].contains(valueStr))
+						{
+							logger->error("Unrecognised value \"{}\" for [{}]:[{}]", valueStr, field.category, field.fieldName);
+
+							std::string output = "Possible values:";
+							for (auto& [str, val] : specialTreatmentMap[specialKey])
+								output.append(std::string(" ") + str);
+
+							logger->info(output);
+							return std::nullopt;
+						}
+						else
+							valueStr = specialTreatmentMap[specialKey][valueStr];
 					}
 
 					try
@@ -96,7 +106,9 @@ class ConfigParser
 					}
 					catch (...)
 					{
-						logger->warn("exception while parsing 0x{:x}:0x{:x} ({}:{})", index, subindex, entry->parameterName, subentry->parameterName);
+						logger->error("Exception while parsing [{}]:[{}]. Please check the value and try one more time. ", entry->parameterName, subentry->parameterName);
+						if (mandatory)
+							return std::nullopt;
 					}
 
 					ODindexes.push_back({index, subindex});
@@ -130,16 +142,46 @@ class ConfigParser
 	std::shared_ptr<spdlog::logger> logger;
 	IODParser::ODType* OD;
 
-	const std::set<std::string> encoderTypes = {"NONE", "AS5047_CENTER", "AS5047_OFFAXIS", "MB053SFA17BENT00", "CM_OFFAXIS", "M24B_CENTER", "M24B_OFFAXIS"};
-	const std::set<std::string> encoderModes = {"NONE", "STARTUP", "MOTION", "REPORT", "MAIN"};
-	const std::set<std::string> encoderCalibrationModes = {"FULL", "DIRONLY"};
-	const std::set<std::string> motorCalibrationModes = {"FULL", "NOPPDET"};
-	const std::set<std::string> homingModes = {"OFF", "SENSORLESS"};
-	const std::set<std::string> brakeModes = {"OFF", "AUTO", "MANUAL"};
+	std::unordered_map<std::string, std::string> encoderTypes = {
+		{"NONE", "0"},
+		{"AS5047_CENTER", "1"},
+		{"AS5047_OFFAXIS", "2"},
+		{"MB053SFA17BENT00", "3"},
+		{"CM_OFFAXIS", "4"},
+		{"M24B_CENTER", "5"},
+		{"M24B_OFFAXIS", "6"}};
 
-	std::unordered_map<std::string, const std::set<std::string>> specialTreatmentMap{
+	std::unordered_map<std::string, std::string> encoderModes = {
+		{"NONE", "0"},
+		{"STARTUP", "1"},
+		{"MOTION", "2"},
+		{"REPORT", "3"},
+		{"MAIN", "4"}};
+
+	std::unordered_map<std::string, std::string> encoderCalibrationModes = {
+		{"FULL", "0"},
+		{"DIRONLY", "1"}};
+
+	std::unordered_map<std::string, std::string> motorCalibrationModes = {
+		{"FULL", "0"},
+		{"NOPPDET", "1"}};
+
+	std::unordered_map<std::string, std::string> homingModes = {
+		{"OFF", "0"},
+		{"SENSORLESS", "1"}};
+
+	std::unordered_map<std::string, std::string> brakeModes = {
+		{"OFF", "0"},
+		{"AUTO", "1"},
+		{"MANUAL", "2"}};
+
+	std::unordered_map<std::string, std::unordered_map<std::string, std::string>> specialTreatmentMap{
 		{"output encodertype", encoderTypes},
-		{"output encodermode", encoderModes}};
+		{"output encodermode", encoderModes},
+		{"output encodercalibration mode", encoderCalibrationModes},
+		{"motor settingscalibration mode", motorCalibrationModes},
+		{"homingmode", homingModes},
+		{"brakemode", brakeModes}};
 
 	std::array<ConfigField, 100> Fields{
 		ConfigField{"motor settings", "motor name", true},
@@ -149,13 +191,14 @@ class ConfigParser
 		ConfigField{"motor settings", "gear ratio", true},
 		ConfigField{"motor settings", "torque bandwidth", true},
 		ConfigField{"motor settings", "motor shutdown temperature", true},
+		ConfigField{"motor settings", "calibration mode", false},
 
 		ConfigField{"limits", "max torque", true},
 		ConfigField{"limits", "max velocity", true},
 		ConfigField{"limits", "max position", true},
 		ConfigField{"limits", "min position", true},
 		ConfigField{"limits", "max acceleration", true},
-		ConfigField{"limits", "min deceleration", true},
+		ConfigField{"limits", "max deceleration", true},
 		ConfigField{"limits", "max current", true},
 
 		ConfigField{"motion", "profile velocity", true},
@@ -167,6 +210,7 @@ class ConfigParser
 
 		ConfigField{"output encoder", "type", false},
 		ConfigField{"output encoder", "mode", false},
+		ConfigField{"output encoder", "calibration mode", false},
 
 		ConfigField{"position pid controller", "kp", true},
 		ConfigField{"position pid controller", "ki", true},
@@ -185,7 +229,8 @@ class ConfigParser
 		ConfigField{"homing", "max travel", false},
 		ConfigField{"homing", "max velocity", false},
 		ConfigField{"homing", "max torque", false},
-	};
+
+		ConfigField{"brake", "mode", false}};
 };
 
 #endif
