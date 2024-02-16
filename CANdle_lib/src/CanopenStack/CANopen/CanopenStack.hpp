@@ -165,12 +165,44 @@ class CanopenStack
 		if (!maybeEntry.has_value())
 			return false;
 
+		auto entry = maybeEntry.value();
+
+		/* this simply checks the limits from EDS, only if they are enabled (their type is the same as the main value) */
+		auto checkLimit = [&](const IODParser::ValueType& limit, auto&& comparator) -> bool
+		{
+			return std::visit([&](const auto& limitValue) -> bool
+							  {
+				using Type1 = std::remove_cvref_t<decltype(value)>;
+				using Type2 = std::remove_cvref_t<decltype(limitValue)>;
+				if constexpr (std::is_same<Type1, Type2>::value)
+					return comparator(value, limitValue);
+				return false; },
+							  limit);
+		};
+
+		if (entry->value.index() != IODParser::ValueType(value).index())
+		{
+			logger->error("Provided type and type from the EDS are not consistent!");
+			return false;
+		}
+
+		if (checkLimit(entry->lowLimit, std::less<T>()))
+		{
+			logger->error("The value exceeds low limit from the EDS file");
+			return false;
+		}
+		else if (checkLimit(entry->highLimit, std::greater<T>()))
+		{
+			logger->error("The value exceeds high limit from the EDS file");
+			return false;
+		}
+
 		serialize(value, data.begin());
 
 		if (!writeSdoBytes(id, index_, subindex_, data, size, errorCode))
 			return false;
 
-		maybeEntry.value()->value = value;
+		entry->value = value;
 		return true;
 	}
 

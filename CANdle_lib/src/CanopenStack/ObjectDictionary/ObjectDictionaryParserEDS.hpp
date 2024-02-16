@@ -57,7 +57,7 @@ class ObjectDictionaryParserEDS : public IODParser
 
 			auto highLimit = ini[key]["highlimit"];
 			if (!highLimit.empty())
-				entry.lowLimit = fillValue(highLimit, entry.dataType);
+				entry.highLimit = fillValue(highLimit, entry.dataType);
 		};
 
 		insertEntires("mandatoryobjects");

@@ -23,6 +23,7 @@ if(WIN32 AND "${PLATFORM}" STREQUAL "native")
 endif()
 
 set(COMPILE_OPTIONS 
+-Wfatal-errors
     -Wall
     -Wextra
     -Wpedantic

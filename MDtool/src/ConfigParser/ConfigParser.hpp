@@ -102,7 +102,7 @@ class ConfigParser
 
 					try
 					{
-						subentry->value = ObjectDictionaryParserEDS::fillDefaultValue(valueStr, subentry->dataType);
+						subentry->value = ObjectDictionaryParserEDS::fillValue(valueStr, subentry->dataType);
 					}
 					catch (...)
 					{

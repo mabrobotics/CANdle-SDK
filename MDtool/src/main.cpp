@@ -96,7 +96,7 @@ int main(int argc, char** argv)
 		else if (valueType == "u32")
 			value = static_cast<uint32_t>(std::stoul(valueStr, nullptr, 0));
 		else if (valueType == "i32")
-			value = static_cast<uint32_t>(std::stoi(valueStr, nullptr, 0));
+			value = static_cast<int32_t>(std::stoi(valueStr, nullptr, 0));
 		else if (valueType == "str")
 		{
 			std::array<uint8_t, 24> arr{};
