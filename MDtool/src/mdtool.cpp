@@ -28,6 +28,25 @@ struct formatter<std::array<T, N>> : formatter<std::string_view>
 		return formatter<std::string_view>::format(result, ctx);
 	}
 };
+
+}  // namespace fmt
+namespace fmt
+{
+template <>
+struct formatter<std::monostate>
+{
+	constexpr auto parse(format_parse_context& ctx)
+	{
+		return ctx.begin();
+	}
+
+	template <typename FormatContext>
+	auto format(const std::monostate&, FormatContext& ctx)
+	{
+		return ctx.out();
+	}
+};
+
 }  // namespace fmt
 
 Mdtool::Mdtool(std::shared_ptr<spdlog::logger> logger) : logger(logger)
