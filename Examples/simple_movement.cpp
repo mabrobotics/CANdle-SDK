@@ -22,7 +22,7 @@ int main(int argc, char** argv)
 
 	auto md80 = candle.getMd80(id);
 
-	// candle.setSendSync(true, 2000);
+	candle.setSendSync(true, 2000);
 
 	float x = 0;
 
