@@ -11,7 +11,7 @@ int main(int argc, char** argv)
 {
 	CLI::App app{"MDtool"};
 	app.fallthrough();
-	app.add_subcommand("ping", "Discovers all drives connected to CANdle");
+	app.add_subcommand("ping", "Use to discover all drives connected to CANdle");
 	auto* updateMD80 = app.add_subcommand("update_md80", "Use to update MD80");
 	auto* updateCANdle = app.add_subcommand("update_candle", "Use to update CANdle");
 	auto* updateBootloader = app.add_subcommand("update_bootloader", "Use to update MD80 bootloader");
@@ -29,8 +29,14 @@ int main(int argc, char** argv)
 	auto* setupMotor = app.add_subcommand("setup", "Use to setup a motor using the selected config file");
 
 	auto* clear = app.add_subcommand("clear", "Use clear errors or warnings");
-	clear->add_subcommand("error", "Use clear errors");
-	clear->add_subcommand("warning", "Use clear warnings");
+	clear->add_subcommand("error", "Use to clear non-critical errors");
+	clear->add_subcommand("warning", "Use to clear warnings");
+
+	float targetPosition = 0.0f;
+	bool absolute = false;
+	auto* move = app.add_subcommand("move", "Use to test the motor by moving the shaft. Default movement is relative.");
+	move->add_flag("-a,--absolute", absolute, "Use for absolute motion");
+	move->add_option("position", targetPosition, "Target position")->required();
 
 	app.add_subcommand("zero", "Use to set current position as zero");
 
@@ -180,6 +186,8 @@ int main(int argc, char** argv)
 		success = mdtool.reset(id);
 	else if (app.got_subcommand("setup"))
 		success = mdtool.setupMotor(id, filePath);
+	else if (app.got_subcommand("move"))
+		success = mdtool.move(id, !absolute, targetPosition);
 
 	if (success)
 		logger->info("Success!");

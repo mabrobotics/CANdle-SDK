@@ -65,7 +65,7 @@ class Candle
 
 		if (errorCode)
 		{
-			logger->error("SDO write error! Code {:x}", errorCode);
+			logger->error("SDO write error (0x{:x}:0x{:x})! Code {:x}", index_, subindex_, errorCode);
 			return false;
 		}
 
@@ -86,7 +86,7 @@ class Candle
 
 		if (errorCode)
 		{
-			logger->error("SDO read error! Error code: 0x{:x}", errorCode);
+			logger->error("SDO read error (0x{:x}:0x{:x})! Error code: 0x{:x}", index_, subindex_, errorCode);
 			return false;
 		}
 

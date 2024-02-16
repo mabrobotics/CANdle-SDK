@@ -475,3 +475,33 @@ bool Mdtool::setupMotor(uint32_t id, const std::string& filePath)
 
 	return true;
 }
+
+bool Mdtool::move(uint32_t id, bool relative, float targetPosition)
+{
+	if (!candle->addMd80(id))
+		return false;
+
+	logger->info("Target position {}", targetPosition);
+
+	candle->setModeOfOperation(id, Candle::ModesOfOperation::PROFILE_POSITION);
+	if (relative)
+		candle->setZeroPosition(id);
+	candle->enterOperational(id);
+
+	auto md80 = candle->getMd80(id);
+
+	float actualPosition = 0;
+	candle->readSDO(id, 0x2009, 0x01, actualPosition);
+	logger->info("Actual position {}", actualPosition);
+
+	candle->writeSDO(id, 0x2008, 0x09, targetPosition);
+
+	/* TODO replace with statusword target reached bit */
+	while (std::fabs(targetPosition - actualPosition) > 0.1f)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		candle->readSDO(id, 0x2009, 0x01, actualPosition);
+	}
+
+	return true;
+}
