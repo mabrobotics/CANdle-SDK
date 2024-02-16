@@ -85,6 +85,18 @@ int main(int argc, char** argv)
 	{
 		if (valueType == "f32")
 			value = std::stof(valueStr);
+		else if (valueType == "bool")
+		{
+			if (valueStr == "true" || valueStr == "1")
+				value = true;
+			else if (valueStr == "false" || valueStr == "0")
+				value = false;
+			else
+			{
+				logger->error("Bool type value should be \"true\" or \"false\". Provided \"{}\" is neither.", valueStr);
+				return 0;
+			}
+		}
 		else if (valueType == "u8")
 			value = static_cast<uint8_t>(std::stoi(valueStr, nullptr, 0));
 		else if (valueType == "i8")

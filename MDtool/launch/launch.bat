@@ -10,4 +10,4 @@
 @REM C://msys64//mingw64//bin//gdbserver.exe localhost:2000 ./build/MDtool/MDtool.exe info
 @REM C://msys64//mingw64//bin//gdbserver.exe localhost:2000 ./build_test/MDtool/test/run_tests.exe
 @REM C://msys64//mingw64//bin//gdbserver.exe localhost:2000 ./build/MDtool/MDtool.exe setup -f C:/Users/klonyyy/PROJECTS/MAB/projects/CANdle-SDK/CANdle-SDK/build/EX8108.
-C://msys64//mingw64//bin//gdbserver.exe localhost:2000 ./build/MDtool/MDtool.exe writeSDO 0x2000 0x1 100 u32
+C://msys64//mingw64//bin//gdbserver.exe localhost:2000 ./build/MDtool/MDtool.exe writeSDO 0x2000 0x0d true bool

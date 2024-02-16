@@ -10,7 +10,7 @@
 class IODParser
 {
    public:
-	typedef std::variant<std::monostate, uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, float, std::array<uint8_t, 24>> ValueType;
+	typedef std::variant<std::monostate, bool, uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, float, std::array<uint8_t, 24>> ValueType;
 	template <typename T>
 	using IsIntegralType = std::disjunction<std::is_same<T, uint8_t>, std::is_same<T, int8_t>, std::is_same<T, uint16_t>, std::is_same<T, int16_t>, std::is_same<T, uint32_t>, std::is_same<T, int32_t>>;
 
