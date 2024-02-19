@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.8)
 set(EXECUTABLE CANdle_lib)
 set(CANDLE_LIB 0.0.1)
 
-set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 

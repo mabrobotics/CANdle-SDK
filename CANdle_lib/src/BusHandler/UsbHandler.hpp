@@ -36,6 +36,7 @@ class UsbHandler : public IBusHandler
 	static constexpr uint32_t sendTimeout = 15;
 	static constexpr uint32_t receiveTimeout = 1000;
 
+	struct libusb_device** devs;
 	struct libusb_device_handle* devh = NULL;
 	std::atomic<bool> done;
 	CircularBuffer<BusFrame, 50> toUsbBuffer;

@@ -20,21 +20,52 @@ bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode, bool deviceNo
 	if (isInitialized)
 		return true;
 
-	int rc = libusb_init(NULL);
+	int32_t rc = libusb_init(NULL);
+
 	if (rc < 0)
 	{
 		logger->error("Error initializing libusb: {}", libusb_error_name(rc));
 		return false;
 	}
 
-	devh = libusb_open_device_with_vid_pid(NULL, vid, pid);
+	int32_t cnt = libusb_get_device_list(NULL, &devs);
 
-	if (!devh)
+	if (cnt < 0)
 	{
-		if (deviceNotFoundError)
-			logger->error("Error finding USB device");
+		logger->error("Error getting device list: {}", libusb_error_name(cnt));
 		return false;
 	}
+
+	for (size_t i = 0; i < cnt; i++)
+	{
+		libusb_device* dev = devs[i];
+		struct libusb_device_descriptor desc;
+
+		rc = libusb_get_device_descriptor(dev, &desc);
+
+		if (rc < 0)
+		{
+			logger->error("Error getting device descriptor: {}", libusb_error_name(rc));
+			continue;
+		}
+
+		if (desc.idVendor == vid && desc.idProduct == pid)
+		{
+			rc = libusb_open(dev, &devh);
+			if (rc != LIBUSB_SUCCESS)
+			{
+				logger->error("Failed to open device: {}", libusb_error_name(rc));
+				continue;
+			}
+			else
+			{
+				logger->info("Open successfull ID: {}", desc.iSerialNumber);
+				break;
+			}
+		}
+	}
+
+	libusb_free_device_list(devs, 1);  // Unreference devices
 
 	for (int if_num = 0; if_num < 2; if_num++)
 	{
