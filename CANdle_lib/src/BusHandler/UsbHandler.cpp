@@ -76,6 +76,12 @@ bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode, bool deviceNo
 		}
 	}
 
+	if (devh == nullptr)
+	{
+		logger->error("Device not found!");
+		return false;
+	}
+
 	for (int if_num = 0; if_num < 2; if_num++)
 	{
 		if (libusb_kernel_driver_active(devh, if_num))
