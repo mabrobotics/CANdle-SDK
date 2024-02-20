@@ -3,6 +3,7 @@
 
 #include <atomic>
 #include <memory>
+#include <set>
 #include <span>
 #include <thread>
 
@@ -46,6 +47,8 @@ class UsbHandler : public IBusHandler
 	bool isInitialized = false;
 	Barrier syncPoint;
 	std::atomic<bool> cycleCompleted = false;
+
+	static std::set<struct libusb_device*> openedDevices;
 
    private:
 	void dataHandler();

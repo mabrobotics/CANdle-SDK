@@ -6,6 +6,8 @@
 #include "Commons/BitCast.hpp"
 #include "libusb.h"
 
+std::set<struct libusb_device*> UsbHandler::openedDevices;
+
 UsbHandler::UsbHandler(std::shared_ptr<spdlog::logger> logger) : logger(logger), syncPoint(2)
 {
 }
@@ -51,6 +53,14 @@ bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode, bool deviceNo
 
 		if (desc.idVendor == vid && desc.idProduct == pid)
 		{
+			logger->debug("Device matched!");
+
+			if (openedDevices.find(dev) != openedDevices.end())
+			{
+				logger->debug("Device already opened!");
+				continue;
+			}
+
 			rc = libusb_open(dev, &devh);
 			if (rc != LIBUSB_SUCCESS)
 			{
@@ -59,13 +69,12 @@ bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode, bool deviceNo
 			}
 			else
 			{
+				openedDevices.insert(dev);
 				logger->info("Open successfull ID: {}", desc.iSerialNumber);
 				break;
 			}
 		}
 	}
-
-	libusb_free_device_list(devs, 1);  // Unreference devices
 
 	for (int if_num = 0; if_num < 2; if_num++)
 	{
@@ -75,8 +84,15 @@ bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode, bool deviceNo
 		rc = libusb_claim_interface(devh, if_num);
 
 		if (rc < 0)
+		{
 			logger->error("Error claiming interface: {}", libusb_error_name(rc));
+			return false;
+		}
+		else
+			logger->debug("Claiming interface succeeded!");
 	}
+
+	libusb_free_device_list(devs, 1);
 
 	if (!manualMode)
 	{

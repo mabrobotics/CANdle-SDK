@@ -22,8 +22,8 @@ if(WIN32 AND "${PLATFORM}" STREQUAL "native")
     set(CMAKE_AR "C:/msys64/mingw64/bin/llvm-ar.exe")
 endif()
 
-set(COMPILE_OPTIONS 
--Wfatal-errors
+set(COMPILE_OPTIONS
+    -Wfatal-errors
     -Wall
     -Wextra
     -Wpedantic

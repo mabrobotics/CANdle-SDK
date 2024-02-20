@@ -2,7 +2,7 @@
 
 int main(int argc, char** argv)
 {
-	const std::array<uint8_t, 2> ids{2, 1};
+	const std::array<uint8_t, 2> ids{1, 2};
 
 	const float kp = 0.5f;
 	const float kd = 0.02f;
