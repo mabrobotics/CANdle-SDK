@@ -67,10 +67,12 @@ std::vector<uint32_t> Candle::ping()
 {
 	std::vector<uint32_t> ids{};
 	uint32_t deviceType = 0;
+	uint32_t errorCode = 0;
 
-	for (size_t i = 1; i < 31; i++)
-		if (readSDO(i, 0x1000, 0x00, deviceType, false))
-			ids.push_back(i);
+	/* TODO: should ping show the channel routing as well ? */
+	for (size_t id = 1; id < 31; id++)
+		if (canopenStack->readSDO(id, 0x1000, 0x00, deviceType, errorCode, false, 0xff))
+			ids.push_back(id);
 
 	return ids;
 }
@@ -177,7 +179,6 @@ void Candle::transmitHandler()
 	syncPoint.wait();
 	while (!done)
 	{
-		/* SEND RPDOs */
 		canopenStack->sendRPDOs();
 
 		if (sendSync)
