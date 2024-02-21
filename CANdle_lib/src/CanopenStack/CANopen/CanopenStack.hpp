@@ -35,13 +35,20 @@ class CanopenStack
 
 	explicit CanopenStack(std::shared_ptr<ICommunication> interface, std::shared_ptr<spdlog::logger> logger);
 	void setOD(uint32_t id, IODParser::ODType* OD);
+	void setChannel(uint32_t id, uint8_t channel);
 
 	template <typename T>
-	bool readSDO(uint32_t id, uint16_t index_, uint8_t subindex_, T& value, uint32_t& errorCode, bool checkOD = true, uint8_t channel = 0)
+	bool readSDO(uint32_t id, uint16_t index_, uint8_t subindex_, T& value, uint32_t& errorCode, bool checkOD = true, std::optional<uint8_t> maybeChannel = std::nullopt)
 	{
 		std::vector<uint8_t> data;
 		/* ensure at least as many elements as there are in the largest element (sizeof(T)) */
 		data.resize(maxSingleFieldSize, 0);
+
+		uint8_t channel = 0;
+		if (maybeChannel.has_value())
+			channel = maybeChannel.value();
+		else
+			channel = idToChannelMap[id];
 
 		std::optional<IODParser::Entry*> maybeEntry;
 
@@ -66,7 +73,7 @@ class CanopenStack
 	bool readSdoToBytes(uint32_t id, uint16_t index_, uint8_t subindex_, std::vector<uint8_t>& dataOut, uint32_t& errorCode, uint8_t channel = 0);
 
 	template <typename T>
-	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T& value, uint32_t& errorCode, uint8_t channel = 0)
+	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T& value, uint32_t& errorCode)
 	{
 		std::vector<uint8_t> data;
 		/* ensure at least as many elements as there are in the largest element (sizeof(T)) */
@@ -111,7 +118,7 @@ class CanopenStack
 
 		serialize(value, data.begin());
 
-		if (!writeSdoBytes(id, index_, subindex_, data, sizeof(T), errorCode, channel))
+		if (!writeSdoBytes(id, index_, subindex_, data, sizeof(T), errorCode, idToChannelMap[id]))
 			return false;
 
 		entry->value = value;
@@ -119,7 +126,7 @@ class CanopenStack
 	}
 
 	bool writeSdoBytes(uint32_t id, uint16_t index_, uint8_t subindex_, const std::vector<uint8_t>& dataIn, uint32_t size, uint32_t& errorCode, uint8_t channel = 0);
-	bool setupPDO(uint32_t id, PDO pdoId, const std::vector<std::pair<uint16_t, uint8_t>>& fields, uint8_t channel = 0);
+	bool setupPDO(uint32_t id, PDO pdoId, const std::vector<std::pair<uint16_t, uint8_t>>& fields);
 	bool sendSYNC();
 	bool sendRPDOs();
 	void parse(ICommunication::CANFrame& frame);
@@ -137,6 +144,7 @@ class CanopenStack
 	static constexpr uint32_t maxSingleFieldSize = 100;
 
 	std::unordered_map<uint32_t, IODParser::ODType*> ODmap;
+	std::unordered_map<uint32_t, uint8_t> idToChannelMap;
 
 	static constexpr uint16_t TPDOComunicationParamIndex = 0x1800;
 	static constexpr uint16_t TPDOMappingParamIndex = 0x1A00;

@@ -97,9 +97,9 @@ bool Candle::addMd80(uint32_t id)
 	if (!success)
 		return false;
 
-	idToChannelMap[id] = channel;
 	md80s[id] = std::make_unique<MD80>();
 	canopenStack->setOD(id, &md80s[id]->OD);
+	canopenStack->setChannel(id, channel);
 	return true;
 }
 
@@ -149,7 +149,7 @@ bool Candle::reset(uint32_t id)
 
 bool Candle::setupPDO(uint32_t id, CanopenStack::PDO pdoID, const std::vector<std::pair<uint16_t, uint8_t>>& fields)
 {
-	return canopenStack->setupPDO(id, pdoID, fields, idToChannelMap[id]);
+	return canopenStack->setupPDO(id, pdoID, fields);
 }
 
 void Candle::receiveHandler()

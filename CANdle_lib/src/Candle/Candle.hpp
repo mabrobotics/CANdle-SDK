@@ -61,7 +61,7 @@ class Candle
 	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T& value)
 	{
 		uint32_t errorCode = 0;
-		bool result = canopenStack->writeSDO(id, index_, subindex_, value, errorCode, idToChannelMap[id]);
+		bool result = canopenStack->writeSDO(id, index_, subindex_, value, errorCode);
 
 		if (errorCode)
 		{
@@ -76,7 +76,7 @@ class Candle
 	bool readSDO(uint32_t id, uint16_t index_, uint8_t subindex_, T& value, bool checkOD = true)
 	{
 		uint32_t errorCode = 0;
-		bool result = canopenStack->readSDO(id, index_, subindex_, value, errorCode, checkOD, idToChannelMap[id]);
+		bool result = canopenStack->readSDO(id, index_, subindex_, value, errorCode, checkOD);
 
 		if (errorCode)
 		{
@@ -110,7 +110,6 @@ class Candle
 	bool isInitialized = false;
 
 	std::unordered_map<uint32_t, std::shared_ptr<MD80>> md80s;
-	std::unordered_map<uint32_t, uint8_t> idToChannelMap;
 	std::shared_ptr<ICommunication> interface;
 	std::shared_ptr<spdlog::logger> logger;
 };
