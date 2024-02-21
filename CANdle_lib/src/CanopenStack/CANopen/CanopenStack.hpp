@@ -37,7 +37,7 @@ class CanopenStack
 	void setOD(uint32_t id, IODParser::ODType* OD);
 
 	template <typename T>
-	bool readSDO(uint32_t id, uint16_t index_, uint8_t subindex_, T& value, uint32_t& errorCode, bool checkOD = true)
+	bool readSDO(uint32_t id, uint16_t index_, uint8_t subindex_, T& value, uint32_t& errorCode, bool checkOD = true, uint8_t channel = 0)
 	{
 		std::vector<uint8_t> data;
 		/* ensure at least as many elements as there are in the largest element (sizeof(T)) */
@@ -52,7 +52,7 @@ class CanopenStack
 				return false;
 		}
 
-		if (!readSdoToBytes(id, index_, subindex_, data, errorCode))
+		if (!readSdoToBytes(id, index_, subindex_, data, errorCode, channel))
 			return false;
 
 		value = deserialize<T>(data.data());
@@ -63,10 +63,10 @@ class CanopenStack
 		return true;
 	}
 
-	bool readSdoToBytes(uint32_t id, uint16_t index_, uint8_t subindex_, std::vector<uint8_t>& dataOut, uint32_t& errorCode);
+	bool readSdoToBytes(uint32_t id, uint16_t index_, uint8_t subindex_, std::vector<uint8_t>& dataOut, uint32_t& errorCode, uint8_t channel = 0);
 
 	template <typename T>
-	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T& value, uint32_t& errorCode, uint32_t size = sizeof(T))
+	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T& value, uint32_t& errorCode, uint8_t channel = 0)
 	{
 		std::vector<uint8_t> data;
 		/* ensure at least as many elements as there are in the largest element (sizeof(T)) */
@@ -111,15 +111,15 @@ class CanopenStack
 
 		serialize(value, data.begin());
 
-		if (!writeSdoBytes(id, index_, subindex_, data, size, errorCode))
+		if (!writeSdoBytes(id, index_, subindex_, data, sizeof(T), errorCode, channel))
 			return false;
 
 		entry->value = value;
 		return true;
 	}
 
-	bool writeSdoBytes(uint32_t id, uint16_t index_, uint8_t subindex_, const std::vector<uint8_t>& dataIn, uint32_t size, uint32_t& errorCode);
-	bool setupPDO(uint32_t id, PDO pdoId, const std::vector<std::pair<uint16_t, uint8_t>>& fields);
+	bool writeSdoBytes(uint32_t id, uint16_t index_, uint8_t subindex_, const std::vector<uint8_t>& dataIn, uint32_t size, uint32_t& errorCode, uint8_t channel = 0);
+	bool setupPDO(uint32_t id, PDO pdoId, const std::vector<std::pair<uint16_t, uint8_t>>& fields, uint8_t channel = 0);
 	bool sendSYNC();
 	bool sendRPDOs();
 	void parse(ICommunication::CANFrame& frame);

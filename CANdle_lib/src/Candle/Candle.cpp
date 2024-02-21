@@ -7,6 +7,7 @@ Candle::Candle() : syncPoint(3)
 	std::string name(1, n);
 	logger = spdlog::stdout_color_mt(name);
 	logger->set_pattern("[%^%l%$] %v");
+	logger->set_level(spdlog::level::level_enum::debug);
 	interface = std::make_shared<CandleInterface>(std::make_unique<UsbHandler>(logger));
 }
 
@@ -77,15 +78,28 @@ std::vector<uint32_t> Candle::ping()
 bool Candle::addMd80(uint32_t id)
 {
 	uint32_t deviceType = 0;
-	if (!readSDO(id, 0x1000, 0x00, deviceType, false))
+	bool success = false;
+	uint8_t channel = 0;
+	uint32_t errorCode = 0;
+
+	for (; channel < candleChannels; channel++)
 	{
-		logger->error("Unable to add MD80 with ID {}", id);
-		return false;
+		if (canopenStack->readSDO(id, 0x1000, 0x00, deviceType, errorCode, false, channel))
+		{
+			logger->info("MD80 with ID {} found on channel {}!", id, channel);
+			success = true;
+			break;
+		}
+
+		logger->debug("MD80 with ID {} not found on channel {}", id, channel);
 	}
 
+	if (!success)
+		return false;
+
+	idToChannelMap[id] = channel;
 	md80s[id] = std::make_unique<MD80>();
 	canopenStack->setOD(id, &md80s[id]->OD);
-
 	return true;
 }
 
@@ -135,7 +149,7 @@ bool Candle::reset(uint32_t id)
 
 bool Candle::setupPDO(uint32_t id, CanopenStack::PDO pdoID, const std::vector<std::pair<uint16_t, uint8_t>>& fields)
 {
-	return canopenStack->setupPDO(id, pdoID, fields);
+	return canopenStack->setupPDO(id, pdoID, fields, idToChannelMap[id]);
 }
 
 void Candle::receiveHandler()

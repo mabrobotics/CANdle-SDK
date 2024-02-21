@@ -58,10 +58,10 @@ class Candle
 	bool setupPDO(uint32_t id, CanopenStack::PDO pdoID, const std::vector<std::pair<uint16_t, uint8_t>>& fields);
 
 	template <typename T>
-	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T&& value)
+	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T& value)
 	{
 		uint32_t errorCode = 0;
-		bool result = canopenStack->writeSDO(id, index_, subindex_, value, errorCode);
+		bool result = canopenStack->writeSDO(id, index_, subindex_, value, errorCode, idToChannelMap[id]);
 
 		if (errorCode)
 		{
@@ -73,16 +73,10 @@ class Candle
 	}
 
 	template <typename T>
-	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T& value)
-	{
-		return writeSDO(id, index_, subindex_, std::move(value));
-	}
-
-	template <typename T>
 	bool readSDO(uint32_t id, uint16_t index_, uint8_t subindex_, T& value, bool checkOD = true)
 	{
 		uint32_t errorCode = 0;
-		bool result = canopenStack->readSDO(id, index_, subindex_, value, errorCode, checkOD);
+		bool result = canopenStack->readSDO(id, index_, subindex_, value, errorCode, checkOD, idToChannelMap[id]);
 
 		if (errorCode)
 		{
@@ -101,6 +95,9 @@ class Candle
 	std::unique_ptr<CanopenStack> canopenStack;
 
    private:
+	/* TODO modify on chandle type read */
+	uint32_t candleChannels = 3;
+
 	std::thread receiveThread;
 	std::thread transmitThread;
 	Barrier syncPoint;
@@ -113,6 +110,7 @@ class Candle
 	bool isInitialized = false;
 
 	std::unordered_map<uint32_t, std::shared_ptr<MD80>> md80s;
+	std::unordered_map<uint32_t, uint8_t> idToChannelMap;
 	std::shared_ptr<ICommunication> interface;
 	std::shared_ptr<spdlog::logger> logger;
 };

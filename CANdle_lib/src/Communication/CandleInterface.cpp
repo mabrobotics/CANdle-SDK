@@ -97,7 +97,7 @@ std::optional<ICommunication::CANFrame> CandleInterface::receiveCanFrame()
 		auto canHeader = deserialize<CANFrame::Header>(it);
 		it += sizeof(canHeader);
 
-		// std::cout << "ID: " << (int)canHeader.canId << " Len: " << (int)canHeader.length << " Data: ";
+		// std::cout << "CH: " << (int)canHeader.channel << " ID: " << (int)canHeader.canId << " Len: " << (int)canHeader.length << " Data: ";
 		// for (int i = 0; i < canHeader.length; i++)
 		// 	std::cout << std::hex << " 0x" << (int)*(it + i) << " ";
 		// std::cout << std::endl;

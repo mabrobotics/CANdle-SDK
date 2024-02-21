@@ -16,7 +16,9 @@ class ICommunication
 		struct Header
 		{
 			uint16_t canId;
-			uint8_t length;
+			uint8_t length; /* TODO payloadSize*/
+			uint8_t channel;
+			uint8_t reserved;
 		} header;
 		std::array<uint8_t, 64> payload;
 	};

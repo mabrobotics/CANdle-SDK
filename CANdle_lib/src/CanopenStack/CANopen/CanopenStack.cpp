@@ -10,11 +10,12 @@ void CanopenStack::setOD(uint32_t id, IODParser::ODType* OD)
 	ODmap[id] = OD;
 }
 
-bool CanopenStack::readSdoToBytes(uint32_t id, uint16_t index_, uint8_t subindex_, std::vector<uint8_t>& dataOut, uint32_t& errorCode)
+bool CanopenStack::readSdoToBytes(uint32_t id, uint16_t index_, uint8_t subindex_, std::vector<uint8_t>& dataOut, uint32_t& errorCode, uint8_t channel)
 {
 	ICommunication::CANFrame frame{};
 	frame.header.canId = 0x600 + id;
 	frame.header.length = 8;
+	frame.header.channel = channel;
 
 	frame.payload[0] = 0x40;
 	serialize(index_, &frame.payload[1]);
@@ -93,7 +94,7 @@ bool CanopenStack::readSdoToBytes(uint32_t id, uint16_t index_, uint8_t subindex
 	return true;
 }
 
-bool CanopenStack::writeSdoBytes(uint32_t id, uint16_t index_, uint8_t subindex_, const std::vector<uint8_t>& dataIn, uint32_t size, uint32_t& errorCode)
+bool CanopenStack::writeSdoBytes(uint32_t id, uint16_t index_, uint8_t subindex_, const std::vector<uint8_t>& dataIn, uint32_t size, uint32_t& errorCode, uint8_t channel)
 {
 	bool segmentedTransfer = false;
 
@@ -103,6 +104,7 @@ bool CanopenStack::writeSdoBytes(uint32_t id, uint16_t index_, uint8_t subindex_
 	ICommunication::CANFrame frame{};
 	frame.header.canId = 0x600 + id;
 	frame.header.length = 8;
+	frame.header.channel = channel;
 
 	if (segmentedTransfer)
 	{
@@ -188,7 +190,7 @@ bool CanopenStack::writeSdoBytes(uint32_t id, uint16_t index_, uint8_t subindex_
 	return true;
 }
 
-bool CanopenStack::setupPDO(uint32_t id, PDO pdoId, const std::vector<std::pair<uint16_t, uint8_t>>& fields)
+bool CanopenStack::setupPDO(uint32_t id, PDO pdoId, const std::vector<std::pair<uint16_t, uint8_t>>& fields, uint8_t channel)
 {
 	auto pdoType = getPDOType(pdoId);
 
@@ -198,15 +200,15 @@ bool CanopenStack::setupPDO(uint32_t id, PDO pdoId, const std::vector<std::pair<
 	uint32_t COBID = static_cast<uint32_t>(pdoId) + id;
 	uint32_t errorCode = 0;
 	/*  disable PDO (set 31 bit to 1)*/
-	if (!writeSDO(id, commParamIdx, 0x01, static_cast<uint32_t>(0x80000000 | COBID), errorCode))
+	if (!writeSDO(id, commParamIdx, 0x01, static_cast<uint32_t>(0x80000000 | COBID), errorCode, channel))
 		return false;
 
 	/* set transsmission type to synch 1*/
-	if (!writeSDO(id, commParamIdx, 0x02, static_cast<uint8_t>(1), errorCode))
+	if (!writeSDO(id, commParamIdx, 0x02, static_cast<uint8_t>(1), errorCode, channel))
 		return false;
 
 	/* set PDO mapping objects count to zero */
-	if (!writeSDO(id, mapParamIdx, 0x00, static_cast<uint8_t>(0), errorCode))
+	if (!writeSDO(id, mapParamIdx, 0x00, static_cast<uint8_t>(0), errorCode, channel))
 		return false;
 
 	uint8_t mapRegsubidx = 0;
@@ -229,16 +231,16 @@ bool CanopenStack::setupPDO(uint32_t id, PDO pdoId, const std::vector<std::pair<
 		uint32_t mappedObject = idx << 16 | subidx << 8 | (currentlyHeldFieldSize * 8);
 
 		/* set PDO mapping objects count to zero */
-		if (!writeSDO(id, mapParamIdx, mapRegsubidx, mappedObject, errorCode))
+		if (!writeSDO(id, mapParamIdx, mapRegsubidx, mappedObject, errorCode, channel))
 			return false;
 	}
 
 	/* set PDO mapping objects count to zero */
-	if (!writeSDO(id, mapParamIdx, 0x00, static_cast<uint8_t>(mapRegsubidx), errorCode))
+	if (!writeSDO(id, mapParamIdx, 0x00, static_cast<uint8_t>(mapRegsubidx), errorCode, channel))
 		return false;
 
 	/*  enable PDO (set 31 bit to 0)*/
-	if (!writeSDO(id, commParamIdx, 0x01, COBID, errorCode))
+	if (!writeSDO(id, commParamIdx, 0x01, COBID, errorCode, channel))
 		return false;
 
 	return true;
@@ -249,6 +251,8 @@ bool CanopenStack::sendSYNC()
 	ICommunication::CANFrame frame{};
 	frame.header.canId = 0x80;
 	frame.header.length = 0;
+	/* TODO send to all channels (0xff) - add definition for magic value */
+	frame.header.channel = 0xff;
 	return interface->sendCanFrame(frame);
 }
 
@@ -256,6 +260,7 @@ bool CanopenStack::sendRPDOs()
 {
 	for (auto& [deviceId, OD] : ODmap)
 	{
+		/* TODO magic value 4*/
 		for (uint16_t i = 0; i < 4; i++)
 		{
 			auto transmissionType = std::get<uint8_t>(OD->at(0x1400 + i)->subEntries.at(0x02)->value);
@@ -265,6 +270,8 @@ bool CanopenStack::sendRPDOs()
 			{
 				auto canFrame = prepareRPDO(OD, i);
 				canFrame.header.canId |= deviceId;
+				/* TODO send RPDOS only for channel assigned for ID!!! */
+				canFrame.header.channel = 0xff;
 				interface->sendCanFrame(canFrame);
 			}
 		}
