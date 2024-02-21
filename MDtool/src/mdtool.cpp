@@ -378,13 +378,13 @@ bool Mdtool::changeBaud(uint32_t id, uint32_t newBaud)
 bool Mdtool::clearError(uint32_t id)
 {
 	return candle->addMd80(id) &&
-		   candle->writeSDO(id, 0x2003, 0x0B, static_cast<uint8_t>(1));
+		   candle->writeSDO(id, 0x2003, 0x0B, true);
 }
 
 bool Mdtool::clearWarning(uint32_t id)
 {
 	return candle->addMd80(id) &&
-		   candle->writeSDO(id, 0x2003, 0x0C, static_cast<uint8_t>(1));
+		   candle->writeSDO(id, 0x2003, 0x0C, true);
 }
 /* TODO: refactor when OD read situation is clear */
 bool Mdtool::setupInfo(uint32_t id)
