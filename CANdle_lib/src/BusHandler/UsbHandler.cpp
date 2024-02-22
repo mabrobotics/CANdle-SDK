@@ -38,7 +38,7 @@ bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode, bool deviceNo
 		return false;
 	}
 
-	for (size_t i = 0; i < cnt; i++)
+	for (int32_t i = 0; i < cnt; i++)
 	{
 		libusb_device* dev = devs[i];
 		struct libusb_device_descriptor desc;
@@ -70,7 +70,13 @@ bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode, bool deviceNo
 			else
 			{
 				openedDevices.insert(dev);
-				logger->info("Open successfull ID: {}", desc.iSerialNumber);
+				uint8_t serial[256];
+				rc = libusb_get_string_descriptor_ascii(devh, desc.iSerialNumber, serial, sizeof(serial));
+				if (rc < 0)
+					logger->error("Failed read serial number: {}", libusb_error_name(rc));
+
+				logger->info("Open successfull! Serial number: {}", std::string(serial, serial + 12));
+
 				break;
 			}
 		}
@@ -78,7 +84,8 @@ bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode, bool deviceNo
 
 	if (devh == nullptr)
 	{
-		logger->error("Device not found!");
+		if (deviceNotFoundError)
+			logger->error("Device not found!");
 		return false;
 	}
 
