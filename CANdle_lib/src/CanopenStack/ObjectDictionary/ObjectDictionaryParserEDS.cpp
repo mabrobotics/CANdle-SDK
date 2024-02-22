@@ -1,7 +1,12 @@
 #include "ObjectDictionaryParserEDS.hpp"
 
+#include <filesystem>
+
 bool ObjectDictionaryParserEDS::parseFile(const std::string& filePath, ODType& objectDictionary)
 {
+	if (!std::filesystem::exists(filePath))
+		return false;
+
 	mINI::INIFile file(filePath);
 	mINI::INIStructure ini;
 	file.read(ini);
@@ -79,7 +84,7 @@ bool ObjectDictionaryParserEDS::parseFile(const std::string& filePath, ODType& o
 		}
 	}
 
-	return false;
+	return true;
 }
 
 IODParser::ValueType ObjectDictionaryParserEDS::fillValue(std::string& value, IODParser::DataType dataType)
