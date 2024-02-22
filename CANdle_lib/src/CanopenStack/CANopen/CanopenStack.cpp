@@ -256,8 +256,7 @@ bool CanopenStack::sendSYNC()
 	ICommunication::CANFrame frame{};
 	frame.header.canId = 0x80;
 	frame.header.payloadSize = 0;
-	/* TODO send to all channels (0xff) - add definition for magic value */
-	frame.header.channel = 0xff;
+	frame.header.channel = ICommunication::CANChannel::ALL;
 	return interface->sendCanFrame(frame);
 }
 
@@ -265,8 +264,7 @@ bool CanopenStack::sendRPDOs()
 {
 	for (auto& [deviceId, OD] : ODmap)
 	{
-		/* TODO magic value 4*/
-		for (uint16_t i = 0; i < 4; i++)
+		for (uint16_t i = 0; i < maxPdoNum; i++)
 		{
 			auto transmissionType = std::get<uint8_t>(OD->at(0x1400 + i)->subEntries.at(0x02)->value);
 

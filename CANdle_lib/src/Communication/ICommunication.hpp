@@ -16,11 +16,19 @@ class ICommunication
 		struct Header
 		{
 			uint16_t canId;
-			uint8_t payloadSize; /* TODO payloadSize*/
+			uint8_t payloadSize;
 			uint8_t channel;
 			uint8_t reserved;
 		} header;
 		std::array<uint8_t, 64> payload;
+	};
+
+	enum CANChannel
+	{
+		CH0 = 0,
+		CH1 = 1,
+		CH2 = 2,
+		ALL = 255
 	};
 
 	struct Status
