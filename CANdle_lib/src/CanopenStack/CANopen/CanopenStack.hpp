@@ -107,12 +107,12 @@ class CanopenStack
 
 		if (checkLimit(entry->lowLimit, std::less<T>()))
 		{
-			logger->error("The value exceeds low limit from the EDS file");
+			logger->error("The value exceeds low limit from the EDS file 0x{:x}:0x{:x}", index_, subindex_);
 			return false;
 		}
 		else if (checkLimit(entry->highLimit, std::greater<T>()))
 		{
-			logger->error("The value exceeds high limit from the EDS file");
+			logger->error("The value exceeds high limit from the EDS file 0x{:x}:0x{:x}", index_, subindex_);
 			return false;
 		}
 
