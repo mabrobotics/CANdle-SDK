@@ -13,8 +13,10 @@ class MD80
    public:
 	MD80()
 	{
+		/* TODO this is only temporary */
 		ObjectDictionaryParserEDS parser{};
-		parser.parseFile("C:/Users/klonyyy/PROJECTS/MAB/projects/MD80/code/md80_firmware/CANopenNode_STM32/MD80_DS402.eds", OD);
+		if (!parser.parseFile("C:/Users/klonyyy/PROJECTS/MAB/projects/MD80/code/md80_firmware/CANopenNode_STM32/MD80_DS402.eds", OD))
+			throw("EDS file not found!");
 		// C:/Users/klonyyy/PROJECTS/MAB/projects/MD80/code/md80_firmware/CANopenNode_STM32
 	}
 
