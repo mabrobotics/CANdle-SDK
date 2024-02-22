@@ -14,7 +14,7 @@ class IBusHandler
 		struct Header
 		{
 			uint8_t id;
-			uint8_t length;
+			uint8_t payloadSize;
 		} header;
 		std::array<uint8_t, 100> payload;
 	};

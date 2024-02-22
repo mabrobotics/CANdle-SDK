@@ -216,8 +216,8 @@ void UsbHandler::copyInputBufToElements(std::array<uint8_t, 1025>& buf, int rece
 		usbEntry.header = bit_cast_<BusFrame::Header>(usbHeaderArray);
 		it += usbHeaderArray.size();
 		/* prepare and copy USB payload */
-		std::copy(it, it + usbEntry.header.length, usbEntry.payload.begin());
-		it += usbEntry.header.length;
+		std::copy(it, it + usbEntry.header.payloadSize, usbEntry.payload.begin());
+		it += usbEntry.header.payloadSize;
 
 		fromUsbBuffer.put(usbEntry);
 	}
@@ -239,7 +239,7 @@ void UsbHandler::copyElementsToOutputBuf(std::array<uint8_t, 1025>& buf, uint32_
 		auto usbEntry = elem.value();
 		auto usbFrameArray = bit_cast_<std::array<uint8_t, sizeof(BusFrame)>>(usbEntry);
 
-		uint8_t usbFrameSize = usbEntry.header.length + sizeof(BusFrame::Header);
+		uint8_t usbFrameSize = usbEntry.header.payloadSize + sizeof(BusFrame::Header);
 		auto copied = std::copy(usbFrameArray.begin(), usbFrameArray.begin() + usbFrameSize, it);
 		it += std::distance(it, copied);
 	}

@@ -96,7 +96,7 @@ void MD80Downloader::receiveHandler()
 			continue;
 
 		auto canFrame = frame.value();
-		if (canFrame.header.canId == canIdResponse && canFrame.header.length == 5)
+		if (canFrame.header.canId == canIdResponse && canFrame.header.payloadSize == 5)
 			lastResponse = static_cast<Response>(canFrame.payload[0]);
 	}
 }
@@ -136,7 +136,7 @@ bool MD80Downloader::sendResetCmd()
 	logger->debug("Resetting...");
 	ICommunication::CANFrame frame{};
 	frame.header.canId = 0x600 + deviceId;
-	frame.header.length = 8;
+	frame.header.payloadSize = 8;
 	frame.payload = {0x2F, 0x03, 0x20, 0x02, 0x01, 0x00, 0x00, 0x00};
 
 	return interface->sendCanFrame(frame);
@@ -146,7 +146,7 @@ bool MD80Downloader::sendInitCmd(Command initCommand)
 {
 	ICommunication::CANFrame frame{};
 	frame.header.canId = canIdCommand;
-	frame.header.length = 5;
+	frame.header.payloadSize = 5;
 	frame.payload = {static_cast<uint8_t>(initCommand)};
 	serialize(bootAddress, &frame.payload[1]);
 
@@ -162,7 +162,7 @@ bool MD80Downloader::doSendFirmware(std::span<const uint8_t> firmwareData)
 
 	ICommunication::CANFrame frame{};
 	frame.header.canId = canIdCommand;
-	frame.header.length = frameSize;
+	frame.header.payloadSize = frameSize;
 
 	size_t size = firmwareData.size() - ivSize;
 
@@ -173,13 +173,13 @@ bool MD80Downloader::doSendFirmware(std::span<const uint8_t> firmwareData)
 	logger->debug("Binary size: {}", size);
 
 	/* send 16 byte IV first */
-	frame.header.length = 8;
-	for (size_t i = 0; i < ivSize / frame.header.length; i++)
+	frame.header.payloadSize = 8;
+	for (size_t i = 0; i < ivSize / frame.header.payloadSize; i++)
 	{
-		std::copy(it, it + frame.header.length, frame.payload.begin());
+		std::copy(it, it + frame.header.payloadSize, frame.payload.begin());
 		if (!sendFrameWaitForResponse(frame, Response::CHUNK_OK, 100))
 			return false;
-		it += frame.header.length;
+		it += frame.header.payloadSize;
 	}
 
 	auto itLastCrc = it;
@@ -206,7 +206,7 @@ bool MD80Downloader::doSendFirmware(std::span<const uint8_t> firmwareData)
 
 			ICommunication::CANFrame frame{};
 			frame.header.canId = canIdCommand;
-			frame.header.length = 5;
+			frame.header.payloadSize = 5;
 			frame.payload[0] = static_cast<uint8_t>(Command::CHECK_CRC);
 			auto calculatedCrc = Checksum::crc32(&*itLastCrc, it - itLastCrc);
 
@@ -257,7 +257,7 @@ bool MD80Downloader::sendWriteCmd()
 {
 	ICommunication::CANFrame frame{};
 	frame.header.canId = canIdCommand;
-	frame.header.length = 5;
+	frame.header.payloadSize = 5;
 	frame.payload = {static_cast<uint8_t>(Command::PROG)};
 
 	return sendFrameWaitForResponse(frame, Response::PROG_OK, 3000);
@@ -266,7 +266,7 @@ bool MD80Downloader::sendBootCmd()
 {
 	ICommunication::CANFrame frame{};
 	frame.header.canId = canIdCommand;
-	frame.header.length = 5;
+	frame.header.payloadSize = 5;
 	frame.payload = {static_cast<uint8_t>(Command::BOOT)};
 
 	return sendFrameWaitForResponse(frame, Response::BOOT_OK, 100);

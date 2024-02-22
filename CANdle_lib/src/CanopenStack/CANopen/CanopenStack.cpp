@@ -19,7 +19,7 @@ bool CanopenStack::readSdoToBytes(uint32_t id, uint16_t index_, uint8_t subindex
 {
 	ICommunication::CANFrame frame{};
 	frame.header.canId = 0x600 + id;
-	frame.header.length = 8;
+	frame.header.payloadSize = 8;
 	frame.header.channel = channel;
 
 	frame.payload[0] = 0x40;
@@ -108,7 +108,7 @@ bool CanopenStack::writeSdoBytes(uint32_t id, uint16_t index_, uint8_t subindex_
 
 	ICommunication::CANFrame frame{};
 	frame.header.canId = 0x600 + id;
-	frame.header.length = 8;
+	frame.header.payloadSize = 8;
 	frame.header.channel = channel;
 
 	if (segmentedTransfer)
@@ -255,7 +255,7 @@ bool CanopenStack::sendSYNC()
 {
 	ICommunication::CANFrame frame{};
 	frame.header.canId = 0x80;
-	frame.header.length = 0;
+	frame.header.payloadSize = 0;
 	/* TODO send to all channels (0xff) - add definition for magic value */
 	frame.header.channel = 0xff;
 	return interface->sendCanFrame(frame);
@@ -450,7 +450,7 @@ ICommunication::CANFrame CanopenStack::prepareRPDO(IODParser::ODType* OD, uint8_
 		std::visit(lambdaFunc, entry.value()->value);
 	}
 
-	canFrame.header.length = it - canFrame.payload.begin();
+	canFrame.header.payloadSize = it - canFrame.payload.begin();
 
 	return canFrame;
 }
