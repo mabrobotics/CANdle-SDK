@@ -11,7 +11,7 @@ int main(int argc, char** argv)
 {
 	CLI::App app{"MDtool"};
 	app.fallthrough();
-	app.add_subcommand("ping", "Use to discover all drives connected to CANdle");
+	auto* ping = app.add_subcommand("ping", "Use to discover all drives connected to CANdle");
 	auto* updateMD80 = app.add_subcommand("update_md80", "Use to update MD80");
 	auto* updateCANdle = app.add_subcommand("update_candle", "Use to update CANdle");
 	auto* updateBootloader = app.add_subcommand("update_bootloader", "Use to update MD80 bootloader");
@@ -27,6 +27,9 @@ int main(int argc, char** argv)
 	auto* changeID = app.add_subcommand("changeID", "Use to change ID");
 	auto* changeBaud = app.add_subcommand("changeBaud", "Use to change baudrate");
 	auto* setupMotor = app.add_subcommand("setup", "Use to setup a motor using the selected config file");
+
+	bool checkChannels = false;
+	ping->add_flag("-c, --channel", checkChannels, "Use to see which IDs are connected to which CANdle channels");
 
 	auto* clear = app.add_subcommand("clear", "Use clear errors or warnings");
 	clear->add_subcommand("error", "Use to clear non-critical errors");
@@ -150,7 +153,7 @@ int main(int argc, char** argv)
 	bool success = false;
 
 	if (app.got_subcommand("ping"))
-		success = mdtool.ping();
+		success = mdtool.ping(checkChannels);
 	else if (app.got_subcommand("update_md80"))
 		success = mdtool.updateMd80(filePath, id, recover, all);
 	else if (app.got_subcommand("update_bootloader"))

@@ -62,13 +62,34 @@ bool Mdtool::init(std::shared_ptr<ICommunication> interface, Candle::Baud baud)
 	return candle->init(baud);
 }
 
-bool Mdtool::ping()
+bool Mdtool::ping(bool checkChannels)
 {
-	auto drives = candle->ping();
-	logger->info("Found drives: ");
+	if (!checkChannels)
+	{
+		auto ids = candle->ping();
 
-	for (auto& md80 : drives)
-		logger->info(std::to_string(md80));
+		if (ids.size() > 0)
+			logger->info("Found drives: ");
+		else
+			logger->warn("No drives found!");
+
+		for (auto& id : ids)
+			logger->info(std::to_string(id));
+
+		return true;
+	}
+
+	auto idsAndChannels = candle->pingWithChannel();
+
+	if (idsAndChannels.size() > 0)
+		logger->info("Found drives!");
+	else
+		logger->warn("No drives found!");
+
+	for (auto& [id, ch] : idsAndChannels)
+	{
+		logger->info("{} on channel {}", id, ch);
+	}
 
 	return true;
 }

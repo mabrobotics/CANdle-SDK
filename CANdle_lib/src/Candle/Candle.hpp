@@ -45,6 +45,7 @@ class Candle
 	void deInit();
 	void setSendSync(bool state, uint32_t intervalUs);
 	std::vector<uint32_t> ping();
+	std::vector<std::pair<uint32_t, uint8_t>> pingWithChannel();
 	bool addMd80(uint32_t id);
 	std::shared_ptr<MD80> getMd80(uint32_t id) const;
 	bool enterOperational(uint32_t id);

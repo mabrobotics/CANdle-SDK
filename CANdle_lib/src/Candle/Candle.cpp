@@ -69,12 +69,28 @@ std::vector<uint32_t> Candle::ping()
 	uint32_t deviceType = 0;
 	uint32_t errorCode = 0;
 
-	/* TODO: should ping show the channel routing as well ? */
 	for (size_t id = 1; id < 31; id++)
 		if (canopenStack->readSDO(id, 0x1000, 0x00, deviceType, errorCode, false, 0xff))
 			ids.push_back(id);
 
 	return ids;
+}
+
+std::vector<std::pair<uint32_t, uint8_t>> Candle::pingWithChannel()
+{
+	std::vector<std::pair<uint32_t, uint8_t>> idsAndChannel;
+	uint32_t deviceType = 0;
+	uint32_t errorCode = 0;
+
+	for (uint8_t ch = 0; ch < candleChannels; ch++)
+	{
+		for (size_t id = 1; id < 31; id++)
+		{
+			if (canopenStack->readSDO(id, 0x1000, 0x00, deviceType, errorCode, false, ch))
+				idsAndChannel.push_back({id, ch});
+		}
+	}
+	return idsAndChannel;
 }
 
 bool Candle::addMd80(uint32_t id)
