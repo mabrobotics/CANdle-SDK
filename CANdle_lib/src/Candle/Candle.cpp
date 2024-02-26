@@ -35,7 +35,15 @@ bool Candle::init(Baud baud)
 	auto status = interface->init(settings);
 
 	if (!status)
+	{
+		logger->error("Unable to init communication interface!");
 		return false;
+	}
+
+	candleChannels = interface->getCanChannels();
+
+	logger->debug("Hardware version: {}", interface->getHardwareVersion());
+	logger->debug("CANdle active CAN channels: {}", candleChannels);
 
 	canopenStack = std::make_unique<CanopenStack>(interface, logger);
 	receiveThread = std::thread(&Candle::receiveHandler, this);

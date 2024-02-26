@@ -56,6 +56,7 @@ class ICommunication
 	virtual Settings getSettings() const = 0;
 	virtual bool sendCanFrame(const CANFrame& canFrame) = 0;
 	virtual std::optional<CANFrame> receiveCanFrame() = 0;
+	virtual uint8_t getCanChannels() = 0;
 
 	virtual Status getStatus() const = 0;
 	virtual bool reset() = 0;
@@ -63,6 +64,7 @@ class ICommunication
 	virtual uint32_t getFirmwareVersion() const = 0;
 	virtual uint32_t getBuildDate() const = 0;
 	virtual std::array<uint8_t, 8> getCommitHash() const = 0;
+	virtual uint8_t getHardwareVersion() const = 0;
 };
 
 #endif

@@ -18,7 +18,7 @@ bool CandleInterface::init(Settings& settings)
 		return false;
 
 	/* settings frame reinits can and clears all fifos. Make sure we clear our fifos right after it
-	 if there are ny problems, make sure that reset fifos wait at leas one full communication c*/
+	 if there are any problems, make sure that reset fifos wait at least one full communication cycle*/
 	if (!sendSettingsFrame(settings))
 		return false;
 
@@ -28,7 +28,17 @@ bool CandleInterface::init(Settings& settings)
 		return false;
 
 	if (!waitForActionWithTimeout([&]() -> bool
-								  { return newResponse; },
+								  { receiveCanFrame();
+								  return !newResponse; },
+								  10))
+		return false;
+
+	if (!sendCommandFrame(Command::GET_HARDWARE_INFO))
+		return false;
+
+	if (!waitForActionWithTimeout([&]() -> bool
+								  { receiveCanFrame();
+								  return !newResponse; },
 								  10))
 		return false;
 
@@ -125,6 +135,13 @@ std::optional<ICommunication::CANFrame> CandleInterface::receiveCanFrame()
 	return std::nullopt;
 }
 
+uint8_t CandleInterface::getCanChannels()
+{
+	if (hardwareInfo.hardwareVersion == 1)
+		return 3;
+	return 1;
+}
+
 template <typename Iterator>
 void CandleInterface::processCommandResponse(Command responseForCommand, Iterator it)
 {
@@ -133,6 +150,11 @@ void CandleInterface::processCommandResponse(Command responseForCommand, Iterato
 		case Command::GET_FIRMWARE_INFO:
 		{
 			firmwareInfo = deserialize<FirmwareInfo>(it);
+			break;
+		}
+		case Command::GET_HARDWARE_INFO:
+		{
+			hardwareInfo = deserialize<HardwareInfo>(it);
 			break;
 		}
 		default:
