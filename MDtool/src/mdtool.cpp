@@ -115,14 +115,14 @@ bool Mdtool::updateMd80(std::string& filePath, uint32_t id, bool recover, bool a
 		return false;
 	}
 
-	std::vector<std::pair<uint32_t, MD80Downloader::Status>> ids = {};
+	std::vector<std::pair<std::pair<uint32_t, uint8_t>, MD80Downloader::Status>> ids = {};
 
 	if (all)
 	{
 		logger->info("Pinging drives at baudrate {}M...", static_cast<uint32_t>(baudrate));
 
-		for (auto id : candle->ping())
-			ids.push_back({id, MD80Downloader::Status::OK});
+		for (auto [id, channel] : candle->pingWithChannel())
+			ids.push_back({{id, channel}, MD80Downloader::Status::OK});
 
 		if (ids.empty())
 			logger->info("No drives found!");
@@ -130,16 +130,19 @@ bool Mdtool::updateMd80(std::string& filePath, uint32_t id, bool recover, bool a
 			logger->info("Found {} drives!", ids.size());
 	}
 	else
-		ids.push_back({id, MD80Downloader::Status::OK});
+	{
+		auto ch = candle->getChannelBasedOnId(id);
+		ids.push_back({{id, ch}, MD80Downloader::Status::OK});
+	}
 
 	candle->deInit();
 	MD80Downloader downloader(interface, logger);
 
-	for (auto& [id, status] : ids)
+	for (auto& [idChPair, status] : ids)
 	{
-		logger->info("Preparing to update drive ID {} at baudrate {}M...", id, static_cast<uint32_t>(baudrate));
+		logger->info("Preparing to update drive ID {} at baudrate {}M...", idChPair.first, static_cast<uint32_t>(baudrate));
 		auto buffer = BinaryParser::getPrimaryFirmwareFile();
-		status = downloader.doLoad(std::span<uint8_t>(buffer), id, recover, 0, false);
+		status = downloader.doLoad(std::span<uint8_t>(buffer), idChPair.first, idChPair.second, recover, 0, false);
 
 		if (status != MD80Downloader::Status::OK)
 			logger->error("Status: {}", static_cast<uint8_t>(status));
@@ -151,18 +154,18 @@ bool Mdtool::updateMd80(std::string& filePath, uint32_t id, bool recover, bool a
 
 	logger->info("Update successful for {} drive(s)", updateOk);
 
-	for (auto md80 : ids)
+	for (auto [idChPair, status] : ids)
 	{
-		if (md80.second == MD80Downloader::Status::OK)
-			logger->info("ID {}", md80.first);
+		if (status == MD80Downloader::Status::OK)
+			logger->info("ID {}", idChPair.first);
 	}
 
 	logger->info("Update failed for {} drive(s) ", ids.size() - updateOk);
 
-	for (auto& [id, status] : ids)
+	for (auto [idChPair, status] : ids)
 	{
 		if (status != MD80Downloader::Status::OK)
-			logger->error("ID {} with status {}", id, static_cast<uint8_t>(status));
+			logger->error("ID {} with status {}", idChPair.first, static_cast<uint8_t>(status));
 	}
 
 	return true;
@@ -205,7 +208,7 @@ bool Mdtool::updateBootloader(std::string& filePath, uint32_t id, bool recover)
 
 	logger->info("Preparing to update the secondary bootloader of drive ID {}", id);
 	auto buffer = BinaryParser::getSecondaryFirmwareFile();
-	auto updateStatus = downloader.doLoad(std::span<uint8_t>(buffer), id, recover, secondaryBootloaderAddress, false);
+	auto updateStatus = downloader.doLoad(std::span<uint8_t>(buffer), id, 0, recover, secondaryBootloaderAddress, false);
 
 	if (updateStatus != MD80Downloader::Status::OK)
 	{
@@ -215,7 +218,7 @@ bool Mdtool::updateBootloader(std::string& filePath, uint32_t id, bool recover)
 
 	logger->info("Preparing to update the primary bootloader of drive ID {}", id);
 	buffer = BinaryParser::getPrimaryFirmwareFile();
-	updateStatus = downloader.doLoad(std::span<uint8_t>(buffer), id, recover, primaryBootloaderAddress, true);
+	updateStatus = downloader.doLoad(std::span<uint8_t>(buffer), id, 0, recover, primaryBootloaderAddress, true);
 
 	if (updateStatus != MD80Downloader::Status::OK)
 	{

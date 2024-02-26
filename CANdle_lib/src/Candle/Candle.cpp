@@ -93,6 +93,19 @@ std::vector<std::pair<uint32_t, uint8_t>> Candle::pingWithChannel()
 	return idsAndChannel;
 }
 
+uint8_t Candle::getChannelBasedOnId(uint32_t id)
+{
+	uint32_t deviceType = 0;
+	uint32_t errorCode = 0;
+
+	for (uint8_t channel = 0; channel < candleChannels; channel++)
+	{
+		if (canopenStack->readSDO(id, 0x1000, 0x00, deviceType, errorCode, false, channel))
+			return channel;
+	}
+	return 0;
+}
+
 bool Candle::addMd80(uint32_t id)
 {
 	uint32_t deviceType = 0;
