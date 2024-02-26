@@ -165,7 +165,6 @@ bool MD80Downloader::doSendFirmware(std::span<const uint8_t> firmwareData)
 
 	ICommunication::CANFrame frame{};
 	frame.header.canId = canIdCommand;
-	frame.header.payloadSize = frameSize;
 	frame.header.channel = channel;
 
 	size_t size = firmwareData.size() - ivSize;
@@ -186,6 +185,7 @@ bool MD80Downloader::doSendFirmware(std::span<const uint8_t> firmwareData)
 		it += frame.header.payloadSize;
 	}
 
+	frame.header.payloadSize = frameSize;
 	auto itLastCrc = it;
 	size_t sentSize = 0;
 
