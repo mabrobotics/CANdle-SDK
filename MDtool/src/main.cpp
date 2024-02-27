@@ -52,6 +52,7 @@ int main(int argc, char** argv)
 	bool all = false;
 	auto* all_option = updateMD80->add_flag("-a,--all", all, "Use to update all drives detected by ping() method");
 	save->add_flag("-a,--all", all, "Use to save config on all connected drives");
+	changeBaud->add_flag("-a,--all", all, "Use to change baudrate on all connected drives");
 
 	uint32_t id = 1;
 	app.add_option("-i,--id", id, "ID of the drive")->check(CLI::Range(1, 31))->excludes(all_option);
@@ -173,7 +174,7 @@ int main(int argc, char** argv)
 	else if (app.got_subcommand("changeID"))
 		success = mdtool.changeId(id, newID);
 	else if (app.got_subcommand("changeBaud"))
-		success = mdtool.changeBaud(id, newBaud * 1000000);
+		success = mdtool.changeBaud(id, newBaud * 1000000, all);
 	else if (app.got_subcommand("clear"))
 	{
 		if (clear->got_subcommand("error"))

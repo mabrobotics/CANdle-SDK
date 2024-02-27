@@ -337,8 +337,11 @@ bool Mdtool::save(uint32_t id, bool all)
 
 		for (auto& id : drives)
 		{
-			logger->info(std::to_string(id));
-			candle->addMd80(id) && candle->writeSDO(id, 0x1010, 0x01, static_cast<uint32_t>(0x65766173));
+			auto result = candle->addMd80(id) && candle->writeSDO(id, 0x1010, 0x01, static_cast<uint32_t>(0x65766173));
+			if (result)
+				logger->info("ID{} - success", std::to_string(id));
+			else
+				logger->error("ID{} - error", std::to_string(id));
 		}
 
 		return true;
@@ -393,10 +396,27 @@ bool Mdtool::changeId(uint32_t id, uint32_t newId)
 		   candle->writeSDO(id, 0x1010, 0x01, static_cast<uint32_t>(0x65766173));
 }
 
-bool Mdtool::changeBaud(uint32_t id, uint32_t newBaud)
+bool Mdtool::changeBaud(uint32_t id, uint32_t newBaud, bool all)
 {
-	return candle->addMd80(id) &&
-		   candle->writeSDO(id, 0x2000, 0x0B, newBaud);
+	if (all)
+	{
+		auto drives = candle->ping();
+
+		logger->info("Changing baudrate on drives: ");
+
+		for (auto& id : drives)
+		{
+			auto result = candle->addMd80(id) && candle->writeSDO(id, 0x2000, 0x0B, newBaud);
+			if (result)
+				logger->info("ID{} - success", std::to_string(id));
+			else
+				logger->error("ID{} - error", std::to_string(id));
+		}
+
+		return true;
+	}
+
+	return candle->addMd80(id) && candle->writeSDO(id, 0x2000, 0x0B, newBaud);
 }
 
 bool Mdtool::clearError(uint32_t id)
