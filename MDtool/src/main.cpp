@@ -55,7 +55,7 @@ int main(int argc, char** argv)
 	changeBaud->add_flag("-a,--all", all, "Use to change baudrate on all connected drives");
 
 	uint32_t id = 1;
-	app.add_option("-i,--id", id, "ID of the drive")->check(CLI::Range(1, 31))->excludes(all_option);
+	app.add_option("-i,--id", id, "ID of the drive")->excludes(all_option);
 
 	std::string filePath;
 	updateMD80->add_option("-f,--file", filePath, "MD80 update filepath (*.mab)")->required();
@@ -71,7 +71,7 @@ int main(int argc, char** argv)
 	app.add_flag("-v,--verbose", verbose, "Use for verbose mode");
 
 	uint32_t newID = 0;
-	changeID->add_option("newid", newID, "new ID")->required();
+	changeID->add_option("newid", newID, "new ID")->check(CLI::Range(1, 31))->required();
 
 	uint32_t newBaud = 1;
 	changeBaud->add_option("newBaud", newBaud, "new baud")->required();
