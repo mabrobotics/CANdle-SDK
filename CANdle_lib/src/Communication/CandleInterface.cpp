@@ -18,7 +18,7 @@ bool CandleInterface::init(Settings& settings)
 		return false;
 
 	/* settings frame reinits can and clears all fifos. Make sure we clear our fifos right after it
-	 if there are ny problems, make sure that reset fifos wait at leas one full communication c*/
+	 if there are any problems, make sure that reset fifos wait at least one full communication cycle*/
 	if (!sendSettingsFrame(settings))
 		return false;
 
@@ -28,7 +28,17 @@ bool CandleInterface::init(Settings& settings)
 		return false;
 
 	if (!waitForActionWithTimeout([&]() -> bool
-								  { return newResponse; },
+								  { receiveCanFrame();
+								  return !newResponse; },
+								  10))
+		return false;
+
+	if (!sendCommandFrame(Command::GET_HARDWARE_INFO))
+		return false;
+
+	if (!waitForActionWithTimeout([&]() -> bool
+								  { receiveCanFrame();
+								  return !newResponse; },
 								  10))
 		return false;
 
@@ -49,9 +59,9 @@ bool CandleInterface::sendCanFrame(const CANFrame& canFrame)
 {
 	IBusHandler::BusFrame usbFrame{};
 	usbFrame.header.id = BusFrameId::CANFRAME;
-	usbFrame.header.length = sizeof(CANFrame::Header) + canFrame.header.length;
+	usbFrame.header.payloadSize = sizeof(CANFrame::Header) + canFrame.header.payloadSize;
 	auto canFrameArray = bit_cast_<std::array<uint8_t, sizeof(CANFrame)>>(canFrame);
-	std::copy(canFrameArray.begin(), canFrameArray.begin() + usbFrame.header.length, usbFrame.payload.begin());
+	std::copy(canFrameArray.begin(), canFrameArray.begin() + usbFrame.header.payloadSize, usbFrame.payload.begin());
 	return busHandler->addToFifo(usbFrame);
 }
 
@@ -69,7 +79,7 @@ bool CandleInterface::sendSettingsFrame(const Settings& settings_)
 {
 	IBusHandler::BusFrame usbSettingsFrame{};
 	usbSettingsFrame.header.id = BusFrameId::CHANGE_CAN_SETTINGS;
-	usbSettingsFrame.header.length = sizeof(Settings);
+	usbSettingsFrame.header.payloadSize = sizeof(Settings);
 	serialize(settings_, usbSettingsFrame.payload.begin());
 	return busHandler->addToFifo(usbSettingsFrame);
 }
@@ -78,7 +88,7 @@ bool CandleInterface::sendCommandFrame(Command cmd)
 {
 	IBusHandler::BusFrame usbFrame{};
 	usbFrame.header.id = BusFrameId::COMMAND;
-	usbFrame.header.length = 1;
+	usbFrame.header.payloadSize = 1;
 	usbFrame.payload[0] = static_cast<uint8_t>(cmd);
 	newResponse = false;
 	return busHandler->addToFifo(usbFrame);
@@ -97,14 +107,14 @@ std::optional<ICommunication::CANFrame> CandleInterface::receiveCanFrame()
 		auto canHeader = deserialize<CANFrame::Header>(it);
 		it += sizeof(canHeader);
 
-		// std::cout << "ID: " << (int)canHeader.canId << " Len: " << (int)canHeader.length << " Data: ";
-		// for (int i = 0; i < canHeader.length; i++)
+		// std::cout << "CH: " << (int)canHeader.channel << " ID: " << (int)canHeader.canId << " Len: " << (int)canHeader.payloadSize << " Data: ";
+		// for (int i = 0; i < canHeader.payloadSize; i++)
 		// 	std::cout << std::hex << " 0x" << (int)*(it + i) << " ";
 		// std::cout << std::endl;
 
 		CANFrame canFrame{};
 		canFrame.header = canHeader;
-		std::copy(it, it + canHeader.length, canFrame.payload.begin());
+		std::copy(it, it + canHeader.payloadSize, canFrame.payload.begin());
 		return canFrame;
 	}
 	else if (frame->header.id == BusFrameId::STATUS)
@@ -125,6 +135,13 @@ std::optional<ICommunication::CANFrame> CandleInterface::receiveCanFrame()
 	return std::nullopt;
 }
 
+uint8_t CandleInterface::getCanChannels()
+{
+	if (hardwareInfo.hardwareVersion == 1)
+		return 3;
+	return 1;
+}
+
 template <typename Iterator>
 void CandleInterface::processCommandResponse(Command responseForCommand, Iterator it)
 {
@@ -133,6 +150,11 @@ void CandleInterface::processCommandResponse(Command responseForCommand, Iterato
 		case Command::GET_FIRMWARE_INFO:
 		{
 			firmwareInfo = deserialize<FirmwareInfo>(it);
+			break;
+		}
+		case Command::GET_HARDWARE_INFO:
+		{
+			hardwareInfo = deserialize<HardwareInfo>(it);
 			break;
 		}
 		default:

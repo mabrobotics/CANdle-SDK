@@ -11,7 +11,7 @@ int main(int argc, char** argv)
 {
 	CLI::App app{"MDtool"};
 	app.fallthrough();
-	app.add_subcommand("ping", "Use to discover all drives connected to CANdle");
+	auto* ping = app.add_subcommand("ping", "Use to discover all drives connected to CANdle");
 	auto* updateMD80 = app.add_subcommand("update_md80", "Use to update MD80");
 	auto* updateCANdle = app.add_subcommand("update_candle", "Use to update CANdle");
 	auto* updateBootloader = app.add_subcommand("update_bootloader", "Use to update MD80 bootloader");
@@ -27,6 +27,9 @@ int main(int argc, char** argv)
 	auto* changeID = app.add_subcommand("changeID", "Use to change ID");
 	auto* changeBaud = app.add_subcommand("changeBaud", "Use to change baudrate");
 	auto* setupMotor = app.add_subcommand("setup", "Use to setup a motor using the selected config file");
+
+	bool checkChannels = false;
+	ping->add_flag("-c, --channel", checkChannels, "Use to see which IDs are connected to which CANdle channels");
 
 	auto* clear = app.add_subcommand("clear", "Use clear errors or warnings");
 	clear->add_subcommand("error", "Use to clear non-critical errors");
@@ -49,9 +52,10 @@ int main(int argc, char** argv)
 	bool all = false;
 	auto* all_option = updateMD80->add_flag("-a,--all", all, "Use to update all drives detected by ping() method");
 	save->add_flag("-a,--all", all, "Use to save config on all connected drives");
+	changeBaud->add_flag("-a,--all", all, "Use to change baudrate on all connected drives");
 
 	uint32_t id = 1;
-	app.add_option("-i,--id", id, "ID of the drive")->check(CLI::Range(1, 31))->excludes(all_option);
+	app.add_option("-i,--id", id, "ID of the drive")->excludes(all_option);
 
 	std::string filePath;
 	updateMD80->add_option("-f,--file", filePath, "MD80 update filepath (*.mab)")->required();
@@ -67,7 +71,7 @@ int main(int argc, char** argv)
 	app.add_flag("-v,--verbose", verbose, "Use for verbose mode");
 
 	uint32_t newID = 0;
-	changeID->add_option("newid", newID, "new ID")->required();
+	changeID->add_option("newid", newID, "new ID")->check(CLI::Range(1, 31))->required();
 
 	uint32_t newBaud = 1;
 	changeBaud->add_option("newBaud", newBaud, "new baud")->required();
@@ -150,7 +154,7 @@ int main(int argc, char** argv)
 	bool success = false;
 
 	if (app.got_subcommand("ping"))
-		success = mdtool.ping();
+		success = mdtool.ping(checkChannels);
 	else if (app.got_subcommand("update_md80"))
 		success = mdtool.updateMd80(filePath, id, recover, all);
 	else if (app.got_subcommand("update_bootloader"))
@@ -170,7 +174,7 @@ int main(int argc, char** argv)
 	else if (app.got_subcommand("changeID"))
 		success = mdtool.changeId(id, newID);
 	else if (app.got_subcommand("changeBaud"))
-		success = mdtool.changeBaud(id, newBaud * 1000000);
+		success = mdtool.changeBaud(id, newBaud * 1000000, all);
 	else if (app.got_subcommand("clear"))
 	{
 		if (clear->got_subcommand("error"))

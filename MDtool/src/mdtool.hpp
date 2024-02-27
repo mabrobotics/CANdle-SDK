@@ -15,7 +15,7 @@ class Mdtool
 	Mdtool(std::shared_ptr<spdlog::logger> logger);
 
 	bool init(std::shared_ptr<ICommunication> interface, Candle::Baud baud);
-	bool ping();
+	bool ping(bool checkChannels);
 	bool updateMd80(std::string& filePath, uint32_t id, bool recover, bool all);
 	bool updateBootloader(std::string& filePath, uint32_t id, bool recover);
 	bool updateCANdle(std::string& filePath, bool recover);
@@ -26,7 +26,7 @@ class Mdtool
 	bool save(uint32_t id, bool all = false);
 	bool status(uint32_t id);
 	bool changeId(uint32_t id, uint32_t newId);
-	bool changeBaud(uint32_t id, uint32_t newBaud);
+	bool changeBaud(uint32_t id, uint32_t newBaud, bool all);
 	bool clearError(uint32_t id);
 	bool clearWarning(uint32_t id);
 	bool setupInfo(uint32_t id);

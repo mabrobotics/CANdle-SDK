@@ -45,6 +45,8 @@ class Candle
 	void deInit();
 	void setSendSync(bool state, uint32_t intervalUs);
 	std::vector<uint32_t> ping();
+	std::vector<std::pair<uint32_t, uint8_t>> pingWithChannel();
+	uint8_t getChannelBasedOnId(uint32_t id);
 	bool addMd80(uint32_t id);
 	std::shared_ptr<MD80> getMd80(uint32_t id) const;
 	bool enterOperational(uint32_t id);
@@ -58,7 +60,7 @@ class Candle
 	bool setupPDO(uint32_t id, CanopenStack::PDO pdoID, const std::vector<std::pair<uint16_t, uint8_t>>& fields);
 
 	template <typename T>
-	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T&& value)
+	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T& value)
 	{
 		uint32_t errorCode = 0;
 		bool result = canopenStack->writeSDO(id, index_, subindex_, value, errorCode);
@@ -70,12 +72,6 @@ class Candle
 		}
 
 		return result;
-	}
-
-	template <typename T>
-	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T& value)
-	{
-		return writeSDO(id, index_, subindex_, std::move(value));
 	}
 
 	template <typename T>
@@ -96,11 +92,19 @@ class Candle
    private:
 	void receiveHandler();
 	void transmitHandler();
+	void handleCandleDeviceStatus();
 
    public:
 	std::unique_ptr<CanopenStack> canopenStack;
 
    private:
+	static constexpr uint8_t rxFifoWarningLevel = 50;
+	static constexpr uint8_t txFifoWarningLevel = 50;
+	static constexpr uint8_t rxFifoErrorLevel = 99;
+	static constexpr uint8_t txFifoErrorLevel = 99;
+
+	uint32_t candleChannels = 1;
+
 	std::thread receiveThread;
 	std::thread transmitThread;
 	Barrier syncPoint;

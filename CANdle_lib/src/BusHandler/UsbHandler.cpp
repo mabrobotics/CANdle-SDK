@@ -38,7 +38,7 @@ bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode, bool deviceNo
 		return false;
 	}
 
-	for (size_t i = 0; i < cnt; i++)
+	for (int32_t i = 0; i < cnt; i++)
 	{
 		libusb_device* dev = devs[i];
 		struct libusb_device_descriptor desc;
@@ -70,7 +70,13 @@ bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode, bool deviceNo
 			else
 			{
 				openedDevices.insert(dev);
-				logger->info("Open successfull ID: {}", desc.iSerialNumber);
+				uint8_t serial[256];
+				rc = libusb_get_string_descriptor_ascii(devh, desc.iSerialNumber, serial, sizeof(serial));
+				if (rc < 0)
+					logger->error("Failed read serial number: {}", libusb_error_name(rc));
+
+				logger->info("CANdle connected! Serial number: {}", std::string(serial, serial + 12));
+
 				break;
 			}
 		}
@@ -78,7 +84,8 @@ bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode, bool deviceNo
 
 	if (devh == nullptr)
 	{
-		logger->error("Device not found!");
+		if (deviceNotFoundError)
+			logger->error("Device not found!");
 		return false;
 	}
 
@@ -209,8 +216,8 @@ void UsbHandler::copyInputBufToElements(std::array<uint8_t, 1025>& buf, int rece
 		usbEntry.header = bit_cast_<BusFrame::Header>(usbHeaderArray);
 		it += usbHeaderArray.size();
 		/* prepare and copy USB payload */
-		std::copy(it, it + usbEntry.header.length, usbEntry.payload.begin());
-		it += usbEntry.header.length;
+		std::copy(it, it + usbEntry.header.payloadSize, usbEntry.payload.begin());
+		it += usbEntry.header.payloadSize;
 
 		fromUsbBuffer.put(usbEntry);
 	}
@@ -232,7 +239,7 @@ void UsbHandler::copyElementsToOutputBuf(std::array<uint8_t, 1025>& buf, uint32_
 		auto usbEntry = elem.value();
 		auto usbFrameArray = bit_cast_<std::array<uint8_t, sizeof(BusFrame)>>(usbEntry);
 
-		uint8_t usbFrameSize = usbEntry.header.length + sizeof(BusFrame::Header);
+		uint8_t usbFrameSize = usbEntry.header.payloadSize + sizeof(BusFrame::Header);
 		auto copied = std::copy(usbFrameArray.begin(), usbFrameArray.begin() + usbFrameSize, it);
 		it += std::distance(it, copied);
 	}

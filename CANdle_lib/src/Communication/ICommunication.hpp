@@ -16,9 +16,19 @@ class ICommunication
 		struct Header
 		{
 			uint16_t canId;
-			uint8_t length;
+			uint8_t payloadSize;
+			uint8_t channel;
+			uint8_t reserved;
 		} header;
 		std::array<uint8_t, 64> payload;
+	};
+
+	enum CANChannel
+	{
+		CH0 = 0,
+		CH1 = 1,
+		CH2 = 2,
+		ALL = 255
 	};
 
 	struct Status
@@ -46,6 +56,7 @@ class ICommunication
 	virtual Settings getSettings() const = 0;
 	virtual bool sendCanFrame(const CANFrame& canFrame) = 0;
 	virtual std::optional<CANFrame> receiveCanFrame() = 0;
+	virtual uint8_t getCanChannels() = 0;
 
 	virtual Status getStatus() const = 0;
 	virtual bool reset() = 0;
@@ -53,6 +64,7 @@ class ICommunication
 	virtual uint32_t getFirmwareVersion() const = 0;
 	virtual uint32_t getBuildDate() const = 0;
 	virtual std::array<uint8_t, 8> getCommitHash() const = 0;
+	virtual uint8_t getHardwareVersion() const = 0;
 };
 
 #endif

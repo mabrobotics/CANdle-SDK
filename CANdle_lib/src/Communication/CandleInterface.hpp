@@ -32,6 +32,7 @@ class CandleInterface : public ICommunication
 		CLEAR_ERRORS = 2,
 		RESET_STATISTICS = 3,
 		GET_FIRMWARE_INFO = 4,
+		GET_HARDWARE_INFO = 5,
 	};
 
 	struct FirmwareInfo
@@ -41,6 +42,15 @@ class CandleInterface : public ICommunication
 		uint32_t firmwareVersion;
 	};
 
+	struct HardwareInfo
+	{
+		std::array<uint8_t, 24> UUID;
+		std::array<uint8_t, 24> chipId;
+		uint32_t flashSize;
+		uint8_t packageType;
+		uint8_t hardwareVersion;
+	};
+
 	explicit CandleInterface(std::unique_ptr<IBusHandler> busHandler);
 
 	bool init(Settings& settings) override;
@@ -48,27 +58,37 @@ class CandleInterface : public ICommunication
 	Settings getSettings() const override;
 	bool sendCanFrame(const CANFrame& canFrame) override;
 	std::optional<CANFrame> receiveCanFrame() override;
+	uint8_t getCanChannels() override;
 
 	Status getStatus() const override;
 	bool reset() override;
 
-	uint32_t getFirmwareVersion() const
+	uint32_t getFirmwareVersion() const override
 	{
 		return firmwareInfo.firmwareVersion;
 	}
-	uint32_t getBuildDate() const
+	uint32_t getBuildDate() const override
 	{
 		return firmwareInfo.buildDate;
 	}
-	std::array<uint8_t, 8> getCommitHash() const
+	std::array<uint8_t, 8> getCommitHash() const override
 	{
 		return firmwareInfo.commitHash;
+	}
+	uint8_t getHardwareVersion() const override
+	{
+		return hardwareInfo.hardwareVersion;
+	}
+	std::array<uint8_t, 24> getUUID() const
+	{
+		return hardwareInfo.UUID;
 	}
 
    private:
 	Settings settings{};
 	Status status{};
 	FirmwareInfo firmwareInfo{};
+	HardwareInfo hardwareInfo{};
 
 	std::atomic<bool> newResponse = false;
 	std::unique_ptr<IBusHandler> busHandler;

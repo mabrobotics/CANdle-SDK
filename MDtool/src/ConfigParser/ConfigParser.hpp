@@ -192,6 +192,7 @@ class ConfigParser
 		ConfigField{"motor settings", "torque bandwidth", true},
 		ConfigField{"motor settings", "motor shutdown temperature", true},
 		ConfigField{"motor settings", "calibration mode", false},
+		ConfigField{"motor settings", "can watchdog", true},
 
 		ConfigField{"limits", "max torque", true},
 		ConfigField{"limits", "max velocity", true},

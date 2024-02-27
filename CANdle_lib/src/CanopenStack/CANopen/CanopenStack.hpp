@@ -35,13 +35,20 @@ class CanopenStack
 
 	explicit CanopenStack(std::shared_ptr<ICommunication> interface, std::shared_ptr<spdlog::logger> logger);
 	void setOD(uint32_t id, IODParser::ODType* OD);
+	void setChannel(uint32_t id, uint8_t channel);
 
 	template <typename T>
-	bool readSDO(uint32_t id, uint16_t index_, uint8_t subindex_, T& value, uint32_t& errorCode, bool checkOD = true)
+	bool readSDO(uint32_t id, uint16_t index_, uint8_t subindex_, T& value, uint32_t& errorCode, bool checkOD = true, std::optional<uint8_t> maybeChannel = std::nullopt)
 	{
 		std::vector<uint8_t> data;
 		/* ensure at least as many elements as there are in the largest element (sizeof(T)) */
 		data.resize(maxSingleFieldSize, 0);
+
+		uint8_t channel = 0;
+		if (maybeChannel.has_value())
+			channel = maybeChannel.value();
+		else
+			channel = idToChannelMap[id];
 
 		std::optional<IODParser::Entry*> maybeEntry;
 
@@ -52,7 +59,7 @@ class CanopenStack
 				return false;
 		}
 
-		if (!readSdoToBytes(id, index_, subindex_, data, errorCode))
+		if (!readSdoToBytes(id, index_, subindex_, data, errorCode, channel))
 			return false;
 
 		value = deserialize<T>(data.data());
@@ -63,10 +70,10 @@ class CanopenStack
 		return true;
 	}
 
-	bool readSdoToBytes(uint32_t id, uint16_t index_, uint8_t subindex_, std::vector<uint8_t>& dataOut, uint32_t& errorCode);
+	bool readSdoToBytes(uint32_t id, uint16_t index_, uint8_t subindex_, std::vector<uint8_t>& dataOut, uint32_t& errorCode, uint8_t channel = 0);
 
 	template <typename T>
-	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T& value, uint32_t& errorCode, uint32_t size = sizeof(T))
+	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T& value, uint32_t& errorCode)
 	{
 		std::vector<uint8_t> data;
 		/* ensure at least as many elements as there are in the largest element (sizeof(T)) */
@@ -100,25 +107,25 @@ class CanopenStack
 
 		if (checkLimit(entry->lowLimit, std::less<T>()))
 		{
-			logger->error("The value exceeds low limit from the EDS file");
+			logger->error("The value exceeds low limit from the EDS file 0x{:x}:0x{:x}", index_, subindex_);
 			return false;
 		}
 		else if (checkLimit(entry->highLimit, std::greater<T>()))
 		{
-			logger->error("The value exceeds high limit from the EDS file");
+			logger->error("The value exceeds high limit from the EDS file 0x{:x}:0x{:x}", index_, subindex_);
 			return false;
 		}
 
 		serialize(value, data.begin());
 
-		if (!writeSdoBytes(id, index_, subindex_, data, size, errorCode))
+		if (!writeSdoBytes(id, index_, subindex_, data, sizeof(T), errorCode, idToChannelMap[id]))
 			return false;
 
 		entry->value = value;
 		return true;
 	}
 
-	bool writeSdoBytes(uint32_t id, uint16_t index_, uint8_t subindex_, const std::vector<uint8_t>& dataIn, uint32_t size, uint32_t& errorCode);
+	bool writeSdoBytes(uint32_t id, uint16_t index_, uint8_t subindex_, const std::vector<uint8_t>& dataIn, uint32_t size, uint32_t& errorCode, uint8_t channel = 0);
 	bool setupPDO(uint32_t id, PDO pdoId, const std::vector<std::pair<uint16_t, uint8_t>>& fields);
 	bool sendSYNC();
 	bool sendRPDOs();
@@ -135,8 +142,10 @@ class CanopenStack
 	static constexpr uint8_t maxDevices = 31;
 	static constexpr uint32_t defaultSdoTimeout = 10;
 	static constexpr uint32_t maxSingleFieldSize = 100;
+	static constexpr uint32_t maxPdoNum = 4;
 
 	std::unordered_map<uint32_t, IODParser::ODType*> ODmap;
+	std::unordered_map<uint32_t, uint8_t> idToChannelMap;
 
 	static constexpr uint16_t TPDOComunicationParamIndex = 0x1800;
 	static constexpr uint16_t TPDOMappingParamIndex = 0x1A00;
