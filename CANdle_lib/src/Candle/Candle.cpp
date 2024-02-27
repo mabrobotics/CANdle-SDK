@@ -204,6 +204,8 @@ void Candle::receiveHandler()
 			continue;
 
 		canopenStack->parse(maybeFrame.value());
+
+		handleCandleDeviceStatus();
 	}
 
 	logger->debug("Ending candle receive thread...");
@@ -227,4 +229,45 @@ void Candle::transmitHandler()
 		}
 	}
 	logger->debug("Ending candle transmit thread...");
+}
+
+void Candle::handleCandleDeviceStatus()
+{
+	static bool rxFifoWarning = false;
+	static bool txFifoWarning = false;
+	static bool rxFifoError = false;
+	static bool txFifoError = false;
+
+	static size_t loop_count = 0;
+
+	if (loop_count++ >= 1000)
+	{
+		auto status = interface->getStatus();
+
+		if (!rxFifoWarning && status.statistics.maxRxFifoOccupancyPercent > rxFifoWarningLevel)
+		{
+			logger->warn("CANdle's internal RX fifo max occupancy exceeded {}%", rxFifoWarningLevel);
+			rxFifoWarning = true;
+		}
+
+		if (!txFifoWarning && status.statistics.maxTxFifoOccupancyPercent > txFifoWarningLevel)
+		{
+			logger->warn("CANdle's internal TX fifo max occupancy exceeded {}%", txFifoWarningLevel);
+			txFifoWarning = true;
+		}
+
+		if (!rxFifoError && status.statistics.maxRxFifoOccupancyPercent >= rxFifoErrorLevel)
+		{
+			logger->error("CANdle's internal RX fifo max occupancy exceeded {}%. Some messages are probably lost. Please consider slowing down the communication or minimizing the data throughput.", rxFifoErrorLevel);
+			rxFifoError = true;
+		}
+
+		if (!txFifoError && status.statistics.maxTxFifoOccupancyPercent > txFifoErrorLevel)
+		{
+			logger->error("CANdle's internal TX fifo max occupancy exceeded {}%. Some messages are probably lost. Please consider slowing down the communication or minimizing the data throughput.", txFifoErrorLevel);
+			txFifoError = true;
+		}
+
+		loop_count = 0;
+	}
 }

@@ -25,27 +25,15 @@ int main(int argc, char** argv)
 		candle.writeSDO(id, 0x2003, 0x05, true);
 		candle.setZeroPosition(id);
 		candle.enterOperational(id);
+		md80s.push_back(candle.getMd80(id));
 	}
 
-	for (int i = 1; i < ids.size() / 2; i++)
-	{
-		md80s.push_back(candle.getMd80(i));
-		md80s.push_back(candle.getMd80(i + 6));
-	}
-	// auto md80_1 = candle.getMd80(ids[0]);
-	// auto md80_2 = candle.getMd80(ids[1]);
-
-	candle.setSendSync(true, 1500);
+	candle.setSendSync(true, 3000);
 
 	while (1)
 	{
-		// md80_1->setPositionTarget(md80_2->getOutputPosition());
-		// md80_2->setPositionTarget(md80_1->getOutputPosition());
-
 		for (auto& md80 : md80s)
-		{
 			auto a = md80->getOutputPosition();
-		}
 	}
 
 	return 0;

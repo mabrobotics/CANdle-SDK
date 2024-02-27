@@ -92,13 +92,18 @@ class Candle
    private:
 	void receiveHandler();
 	void transmitHandler();
+	void handleCandleDeviceStatus();
 
    public:
 	std::unique_ptr<CanopenStack> canopenStack;
 
    private:
-	/* TODO modify on chandle type read */
-	uint32_t candleChannels = 3;
+	static constexpr uint8_t rxFifoWarningLevel = 50;
+	static constexpr uint8_t txFifoWarningLevel = 50;
+	static constexpr uint8_t rxFifoErrorLevel = 99;
+	static constexpr uint8_t txFifoErrorLevel = 99;
+
+	uint32_t candleChannels = 1;
 
 	std::thread receiveThread;
 	std::thread transmitThread;
