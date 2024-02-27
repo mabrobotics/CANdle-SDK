@@ -75,7 +75,7 @@ bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode, bool deviceNo
 				if (rc < 0)
 					logger->error("Failed read serial number: {}", libusb_error_name(rc));
 
-				logger->info("Open successfull! Serial number: {}", std::string(serial, serial + 12));
+				logger->info("CANdle connected! Serial number: {}", std::string(serial, serial + 12));
 
 				break;
 			}
