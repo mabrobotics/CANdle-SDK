@@ -111,7 +111,7 @@ IODParser::ValueType ObjectDictionaryParserEDS::fillValue(std::string& value, IO
 		case IODParser::DataType::UNSIGNED32:
 			return static_cast<uint32_t>(std::stoul(value, nullptr, 0));
 		case IODParser::DataType::INTEGER32:
-			return static_cast<uint32_t>(std::stoi(value, nullptr, 0));
+			return static_cast<int32_t>(std::stoi(value, nullptr, 0));
 		case IODParser::DataType::VISIBLE_STRING:
 		{
 			std::array<uint8_t, 24> arr{};
