@@ -11,6 +11,8 @@ int main(int argc, char** argv)
 {
 	CLI::App app{"MDtool"};
 	app.fallthrough();
+	app.ignore_case();
+
 	auto* ping = app.add_subcommand("ping", "Use to discover all drives connected to CANdle");
 	auto* updateMD80 = app.add_subcommand("update_md80", "Use to update MD80");
 	auto* updateCANdle = app.add_subcommand("update_candle", "Use to update CANdle");
