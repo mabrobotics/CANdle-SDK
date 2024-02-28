@@ -327,6 +327,15 @@ void CanopenStack::parse(ICommunication::CANFrame& frame)
 		uint16_t errorIndex = deserialize<uint16_t>(&frame.payload[2]);
 		logger->error("Emergency frame received ID 0x{:x}! Error code (0x{:x}) error index (0x{:x})", id, errorCode, errorIndex);
 	}
+	else if (frame.header.canId >= 0x700 && frame.header.canId < (0x700 + maxDevices))
+	{
+		uint8_t id = frame.header.canId - 0x700;
+
+		if (frame.payload[0] == 0x7f)
+		{
+			logger->warn("Drive ID{} is in pre operational mode!", id);
+		}
+	}
 }
 
 std::optional<IODParser::Entry*> CanopenStack::checkEntryExists(IODParser::ODType* OD, uint16_t index, uint8_t subindex)
