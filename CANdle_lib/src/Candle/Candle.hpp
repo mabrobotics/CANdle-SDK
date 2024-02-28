@@ -102,6 +102,7 @@ class Candle
 	static constexpr uint8_t txFifoWarningLevel = 50;
 	static constexpr uint8_t rxFifoErrorLevel = 99;
 	static constexpr uint8_t txFifoErrorLevel = 99;
+	inline static size_t candleNum;
 
 	uint32_t candleChannels = 1;
 

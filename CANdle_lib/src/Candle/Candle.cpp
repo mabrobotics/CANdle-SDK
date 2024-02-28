@@ -2,10 +2,8 @@
 
 Candle::Candle() : syncPoint(3)
 {
-	/* TODO just a temporary solution */
-	char n = 'a' + rand() % 26;
-	std::string name(1, n);
-	logger = spdlog::stdout_color_mt(name);
+	std::string name = "candle_logger";
+	logger = spdlog::stdout_color_mt(name + std::to_string(candleNum++));
 	logger->set_pattern("[%^%l%$] %v");
 	logger->set_level(spdlog::level::level_enum::debug);
 	interface = std::make_shared<CandleInterface>(std::make_unique<UsbHandler>(logger));
