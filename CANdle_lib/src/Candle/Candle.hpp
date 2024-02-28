@@ -41,7 +41,7 @@ class Candle
 	Candle(std::shared_ptr<ICommunication> interface, std::shared_ptr<spdlog::logger> logger);
 	~Candle();
 
-	bool init(Baud baud = Baud::BAUD_1M);
+	bool init(Baud baud = Baud::BAUD_1M, std::string edsPath = "");
 	void deInit();
 	void setSendSync(bool state, uint32_t intervalUs);
 	std::vector<uint32_t> ping();
@@ -120,6 +120,8 @@ class Candle
 	std::unordered_map<uint32_t, std::shared_ptr<MD80>> md80s;
 	std::shared_ptr<ICommunication> interface;
 	std::shared_ptr<spdlog::logger> logger;
+
+	std::string edsPath;
 };
 
 #endif

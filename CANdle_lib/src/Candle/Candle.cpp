@@ -21,8 +21,11 @@ Candle::~Candle()
 	deInit();
 }
 
-bool Candle::init(Baud baud)
+bool Candle::init(Baud baud, std::string edsPath)
 {
+	if (edsPath == "")
+		this->edsPath = "MD80_DS402.eds";
+
 	ICommunication::Settings settings;
 
 	if (baud == Baud::BAUD_8M)
@@ -114,6 +117,7 @@ uint8_t Candle::getChannelBasedOnId(uint32_t id)
 
 bool Candle::addMd80(uint32_t id)
 {
+	ObjectDictionaryParserEDS parser;
 	uint32_t deviceType = 0;
 	bool success = false;
 	uint8_t channel = 0;
@@ -135,6 +139,13 @@ bool Candle::addMd80(uint32_t id)
 		return false;
 
 	md80s[id] = std::make_unique<MD80>();
+
+	if (!parser.parseFile(edsPath, md80s[id]->OD))
+	{
+		logger->error("EDS file path is invalid: {}. Please provide a correct path in the Candle init function or place the EDS file in the directory the script is run from.", edsPath);
+		return false;
+	}
+
 	canopenStack->setOD(id, &md80s[id]->OD);
 	canopenStack->setChannel(id, channel);
 	return true;
