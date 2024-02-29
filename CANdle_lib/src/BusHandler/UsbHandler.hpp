@@ -29,7 +29,9 @@ class UsbHandler : public IBusHandler
 	bool receiveDataDirectly(std::span<uint8_t>& data);
 
    private:
-	static constexpr uint32_t size = 2048;
+	/* the 2049 size is to allow for a 1 extra byte so that a transfer is not
+	ended within the USB  1ms cycle see the end of copyFifoToOutputBuffer method */
+	static constexpr uint32_t size = 2049;
 	static constexpr uint16_t VID = 0x0069;
 	static constexpr uint16_t PID = 0x1000;
 	static constexpr int inEndpointAdr = 0x81;

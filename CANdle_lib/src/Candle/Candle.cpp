@@ -227,6 +227,7 @@ void Candle::transmitHandler()
 	syncPoint.wait();
 	while (!done)
 	{
+		/* TODO: synch OD accesses? */
 		canopenStack->sendRPDOs();
 
 		if (sendSync)
