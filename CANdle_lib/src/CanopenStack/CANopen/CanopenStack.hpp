@@ -140,7 +140,7 @@ class CanopenStack
 	std::atomic<bool> segmentedReadOngoing = false;
 
 	static constexpr uint8_t maxDevices = 31;
-	static constexpr uint32_t defaultSdoTimeout = 10;
+	static constexpr uint32_t defaultSdoTimeout = 20;
 	static constexpr uint32_t maxSingleFieldSize = 100;
 	static constexpr uint32_t maxPdoNum = 4;
 

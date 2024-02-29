@@ -173,7 +173,6 @@ void UsbHandler::resetFifos()
 
 void UsbHandler::dataHandler()
 {
-	static constexpr uint32_t size = 1025;
 	std::array<uint8_t, size> txBuf;
 	std::array<uint8_t, size> rxBuf;
 
@@ -203,7 +202,7 @@ void UsbHandler::dataHandler()
 	}
 }
 
-void UsbHandler::copyInputBufToElements(std::array<uint8_t, 1025>& buf, int receiveLen)
+void UsbHandler::copyInputBufToElements(std::array<uint8_t, size>& buf, int receiveLen)
 {
 	auto it = buf.begin();
 
@@ -225,7 +224,7 @@ void UsbHandler::copyInputBufToElements(std::array<uint8_t, 1025>& buf, int rece
 	buf.fill(0);
 }
 
-void UsbHandler::copyElementsToOutputBuf(std::array<uint8_t, 1025>& buf, uint32_t& sendLen)
+void UsbHandler::copyElementsToOutputBuf(std::array<uint8_t, size>& buf, uint32_t& sendLen)
 {
 	auto it = buf.begin();
 	buf.fill(0);

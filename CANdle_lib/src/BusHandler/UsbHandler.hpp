@@ -29,13 +29,14 @@ class UsbHandler : public IBusHandler
 	bool receiveDataDirectly(std::span<uint8_t>& data);
 
    private:
+	static constexpr uint32_t size = 2048;
 	static constexpr uint16_t VID = 0x0069;
 	static constexpr uint16_t PID = 0x1000;
 	static constexpr int inEndpointAdr = 0x81;
 	static constexpr int outEndpointAdr = 0x01;
 
-	static constexpr uint32_t sendTimeout = 15;
-	static constexpr uint32_t receiveTimeout = 1000;
+	static constexpr uint32_t sendTimeout = 100;
+	static constexpr uint32_t receiveTimeout = 100;
 
 	struct libusb_device** devs;
 	struct libusb_device_handle* devh = NULL;
@@ -52,8 +53,8 @@ class UsbHandler : public IBusHandler
 
    private:
 	void dataHandler();
-	void copyInputBufToElements(std::array<uint8_t, 1025>& buf, int receiveLen);
-	void copyElementsToOutputBuf(std::array<uint8_t, 1025>& buf, uint32_t& sendLen);
+	void copyInputBufToElements(std::array<uint8_t, size>& buf, int receiveLen);
+	void copyElementsToOutputBuf(std::array<uint8_t, size>& buf, uint32_t& sendLen);
 };
 
 #endif
