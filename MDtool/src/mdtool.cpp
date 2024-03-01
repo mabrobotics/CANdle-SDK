@@ -313,10 +313,23 @@ bool Mdtool::writeSDO(uint32_t id, uint16_t index, uint8_t subindex, const IODPa
 
 bool Mdtool::calibrate(uint32_t id)
 {
-	return candle->addMd80(id) &&
-		   candle->enterOperational(id) &&
-		   candle->setModeOfOperation(id, Candle::ModesOfOperation::SERVICE) &&
-		   candle->writeSDO(id, 0x2003, 0x03, true);
+	if (!candle->addMd80(id))
+		return false;
+
+	if (!candle->enterOperational(id) || !candle->setModeOfOperation(id, Candle::ModesOfOperation::SERVICE))
+		return false;
+
+	bool stillCalibrating = true;
+
+	candle->writeSDO(id, 0x2003, 0x03, stillCalibrating);
+
+	while (stillCalibrating)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		candle->readSDO(id, 0x2003, 0x03, stillCalibrating);
+	}
+
+	return true;
 }
 
 bool Mdtool::home(uint32_t id)
