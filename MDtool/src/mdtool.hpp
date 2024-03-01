@@ -34,6 +34,7 @@ class Mdtool
 	bool reset(uint32_t id);
 	bool setupMotor(uint32_t id, const std::string& filePath);
 	bool move(uint32_t id, bool relative, float targetPosition);
+	bool blink(uint32_t id);
 
    private:
 	static constexpr uint32_t secondaryBootloaderAddress = 0x8005000;

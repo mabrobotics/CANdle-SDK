@@ -549,3 +549,21 @@ bool Mdtool::move(uint32_t id, bool relative, float targetPosition)
 
 	return true;
 }
+
+bool Mdtool::blink(uint32_t id)
+{
+	if (!candle->addMd80(id))
+		return false;
+
+	bool stillBlinking = true;
+
+	candle->writeSDO(id, 0x2003, 0x01, stillBlinking);
+
+	while (stillBlinking)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		candle->readSDO(id, 0x2003, 0x01, stillBlinking);
+	}
+
+	return true;
+}

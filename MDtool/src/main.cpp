@@ -26,6 +26,7 @@ int main(int argc, char** argv)
 	app.add_subcommand("home", "Use to run homing");
 	app.add_subcommand("info", "Use list all registers");
 	app.add_subcommand("reset", "Use to reset a drive");
+	app.add_subcommand("blink", "Use to blink the MD80's onboard LEDs");
 	auto* changeID = app.add_subcommand("changeID", "Use to change ID");
 	auto* changeBaud = app.add_subcommand("changeBaud", "Use to change baudrate");
 	auto* setupMotor = app.add_subcommand("setup", "Use to setup a motor using the selected config file");
@@ -194,6 +195,8 @@ int main(int argc, char** argv)
 		success = mdtool.setupMotor(id, filePath);
 	else if (app.got_subcommand("move"))
 		success = mdtool.move(id, !absolute, targetPosition);
+	else if (app.got_subcommand("blink"))
+		success = mdtool.blink(id);
 
 	if (success)
 		logger->info("Success!");
