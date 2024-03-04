@@ -505,42 +505,63 @@ bool Mdtool::reset(uint32_t id)
 	return candle->addMd80(id) && candle->reset(id);
 }
 
-bool Mdtool::setupMotor(uint32_t id, const std::string& filePath)
+bool Mdtool::setupMotor(uint32_t id, const std::string& filePath, bool all)
 {
-	if (!candle->addMd80(id))
-		return false;
+	std::vector<uint32_t> drives;
 
-	auto& OD = candle->getMd80(id)->OD;
+	if (all)
+		drives = candle->ping();
+	else
+		drives.push_back(id);
 
-	ConfigParser CP(logger, &OD);
-
-	if (!CP.openFile(filePath))
+	for (auto& id : drives)
 	{
-		logger->error("Error opening file: {}", filePath);
-		return false;
-	}
-
-	auto ODentries = CP.parseFile();
-
-	if (!ODentries.has_value())
-	{
-		logger->error("Error parsing file: {}", filePath);
-		return false;
-	}
-
-	for (auto& [index, subindex] : ODentries.value())
-	{
-		auto lambdaFunc = [&](auto& arg) -> bool
+		if (!candle->addMd80(id))
 		{
-			if (!candle->writeSDO(id, index, subindex, std::move(arg)))
-				return false;
-
-			logger->info("Writing successful! 0x{:x}:0x{:x} = {}", index, subindex, arg);
-			return true;
-		};
-
-		if (!std::visit(lambdaFunc, OD[index]->subEntries[subindex]->value))
+			logger->error("Error adding MD80 with ID{}", id);
 			return false;
+		}
+
+		auto& OD = candle->getMd80(id)->OD;
+
+		ConfigParser CP(logger, &OD);
+
+		if (!CP.openFile(filePath))
+		{
+			logger->error("Error opening file: {}", filePath);
+			return false;
+		}
+
+		auto ODentries = CP.parseFile();
+
+		if (!ODentries.has_value())
+		{
+			logger->error("Error parsing file: {}", filePath);
+			return false;
+		}
+
+		for (auto& [index, subindex] : ODentries.value())
+		{
+			auto lambdaFunc = [&](auto& arg) -> bool
+			{
+				if (!candle->writeSDO(id, index, subindex, std::move(arg)))
+					return false;
+
+				logger->debug("Writing successful! 0x{:x}:0x{:x} = {}", index, subindex, arg);
+				return true;
+			};
+
+			if (!std::visit(lambdaFunc, OD[index]->subEntries[subindex]->value))
+				return false;
+		}
+
+		if (!candle->writeSDO(id, 0x1010, 0x01, static_cast<uint32_t>(0x65766173)))
+		{
+			logger->error("Error saving on ID{}", id);
+			return false;
+		}
+
+		logger->info("Setup successfull on ID{}", id);
 	}
 
 	return true;

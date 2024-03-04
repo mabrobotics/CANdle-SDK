@@ -56,6 +56,7 @@ int main(int argc, char** argv)
 	auto* all_option = updateMD80->add_flag("-a,--all", all, "Use to update all drives detected by ping() method");
 	save->add_flag("-a,--all", all, "Use to save config on all connected drives");
 	changeBaud->add_flag("-a,--all", all, "Use to change baudrate on all connected drives");
+	setupMotor->add_flag("-a,--all", all, "Use to setup all motors with the same config at once");
 
 	uint32_t id = 1;
 	app.add_option("-i,--id", id, "ID of the drive")->excludes(all_option);
@@ -192,7 +193,7 @@ int main(int argc, char** argv)
 	else if (app.got_subcommand("reset"))
 		success = mdtool.reset(id);
 	else if (app.got_subcommand("setup"))
-		success = mdtool.setupMotor(id, filePath);
+		success = mdtool.setupMotor(id, filePath, all);
 	else if (app.got_subcommand("move"))
 		success = mdtool.move(id, !absolute, targetPosition);
 	else if (app.got_subcommand("blink"))

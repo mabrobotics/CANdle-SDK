@@ -32,7 +32,7 @@ class Mdtool
 	bool setupInfo(uint32_t id);
 	bool setZero(uint32_t id);
 	bool reset(uint32_t id);
-	bool setupMotor(uint32_t id, const std::string& filePath);
+	bool setupMotor(uint32_t id, const std::string& filePath, bool all);
 	bool move(uint32_t id, bool relative, float targetPosition);
 	bool blink(uint32_t id);
 
