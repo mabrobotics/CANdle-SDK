@@ -101,7 +101,7 @@ class CanopenStack
 
 		if (entry->value.index() != IODParser::ValueType(value).index())
 		{
-			logger->error("Provided type and type from the EDS are not consistent!");
+			logger->error("Provided type and type from the EDS are not consistent! 0x{:x}:0x{:x}", index_, subindex_);
 			return false;
 		}
 
