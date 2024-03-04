@@ -319,14 +319,14 @@ bool Mdtool::calibrate(uint32_t id)
 	if (!candle->enterOperational(id) || !candle->setModeOfOperation(id, Candle::ModesOfOperation::SERVICE))
 		return false;
 
-	bool stillCalibrating = true;
+	bool inProgress = true;
 
-	candle->writeSDO(id, 0x2003, 0x03, stillCalibrating);
+	candle->writeSDO(id, 0x2003, 0x03, inProgress);
 
-	while (stillCalibrating)
+	while (inProgress)
 	{
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		candle->readSDO(id, 0x2003, 0x03, stillCalibrating);
+		candle->readSDO(id, 0x2003, 0x03, inProgress);
 	}
 
 	return true;
@@ -334,10 +334,23 @@ bool Mdtool::calibrate(uint32_t id)
 
 bool Mdtool::home(uint32_t id)
 {
-	return candle->addMd80(id) &&
-		   candle->enterOperational(id) &&
-		   candle->setModeOfOperation(id, Candle::ModesOfOperation::SERVICE) &&
-		   candle->writeSDO(id, 0x2003, 0x0E, true);
+	if (!candle->addMd80(id))
+		return false;
+
+	if (!candle->enterOperational(id) || !candle->setModeOfOperation(id, Candle::ModesOfOperation::SERVICE))
+		return false;
+
+	bool inProgress = true;
+
+	candle->writeSDO(id, 0x2003, 0x0E, inProgress);
+
+	while (inProgress)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		candle->readSDO(id, 0x2003, 0x0E, inProgress);
+	}
+
+	return true;
 }
 
 bool Mdtool::save(uint32_t id, bool all)
@@ -540,9 +553,10 @@ bool Mdtool::move(uint32_t id, bool relative, float targetPosition)
 
 	logger->info("Target position {}", targetPosition);
 
-	candle->setModeOfOperation(id, Candle::ModesOfOperation::PROFILE_POSITION);
 	if (relative)
 		candle->setZeroPosition(id);
+
+	candle->setModeOfOperation(id, Candle::ModesOfOperation::PROFILE_POSITION);
 	candle->enterOperational(id);
 
 	auto md80 = candle->getMd80(id);
@@ -568,14 +582,14 @@ bool Mdtool::blink(uint32_t id)
 	if (!candle->addMd80(id))
 		return false;
 
-	bool stillBlinking = true;
+	bool inProgress = true;
 
-	candle->writeSDO(id, 0x2003, 0x01, stillBlinking);
+	candle->writeSDO(id, 0x2003, 0x01, inProgress);
 
-	while (stillBlinking)
+	while (inProgress)
 	{
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		candle->readSDO(id, 0x2003, 0x01, stillBlinking);
+		candle->readSDO(id, 0x2003, 0x01, inProgress);
 	}
 
 	return true;
