@@ -25,7 +25,7 @@ bool ObjectDictionaryParserEDS::parseFile(const std::string& filePath, ODType& o
 				break;
 
 			std::string key = ini.get(category).get(std::to_string(i));
-			objectDictionary.insert({stringToInt(key), std::make_shared<Entry>()});
+			objectDictionary.emplace(stringToInt(key), std::move(std::make_unique<Entry>()));
 		}
 	};
 
@@ -77,7 +77,7 @@ bool ObjectDictionaryParserEDS::parseFile(const std::string& filePath, ODType& o
 				if (!ini.has(subkey))
 					break;
 
-				objectDictionary[key]->subEntries.insert({i, std::make_shared<Entry>()});
+				objectDictionary[key]->subEntries.emplace(i, std::move(std::make_unique<Entry>()));
 				fillInEntryFields(subkey, *objectDictionary[key]->subEntries[i]);
 				i++;
 			}

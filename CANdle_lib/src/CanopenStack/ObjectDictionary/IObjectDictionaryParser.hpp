@@ -62,13 +62,13 @@ class IODParser
 		DataType dataType;
 		AccessSDO accessType;
 		size_t highestSubindex = 0;
-		std::unordered_map<uint32_t, std::shared_ptr<Entry>> subEntries;
+		std::unordered_map<uint32_t, std::unique_ptr<Entry>> subEntries;
 		ValueType highLimit;
 		ValueType lowLimit;
 		ValueType value;
 	};
 
-	using ODType = std::unordered_map<uint32_t, std::shared_ptr<Entry>>;
+	using ODType = std::unordered_map<uint32_t, std::unique_ptr<Entry>>;
 
 	virtual ~IODParser() = default;
 	virtual bool parseFile(const std::string& filePath, ODType& objectDictionary) = 0;
