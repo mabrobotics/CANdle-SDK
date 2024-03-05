@@ -272,7 +272,9 @@ bool Mdtool::updateCANdle(std::string& filePath, bool recover)
 
 bool Mdtool::readSDO(uint32_t id, uint16_t index, uint8_t subindex)
 {
-	candle->addMd80(id);
+	if (!candle->addMd80(id))
+		return false;
+
 	auto md80 = candle->getMd80(id);
 
 	auto maybeEntry = candle->canopenStack->checkEntryExists(&md80->OD, index, subindex);
@@ -297,7 +299,8 @@ bool Mdtool::readSDO(uint32_t id, uint16_t index, uint8_t subindex)
 
 bool Mdtool::writeSDO(uint32_t id, uint16_t index, uint8_t subindex, const IODParser::ValueType& value)
 {
-	candle->addMd80(id);
+	if (!candle->addMd80(id))
+		return false;
 
 	auto lambdaFunc = [&](auto& arg) -> bool
 	{

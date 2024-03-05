@@ -127,16 +127,19 @@ bool Candle::addMd80(uint32_t id)
 	{
 		if (canopenStack->readSDO(id, 0x1000, 0x00, deviceType, errorCode, false, channel))
 		{
-			logger->info("MD80 with ID {} found on channel {}!", id, channel);
+			logger->info("MD80 with ID{} found on channel {}!", id, channel);
 			success = true;
 			break;
 		}
 
-		logger->debug("MD80 with ID {} not found on channel {}", id, channel);
+		logger->debug("MD80 with ID{} not found on channel {}", id, channel);
 	}
 
 	if (!success)
+	{
+		logger->error("Unable to add MD80 with ID{}", id);
 		return false;
+	}
 
 	md80s[id] = std::make_unique<MD80>();
 
