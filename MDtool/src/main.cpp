@@ -204,5 +204,5 @@ int main(int argc, char** argv)
 	else
 		logger->error("Command Failed!");
 
-	return 0;
+	return success == true ? 0 : -1;
 }
