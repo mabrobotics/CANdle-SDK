@@ -1,0 +1,2 @@
+ACTION=="add", ATTR{idVendor}=="0069, ATTR{idProduct}=="1000", MODE:="666", ATTR{manufacturer} = "MAB Robotics"
+ACTION=="add", ATTR{idVendor}=="0069, ATTR{idProduct}=="2000", MODE:="666", ATTR{manufacturer} = "MAB Robotics"
