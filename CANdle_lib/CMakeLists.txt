@@ -16,6 +16,21 @@ if(UNIX)
     set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
     include(${CMAKE_MODULE_PATH}/Findlibusb.cmake)
     find_package(libusb REQUIRED)
+
+    include(FetchContent)
+    FetchContent_Declare(
+            spdlog
+            GIT_REPOSITORY https://github.com/gabime/spdlog.git
+            GIT_TAG        v1.13.0)
+    FetchContent_GetProperties(spdlog)
+    if (NOT spdlog_POPULATED)
+        FetchContent_Populate(spdlog)
+        add_subdirectory(${spdlog_SOURCE_DIR} ${spdlog_BINARY_DIR})
+    endif()
+    # this is to avoid warnings from spdlog
+    get_target_property(SPDLOG_IID spdlog INTERFACE_INCLUDE_DIRECTORIES)
+    set_target_properties(spdlog PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${SPDLOG_IID}")
+
 endif()
 
 if(WIN32)
@@ -52,7 +67,7 @@ target_include_directories(${EXECUTABLE} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CanopenStack/ObjectDictionary/)
 
 if(UNIX)
-    target_link_libraries(${EXECUTABLE} ${LIBUSB_LIBRARY} ${SPDLOG_LINUX} pthread)
+    target_link_libraries(${EXECUTABLE} ${LIBUSB_LIBRARY} spdlog::spdlog pthread)
 elseif(WIN32)
     target_link_libraries(${EXECUTABLE} ${LIBUSB_WINDOWS_STATIC} ${SPDLOG_WINDOWS} ssp)
 endif()
