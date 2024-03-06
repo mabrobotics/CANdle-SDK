@@ -91,6 +91,21 @@ class Mdtool
 									{"WARNING_TORQUE_CLIPPED", (1 << 25)},
 									{"WARNING_VELOCITY_CLIPPED", (1 << 26)},
 									{"WARNING_POSITION_CLIPPED", (1 << 27)}};
+
+	errorMapType persistentStorageErrorList = {{"STORAGE_TAG_NOT_FOUND", (1 << 0)},
+											   {"INSUFFICIENT_BUFFER_SIZE", (1 << 1)},
+											   {"WRONG_STORAGE_SIZE", (1 << 2)},
+											   {"ERROR_FINDING_OR_VALIDATING_ENTRY", (1 << 3)},
+											   {"PACK_FAILED_FOR_AT_LEAST_ONCE", (1 << 4)},
+											   {"UNPACK_FAILED_AT_LEAST_ONCE", (1 << 5)},
+											   {"FLASH_WRITE_FAILED", (1 << 6)}};
+
+	const std::unordered_map<uint32_t, std::string> setupErrorList = {{1, "POSITION_LIMITS"},
+																	  {2, "OUTPUT_ENCODER_MODE"},
+																	  {3, "MAX_TORQUE_ZERO_OR_NAN"},
+																	  {4, "PROFILE_DECELERATION_ZERO_OR_NAN"},
+																	  {5, "PROFILE_ACCELERATION_ZERO_OR_NAN"},
+																	  {6, "PROFILE_VELOCITY_ZERO_OR_NAN"}};
 };
 
 #endif

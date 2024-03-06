@@ -398,14 +398,16 @@ bool Mdtool::status(uint32_t id)
 		}
 	};
 
-	std::array<std::pair<std::string, errorMapType>, 8> errorMapList = {{{"main encoder errors", encoderErrorList},
-																		 {"output encoder errors", encoderErrorList},
-																		 {"calibration errors", calibrationErrorList},
-																		 {"bridge errors", bridgeErrorList},
-																		 {"hardware errors", hardwareErrorList},
-																		 {"homing errors", homingErrorList},
-																		 {"motion errors", motionErrorList},
-																		 {"communication errors", communicationErrorList}}};
+	std::array<std::pair<std::string, errorMapType>, 10> errorMapList = {{{"main encoder errors", encoderErrorList},
+																		  {"output encoder errors", encoderErrorList},
+																		  {"calibration errors", calibrationErrorList},
+																		  {"bridge errors", bridgeErrorList},
+																		  {"hardware errors", hardwareErrorList},
+																		  {"homing errors", homingErrorList},
+																		  {"motion errors", motionErrorList},
+																		  {"communication errors", communicationErrorList},
+																		  {"persistent storage read errors", persistentStorageErrorList},
+																		  {"persistent storage write errors", persistentStorageErrorList}}};
 
 	for (uint32_t i = 0; i < errorMapList.size(); i++)
 	{
@@ -413,6 +415,18 @@ bool Mdtool::status(uint32_t id)
 		candle->readSDO(id, 0x2004, i + 1, status);
 		logger->info("{}: 0x{:x}", errorMapList[i].first, status);
 		printErrors(status, errorMapList[i].second);
+
+		/* check if we should disply last setup error */
+		if (errorMapList[i].first == "calibration errors")
+		{
+			uint32_t errorSetupMask = calibrationErrorList.at("ERROR_SETUP");
+			if (status & errorSetupMask)
+			{
+				uint32_t setupError = 0;
+				candle->readSDO(id, 0x2004, 0x0B, setupError);
+				logger->error("ERROR_SETUP_CODE: {}", setupErrorList.at(setupError));
+			}
+		}
 	}
 
 	return true;
