@@ -22,11 +22,14 @@ int main(int argc, char** argv)
 
 	auto md80 = candle.getMd80(id);
 
-	float x = 0;
+	float x = 0.0f;
+	float readPos = 0.0f;
 
 	while (1)
 	{
 		candle.writeSDO(id, 0x607A, 0x0, (int32_t)(10000.0f * sin(x)));
+		candle.readSDO(id, 0x2009, 0x01, readPos);
+		std::cout << "Current position: " << readPos << std::endl;
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		x += 0.01;
 	}
