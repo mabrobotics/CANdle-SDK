@@ -15,6 +15,8 @@ class IBusHandler
 		{
 			uint8_t id;
 			uint8_t payloadSize;
+			uint32_t reserved1;
+			uint32_t reserved2;
 		} header;
 		std::array<uint8_t, 100> payload;
 	};

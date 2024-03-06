@@ -18,7 +18,8 @@ class ICommunication
 			uint16_t canId;
 			uint8_t payloadSize;
 			uint8_t channel;
-			uint8_t reserved;
+			uint32_t reserved1;
+			uint32_t reserved2;
 		} header;
 		std::array<uint8_t, 64> payload;
 	};
