@@ -9,6 +9,8 @@ build*/
 .settings/**
 .cache/
 .vscode/
+html/
+latex/
 STM32_bootloader/Core/Mab/Version/gitversion.h
 STM32_bootloader/.settings/
 STM32_bootloader/Debug/

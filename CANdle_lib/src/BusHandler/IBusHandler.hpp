@@ -1,3 +1,13 @@
+/**
+ * @file IBusHandler.hpp
+ * @author Piotr Wasilewski (piotr.wasilewski@mabrobotics.pl)
+ * @brief
+ * @version 0.1
+ * @date 2024-03-06
+ *
+ * @copyright Copyright (c) 2024
+ *
+ */
 #ifndef _IBUSHANDLER_HPP
 #define _IBUSHANDLER_HPP
 
@@ -9,6 +19,11 @@ class IBusHandler
 {
    public:
 #pragma pack(push, 4)
+
+	/**
+	 * @brief BusFrame describes a single FIFO frame that is then sent using the "bus" (currently only USB).
+	 * The size of the payload should be large enough to hold a single CANFrame. Only a single frame, either a status, command or can frame can be placed in a single BusFrame.
+	 */
 	struct BusFrame
 	{
 		struct Header
