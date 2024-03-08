@@ -121,10 +121,6 @@ class UsbHandler : public IBusHandler
 	CircularBuffer<BusFrame, 50> fromUsbBuffer;	 ///< receive FIFO.
 
 	bool isInitialized = false;
-	/**
-	 * @brief
-	 *
-	 */
 	Barrier syncPoint;
 
 	std::atomic<bool> done;

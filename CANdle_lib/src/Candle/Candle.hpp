@@ -229,13 +229,13 @@ class Candle
 	}
 
 	/**
-	 * @brief Used to read a specific field in OD, given the index, subindex, and value
+	 * @brief Used to read a specific field in OD, given the index, subindex, and value.
 	 *
-	 * @tparam T type of the field, one of \ref ValueType
+	 * @tparam T type of the field, one of \ref ValueType.
 	 * @param id
 	 * @param index_ OD index.
 	 * @param subindex_ OD subindex.
-	 * @param value value reference to which the read value will be written.
+	 * @param value variable reference to which the read value will be written.
 	 * @param checkOD set to false if checking the type against the OD is not needed and the value should not be written to the MD80s OD, only returned using the value reference.
 	 * @return true
 	 * @return false
