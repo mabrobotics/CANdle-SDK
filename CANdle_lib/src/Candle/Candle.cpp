@@ -176,18 +176,6 @@ bool Candle::setModeOfOperation(uint32_t id, ModesOfOperation mode)
 	return writeSDO(id, 0x6060, 0x00, static_cast<int8_t>(mode));
 }
 
-bool Candle::setTargetPosition(uint32_t id, uint32_t target)
-{
-	return writeSDO(id, 0x607A, 0x00, target);
-}
-
-bool Candle::startCalibration(uint32_t id)
-{
-	return enterOperational(id) &&
-		   writeSDO(id, 0x6060, 0x00, static_cast<int8_t>(-2)) &&
-		   writeSDO(id, 0x2003, 0x03, static_cast<uint8_t>(1));
-}
-
 bool Candle::setZeroPosition(uint32_t id)
 {
 	return writeSDO(id, 0x2003, 0x05, true);

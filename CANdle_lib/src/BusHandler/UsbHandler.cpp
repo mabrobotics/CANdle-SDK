@@ -186,12 +186,12 @@ void UsbHandler::dataHandler()
 	{
 		copyElementsToOutputBuf(txBuf, sendLen);
 
-		int ret = libusb_bulk_transfer(devh, outEndpointAdr, txBuf.data(), sendLen, &sendLenActual, sendTimeout);
+		int ret = libusb_bulk_transfer(devh, outEndpointAdr, txBuf.data(), sendLen, &sendLenActual, sendTimeoutMs);
 
 		if (ret < 0)
 			logger->error("Error while sending: {}", libusb_strerror(static_cast<libusb_error>(ret)));
 
-		ret = libusb_bulk_transfer(devh, inEndpointAdr, rxBuf.data(), size, &receivedLen, receiveTimeout);
+		ret = libusb_bulk_transfer(devh, inEndpointAdr, rxBuf.data(), size, &receivedLen, receiveTimeoutMs);
 
 		if (ret < 0)
 			logger->error("Error while receiving {}  transferred {}", libusb_strerror(static_cast<libusb_error>(ret)), receivedLen);
@@ -255,7 +255,7 @@ bool UsbHandler::sendDataDirectly(std::span<uint8_t> data)
 {
 	/* TODO check sendLenActual */
 	int sendLenActual = 0;
-	int ret = libusb_bulk_transfer(devh, outEndpointAdr, data.data(), data.size(), &sendLenActual, sendTimeout);
+	int ret = libusb_bulk_transfer(devh, outEndpointAdr, data.data(), data.size(), &sendLenActual, sendTimeoutMs);
 
 	if (ret < 0)
 	{
@@ -269,7 +269,7 @@ bool UsbHandler::receiveDataDirectly(std::span<uint8_t>& data)
 {
 	/* TODO check receivedLen */
 	int receivedLen = 0;
-	int ret = libusb_bulk_transfer(devh, inEndpointAdr, data.data(), data.size(), &receivedLen, receiveTimeout);
+	int ret = libusb_bulk_transfer(devh, inEndpointAdr, data.data(), data.size(), &receivedLen, receiveTimeoutMs);
 
 	if (ret < 0)
 	{

@@ -21,8 +21,9 @@ class IBusHandler
 #pragma pack(push, 4)
 
 	/**
-	 * @brief BusFrame describes a single FIFO frame that is then sent using the "bus" (currently only USB).
-	 * The size of the payload should be large enough to hold a single CANFrame. Only a single frame, either a status, command or can frame can be placed in a single BusFrame.
+	 * @brief Base type of the FIFO
+	 *
+	 * BusFrame describes a single FIFO frame that is then sent using the "bus" (currently only USB). The size of the payload should be large enough to hold a single CANFrame. Only a single frame, either a status, command or can frame can be placed in a single BusFrame.
 	 */
 	struct BusFrame
 	{
