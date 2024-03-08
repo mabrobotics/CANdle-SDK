@@ -53,14 +53,63 @@ class CandleInterface : public ICommunication
 
 	explicit CandleInterface(std::unique_ptr<IBusHandler> busHandler);
 
+	/**
+	 * @brief Inits the Candle interface with given settings.
+	 *
+	 * @param settings \ref Settings object.
+	 * @return true
+	 * @return false
+	 */
 	bool init(Settings& settings) override;
+	/**
+	 * @brief Deinitializes busHandler.
+	 *
+	 * @return true
+	 * @return false
+	 */
 	bool deinit() override;
+	/**
+	 * @brief Returns Settings object
+	 *
+	 * @return Settings
+	 */
 	Settings getSettings() const override;
+	/**
+	 * @brief Sends CAN frame using busHandler
+	 *
+	 * @param canFrame
+	 * @return true
+	 * @return false
+	 */
 	bool sendCanFrame(const CANFrame& canFrame) override;
+
+	/**
+	 * @brief Receives CANFrame using busHandler
+	 *
+	 * @return std::optional<CANFrame>
+	 */
 	std::optional<CANFrame> receiveCanFrame() override;
+
+	/**
+	 * @brief Get number of active CAN channels
+	 *
+	 * @return uint8_t number of channels
+	 */
 	uint8_t getCanChannels() override;
 
+	/**
+	 * @brief Get the Candle status
+	 *
+	 * @return Status
+	 */
 	Status getStatus() const override;
+
+	/**
+	 * @brief reset Candle statistics
+	 *
+	 * @return true
+	 * @return false
+	 */
 	bool reset() override;
 
 	uint32_t getFirmwareVersion() const override
@@ -94,11 +143,41 @@ class CandleInterface : public ICommunication
 	std::unique_ptr<IBusHandler> busHandler;
 
    private:
+	/**
+	 * @brief Send settings frame to the Candle device.
+	 *
+	 * @param settings_
+	 * @return true
+	 * @return false
+	 */
 	bool sendSettingsFrame(const Settings& settings_);
+	/**
+	 * @brief Send command frame to the Candle device.
+	 *
+	 * @param cmd \ref Command
+	 * @return true
+	 * @return false
+	 */
 	bool sendCommandFrame(Command cmd);
 
+	/**
+	 * @brief Processes the Candle device response
+	 *
+	 * @tparam Iterator
+	 * @param responseForCommand \ref Command ID to which the response is made
+	 * @param it iterator for the data buffer
+	 */
 	template <typename Iterator>
 	void processCommandResponse(Command responseForCommand, Iterator it);
+
+	/**
+	 * @brief Wait for a specific function to complete with timeout.
+	 *
+	 * @param condition std::function returning bool. While it returns false, the function is blocking.
+	 * @param timeoutMs timeout in milliseconds.
+	 * @return true
+	 * @return false
+	 */
 	bool waitForActionWithTimeout(std::function<bool()> condition, uint32_t timeoutMs);
 };
 

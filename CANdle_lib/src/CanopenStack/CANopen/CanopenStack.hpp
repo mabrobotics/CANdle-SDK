@@ -291,6 +291,7 @@ class CanopenStack
 	 * @return ICommunication::CANFrame.
 	 */
 	ICommunication::CANFrame prepareRPDO(IODParser::ODType* OD, uint8_t offset);
+
 	/**
 	 * @brief Get PDO Type (either RPDO or TPDO) based on its id.
 	 *
@@ -298,6 +299,7 @@ class CanopenStack
 	 * @return PDOType \ref PDOType.
 	 */
 	PDOType getPDOType(PDO pdoId);
+
 	/**
 	 * @brief Sends CAN frame and waits for compeltion.
 	 *
@@ -308,6 +310,7 @@ class CanopenStack
 	 * @return false
 	 */
 	bool sendFrameWaitForCompletion(const ICommunication::CANFrame& frame, std::atomic<bool>& conditionVar, uint32_t timeoutMs);
+
 	/**
 	 * @brief Wait for a specific function to complete with timeout.
 	 *
