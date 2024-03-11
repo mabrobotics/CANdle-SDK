@@ -105,7 +105,8 @@ class Mdtool
 																	  {3, "MAX_TORQUE_ZERO_OR_NAN"},
 																	  {4, "PROFILE_DECELERATION_ZERO_OR_NAN"},
 																	  {5, "PROFILE_ACCELERATION_ZERO_OR_NAN"},
-																	  {6, "PROFILE_VELOCITY_ZERO_OR_NAN"}};
+																	  {6, "PROFILE_VELOCITY_ZERO_OR_NAN"},
+																	  {7, "KT_AND_KV_ZERO"}};
 };
 
 #endif
