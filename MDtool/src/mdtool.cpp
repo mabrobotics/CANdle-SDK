@@ -605,11 +605,11 @@ bool Mdtool::move(uint32_t id, bool relative, float targetPosition)
 
 	candle->writeSDO(id, 0x2008, 0x09, targetPosition);
 
-	/* TODO replace with statusword target reached bit */
-	while (std::fabs(targetPosition - actualPosition) > 0.1f)
+	uint16_t statusWord = 0;
+	while (!md80->isTargetReached())
 	{
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		candle->readSDO(id, 0x2009, 0x01, actualPosition);
+		candle->readSDO(id, 0x6041, 0x00, statusWord);
 	}
 
 	return true;

@@ -41,6 +41,11 @@ class MD80
 		OD.at(0x2008)->subEntries.at(0x0B)->value = torque;
 	}
 
+	bool isTargetReached()
+	{
+		return std::get<uint16_t>(OD.at(0x6041)->value) & (1 << 10);
+	}
+
 	IODParser::ODType OD;
 };
 
