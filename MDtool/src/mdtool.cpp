@@ -335,6 +335,29 @@ bool Mdtool::calibrate(uint32_t id)
 	return true;
 }
 
+bool Mdtool::calibrateOutput(uint32_t id)
+{
+	logger->info("GLFADO");
+
+	if (!candle->addMd80(id))
+		return false;
+
+	if (!candle->enterOperational(id) || !candle->setModeOfOperation(id, Candle::ModesOfOperation::SERVICE))
+		return false;
+
+	bool inProgress = true;
+
+	candle->writeSDO(id, 0x2003, 0x04, inProgress);
+
+	while (inProgress)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		candle->readSDO(id, 0x2003, 0x04, inProgress);
+	}
+
+	return true;
+}
+
 bool Mdtool::home(uint32_t id)
 {
 	if (!candle->addMd80(id))

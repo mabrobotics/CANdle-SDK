@@ -20,7 +20,9 @@ int main(int argc, char** argv)
 
 	auto* readSDO = app.add_subcommand("readSDO", "Use to read SDO value");
 	auto* writeSDO = app.add_subcommand("writeSDO", "Use to write SDO value");
-	app.add_subcommand("calibrate", "Use to calibrate the motor");
+	auto* calibrate = app.add_subcommand("calibrate", "Use to calibrate the motor");
+	calibrate->add_subcommand("output", "Use to run output encoder calibration");
+
 	auto* save = app.add_subcommand("save", "Use to save the motor parameters");
 	app.add_subcommand("status", "Use to read motor status");
 	app.add_subcommand("home", "Use to run homing");
@@ -168,7 +170,12 @@ int main(int argc, char** argv)
 	else if (app.got_subcommand("writeSDO"))
 		success = mdtool.writeSDO(id, index, subindex, value);
 	else if (app.got_subcommand("calibrate"))
-		success = mdtool.calibrate(id);
+	{
+		if (calibrate->got_subcommand("output"))
+			success = mdtool.calibrateOutput(id);
+		else
+			success = mdtool.calibrate(id);
+	}
 	else if (app.got_subcommand("save"))
 		success = mdtool.save(id, all);
 	else if (app.got_subcommand("status"))

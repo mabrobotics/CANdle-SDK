@@ -22,6 +22,7 @@ class Mdtool
 	bool readSDO(uint32_t id, uint16_t index, uint8_t subindex);
 	bool writeSDO(uint32_t id, uint16_t index, uint8_t subindex, const IODParser::ValueType& value);
 	bool calibrate(uint32_t id);
+	bool calibrateOutput(uint32_t id);
 	bool home(uint32_t id);
 	bool save(uint32_t id, bool all = false);
 	bool status(uint32_t id);
