@@ -552,6 +552,8 @@ bool Mdtool::setupMotor(uint32_t id, const std::string& filePath, bool all)
 	else
 		drives.push_back(id);
 
+	bool state = true;
+
 	for (auto& id : drives)
 	{
 		if (!candle->addMd80(id))
@@ -590,7 +592,7 @@ bool Mdtool::setupMotor(uint32_t id, const std::string& filePath, bool all)
 			};
 
 			if (!std::visit(lambdaFunc, OD[index]->subEntries[subindex]->value))
-				return false;
+				state = false;
 		}
 
 		if (!candle->writeSDO(id, 0x1010, 0x01, static_cast<uint32_t>(0x65766173)))
@@ -602,7 +604,7 @@ bool Mdtool::setupMotor(uint32_t id, const std::string& filePath, bool all)
 		logger->info("Setup successfull on ID{}", id);
 	}
 
-	return true;
+	return state;
 }
 
 bool Mdtool::move(uint32_t id, bool relative, float targetPosition)
