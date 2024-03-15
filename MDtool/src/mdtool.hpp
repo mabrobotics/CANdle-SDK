@@ -99,7 +99,8 @@ class Mdtool
 											   {"ERROR_FINDING_OR_VALIDATING_ENTRY", (1 << 3)},
 											   {"PACK_FAILED_FOR_AT_LEAST_ONCE", (1 << 4)},
 											   {"UNPACK_FAILED_AT_LEAST_ONCE", (1 << 5)},
-											   {"FLASH_WRITE_FAILED", (1 << 6)}};
+											   {"FLASH_WRITE_FAILED", (1 << 6)},
+											   {"INSUFFICIENT_FLASH_SIZE", (1 << 7)}};
 
 	const std::unordered_map<uint32_t, std::string> setupErrorList = {{1, "POSITION_LIMITS"},
 																	  {2, "OUTPUT_ENCODER_MODE"},
