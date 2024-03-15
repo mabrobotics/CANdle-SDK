@@ -337,8 +337,6 @@ bool Mdtool::calibrate(uint32_t id)
 
 bool Mdtool::calibrateOutput(uint32_t id)
 {
-	logger->info("GLFADO");
-
 	if (!candle->addMd80(id))
 		return false;
 
