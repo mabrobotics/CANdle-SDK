@@ -41,10 +41,15 @@ int main(int argc, char** argv)
 	clear->add_subcommand("warning", "Use to clear warnings");
 
 	float targetPosition = 0.0f;
+	float profileVelocity = std::nan("");
+	float profileAcceleration = std::nan("");
+
 	bool absolute = false;
 	auto* move = app.add_subcommand("move", "Use to test the motor by moving the shaft. Default movement is relative.");
 	move->add_flag("-a,--absolute", absolute, "Use for absolute motion");
 	move->add_option("position", targetPosition, "Target position")->required();
+	move->add_option("profile velocity", profileVelocity, "Profile velocity");
+	move->add_option("profile acceleration", profileAcceleration, "Profile acceleration");
 
 	app.add_subcommand("zero", "Use to set current position as zero");
 
@@ -202,7 +207,7 @@ int main(int argc, char** argv)
 	else if (app.got_subcommand("setup"))
 		success = mdtool.setupMotor(id, filePath, all);
 	else if (app.got_subcommand("move"))
-		success = mdtool.move(id, !absolute, targetPosition);
+		success = mdtool.move(id, !absolute, targetPosition, profileVelocity, profileAcceleration);
 	else if (app.got_subcommand("blink"))
 		success = mdtool.blink(id);
 

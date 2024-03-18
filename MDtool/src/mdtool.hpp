@@ -34,7 +34,7 @@ class Mdtool
 	bool setZero(uint32_t id);
 	bool reset(uint32_t id);
 	bool setupMotor(uint32_t id, const std::string& filePath, bool all);
-	bool move(uint32_t id, bool relative, float targetPosition);
+	bool move(uint32_t id, bool relative, float targetPosition, float profileVelocity, float profileAcceleration);
 	bool blink(uint32_t id);
 
    private:

@@ -607,7 +607,7 @@ bool Mdtool::setupMotor(uint32_t id, const std::string& filePath, bool all)
 	return state;
 }
 
-bool Mdtool::move(uint32_t id, bool relative, float targetPosition)
+bool Mdtool::move(uint32_t id, bool relative, float targetPosition, float profileVelocity, float profileAcceleration)
 {
 	if (!candle->addMd80(id))
 		return false;
@@ -616,6 +616,15 @@ bool Mdtool::move(uint32_t id, bool relative, float targetPosition)
 
 	if (relative)
 		candle->setZeroPosition(id);
+
+	if (!std::isnan(profileVelocity))
+		candle->writeSDO(id, 0x2008, 0x03, profileVelocity);
+
+	if (!std::isnan(profileAcceleration))
+	{
+		candle->writeSDO(id, 0x2008, 0x04, profileAcceleration);
+		candle->writeSDO(id, 0x2008, 0x05, profileAcceleration);
+	}
 
 	candle->setModeOfOperation(id, Candle::ModesOfOperation::PROFILE_POSITION);
 	candle->enterOperational(id);
