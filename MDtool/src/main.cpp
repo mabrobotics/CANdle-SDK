@@ -26,7 +26,7 @@ int main(int argc, char** argv)
 	auto* save = app.add_subcommand("save", "Use to save the motor parameters");
 	app.add_subcommand("status", "Use to read motor status");
 	app.add_subcommand("home", "Use to run homing");
-	app.add_subcommand("info", "Use list all registers");
+	app.add_subcommand("info", "Use to list all registers");
 	app.add_subcommand("reset", "Use to reset a drive");
 	app.add_subcommand("blink", "Use to blink the MD80's onboard LEDs");
 	auto* changeID = app.add_subcommand("changeID", "Use to change ID");
@@ -36,7 +36,7 @@ int main(int argc, char** argv)
 	bool checkChannels = false;
 	ping->add_flag("-c, --channel", checkChannels, "Use to see which IDs are connected to which CANdle channels");
 
-	auto* clear = app.add_subcommand("clear", "Use clear errors or warnings");
+	auto* clear = app.add_subcommand("clear", "Use to clear errors or warnings");
 	clear->add_subcommand("error", "Use to clear non-critical errors");
 	clear->add_subcommand("warning", "Use to clear warnings");
 
