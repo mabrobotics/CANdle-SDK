@@ -22,6 +22,10 @@
 #include "IObjectDictionaryParser.hpp"
 #include "spdlog/spdlog.h"
 
+/**
+ * @brief Implements minimal CANopen stack
+ *
+ */
 class CanopenStack
 {
    public:
@@ -44,13 +48,11 @@ class CanopenStack
 	/**
 	 * @brief PDO Type.
 	 *
-	 * RPDO - command msg.
-	 * TPDO - response msg.
 	 */
 	enum PDOType
 	{
-		RPDO = 1,
-		TPDO = 2,
+		RPDO = 1, /**< command msg  */
+		TPDO = 2, /**< response msg */
 	};
 
 	/**

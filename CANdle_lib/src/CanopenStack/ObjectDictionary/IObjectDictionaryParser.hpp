@@ -7,6 +7,10 @@
 #include <unordered_map>
 #include <variant>
 
+/**
+ * @brief Interface for parsers that fill in Object Dictionary based on a description file
+ *
+ */
 class IODParser
 {
    public:
@@ -24,37 +28,33 @@ class IODParser
 		UNSIGNED8 = 5,
 		UNSIGNED16 = 6,
 		UNSIGNED32 = 7,
-		REAL32 = 8,
-		VISIBLE_STRING = 9,
+		REAL32 = 8,			/**< float  */
+		VISIBLE_STRING = 9, /**< String up to 24 characters  */
 	};
 
 	enum class ObjectType
 	{
-		UNKNOWN = -1,
-		DOM = 2,
-		DEFTYPE = 5,
-		DEFSTRUCT = 6,
-		VAR = 7,
-		ARRAY = 8,
-		REC = 9,
-	};
-
-	enum class PDOMappingType
-	{
-		no = 0,
-		optional = 1,
-		RPDO = 2,
-		TPDO = 3,
+		UNKNOWN = -1,  /**< Unknown object type  */
+		DOM = 2,	   /**< Domain  */
+		DEFTYPE = 5,   /**< Type definition  */
+		DEFSTRUCT = 6, /**< Struct definition  */
+		VAR = 7,	   /**< Variable  */
+		ARRAY = 8,	   /**< Array  */
+		REC = 9,	   /**< Record  */
 	};
 
 	enum class AccessSDO
 	{
-		no = 0,
-		ro = 1,
-		wo = 2,
-		rw = 3
+		no = 0, /**< No acess */
+		ro = 1, /**< Read-only  */
+		wo = 2, /**< Write-only  */
+		rw = 3	/**< Read-write  */
 	};
 
+	/**
+	 * @brief Single object dictionary entry definition (either index or subindex param)
+	 *
+	 */
 	struct Entry
 	{
 		std::string parameterName;

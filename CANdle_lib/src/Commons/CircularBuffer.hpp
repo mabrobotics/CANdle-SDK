@@ -1,24 +1,32 @@
-/*
- * CircularBuffer.hpp
+/**
+ * @file CircularBuffer.hpp
+ * @author Piotr Wasilewski (piotr.wasilewski@mabrobotics.pl)
+ * @brief
+ * @version 0.1
+ * @date 2024-03-18
  *
- *  Created on: Sep 4, 2023
- *      Author: Piotr Wasilewski
+ * @copyright Copyright (c) 2024
+ *
  */
 
 #ifndef MAB_CIRCULARBUFFER_HPP_
 #define MAB_CIRCULARBUFFER_HPP_
 
 #include <array>
-#include <optional>
 #include <mutex>
+#include <optional>
 
+/**
+ * @brief Thread-safe circular buffer implementation
+ *
+ */
 template <class T, size_t maxSize>
 class CircularBuffer
 {
-public:
+   public:
 	CircularBuffer() = default;
 
-	bool put(const T &item) noexcept
+	bool put(const T& item) noexcept
 	{
 		std::unique_lock<std::mutex> lock(mtx);
 
@@ -91,7 +99,7 @@ public:
 		return static_cast<float>(size()) / static_cast<float>(capacity());
 	}
 
-private:
+   private:
 	mutable std::mutex mtx{};
 	std::array<T, maxSize> buf;
 	size_t head = 0;

@@ -42,8 +42,8 @@ class Candle
 	 */
 	enum class Baud : uint32_t
 	{
-		BAUD_1M = 1,
-		BAUD_8M = 8,
+		BAUD_1M = 1, /**< 1M arbitration is p = 1, t1 = 63, t2 = 16, sjw = 16, data is p = 2, t1 = 26, t2 = 13, sjw = 13 */
+		BAUD_8M = 8, /**< 8M arbitration is p = 1, t1 = 63, t2 = 16, sjw = 16, data is p = 1, t1 = 5, t2 = 4, sjw = 4 */
 	};
 
 	/**
@@ -52,13 +52,13 @@ class Candle
 	 */
 	enum class ModesOfOperation : int8_t
 	{
-		IMPEDANCE = -3,
-		SERVICE = -2,
-		IDLE = 0,
-		PROFILE_POSITION = 1,
-		PROFILE_VELOCITY = 2,
-		CYCLIC_SYNC_POSITION = 8,
-		CYCLIC_SYNC_VELOCTIY = 9,
+		IMPEDANCE = -3,			  /**< Impedance PD mode */
+		SERVICE = -2,			  /**< Service is used for calibration routines and homing */
+		IDLE = 0,				  /**< Idle is default motion after power up */
+		PROFILE_POSITION = 1,	  /**< Profiled position mode */
+		PROFILE_VELOCITY = 2,	  /**< Profiled veloctiy mode */
+		CYCLIC_SYNC_POSITION = 8, /**< Simple position PID mode */
+		CYCLIC_SYNC_VELOCTIY = 9, /**< Simple velocity PID mode */
 	};
 
 	/**

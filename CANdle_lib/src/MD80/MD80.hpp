@@ -8,6 +8,10 @@
 #include "IObjectDictionaryParser.hpp"
 #include "ObjectDictionaryParserEDS.hpp"
 
+/**
+ * @brief implements general methods for reading and writing data to MD80 drivers
+ *
+ */
 class MD80
 {
    public:

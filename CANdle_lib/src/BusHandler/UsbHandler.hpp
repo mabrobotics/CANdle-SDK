@@ -22,6 +22,11 @@
 #include "IBusHandler.hpp"
 #include "spdlog/spdlog.h"
 
+/**
+ * @brief Handles the low level USB communication using libusb
+ *
+ */
+
 class UsbHandler : public IBusHandler
 {
    public:
@@ -100,9 +105,9 @@ class UsbHandler : public IBusHandler
 
    private:
 	/**
-	 * @brief max size of the single transfer "bus" buffer.
+	 * @brief Max size of the single transfer "bus" buffer.
 	 *
-	 * The 2049 size is to allow for a 1 extra byte so that a transfer is not ended within the USB 1ms cycle see the end of copyFifoToOutputBuffer method.
+	 * The 2049 size is to allow for a 1 extra byte so that a transfer is not ended within the USB 1ms cycle. See the end of copyFifoToOutputBuffer method.
 	 */
 	static constexpr uint32_t size = 2049;
 	static constexpr uint16_t VID = 0x0069;

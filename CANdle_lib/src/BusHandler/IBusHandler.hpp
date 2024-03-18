@@ -15,6 +15,10 @@
 #include <cstdint>
 #include <optional>
 
+/**
+ * @brief Interface for the master <> CAN dongle communication bus
+ *
+ */
 class IBusHandler
 {
    public:
@@ -27,6 +31,10 @@ class IBusHandler
 	 */
 	struct BusFrame
 	{
+		/**
+		 * @brief bus frame's header structure
+		 *
+		 */
 		struct Header
 		{
 			uint8_t id;

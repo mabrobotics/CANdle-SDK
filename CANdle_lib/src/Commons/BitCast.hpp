@@ -1,14 +1,22 @@
-/*
- * BitCast.hpp
+/**
+ * @file BitCast.hpp
+ * @author Piotr Wasilewski (piotr.wasilewski@mabrobotics.pl)
+ * @brief
+ * @version 0.1
+ * @date 2024-03-18
  *
- *  Created on: Sep 4, 2023
- *      Author: Piotr Wasilewski
+ * @copyright Copyright (c) 2024
+ *
  */
-
 #ifndef MAB_BITCAST_HPP_
 #define MAB_BITCAST_HPP_
 
 #include <cstring>
+
+/**
+ * @brief std::bit_cast equivalent for mingw C++20
+ *
+ */
 
 template <class T2, class T1>
 T2 bit_cast_(T1 t1)

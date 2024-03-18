@@ -12,18 +12,21 @@
 #include "IBusHandler.hpp"
 #include "ICommunication.hpp"
 
+/**
+ * @brief Implements ICommunication interface with CANdle specific communication
+ *
+ */
 class CandleInterface : public ICommunication
 {
    public:
 	enum BusFrameId
 	{
-		CANFRAME = 1,
-		STATUS = 2,
-		COMMAND = 3,
-		CHANGE_CAN_SETTINGS = 4,
-		COMMAND_RESPONSE = 5,
-		/* legacy */
-		ENTER_BOOTLOADER = 10,
+		CANFRAME = 1,			 /**< Data frame */
+		STATUS = 2,				 /**< Dongle status frame */
+		COMMAND = 3,			 /**< Command frame */
+		CHANGE_CAN_SETTINGS = 4, /**< Change dongle settings frame */
+		COMMAND_RESPONSE = 5,	 /**< Response frame */
+		ENTER_BOOTLOADER = 10,	 /**< Legacy enter bootlaoder frame */
 	};
 
 	enum Command : uint8_t
@@ -35,6 +38,10 @@ class CandleInterface : public ICommunication
 		GET_HARDWARE_INFO = 5,
 	};
 
+	/**
+	 * @brief CAN dongle firmware info struct
+	 *
+	 */
 	struct FirmwareInfo
 	{
 		std::array<uint8_t, 8> commitHash;
@@ -42,6 +49,10 @@ class CandleInterface : public ICommunication
 		uint32_t firmwareVersion;
 	};
 
+	/**
+	 * @brief CAN dongle hardware info struct
+	 *
+	 */
 	struct HardwareInfo
 	{
 		std::array<uint8_t, 24> UUID;
