@@ -9,46 +9,6 @@
 #include "MD80Downloader.hpp"
 #include "spdlog/fmt/ostr.h"
 
-namespace fmt
-{
-template <typename T, std::size_t N>
-struct formatter<std::array<T, N>> : formatter<std::string_view>
-{
-	template <typename FormatContext>
-	auto format(const std::array<T, N>& arr, FormatContext& ctx)
-	{
-		std::string result = "";
-		auto it = arr.begin();
-		while (it != arr.end() && *it != 0)
-		{
-			result += (std::isprint(static_cast<unsigned char>(*it)) ? *it : '?');
-			it++;
-		}
-
-		return formatter<std::string_view>::format(result, ctx);
-	}
-};
-
-}  // namespace fmt
-namespace fmt
-{
-template <>
-struct formatter<std::monostate>
-{
-	constexpr auto parse(format_parse_context& ctx)
-	{
-		return ctx.begin();
-	}
-
-	template <typename FormatContext>
-	auto format(const std::monostate&, FormatContext& ctx)
-	{
-		return ctx.out();
-	}
-};
-
-}  // namespace fmt
-
 Mdtool::Mdtool(std::shared_ptr<spdlog::logger> logger) : logger(logger)
 {
 }
@@ -316,65 +276,17 @@ bool Mdtool::writeSDO(uint32_t id, uint16_t index, uint8_t subindex, const IODPa
 
 bool Mdtool::calibrate(uint32_t id)
 {
-	if (!candle->addMd80(id))
-		return false;
-
-	if (!candle->enterOperational(id) || !candle->setModeOfOperation(id, Candle::ModesOfOperation::SERVICE))
-		return false;
-
-	bool inProgress = true;
-
-	candle->writeSDO(id, 0x2003, 0x03, inProgress);
-
-	while (inProgress)
-	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		candle->readSDO(id, 0x2003, 0x03, inProgress);
-	}
-
-	return true;
+	return performAction(id, 0x2003, 0x03, true);
 }
 
 bool Mdtool::calibrateOutput(uint32_t id)
 {
-	if (!candle->addMd80(id))
-		return false;
-
-	if (!candle->enterOperational(id) || !candle->setModeOfOperation(id, Candle::ModesOfOperation::SERVICE))
-		return false;
-
-	bool inProgress = true;
-
-	candle->writeSDO(id, 0x2003, 0x04, inProgress);
-
-	while (inProgress)
-	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		candle->readSDO(id, 0x2003, 0x04, inProgress);
-	}
-
-	return true;
+	return performAction(id, 0x2003, 0x04, true);
 }
 
 bool Mdtool::home(uint32_t id)
 {
-	if (!candle->addMd80(id))
-		return false;
-
-	if (!candle->enterOperational(id) || !candle->setModeOfOperation(id, Candle::ModesOfOperation::SERVICE))
-		return false;
-
-	bool inProgress = true;
-
-	candle->writeSDO(id, 0x2003, 0x0E, inProgress);
-
-	while (inProgress)
-	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		candle->readSDO(id, 0x2003, 0x0E, inProgress);
-	}
-
-	return true;
+	return performAction(id, 0x2003, 0x0E, true);
 }
 
 bool Mdtool::save(uint32_t id, bool all)
@@ -649,17 +561,28 @@ bool Mdtool::move(uint32_t id, bool relative, float targetPosition, float profil
 
 bool Mdtool::blink(uint32_t id)
 {
+	return performAction(id, 0x2003, 0x01);
+}
+
+bool Mdtool::performAction(uint32_t id, uint16_t index, uint8_t subindex, bool operationalServiceRequired)
+{
 	if (!candle->addMd80(id))
 		return false;
 
+	if (operationalServiceRequired)
+	{
+		if (!candle->enterOperational(id) || !candle->setModeOfOperation(id, Candle::ModesOfOperation::SERVICE))
+			return false;
+	}
+
 	bool inProgress = true;
 
-	candle->writeSDO(id, 0x2003, 0x01, inProgress);
+	candle->writeSDO(id, index, subindex, inProgress);
 
 	while (inProgress)
 	{
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		candle->readSDO(id, 0x2003, 0x01, inProgress);
+		candle->readSDO(id, index, subindex, inProgress);
 	}
 
 	return true;

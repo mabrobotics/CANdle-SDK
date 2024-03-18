@@ -49,6 +49,7 @@ class Mdtool
    private:
 	IODParser::ValueType getTypeBasedOnTag(IODParser::DataType tag);
 	std::optional<IODParser::Entry*> checkEntryExists(MD80* md80, uint16_t index, uint8_t subindex);
+	bool performAction(uint32_t id, uint16_t index, uint8_t subindex, bool operationalServiceRequired = false);
 
 	using errorMapType = const std::unordered_map<std::string, uint32_t>;
 
@@ -110,5 +111,41 @@ class Mdtool
 																	  {6, "PROFILE_VELOCITY_ZERO_OR_NAN"},
 																	  {7, "KT_AND_KV_ZERO"}};
 };
+
+namespace fmt
+{
+template <typename T, std::size_t N>
+struct formatter<std::array<T, N>> : formatter<std::string_view>
+{
+	template <typename FormatContext>
+	auto format(const std::array<T, N>& arr, FormatContext& ctx)
+	{
+		std::string result = "";
+		auto it = arr.begin();
+		while (it != arr.end() && *it != 0)
+		{
+			result += (std::isprint(static_cast<unsigned char>(*it)) ? *it : '?');
+			it++;
+		}
+
+		return formatter<std::string_view>::format(result, ctx);
+	}
+};
+template <>
+struct formatter<std::monostate>
+{
+	constexpr auto parse(format_parse_context& ctx)
+	{
+		return ctx.begin();
+	}
+
+	template <typename FormatContext>
+	auto format(const std::monostate&, FormatContext& ctx)
+	{
+		return ctx.out();
+	}
+};
+
+}  // namespace fmt
 
 #endif
