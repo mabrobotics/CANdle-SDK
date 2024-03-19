@@ -43,3 +43,30 @@ target_link_libraries(${EXECUTABLE} pthread CANdle_lib -static-libstdc++ -static
 add_custom_command(TARGET ${EXECUTABLE} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/MDtool/configs $<TARGET_FILE_DIR:${EXECUTABLE}>)
+
+
+
+if(WIN32)
+    install(TARGETS ${EXECUTABLE} RUNTIME DESTINATION ${INSTALL_PATH} COMPONENT MDtool)
+    install(DIRECTORY "configs/" DESTINATION bin COMPONENT Configuration)
+else()
+    set(CPACK_GENERATOR "DEB")
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "wget, libusb-1.0-0, libglfw3, rpm")
+    set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL "ON")
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "MAB Robotics <contact@mabrobotics.pl>")
+    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${ARCH})
+
+    install(TARGETS ${PROJECT_NAME}
+        DESTINATION /usr/local/bin)
+endif()
+
+set(CPACK_PROJECT_NAME "MDtool")
+set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
+set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
+set(CPACK_PACKAGE_VENDOR "MAB Robotics")
+set(CPACK_PACKAGE_DESCRIPTION "Console tool for configuring and setting up MD80 via CANdle")
+set(CPACK_NSIS_CREATE_UNINSTALLER ON)
+set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
+set(CPACK_NSIS_MODIFY_PATH ON)
+
+include(CPack)
