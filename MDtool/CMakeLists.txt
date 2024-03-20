@@ -38,7 +38,6 @@ target_include_directories(${EXECUTABLE} SYSTEM PRIVATE
     ${mINI_INCLUDE_DIR}
     ${SPDLOG_INCLUDE_DIR})
 
-target_link_libraries(${EXECUTABLE} pthread CANdle_lib -static-libstdc++ -static-libgcc OpenSSL::SSL OpenSSL::Crypto)
 
 add_custom_command(TARGET ${EXECUTABLE} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -47,9 +46,11 @@ add_custom_command(TARGET ${EXECUTABLE} PRE_BUILD
 
 
 if(WIN32)
+    target_link_libraries(${EXECUTABLE} -static CANdle_lib -static-libstdc++ -static-libgcc OpenSSL::SSL OpenSSL::Crypto)
     install(TARGETS ${EXECUTABLE} RUNTIME DESTINATION ${INSTALL_PATH} COMPONENT MDtool)
     install(DIRECTORY "configs/" DESTINATION bin COMPONENT Configuration)
 else()
+    target_link_libraries(${EXECUTABLE} pthread CANdle_lib -static-libstdc++ -static-libgcc OpenSSL::SSL OpenSSL::Crypto)
     set(CPACK_GENERATOR "DEB")
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "wget, libusb-1.0-0, libglfw3, rpm")
     set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL "ON")

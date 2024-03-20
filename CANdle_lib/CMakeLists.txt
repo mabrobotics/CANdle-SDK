@@ -69,7 +69,7 @@ target_include_directories(${EXECUTABLE} PUBLIC
 if(UNIX)
     target_link_libraries(${EXECUTABLE} ${LIBUSB_LIBRARY} spdlog::spdlog pthread)
 elseif(WIN32)
-    target_link_libraries(${EXECUTABLE} ${LIBUSB_WINDOWS_STATIC} ${SPDLOG_WINDOWS} ssp)
+    target_link_libraries(${EXECUTABLE} ${LIBUSB_WINDOWS_STATIC} ${SPDLOG_WINDOWS} -static)
 endif()
 
 if(WIN32)
