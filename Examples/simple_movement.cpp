@@ -2,7 +2,7 @@
 
 int main(int argc, char** argv)
 {
-	const uint32_t id = 2;
+	const uint32_t id = 1;
 
 	Candle candle;
 
@@ -27,9 +27,8 @@ int main(int argc, char** argv)
 
 	while (1)
 	{
-		candle.writeSDO(id, 0x607A, 0x0, (int32_t)(10000.0f * sin(x)));
-		candle.readSDO(id, 0x2009, 0x01, readPos);
-		std::cout << "Current position: " << readPos << std::endl;
+		md80->setPositionTarget(6.0f * sin(x));
+		std::cout << "Current position: " << md80->getOutputPosition() << std::endl;
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		x += 0.01;
 	}

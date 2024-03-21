@@ -273,7 +273,7 @@ class Candle
 	void handleCandleDeviceStatus();
 
    public:
-	std::unique_ptr<CanopenStack> canopenStack;
+	std::shared_ptr<CanopenStack> canopenStack;
 
    private:
 	static constexpr uint8_t rxFifoWarningLevel = 50;
