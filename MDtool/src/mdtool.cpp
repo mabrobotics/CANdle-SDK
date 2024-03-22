@@ -447,12 +447,28 @@ bool Mdtool::setupInfo(uint32_t id)
 
 bool Mdtool::setZero(uint32_t id)
 {
-	return candle->addMd80(id) && candle->setZeroPosition(id);
+	if (!candle->addMd80(id))
+		return false;
+
+	auto md80 = candle->getMd80(id);
+
+	if (md80->runRoutine(MD80::RoutineID::SET_ZERO, true))
+		return false;
+
+	return true;
 }
 
 bool Mdtool::reset(uint32_t id)
 {
-	return candle->addMd80(id) && candle->reset(id);
+	if (!candle->addMd80(id))
+		return false;
+
+	auto md80 = candle->getMd80(id);
+
+	if (md80->runRoutine(MD80::RoutineID::RESET, true))
+		return false;
+
+	return true;
 }
 
 bool Mdtool::setupMotor(uint32_t id, const std::string& filePath, bool all)
@@ -526,8 +542,10 @@ bool Mdtool::move(uint32_t id, bool relative, float targetPosition, float profil
 
 	logger->info("Target position {}", targetPosition);
 
+	auto md80 = candle->getMd80(id);
+
 	if (relative)
-		candle->setZeroPosition(id);
+		md80->runRoutine(MD80::RoutineID::SET_ZERO, true);
 
 	if (!std::isnan(profileVelocity))
 		candle->writeSDO(id, 0x2008, 0x03, profileVelocity);
@@ -538,10 +556,8 @@ bool Mdtool::move(uint32_t id, bool relative, float targetPosition, float profil
 		candle->writeSDO(id, 0x2008, 0x05, profileAcceleration);
 	}
 
-	candle->setModeOfOperation(id, Candle::ModesOfOperation::PROFILE_POSITION);
-	candle->enterOperational(id);
-
-	auto md80 = candle->getMd80(id);
+	md80->setModeOfOperation(MD80::ModesOfOperation::PROFILE_POSITION);
+	md80->enterOperational();
 
 	float actualPosition = 0;
 	candle->readSDO(id, 0x2009, 0x01, actualPosition);
@@ -569,9 +585,11 @@ bool Mdtool::performAction(uint32_t id, uint16_t index, uint8_t subindex, bool o
 	if (!candle->addMd80(id))
 		return false;
 
+	auto md80 = candle->getMd80(id);
+
 	if (operationalServiceRequired)
 	{
-		if (!candle->enterOperational(id) || !candle->setModeOfOperation(id, Candle::ModesOfOperation::SERVICE))
+		if (!md80->enterOperational() || !md80->setModeOfOperation(MD80::ModesOfOperation::SERVICE))
 			return false;
 	}
 

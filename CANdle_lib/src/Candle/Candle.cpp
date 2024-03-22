@@ -160,38 +160,6 @@ std::shared_ptr<MD80> Candle::getMd80(uint32_t id) const
 	return md80s.at(id);
 }
 
-bool Candle::enterOperational(uint32_t id)
-{
-	return writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0080)) &&
-		   writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0006)) &&
-		   writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x000f));
-}
-
-bool Candle::enterSwitchOnDisabled(uint32_t id)
-{
-	return writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0008));
-}
-
-bool Candle::setModeOfOperation(uint32_t id, ModesOfOperation mode)
-{
-	return writeSDO(id, 0x6060, 0x00, static_cast<int8_t>(mode));
-}
-
-bool Candle::setZeroPosition(uint32_t id)
-{
-	return writeSDO(id, 0x2003, 0x05, true);
-}
-
-bool Candle::reset(uint32_t id)
-{
-	return writeSDO(id, 0x2003, 0x02, true);
-}
-
-bool Candle::setupPDO(uint32_t id, CanopenStack::PDO pdoID, const std::vector<std::pair<uint16_t, uint8_t>>& fields)
-{
-	return canopenStack->setupPDO(id, pdoID, fields);
-}
-
 void Candle::receiveHandler()
 {
 	logger->debug("Starting candle receive thread...");

@@ -16,13 +16,13 @@ int main(int argc, char** argv)
 
 	std::cout << "Added MD80 succesfully!" << std::endl;
 
-	candle.setupPDO(id, CanopenStack::PDO::TPDO1, {{0x2009, 0x01}, {0x2009, 0x02}});
-	candle.setupPDO(id, CanopenStack::PDO::RPDO1, {{0x2008, 0x09}, {0x2008, 0x0A}});
-	candle.setModeOfOperation(id, Candle::ModesOfOperation::CYCLIC_SYNC_VELOCTIY);
-	candle.setZeroPosition(id);
-	candle.enterOperational(id);
-
+	candle.addMd80(id);
 	auto md80 = candle.getMd80(id);
+	md80->setupPDO(CanopenStack::PDO::TPDO1, {{0x2009, 0x01}, {0x2009, 0x02}});
+	md80->setupPDO(CanopenStack::PDO::RPDO1, {{0x2008, 0x09}, {0x2008, 0x0A}});
+	md80->setModeOfOperation(MD80::ModesOfOperation::CYCLIC_SYNC_VELOCTIY);
+	md80->runRoutine(MD80::RoutineID::SET_ZERO, true);
+	md80->enterOperational();
 
 	candle.setSendSync(true, 2000);
 

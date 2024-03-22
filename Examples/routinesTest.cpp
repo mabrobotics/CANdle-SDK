@@ -16,11 +16,8 @@ int main(int argc, char** argv)
 
 	std::cout << "Added MD80 succesfully!" << std::endl;
 
-	candle.enterOperational(id);
-
 	auto md80 = candle.getMd80(id);
-
+	md80->enterOperational();
 	md80->runRoutine(MD80::RoutineID::BLINK, true);
-
 	return 0;
 }

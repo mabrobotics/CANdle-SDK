@@ -16,6 +16,21 @@
 class MD80
 {
    public:
+	/**
+	 * @brief An enum holding possible modes of operations of the MD80 controller. Some fields are CiA402 - compliant.
+	 *
+	 */
+	enum class ModesOfOperation : int8_t
+	{
+		IMPEDANCE = -3,			  /**< Impedance PD mode */
+		SERVICE = -2,			  /**< Service is used for calibration routines and homing */
+		IDLE = 0,				  /**< Idle is default motion after power up */
+		PROFILE_POSITION = 1,	  /**< Profiled position mode */
+		PROFILE_VELOCITY = 2,	  /**< Profiled veloctiy mode */
+		CYCLIC_SYNC_POSITION = 8, /**< Simple position PID mode */
+		CYCLIC_SYNC_VELOCTIY = 9, /**< Simple velocity PID mode */
+	};
+
 	enum RoutineID
 	{
 		BLINK = 1,
@@ -48,17 +63,17 @@ class MD80
 
 	bool setVelocityPidGains(float kp, float ki, float kd, float intLimit, bool useSDO = true)
 	{
-		return writeAccessHelper(0x2001, 0x01, kp, useSDO) ||
-			   writeAccessHelper(0x2001, 0x02, ki, useSDO) ||
-			   writeAccessHelper(0x2001, 0x03, kd, useSDO) ||
+		return writeAccessHelper(0x2001, 0x01, kp, useSDO) &&
+			   writeAccessHelper(0x2001, 0x02, ki, useSDO) &&
+			   writeAccessHelper(0x2001, 0x03, kd, useSDO) &&
 			   writeAccessHelper(0x2001, 0x04, intLimit, useSDO);
 	}
 
 	bool setPositionPidGains(float kp, float ki, float kd, float intLimit, bool useSDO = true)
 	{
-		return writeAccessHelper(0x2002, 0x01, kp, useSDO) ||
-			   writeAccessHelper(0x2002, 0x02, ki, useSDO) ||
-			   writeAccessHelper(0x2002, 0x03, kd, useSDO) ||
+		return writeAccessHelper(0x2002, 0x01, kp, useSDO) &&
+			   writeAccessHelper(0x2002, 0x02, ki, useSDO) &&
+			   writeAccessHelper(0x2002, 0x03, kd, useSDO) &&
 			   writeAccessHelper(0x2002, 0x04, intLimit, useSDO);
 	}
 
@@ -76,6 +91,28 @@ class MD80
 			inProgress = readAccessHelper<bool>(0x2003, routineSubindex, true);
 		}
 		return true;
+	}
+
+	bool enterOperational()
+	{
+		return writeAccessHelper(0x6040, 0x00, static_cast<uint16_t>(0x0080), true) &&
+			   writeAccessHelper(0x6040, 0x00, static_cast<uint16_t>(0x0006), true) &&
+			   writeAccessHelper(0x6040, 0x00, static_cast<uint16_t>(0x000f), true);
+	}
+
+	bool enterSwitchOnDisabled()
+	{
+		return writeAccessHelper(0x6040, 0x00, static_cast<uint16_t>(0x0008), true);
+	}
+
+	bool setModeOfOperation(ModesOfOperation mode)
+	{
+		return writeAccessHelper(0x6060, 0x00, static_cast<int8_t>(mode), true);
+	}
+
+	bool setupPDO(CanopenStack::PDO pdoID, const std::vector<std::pair<uint16_t, uint8_t>>& fields)
+	{
+		return canopenStack->setupPDO(id, pdoID, fields);
 	}
 
    public:

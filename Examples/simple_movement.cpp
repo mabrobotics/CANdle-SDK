@@ -16,11 +16,10 @@ int main(int argc, char** argv)
 
 	std::cout << "Added MD80 succesfully!" << std::endl;
 
-	candle.setModeOfOperation(id, Candle::ModesOfOperation::CYCLIC_SYNC_POSITION);
-	candle.setZeroPosition(id);
-	candle.enterOperational(id);
-
 	auto md80 = candle.getMd80(id);
+	md80->setModeOfOperation(MD80::ModesOfOperation::CYCLIC_SYNC_POSITION);
+	md80->runRoutine(MD80::RoutineID::SET_ZERO, true);
+	md80->enterOperational();
 
 	float x = 0.0f;
 

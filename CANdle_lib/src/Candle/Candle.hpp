@@ -47,21 +47,6 @@ class Candle
 	};
 
 	/**
-	 * @brief An enum holding possible modes of operations of the MD80 controller. Some fields are CiA402 - compliant.
-	 *
-	 */
-	enum class ModesOfOperation : int8_t
-	{
-		IMPEDANCE = -3,			  /**< Impedance PD mode */
-		SERVICE = -2,			  /**< Service is used for calibration routines and homing */
-		IDLE = 0,				  /**< Idle is default motion after power up */
-		PROFILE_POSITION = 1,	  /**< Profiled position mode */
-		PROFILE_VELOCITY = 2,	  /**< Profiled veloctiy mode */
-		CYCLIC_SYNC_POSITION = 8, /**< Simple position PID mode */
-		CYCLIC_SYNC_VELOCTIY = 9, /**< Simple velocity PID mode */
-	};
-
-	/**
 	 * @brief Construct a new Candle object.
 	 *
 	 * Construct Candle object without explicitly providing the logger and communication interface.
@@ -148,59 +133,6 @@ class Candle
 	 * @return std::shared_ptr<MD80>
 	 */
 	std::shared_ptr<MD80> getMd80(uint32_t id) const;
-	/**
-	 * @brief Enter operational mode on MD80. Movement is allowed only in operational mode.
-	 *
-	 * @param id
-	 * @return true
-	 * @return false
-	 */
-	bool enterOperational(uint32_t id);
-	/**
-	 * @brief Enter switch on disabled state. Movement is not allowed in this mode.
-	 *
-	 * @param id
-	 * @return true
-	 * @return false
-	 */
-	bool enterSwitchOnDisabled(uint32_t id);
-	/**
-	 * @brief Set mode of operation.
-	 *
-	 * @param id
-	 * @param mode \ref ModesOfOperation
-	 * @return true
-	 * @return false
-	 */
-	bool setModeOfOperation(uint32_t id, ModesOfOperation mode);
-	/**
-	 * @brief Set zero position on selected MD80.
-	 *
-	 * @param id
-	 * @return true
-	 * @return false
-	 */
-	bool setZeroPosition(uint32_t id);
-	/**
-	 * @brief Reset MD80 controller.
-	 *
-	 * @param id
-	 * @return true
-	 * @return false
-	 */
-	bool reset(uint32_t id);
-
-	/**
-	 * @brief Setup PDO objects
-	 *
-	 * This function can be used to setup the response and command frames structures. Always check if the total field length does not exceed the max frame length (1M baudrate max is 8 bytes, 8M baudrate is 64 bytes). RPDOs are sent before SYNC msg, TPDO are received after SYNC msg. SYNC must be turned on using \ref setSendSync().
-	 * @param id
-	 * @param pdoID ID of the RPDO (response) or TPDO (command) \ref CanopenStack::PDO
-	 * @param fields std::vector of std::pairs of index and subindex from the OD that are expected in the response or command
-	 * @return true
-	 * @return false
-	 */
-	bool setupPDO(uint32_t id, CanopenStack::PDO pdoID, const std::vector<std::pair<uint16_t, uint8_t>>& fields);
 
 	/**
 	 * @brief Used to write a specific field in OD, given the index, subindex, and value
