@@ -43,6 +43,7 @@ endif()
 set(PROJECT_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/BusHandler/UsbHandler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Communication/CandleInterface.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/MD80/MD80.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Candle/Candle.cpp 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CanopenStack/CANopen/CanopenStack.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CanopenStack/ObjectDictionary/ObjectDictionaryParserEDS.cpp)

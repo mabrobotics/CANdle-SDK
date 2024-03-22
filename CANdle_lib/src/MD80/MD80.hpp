@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+/* TODO replace with logger */
+#include <iostream>
 
 #include "CanopenStack/CANopen/CanopenStack.hpp"
 #include "IObjectDictionaryParser.hpp"
@@ -31,6 +33,10 @@ class MD80
 		CYCLIC_SYNC_VELOCTIY = 9, /**< Simple velocity PID mode */
 	};
 
+	/**
+	 * @brief Routine ID - use to run a selected routine on the MD80 controller
+	 *
+	 */
 	enum RoutineID
 	{
 		BLINK = 1,
@@ -47,79 +53,151 @@ class MD80
 		RUN_HOMING,
 	};
 
-	MD80(uint32_t id, std::shared_ptr<CanopenStack> canopenStack) : id(id), canopenStack(canopenStack) {}
+	/**
+	 * @brief Construct a new MD80 object.
+	 *
+	 * @param id ID of the drive.
+	 * @param canopenStack std::shared_ptr to CanopenStack.
+	 */
+	MD80(uint32_t id, std::shared_ptr<CanopenStack> canopenStack);
 
-	float getOutputPosition(bool useSDO = true) { return readAccessHelper<float>(0x2009, 0x01, useSDO); }
-	float getOutputVelocity(bool useSDO = true) { return readAccessHelper<float>(0x2009, 0x02, useSDO); }
-	float getOutputTorque(bool useSDO = true) { return readAccessHelper<float>(0x2009, 0x03, useSDO); }
-
-	uint32_t getQuickStatus(bool useSDO = true) { return readAccessHelper<uint32_t>(0x2004, 0x0C, useSDO); }
-
-	bool setPositionTarget(float position, bool useSDO = true) { return writeAccessHelper(0x2008, 0x09, position, useSDO); }
-	bool setVelocityTarget(float velocity, bool useSDO = true) { return writeAccessHelper(0x2008, 0x0A, velocity, useSDO); }
-	bool setTorqueTarget(float torque, bool useSDO = true) { return writeAccessHelper(0x2008, 0x0B, torque, useSDO); }
-
-	bool isTargetReached(bool useSDO = true) { return readAccessHelper<uint16_t>(0x6041, 0x00, useSDO) & (1 << 10); }
-
-	bool setVelocityPidGains(float kp, float ki, float kd, float intLimit, bool useSDO = true)
-	{
-		return writeAccessHelper(0x2001, 0x01, kp, useSDO) &&
-			   writeAccessHelper(0x2001, 0x02, ki, useSDO) &&
-			   writeAccessHelper(0x2001, 0x03, kd, useSDO) &&
-			   writeAccessHelper(0x2001, 0x04, intLimit, useSDO);
-	}
-
-	bool setPositionPidGains(float kp, float ki, float kd, float intLimit, bool useSDO = true)
-	{
-		return writeAccessHelper(0x2002, 0x01, kp, useSDO) &&
-			   writeAccessHelper(0x2002, 0x02, ki, useSDO) &&
-			   writeAccessHelper(0x2002, 0x03, kd, useSDO) &&
-			   writeAccessHelper(0x2002, 0x04, intLimit, useSDO);
-	}
-
-	bool setImpedancePdGains(float kp, float kd, bool useSDO = true)
-	{
-		return writeAccessHelper(0x200C, 0x01, kp, useSDO) &&
-			   writeAccessHelper(0x200C, 0x02, kd, useSDO);
-	}
-
-	bool runRoutine(RoutineID routineId, bool shouldWaitForCompletion)
-	{
-		bool inProgress = true;
-		uint8_t routineSubindex = static_cast<uint8_t>(routineId);
-
-		if (!writeAccessHelper(0x2003, routineSubindex, inProgress, true))
-			return false;
-
-		while (inProgress && shouldWaitForCompletion)
-		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
-			inProgress = readAccessHelper<bool>(0x2003, routineSubindex, true);
-		}
-		return true;
-	}
-
-	bool enterOperational()
-	{
-		return writeAccessHelper(0x6040, 0x00, static_cast<uint16_t>(0x0080), true) &&
-			   writeAccessHelper(0x6040, 0x00, static_cast<uint16_t>(0x0006), true) &&
-			   writeAccessHelper(0x6040, 0x00, static_cast<uint16_t>(0x000f), true);
-	}
-
-	bool enterSwitchOnDisabled()
-	{
-		return writeAccessHelper(0x6040, 0x00, static_cast<uint16_t>(0x0008), true);
-	}
-
-	bool setModeOfOperation(ModesOfOperation mode)
-	{
-		return writeAccessHelper(0x6060, 0x00, static_cast<int8_t>(mode), true);
-	}
-
-	bool setupPDO(CanopenStack::PDO pdoID, const std::vector<std::pair<uint16_t, uint8_t>>& fields)
-	{
-		return canopenStack->setupPDO(id, pdoID, fields);
-	}
+	/**
+	 * @brief Get output position.
+	 *
+	 * @param useSDO set to false to use PDO access (faster but needs to be configured first).
+	 * @return float
+	 */
+	float getOutputPosition(bool useSDO = true);
+	/**
+	 * @brief Get the output velocity.
+	 *
+	 * @param useSDO set to false to use PDO access (faster but needs to be configured first).
+	 * @return float
+	 */
+	float getOutputVelocity(bool useSDO = true);
+	/**
+	 * @brief Get the output torque.
+	 *
+	 * @param useSDO set to false to use PDO access (faster but needs to be configured first).
+	 * @return float
+	 */
+	float getOutputTorque(bool useSDO = true);
+	/**
+	 * @brief Set target position.
+	 *
+	 * @param position target position to be set.
+	 * @param useSDO set to false to use PDO access (faster but needs to be configured first).
+	 * @return true
+	 * @return false
+	 */
+	bool setPositionTarget(float position, bool useSDO = true);
+	/**
+	 * @brief Set target velocity.
+	 *
+	 * @param velocity target velocity to be set.
+	 * @param useSDO set to false to use PDO access (faster but needs to be configured first).
+	 * @return true
+	 * @return false
+	 */
+	bool setVelocityTarget(float velocity, bool useSDO = true);
+	/**
+	 * @brief Set target torque.
+	 *
+	 * @param torque target torque to be set.
+	 * @param useSDO set to false to use PDO access (faster but needs to be configured first).
+	 * @return true
+	 * @return false
+	 */
+	bool setTorqueTarget(float torque, bool useSDO = true);
+	/**
+	 * @brief Get quick status.
+	 *
+	 * @param useSDO set to false to use PDO access (faster but needs to be configured first).
+	 * @return uint32_t quick status.
+	 */
+	uint32_t getQuickStatus(bool useSDO = true);
+	/**
+	 * @brief Check if a target value, depending on the currently active motion mode, is reached.
+	 *
+	 * @param useSDO set to false to use PDO access (faster but needs to be configured first).
+	 * @return true
+	 * @return false
+	 */
+	bool isTargetReached(bool useSDO = true);
+	/**
+	 * @brief Set velocity PID gains.
+	 *
+	 * @param kp proportional gain.
+	 * @param ki integral gain.
+	 * @param kd derivative gain.
+	 * @param intLimit integral limit (anti-windup).
+	 * @param useSDO set to false to use PDO access (faster but needs to be configured first).
+	 * @return true
+	 * @return false
+	 */
+	bool setVelocityPidGains(float kp, float ki, float kd, float intLimit, bool useSDO = true);
+	/**
+	 * @brief Set position PID gains.
+	 *
+	 * @param kp proportional gain.
+	 * @param ki integral gain.
+	 * @param kd derivative gain.
+	 * @param intLimit integral limit (anti-windup).
+	 * @param useSDO set to false to use PDO access (faster but needs to be configured first).
+	 * @return true
+	 * @return false
+	 */
+	bool setPositionPidGains(float kp, float ki, float kd, float intLimit, bool useSDO = true);
+	/**
+	 * @brief Set impedance PD gains.
+	 *
+	 * @param kp integral gain.
+	 * @param kd derivative gain.
+	 * @param useSDO set to false to use PDO access (faster but needs to be configured first).
+	 * @return true
+	 * @return false
+	 */
+	bool setImpedancePdGains(float kp, float kd, bool useSDO = true);
+	/**
+	 * @brief Run a routine. Select from RoutineID.
+	 *
+	 * @param routineId RoutineID id
+	 * @param shouldWaitForCompletion set to true if the function must wait for routine completion.
+	 * @return true
+	 * @return false
+	 */
+	bool runRoutine(RoutineID routineId, bool shouldWaitForCompletion);
+	/**
+	 * @brief Enter operational mode. Only in operational mode non-service movement is allowed.
+	 *
+	 * @return true
+	 * @return false
+	 */
+	bool enterOperational();
+	/**
+	 * @brief Enter switch on disabled mode. This is equivalent to exiting the operational mode.
+	 *
+	 * @return true
+	 * @return false
+	 */
+	bool enterSwitchOnDisabled();
+	/**
+	 * @brief Set current mode of operation
+	 *
+	 * @param mode mode from ModesOfOperation enum
+	 * @return true
+	 * @return false
+	 */
+	bool setModeOfOperation(ModesOfOperation mode);
+	/**
+	 * @brief Setup fast PDO communication.
+	 *
+	 * @param pdoID ID of the TPDO or RPDO
+	 * @param fields std::vector of index-subindex pairs that should be used in the selected PDO frame
+	 * @return true
+	 * @return false
+	 */
+	bool setupPDO(CanopenStack::PDO pdoID, const std::vector<std::pair<uint16_t, uint8_t>>& fields);
 
    public:
 	IODParser::ODType OD;
