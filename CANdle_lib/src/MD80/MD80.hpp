@@ -16,43 +16,66 @@
 class MD80
 {
    public:
-	MD80(uint32_t id, std::shared_ptr<CanopenStack> canopenStack) : id(id), canopenStack(canopenStack)
+	enum RoutineID
 	{
+		BLINK = 1,
+		RESET,
+		CALIBRATION,
+		CALIBRATION_AUX,
+		SET_ZERO,
+		CALIBRATE_PI_GAINS,
+		TEST_OUTPUT_ENCODER,
+		TEST_MAIN_ENCODER,
+		SAVE,
+		REVERT_FACTORY_SETTINGS,
+		CAN_REINIT,
+		RUN_HOMING,
+	};
+
+	MD80(uint32_t id, std::shared_ptr<CanopenStack> canopenStack) : id(id), canopenStack(canopenStack) {}
+
+	float getOutputPosition(bool useSDO = true) { return readAccessHelper<float>(0x2009, 0x01, useSDO); }
+	float getOutputVelocity(bool useSDO = true) { return readAccessHelper<float>(0x2009, 0x02, useSDO); }
+	float getOutputTorque(bool useSDO = true) { return readAccessHelper<float>(0x2009, 0x03, useSDO); }
+
+	uint32_t getQuickStatus(bool useSDO = true) { return readAccessHelper<uint32_t>(0x2004, 0x0C, useSDO); }
+
+	bool setPositionTarget(float position, bool useSDO = true) { return writeAccessHelper(0x2008, 0x09, position, useSDO); }
+	bool setVelocityTarget(float velocity, bool useSDO = true) { return writeAccessHelper(0x2008, 0x0A, velocity, useSDO); }
+	bool setTorqueTarget(float torque, bool useSDO = true) { return writeAccessHelper(0x2008, 0x0B, torque, useSDO); }
+
+	bool isTargetReached(bool useSDO = true) { return readAccessHelper<uint16_t>(0x6041, 0x00, useSDO) & (1 << 10); }
+
+	bool setVelocityPidGains(float kp, float ki, float kd, float intLimit, bool useSDO = true)
+	{
+		return writeAccessHelper(0x2001, 0x01, kp, useSDO) ||
+			   writeAccessHelper(0x2001, 0x02, ki, useSDO) ||
+			   writeAccessHelper(0x2001, 0x03, kd, useSDO) ||
+			   writeAccessHelper(0x2001, 0x04, intLimit, useSDO);
 	}
 
-	float getOutputPosition(bool useSDO = true)
+	bool setPositionPidGains(float kp, float ki, float kd, float intLimit, bool useSDO = true)
 	{
-		return readAccessHelper<float>(0x2009, 0x01, useSDO);
+		return writeAccessHelper(0x2002, 0x01, kp, useSDO) ||
+			   writeAccessHelper(0x2002, 0x02, ki, useSDO) ||
+			   writeAccessHelper(0x2002, 0x03, kd, useSDO) ||
+			   writeAccessHelper(0x2002, 0x04, intLimit, useSDO);
 	}
 
-	float getOutputVelocity(bool useSDO = true)
+	bool runRoutine(RoutineID routineId, bool shouldWaitForCompletion)
 	{
-		return readAccessHelper<float>(0x2009, 0x02, useSDO);
-	}
+		bool inProgress = true;
+		uint8_t routineSubindex = static_cast<uint8_t>(routineId);
 
-	float getOutputTorque(bool useSDO = true)
-	{
-		return readAccessHelper<float>(0x2009, 0x03, useSDO);
-	}
+		if (!writeAccessHelper(0x2003, routineSubindex, inProgress, true))
+			return false;
 
-	bool setPositionTarget(float position, bool useSDO = true)
-	{
-		return writeAccessHelper(0x2008, 0x09, position, useSDO);
-	}
-
-	bool setVelocityTarget(float velocity, bool useSDO = true)
-	{
-		return writeAccessHelper(0x2008, 0x0A, velocity, useSDO);
-	}
-
-	bool setTorqueTarget(float torque, bool useSDO = true)
-	{
-		return writeAccessHelper(0x2008, 0x0B, torque, useSDO);
-	}
-
-	bool isTargetReached(bool useSDO = true)
-	{
-		return readAccessHelper<uint16_t>(0x6041, 0x00, useSDO) & (1 << 10);
+		while (inProgress && shouldWaitForCompletion)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			inProgress = readAccessHelper<bool>(0x2003, routineSubindex, true);
+		}
+		return true;
 	}
 
    public:

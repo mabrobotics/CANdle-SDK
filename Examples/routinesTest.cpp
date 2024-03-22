@@ -16,21 +16,11 @@ int main(int argc, char** argv)
 
 	std::cout << "Added MD80 succesfully!" << std::endl;
 
-	candle.setModeOfOperation(id, Candle::ModesOfOperation::CYCLIC_SYNC_POSITION);
-	candle.setZeroPosition(id);
 	candle.enterOperational(id);
 
 	auto md80 = candle.getMd80(id);
 
-	float x = 0.0f;
-
-	while (1)
-	{
-		md80->setPositionTarget(6.0f * sin(x));
-		std::cout << "Current position: " << md80->getOutputPosition() << std::endl;
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		x += 0.01;
-	}
+	md80->runRoutine(MD80::RoutineID::BLINK, true);
 
 	return 0;
 }
