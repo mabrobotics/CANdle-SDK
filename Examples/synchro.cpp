@@ -2,10 +2,9 @@
 
 int main(int argc, char** argv)
 {
-	const std::array<uint8_t, 2> ids{1, 2};
-
 	const float kp = 0.5f;
 	const float kd = 0.02f;
+	std::vector<std::shared_ptr<MD80>> md80s;
 
 	Candle candle;
 
@@ -14,6 +13,8 @@ int main(int argc, char** argv)
 		std::cout << "CANdle init failed!" << std::endl;
 		return -1;
 	}
+
+	auto ids = candle.ping();
 
 	std::cout << "CANdle init successful!" << std::endl;
 
@@ -27,10 +28,8 @@ int main(int argc, char** argv)
 		md80->setImpedancePdGains(kp, kd);
 		md80->runRoutine(MD80::RoutineID::SET_ZERO, true);
 		md80->enterOperational();
+		md80s.push_back(md80);
 	}
-
-	auto md80_1 = candle.getMd80(ids[0]);
-	auto md80_2 = candle.getMd80(ids[1]);
 
 	candle.setSendSync(true, 3000);
 
@@ -39,10 +38,11 @@ int main(int argc, char** argv)
 	while (1)
 	{
 		float target = 5.0f * sin(x);
-		md80_1->setPositionTarget(target);
-		md80_2->setPositionTarget(target);
 
-		std::cout << md80_1->getOutputPosition() << " " << md80_1->getOutputVelocity() << " " << md80_1->getOutputTorque() << std::endl;
+		for (auto& md80 : md80s)
+			md80->setPositionTarget(target, false);
+
+		std::cout << md80s[0]->getOutputPosition() << " " << md80s[0]->getOutputVelocity() << " " << md80s[0]->getOutputTorque() << std::endl;
 
 		x += 0.01f;
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
