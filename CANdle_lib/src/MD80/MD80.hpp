@@ -77,6 +77,12 @@ class MD80
 			   writeAccessHelper(0x2002, 0x04, intLimit, useSDO);
 	}
 
+	bool setImpedancePdGains(float kp, float kd, bool useSDO = true)
+	{
+		return writeAccessHelper(0x200C, 0x01, kp, useSDO) &&
+			   writeAccessHelper(0x200C, 0x03, kd, useSDO);
+	}
+
 	bool runRoutine(RoutineID routineId, bool shouldWaitForCompletion)
 	{
 		bool inProgress = true;

@@ -24,8 +24,7 @@ int main(int argc, char** argv)
 		md80->setupPDO(CanopenStack::PDO::TPDO1, {{0x2009, 0x01}, {0x2009, 0x03}, {0x2009, 0x02}});
 		md80->setupPDO(CanopenStack::PDO::RPDO1, {{0x2008, 0x09}, {0x2008, 0x0B}, {0x2008, 0x0A}});
 		md80->setModeOfOperation(MD80::ModesOfOperation::CYCLIC_SYNC_POSITION);
-		candle.writeSDO(id, 0x200C, 0x01, kp);
-		candle.writeSDO(id, 0x200C, 0x02, kd);
+		md80->setImpedancePdGains(kp, kd);
 		md80->runRoutine(MD80::RoutineID::SET_ZERO, true);
 		md80->enterOperational();
 	}
