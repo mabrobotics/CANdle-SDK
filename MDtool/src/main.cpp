@@ -40,6 +40,11 @@ int main(int argc, char** argv)
 	clear->add_subcommand("error", "Use to clear non-critical errors");
 	clear->add_subcommand("warning", "Use to clear warnings");
 
+	auto* test = app.add_subcommand("test", "Use to run specific tests");
+	auto* encoder = test->add_subcommand("encoder", "Use to test onboard encoders");
+	encoder->add_subcommand("main", "Use to test main encoder");
+	encoder->add_subcommand("output", "Use to test output encoder");
+
 	float targetPosition = 0.0f;
 	float profileVelocity = std::nan("");
 	float profileAcceleration = std::nan("");
@@ -210,6 +215,16 @@ int main(int argc, char** argv)
 		success = mdtool.move(id, !absolute, targetPosition, profileVelocity, profileAcceleration);
 	else if (app.got_subcommand("blink"))
 		success = mdtool.blink(id);
+	else if (app.got_subcommand("test"))
+	{
+		if (test->got_subcommand("encoder"))
+		{
+			if (encoder->got_subcommand("main"))
+				success = mdtool.testEncoder(id, Mdtool::Encoder::MAIN);
+			else if (encoder->got_subcommand("output"))
+				success = mdtool.testEncoder(id, Mdtool::Encoder::OUTPUT);
+		}
+	}
 
 	if (success)
 		logger->info("Success!");

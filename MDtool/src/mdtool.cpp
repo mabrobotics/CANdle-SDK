@@ -580,6 +580,12 @@ bool Mdtool::blink(uint32_t id)
 	return performAction(id, 0x2003, 0x01);
 }
 
+bool Mdtool::testEncoder(uint32_t id, Encoder encoder)
+{
+	uint8_t subindex = encoder == MAIN ? 0x08 : 0x07;
+	return performAction(id, 0x2003, subindex, true);
+}
+
 bool Mdtool::performAction(uint32_t id, uint16_t index, uint8_t subindex, bool operationalServiceRequired)
 {
 	if (!candle->addMd80(id))

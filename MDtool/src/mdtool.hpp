@@ -11,6 +11,12 @@
 class Mdtool
 {
    public:
+	enum Encoder
+	{
+		MAIN = 0,
+		OUTPUT = 1
+	};
+
 	Mdtool() = delete;
 	Mdtool(std::shared_ptr<spdlog::logger> logger);
 
@@ -36,6 +42,7 @@ class Mdtool
 	bool setupMotor(uint32_t id, const std::string& filePath, bool all);
 	bool move(uint32_t id, bool relative, float targetPosition, float profileVelocity, float profileAcceleration);
 	bool blink(uint32_t id);
+	bool testEncoder(uint32_t id, Encoder encoder);
 
    private:
 	static constexpr uint32_t secondaryBootloaderAddress = 0x8005000;
