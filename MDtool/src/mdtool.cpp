@@ -450,12 +450,7 @@ bool Mdtool::setZero(uint32_t id)
 	if (!candle->addMd80(id))
 		return false;
 
-	auto md80 = candle->getMd80(id);
-
-	if (md80->runRoutine(MD80::RoutineID::SET_ZERO, true))
-		return false;
-
-	return true;
+	return candle->getMd80(id)->runRoutine(MD80::RoutineID::SET_ZERO, true);
 }
 
 bool Mdtool::reset(uint32_t id)
@@ -463,12 +458,7 @@ bool Mdtool::reset(uint32_t id)
 	if (!candle->addMd80(id))
 		return false;
 
-	auto md80 = candle->getMd80(id);
-
-	if (md80->runRoutine(MD80::RoutineID::RESET, true))
-		return false;
-
-	return true;
+	return candle->getMd80(id)->runRoutine(MD80::RoutineID::RESET, false);
 }
 
 bool Mdtool::setupMotor(uint32_t id, const std::string& filePath, bool all)
