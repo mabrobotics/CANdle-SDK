@@ -2,6 +2,7 @@
 
 Candle::Candle() : syncPoint(3)
 {
+	/* TODO refactor */
 	std::string name = "candle_logger";
 	logger = spdlog::stdout_color_mt(name + std::to_string(candleNum++));
 	logger->set_pattern("[%^%l%$] %v");
@@ -78,6 +79,7 @@ std::vector<uint32_t> Candle::ping()
 	uint32_t deviceType = 0;
 	uint32_t errorCode = 0;
 
+	/* TODO define 0xff as all channels on CANdle */
 	for (size_t id = 1; id < 31; id++)
 		if (canopenStack->readSDO(id, 0x1000, 0x00, deviceType, errorCode, false, 0xff))
 			ids.push_back(id);
