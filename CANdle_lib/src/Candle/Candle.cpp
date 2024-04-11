@@ -24,7 +24,7 @@ Candle::~Candle()
 bool Candle::init(Baud baud, std::string edsPath)
 {
 	if (edsPath == "")
-		this->edsPath = "MD80_DS402.eds";
+		this->edsPath = "config/eds/MD80_latest.eds";
 
 	ICommunication::Settings settings;
 

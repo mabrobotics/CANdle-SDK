@@ -15,4 +15,5 @@ STM32_bootloader/Core/Mab/Version/gitversion.h
 STM32_bootloader/.settings/
 STM32_bootloader/Debug/
 STM32_bootloader/Release/
+compile_commands.json
 
