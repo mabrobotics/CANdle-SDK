@@ -26,7 +26,7 @@ bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode, bool deviceNo
 
 	if (rc < 0)
 	{
-		logger->error("Error initializing libusb: {}", libusb_error_name(rc));
+		logger->error("[USB] Error initializing libusb: {}", libusb_error_name(rc));
 		return false;
 	}
 
@@ -34,7 +34,7 @@ bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode, bool deviceNo
 
 	if (cnt < 0)
 	{
-		logger->error("Error getting device list: {}", libusb_error_name(cnt));
+		logger->error("[USB] Error getting device list: {}", libusb_error_name(cnt));
 		return false;
 	}
 
@@ -47,24 +47,24 @@ bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode, bool deviceNo
 
 		if (rc < 0)
 		{
-			logger->error("Error getting device descriptor: {}", libusb_error_name(rc));
+			logger->error("[USB] Error getting device descriptor: {}", libusb_error_name(rc));
 			continue;
 		}
 
 		if (desc.idVendor == vid && desc.idProduct == pid)
 		{
-			logger->debug("Device matched!");
+			logger->debug("[USB] Device matched!");
 
 			if (openedDevices.find(dev) != openedDevices.end())
 			{
-				logger->debug("Device already opened!");
+				logger->debug("[USB] Device already opened!");
 				continue;
 			}
 
 			rc = libusb_open(dev, &devh);
 			if (rc != LIBUSB_SUCCESS)
 			{
-				logger->error("Failed to open device: {}", libusb_error_name(rc));
+				logger->error("[USB] Failed to open device: {}", libusb_error_name(rc));
 				continue;
 			}
 			else
@@ -73,9 +73,9 @@ bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode, bool deviceNo
 				uint8_t serial[256];
 				rc = libusb_get_string_descriptor_ascii(devh, desc.iSerialNumber, serial, sizeof(serial));
 				if (rc < 0)
-					logger->error("Failed read serial number: {}", libusb_error_name(rc));
+					logger->error("[USB] Failed read serial number: {}", libusb_error_name(rc));
 
-				logger->info("CANdle connected! Serial number: {}", std::string(serial, serial + 12));
+				logger->info("[USB] CANdle connected! Serial number: {}", std::string(serial, serial + 12));
 
 				break;
 			}
@@ -85,7 +85,7 @@ bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode, bool deviceNo
 	if (devh == nullptr)
 	{
 		if (deviceNotFoundError)
-			logger->error("Device not found!");
+			logger->error("[USB] Device not found!");
 		return false;
 	}
 
@@ -98,11 +98,11 @@ bool UsbHandler::init(uint16_t vid, uint16_t pid, bool manualMode, bool deviceNo
 
 		if (rc < 0)
 		{
-			logger->error("Error claiming interface: {}", libusb_error_name(rc));
+			logger->error("[USB] Error claiming interface: {}", libusb_error_name(rc));
 			return false;
 		}
 		else
-			logger->debug("Claiming interface succeeded!");
+			logger->debug("[USB] Claiming interface succeeded!");
 	}
 
 	libusb_free_device_list(devs, 1);
@@ -189,12 +189,12 @@ void UsbHandler::dataHandler()
 		int ret = libusb_bulk_transfer(devh, outEndpointAdr, txBuf.data(), sendLen, &sendLenActual, sendTimeoutMs);
 
 		if (ret < 0)
-			logger->error("Error while sending: {}", libusb_strerror(static_cast<libusb_error>(ret)));
+			logger->error("[USB] Error while sending: {}", libusb_strerror(static_cast<libusb_error>(ret)));
 
 		ret = libusb_bulk_transfer(devh, inEndpointAdr, rxBuf.data(), size, &receivedLen, receiveTimeoutMs);
 
 		if (ret < 0)
-			logger->error("Error while receiving {}  transferred {}", libusb_strerror(static_cast<libusb_error>(ret)), receivedLen);
+			logger->error("[USB] Error while receiving {}  transferred {}", libusb_strerror(static_cast<libusb_error>(ret)), receivedLen);
 		else
 			copyInputBufToElements(rxBuf, receivedLen);
 
@@ -259,7 +259,7 @@ bool UsbHandler::sendDataDirectly(std::span<uint8_t> data)
 
 	if (ret < 0)
 	{
-		logger->error("Error while sending: {}", libusb_strerror(static_cast<libusb_error>(ret)));
+		logger->error("[USB] Error while sending: {}", libusb_strerror(static_cast<libusb_error>(ret)));
 		return false;
 	}
 	return true;
@@ -273,7 +273,7 @@ bool UsbHandler::receiveDataDirectly(std::span<uint8_t>& data)
 
 	if (ret < 0)
 	{
-		logger->error("Error while receiving {}  transferred {}", libusb_strerror(static_cast<libusb_error>(ret)), receivedLen);
+		logger->error("[USB] Error while receiving {}  transferred {}", libusb_strerror(static_cast<libusb_error>(ret)), receivedLen);
 		return false;
 	}
 	return true;
