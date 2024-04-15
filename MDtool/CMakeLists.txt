@@ -43,12 +43,11 @@ add_custom_command(TARGET ${EXECUTABLE} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/MDtool/configs $<TARGET_FILE_DIR:${EXECUTABLE}>)
 
-
-
 if(WIN32)
     target_link_libraries(${EXECUTABLE} -static CANdle_lib -static-libstdc++ -static-libgcc OpenSSL::SSL OpenSSL::Crypto)
     install(TARGETS ${EXECUTABLE} RUNTIME DESTINATION ${INSTALL_PATH} COMPONENT MDtool)
     install(DIRECTORY "configs/" DESTINATION bin COMPONENT Configuration)
+    install(DIRECTORY "configs/" DESTINATION ${%LocalAppData%})
 else()
     target_link_libraries(${EXECUTABLE} pthread CANdle_lib -static-libstdc++ -static-libgcc OpenSSL::SSL OpenSSL::Crypto)
     set(CPACK_GENERATOR "DEB")
@@ -59,13 +58,15 @@ else()
 
     install(TARGETS ${PROJECT_NAME}
         DESTINATION /usr/local/bin)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/configs
+        DESTINATION /usr/local/share/mdtool)
 endif()
 
 set(CPACK_PROJECT_NAME "MDtool")
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_VENDOR "MAB Robotics")
-set(CPACK_PACKAGE_DESCRIPTION "Console tool for configuring and setting up MD80 via CANdle")
+set(CPACK_PACKAGE_DESCRIPTION "Console tool for configuring and setting up MAB's MD10 and MD80 via CANdle")
 set(CPACK_NSIS_CREATE_UNINSTALLER ON)
 set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
 set(CPACK_NSIS_MODIFY_PATH ON)

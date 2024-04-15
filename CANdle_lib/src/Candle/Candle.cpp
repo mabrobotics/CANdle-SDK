@@ -1,5 +1,13 @@
 #include "Candle.hpp"
 
+#include <filesystem>
+
+#if (_WIN32)
+const std::edsDirPath = getenv("%LocalAppData%");
+#else
+const std::string dataDirPath = "/usr/local/share/";
+#endif
+
 Candle::Candle() : syncPoint(3)
 {
 	std::string name = "candle_logger";
@@ -9,22 +17,30 @@ Candle::Candle() : syncPoint(3)
 	interface = std::make_shared<CandleInterface>(std::make_unique<UsbHandler>(logger));
 }
 
-Candle::Candle(std::shared_ptr<ICommunication> interface, std::shared_ptr<spdlog::logger> logger) : syncPoint(3),
-																									interface(interface),
-																									logger(logger)
-
+Candle::Candle(std::shared_ptr<ICommunication> interface, std::shared_ptr<spdlog::logger> logger)
+	: syncPoint(3), interface(interface), logger(logger)
 {
 }
 
-Candle::~Candle()
-{
-	deInit();
-}
+Candle::~Candle() { deInit(); }
 
 bool Candle::init(Baud baud, std::string edsPath)
 {
 	if (edsPath == "")
-		this->edsPath = "MD80_DS402.eds";
+	{
+		std::string localPath = "configs/eds/MD80_DS402.eds";
+		if (std::filesystem::exists(localPath))
+		{
+			logger->debug("Using local .EDS file.");
+			this->edsPath = localPath;
+		}
+		else
+		{
+			this->edsPath = dataDirPath + "mdtool/configs/eds/" + "MD80_DS402_latest.eds";
+			logger->debug("Using global .EDS file at {}", this->edsPath);
+		}
+	}
+
 
 	ICommunication::Settings settings;
 
@@ -145,7 +161,9 @@ bool Candle::addMd80(uint32_t id)
 
 	if (!parser.parseFile(edsPath, md80s[id]->OD))
 	{
-		logger->error("EDS file path is invalid: {}. Please provide a correct path in the Candle init function or place the EDS file in the directory the script is run from.", edsPath);
+		logger->error("EDS file path is invalid: {}. Please provide a correct path in the Candle init "
+					  "function or place the EDS file in the directory the script is run from.",
+					  edsPath);
 		return false;
 	}
 
@@ -154,10 +172,7 @@ bool Candle::addMd80(uint32_t id)
 	return true;
 }
 
-std::shared_ptr<MD80> Candle::getMd80(uint32_t id) const
-{
-	return md80s.at(id);
-}
+std::shared_ptr<MD80> Candle::getMd80(uint32_t id) const { return md80s.at(id); }
 
 bool Candle::enterOperational(uint32_t id)
 {
@@ -176,17 +191,12 @@ bool Candle::setModeOfOperation(uint32_t id, ModesOfOperation mode)
 	return writeSDO(id, 0x6060, 0x00, static_cast<int8_t>(mode));
 }
 
-bool Candle::setZeroPosition(uint32_t id)
-{
-	return writeSDO(id, 0x2003, 0x05, true);
-}
+bool Candle::setZeroPosition(uint32_t id) { return writeSDO(id, 0x2003, 0x05, true); }
 
-bool Candle::reset(uint32_t id)
-{
-	return writeSDO(id, 0x2003, 0x02, true);
-}
+bool Candle::reset(uint32_t id) { return writeSDO(id, 0x2003, 0x02, true); }
 
-bool Candle::setupPDO(uint32_t id, CanopenStack::PDO pdoID, const std::vector<std::pair<uint16_t, uint8_t>>& fields)
+bool Candle::setupPDO(uint32_t id, CanopenStack::PDO pdoID,
+					  const std::vector<std::pair<uint16_t, uint8_t>>& fields)
 {
 	return canopenStack->setupPDO(id, pdoID, fields);
 }
@@ -224,7 +234,8 @@ void Candle::transmitHandler()
 		if (sendSync)
 			canopenStack->sendSYNC();
 
-		auto end_time = std::chrono::high_resolution_clock::now() + std::chrono::microseconds(syncIntervalUs);
+		auto end_time =
+			std::chrono::high_resolution_clock::now() + std::chrono::microseconds(syncIntervalUs);
 		while (std::chrono::high_resolution_clock::now() < end_time)
 		{
 		}
@@ -259,13 +270,19 @@ void Candle::handleCandleDeviceStatus()
 
 		if (!rxFifoError && status.statistics.maxRxFifoOccupancyPercent >= rxFifoErrorLevel)
 		{
-			logger->error("CANdle's internal RX fifo max occupancy exceeded {}%. Some messages are probably lost. Please consider slowing down the communication or minimizing the data throughput.", rxFifoErrorLevel);
+			logger->error(
+				"CANdle's internal RX fifo max occupancy exceeded {}%. Some messages are probably lost. "
+				"Please consider slowing down the communication or minimizing the data throughput.",
+				rxFifoErrorLevel);
 			rxFifoError = true;
 		}
 
 		if (!txFifoError && status.statistics.maxTxFifoOccupancyPercent > txFifoErrorLevel)
 		{
-			logger->error("CANdle's internal TX fifo max occupancy exceeded {}%. Some messages are probably lost. Please consider slowing down the communication or minimizing the data throughput.", txFifoErrorLevel);
+			logger->error(
+				"CANdle's internal TX fifo max occupancy exceeded {}%. Some messages are probably lost. "
+				"Please consider slowing down the communication or minimizing the data throughput.",
+				txFifoErrorLevel);
 			txFifoError = true;
 		}
 
