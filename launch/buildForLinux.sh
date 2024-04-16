@@ -2,7 +2,7 @@
 
 BUILD_DIRECTORY=buildLinux
 
-mkdir $BUILD_DIRECTORY
+mkdir $BUILD_DIRECTORY -p
 cd $BUILD_DIRECTORY
 cmake ..
 make -j4
