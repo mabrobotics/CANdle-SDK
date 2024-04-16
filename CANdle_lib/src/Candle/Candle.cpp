@@ -3,7 +3,7 @@
 #include <filesystem>
 
 #if (_WIN32)
-const std::edsDirPath = getenv("%LocalAppData%");
+const std::string dataDirPath = "%LocalAppData%";
 #else
 const std::string dataDirPath = "/usr/local/share/";
 #endif

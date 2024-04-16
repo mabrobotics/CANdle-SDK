@@ -6,8 +6,6 @@ set(EXECUTABLE run_tests)
 
 enable_testing()
 
-find_package(OpenSSL REQUIRED)
-
 set(CMAKE_BUILD_TYPE Debug)
 
 FetchContent_Declare(
@@ -44,8 +42,7 @@ add_compile_options(-Wall -Wextra -Wpedantic)
 
 target_link_libraries(${EXECUTABLE}
     PRIVATE
-    GTest::GTest
-    OpenSSL::SSL OpenSSL::Crypto)
+    GTest::GTest)
 
 add_custom_command(TARGET ${EXECUTABLE} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
