@@ -21,3 +21,18 @@ sudo docker build ./launch/WindowsDocker/
 ./launch/runDockerForWindows.sh
 ```
 
+
+# Running
+
+## Windows
+### Requirements
+- Driver replacement via Zadig
+
+#### USB driver replacement
+    Download Zadig 2.8 or later [ADD LINK HERE]
+    Options -> List all devices
+    Select `MD USB-TO-CAN` from drop down menu
+    Changed driver type to `libusb-win32`
+    Click `Replace Driver`
+    Wait for installation to finish
+
