@@ -11,47 +11,38 @@
 
 namespace fmt
 {
-template <typename T, std::size_t N>
-struct formatter<std::array<T, N>> : formatter<std::string_view>
-{
-	template <typename FormatContext>
-	auto format(const std::array<T, N>& arr, FormatContext& ctx)
+	template <typename T, std::size_t N> struct formatter<std::array<T, N>> : formatter<std::string_view>
 	{
-		std::string result = "";
-		auto it = arr.begin();
-		while (it != arr.end() && *it != 0)
+		template <typename FormatContext> auto format(const std::array<T, N>& arr, FormatContext& ctx)
 		{
-			result += (std::isprint(static_cast<unsigned char>(*it)) ? *it : '?');
-			it++;
+			std::string result = "";
+			auto it = arr.begin();
+			while (it != arr.end() && *it != 0)
+			{
+				result += (std::isprint(static_cast<unsigned char>(*it)) ? *it : '?');
+				it++;
+			}
+
+			return formatter<std::string_view>::format(result, ctx);
 		}
+	};
 
-		return formatter<std::string_view>::format(result, ctx);
-	}
-};
-
-}  // namespace fmt
+} // namespace fmt
 namespace fmt
 {
-template <>
-struct formatter<std::monostate>
-{
-	constexpr auto parse(format_parse_context& ctx)
+	template <> struct formatter<std::monostate>
 	{
-		return ctx.begin();
-	}
+		constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
-	template <typename FormatContext>
-	auto format(const std::monostate&, FormatContext& ctx)
-	{
-		return ctx.out();
-	}
-};
+		template <typename FormatContext> auto format(const std::monostate&, FormatContext& ctx)
+		{
+			return ctx.out();
+		}
+	};
 
-}  // namespace fmt
+} // namespace fmt
 
-Mdtool::Mdtool(std::shared_ptr<spdlog::logger> logger) : logger(logger)
-{
-}
+Mdtool::Mdtool(std::shared_ptr<spdlog::logger> logger) : logger(logger) {}
 
 bool Mdtool::init(std::shared_ptr<ICommunication> interface, Candle::Baud baud)
 {
@@ -97,7 +88,7 @@ bool Mdtool::ping(bool checkChannels)
 bool Mdtool::updateMd80(std::string& filePath, uint32_t id, bool recover, bool all)
 {
 	auto status = BinaryParser::processFile(filePath);
-
+    
 	if (status == BinaryParser::Status::ERROR_FILE)
 	{
 		logger->error("Error opening file: {}", filePath);
@@ -105,7 +96,8 @@ bool Mdtool::updateMd80(std::string& filePath, uint32_t id, bool recover, bool a
 	}
 	else if (status != BinaryParser::Status::OK)
 	{
-		logger->error("Error while parsing firmware file! Error code: {}", static_cast<std::underlying_type<BinaryParser::Status>::type>(status));
+		logger->error("Error while parsing firmware file! Error code: {}",
+					  static_cast<std::underlying_type<BinaryParser::Status>::type>(status));
 		return false;
 	}
 
@@ -140,17 +132,19 @@ bool Mdtool::updateMd80(std::string& filePath, uint32_t id, bool recover, bool a
 
 	for (auto& [idChPair, status] : ids)
 	{
-		logger->info("Preparing to update drive ID {} at baudrate {}M...", idChPair.first, static_cast<uint32_t>(baudrate));
+		logger->info("Preparing to update drive ID {} at baudrate {}M...", idChPair.first,
+					 static_cast<uint32_t>(baudrate));
 		auto buffer = BinaryParser::getPrimaryFirmwareFile();
-		status = downloader.doLoad(std::span<uint8_t>(buffer), idChPair.first, idChPair.second, recover, 0, false);
+		status = downloader.doLoad(std::span<uint8_t>(buffer), idChPair.first, idChPair.second, recover,
+								   0, false);
 
 		if (status != MD80Downloader::Status::OK)
 			logger->error("Status: {}", static_cast<uint8_t>(status));
 	}
 
-	auto updateOk = std::count_if(ids.begin(), ids.end(),
-								  [](const auto& md80)
-								  { return md80.second == MD80Downloader::Status::OK; });
+	auto updateOk = std::count_if(ids.begin(), ids.end(), [](const auto& md80) {
+		return md80.second == MD80Downloader::Status::OK;
+	});
 
 	logger->info("Update successful for {} drive(s)", updateOk);
 
@@ -173,7 +167,8 @@ bool Mdtool::updateMd80(std::string& filePath, uint32_t id, bool recover, bool a
 
 bool Mdtool::updateBootloader(std::string& filePath, uint32_t id, bool recover)
 {
-	logger->warn("You're about to update the MD80 bootloader. Ensure proper power supply. Disconnecting the power mid-update can brick the MD80! Please type \"iamaware\" to continue:");
+	logger->warn("You're about to update the MD80 bootloader. Ensure proper power supply. Disconnecting "
+				 "the power mid-update can brick the MD80! Please type \"iamaware\" to continue:");
 
 	std::string safetyCode;
 	std::cin >> safetyCode;
@@ -193,13 +188,15 @@ bool Mdtool::updateBootloader(std::string& filePath, uint32_t id, bool recover)
 	}
 	else if (status != BinaryParser::Status::OK)
 	{
-		logger->error("Error while parsing firmware file! Error code: {}", static_cast<std::underlying_type<BinaryParser::Status>::type>(status));
+		logger->error("Error while parsing firmware file! Error code: {}",
+					  static_cast<std::underlying_type<BinaryParser::Status>::type>(status));
 		return false;
 	}
 
 	if (BinaryParser::getFirmwareFileType() != BinaryParser::Type::BOOT)
 	{
-		logger->error("Wrong file type! Please make sure the file is intended for MD80 controller bootloader.");
+		logger->error(
+			"Wrong file type! Please make sure the file is intended for MD80 controller bootloader.");
 		return false;
 	}
 
@@ -208,7 +205,8 @@ bool Mdtool::updateBootloader(std::string& filePath, uint32_t id, bool recover)
 
 	logger->info("Preparing to update the secondary bootloader of drive ID {}", id);
 	auto buffer = BinaryParser::getSecondaryFirmwareFile();
-	auto updateStatus = downloader.doLoad(std::span<uint8_t>(buffer), id, 0, recover, secondaryBootloaderAddress, false);
+	auto updateStatus =
+		downloader.doLoad(std::span<uint8_t>(buffer), id, 0, recover, secondaryBootloaderAddress, false);
 
 	if (updateStatus != MD80Downloader::Status::OK)
 	{
@@ -218,7 +216,8 @@ bool Mdtool::updateBootloader(std::string& filePath, uint32_t id, bool recover)
 
 	logger->info("Preparing to update the primary bootloader of drive ID {}", id);
 	buffer = BinaryParser::getPrimaryFirmwareFile();
-	updateStatus = downloader.doLoad(std::span<uint8_t>(buffer), id, 0, recover, primaryBootloaderAddress, true);
+	updateStatus =
+		downloader.doLoad(std::span<uint8_t>(buffer), id, 0, recover, primaryBootloaderAddress, true);
 
 	if (updateStatus != MD80Downloader::Status::OK)
 	{
@@ -226,7 +225,8 @@ bool Mdtool::updateBootloader(std::string& filePath, uint32_t id, bool recover)
 		return false;
 	}
 	else
-		logger->info("Bootloader update successful! Now please update MD80 firmware using \"update_md80\" command.");
+		logger->info("Bootloader update successful! Now please update MD80 firmware using "
+					 "\"update_md80\" command.");
 
 	return true;
 }
@@ -242,13 +242,15 @@ bool Mdtool::updateCANdle(std::string& filePath, bool recover)
 	}
 	else if (status != BinaryParser::Status::OK)
 	{
-		logger->error("Error while parsing firmware file! Error code: {}", static_cast<std::underlying_type<BinaryParser::Status>::type>(status));
+		logger->error("Error while parsing firmware file! Error code: {}",
+					  static_cast<std::underlying_type<BinaryParser::Status>::type>(status));
 		return false;
 	}
 
 	if (BinaryParser::getFirmwareFileType() != BinaryParser::Type::CANDLE)
 	{
-		logger->error("Wrong file type! Please make sure the file is intended for CANdle communication dongle.");
+		logger->error(
+			"Wrong file type! Please make sure the file is intended for CANdle communication dongle.");
 		return false;
 	}
 
@@ -285,8 +287,7 @@ bool Mdtool::readSDO(uint32_t id, uint16_t index, uint8_t subindex)
 	auto& value = maybeEntry.value()->value;
 	value = candle->canopenStack->getTypeBasedOnTag(maybeEntry.value()->dataType);
 
-	auto lambdaFunc = [&](auto& arg)
-	{
+	auto lambdaFunc = [&](auto& arg) {
 		if (!candle->readSDO(id, index, subindex, arg))
 			return false;
 
@@ -302,8 +303,7 @@ bool Mdtool::writeSDO(uint32_t id, uint16_t index, uint8_t subindex, const IODPa
 	if (!candle->addMd80(id))
 		return false;
 
-	auto lambdaFunc = [&](auto& arg) -> bool
-	{
+	auto lambdaFunc = [&](auto& arg) -> bool {
 		if (!candle->writeSDO(id, index, subindex, std::move(arg)))
 			return false;
 
@@ -319,7 +319,8 @@ bool Mdtool::calibrate(uint32_t id)
 	if (!candle->addMd80(id))
 		return false;
 
-	if (!candle->enterOperational(id) || !candle->setModeOfOperation(id, Candle::ModesOfOperation::SERVICE))
+	if (!candle->enterOperational(id) ||
+		!candle->setModeOfOperation(id, Candle::ModesOfOperation::SERVICE))
 		return false;
 
 	bool inProgress = true;
@@ -340,7 +341,8 @@ bool Mdtool::calibrateOutput(uint32_t id)
 	if (!candle->addMd80(id))
 		return false;
 
-	if (!candle->enterOperational(id) || !candle->setModeOfOperation(id, Candle::ModesOfOperation::SERVICE))
+	if (!candle->enterOperational(id) ||
+		!candle->setModeOfOperation(id, Candle::ModesOfOperation::SERVICE))
 		return false;
 
 	bool inProgress = true;
@@ -361,7 +363,8 @@ bool Mdtool::home(uint32_t id)
 	if (!candle->addMd80(id))
 		return false;
 
-	if (!candle->enterOperational(id) || !candle->setModeOfOperation(id, Candle::ModesOfOperation::SERVICE))
+	if (!candle->enterOperational(id) ||
+		!candle->setModeOfOperation(id, Candle::ModesOfOperation::SERVICE))
 		return false;
 
 	bool inProgress = true;
@@ -387,7 +390,8 @@ bool Mdtool::save(uint32_t id, bool all)
 
 		for (auto& id : drives)
 		{
-			auto result = candle->addMd80(id) && candle->writeSDO(id, 0x1010, 0x01, static_cast<uint32_t>(0x65766173));
+			auto result = candle->addMd80(id) &&
+						  candle->writeSDO(id, 0x1010, 0x01, static_cast<uint32_t>(0x65766173));
 			if (result)
 				logger->info("ID{} - success", std::to_string(id));
 			else
@@ -405,8 +409,7 @@ bool Mdtool::status(uint32_t id)
 	if (!candle->addMd80(id))
 		return false;
 
-	auto printErrors = [&](uint32_t status, errorMapType map)
-	{
+	auto printErrors = [&](uint32_t status, errorMapType map) {
 		for (auto& [name, mask] : map)
 		{
 			if (status & mask)
@@ -419,16 +422,17 @@ bool Mdtool::status(uint32_t id)
 		}
 	};
 
-	std::array<std::pair<std::string, errorMapType>, 10> errorMapList = {{{"main encoder errors", encoderErrorList},
-																		  {"output encoder errors", encoderErrorList},
-																		  {"calibration errors", calibrationErrorList},
-																		  {"bridge errors", bridgeErrorList},
-																		  {"hardware errors", hardwareErrorList},
-																		  {"homing errors", homingErrorList},
-																		  {"motion errors", motionErrorList},
-																		  {"communication errors", communicationErrorList},
-																		  {"persistent storage read errors", persistentStorageErrorList},
-																		  {"persistent storage write errors", persistentStorageErrorList}}};
+	std::array<std::pair<std::string, errorMapType>, 10> errorMapList = {
+		{{"main encoder errors", encoderErrorList},
+		 {"output encoder errors", encoderErrorList},
+		 {"calibration errors", calibrationErrorList},
+		 {"bridge errors", bridgeErrorList},
+		 {"hardware errors", hardwareErrorList},
+		 {"homing errors", homingErrorList},
+		 {"motion errors", motionErrorList},
+		 {"communication errors", communicationErrorList},
+		 {"persistent storage read errors", persistentStorageErrorList},
+		 {"persistent storage write errors", persistentStorageErrorList}}};
 
 	for (uint32_t i = 0; i < errorMapList.size(); i++)
 	{
@@ -455,8 +459,7 @@ bool Mdtool::status(uint32_t id)
 
 bool Mdtool::changeId(uint32_t id, uint32_t newId)
 {
-	return candle->addMd80(id) &&
-		   candle->writeSDO(id, 0x2000, 0x0A, newId) &&
+	return candle->addMd80(id) && candle->writeSDO(id, 0x2000, 0x0A, newId) &&
 		   candle->writeSDO(id, 0x1010, 0x01, static_cast<uint32_t>(0x65766173));
 }
 
@@ -485,14 +488,12 @@ bool Mdtool::changeBaud(uint32_t id, uint32_t newBaud, bool all)
 
 bool Mdtool::clearError(uint32_t id)
 {
-	return candle->addMd80(id) &&
-		   candle->writeSDO(id, 0x2003, 0x0B, true);
+	return candle->addMd80(id) && candle->writeSDO(id, 0x2003, 0x0B, true);
 }
 
 bool Mdtool::clearWarning(uint32_t id)
 {
-	return candle->addMd80(id) &&
-		   candle->writeSDO(id, 0x2003, 0x0C, true);
+	return candle->addMd80(id) && candle->writeSDO(id, 0x2003, 0x0C, true);
 }
 /* TODO: refactor when OD read situation is clear */
 bool Mdtool::setupInfo(uint32_t id)
@@ -516,8 +517,7 @@ bool Mdtool::setupInfo(uint32_t id)
 
 			auto value = candle->canopenStack->getTypeBasedOnTag(subentry->dataType);
 
-			auto lambdaFunc = [&](auto& arg)
-			{
+			auto lambdaFunc = [&](auto& arg) {
 				if (!candle->readSDO(id, index, subindex, arg))
 					return false;
 
@@ -533,15 +533,9 @@ bool Mdtool::setupInfo(uint32_t id)
 	return true;
 }
 
-bool Mdtool::setZero(uint32_t id)
-{
-	return candle->addMd80(id) && candle->setZeroPosition(id);
-}
+bool Mdtool::setZero(uint32_t id) { return candle->addMd80(id) && candle->setZeroPosition(id); }
 
-bool Mdtool::reset(uint32_t id)
-{
-	return candle->addMd80(id) && candle->reset(id);
-}
+bool Mdtool::reset(uint32_t id) { return candle->addMd80(id) && candle->reset(id); }
 
 bool Mdtool::setupMotor(uint32_t id, const std::string& filePath, bool all)
 {
@@ -582,8 +576,7 @@ bool Mdtool::setupMotor(uint32_t id, const std::string& filePath, bool all)
 
 		for (auto& [index, subindex] : ODentries.value())
 		{
-			auto lambdaFunc = [&](auto& arg) -> bool
-			{
+			auto lambdaFunc = [&](auto& arg) -> bool {
 				if (!candle->writeSDO(id, index, subindex, std::move(arg)))
 					return false;
 
@@ -607,7 +600,8 @@ bool Mdtool::setupMotor(uint32_t id, const std::string& filePath, bool all)
 	return state;
 }
 
-bool Mdtool::move(uint32_t id, bool relative, float targetPosition, float profileVelocity, float profileAcceleration)
+bool Mdtool::move(uint32_t id, bool relative, float targetPosition, float profileVelocity,
+				  float profileAcceleration)
 {
 	if (!candle->addMd80(id))
 		return false;

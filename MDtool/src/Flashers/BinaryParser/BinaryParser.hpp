@@ -1,17 +1,15 @@
 #ifndef BINARY_PARSER_HPP
 #define BINARY_PARSER_HPP
 
-#include <openssl/evp.h>
-
-#include <fstream>
 #include <string>
 #include <vector>
 
+#include "Checksum.hpp"
 #include "ini.h"
 
 class BinaryParser
 {
-   public:
+  public:
 	enum class Type : uint8_t
 	{
 		NONE = 0,
@@ -28,7 +26,7 @@ class BinaryParser
 		ERROR_CHECKSUM = 3,
 	};
 
-   public:
+  public:
 	static Status processFile(std::string filePath)
 	{
 		mINI::INIFile file(filePath);
@@ -54,28 +52,20 @@ class BinaryParser
 		else
 			return Status::ERROR_TAG;
 
-		if (firmwareEntry1.status == Status::ERROR_CHECKSUM || firmwareEntry2.status == Status::ERROR_CHECKSUM)
+		if (firmwareEntry1.status == Status::ERROR_CHECKSUM ||
+			firmwareEntry2.status == Status::ERROR_CHECKSUM)
 			return Status::ERROR_CHECKSUM;
 
 		return Status::OK;
 	}
 
-	static std::vector<uint8_t> getPrimaryFirmwareFile()
-	{
-		return firmwareEntry1.binary;
-	}
+	static std::vector<uint8_t> getPrimaryFirmwareFile() { return firmwareEntry1.binary; }
 
-	static std::vector<uint8_t> getSecondaryFirmwareFile()
-	{
-		return firmwareEntry2.binary;
-	}
+	static std::vector<uint8_t> getSecondaryFirmwareFile() { return firmwareEntry2.binary; }
 
-	static BinaryParser::Type getFirmwareFileType()
-	{
-		return fileType;
-	}
+	static BinaryParser::Type getFirmwareFileType() { return fileType; }
 
-   private:
+  private:
 	struct FirmwareEntry
 	{
 		std::string tag;
@@ -90,7 +80,7 @@ class BinaryParser
 	inline static FirmwareEntry firmwareEntry2;
 	inline static Type fileType = Type::MD80;
 
-   private:
+  private:
 	static FirmwareEntry parseFirmwareEntry(mINI::INIStructure& ini, std::string&& header)
 	{
 		FirmwareEntry temp{};
@@ -108,30 +98,18 @@ class BinaryParser
 
 	static bool validateChecksum(std::vector<uint8_t>& data, std::string& expectedChecksum)
 	{
-		constexpr size_t sha256DigestLength = 32;
-		EVP_MD_CTX* mdctx = EVP_MD_CTX_new();
-
-		if (mdctx == NULL)
-			return false;
-
-		EVP_DigestInit(mdctx, EVP_sha256());
-		EVP_DigestUpdate(mdctx, data.data(), data.size());
-		uint32_t calculateChecksumLength;
-		uint8_t calculateChecksum[sha256DigestLength];
-		if (EVP_DigestFinal(mdctx, calculateChecksum, &calculateChecksumLength) != 1)
-		{
-			EVP_MD_CTX_free(mdctx);
-			return false;
-		}
+		const unsigned int sha256len = 32;
+		Checksum::SHA256 sha;
+		sha.update(data.data(), data.size());
+		Checksum::BYTE hash[32] = {};
+		sha.final(hash);
 
 		auto expectedChecksumBytes = hexStringToBytes(expectedChecksum);
-
-		for (size_t i = 0; i < sha256DigestLength; i++)
+		for (size_t i = 0; i < sha256len; i++)
 		{
-			if (expectedChecksumBytes[i] != calculateChecksum[i])
+			if (expectedChecksumBytes[i] != hash[i])
 				return false;
 		}
-
 		return true;
 	}
 

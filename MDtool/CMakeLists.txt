@@ -19,6 +19,7 @@ set(PROJECT_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/mdtool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Flashers/MD80Downloader/MD80Downloader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Flashers/CANdleDownloader/CANdleDownloader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Flashers/Checksum/Sha256.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Flashers/Checksum/Checksum.cpp)
 
 add_executable(${EXECUTABLE} ${PROJECT_SOURCES})
