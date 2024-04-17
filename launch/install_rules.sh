@@ -8,4 +8,5 @@ if [[ "$EUID" != 0 ]]; then
     fi
 fi
 
-sudo cp ./../CANdle_lib/launch/99-candle.rules /etc/udev/rules.d/
+dir="$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE}")")")"
+sudo cp $dir/CANdle_lib/launch/99-candle.rules /etc/udev/rules.d/
