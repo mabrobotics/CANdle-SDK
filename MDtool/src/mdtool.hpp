@@ -25,6 +25,7 @@ class Mdtool
 	bool calibrateOutput(uint32_t id);
 	bool home(uint32_t id);
 	bool save(uint32_t id, bool all = false);
+	bool revert(uint32_t id);
 	bool status(uint32_t id);
 	bool changeId(uint32_t id, uint32_t newId);
 	bool changeBaud(uint32_t id, uint32_t newBaud, bool all);

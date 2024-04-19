@@ -403,6 +403,10 @@ bool Mdtool::save(uint32_t id, bool all)
 
 	return candle->addMd80(id) && candle->writeSDO(id, 0x1010, 0x01, static_cast<uint32_t>(0x65766173));
 }
+bool Mdtool::revert(uint32_t id)
+{
+    return candle->addMd80(id) && candle->writeSDO(id, 0x2003, 0x0A, 1);
+}
 
 bool Mdtool::status(uint32_t id)
 {
