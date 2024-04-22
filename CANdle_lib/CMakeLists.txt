@@ -6,12 +6,6 @@ set(CANDLE_LIB 0.0.1)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
-add_compile_options(-Wall
-    -Wextra
-    -Wpedantic
-    -Wno-unused-parameter
-    -Wno-missing-field-initializers)
-
 if(UNIX)
     set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
     include(${CMAKE_MODULE_PATH}/Findlibusb.cmake)
