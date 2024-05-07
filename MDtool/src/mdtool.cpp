@@ -7,7 +7,6 @@
 #include "CANdleDownloader.hpp"
 #include "ConfigParser/ConfigParser.hpp"
 #include "MD80Downloader.hpp"
-#include "spdlog/fmt/ostr.h"
 
 namespace fmt
 {
@@ -60,12 +59,12 @@ bool Mdtool::ping(bool checkChannels)
 		auto ids = candle->ping();
 
 		if (ids.size() > 0)
-			logger->info("Found drives: ");
+			logger->info("Found {} {}. ", ids.size(), ids.size() == 1 ? "drive" : "drives");
 		else
 			logger->warn("No drives found!");
 
 		for (auto& id : ids)
-			logger->info(std::to_string(id));
+			logger->info("ID: " + std::to_string(id));
 
 		return true;
 	}
@@ -73,13 +72,14 @@ bool Mdtool::ping(bool checkChannels)
 	auto idsAndChannels = candle->pingWithChannel();
 
 	if (idsAndChannels.size() > 0)
-		logger->info("Found drives!");
+		logger->info("Found {} {}. ", idsAndChannels.size(),
+					 idsAndChannels.size() == 1 ? "drive" : "drives");
 	else
 		logger->warn("No drives found!");
 
 	for (auto& [id, ch] : idsAndChannels)
 	{
-		logger->info("{} on channel {}", id, ch);
+		logger->info("ID: {} on channel {}", id, ch);
 	}
 
 	return true;
@@ -88,7 +88,7 @@ bool Mdtool::ping(bool checkChannels)
 bool Mdtool::updateMd80(std::string& filePath, uint32_t id, bool recover, bool all)
 {
 	auto status = BinaryParser::processFile(filePath);
-    
+
 	if (status == BinaryParser::Status::ERROR_FILE)
 	{
 		logger->error("Error opening file: {}", filePath);
@@ -382,6 +382,8 @@ bool Mdtool::home(uint32_t id)
 
 bool Mdtool::save(uint32_t id, bool all)
 {
+	uint16_t odIndex = 0x1010;
+	uint8_t odSubIndex = 0x01;
 	if (all)
 	{
 		auto drives = candle->ping();
@@ -390,8 +392,9 @@ bool Mdtool::save(uint32_t id, bool all)
 
 		for (auto& id : drives)
 		{
-			auto result = candle->addMd80(id) &&
-						  candle->writeSDO(id, 0x1010, 0x01, static_cast<uint32_t>(0x65766173));
+			bool result = candle->addMd80(id) &&
+						  candle->writeSDO(id, odIndex, odSubIndex, static_cast<uint32_t>(0x65766173));
+
 			if (result)
 				logger->info("ID{} - success", std::to_string(id));
 			else
@@ -400,12 +403,26 @@ bool Mdtool::save(uint32_t id, bool all)
 
 		return true;
 	}
-
-	return candle->addMd80(id) && candle->writeSDO(id, 0x1010, 0x01, static_cast<uint32_t>(0x65766173));
+	bool result = candle->addMd80(id);
+	result &= candle->writeSDO(id, odIndex, odSubIndex, static_cast<uint32_t>(0x65766173));
+	return result;
 }
 bool Mdtool::revert(uint32_t id)
 {
-    return candle->addMd80(id) && candle->writeSDO(id, 0x2003, 0x0A, 1);
+	logger->warn("You're about to revert MD80 to factory setting, current setup and configuration"
+				 "data will be overwriten. Setting new config and performing calibration will "
+				 "be required. Are you sure? [y/n]");
+
+	std::string safetyCode;
+	std::cin >> safetyCode;
+
+	if (safetyCode == "y" || safetyCode == "Y" || safetyCode == "Yes" || safetyCode == "YES")
+	{
+		if (!candle->addMd80(id))
+			return false;
+		return candle->writeSDO(id, 0x2003, 0x0A, true);
+	}
+	return false;
 }
 
 bool Mdtool::status(uint32_t id)

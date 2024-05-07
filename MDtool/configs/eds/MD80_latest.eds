@@ -4,19 +4,19 @@ FileVersion=1
 FileRevision=1
 LastEDS=
 EDSVersion=4.0
-Description=MD80 motor controller
-CreationTime=12:00PM
+Description=MD motor controller
+CreationTime=4:00AM
 CreationDate=11-23-2020
 CreatedBy=Piotr Wasilewski
-ModificationTime=11:33AM
-ModificationDate=02-05-2024
-ModifiedBy=Piotr Wasilewski
+ModificationTime=1:37AM
+ModificationDate=04-30-2024
+ModifiedBy=Jakub Matyszczak
 
 [DeviceInfo]
 VendorName=MAB ROBOTICS
 VendorNumber=1
-ProductName=MD80
-ProductNumber=1
+ProductName=MD
+ProductNumber=80
 RevisionNumber=0
 BaudRate_10=1
 BaudRate_20=1
@@ -35,6 +35,7 @@ GroupMessaging=0
 NrOfRXPDO=4
 NrOfTXPDO=4
 LSS_Supported=1
+NG_Slave=0
 
 [DummyUsage]
 Dummy0001=0
@@ -1493,7 +1494,7 @@ PDOMapping=0
 ParameterName=TPDO mapping parameter
 ObjectType=0x9
 ;StorageLocation=PERSIST_COMM
-SubNumber=0x3
+SubNumber=0x9
 
 [1A00sub0]
 ParameterName=Number of mapped objects
@@ -1522,11 +1523,65 @@ AccessType=rw
 DefaultValue=0x0
 PDOMapping=0
 
+[1A00sub3]
+ParameterName=Mapped object 3
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x0
+PDOMapping=0
+
+[1A00sub4]
+ParameterName=Mapped object 4
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x0
+PDOMapping=0
+
+[1A00sub5]
+ParameterName=Mapped object 5
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x0
+PDOMapping=0
+
+[1A00sub6]
+ParameterName=Mapped object 6
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x0
+PDOMapping=0
+
+[1A00sub7]
+ParameterName=Mapped object 7
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x0
+PDOMapping=0
+
+[1A00sub8]
+ParameterName=Mapped object 8
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x0
+PDOMapping=0
+
 [1A01]
 ParameterName=TPDO mapping parameter
 ObjectType=0x9
 ;StorageLocation=PERSIST_COMM
-SubNumber=0x3
+SubNumber=0x9
 
 [1A01sub0]
 ParameterName=Number of mapped objects
@@ -1534,7 +1589,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0005
 AccessType=rw
-DefaultValue=0x02
+DefaultValue=0x08
 PDOMapping=0
 
 [1A01sub1]
@@ -1555,11 +1610,65 @@ AccessType=rw
 DefaultValue=0x60640020
 PDOMapping=0
 
+[1A01sub3]
+ParameterName=Mapped object 3
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[1A01sub4]
+ParameterName=Mapped object 4
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[1A01sub5]
+ParameterName=Mapped object 5
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[1A01sub6]
+ParameterName=Mapped object 6
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[1A01sub7]
+ParameterName=Mapped object 7
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[1A01sub8]
+ParameterName=Mapped object 8
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
 [1A02]
 ParameterName=TPDO mapping parameter
 ObjectType=0x9
 ;StorageLocation=PERSIST_COMM
-SubNumber=0x3
+SubNumber=0x9
 
 [1A02sub0]
 ParameterName=Number of mapped objects
@@ -1567,7 +1676,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0005
 AccessType=rw
-DefaultValue=2
+DefaultValue=0x08
 PDOMapping=0
 
 [1A02sub1]
@@ -1588,11 +1697,65 @@ AccessType=rw
 DefaultValue=0x606c0020
 PDOMapping=0
 
+[1A02sub3]
+ParameterName=Mapped object 3
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[1A02sub4]
+ParameterName=Mapped object 4
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[1A02sub5]
+ParameterName=Mapped object 5
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[1A02sub6]
+ParameterName=Mapped object 6
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[1A02sub7]
+ParameterName=Mapped object 7
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[1A02sub8]
+ParameterName=Mapped object 8
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
 [1A03]
 ParameterName=TPDO mapping parameter
 ObjectType=0x9
 ;StorageLocation=PERSIST_COMM
-SubNumber=0x3
+SubNumber=0x9
 
 [1A03sub0]
 ParameterName=Number of mapped objects
@@ -1600,7 +1763,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0005
 AccessType=rw
-DefaultValue=2
+DefaultValue=0x08
 PDOMapping=0
 
 [1A03sub1]
@@ -1619,6 +1782,60 @@ ObjectType=0x7
 DataType=0x0007
 AccessType=rw
 DefaultValue=0x60770010
+PDOMapping=0
+
+[1A03sub3]
+ParameterName=Mapped object 3
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[1A03sub4]
+ParameterName=Mapped object 4
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[1A03sub5]
+ParameterName=Mapped object 5
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[1A03sub6]
+ParameterName=Mapped object 6
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[1A03sub7]
+ParameterName=Mapped object 7
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[1A03sub8]
+ParameterName=Mapped object 8
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
 PDOMapping=0
 
 [6040]
@@ -1898,7 +2115,7 @@ DefaultValue=647
 PDOMapping=0
 
 [ManufacturerObjects]
-SupportedObjects=14
+SupportedObjects=15
 1=0x2000
 2=0x2001
 3=0x2002
@@ -1913,12 +2130,13 @@ SupportedObjects=14
 12=0x200B
 13=0x200C
 14=0x200D
+15=0x200E
 
 [2000]
 ParameterName=Motor Settings
 ObjectType=0x9
 ;StorageLocation=RAM
-SubNumber=0xE
+SubNumber=0xF
 
 [2000sub0]
 ParameterName=Highest sub-index supported
@@ -1926,7 +2144,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0005
 AccessType=ro
-DefaultValue=0x0D
+DefaultValue=0x0E
 PDOMapping=0
 
 [2000sub1]
@@ -1935,6 +2153,8 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
 AccessType=rw
+HighLimit=80
+LowLimit=0
 DefaultValue=0
 PDOMapping=0
 
@@ -1944,6 +2164,8 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0008
 AccessType=rw
+HighLimit=1.0
+LowLimit=0
 DefaultValue=0
 PDOMapping=0
 
@@ -1971,6 +2193,8 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0006
 AccessType=rw
+HighLimit=2500
+LowLimit=50
 DefaultValue=0
 PDOMapping=0
 
@@ -1980,7 +2204,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0009
 AccessType=rw
-DefaultValue=MD80
+DefaultValue=NONE
 PDOMapping=0
 
 [2000sub7]
@@ -1989,6 +2213,8 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0005
 AccessType=rw
+HighLimit=140
+LowLimit=40
 DefaultValue=80
 PDOMapping=0
 
@@ -1998,6 +2224,8 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0008
 AccessType=rw
+HighLimit=200
+LowLimit=0.005
 DefaultValue=1
 PDOMapping=0
 
@@ -2016,6 +2244,8 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
 AccessType=rw
+HighLimit=30
+LowLimit=1
 DefaultValue=1
 PDOMapping=0
 
@@ -2034,6 +2264,8 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0006
 AccessType=rw
+HighLimit=2000
+LowLimit=0
 DefaultValue=1
 PDOMapping=0
 
@@ -2044,6 +2276,15 @@ ObjectType=0x7
 DataType=0x0001
 AccessType=rw
 DefaultValue=false
+PDOMapping=0
+
+[2000subE]
+ParameterName=KV
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
 PDOMapping=0
 
 [2001]
@@ -2068,7 +2309,7 @@ ObjectType=0x7
 DataType=0x0008
 AccessType=rw
 DefaultValue=0
-PDOMapping=1
+PDOMapping=0
 
 [2001sub2]
 ParameterName=Ki
@@ -2077,7 +2318,7 @@ ObjectType=0x7
 DataType=0x0008
 AccessType=rw
 DefaultValue=0
-PDOMapping=1
+PDOMapping=0
 
 [2001sub3]
 ParameterName=Kd
@@ -2086,7 +2327,7 @@ ObjectType=0x7
 DataType=0x0008
 AccessType=rw
 DefaultValue=0
-PDOMapping=1
+PDOMapping=0
 
 [2001sub4]
 ParameterName=Integral Limit
@@ -2119,7 +2360,7 @@ ObjectType=0x7
 DataType=0x0008
 AccessType=rw
 DefaultValue=0
-PDOMapping=1
+PDOMapping=0
 
 [2002sub2]
 ParameterName=Ki
@@ -2128,7 +2369,7 @@ ObjectType=0x7
 DataType=0x0008
 AccessType=rw
 DefaultValue=0
-PDOMapping=1
+PDOMapping=0
 
 [2002sub3]
 ParameterName=Kd
@@ -2137,7 +2378,7 @@ ObjectType=0x7
 DataType=0x0008
 AccessType=rw
 DefaultValue=0
-PDOMapping=1
+PDOMapping=0
 
 [2002sub4]
 ParameterName=Integral Limit
@@ -2152,7 +2393,7 @@ PDOMapping=0
 ParameterName=System Command
 ObjectType=0x9
 ;StorageLocation=RAM
-SubNumber=0xE
+SubNumber=0x10
 
 [2003sub0]
 ParameterName=Highest sub-index supported
@@ -2160,7 +2401,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0005
 AccessType=ro
-DefaultValue=0x0D
+DefaultValue=0x0F
 PDOMapping=0
 
 [2003sub1]
@@ -2280,11 +2521,29 @@ AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
+[2003subE]
+ParameterName=Run Homing
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0001
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[2003subF]
+ParameterName=Procedure
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
 [2004]
 ParameterName=System Status
 ObjectType=0x9
 ;StorageLocation=RAM
-SubNumber=0x9
+SubNumber=0xD
 
 [2004sub0]
 ParameterName=Highest sub-index supported
@@ -2292,7 +2551,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0005
 AccessType=ro
-DefaultValue=0x08
+DefaultValue=0x0C
 PDOMapping=0
 
 [2004sub1]
@@ -2367,6 +2626,42 @@ AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
+[2004sub9]
+ParameterName=Persistent Storage Read Status
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[2004subA]
+ParameterName=Persistent Storage Write Status
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[2004subB]
+ParameterName=Last Setup Error code
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[2004subC]
+ParameterName=QuickStatus
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=1
+
 [2005]
 ParameterName=Output Encoder
 ObjectType=0x9
@@ -2423,7 +2718,7 @@ ParameterName=Velocity
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0008
-AccessType=rwr
+AccessType=rww
 DefaultValue=0
 PDOMapping=1
 
@@ -2464,7 +2759,7 @@ PDOMapping=1
 ParameterName=Limits
 ObjectType=0x9
 ;StorageLocation=RAM
-SubNumber=0x7
+SubNumber=0x8
 
 [2007sub0]
 ParameterName=Highest sub-index supported
@@ -2472,7 +2767,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0005
 AccessType=ro
-DefaultValue=0x06
+DefaultValue=0x07
 PDOMapping=0
 
 [2007sub1]
@@ -2522,6 +2817,15 @@ PDOMapping=0
 
 [2007sub6]
 ParameterName=Min Position
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[2007sub7]
+ParameterName=Max Current
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0008
@@ -2812,10 +3116,10 @@ DefaultValue=0
 PDOMapping=1
 
 [200D]
-ParameterName=Brake
+ParameterName=Homing
 ObjectType=0x9
 ;StorageLocation=RAM
-SubNumber=0x2
+SubNumber=0x5
 
 [200Dsub0]
 ParameterName=Highest sub-index supported
@@ -2823,15 +3127,102 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0005
 AccessType=ro
-DefaultValue=0x01
+DefaultValue=0x04
 PDOMapping=0
 
 [200Dsub1]
-ParameterName=Brake Mode
+ParameterName=Mode
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0005
 AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[200Dsub2]
+ParameterName=Max Travel
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[200Dsub3]
+ParameterName=Max Velocity
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[200Dsub4]
+ParameterName=Max Torque
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[200E]
+ParameterName=Hardware Info
+ObjectType=0x9
+;StorageLocation=RAM
+SubNumber=0x6
+
+[200Esub0]
+ParameterName=Highest sub-index supported
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x05
+PDOMapping=0
+
+[200Esub1]
+ParameterName=Chip ID
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0009
+AccessType=ro
+DefaultValue=000000000000000000000000
+PDOMapping=0
+
+[200Esub2]
+ParameterName=Package Type
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=ro
+DefaultValue=0
+PDOMapping=0
+
+[200Esub3]
+ParameterName=Flash Size
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=ro
+DefaultValue=0
+PDOMapping=0
+
+[200Esub4]
+ParameterName=UUID
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0009
+AccessType=ro
+DefaultValue=000000000000000000000000
+PDOMapping=0
+
+[200Esub5]
+ParameterName=Resistor Version
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0005
+AccessType=ro
 DefaultValue=0
 PDOMapping=0
 

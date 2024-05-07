@@ -32,8 +32,7 @@ int main(int argc, char** argv)
 	auto* changeID = app.add_subcommand("changeID", "Use to change ID");
 	auto* changeBaud = app.add_subcommand("changeBaud", "Use to change baudrate");
 	auto* setupMotor = app.add_subcommand("setup", "Use to setup a motor using the selected config file");
-	
-    auto* revert = app.add_subcommand("revert", "Use to revert controller to factory settings parameters");
+    app.add_subcommand("revert", "Use to revert controller to factory settings parameters");
 
 	bool checkChannels = false;
 	ping->add_flag("-c, --channel", checkChannels, "Use to see which IDs are connected to which CANdle channels");
@@ -210,7 +209,7 @@ int main(int argc, char** argv)
 		success = mdtool.setupMotor(id, filePath, all);
 	else if (app.got_subcommand("move"))
 		success = mdtool.move(id, !absolute, targetPosition, profileVelocity, profileAcceleration);
-	else if (app.got_subcommand("blink"))
+	else if (app.got_subcommand("revert"))
 		success = mdtool.revert(id);
 
 	if (success)
