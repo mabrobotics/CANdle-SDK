@@ -34,31 +34,20 @@
  */
 class Candle
 {
-   public:
+  public:
 	/**
 	 * @brief An enum holding possible baudrate settings.
 	 *
-	 * These are single-value baudrate settings. The value is interpreted on the CANdle side to prescalers and bit quantas. It is possible to add custom settings in the future with the help of a more sophisticated can baudrate frame.
+	 * These are single-value baudrate settings. The value is interpreted on the CANdle side to
+	 * prescalers and bit quantas. It is possible to add custom settings in the future with the help of a
+	 * more sophisticated can baudrate frame.
 	 */
 	enum class Baud : uint32_t
 	{
-		BAUD_1M = 1,
-		BAUD_8M = 8,
-	};
-
-	/**
-	 * @brief An enum holding possible modes of operations of the MD80 controller. Some fields are CiA402 - compliant.
-	 *
-	 */
-	enum class ModesOfOperation : int8_t
-	{
-		IMPEDANCE = -3,
-		SERVICE = -2,
-		IDLE = 0,
-		PROFILE_POSITION = 1,
-		PROFILE_VELOCITY = 2,
-		CYCLIC_SYNC_POSITION = 8,
-		CYCLIC_SYNC_VELOCTIY = 9,
+		BAUD_1M = 1, /**< 1M arbitration is p = 1, t1 = 63, t2 = 16, sjw = 16, data is p = 2, t1 = 26, t2
+						= 13, sjw = 13 */
+		BAUD_8M = 8, /**< 8M arbitration is p = 1, t1 = 63, t2 = 16, sjw = 16, data is p = 1, t1 = 5, t2
+						= 4, sjw = 4 */
 	};
 
 	/**
@@ -92,7 +81,8 @@ class Candle
 	 *
 	 * Initializes the communication interface and launches receive and transmit threads.
 	 * @param baud baudrate setting of the MD80 controllers.
-	 * @param edsPath path to EDS file, named "MD80_DS402.eds". If left empty the default search path is the path from which the script is running.
+	 * @param edsPath path to EDS file, named "MD80_DS402.eds". If left empty the default search path is
+	 * the path from which the script is running.
 	 * @return true
 	 * @return false
 	 */
@@ -104,7 +94,8 @@ class Candle
 	 */
 	void deInit();
 	/**
-	 * @brief Set the state and duration between consecutive SYNC messages that trigger RXPDO responses from MD80
+	 * @brief Set the state and duration between consecutive SYNC messages that trigger RXPDO responses
+	 * from MD80
 	 *
 	 * @param state true to turn on, false to turn off.
 	 * @param intervalUs interval between frames in microseconds.
@@ -134,7 +125,8 @@ class Candle
 	/**
 	 * @brief Adds MD80 to an internal Candle MD80 list.
 	 *
-	 * This function created MD80 object internally. The MD80 object can be retrieved using the \ref getMd80() function.
+	 * This function created MD80 object internally. The MD80 object can be retrieved using the \ref
+	 * getMd80() function.
 	 * @param id
 	 * @return true
 	 * @return false
@@ -148,59 +140,6 @@ class Candle
 	 * @return std::shared_ptr<MD80>
 	 */
 	std::shared_ptr<MD80> getMd80(uint32_t id) const;
-	/**
-	 * @brief Enter operational mode on MD80. Movement is allowed only in operational mode.
-	 *
-	 * @param id
-	 * @return true
-	 * @return false
-	 */
-	bool enterOperational(uint32_t id);
-	/**
-	 * @brief Enter switch on disabled state. Movement is not allowed in this mode.
-	 *
-	 * @param id
-	 * @return true
-	 * @return false
-	 */
-	bool enterSwitchOnDisabled(uint32_t id);
-	/**
-	 * @brief Set mode of operation.
-	 *
-	 * @param id
-	 * @param mode \ref ModesOfOperation
-	 * @return true
-	 * @return false
-	 */
-	bool setModeOfOperation(uint32_t id, ModesOfOperation mode);
-	/**
-	 * @brief Set zero position on selected MD80.
-	 *
-	 * @param id
-	 * @return true
-	 * @return false
-	 */
-	bool setZeroPosition(uint32_t id);
-	/**
-	 * @brief Reset MD80 controller.
-	 *
-	 * @param id
-	 * @return true
-	 * @return false
-	 */
-	bool reset(uint32_t id);
-
-	/**
-	 * @brief Setup PDO objects
-	 *
-	 * This function can be used to setup the response and command frames structures. Always check if the total field length does not exceed the max frame length (1M baudrate max is 8 bytes, 8M baudrate is 64 bytes). RPDOs are sent before SYNC msg, TPDO are received after SYNC msg. SYNC must be turned on using \ref setSendSync().
-	 * @param id
-	 * @param pdoID ID of the RPDO (response) or TPDO (command) \ref CanopenStack::PDO
-	 * @param fields std::vector of std::pairs of index and subindex from the OD that are expected in the response or command
-	 * @return true
-	 * @return false
-	 */
-	bool setupPDO(uint32_t id, CanopenStack::PDO pdoID, const std::vector<std::pair<uint16_t, uint8_t>>& fields);
 
 	/**
 	 * @brief Used to write a specific field in OD, given the index, subindex, and value
@@ -213,8 +152,7 @@ class Candle
 	 * @return true
 	 * @return false
 	 */
-	template <typename T>
-	bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T& value)
+	template <typename T> bool writeSDO(uint32_t id, uint16_t index_, uint8_t subindex_, const T& value)
 	{
 		uint32_t errorCode = 0;
 		bool result = canopenStack->writeSDO(id, index_, subindex_, value, errorCode);
@@ -236,7 +174,8 @@ class Candle
 	 * @param index_ OD index.
 	 * @param subindex_ OD subindex.
 	 * @param value variable reference to which the read value will be written.
-	 * @param checkOD set to false if checking the type against the OD is not needed and the value should not be written to the MD80s OD, only returned using the value reference.
+	 * @param checkOD set to false if checking the type against the OD is not needed and the value should
+	 * not be written to the MD80s OD, only returned using the value reference.
 	 * @return true
 	 * @return false
 	 */
@@ -248,14 +187,14 @@ class Candle
 
 		if (errorCode)
 		{
-			logger->error("SDO read error (0x{:x}:0x{:x})! Error code: 0x{:x}", index_, subindex_, errorCode);
+			logger->error("SDO read error (0x{:x}:0x{:x})! Error code: 0x{:x}", index_, subindex_,
+						  errorCode);
 			return false;
 		}
 
 		return result;
 	}
-
-   private:
+  private:
 	/**
 	 * @brief Receive thread
 	 *
@@ -267,15 +206,16 @@ class Candle
 	 */
 	void transmitHandler();
 	/**
-	 * @brief Candle device status handler. Periodically checks internal Candle state and issues warnings if FIFO max fill levels exceed thresholds.
+	 * @brief Candle device status handler. Periodically checks internal Candle state and issues warnings
+	 * if FIFO max fill levels exceed thresholds.
 	 *
 	 */
 	void handleCandleDeviceStatus();
 
-   public:
-	std::unique_ptr<CanopenStack> canopenStack;
+  public:
+	std::shared_ptr<CanopenStack> canopenStack;
 
-   private:
+  private:
 	static constexpr uint8_t rxFifoWarningLevel = 50;
 	static constexpr uint8_t txFifoWarningLevel = 50;
 	static constexpr uint8_t rxFifoErrorLevel = 99;

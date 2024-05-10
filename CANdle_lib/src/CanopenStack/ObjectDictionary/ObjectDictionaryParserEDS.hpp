@@ -19,7 +19,7 @@
 #include "ini.h"
 
 /**
- * @brief This class implements IODParser
+ * @brief Implements IODParser for *.eds files
  *
  * If needed other parsers for different files can be implemented based on shared interface
  */
@@ -32,7 +32,7 @@ class ObjectDictionaryParserEDS : public IODParser
 	/**
 	 * @brief Parses EDS file and fills in the objectDictionary.
 	 *
-	 * The parsing process also intializes the std::variant with the correct type based on DataType fields from the EDS file. 
+	 * The parsing process also intializes the std::variant with the correct type based on DataType fields from the EDS file.
 	 * @param filePath file path to the EDS file.
 	 * @param objectDictionary reference to OD to be filled in based on EDS
 	 * @return true

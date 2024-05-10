@@ -20,14 +20,13 @@ int main(int argc, char** argv)
 	for (auto id : ids)
 	{
 		candle.addMd80(id);
-		candle.setupPDO(id, CanopenStack::PDO::TPDO1, {{0x2009, 0x01}, {0x2009, 0x03}});
-		candle.setupPDO(id, CanopenStack::PDO::RPDO1, {{0x2008, 0x09}, {0x2008, 0x0B}});
-		candle.setModeOfOperation(id, Candle::ModesOfOperation::IMPEDANCE);
-		candle.writeSDO(id, 0x2003, 0x05, true);
-		candle.writeSDO(id, 0x200C, 0x01, kp);
-		candle.writeSDO(id, 0x200C, 0x02, kd);
-		candle.setZeroPosition(id);
-		candle.enterOperational(id);
+		auto md80 = candle.getMd80(id);
+		md80->setupPDO(CanopenStack::PDO::TPDO1, {{0x2009, 0x01}, {0x2009, 0x03}});
+		md80->setupPDO(CanopenStack::PDO::RPDO1, {{0x2008, 0x09}, {0x2008, 0x0B}});
+		md80->setModeOfOperation(MD80::ModesOfOperation::IMPEDANCE);
+		md80->setImpedancePdGains(kp, kd);
+		md80->runRoutine(MD80::RoutineID::SET_ZERO, true);
+		md80->enterOperational();
 	}
 
 	auto md80_1 = candle.getMd80(ids[0]);

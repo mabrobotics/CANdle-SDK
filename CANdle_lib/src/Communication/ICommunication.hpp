@@ -7,12 +7,24 @@
 
 #include "BusHandler/IBusHandler.hpp"
 
+/**
+ * @brief Interface for communicating with CAN dongles
+ *
+ */
 class ICommunication
 {
    public:
 #pragma pack(push, 4)
+	/**
+	 * @brief CAN / CANFD frame structure
+	 *
+	 */
 	struct CANFrame
 	{
+		/**
+		 * @brief CAN / CANFD frame header structure
+		 *
+		 */
 		struct Header
 		{
 			uint16_t canId;
@@ -26,14 +38,22 @@ class ICommunication
 
 	enum CANChannel
 	{
-		CH0 = 0,
-		CH1 = 1,
-		CH2 = 2,
-		ALL = 255
+		CH0 = 0,  /**< Default channel 0 - only this channel can be used for MD80 bootloader recovery mode */
+		CH1 = 1,  /**< Channel 1 */
+		CH2 = 2,  /**< Channel 2 */
+		ALL = 255 /**< All channels simultaneously */
 	};
 
+	/**
+	 * @brief General CAN dongle status
+	 *
+	 */
 	struct Status
 	{
+		/**
+		 * @brief Communication FIFO statistics
+		 *
+		 */
 		struct Statistics
 		{
 			uint8_t averageTxFifoOccupancyPercent;
@@ -44,6 +64,10 @@ class ICommunication
 		uint32_t busStatus;
 	};
 
+	/**
+	 * @brief CAN dongle settings struct
+	 *
+	 */
 	struct Settings
 	{
 		uint32_t baudrate;

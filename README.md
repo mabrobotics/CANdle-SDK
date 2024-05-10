@@ -1,34 +1,36 @@
+# CANdle-SDK
 
-# Building
+CANdle-SDK is a multi-platform software development kit (SDK) for creating MD driver control scripts. 
 
-## Requirements
+## Building
+### Requirements
 - docker (optional - for building)
 
-## Linux (native)
+### Linux (native)
 ```
 ./launch/buildForLinux.sh
 ```
 
-## Linux (docker)
+### Linux (docker)
 ```
 sudo docker build ./launch/LinuxDocker/
 sudo docker build ./launch/runDockerForLinux.sh
 ```
 
-## Windows (cross-compile via docker)
+### Windows (cross-compile via docker)
 ```
 sudo docker build ./launch/WindowsDocker/
 ./launch/runDockerForWindows.sh
 ```
 
 
-# Running
+## Running
 
-## Windows
-### Requirements
+### Windows
+#### Requirements
 - Driver replacement via Zadig
 
-#### USB driver replacement
+##### USB driver replacement
     Download Zadig 2.8 or later [ADD LINK HERE]
     Options -> List all devices
     Select `MD USB-TO-CAN` from drop down menu

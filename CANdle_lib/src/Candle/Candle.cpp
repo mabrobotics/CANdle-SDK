@@ -10,6 +10,7 @@ const std::string dataDirPath = "/usr/local/share/";
 
 Candle::Candle() : syncPoint(3)
 {
+	/* TODO refactor */
 	std::string name = "candle_logger";
 	logger = spdlog::stdout_color_mt(name + std::to_string(candleNum++));
 	logger->set_pattern("[%^%l%$] %v");
@@ -62,7 +63,7 @@ bool Candle::init(Baud baud, std::string edsPath)
 	logger->debug("Hardware version: {}", interface->getHardwareVersion());
 	logger->debug("CANdle active CAN channels: {}", candleChannels);
 
-	canopenStack = std::make_unique<CanopenStack>(interface, logger);
+	canopenStack = std::make_shared<CanopenStack>(interface, logger);
 	receiveThread = std::thread(&Candle::receiveHandler, this);
 	transmitThread = std::thread(&Candle::transmitHandler, this);
 
@@ -94,6 +95,7 @@ std::vector<uint32_t> Candle::ping()
 	uint32_t deviceType = 0;
 	uint32_t errorCode = 0;
 
+	/* TODO define 0xff as all channels on CANdle */
 	for (size_t id = 1; id < 31; id++)
 		if (canopenStack->readSDO(id, 0x1000, 0x00, deviceType, errorCode, false, 0xff))
 			ids.push_back(id);
@@ -131,6 +133,7 @@ uint8_t Candle::getChannelBasedOnId(uint32_t id)
 	return 0;
 }
 
+/* TODO: maybe return std::optional<MD80> ? or would it be too complicated for new users? */
 bool Candle::addMd80(uint32_t id)
 {
 	ObjectDictionaryParserEDS parser;
@@ -157,7 +160,7 @@ bool Candle::addMd80(uint32_t id)
 		return false;
 	}
 
-	md80s[id] = std::make_unique<MD80>();
+	md80s[id] = std::make_shared<MD80>(id, canopenStack);
 
 	if (!parser.parseFile(edsPath, md80s[id]->OD))
 	{
@@ -174,32 +177,6 @@ bool Candle::addMd80(uint32_t id)
 
 std::shared_ptr<MD80> Candle::getMd80(uint32_t id) const { return md80s.at(id); }
 
-bool Candle::enterOperational(uint32_t id)
-{
-	return writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0080)) &&
-		   writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0006)) &&
-		   writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x000f));
-}
-
-bool Candle::enterSwitchOnDisabled(uint32_t id)
-{
-	return writeSDO(id, 0x6040, 0x00, static_cast<uint16_t>(0x0008));
-}
-
-bool Candle::setModeOfOperation(uint32_t id, ModesOfOperation mode)
-{
-	return writeSDO(id, 0x6060, 0x00, static_cast<int8_t>(mode));
-}
-
-bool Candle::setZeroPosition(uint32_t id) { return writeSDO(id, 0x2003, 0x05, true); }
-
-bool Candle::reset(uint32_t id) { return writeSDO(id, 0x2003, 0x02, true); }
-
-bool Candle::setupPDO(uint32_t id, CanopenStack::PDO pdoID,
-					  const std::vector<std::pair<uint16_t, uint8_t>>& fields)
-{
-	return canopenStack->setupPDO(id, pdoID, fields);
-}
 
 void Candle::receiveHandler()
 {

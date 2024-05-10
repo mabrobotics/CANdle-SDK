@@ -11,6 +11,12 @@
 class Mdtool
 {
    public:
+	enum Encoder
+	{
+		MAIN = 0,
+		OUTPUT = 1
+	};
+
 	Mdtool() = delete;
 	Mdtool(std::shared_ptr<spdlog::logger> logger);
 
@@ -37,6 +43,7 @@ class Mdtool
 	bool setupMotor(uint32_t id, const std::string& filePath, bool all);
 	bool move(uint32_t id, bool relative, float targetPosition, float profileVelocity, float profileAcceleration);
 	bool blink(uint32_t id);
+	bool testEncoder(uint32_t id, Encoder encoder);
 
    private:
 	static constexpr uint32_t secondaryBootloaderAddress = 0x8005000;
@@ -50,6 +57,7 @@ class Mdtool
    private:
 	IODParser::ValueType getTypeBasedOnTag(IODParser::DataType tag);
 	std::optional<IODParser::Entry*> checkEntryExists(MD80* md80, uint16_t index, uint8_t subindex);
+	bool performAction(uint32_t id, uint16_t index, uint8_t subindex, bool operationalServiceRequired = false);
 
 	using errorMapType = const std::unordered_map<std::string, uint32_t>;
 

@@ -1,8 +1,12 @@
-/*
- * Deserializer.hpp
- *
- *  Created on: 18 wrz 2023
- *      Author: Piotr Wasilewski
+/**
+ * @file Deserializer.hpp
+ * @author Piotr Wasilewski (piotr.wasilewski@mabrobotics.pl)
+ * @brief 
+ * @version 0.1
+ * @date 2024-03-18
+ * 
+ * @copyright Copyright (c) 2024
+ * 
  */
 
 #ifndef MAB_COMMONS_DESERIALIZER_HPP_

@@ -1,3 +1,13 @@
+/**
+ * @file Barrier.hpp
+ * @author Piotr Wasilewski (piotr.wasilewski@mabrobotics.pl)
+ * @brief
+ * @version 0.1
+ * @date 2024-03-18
+ *
+ * @copyright Copyright (c) 2024
+ *
+ */
 #ifndef BARRIER_HPP
 #define BARRIER_HPP
 
@@ -5,6 +15,10 @@
 #include <mutex>
 #include <thread>
 
+/**
+ * @brief std::barrier equivalent for mingw C++20
+ *
+ */
 class Barrier
 {
    public:
