@@ -1,0 +1,4 @@
+uint16[] drive_ids
+string[] mode
+---
+bool[] drives_success

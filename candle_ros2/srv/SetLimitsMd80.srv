@@ -1,0 +1,5 @@
+uint16[] drive_ids
+float32[] velocity_limit
+float32[] torque_limit
+---
+bool[] drives_success
