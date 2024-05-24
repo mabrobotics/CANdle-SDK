@@ -1,4 +1,4 @@
-#include "mainWorker.hpp"
+#include "mdtool.hpp"
 
 #include <unistd.h>
 
@@ -133,7 +133,7 @@ mab::CANdleBaudrate_E str2baud(std::string& baud)
 	return mab::CANdleBaudrate_E::CAN_BAUD_1M;
 }
 
-MainWorker::MainWorker(std::vector<std::string>& args)
+MDtool::MDtool(std::vector<std::string>& args)
 {
 	ui::printVersion(mab::Candle::getVersion());
 	if (args.size() < 2)
@@ -330,7 +330,7 @@ MainWorker::MainWorker(std::vector<std::string>& args)
 	}
 }
 
-void MainWorker::ping(std::vector<std::string>& args)
+void MDtool::ping(std::vector<std::string>& args)
 {
 	bool performScan = false;
 
@@ -362,7 +362,7 @@ void MainWorker::ping(std::vector<std::string>& args)
 	}
 }
 
-void MainWorker::configCan(std::vector<std::string>& args)
+void MDtool::configCan(std::vector<std::string>& args)
 {
 	if (!checkArgs(args, 7))
 		return;
@@ -375,21 +375,21 @@ void MainWorker::configCan(std::vector<std::string>& args)
 
 	candle->configMd80Can(id, new_id, new_baud, timeout, canTermination);
 }
-void MainWorker::configSave(std::vector<std::string>& args)
+void MDtool::configSave(std::vector<std::string>& args)
 {
 	int32_t id = checkArgsAndGetId(args, 4, 3);
 	if (id == -1)
 		return;
 	candle->configMd80Save(id);
 }
-void MainWorker::configZero(std::vector<std::string>& args)
+void MDtool::configZero(std::vector<std::string>& args)
 {
 	int32_t id = checkArgsAndGetId(args, 4, 3);
 	if (id == -1)
 		return;
 	candle->controlMd80SetEncoderZero(id);
 }
-void MainWorker::configCurrent(std::vector<std::string>& args)
+void MDtool::configCurrent(std::vector<std::string>& args)
 {
 	int32_t id = checkArgsAndGetId(args, 5, 3);
 	if (id == -1)
@@ -397,7 +397,7 @@ void MainWorker::configCurrent(std::vector<std::string>& args)
 	candle->configMd80SetCurrentLimit(id, atof(args[4].c_str()));
 }
 
-void MainWorker::configBandwidth(std::vector<std::string>& args)
+void MDtool::configBandwidth(std::vector<std::string>& args)
 {
 	int32_t id = checkArgsAndGetId(args, 5, 3);
 	if (id == -1)
@@ -405,7 +405,7 @@ void MainWorker::configBandwidth(std::vector<std::string>& args)
 	candle->configMd80TorqueBandwidth(id, atof(args[4].c_str()));
 }
 
-void MainWorker::configClear(std::vector<std::string>& args)
+void MDtool::configClear(std::vector<std::string>& args)
 {
 	int32_t id = checkArgsAndGetId(args, 4, 3);
 	if (id == -1)
@@ -417,7 +417,7 @@ void MainWorker::configClear(std::vector<std::string>& args)
 		std::cout << "[MDTOOL] Error reverting config to factory state!" << std::endl;
 }
 
-void MainWorker::setupCalibration(std::vector<std::string>& args)
+void MDtool::setupCalibration(std::vector<std::string>& args)
 {
 	int32_t id = checkArgsAndGetId(args, 4, 3);
 	if (id == -1)
@@ -429,7 +429,7 @@ void MainWorker::setupCalibration(std::vector<std::string>& args)
 	candle->setupMd80Calibration(id);
 }
 
-void MainWorker::setupCalibrationOutput(std::vector<std::string>& args)
+void MDtool::setupCalibrationOutput(std::vector<std::string>& args)
 {
 	int32_t id = checkArgsAndGetId(args, 4, 3);
 	if (id == -1)
@@ -450,7 +450,7 @@ void MainWorker::setupCalibrationOutput(std::vector<std::string>& args)
 	candle->setupMd80CalibrationOutput(id);
 }
 
-void MainWorker::setupMotor(std::vector<std::string>& args)
+void MDtool::setupMotor(std::vector<std::string>& args)
 {
 	int32_t id = checkArgsAndGetId(args, 5, 3);
 	if (id == -1)
@@ -710,7 +710,7 @@ void MainWorker::setupMotor(std::vector<std::string>& args)
 	sleep(3);
 }
 
-void MainWorker::setupInfo(std::vector<std::string>& args)
+void MDtool::setupInfo(std::vector<std::string>& args)
 {
 	bool printAll = false;
 
@@ -733,7 +733,7 @@ void MainWorker::setupInfo(std::vector<std::string>& args)
 	ui::printDriveInfoExtended(candle->getMd80FromList(id), printAll);
 }
 
-void MainWorker::testMove(std::vector<std::string>& args)
+void MDtool::testMove(std::vector<std::string>& args)
 {
 	int32_t id = checkArgsAndGetId(args, 5, 3);
 	if (id == -1)
@@ -774,7 +774,7 @@ void MainWorker::testMove(std::vector<std::string>& args)
 	candle->end();
 }
 
-void MainWorker::testMoveAbsolute(std::vector<std::string>& args)
+void MDtool::testMoveAbsolute(std::vector<std::string>& args)
 {
 	if (args.size() < 6)
 	{
@@ -819,7 +819,7 @@ void MainWorker::testMoveAbsolute(std::vector<std::string>& args)
 	candle->end();
 }
 
-void MainWorker::testLatency(std::vector<std::string>& args)
+void MDtool::testLatency(std::vector<std::string>& args)
 {
 	struct sched_param sp;
 	memset(&sp, 0, sizeof(sp));
@@ -874,7 +874,7 @@ void MainWorker::testLatency(std::vector<std::string>& args)
 	candle->end();
 }
 
-void MainWorker::testEncoderOutput(std::vector<std::string>& args)
+void MDtool::testEncoderOutput(std::vector<std::string>& args)
 {
 	int32_t id = checkArgsAndGetId(args, 5, 4);
 	if (id == -1)
@@ -899,7 +899,7 @@ void MainWorker::testEncoderOutput(std::vector<std::string>& args)
 	candle->setupMd80TestOutputEncoder(id);
 }
 
-void MainWorker::testEncoderMain(std::vector<std::string>& args)
+void MDtool::testEncoderMain(std::vector<std::string>& args)
 {
 	int32_t id = checkArgsAndGetId(args, 5, 4);
 	if (id == -1)
@@ -916,7 +916,7 @@ void MainWorker::testEncoderMain(std::vector<std::string>& args)
 	candle->setupMd80TestMainEncoder(id);
 }
 
-void MainWorker::setupHoming(std::vector<std::string>& args)
+void MDtool::setupHoming(std::vector<std::string>& args)
 {
 	int32_t id = checkArgsAndGetId(args, 4, 3);
 	if (id == -1)
@@ -924,7 +924,7 @@ void MainWorker::setupHoming(std::vector<std::string>& args)
 	candle->setupMd80PerformHoming(id);
 }
 
-void MainWorker::registerWrite(std::vector<std::string>& args)
+void MDtool::registerWrite(std::vector<std::string>& args)
 {
 	int32_t id = checkArgsAndGetId(args, 6, 3);
 	if (id == -1)
@@ -976,7 +976,7 @@ void MainWorker::registerWrite(std::vector<std::string>& args)
 		std::cout << "[MDTOOL] Writing register failed!" << std::endl;
 }
 
-void MainWorker::registerRead(std::vector<std::string>& args)
+void MDtool::registerRead(std::vector<std::string>& args)
 {
 	int32_t id = checkArgsAndGetId(args, 5, 3);
 	if (id == -1)
@@ -1025,14 +1025,14 @@ void MainWorker::registerRead(std::vector<std::string>& args)
 	std::cout << "[MDTOOL] Register value: " << value << std::endl;
 }
 
-void MainWorker::blink(std::vector<std::string>& args)
+void MDtool::blink(std::vector<std::string>& args)
 {
 	int32_t id = checkArgsAndGetId(args, 3, 2);
 	if (id == -1)
 		return;
 	candle->configMd80Blink(id);
 }
-void MainWorker::encoder(std::vector<std::string>& args)
+void MDtool::encoder(std::vector<std::string>& args)
 {
 	int32_t id = checkArgsAndGetId(args, 3, 2);
 	if (id == -1)
@@ -1049,7 +1049,7 @@ void MainWorker::encoder(std::vector<std::string>& args)
 	}
 	candle->end();
 }
-void MainWorker::bus(std::vector<std::string>& args)
+void MDtool::bus(std::vector<std::string>& args)
 {
 	if (args.size() < 3 || args.size() > 4)
 	{
@@ -1066,7 +1066,7 @@ void MainWorker::bus(std::vector<std::string>& args)
 	changeDefaultConfig(args[2], args[3]);
 }
 
-void MainWorker::changeDefaultConfig(std::string bus, std::string device)
+void MDtool::changeDefaultConfig(std::string bus, std::string device)
 {
 	mINI::INIFile	   file(mdtoolIniFilePath);
 	mINI::INIStructure ini;
@@ -1080,7 +1080,7 @@ void MainWorker::changeDefaultConfig(std::string bus, std::string device)
 	file.write(ini);
 }
 
-void MainWorker::clearErrors(std::vector<std::string>& args)
+void MDtool::clearErrors(std::vector<std::string>& args)
 {
 	int32_t id = checkArgsAndGetId(args, 4, 3);
 	if (id == -1)
@@ -1088,7 +1088,7 @@ void MainWorker::clearErrors(std::vector<std::string>& args)
 	candle->setupMd80ClearErrors(id);
 }
 
-void MainWorker::clearWarnings(std::vector<std::string>& args)
+void MDtool::clearWarnings(std::vector<std::string>& args)
 {
 	int32_t id = checkArgsAndGetId(args, 4, 3);
 	if (id == -1)
@@ -1096,7 +1096,7 @@ void MainWorker::clearWarnings(std::vector<std::string>& args)
 	candle->setupMd80ClearWarnings(id);
 }
 
-void MainWorker::reset(std::vector<std::string>& args)
+void MDtool::reset(std::vector<std::string>& args)
 {
 	int32_t id = checkArgsAndGetId(args, 3, 2);
 	if (id == -1)
@@ -1104,7 +1104,7 @@ void MainWorker::reset(std::vector<std::string>& args)
 	candle->setupMd80PerformReset(id);
 }
 
-mab::CANdleBaudrate_E MainWorker::checkSpeedForId(uint16_t id)
+mab::CANdleBaudrate_E MDtool::checkSpeedForId(uint16_t id)
 {
 	std::initializer_list<mab::CANdleBaudrate_E> bauds = {mab::CANdleBaudrate_E::CAN_BAUD_1M,
 														  mab::CANdleBaudrate_E::CAN_BAUD_2M,
@@ -1121,7 +1121,7 @@ mab::CANdleBaudrate_E MainWorker::checkSpeedForId(uint16_t id)
 	return mab::CANdleBaudrate_E::CAN_BAUD_1M;
 }
 
-uint8_t MainWorker::getNumericParamFromList(std::string&					param,
+uint8_t MDtool::getNumericParamFromList(std::string&					param,
 											const std::vector<std::string>& list)
 {
 	int i = 0;
@@ -1134,7 +1134,7 @@ uint8_t MainWorker::getNumericParamFromList(std::string&					param,
 	return 0;
 }
 
-bool MainWorker::checkErrors(uint16_t canId)
+bool MDtool::checkErrors(uint16_t canId)
 {
 	candle->setupMd80DiagnosticExtended(canId);
 
@@ -1151,7 +1151,7 @@ bool MainWorker::checkErrors(uint16_t canId)
 
 /* gets field only if the value is within bounds form the ini file */
 template <class T>
-bool MainWorker::getField(mINI::INIStructure& cfg,
+bool MDtool::getField(mINI::INIStructure& cfg,
 						  mINI::INIStructure& ini,
 						  std::string		  category,
 						  std::string		  field,
@@ -1183,7 +1183,7 @@ bool MainWorker::getField(mINI::INIStructure& cfg,
 	}
 }
 
-bool MainWorker::checkArgs(std::vector<std::string>& args, uint32_t size)
+bool MDtool::checkArgs(std::vector<std::string>& args, uint32_t size)
 {
 	if (args.size() < size)
 	{
@@ -1193,7 +1193,7 @@ bool MainWorker::checkArgs(std::vector<std::string>& args, uint32_t size)
 	return true;
 }
 
-bool MainWorker::tryAddMD80(uint16_t id)
+bool MDtool::tryAddMD80(uint16_t id)
 {
 	checkSpeedForId(id);
 
@@ -1202,7 +1202,7 @@ bool MainWorker::tryAddMD80(uint16_t id)
 	return true;
 }
 
-int MainWorker::checkArgsAndGetId(std::vector<std::string>& args, uint32_t size, uint32_t idPos)
+int MDtool::checkArgsAndGetId(std::vector<std::string>& args, uint32_t size, uint32_t idPos)
 {
 	if (!checkArgs(args, size))
 		return -1;
@@ -1214,7 +1214,7 @@ int MainWorker::checkArgsAndGetId(std::vector<std::string>& args, uint32_t size,
 	return id;
 }
 
-bool MainWorker::checkSetupError(uint16_t id)
+bool MDtool::checkSetupError(uint16_t id)
 {
 	uint32_t calibrationStatus;
 	candle->readMd80Register(id, mab::Md80Reg_E::calibrationErrors, calibrationStatus);

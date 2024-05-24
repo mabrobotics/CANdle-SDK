@@ -12,7 +12,10 @@ set(CMAKE_BUILD_TYPE Release)
 
 add_executable(${PROJECT_NAME} ${SRC})
 target_link_libraries(${PROJECT_NAME} candle)
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/candlelib/include ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include 
+    ${CMAKE_CURRENT_SOURCE_DIR}/../candlelib/include 
+    ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/CLI11/inc)
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "mdtool")
 
 target_compile_definitions(${PROJECT_NAME}

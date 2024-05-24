@@ -4,10 +4,10 @@
 #include "candle.hpp"
 #include "mini/ini.h"
 
-class MainWorker
+class MDtool
 {
   public:
-	MainWorker(std::vector<std::string>& args);
+	MDtool(std::vector<std::string>& args);
 
   private:
 	const std::string mdtoolHomeConfigDirName = ".config";
