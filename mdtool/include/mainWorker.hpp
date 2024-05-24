@@ -8,7 +8,6 @@ class MainWorker
 {
   public:
 	MainWorker(std::vector<std::string>& args);
-	static std::string getVersion();
 
   private:
 	const std::string mdtoolHomeConfigDirName = ".config";

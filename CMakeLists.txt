@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.8)
 
+include(git_func.cmake)
+
+set(CANDLESDK_VERSION 0.1.0)
+get_tag(CANDLESDK_VERSION_TAG)
+
 if(NOT DEFINED PLATFORM)
     set(PLATFORM "native")
     message("Compiling for native system")
@@ -22,6 +27,7 @@ add_compile_options(
     -Wpedantic
     -Wno-unused-parameter
     -Wno-missing-field-initializers
+    -Werror
 )
 
 set(mINI_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/mINI/inc/)

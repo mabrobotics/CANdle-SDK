@@ -2,10 +2,6 @@ cmake_minimum_required(VERSION 3.5)
 
 project(candlelib)
 
-# change the version and tag here
-set(CANDLE_LIB_VERSION 3.5.0)
-set(VERSION_TAG 'd')
-
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_BUILD_TYPE Release)
 
@@ -37,12 +33,12 @@ else()
     target_compile_options(candle PRIVATE -O2)
 endif()
 
-string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" _ "${CANDLE_LIB_VERSION}")
+string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" _ "${CANDLESDK_VERSION}")
 target_compile_definitions(candle
     PRIVATE CANDLE_VMAJOR=${CMAKE_MATCH_1}
     PRIVATE CANDLE_VMINOR=${CMAKE_MATCH_2}
     PRIVATE CANDLE_VREVISION=${CMAKE_MATCH_3}
-    PRIVATE CANDLE_VTAG=${VERSION_TAG}
+    PRIVATE CANDLE_VTAG=${CANDLESDK_VERSION_TAG}
 )
 
 if(MAKE_TESTS)

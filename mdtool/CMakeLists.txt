@@ -1,10 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-set(MDTOOL_VERSION 1.4.0)
-set(MDTOOL_VERSION_TAG 'r')
-
 project(mdtool)
-
 add_compile_options(-Wall -Wextra -Wpedantic)
 
 file(GLOB SRC "src/*.cpp")
@@ -12,9 +8,6 @@ file(GLOB SRC "src/*.cpp")
 # enable_testing()
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CANDLE_BUILD_STATIC ON)
-set(CANDLE_OMIT_EXAMPLES ON)
-
 set(CMAKE_BUILD_TYPE Release)
 
 add_executable(${PROJECT_NAME} ${SRC})
@@ -22,12 +15,11 @@ target_link_libraries(${PROJECT_NAME} candle)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/candlelib/include ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src)
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "mdtool")
 
-string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" _ "${MDTOOL_VERSION}")
 target_compile_definitions(${PROJECT_NAME}
-    PRIVATE MDTOOL_VMAJOR=${CMAKE_MATCH_1}
-    PRIVATE MDTOOL_VMINOR=${CMAKE_MATCH_2}
-    PRIVATE MDTOOL_VREVISION=${CMAKE_MATCH_3}
-    PRIVATE MDTOOL_VTAG=${MDTOOL_VERSION_TAG}
+    PRIVATE MDTOOL_VMAJOR=${CANDLESDK_VERSION_1}
+    PRIVATE MDTOOL_VMINOR=${CANDLESDK_VERSION_2}
+    PRIVATE MDTOOL_VREVISION=${CANDLESDK_VERSION_3}
+    PRIVATE MDTOOL_VTAG=${CANDLESDK_VERSION_TAG}
 )
 
 if(MAKE_TESTS_MDTOOL)
