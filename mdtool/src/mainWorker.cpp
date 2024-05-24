@@ -135,6 +135,12 @@ mab::CANdleBaudrate_E str2baud(std::string& baud)
 
 MainWorker::MainWorker(std::vector<std::string>& args)
 {
+	ui::printVersion(mab::Candle::getVersion());
+	if (args.size() < 2)
+	{
+		ui::printTooFewArgs();
+		exit(2);
+	}
 	mdtoolBaseDir =
 		std::string(getenv("HOME")) + "/" + mdtoolHomeConfigDirName + "/" + mdtoolDirName;
 	mdtoolIniFilePath = mdtoolBaseDir + "/" + mdtoolIniFileName;
@@ -152,15 +158,15 @@ MainWorker::MainWorker(std::vector<std::string>& args)
 		mINI::INIStructure ini;
 		file.read(ini);
 
-		// if (ini["general"]["version"] != getVersion())
-		// {
-		// 	result = system(("cp " + mdtoolConfigPath + mdtoolDirName + "/" + mdtoolIniFileName +
-		// 					 " " + mdtoolBaseDir + "/")
-		// 						.c_str());
-		// 	file.read(ini);
-		// 	ini["general"]["version"] = getVersion();
-		// 	file.write(ini);
-		// }
+		if (ini["general"]["version"] != candle->getVersion())
+		{
+			(void)!system(("cp " + mdtoolConfigPath + mdtoolDirName + "/" + mdtoolIniFileName +
+						   " " + mdtoolBaseDir + "/")
+							  .c_str());
+			file.read(ini);
+			ini["general"]["version"] = candle->getVersion();
+			file.write(ini);
+		}
 	}
 
 	/* defaults */

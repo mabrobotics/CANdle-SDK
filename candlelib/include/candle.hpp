@@ -77,7 +77,7 @@ namespace mab
 		 * @brief Getter for version number
 		 * @return std::string with version in format "vMAJOR.MINOR.REVISION.TAG"
 		 */
-		const std::string getVersion();
+		static const std::string getVersion();
 
 		/**
 		 * @brief Getter for device ID. Can be used to differentiate between multiple CANdle's

@@ -24,7 +24,7 @@
 
 namespace ui
 {
-
+	void printVersion(const std::string& version);
 	void printTooFewArgs();
 	void printTooFewArgsNoHelp();
 	void printWrongArgumentsSpecified();
