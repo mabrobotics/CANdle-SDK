@@ -80,7 +80,7 @@ class MDtool
 
 	std::string busString;
 
-	bool printVerbose = false;
+	bool printVerbose = true;
 
 	void configSave(std::vector<std::string>& args);
 	void configZero(std::vector<std::string>& args);
