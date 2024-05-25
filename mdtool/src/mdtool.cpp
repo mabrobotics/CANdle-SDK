@@ -1125,7 +1125,7 @@ int MDtool::checkArgsAndGetId(std::vector<std::string>& args, uint32_t size, uin
 
 bool MDtool::checkSetupError(uint16_t id)
 {
-	uint32_t calibrationStatus;
+	uint32_t calibrationStatus = 0;
 	candle->readMd80Register(id, mab::Md80Reg_E::calibrationErrors, calibrationStatus);
 
 	if (calibrationStatus & (1 << ui::calibrationErrorList.at(std::string("ERROR_SETUP"))))

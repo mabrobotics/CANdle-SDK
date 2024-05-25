@@ -97,6 +97,11 @@ int main(int argc, char** argv)
 
 	if (app.got_subcommand("ping"))
 		mdtool.ping(cmd.variant);
+	if(config->parsed())
+	{
+		if(configCan->parsed())
+			mdtool.configCan(cmd.id, cmd.newId, cmd.baud, cmd.canWatchdog);
+	}
 
 	return EXIT_SUCCESS;
 }
