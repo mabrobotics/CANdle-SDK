@@ -332,7 +332,7 @@ void MDtool::setupCalibrationOutput(u16 id)
 	candle->readMd80Register(id, mab::Md80Reg_E::outputEncoder, outputEncoder);
 	if (!outputEncoder)
 	{
-		std::cerr << "[MDTOOL] No output encoder is configured! " << RED("[FAILED]") << std::endl;
+		std::cerr << "[MDTOOL] No output encoder is configured! " << RED__("[FAILED]") << std::endl;
 		return;
 	}
 
@@ -765,7 +765,7 @@ void MDtool::testEncoderOutput(std::vector<std::string>& args)
 
 	if (!outputEncoder)
 	{
-		std::cout << "[MDTOOL] No output encoder is configured! " << RED("[FAILED]") << std::endl;
+		std::cout << "[MDTOOL] No output encoder is configured! " << RED__("[FAILED]") << std::endl;
 		return;
 	}
 
@@ -1086,7 +1086,7 @@ bool MDtool::checkSetupError(uint16_t id)
 
 	if (calibrationStatus & (1 << ui::calibrationErrorList.at(std::string("ERROR_SETUP"))))
 	{
-		std::cout << "[MDTOOL] Could not proceed due to " << RED("ERROR_SETUP")
+		std::cout << "[MDTOOL] Could not proceed due to " << RED__("ERROR_SETUP")
 				  << ". Please call mdtool setup motor <ID> <cfg> first." << std::endl;
 		return true;
 	}

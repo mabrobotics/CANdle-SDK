@@ -8,11 +8,12 @@ file(GLOB SRC "src/*.cpp")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_executable(${PROJECT_NAME} ${SRC})
-target_link_libraries(${PROJECT_NAME} candle)
+target_link_libraries(${PROJECT_NAME} candle logger)
 target_include_directories(
   ${PROJECT_NAME}
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
          ${CMAKE_CURRENT_SOURCE_DIR}/../candlelib/include
+         ${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger
          ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src
          ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/CLI11/inc)
 target_compile_options(mdtool PRIVATE -g)

@@ -65,7 +65,7 @@ namespace ui
 		vout << std::endl;
 		vout << std::endl;
 		vout << "For more information please refer to the manual:"
-			 << GREEN(" https://mabrobotics.pl/servos/manual");
+			 << GREEN__(" https://mabrobotics.pl/servos/manual");
 		vout << std::endl;
 		vout << std::endl;
 	}
@@ -98,7 +98,7 @@ namespace ui
 		vout << "\t bandwidth [id] \t\t\t sets the torque bandwidth parameter" << std::endl;
 		vout << std::endl;
 		vout << "For more information please refer to the manual:"
-			 << GREEN(" https://mabrobotics.pl/servos/manual") << std::endl;
+			 << GREEN__(" https://mabrobotics.pl/servos/manual") << std::endl;
 		vout << std::endl;
 	}
 	void printHelpSetup()
@@ -123,7 +123,7 @@ namespace ui
 		vout << "\t homing   [id]        \t\t\tstarts the homing routine" << std::endl;
 		vout << std::endl;
 		vout << "For more information please refer to the manual:"
-			 << GREEN(" https://mabrobotics.pl/servos/manual") << std::endl;
+			 << GREEN__(" https://mabrobotics.pl/servos/manual") << std::endl;
 		vout << std::endl;
 	}
 	void printHelpTest()
@@ -153,7 +153,7 @@ namespace ui
 		vout << "\t encoder  [type] [id] \t\t\ttests the encoder [type] (main/output)" << std::endl;
 		vout << std::endl;
 		vout << "For more information please refer to the manual:"
-			 << GREEN("https://mabrobotics.pl/servos/manual") << std::endl;
+			 << GREEN__("https://mabrobotics.pl/servos/manual") << std::endl;
 		vout << std::endl;
 	}
 
@@ -170,7 +170,7 @@ namespace ui
 		vout << "Standard deviation: " << std::setprecision(2) << stdev << "Hz" << std::endl;
 		vout << std::endl;
 		vout << "For more information on this test please refer to the manual: "
-			 << GREEN("https://mabrobotics.pl/servos/manual") << std::endl;
+			 << GREEN__("https://mabrobotics.pl/servos/manual") << std::endl;
 		vout << std::endl;
 		vout << "**********************************************************************************"
 				"********************************************"
@@ -193,7 +193,7 @@ namespace ui
 			 << std::endl;
 		vout << std::endl;
 		vout << "For more information please refer to the manual: "
-			 << GREEN("https://mabrobotics.pl/servos/manual") << std::endl;
+			 << GREEN__("https://mabrobotics.pl/servos/manual") << std::endl;
 		vout << std::endl;
 		vout << "Are you sure you want to start the calibration? [Y/n]" << std::endl;
 		char x;
@@ -219,7 +219,7 @@ namespace ui
 			 << std::endl;
 		vout << std::endl;
 		vout << "For more information please refer to the manual: "
-			 << GREEN("https://mabrobotics.pl/servos/manual") << std::endl;
+			 << GREEN__("https://mabrobotics.pl/servos/manual") << std::endl;
 		vout << std::endl;
 		vout << "Are you sure you want to start the calibration? [Y/n]" << std::endl;
 		char x;
@@ -504,7 +504,7 @@ namespace ui
 		vout << "	(";
 		if (error == 0)
 		{
-			vout << GREEN("ALL OK") << ")" << std::endl;
+			vout << GREEN__("ALL OK") << ")" << std::endl;
 			return;
 		}
 
@@ -522,7 +522,7 @@ namespace ui
 		vout << "	(";
 		if (error == 0)
 		{
-			vout << GREEN("ALL OK") << ")" << std::endl;
+			vout << GREEN__("ALL OK") << ")" << std::endl;
 			return;
 		}
 

@@ -3,6 +3,7 @@
 #include "bus.hpp"
 #include "candle.hpp"
 #include "mini/ini.h"
+#include "logger.hpp"
 
 enum class toolsCmd_E
 {
@@ -84,6 +85,7 @@ class MDtool
 
 	const std::string mdtoolConfigPath = "/etc/";
 
+	logger log = {.tag = "MDTOOL"};
 	std::string mdtoolBaseDir;
 	std::string mdtoolIniFilePath;
 
