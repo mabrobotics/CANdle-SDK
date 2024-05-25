@@ -8,46 +8,6 @@
 #include "ConfigManager.hpp"
 #include "ui.hpp"
 
-enum class toolsCmd_E
-{
-	NONE,
-	PING,
-	CONFIG,
-	SETUP,
-	TEST,
-	BLINK,
-	ENCODER,
-	BUS,
-	REGISTER,
-	CLEAR,
-	RESET,
-};
-enum class toolsOptions_E
-{
-	NONE,
-	CURRENT,
-	CAN,
-	SAVE,
-	ZERO,
-	BANDWIDTH,
-	CALIBRATION,
-	DIAGNOSTIC,
-	MOTOR,
-	INFO,
-	MOVE,
-	LATENCY,
-	CALIBRATION_OUTPUT,
-	ENCODER,
-	MAIN,
-	OUTPUT,
-	HOMING,
-	ABSOLUTE,
-	READ,
-	WRITE,
-	ERROR,
-	WARNING,
-	CLEAR,
-};
 toolsOptions_E str2option(std::string& opt)
 {
 	if (opt == "current")
@@ -120,7 +80,7 @@ toolsCmd_E str2cmd(std::string& cmd)
 	return toolsCmd_E::NONE;
 }
 
-mab::CANdleBaudrate_E str2baud(std::string& baud)
+mab::CANdleBaudrate_E str2baud(const std::string& baud)
 {
 	if (baud == "1M")
 		return mab::CANdleBaudrate_E::CAN_BAUD_1M;
@@ -133,14 +93,10 @@ mab::CANdleBaudrate_E str2baud(std::string& baud)
 	return mab::CANdleBaudrate_E::CAN_BAUD_1M;
 }
 
-MDtool::MDtool(std::vector<std::string>& args)
+MDtool::MDtool(const UserCommand& cmd)
 {
 	ui::printVersion(mab::Candle::getVersion());
-	if (args.size() < 2)
-	{
-		ui::printTooFewArgs();
-		exit(2);
-	}
+
 	mdtoolBaseDir =
 		std::string(getenv("HOME")) + "/" + mdtoolHomeConfigDirName + "/" + mdtoolDirName;
 	mdtoolIniFilePath = mdtoolBaseDir + "/" + mdtoolIniFileName;
@@ -148,7 +104,6 @@ MDtool::MDtool(std::vector<std::string>& args)
 	/* copy motors configs directory - not the best practice to use system() but std::filesystem is
 	 * not available until C++17 */
 	struct stat info;
-
 	if (stat(mdtoolBaseDir.c_str(), &info) != 0)
 		(void)!system(("cp -r " + mdtoolConfigPath + mdtoolDirName + " " + mdtoolBaseDir).c_str());
 	else /* if the directory is not empty we should only copy the ini file (only if the version is
@@ -170,27 +125,9 @@ MDtool::MDtool(std::vector<std::string>& args)
 	}
 
 	/* defaults */
-	toolsCmd_E			  cmd	  = toolsCmd_E::NONE;
+	// toolsCmd_E			  cmd	  = toolsCmd_E::NONE;
 	mab::BusType_E		  busType = mab::BusType_E::USB;
 	mab::CANdleBaudrate_E baud	  = mab::CANdleBaudrate_E::CAN_BAUD_1M;
-
-	if (args.size() > 1)
-		cmd = str2cmd(args[1]);
-	if (cmd == toolsCmd_E::NONE)
-	{
-		ui::printUnknownCmd(args[1]);
-		return;
-	}
-	else if (cmd == toolsCmd_E::BUS)
-		bus(args);
-
-	printVerbose = true;
-
-	for (auto& arg : args)
-	{
-		if (arg == "-sv")
-			printVerbose = false;
-	}
 
 	mINI::INIFile	   file(mdtoolIniFilePath);
 	mINI::INIStructure ini;
@@ -204,9 +141,7 @@ MDtool::MDtool(std::vector<std::string>& args)
 		busType = mab::BusType_E::UART;
 	else if (busString == "USB")
 		busType = mab::BusType_E::USB;
-
 	std::string& device = ini["communication"]["device"];
-
 	try
 	{
 		if (device != "" && busType != mab::BusType_E::USB)
@@ -218,136 +153,119 @@ MDtool::MDtool(std::vector<std::string>& args)
 	{
 		return;
 	}
+	return;
 
-	toolsOptions_E option  = toolsOptions_E::NONE;
-	toolsOptions_E option2 = toolsOptions_E::NONE;
-
-	if (args.size() > 2)
-		option = str2option(args[2]);
-	if (args.size() > 3)
-		option2 = str2option(args[3]);
-
-	switch (cmd)
-	{
-		case toolsCmd_E::PING:
-			ping(args);
-			break;
-		case toolsCmd_E::CONFIG:
-		{
-			if (option == toolsOptions_E::CAN)
-				configCan(args);
-			else if (option == toolsOptions_E::SAVE)
-				configSave(args);
-			else if (option == toolsOptions_E::ZERO)
-				configZero(args);
-			else if (option == toolsOptions_E::CURRENT)
-				configCurrent(args);
-			else if (option == toolsOptions_E::BANDWIDTH)
-				configBandwidth(args);
-			else if (option == toolsOptions_E::CLEAR)
-				configClear(args);
-			else
-				ui::printHelpConfig();
-			break;
-		}
-		case toolsCmd_E::SETUP:
-		{
-			if (option == toolsOptions_E::CALIBRATION)
-				setupCalibration(args);
-			else if (option == toolsOptions_E::CALIBRATION_OUTPUT)
-				setupCalibrationOutput(args);
-			else if (option == toolsOptions_E::MOTOR)
-				setupMotor(args);
-			else if (option == toolsOptions_E::INFO)
-				setupInfo(args);
-			else if (option == toolsOptions_E::HOMING)
-				setupHoming(args);
-			else
-				ui::printHelpSetup();
-			break;
-		}
-		case toolsCmd_E::TEST:
-		{
-			if (option == toolsOptions_E::LATENCY)
-				testLatency(args);
-			else if (option == toolsOptions_E::MOVE)
-			{
-				if (option2 == toolsOptions_E::ABSOLUTE)
-					testMoveAbsolute(args);
-				else
-					testMove(args);
-			}
-			else if (option == toolsOptions_E::ENCODER)
-			{
-				if (option2 == toolsOptions_E::MAIN)
-					testEncoderMain(args);
-				else if (option2 == toolsOptions_E::OUTPUT)
-					testEncoderOutput(args);
-				else
-					ui::printHelpTest();
-			}
-			else
-				ui::printHelpTest();
-			break;
-		}
-		case toolsCmd_E::BLINK:
-		{
-			blink(args);
-			break;
-		}
-		case toolsCmd_E::ENCODER:
-		{
-			encoder(args);
-			break;
-		}
-		case toolsCmd_E::REGISTER:
-		{
-			if (option == toolsOptions_E::WRITE)
-				registerWrite(args);
-			else if (option == toolsOptions_E::READ)
-				registerRead(args);
-			else
-				ui::printHelpTest();
-			break;
-		}
-		case toolsCmd_E::CLEAR:
-		{
-			if (option == toolsOptions_E::ERROR)
-				clearErrors(args);
-			else if (option == toolsOptions_E::WARNING)
-				clearWarnings(args);
-			else
-				ui::printHelpTest();
-			break;
-		}
-		case toolsCmd_E::RESET:
-		{
-			reset(args);
-			break;
-		}
-		default:
-			return;
-	}
+	// switch (cmd.cmd)
+	// {
+	// 	case toolsCmd_E::PING:
+	// 		ping(args);
+	// 		break;
+	// 	case toolsCmd_E::CONFIG:
+	// 	{
+	// 		if (cmd.cmd.option == toolsOptions_E::CAN)
+	// 			configCan(args);
+	// 		else if (cmd.option == toolsOptions_E::SAVE)
+	// 			configSave(args);
+	// 		else if (cmd.option == toolsOptions_E::ZERO)
+	// 			configZero(args);
+	// 		else if (cmd.option == toolsOptions_E::CURRENT)
+	// 			configCurrent(args);
+	// 		else if (cmd.option == toolsOptions_E::BANDWIDTH)
+	// 			configBandwidth(args);
+	// 		else if (cmd.option == toolsOptions_E::CLEAR)
+	// 			configClear(args);
+	// 		else
+	// 			ui::printHelpConfig();
+	// 		break;
+	// 	}
+	// 	case toolsCmd_E::SETUP:
+	// 	{
+	// 		if (cmd.option == toolsOptions_E::CALIBRATION)
+	// 			setupCalibration(args);
+	// 		else if (cmd.option == toolsOptions_E::CALIBRATION_OUTPUT)
+	// 			setupCalibrationOutput(args);
+	// 		else if (cmd.option == toolsOptions_E::MOTOR)
+	// 			setupMotor(args);
+	// 		else if (cmd.option == toolsOptions_E::INFO)
+	// 			setupInfo(args);
+	// 		else if (cmd.option == toolsOptions_E::HOMING)
+	// 			setupHoming(args);
+	// 		else
+	// 			ui::printHelpSetup();
+	// 		break;
+	// 	}
+	// 	case toolsCmd_E::TEST:
+	// 	{
+	// 		if (cmd.option == toolsOptions_E::LATENCY)
+	// 			testLatency(args);
+	// 		else if (cmd.option == toolsOptions_E::MOVE)
+	// 		{
+	// 			if (cmd.option2 == toolsOptions_E::ABSOLUTE)
+	// 				testMoveAbsolute(args);
+	// 			else
+	// 				testMove(args);
+	// 		}
+	// 		else if (cmd.option == toolsOptions_E::ENCODER)
+	// 		{
+	// 			if (cmd.option2 == toolsOptions_E::MAIN)
+	// 				testEncoderMain(args);
+	// 			else if (cmd.option2 == toolsOptions_E::OUTPUT)
+	// 				testEncoderOutput(args);
+	// 			else
+	// 				ui::printHelpTest();
+	// 		}
+	// 		else
+	// 			ui::printHelpTest();
+	// 		break;
+	// 	}
+	// 	case toolsCmd_E::BLINK:
+	// 	{
+	// 		blink(args);
+	// 		break;
+	// 	}
+	// 	case toolsCmd_E::ENCODER:
+	// 	{
+	// 		encoder(args);
+	// 		break;
+	// 	}
+	// 	case toolsCmd_E::REGISTER:
+	// 	{
+	// 		if (cmd.option == toolsOptions_E::WRITE)
+	// 			registerWrite(args);
+	// 		else if (cmd.option == toolsOptions_E::READ)
+	// 			registerRead(args);
+	// 		else
+	// 			ui::printHelpTest();
+	// 		break;
+	// 	}
+	// 	case toolsCmd_E::CLEAR:
+	// 	{
+	// 		if (cmd.option == toolsOptions_E::ERROR)
+	// 			clearErrors(args);
+	// 		else if (cmd.option == toolsOptions_E::WARNING)
+	// 			clearWarnings(args);
+	// 		else
+	// 			ui::printHelpTest();
+	// 		break;
+	// 	}
+	// 	case toolsCmd_E::RESET:
+	// 	{
+	// 		reset(args);
+	// 		break;
+	// 	}
+	// 	default:
+	// 		return;
+	// }
 }
 
-void MDtool::ping(std::vector<std::string>& args)
+void MDtool::ping(const std::string& variant)
 {
-	bool performScan = false;
-
-	if (args.size() < 2 || args.size() > 4)
-	{
-		ui::printTooFewArgsNoHelp();
-		return;
-	}
-
-	mab::CANdleBaudrate_E baud = candle->getCurrentBaudrate();
-
-	if (args.size() == 3)
-	{
-		baud = str2baud(args[2]);
-		if (args[2] == "all")
-			performScan = true;
-	}
+	bool				  performScan = false;
+	mab::CANdleBaudrate_E baud;
+	if (variant == "all")
+		performScan = true;
+	else
+		baud = str2baud(variant);
 
 	if (performScan)
 	{
@@ -362,18 +280,10 @@ void MDtool::ping(std::vector<std::string>& args)
 	}
 }
 
-void MDtool::configCan(std::vector<std::string>& args)
+void MDtool::configCan(u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination)
 {
-	if (!checkArgs(args, 7))
-		return;
-	int id = atoi(args[3].c_str());
 	checkSpeedForId(id);
-	int					  new_id   = atoi(args[4].c_str());
-	mab::CANdleBaudrate_E new_baud = str2baud(args[5]);
-	int					  timeout  = atoi(args[6].c_str());
-	bool canTermination			   = (args.size() > 7 && atoi(args[7].c_str()) > 0) ? true : false;
-
-	candle->configMd80Can(id, new_id, new_baud, timeout, canTermination);
+	candle->configMd80Can(id, newId, str2baud(baud), timeout, termination);
 }
 void MDtool::configSave(std::vector<std::string>& args)
 {
@@ -1121,8 +1031,7 @@ mab::CANdleBaudrate_E MDtool::checkSpeedForId(uint16_t id)
 	return mab::CANdleBaudrate_E::CAN_BAUD_1M;
 }
 
-uint8_t MDtool::getNumericParamFromList(std::string&					param,
-											const std::vector<std::string>& list)
+uint8_t MDtool::getNumericParamFromList(std::string& param, const std::vector<std::string>& list)
 {
 	int i = 0;
 	for (auto& type : list)
@@ -1152,10 +1061,10 @@ bool MDtool::checkErrors(uint16_t canId)
 /* gets field only if the value is within bounds form the ini file */
 template <class T>
 bool MDtool::getField(mINI::INIStructure& cfg,
-						  mINI::INIStructure& ini,
-						  std::string		  category,
-						  std::string		  field,
-						  T&				  value)
+					  mINI::INIStructure& ini,
+					  std::string		  category,
+					  std::string		  field,
+					  T&				  value)
 {
 	T min = 0;
 	T max = 0;
