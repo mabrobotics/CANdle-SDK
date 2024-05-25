@@ -285,34 +285,22 @@ void MDtool::configCan(u16 id, u16 newId, const std::string& baud, u16 timeout, 
 	checkSpeedForId(id);
 	candle->configMd80Can(id, newId, str2baud(baud), timeout, termination);
 }
-void MDtool::configSave(std::vector<std::string>& args)
+void MDtool::configSave(u16 id)
 {
-	int32_t id = checkArgsAndGetId(args, 4, 3);
-	if (id == -1)
-		return;
 	candle->configMd80Save(id);
 }
-void MDtool::configZero(std::vector<std::string>& args)
+void MDtool::configZero(u16 id)
 {
-	int32_t id = checkArgsAndGetId(args, 4, 3);
-	if (id == -1)
-		return;
 	candle->controlMd80SetEncoderZero(id);
 }
-void MDtool::configCurrent(std::vector<std::string>& args)
+void MDtool::configCurrent(u16 id, f32 current)
 {
-	int32_t id = checkArgsAndGetId(args, 5, 3);
-	if (id == -1)
-		return;
-	candle->configMd80SetCurrentLimit(id, atof(args[4].c_str()));
+	candle->configMd80SetCurrentLimit(id, current);
 }
 
-void MDtool::configBandwidth(std::vector<std::string>& args)
+void MDtool::configBandwidth(u16 id, f32 bandwidth)
 {
-	int32_t id = checkArgsAndGetId(args, 5, 3);
-	if (id == -1)
-		return;
-	candle->configMd80TorqueBandwidth(id, atof(args[4].c_str()));
+	candle->configMd80TorqueBandwidth(id, bandwidth);
 }
 
 void MDtool::configClear(std::vector<std::string>& args)
@@ -327,63 +315,47 @@ void MDtool::configClear(std::vector<std::string>& args)
 		std::cout << "[MDTOOL] Error reverting config to factory state!" << std::endl;
 }
 
-void MDtool::setupCalibration(std::vector<std::string>& args)
+void MDtool::setupCalibration(u16 id)
 {
-	int32_t id = checkArgsAndGetId(args, 4, 3);
-	if (id == -1)
-		return;
-
 	if (!ui::getCalibrationConfirmation() || checkSetupError(id))
 		return;
 
 	candle->setupMd80Calibration(id);
 }
 
-void MDtool::setupCalibrationOutput(std::vector<std::string>& args)
+void MDtool::setupCalibrationOutput(u16 id)
 {
-	int32_t id = checkArgsAndGetId(args, 4, 3);
-	if (id == -1)
-		return;
-
 	if (!ui::getCalibrationOutputConfirmation() || checkSetupError(id))
 		return;
 
-	uint16_t outputEncoder = 0;
+	u16 outputEncoder = 0;
 	candle->readMd80Register(id, mab::Md80Reg_E::outputEncoder, outputEncoder);
-
 	if (!outputEncoder)
 	{
-		std::cout << "[MDTOOL] No output encoder is configured! " << RED("[FAILED]") << std::endl;
+		std::cerr << "[MDTOOL] No output encoder is configured! " << RED("[FAILED]") << std::endl;
 		return;
 	}
 
 	candle->setupMd80CalibrationOutput(id);
 }
 
-void MDtool::setupMotor(std::vector<std::string>& args)
+void MDtool::setupMotor(u16 id, const std::string& cfgFilename)
 {
-	int32_t id = checkArgsAndGetId(args, 5, 3);
-	if (id == -1)
-		return;
-
-	std::string path = (mdtoolBaseDir + "/" + mdtoolMotorCfgDirName + "/" + args[4].c_str());
-
-	std::string filename = args[4].c_str();
+	std::string path = (mdtoolBaseDir + "/" + mdtoolMotorCfgDirName + "/" + cfgFilename);
 
 	ConfigManager configManager(mdtoolConfigPath + mdtoolDirName + "/" + mdtoolMotorCfgDirName,
 								mdtoolBaseDir + "/" + mdtoolMotorCfgDirName);
 
-	if (configManager.isConfigDefault(filename) && configManager.isConifgDifferent(filename))
+	if (configManager.isConfigDefault(cfgFilename) && configManager.isConifgDifferent(cfgFilename))
 	{
-		if (ui::getDifferentConfigsConfirmation(filename))
+		if (ui::getDifferentConfigsConfirmation(cfgFilename))
 		{
 			(void)!system(("cp " + mdtoolConfigPath + mdtoolDirName + "/" + mdtoolMotorCfgDirName +
-						   "/" + filename + " " + mdtoolBaseDir + "/" + mdtoolMotorCfgDirName +
-						   "/" + filename)
+						   "/" + cfgFilename + " " + mdtoolBaseDir + "/" + mdtoolMotorCfgDirName +
+						   "/" + cfgFilename)
 							  .c_str());
 		}
 	}
-
 	if (configManager.isConfigDefault("default.ini") &&
 		configManager.isConifgDifferent("default.ini"))
 	{
@@ -393,12 +365,12 @@ void MDtool::setupMotor(std::vector<std::string>& args)
 						  .c_str());
 	}
 
-	if (!configManager.isConfigValid(filename))
+	if (!configManager.isConfigValid(cfgFilename))
 	{
-		if (ui::getUpdateConfigConfirmation(filename))
+		if (ui::getUpdateConfigConfirmation(cfgFilename))
 		{
 			path = mdtoolBaseDir + "/" + mdtoolMotorCfgDirName + "/" +
-				   configManager.validateConfig(filename);
+				   configManager.validateConfig(cfgFilename);
 		}
 	}
 
@@ -620,27 +592,18 @@ void MDtool::setupMotor(std::vector<std::string>& args)
 	sleep(3);
 }
 
-void MDtool::setupInfo(std::vector<std::string>& args)
+void MDtool::setupInfo(u16 id, bool printAll)
 {
-	bool printAll = false;
-
-	if (args.size() < 4)
-	{
-		ui::printTooFewArgsNoHelp();
-		return;
-	}
-	if (args.size() == 5)
-	{
-		if (args[4] == "all")
-			printAll = true;
-	}
-	int id = atoi(args[3].c_str());
 	checkSpeedForId(id);
 	if (!candle->addMd80(id))
 		return;
-
 	candle->setupMd80DiagnosticExtended(id);
 	ui::printDriveInfoExtended(candle->getMd80FromList(id), printAll);
+}
+
+void MDtool::setupHoming(u16 id)
+{
+	candle->setupMd80PerformHoming(id);
 }
 
 void MDtool::testMove(std::vector<std::string>& args)
@@ -826,13 +789,6 @@ void MDtool::testEncoderMain(std::vector<std::string>& args)
 	candle->setupMd80TestMainEncoder(id);
 }
 
-void MDtool::setupHoming(std::vector<std::string>& args)
-{
-	int32_t id = checkArgsAndGetId(args, 4, 3);
-	if (id == -1)
-		return;
-	candle->setupMd80PerformHoming(id);
-}
 
 void MDtool::registerWrite(std::vector<std::string>& args)
 {

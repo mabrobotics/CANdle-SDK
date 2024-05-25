@@ -44,19 +44,20 @@ int main(int argc, char** argv)
 
 	// SETUP
 	auto* setupInfo		= setup->add_subcommand("info", "Display info about the MD drive.");
-	auto* setupCalib	= setup->add_subcommand("calibrate", "Calibrate main MD encoder.");
-	auto* setupCalibOut = setup->add_subcommand("calibrate_out", "Calibrate output encoder.");
-	auto* setupMotor	= setup->add_subcommand("motor", "Upload actuator config from .cfg file.");
+	auto* setupCalib	= setup->add_subcommand("calibration", "Calibrate main MD encoder.");
+	auto* setupCalibOut = setup->add_subcommand("calibration_out", "Calibrate output encoder.");
 	auto* setupHoming	= setup->add_subcommand("homing", "Begin homing procedure.");
+	auto* setupMotor	= setup->add_subcommand("motor", "Upload actuator config from .cfg file.");
 	setupInfo->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+	setupInfo->add_option("all", cmd.infoAll, "Print ALL available info.");
 	setupCalib->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 	setupCalibOut->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
-	setupMotor->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 	setupHoming->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+	setupMotor->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 	setupMotor->add_option(
-		"<.cfg PATH>",
+		"<.cfg FILENAME>",
 		cmd.cfgPath,
-		"Path to motor config. By default, searches ~/.config/mdtool/mdtool_motors/ .");
+		"Filename of motor config. By default, searches `~/.config/mdtool/mdtool_motors/`.");
 
 	// TEST
 	auto* testMove	  = test->add_subcommand("move", "Move motor relatie to current position.");
@@ -97,10 +98,31 @@ int main(int argc, char** argv)
 
 	if (app.got_subcommand("ping"))
 		mdtool.ping(cmd.variant);
-	if(config->parsed())
+	if (config->parsed())
 	{
-		if(configCan->parsed())
+		if (configCan->parsed())
 			mdtool.configCan(cmd.id, cmd.newId, cmd.baud, cmd.canWatchdog);
+		if (configZero->parsed())
+			mdtool.configZero(cmd.id);
+		if (configSave->parsed())
+			mdtool.configSave(cmd.id);
+		if (configCurrent->parsed())
+			mdtool.configCurrent(cmd.id, cmd.current);
+		if (configBand->parsed())
+			mdtool.configBandwidth(cmd.id, cmd.bandwidth);
+	}
+	if(setup->parsed())
+	{
+		if(setupInfo->parsed())
+			mdtool.setupInfo(cmd.id, cmd.infoAll);
+		if(setupCalib->parsed())
+			mdtool.setupCalibration(cmd.id);
+		if(setupCalibOut->parsed())
+			mdtool.setupCalibrationOutput(cmd.id);
+		if(setupHoming->parsed())
+			mdtool.setupHoming(cmd.id);
+		if(setupMotor->parsed())
+			mdtool.setupMotor(cmd.id, cmd.cfgPath);
 	}
 
 	return EXIT_SUCCESS;

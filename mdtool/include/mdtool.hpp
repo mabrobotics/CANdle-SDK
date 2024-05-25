@@ -57,6 +57,7 @@ struct UserCommand
 	u32			   bandwidth   = 100.f;
 	std::string	   cfgPath	   = "~/.config/mdtool/mdtool_motors/";
 	f32			   pos = 0.f, vel = 10.f, acc = 5.f, dcc = 5.f;
+	bool		   infoAll = false;
 };
 class MDtool
 {
@@ -64,6 +65,16 @@ class MDtool
 	MDtool(const UserCommand& cmd);
 	void ping(const std::string& variant);
 	void configCan(u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination = 0);
+	void configSave(u16 id);
+	void configZero(u16 id);
+	void configCurrent(u16 id, f32 current);
+	void configBandwidth(u16 id, f32 bandwidth);
+
+	void setupCalibration(u16 id);
+	void setupCalibrationOutput(u16 id);
+	void setupMotor(u16 id, const std::string& cfgPath);
+	void setupInfo(u16 id, bool printAll);
+	void setupHoming(u16 id);
 
   private:
 	const std::string mdtoolHomeConfigDirName = ".config";
@@ -82,17 +93,7 @@ class MDtool
 
 	bool printVerbose = true;
 
-	void configSave(std::vector<std::string>& args);
-	void configZero(std::vector<std::string>& args);
-	void configCurrent(std::vector<std::string>& args);
-	void configBandwidth(std::vector<std::string>& args);
 	void configClear(std::vector<std::string>& args);
-
-	void setupCalibration(std::vector<std::string>& args);
-	void setupCalibrationOutput(std::vector<std::string>& args);
-	void setupMotor(std::vector<std::string>& args);
-	void setupInfo(std::vector<std::string>& args);
-	void setupHoming(std::vector<std::string>& args);
 
 	void testMove(std::vector<std::string>& args);
 	void testMoveAbsolute(std::vector<std::string>& args);

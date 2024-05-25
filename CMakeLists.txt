@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.8)
 
 include(git_func.cmake)
 
+set(CMAKE_BUILD_TYPE Debug)
 set(CANDLESDK_VERSION 0.1.0)
 get_tag(CANDLESDK_VERSION_TAG)
 
@@ -16,7 +17,6 @@ elseif("${PLATFORM}" STREQUAL "WIN")
 endif()
 project(candlesdk)
 
-set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
