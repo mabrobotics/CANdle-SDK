@@ -116,7 +116,7 @@ bool UsbDevice::receive(int responseLen, int timeoutMs, bool checkCrc, bool faul
 		devh, inEndpointAdr, (u8*)rxBuffer, responseLen, &bytesReceived, timeoutMs);
 	if (ret < 0)
 	{
-		cout << "[USB] Failed to transmit!" << endl;
+		cout << "[USB] Failed to receive!" << endl;
 		return false;
 	}
 	return true;
