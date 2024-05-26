@@ -9,16 +9,16 @@ int main(int argc, char** argv)
 	app.ignore_case();
 	UserCommand cmd;
 
-	auto* ping	 = app.add_subcommand("ping", "Discover MD drives on CAN bus.");
-	auto* config = app.add_subcommand("config", "Configure CAN parameters of MD drive.");
-	auto* setup	 = app.add_subcommand("setup", "Setup MD via config files, and calibrate.");
-	auto* test	 = app.add_subcommand("test", "Basic MD drive testing routines.");
-	auto* blink	 = app.add_subcommand("blink", "Blink LEDs on MD drive.");
-	// auto* encoder = app.add_subcommand("encoder", "Display MD rotor position.");
-	// auto* bus	  = app.add_subcommand("bus", "Set CANdle bus parameters.");
+	auto* ping	  = app.add_subcommand("ping", "Discover MD drives on CAN bus.");
+	auto* config  = app.add_subcommand("config", "Configure CAN parameters of MD drive.");
+	auto* setup	  = app.add_subcommand("setup", "Setup MD via config files, and calibrate.");
+	auto* test	  = app.add_subcommand("test", "Basic MD drive testing routines.");
+	auto* blink	  = app.add_subcommand("blink", "Blink LEDs on MD drive.");
+	auto* encoder = app.add_subcommand("encoder", "Display MD rotor position.");
+	auto* bus	  = app.add_subcommand("bus", "Set CANdle bus parameters.");
 	// auto* registe = app.add_subcommand("register", "Access MD drive via register read/write.");
-	// auto* clear	  = app.add_subcommand("clear", "Clear Errors and Warnings.");
-	// auto* reset	  = app.add_subcommand("reset", "Reset MD drive.");
+	auto* clear	  = app.add_subcommand("clear", "Clear Errors and Warnings.");
+	auto* reset	  = app.add_subcommand("reset", "Reset MD drive.");
 
 	// PING
 	ping->add_option("<CAN BAUD>", cmd.variant, "Can be one of: 1M, 2M, 5M, 8M, all. Default: all");
@@ -72,16 +72,16 @@ int main(int argc, char** argv)
 	auto* testEncoderOut =
 		testEncoder->add_subcommand("output", "Perfrom test routine on output encoder.");
 
-	testMove->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
-	testMoveAbs->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 	testEncoderMain->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")
 		->required();
 	testEncoderOut->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")
 		->required();
 	testLatency->add_option("<CAN BAUD>", cmd.baud, "New CAN baudrate to set: 1M, 2M, 5M or 8M")
 		->required();
+	testMove->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 	testMove->add_option("<REL POS>", cmd.pos, "Relative position to reach. Range: <-10, 10> [rad]")
 		->required();
+	testMoveAbs->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 	testMoveAbs->add_option("<ABS POS>", cmd.pos, "Absolute position to reach [rad].")->required();
 	testMoveAbs->add_option("<MAX VEL>", cmd.vel, "Profile max velocity [rad/s].");
 	testMoveAbs->add_option("<MAX ACC>", cmd.acc, "Profile max acceleration [rad/s^2].");
@@ -90,13 +90,27 @@ int main(int argc, char** argv)
 	// BLINK
 	blink->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 
+	// ENCODER
+	encoder->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+
+	// BUS
+	bus->add_option("<BUS>", cmd.bus, "Can be USB/SPI/UART. Only for CANdleHAT.")->required();
+	bus->add_option("<DEVICE>", cmd.variant, "SPI/UART device to use, ie: /dev/spidev1.1.");
+
+	// CLEAR 
+	clear->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+	clear->add_option("<LEVEL>", cmd.variant, "Can be: warning, error, all")->required();
+	
+	// RESET 
+	reset->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+
 	CLI11_PARSE(app, argc, argv);
 
 	MDtool mdtool(cmd);
 	if (app.count_all() == 1)
 		std::cerr << app.help() << std::endl;
 
-	if (app.got_subcommand("ping"))
+	if (ping->parsed())
 		mdtool.ping(cmd.variant);
 	if (config->parsed())
 	{
@@ -111,19 +125,34 @@ int main(int argc, char** argv)
 		if (configBand->parsed())
 			mdtool.configBandwidth(cmd.id, cmd.bandwidth);
 	}
-	if(setup->parsed())
+	if (setup->parsed())
 	{
-		if(setupInfo->parsed())
+		if (setupInfo->parsed())
 			mdtool.setupInfo(cmd.id, cmd.infoAll);
-		if(setupCalib->parsed())
+		if (setupCalib->parsed())
 			mdtool.setupCalibration(cmd.id);
-		if(setupCalibOut->parsed())
+		if (setupCalibOut->parsed())
 			mdtool.setupCalibrationOutput(cmd.id);
-		if(setupHoming->parsed())
+		if (setupHoming->parsed())
 			mdtool.setupHoming(cmd.id);
-		if(setupMotor->parsed())
+		if (setupMotor->parsed())
 			mdtool.setupMotor(cmd.id, cmd.cfgPath);
 	}
+	if(test->parsed())
+	{
+		if(testMove->parsed())
+			mdtool.testMove(cmd.id, cmd.pos);
+	}
+	if (blink->parsed())
+		mdtool.blink(cmd.id);
+	if (encoder->parsed())
+		mdtool.encoder(cmd.id);
+	if (bus->parsed())
+		mdtool.bus(cmd.bus, cmd.busDevice);
+	if (clear->parsed())
+		mdtool.clearErrors(cmd.id, cmd.variant);
+	if(reset->parsed())
+		mdtool.reset(cmd.id);
 
 	return EXIT_SUCCESS;
 }

@@ -8,6 +8,8 @@
 #include "ConfigManager.hpp"
 #include "ui.hpp"
 
+f32 lerp(f32 start, f32 end, f32 t) { return (start * (1.f - t)) + (end * t); }
+
 toolsOptions_E str2option(std::string& opt)
 {
 	if (opt == "current")
@@ -285,18 +287,9 @@ void MDtool::configCan(u16 id, u16 newId, const std::string& baud, u16 timeout, 
 	checkSpeedForId(id);
 	candle->configMd80Can(id, newId, str2baud(baud), timeout, termination);
 }
-void MDtool::configSave(u16 id)
-{
-	candle->configMd80Save(id);
-}
-void MDtool::configZero(u16 id)
-{
-	candle->controlMd80SetEncoderZero(id);
-}
-void MDtool::configCurrent(u16 id, f32 current)
-{
-	candle->configMd80SetCurrentLimit(id, current);
-}
+void MDtool::configSave(u16 id) { candle->configMd80Save(id); }
+void MDtool::configZero(u16 id) { candle->controlMd80SetEncoderZero(id); }
+void MDtool::configCurrent(u16 id, f32 current) { candle->configMd80SetCurrentLimit(id, current); }
 
 void MDtool::configBandwidth(u16 id, f32 bandwidth)
 {
@@ -601,46 +594,38 @@ void MDtool::setupInfo(u16 id, bool printAll)
 	ui::printDriveInfoExtended(candle->getMd80FromList(id), printAll);
 }
 
-void MDtool::setupHoming(u16 id)
-{
-	candle->setupMd80PerformHoming(id);
-}
+void MDtool::setupHoming(u16 id) { candle->setupMd80PerformHoming(id); }
 
-void MDtool::testMove(std::vector<std::string>& args)
+void MDtool::testMove(u16 id, f32 targetPosition)
 {
-	int32_t id = checkArgsAndGetId(args, 5, 3);
-	if (id == -1)
+	if (targetPosition > 10.0f)
+		targetPosition = 10.0f;
+	if (targetPosition < -10.0f)
+		targetPosition = -10.0f;
+	if (!tryAddMD80(id))
 		return;
-
-	float targetPos = atof(args[4].c_str());
-	if (targetPos > 10.0f)
-		targetPos = 10.0f;
-	if (targetPos < -10.0f)
-		targetPos = -10.0f;
-
-	/* check if no critical errors are present */
 	if (checkErrors(id))
 	{
-		std::cout << "[MDTOOL] Could not proceed due to errors: " << std::endl;
+		log.error("Cannot move! There are errors:");
 		ui::printAllErrors(candle->md80s[0]);
 		return;
 	}
 
-	candle->controlMd80SetEncoderZero(id);
+	mab::Md80& md = candle->md80s[0];
 	candle->controlMd80Mode(id, mab::Md80Mode_E::IMPEDANCE);
+	f32 pos = md.getPosition();
+	md.setTargetPosition(pos);
+	targetPosition += pos;
+
 	candle->controlMd80Enable(id, true);
 	candle->begin();
-	usleep(100000);
-
-	float dp  = (targetPos + candle->md80s[0].getPosition()) / 300;
-	float pos = 0.0f;
-	for (int i = 0; i < 300; i++)
+	for (f32 t = 0.f; t < 1.f; t += 0.01f)
 	{
-		pos += dp;
-		candle->md80s[0].setTargetPosition(pos);
-		usleep(10000);
-		ui::printPositionAndVelocity(
-			id, candle->md80s[0].getPosition(), candle->md80s[0].getVelocity());
+		f32 target = lerp(pos, targetPosition, t);
+		log.level  = logger::LogLevel_E::DEBUG;
+		md.setTargetPosition(target);
+		log.info("[%4d] Position: %4.2f, Velocity: %4.1f", id, md.getPosition(), md.getVelocity());
+		usleep(30000);
 	}
 	std::cout << std::endl;
 
@@ -789,7 +774,6 @@ void MDtool::testEncoderMain(std::vector<std::string>& args)
 	candle->setupMd80TestMainEncoder(id);
 }
 
-
 void MDtool::registerWrite(std::vector<std::string>& args)
 {
 	int32_t id = checkArgsAndGetId(args, 6, 3);
@@ -891,82 +875,54 @@ void MDtool::registerRead(std::vector<std::string>& args)
 	std::cout << "[MDTOOL] Register value: " << value << std::endl;
 }
 
-void MDtool::blink(std::vector<std::string>& args)
+void MDtool::blink(u16 id) { candle->configMd80Blink(id); }
+void MDtool::encoder(u16 id)
 {
-	int32_t id = checkArgsAndGetId(args, 3, 2);
-	if (id == -1)
+	if (!tryAddMD80(id))
 		return;
-	candle->configMd80Blink(id);
-}
-void MDtool::encoder(std::vector<std::string>& args)
-{
-	int32_t id = checkArgsAndGetId(args, 3, 2);
-	if (id == -1)
-		return;
+	mab::Md80& md = candle->md80s[0];
 	candle->controlMd80Mode(id, mab::Md80Mode_E::IDLE);
 	candle->controlMd80Enable(id, true);
 	candle->begin();
-
 	while (1)
 	{
-		ui::printPositionAndVelocity(
-			id, candle->md80s[0].getPosition(), candle->md80s[0].getVelocity());
+		log.info("[%4d] Position: %6.2f, Velocity: %6.1f", id, md.getPosition(), md.getVelocity());
 		usleep(100000);
 	}
 	candle->end();
 }
-void MDtool::bus(std::vector<std::string>& args)
+void MDtool::bus(const std::string& bus, const std::string& device)
 {
-	if (args.size() < 3 || args.size() > 4)
+	if (bus != "USB" && bus != "SPI" && bus != "UART")
+		return;
+	if ((bus == "SPI" || bus == "UART") && device == "")
 	{
-		ui::printTooFewArgsNoHelp();
+		log.error("Bus: %s, requires specifying device!", bus);
 		return;
 	}
-
-	if (args[2] != "SPI" && args[2] != "UART" && args[2] != "USB")
-	{
-		ui::printWrongArgumentsSpecified();
-		return;
-	}
-
-	changeDefaultConfig(args[2], args[3]);
-}
-
-void MDtool::changeDefaultConfig(std::string bus, std::string device)
-{
 	mINI::INIFile	   file(mdtoolIniFilePath);
 	mINI::INIStructure ini;
 	file.read(ini);
-	if (!bus.empty())
-		ini["communication"]["bus"] = bus;
-	if (!device.empty() && (bus == "SPI" || bus == "UART"))
-		ini["communication"]["device"] = device;
-	else
-		ini["communication"]["device"] = "";
+	ini["communication"]["bus"]	   = bus;
+	ini["communication"]["device"] = device;
 	file.write(ini);
 }
 
-void MDtool::clearErrors(std::vector<std::string>& args)
+void MDtool::clearErrors(u16 id, const std::string& level)
 {
-	int32_t id = checkArgsAndGetId(args, 4, 3);
-	if (id == -1)
-		return;
-	candle->setupMd80ClearErrors(id);
+	if (level == "error")
+		candle->setupMd80ClearErrors(id);
+	if (level == "warning")
+		candle->setupMd80ClearWarnings(id);
+	else
+	{
+		candle->setupMd80ClearErrors(id);
+		candle->setupMd80ClearWarnings(id);
+	}
 }
 
-void MDtool::clearWarnings(std::vector<std::string>& args)
+void MDtool::reset(u16 id)
 {
-	int32_t id = checkArgsAndGetId(args, 4, 3);
-	if (id == -1)
-		return;
-	candle->setupMd80ClearWarnings(id);
-}
-
-void MDtool::reset(std::vector<std::string>& args)
-{
-	int32_t id = checkArgsAndGetId(args, 3, 2);
-	if (id == -1)
-		return;
 	candle->setupMd80PerformReset(id);
 }
 
@@ -1061,9 +1017,11 @@ bool MDtool::checkArgs(std::vector<std::string>& args, uint32_t size)
 bool MDtool::tryAddMD80(uint16_t id)
 {
 	checkSpeedForId(id);
-
 	if (!candle->addMd80(id))
+	{
+		log.error("MD with ID: %d, not found on the bus.", id);
 		return false;
+	}
 	return true;
 }
 

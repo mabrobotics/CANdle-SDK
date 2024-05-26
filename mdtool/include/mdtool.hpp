@@ -58,7 +58,9 @@ struct UserCommand
 	u32			   bandwidth   = 100.f;
 	std::string	   cfgPath	   = "~/.config/mdtool/mdtool_motors/";
 	f32			   pos = 0.f, vel = 10.f, acc = 5.f, dcc = 5.f;
-	bool		   infoAll = false;
+	bool		   infoAll	 = false;
+	std::string	   bus		 = "USB";
+	std::string	   busDevice = "";
 };
 class MDtool
 {
@@ -77,6 +79,19 @@ class MDtool
 	void setupInfo(u16 id, bool printAll);
 	void setupHoming(u16 id);
 
+	void testMove(u16 id, f32 targetPosition);
+	void testMoveAbsolute(std::vector<std::string>& args);
+	void testLatency(std::vector<std::string>& args);
+	void testEncoderOutput(std::vector<std::string>& args);
+	void testEncoderMain(std::vector<std::string>& args);
+
+	void blink(u16 id);
+	void encoder(u16 id);
+	void bus(const std::string& bus, const std::string& device);
+
+	void clearErrors(u16 id, const std::string& level);
+	void reset(u16 id);
+
   private:
 	const std::string mdtoolHomeConfigDirName = ".config";
 	const std::string mdtoolDirName			  = "mdtool";
@@ -85,7 +100,7 @@ class MDtool
 
 	const std::string mdtoolConfigPath = "/etc/";
 
-	logger log = {.tag = "MDTOOL"};
+	logger		log = {.tag = "MDTOOL"};
 	std::string mdtoolBaseDir;
 	std::string mdtoolIniFilePath;
 
@@ -97,22 +112,10 @@ class MDtool
 
 	void configClear(std::vector<std::string>& args);
 
-	void testMove(std::vector<std::string>& args);
-	void testMoveAbsolute(std::vector<std::string>& args);
-	void testLatency(std::vector<std::string>& args);
-	void testEncoderOutput(std::vector<std::string>& args);
-	void testEncoderMain(std::vector<std::string>& args);
 	void registerWrite(std::vector<std::string>& args);
 	void registerRead(std::vector<std::string>& args);
-	void blink(std::vector<std::string>& args);
-	void encoder(std::vector<std::string>& args);
-	void bus(std::vector<std::string>& args);
 
-	void clearErrors(std::vector<std::string>& args);
-	void clearWarnings(std::vector<std::string>& args);
-	void reset(std::vector<std::string>& args);
 
-	void				  changeDefaultConfig(std::string bus, std::string device);
 	mab::CANdleBaudrate_E checkSpeedForId(uint16_t id);
 
 	uint8_t getNumericParamFromList(std::string& param, const std::vector<std::string>& list);
