@@ -50,7 +50,7 @@ namespace mab
 		{
 			vout << "Failed to set up CANdle baudrate @" << canBaudrate << "Mbps!" << statusFAIL
 				 << std::endl;
-			throw "Failed to set up CANdle baudrate!";
+			throw std::runtime_error("Failed to set up CANdle baudrate!");
 		}
 
 		if (bus->getType() == mab::BusType_E::USB)
@@ -105,7 +105,7 @@ namespace mab
 					return std::make_shared<UartDevice>();
 			}
 			default:
-				throw "Error wrong bus type specified!";
+				throw std::runtime_error("Error wrong bus type specified!");
 		}
 		return nullptr;
 	}
@@ -494,7 +494,7 @@ namespace mab
 		for (auto& md : md80s)
 			if (md.getId() == id)
 				return md;
-		throw "getMd80FromList(id): Id not found on the list!";
+		throw std::runtime_error("getMd80FromList(id): Id not found on the list!");
 	}
 	bool Candle::controlMd80SetEncoderZero(Md80& drive)
 	{
