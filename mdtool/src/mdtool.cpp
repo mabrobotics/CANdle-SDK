@@ -380,7 +380,7 @@ void MDtool::setupMotor(u16 id, const std::string& cfgFilename)
 		return;
 	}
 
-	if(!tryAddMD80(id))
+	if (!tryAddMD80(id))
 		return;
 	mab::regWrite_st& regW = candle->getMd80FromList(id).getWriteReg();
 	mab::regRead_st&  regR = candle->getMd80FromList(id).getReadReg();
@@ -722,67 +722,61 @@ void MDtool::testEncoderMain(u16 id)
 	candle->setupMd80TestMainEncoder(id);
 }
 
-void MDtool::registerWrite(std::vector<std::string>& args)
+void MDtool::registerWrite(u16 id, u16 reg, const std::string& value)
 {
-	int32_t id = checkArgsAndGetId(args, 6, 3);
-	if (id == -1)
+	if (!tryAddMD80(id))
 		return;
 
-	mab::Md80Reg_E regId = static_cast<mab::Md80Reg_E>(std::strtol(args[4].c_str(), nullptr, 16));
-	uint32_t	   regValue = atoi(args[5].c_str());
+	mab::Md80Reg_E regId	= (mab::Md80Reg_E)reg;
+	u32			   regValue = atoi(value.c_str());
 
 	bool success = false;
 
 	switch (mab::Register::getType(regId))
 	{
 		case mab::Register::type::U8:
-			success = candle->writeMd80Register(id, regId, static_cast<uint8_t>(regValue));
+			success = candle->writeMd80Register(id, regId, (u8)regValue);
 			break;
 		case mab::Register::type::I8:
-			success = candle->writeMd80Register(id, regId, static_cast<int8_t>(regValue));
+			success = candle->writeMd80Register(id, regId, (s8)regValue);
 			break;
 		case mab::Register::type::U16:
-			success = candle->writeMd80Register(id, regId, static_cast<uint16_t>(regValue));
+			success = candle->writeMd80Register(id, regId, (u16)regValue);
 			break;
 		case mab::Register::type::I16:
-			success = candle->writeMd80Register(id, regId, static_cast<int16_t>(regValue));
+			success = candle->writeMd80Register(id, regId, (s16)regValue);
 			break;
 		case mab::Register::type::U32:
-			success = candle->writeMd80Register(id, regId, static_cast<uint32_t>(regValue));
+			success = candle->writeMd80Register(id, regId, (u32)regValue);
 			break;
 		case mab::Register::type::I32:
-			success = candle->writeMd80Register(id, regId, static_cast<int32_t>(regValue));
+			success = candle->writeMd80Register(id, regId, (s32)regValue);
 			break;
 		case mab::Register::type::F32:
-			success = candle->writeMd80Register(
-				id, regId, static_cast<float>(std::atof(args[5].c_str())));
+			success = candle->writeMd80Register(id, regId, (f32)std::atof(value.c_str()));
 			break;
 		case mab::Register::type::STR:
 		{
-			char str[24]{};
-			memcpy(str, args[5].c_str(), sizeof(str));
+			char str[24] = {};
+			strncpy(str, value.c_str(), sizeof(str));
 			success = candle->writeMd80Register(id, regId, str);
 			break;
 		}
 		case mab::Register::type::UNKNOWN:
-			std::cout << "[MDTOOL] Unknown register! Please check the ID and try again"
-					  << std::endl;
+			log.error("Unknown register! Please check the ID and try again");
 	}
 	if (success)
-		std::cout << "[MDTOOL] Writing register successful!" << std::endl;
+		log.success("Writing register successful!");
 	else
-		std::cout << "[MDTOOL] Writing register failed!" << std::endl;
+		log.error("Writing register failed!");
 }
 
-void MDtool::registerRead(std::vector<std::string>& args)
+void MDtool::registerRead(u16 id, u16 reg)
 {
-	int32_t id = checkArgsAndGetId(args, 5, 3);
-	if (id == -1)
+	if (!tryAddMD80(id))
 		return;
-
-	mab::Md80Reg_E regId = static_cast<mab::Md80Reg_E>(std::strtol(args[4].c_str(), nullptr, 16));
-
-	std::string value = "";
+	mab::Md80Reg_E regId = (mab::Md80Reg_E)reg;
+	std::string	   value = "";
 
 	switch (mab::Register::getType(regId))
 	{
@@ -815,12 +809,10 @@ void MDtool::registerRead(std::vector<std::string>& args)
 			break;
 		}
 		case mab::Register::type::UNKNOWN:
-			std::cout << "[MDTOOL] Unknown register! Please check the ID and try again"
-					  << std::endl;
+			log.error("Unknown register! Please check the ID and try again");
 			break;
 	}
-
-	std::cout << "[MDTOOL] Register value: " << value << std::endl;
+	log.success("Register value: %s", value.c_str());
 }
 
 void MDtool::blink(u16 id) { candle->configMd80Blink(id); }

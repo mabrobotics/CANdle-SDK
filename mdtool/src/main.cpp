@@ -16,9 +16,9 @@ int main(int argc, char** argv)
 	auto* blink	  = app.add_subcommand("blink", "Blink LEDs on MD drive.");
 	auto* encoder = app.add_subcommand("encoder", "Display MD rotor position.");
 	auto* bus	  = app.add_subcommand("bus", "Set CANdle bus parameters.");
-	// auto* registe = app.add_subcommand("register", "Access MD drive via register read/write.");
-	auto* clear = app.add_subcommand("clear", "Clear Errors and Warnings.");
-	auto* reset = app.add_subcommand("reset", "Reset MD drive.");
+	auto* registr = app.add_subcommand("register", "Access MD drive via register read/write.");
+	auto* clear	  = app.add_subcommand("clear", "Clear Errors and Warnings.");
+	auto* reset	  = app.add_subcommand("reset", "Reset MD drive.");
 
 	// PING
 	ping->add_option("<CAN BAUD>", cmd.variant, "Can be one of: 1M, 2M, 5M, 8M, all. Default: all");
@@ -105,6 +105,15 @@ int main(int argc, char** argv)
 	// RESET
 	reset->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 
+	// REGISTER
+	auto* regRead  = registr->add_subcommand("read", "Read MD register.");
+	auto* regWrite = registr->add_subcommand("write", "Write MD register.");
+	regRead->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+	regRead->add_option("<REG ID>", cmd.reg, "Register ID (offset) to read data from.")->required();
+	regWrite->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+	regWrite->add_option("<REG ID>", cmd.reg, "Register ID (offset) to write data to.")->required();
+	regWrite->add_option("<VALUE>", cmd.value, "Value to write")->required();
+
 	CLI11_PARSE(app, argc, argv);
 
 	MDtool mdtool(cmd);
@@ -151,6 +160,14 @@ int main(int argc, char** argv)
 			mdtool.testEncoderOutput(cmd.id);
 		if (testLatency->parsed())
 			mdtool.testLatency(cmd.baud);
+	}
+	if (registr->parsed())
+	{
+		u16 reg = strtoul(cmd.reg.c_str(), nullptr, 16);
+		if (regRead->parsed())
+			mdtool.registerRead(cmd.id, reg);
+		if (regWrite->parsed())
+			mdtool.registerWrite(cmd.id, reg, cmd.value);
 	}
 	if (blink->parsed())
 		mdtool.blink(cmd.id);

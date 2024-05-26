@@ -54,12 +54,14 @@ struct UserCommand
 	u32			   newId	   = 0;
 	std::string	   baud		   = "1M";
 	u32			   canWatchdog = 100;
-	u32			   current	   = 1.f;
-	u32			   bandwidth   = 100.f;
+	f32			   current	   = 1.f;
+	f32			   bandwidth   = 100.f;
 	std::string	   cfgPath	   = "~/.config/mdtool/mdtool_motors/";
 	f32			   pos = 0.f, vel = 10.f, acc = 5.f, dcc = 5.f;
-	bool		   infoAll	 = false;
-	std::string	   bus		 = "USB";
+	bool		   infoAll = false;
+	std::string	   bus	   = "USB";
+	std::string	   reg	   = "0x0000";
+	std::string	   value   = "";
 };
 class MDtool
 {
@@ -86,9 +88,10 @@ class MDtool
 	void blink(u16 id);
 	void encoder(u16 id);
 	void bus(const std::string& bus, const std::string& device);
-
 	void clearErrors(u16 id, const std::string& level);
 	void reset(u16 id);
+	void registerWrite(u16 id, u16 reg, const std::string& value);
+	void registerRead(u16 id, u16 reg);
 
   private:
 	const std::string mdtoolHomeConfigDirName = ".config";
@@ -106,13 +109,8 @@ class MDtool
 
 	std::string busString;
 
-	bool printVerbose = true;
-
-	void configClear(std::vector<std::string>& args);
-
-	void registerWrite(std::vector<std::string>& args);
-	void registerRead(std::vector<std::string>& args);
-
+	bool				  printVerbose = true;
+	void				  configClear(std::vector<std::string>& args);
 	mab::CANdleBaudrate_E checkSpeedForId(uint16_t id);
 
 	uint8_t getNumericParamFromList(std::string& param, const std::vector<std::string>& list);
