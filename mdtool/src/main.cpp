@@ -17,8 +17,8 @@ int main(int argc, char** argv)
 	auto* encoder = app.add_subcommand("encoder", "Display MD rotor position.");
 	auto* bus	  = app.add_subcommand("bus", "Set CANdle bus parameters.");
 	// auto* registe = app.add_subcommand("register", "Access MD drive via register read/write.");
-	auto* clear	  = app.add_subcommand("clear", "Clear Errors and Warnings.");
-	auto* reset	  = app.add_subcommand("reset", "Reset MD drive.");
+	auto* clear = app.add_subcommand("clear", "Clear Errors and Warnings.");
+	auto* reset = app.add_subcommand("reset", "Reset MD drive.");
 
 	// PING
 	ping->add_option("<CAN BAUD>", cmd.variant, "Can be one of: 1M, 2M, 5M, 8M, all. Default: all");
@@ -49,7 +49,7 @@ int main(int argc, char** argv)
 	auto* setupHoming	= setup->add_subcommand("homing", "Begin homing procedure.");
 	auto* setupMotor	= setup->add_subcommand("motor", "Upload actuator config from .cfg file.");
 	setupInfo->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
-	setupInfo->add_option("all", cmd.infoAll, "Print ALL available info.");
+	auto* setupInfoAllFlag = setupInfo->add_flag("-a", "Print ALL available info.");
 	setupCalib->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 	setupCalibOut->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 	setupHoming->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
@@ -60,13 +60,14 @@ int main(int argc, char** argv)
 		"Filename of motor config. By default, searches `~/.config/mdtool/mdtool_motors/`.");
 
 	// TEST
-	auto* testMove	  = test->add_subcommand("move", "Move motor relatie to current position.");
+	auto* testMove	  = test->add_subcommand("move", "Validate if motor can move.");
+	auto* testMoveAbs = testMove->add_subcommand("absolute", "Move motor to absolute position.");
+	auto* testMoveRel = testMove->add_subcommand("relative", "Move motor to relative position.");
+	auto* testEncoder = test->add_subcommand("encoder", "Perform accuracy test on encoder.");
 	auto* testLatency = test->add_subcommand(
 		"latency",
 		"Test max data exchange rate between your computer and all MD connected  drives.");
-	auto* testEncoder = test->add_subcommand("encoder", "Perform accuracy test on encoder.");
 
-	auto* testMoveAbs = testMove->add_subcommand("absolute", "Move motor to absolute position.");
 	auto* testEncoderMain =
 		testEncoder->add_subcommand("main", "Perfrom test routine on main encoder.");
 	auto* testEncoderOut =
@@ -78,9 +79,9 @@ int main(int argc, char** argv)
 		->required();
 	testLatency->add_option("<CAN BAUD>", cmd.baud, "New CAN baudrate to set: 1M, 2M, 5M or 8M")
 		->required();
-	testMove->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
-	testMove->add_option("<REL POS>", cmd.pos, "Relative position to reach. Range: <-10, 10> [rad]")
-		->required();
+
+	testMoveRel->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+	testMoveRel->add_option("<REL POS>", cmd.pos, "Relative position to reach. <-10, 10>[rad]");
 	testMoveAbs->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 	testMoveAbs->add_option("<ABS POS>", cmd.pos, "Absolute position to reach [rad].")->required();
 	testMoveAbs->add_option("<MAX VEL>", cmd.vel, "Profile max velocity [rad/s].");
@@ -97,11 +98,11 @@ int main(int argc, char** argv)
 	bus->add_option("<BUS>", cmd.bus, "Can be USB/SPI/UART. Only for CANdleHAT.")->required();
 	bus->add_option("<DEVICE>", cmd.variant, "SPI/UART device to use, ie: /dev/spidev1.1.");
 
-	// CLEAR 
+	// CLEAR
 	clear->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 	clear->add_option("<LEVEL>", cmd.variant, "Can be: warning, error, all")->required();
-	
-	// RESET 
+
+	// RESET
 	reset->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 
 	CLI11_PARSE(app, argc, argv);
@@ -128,7 +129,7 @@ int main(int argc, char** argv)
 	if (setup->parsed())
 	{
 		if (setupInfo->parsed())
-			mdtool.setupInfo(cmd.id, cmd.infoAll);
+			mdtool.setupInfo(cmd.id, (setupInfoAllFlag->count() > 0 ? true : false));
 		if (setupCalib->parsed())
 			mdtool.setupCalibration(cmd.id);
 		if (setupCalibOut->parsed())
@@ -138,20 +139,28 @@ int main(int argc, char** argv)
 		if (setupMotor->parsed())
 			mdtool.setupMotor(cmd.id, cmd.cfgPath);
 	}
-	if(test->parsed())
+	if (test->parsed())
 	{
-		if(testMove->parsed())
+		if (testMoveRel->parsed())
 			mdtool.testMove(cmd.id, cmd.pos);
+		if (testMoveAbs->parsed())
+			mdtool.testMoveAbsolute(cmd.id, cmd.pos, cmd.vel, cmd.acc, cmd.dcc);
+		if (testEncoderMain->parsed())
+			mdtool.testEncoderMain(cmd.id);
+		if (testEncoderOut->parsed())
+			mdtool.testEncoderOutput(cmd.id);
+		if (testLatency->parsed())
+			mdtool.testLatency(cmd.baud);
 	}
 	if (blink->parsed())
 		mdtool.blink(cmd.id);
 	if (encoder->parsed())
 		mdtool.encoder(cmd.id);
 	if (bus->parsed())
-		mdtool.bus(cmd.bus, cmd.busDevice);
+		mdtool.bus(cmd.bus, cmd.variant);
 	if (clear->parsed())
 		mdtool.clearErrors(cmd.id, cmd.variant);
-	if(reset->parsed())
+	if (reset->parsed())
 		mdtool.reset(cmd.id);
 
 	return EXIT_SUCCESS;

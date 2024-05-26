@@ -380,6 +380,8 @@ void MDtool::setupMotor(u16 id, const std::string& cfgFilename)
 		return;
 	}
 
+	if(!tryAddMD80(id))
+		return;
 	mab::regWrite_st& regW = candle->getMd80FromList(id).getWriteReg();
 	mab::regRead_st&  regR = candle->getMd80FromList(id).getReadReg();
 
@@ -604,12 +606,8 @@ void MDtool::testMove(u16 id, f32 targetPosition)
 		targetPosition = -10.0f;
 	if (!tryAddMD80(id))
 		return;
-	if (checkErrors(id))
-	{
-		log.error("Cannot move! There are errors:");
-		ui::printAllErrors(candle->md80s[0]);
+	if (hasError(id))
 		return;
-	}
 
 	mab::Md80& md = candle->md80s[0];
 	candle->controlMd80Mode(id, mab::Md80Mode_E::IMPEDANCE);
@@ -627,70 +625,41 @@ void MDtool::testMove(u16 id, f32 targetPosition)
 		log.info("[%4d] Position: %4.2f, Velocity: %4.1f", id, md.getPosition(), md.getVelocity());
 		usleep(30000);
 	}
-	std::cout << std::endl;
-
 	candle->end();
 }
 
-void MDtool::testMoveAbsolute(std::vector<std::string>& args)
+void MDtool::testMoveAbsolute(u16 id, f32 targetPos, f32 velLimit, f32 accLimit, f32 dccLimit)
 {
-	if (args.size() < 6)
-	{
-		ui::printTooFewArgsNoHelp();
-		return;
-	}
-	uint16_t id = atoi(args[4].c_str());
-
 	if (!tryAddMD80(id))
 		return;
 
-	float targetPos = std::stof(args[5].c_str());
-
-	/* check if no critical errors are present */
-	if (checkErrors(id))
-	{
-		std::cout << "[MDTOOL] Could not proceed due to errors: " << std::endl;
-		ui::printAllErrors(candle->md80s[0]);
+	if (hasError(id))
 		return;
-	}
-
-	if (args.size() > 6)
-		candle->writeMd80Register(id, mab::Md80Reg_E::profileVelocity, std::stof(args[6].c_str()));
-	if (args.size() > 7)
-		candle->writeMd80Register(
-			id, mab::Md80Reg_E::profileAcceleration, std::stof(args[7].c_str()));
-	if (args.size() > 8)
-		candle->writeMd80Register(
-			id, mab::Md80Reg_E::profileDeceleration, std::stof(args[8].c_str()));
+	if (velLimit > 0)
+		candle->writeMd80Register(id, mab::Md80Reg_E::profileVelocity, velLimit);
+	if (accLimit > 0)
+		candle->writeMd80Register(id, mab::Md80Reg_E::profileAcceleration, accLimit);
+	if (dccLimit > 0)
+		candle->writeMd80Register(id, mab::Md80Reg_E::profileDeceleration, dccLimit);
 
 	candle->controlMd80Mode(id, mab::Md80Mode_E::POSITION_PROFILE);
 	candle->controlMd80Enable(id, true);
 	candle->begin();
-
 	candle->md80s[0].setTargetPosition(targetPos);
 	while (!candle->md80s[0].isTargetPositionReached())
-	{
 		sleep(1);
-	};
-	std::cout << "[MDTOOL] TARGET REACHED!" << std::endl;
-
+	log.info("TARGET REACHED!");
 	candle->end();
 }
 
-void MDtool::testLatency(std::vector<std::string>& args)
+void MDtool::testLatency(const std::string& canBaudrate)
 {
 	struct sched_param sp;
 	memset(&sp, 0, sizeof(sp));
 	sp.sched_priority = 99;
 	sched_setscheduler(0, SCHED_FIFO, &sp);
 
-	if (args.size() != 4)
-	{
-		ui::printTooFewArgsNoHelp();
-		return;
-	}
-
-	auto ids = candle->ping(str2baud(args[3]));
+	auto ids = candle->ping(str2baud(canBaudrate));
 
 	if (ids.size() == 0)
 		return;
@@ -705,8 +674,8 @@ void MDtool::testLatency(std::vector<std::string>& args)
 
 	candle->begin();
 
-	std::vector<uint32_t> samples;
-	const uint32_t		  timelen = 10;
+	std::vector<u32> samples;
+	const u32		 timelen = 10;
 
 	sleep(1);
 
@@ -714,63 +683,42 @@ void MDtool::testLatency(std::vector<std::string>& args)
 	{
 		sleep(1);
 		samples.push_back(candle->getActualCommunicationFrequency());
-		std::cout << "Current average communication speed: " << samples[i] << " Hz" << std::endl;
+		log.info("Current average communication speed: %d Hz", samples[i]);
 	}
 
 	/* calculate mean and stdev */
-	float sum = std::accumulate(std::begin(samples), std::end(samples), 0.0);
-	float m	  = sum / samples.size();
+	f32 sum = std::accumulate(std::begin(samples), std::end(samples), 0.0);
+	f32 m	= sum / samples.size();
 
-	float accum = 0.0;
+	f32 accum = 0.0;
 	std::for_each(
-		std::begin(samples), std::end(samples), [&](const float d) { accum += (d - m) * (d - m); });
-
-	float stdev = sqrt(accum / (samples.size() - 1));
+		std::begin(samples), std::end(samples), [&](const f32 d) { accum += (d - m) * (d - m); });
+	f32 stdev = sqrt(accum / (samples.size() - 1));
 
 	ui::printLatencyTestResult(ids.size(), m, stdev, busString);
 
 	candle->end();
 }
 
-void MDtool::testEncoderOutput(std::vector<std::string>& args)
+void MDtool::testEncoderOutput(u16 id)
 {
-	int32_t id = checkArgsAndGetId(args, 5, 4);
-	if (id == -1)
+	if (!tryAddMD80(id) && hasError(id))
 		return;
-	/* check if no critical errors are present */
-	if (checkErrors(id))
-	{
-		std::cout << "[MDTOOL] Could not proceed due to errors: " << std::endl;
-		ui::printAllErrors(candle->md80s[0]);
-		return;
-	}
 
-	uint16_t outputEncoder = 0;
+	u16 outputEncoder = 0;
 	candle->readMd80Register(id, mab::Md80Reg_E::outputEncoder, outputEncoder);
-
 	if (!outputEncoder)
 	{
-		std::cout << "[MDTOOL] No output encoder is configured! " << RED__("[FAILED]") << std::endl;
+		log.warn("No output encoder on ID: %d! Not testing.", id);
 		return;
 	}
-
 	candle->setupMd80TestOutputEncoder(id);
 }
 
-void MDtool::testEncoderMain(std::vector<std::string>& args)
+void MDtool::testEncoderMain(u16 id)
 {
-	int32_t id = checkArgsAndGetId(args, 5, 4);
-	if (id == -1)
+	if (!tryAddMD80(id) && hasError(id))
 		return;
-
-	/* check if no critical errors are present */
-	if (checkErrors(id))
-	{
-		std::cout << "[MDTOOL] Could not proceed due to errors: " << std::endl;
-		ui::printAllErrors(candle->md80s[0]);
-		return;
-	}
-
 	candle->setupMd80TestMainEncoder(id);
 }
 
@@ -897,7 +845,7 @@ void MDtool::bus(const std::string& bus, const std::string& device)
 		return;
 	if ((bus == "SPI" || bus == "UART") && device == "")
 	{
-		log.error("Bus: %s, requires specifying device!", bus);
+		log.error("Bus: %s, requires specifying device!", bus.c_str());
 		return;
 	}
 	mINI::INIFile	   file(mdtoolIniFilePath);
@@ -921,10 +869,7 @@ void MDtool::clearErrors(u16 id, const std::string& level)
 	}
 }
 
-void MDtool::reset(u16 id)
-{
-	candle->setupMd80PerformReset(id);
-}
+void MDtool::reset(u16 id) { candle->setupMd80PerformReset(id); }
 
 mab::CANdleBaudrate_E MDtool::checkSpeedForId(uint16_t id)
 {
@@ -955,7 +900,7 @@ uint8_t MDtool::getNumericParamFromList(std::string& param, const std::vector<st
 	return 0;
 }
 
-bool MDtool::checkErrors(uint16_t canId)
+bool MDtool::hasError(uint16_t canId)
 {
 	candle->setupMd80DiagnosticExtended(canId);
 
@@ -965,7 +910,11 @@ bool MDtool::checkErrors(uint16_t canId)
 		candle->getMd80FromList(canId).getReadReg().RO.hardwareErrors & 0x0000ffff ||
 		candle->getMd80FromList(canId).getReadReg().RO.bridgeErrors & 0x0000ffff ||
 		candle->getMd80FromList(canId).getReadReg().RO.communicationErrors & 0x0000ffff)
+	{
+		log.error("Cannot execute command. MD has error:");
+		ui::printAllErrors(candle->md80s[0]);
 		return true;
+	}
 
 	return false;
 }

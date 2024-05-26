@@ -49,7 +49,7 @@ struct UserCommand
 {
 	toolsCmd_E	   cmd		   = toolsCmd_E::NONE;
 	toolsOptions_E option	   = toolsOptions_E::NONE;
-	std::string	   variant	   = "all";
+	std::string	   variant	   = "";
 	u32			   id		   = 0;
 	u32			   newId	   = 0;
 	std::string	   baud		   = "1M";
@@ -60,7 +60,6 @@ struct UserCommand
 	f32			   pos = 0.f, vel = 10.f, acc = 5.f, dcc = 5.f;
 	bool		   infoAll	 = false;
 	std::string	   bus		 = "USB";
-	std::string	   busDevice = "";
 };
 class MDtool
 {
@@ -80,11 +79,10 @@ class MDtool
 	void setupHoming(u16 id);
 
 	void testMove(u16 id, f32 targetPosition);
-	void testMoveAbsolute(std::vector<std::string>& args);
-	void testLatency(std::vector<std::string>& args);
-	void testEncoderOutput(std::vector<std::string>& args);
-	void testEncoderMain(std::vector<std::string>& args);
-
+	void testMoveAbsolute(u16 id, f32 targetPos, f32 velLimit, f32 accLimit, f32 dccLimit);
+	void testLatency(const std::string& canBaudrate);
+	void testEncoderOutput(u16 id);
+	void testEncoderMain(u16 id);
 	void blink(u16 id);
 	void encoder(u16 id);
 	void bus(const std::string& bus, const std::string& device);
@@ -115,12 +113,11 @@ class MDtool
 	void registerWrite(std::vector<std::string>& args);
 	void registerRead(std::vector<std::string>& args);
 
-
 	mab::CANdleBaudrate_E checkSpeedForId(uint16_t id);
 
 	uint8_t getNumericParamFromList(std::string& param, const std::vector<std::string>& list);
 
-	bool checkErrors(uint16_t canId);
+	bool hasError(uint16_t canId);
 
 	template <class T>
 	bool getField(mINI::INIStructure& cfg,
