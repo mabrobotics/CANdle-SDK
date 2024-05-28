@@ -25,7 +25,8 @@ mab::CANdleBaudrate_E str2baud(const std::string& baud)
 
 MDtool::MDtool()
 {
-	ui::printVersion(mab::Candle::getVersion());
+	std::cerr << "[CANDLESDK] Version: " << mab::Candle::getVersion() << std::endl;
+	log.tag = "MDTOOL";
 
 	mdtoolBaseDir =
 		std::string(getenv("HOME")) + "/" + mdtoolHomeConfigDirName + "/" + mdtoolDirName;
@@ -86,24 +87,15 @@ MDtool::MDtool()
 
 void MDtool::ping(const std::string& variant)
 {
-	bool				  performScan = false;
-	mab::CANdleBaudrate_E baud;
 	if (variant == "all")
-		performScan = true;
-	else
-		baud = str2baud(variant);
-
-	if (performScan)
 	{
-		candle->setVebose(false);
-		ui::printScanOutput(candle.get());
+		candle->ping(mab::CANdleBaudrate_E::CAN_BAUD_1M);
+		candle->ping(mab::CANdleBaudrate_E::CAN_BAUD_2M);
+		candle->ping(mab::CANdleBaudrate_E::CAN_BAUD_5M);
+		candle->ping(mab::CANdleBaudrate_E::CAN_BAUD_8M);
+		return;
 	}
-	else
-	{
-		candle->setVebose(true);
-		candle->ping(baud);
-		candle->setVebose(printVerbose);
-	}
+	candle->ping(str2baud(variant));
 }
 
 void MDtool::configCan(u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination)
@@ -124,8 +116,8 @@ void MDtool::configBandwidth(u16 id, f32 bandwidth)
 
 void MDtool::configClear(u16 id)
 {
-	if(!tryAddMD80(id))
-		return ;
+	if (!tryAddMD80(id))
+		return;
 	if (candle->writeMd80Register(id, mab::Md80Reg_E::runRestoreFactoryConfig, true))
 		log.success("Config reverted to factory state!");
 	else
@@ -198,7 +190,7 @@ void MDtool::setupMotor(u16 id, const std::string& cfgFilename)
 
 	if (!motorCfg.read(cfg))
 	{
-		ui::printUnableToFindCfgFile(path);
+		log.error("Unable to find config file at %s", path.c_str());
 		return;
 	}
 
@@ -252,7 +244,7 @@ void MDtool::setupMotor(u16 id, const std::string& cfgFilename)
 
 		if (!candle->writeMd80Register(id, reg, fieldVar))
 		{
-			ui::printFailedToSetupMotor(reg);
+			log.error("Failed to setup motor! Error writing: 0x%x register.", (u16)reg);
 			return false;
 		}
 		return true;
@@ -303,7 +295,7 @@ void MDtool::setupMotor(u16 id, const std::string& cfgFilename)
 								   regW.RW.iMax,
 								   mab::Md80Reg_E::motorTorgueBandwidth,
 								   regW.RW.torqueBandwidth))
-		ui::printFailedToSetupMotor(mab::Md80Reg_E::motorTorgueBandwidth);
+		log.error("Failed to setup motor!");
 
 	/* motor advanced config */
 	if (!candle->writeMd80Register(id,
@@ -323,7 +315,7 @@ void MDtool::setupMotor(u16 id, const std::string& cfgFilename)
 								   regW.RW.outputEncoderMode,
 								   mab::Md80Reg_E::outputEncoderDefaultBaud,
 								   regW.RW.outputEncoderDefaultBaud))
-		ui::printFailedToSetupMotor(mab::Md80Reg_E::outputEncoderDefaultBaud);
+		log.error("Failed to setup motor!");
 
 	/* motor motion config - Position and velocity PID*/
 	if (!candle->writeMd80Register(id,
@@ -343,7 +335,7 @@ void MDtool::setupMotor(u16 id, const std::string& cfgFilename)
 								   f32FromField("velocity PID", "kd"),
 								   mab::Md80Reg_E::motorVelPidWindup,
 								   f32FromField("velocity PID", "windup")))
-		ui::printFailedToSetupMotor(mab::Md80Reg_E::motorVelPidWindup);
+		log.error("Failed to setup motor!");
 
 	/* motor motion config - Impedance PD*/
 	if (!candle->writeMd80Register(id,
@@ -353,15 +345,15 @@ void MDtool::setupMotor(u16 id, const std::string& cfgFilename)
 								   f32FromField("impedance PD", "kd"),
 								   mab::Md80Reg_E::motorShutdownTemp,
 								   regW.RW.motorShutdownTemp))
-		ui::printFailedToSetupMotor(mab::Md80Reg_E::motorShutdownTemp);
+		log.error("Failed to setup motor!");
 
 	if (!candle->writeMd80Register(
 			id, mab::Md80Reg_E::outputEncoderCalibrationMode, regW.RW.outputEncoderCalibrationMode))
-		ui::printFailedToSetupMotor(mab::Md80Reg_E::outputEncoderCalibrationMode);
+		log.error("Failed to setup motor!");
 
 	if (!candle->writeMd80Register(
 			id, mab::Md80Reg_E::motorCalibrationMode, regW.RW.motorCalibrationMode))
-		ui::printFailedToSetupMotor(mab::Md80Reg_E::motorCalibrationMode);
+		log.error("Failed to setup motor!");
 
 	if (!candle->writeMd80Register(id,
 								   mab::Md80Reg_E::homingMode,
@@ -372,7 +364,7 @@ void MDtool::setupMotor(u16 id, const std::string& cfgFilename)
 								   f32FromField("homing", "max torque"),
 								   mab::Md80Reg_E::homingVelocity,
 								   f32FromField("homing", "max velocity")))
-		ui::printFailedToSetupMotor(mab::Md80Reg_E::homingMode);
+		log.error("Failed to setup motor!");
 
 	if (!candle->writeMd80Register(id,
 								   mab::Md80Reg_E::maxTorque,
@@ -387,7 +379,7 @@ void MDtool::setupMotor(u16 id, const std::string& cfgFilename)
 								   f32FromField("limits", "min position"),
 								   mab::Md80Reg_E::positionLimitMax,
 								   f32FromField("limits", "max position")))
-		ui::printFailedToSetupMotor(mab::Md80Reg_E::positionLimitMin);
+		log.error("Failed to setup motor!");
 
 	if (!candle->writeMd80Register(id,
 								   mab::Md80Reg_E::profileAcceleration,
@@ -398,10 +390,10 @@ void MDtool::setupMotor(u16 id, const std::string& cfgFilename)
 								   f32FromField("profile", "quick stop deceleration"),
 								   mab::Md80Reg_E::profileVelocity,
 								   f32FromField("profile", "velocity")))
-		ui::printFailedToSetupMotor(mab::Md80Reg_E::positionLimitMin);
+		log.error("Failed to setup motor!");
 
 	if (!candle->writeMd80Register(id, mab::Md80Reg_E::brakeMode, regW.RW.brakeMode))
-		ui::printFailedToSetupMotor(mab::Md80Reg_E::brakeMode);
+		log.error("Failed to setup motor!");
 
 	candle->configMd80Save(id);
 

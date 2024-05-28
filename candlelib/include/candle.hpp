@@ -9,6 +9,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "logger.hpp"
 #include "bus.hpp"
 #include "candle_protocol.hpp"
 #include "mab_types.hpp"
@@ -383,6 +384,7 @@ namespace mab
 		std::thread transmitterThread;
 		sem_t		transmitted;
 		sem_t		received;
+		logger		log = {.tag = "CANDLE"};
 
 		bool printVerbose = true;
 

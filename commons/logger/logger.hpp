@@ -36,7 +36,6 @@ struct logger
 	LogLevel_E	level = LogLevel_E::INFO;
 	std::string tag	  = "";
 
-	// void verbose(const char* msg, ...);
 	void info(const char* msg, ...);
 	void success(const char* msg, ...);
 	void debug(const char* msg, ...);

@@ -15,146 +15,7 @@ namespace ui
 
 	void printVersion(const std::string& version)
 	{
-		vout << "[CANDLESDK] Version: " << version << std::endl;
-	}
-
-	void printTooFewArgs()
-	{
-		vout << "[MDTOOL] Not enough arguments!" << std::endl;
-		printHelp();
-	}
-
-	void printTooFewArgsNoHelp() { vout << "[MDTOOL] Not enough arguments!" << std::endl; }
-
-	void printWrongArgumentsSpecified()
-	{
-		vout << "[MDTOOL] Wrong arguments specified!" << std::endl;
-	}
-
-	void printUnknownCmd(std::string arg = "")
-	{
-		vout << "[MDTOOL] Command '" << arg << "' unknown!" << std::endl;
-		printHelp();
-	}
-
-	void printHelp()
-	{
-		vout << std::endl;
-		vout << "Usage: " << std::endl;
-		vout << "\tmdtool <command> [options | arguments]" << std::endl;
-		vout << std::endl;
-		vout << "Supported commands: " << std::endl;
-		vout << "\t ping [can speed] \t\t discovers all drives available on FDCAN bus at [can "
-				"speed] (1M/2M/5M/8M). Use 'all' keyword for scanning all speeds at once."
-			 << std::endl;
-		vout << "\t config [options] [arguments] \t sets configuration options. Use `mdtool "
-				"config` for more info."
-			 << std::endl;
-		vout << "\t setup [options] [arguments] \t launches a setup procedure. Use `mdtool setup` "
-				"for more info."
-			 << std::endl;
-		vout << "\t test [options] [arguments] \t tests the setup. Use 'mdtool test' for more info"
-			 << std::endl;
-		vout << "\t blink [id] \t\t\t blink LEDs on driver board." << std::endl;
-		vout << "\t encoder [id] \t\t\t prints current position and velocity in a loop."
-			 << std::endl;
-		vout << "\t bus [type] [device]\t\t changes default CANdle CAN bus [type] (SPI/USB/UART) "
-				"and optionally [device] if default is not suitable (applies to UART and SPI)."
-			 << std::endl;
-		vout << "\t clear [error / warning]\t\t clears errors or warnings" << std::endl;
-		vout << std::endl;
-		vout << std::endl;
-		vout << "For more information please refer to the manual:"
-			 << GREEN__(" https://mabrobotics.pl/servos/manual");
-		vout << std::endl;
-		vout << std::endl;
-	}
-	void printHelpConfig()
-	{
-		vout << std::endl;
-		vout << "Usage: " << std::endl;
-		vout << "\tmdtool config [options] [arguments]" << std::endl;
-		vout << std::endl;
-		vout << "Example: " << std::endl;
-		vout << "\tmdtool config zero 14" << std::endl;
-		vout << "\tmdtool config can 100 105 8M 100 0" << std::endl;
-		vout << "\tmdtool config save 105" << std::endl;
-		vout << "\tmdtool config current 105 12.5" << std::endl;
-		vout << "\tmdtool config bandwidth 105 500" << std::endl;
-		vout << std::endl;
-		vout << "Supported options: " << std::endl;
-		vout << "\t zero [id] \t\t\t\t sets current drive position as zero reference position."
-			 << std::endl;
-		vout << "\t can [id] [new_id] [baudrate] [timeout] [termination] changes FDCAN parameters "
-				"of the drive. [id] - currend drive id, [new_id] - new id to be set."
-			 << "[baudrate] - can be either 1M, 2M, 5M or 8M, [timeout] - FDCAN communication "
-				"watchdog timeout in ms, [termination] - works from HW V2.0 - 1 to turn on, 0 to "
-				"turn off"
-			 << std::endl;
-		vout << "\t save [id] \t\t\t\t saves parameters to flash memory." << std::endl;
-		vout << "\t current [id] [current] \t\t sets max phase current the drive will output. "
-				"Check MD80 docs for more info. [current] - current limit in Amps."
-			 << std::endl;
-		vout << "\t bandwidth [id] \t\t\t sets the torque bandwidth parameter" << std::endl;
-		vout << std::endl;
-		vout << "For more information please refer to the manual:"
-			 << GREEN__(" https://mabrobotics.pl/servos/manual") << std::endl;
-		vout << std::endl;
-	}
-	void printHelpSetup()
-	{
-		vout << std::endl;
-		vout << "Usage: " << std::endl;
-		vout << "\tmdtool setup [options] [arguments]" << std::endl;
-		vout << std::endl;
-		vout << "Example: " << std::endl;
-		vout << "\tmdtool setup calibration 100" << std::endl;
-		vout << "\tmdtool setup calibration_out 100" << std::endl;
-		vout << "\tmdtool setup motor 100 AK80-9.cfg" << std::endl;
-		vout << "\tmdtool setup info 100" << std::endl;
-		vout << "\tmdtool setup info 100" << std::endl;
-		vout << std::endl;
-		vout << "Supported options: " << std::endl;
-		vout << "\t calibration [id] \t\t\tstarts motor calibration procedure." << std::endl;
-		vout << "\t calibration_out [id] \t\t\tstarts output encoder calibration procedure."
-			 << std::endl;
-		vout << "\t motor [id] [*.cfg] \t\t\tloads selected motor config." << std::endl;
-		vout << "\t info  [id] \t\t\t\tprints detailed info about controller." << std::endl;
-		vout << "\t homing   [id]        \t\t\tstarts the homing routine" << std::endl;
-		vout << std::endl;
-		vout << "For more information please refer to the manual:"
-			 << GREEN__(" https://mabrobotics.pl/servos/manual") << std::endl;
-		vout << std::endl;
-	}
-	void printHelpTest()
-	{
-		vout << std::endl;
-		vout << "Usage: " << std::endl;
-		vout << "\tmdtool test [options] [arguments]" << std::endl;
-		vout << std::endl;
-		vout << "Example: " << std::endl;
-		vout << "\tmdtool test move 100 5" << std::endl;
-		vout << "\tmdtool test move absolute 100 10" << std::endl;
-		vout << "\tmdtool test move absolute 100 10 20 10 10" << std::endl;
-		vout << "\tmdtool test latency 1M" << std::endl;
-		vout << "\tmdtool test encoder main 100" << std::endl;
-		vout << "\tmdtool test encoder output 100" << std::endl;
-		vout << std::endl;
-		vout << "Supported options: " << std::endl;
-		vout << "\t move [id] [position] \t\t\tsimple test movement from current location to "
-				"[position]. [position] should be <-10, 10> rad."
-			 << std::endl;
-		vout << "\t move absolute [id] [position] [profile velocity] [profile acceleration] "
-				"[profile deceleration] position PID absolute movement. "
-			 << std::endl;
-		vout << "\t latency  [baudrate] \t\t\ttests the overall TX message frequency. [baudrate] "
-				"should be the baudrate of actuators on the CAN bus."
-			 << std::endl;
-		vout << "\t encoder  [type] [id] \t\t\ttests the encoder [type] (main/output)" << std::endl;
-		vout << std::endl;
-		vout << "For more information please refer to the manual:"
-			 << GREEN__("https://mabrobotics.pl/servos/manual") << std::endl;
-		vout << std::endl;
+		std::cerr << "[CANDLESDK] Version: " << version << std::endl;
 	}
 
 	void printLatencyTestResult(uint8_t actuatorCount, float average, float stdev, std::string bus)
@@ -242,18 +103,6 @@ namespace ui
 		vout << "Drive " << id << " Position: " << pos << "\tVelocity: " << velocity << std::endl;
 	}
 
-	void printScanOutput(mab::Candle* candle)
-	{
-		std::cout << "[CANDLE] Pinging drives at 1M CAN speed..." << std::endl;
-		ui::printFoundDrives(candle->ping(mab::CANdleBaudrate_E::CAN_BAUD_1M));
-		std::cout << "[CANDLE] Pinging drives at 2M CAN speed..." << std::endl;
-		ui::printFoundDrives(candle->ping(mab::CANdleBaudrate_E::CAN_BAUD_2M));
-		std::cout << "[CANDLE] Pinging drives at 5M CAN speed..." << std::endl;
-		ui::printFoundDrives(candle->ping(mab::CANdleBaudrate_E::CAN_BAUD_5M));
-		std::cout << "[CANDLE] Pinging drives at 8M CAN speed..." << std::endl;
-		ui::printFoundDrives(candle->ping(mab::CANdleBaudrate_E::CAN_BAUD_8M));
-	}
-
 	void printFoundDrives(std::vector<uint16_t> ids)
 	{
 		if (ids.size() == 0)
@@ -278,11 +127,6 @@ namespace ui
 				return;
 			}
 		}
-	}
-
-	void printUnableToFindCfgFile(std::string path)
-	{
-		vout << "Unable to find selected config file. Received location: " + path << std::endl;
 	}
 
 	void printDriveInfoExtended(mab::Md80& drive, bool printAll)
@@ -542,12 +386,6 @@ namespace ui
 	{
 		vout << "Motor config parameter in category [" << category << "] named [" << field
 			 << "] is out of bounds!" << std::endl;
-	}
-
-	void printFailedToSetupMotor(mab::Md80Reg_E regId)
-	{
-		vout << "Failed to setup motor! Error while writing: 0x" << std::hex
-			 << static_cast<uint16_t>(regId) << " register" << std::endl;
 	}
 
 	bool getDifferentConfigsConfirmation(std::string configName)

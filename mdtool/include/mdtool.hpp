@@ -59,7 +59,7 @@ class MDtool
 
 	const std::string mdtoolConfigPath = "/etc/";
 
-	logger		log = {.tag = "MDTOOL"};
+	logger		log;
 	std::string mdtoolBaseDir;
 	std::string mdtoolIniFilePath;
 

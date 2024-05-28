@@ -41,26 +41,22 @@ namespace mab
 	Candle::Candle(CANdleBaudrate_E canBaudrate, bool printVerbose, std::shared_ptr<Bus> bus)
 		: printVerbose(printVerbose), bus(bus)
 	{
-		vout << "CANdle library version: v" << getVersion() << std::endl;
+		log.info("CANdlelib v%s", getVersion().c_str());
 
 		reset();
 		usleep(5000);
 
 		if (!configCandleBaudrate(canBaudrate, true))
 		{
-			vout << "Failed to set up CANdle baudrate @" << canBaudrate << "Mbps!" << statusFAIL
-				 << std::endl;
+			log.error("Failed to set up CANdle baudrate @%sMbps", canBaudrate);
 			throw std::runtime_error("Failed to set up CANdle baudrate!");
 		}
-
 		if (bus->getType() == mab::BusType_E::USB)
-			vout << "CANdle 0x" << std::hex << getDeviceId() << std::dec << " ready (USB)"
-				 << std::endl;
+			log.info("CANdle 0x%x ready(USB)", getDeviceId());
 		else if (bus->getType() == mab::BusType_E::SPI)
-			vout << "CANdle ready (SPI)" << std::endl;
+			log.info("CANdle ready (SPI)");
 		else if (bus->getType() == mab::BusType_E::UART)
-			vout << "CANdle ready (UART)" << std::endl;
-
+			log.info("CANdle ready (UART)");
 		md80Register = std::make_shared<Register>(this);
 		Candle::instances.push_back(this);
 	}
@@ -82,9 +78,9 @@ namespace mab
 					if (instance->bus->getType() == BusType_E::USB)
 						idsToIgnore.push_back(instance->bus->getId());
 				if (idsToIgnore.size() == 0 && searchMultipleDevicesOnUSB(candlePid, candleVid) > 1)
-					vout << "Multiple CANdle detected! If ID is unspecified in the constructor, "
-							"the one with the smallest ID will be used by default!"
-						 << std::endl;
+					log.warn(
+						"Multiple CANdle detected! If ID is unspecified in the constructor, the "
+						"one with the smallest ID will be used by default!");
 				std::shared_ptr<UsbDevice> usb =
 					std::make_shared<UsbDevice>(candleVid, candlePid, idsToIgnore, device);
 				return usb;
@@ -141,7 +137,7 @@ namespace mab
 			else
 			{
 				if (!shouldStopReceiver)
-					vout << "Did not receive response from CANdle!" << statusFAIL << std::endl;
+					log.warn("Did not receive response from CANdle!");
 				shouldStopReceiver	  = true;
 				shouldStopTransmitter = true;
 				sem_post(&received);
@@ -213,7 +209,10 @@ namespace mab
 				(StdMd80ResponseFrame_t*)bus->getRxBuffer(1 + i * sizeof(StdMd80ResponseFrame_t)));
 	}
 
-	void Candle::setVebose(bool enable) { printVerbose = enable; }
+	void Candle::setVebose(bool enable)
+	{
+		log.level = enable ? logger::LogLevel_E::INFO : logger::LogLevel_E::ERROR;
+	}
 
 	unsigned long Candle::getDeviceId() { return bus->getId(); }
 
@@ -249,15 +248,14 @@ namespace mab
 		{
 			if (md.getId() == canId)
 			{
-				vout << "MD80 with ID: " << canId << " is already on the update list." << statusOK
-					 << std::endl;
+				log.success("MD80 with ID: %d is already on the update list.", canId);
 				return true;
 			}
 		}
 
 		if (md80s.size() >= maxDevices)
 		{
-			vout << "Cannot add more than " << maxDevices << " MD80s" << statusFAIL << std::endl;
+			log.error("Cannot add more than %d MDs!", maxDevices);
 			return false;
 		}
 
@@ -270,28 +268,26 @@ namespace mab
 
 			if (!md80Register->read(canId, Md80Reg_E::firmwareVersion, firmwareVersion.i))
 			{
-				vout << "Unable to read MD80's firmware version! Please check the ID, or update "
-						"the MD80 with MAB_CAN_Flasher."
-					 << statusFAIL << std::endl;
+				log.error(
+					"Unable to read MD80's firmware version! Please check the ID, or update "
+					"the MD80 with MAB_CAN_Flasher.");
 				return false;
 			}
 
 			if (firmwareVersion.i < md80CompatibleVersion.i)
 			{
-				vout << "MD80's firmware with ID: " + std::to_string(canId) +
-							" is outdated. Please update it using MAB_CAN_Flasher."
-					 << statusFAIL << std::endl;
+				log.error("MD80 firmware (ID: %d) is outdated. Update with MAB_CAN_Flasher.",
+						  canId);
 				return false;
 			}
 			else if (firmwareVersion.s.major > md80CompatibleVersion.s.major ||
 					 firmwareVersion.s.minor > md80CompatibleVersion.s.minor)
 			{
-				vout << "MD80's firmware with ID: " + std::to_string(canId) +
-							" is a future version. Please update your CANdle library."
-					 << statusFAIL << std::endl;
+				log.error("MD80 firmware (ID: %d) is a future version. Update your CANdle library.",
+						  canId);
 				return false;
 			}
-			vout << "Added MD80 with ID: " + std::to_string(canId) << statusOK << std::endl;
+			log.success("Added MD80 (ID: %d)", canId);
 			md80s.push_back(Md80(canId));
 			mab::Md80& newDrive = md80s.back();
 			updateMd80State(newDrive);
@@ -299,16 +295,14 @@ namespace mab
 		}
 
 		if (printFailure)
-			vout << "Failed to add MD80 with ID: " + std::to_string(canId) << statusFAIL
-				 << std::endl;
+			log.error("Failed to add MD80 (ID: %d)");
 		return false;
 	}
 	std::vector<uint16_t> Candle::ping(mab::CANdleBaudrate_E baudrate)
 	{
 		if (!configCandleBaudrate(baudrate))
 			return std::vector<uint16_t>();
-		vout << "Starting pinging drives at baudrate: " << std::to_string(baudrate) << "M"
-			 << std::endl;
+		log.info("Starting pinging drives at baudrate: %dM", baudrate);
 		std::vector<uint16_t> ids{};
 
 		if (sendBusFrame(BUS_FRAME_PING_START, 2000, nullptr, 2, 33))
@@ -323,22 +317,20 @@ namespace mab
 			}
 			if (ids.size() == 0)
 			{
-				vout << "No drives found." << std::endl;
+				log.info("No drives found");
 				return ids;
 			}
-			vout << "Found drives." << std::endl;
+			log.info("Found drives.");
 			for (size_t i = 0; i < ids.size(); i++)
 			{
 				if (ids[i] == 0)
 					break;	// No more ids in the message
-
-				vout << std::to_string(i + 1) << ": ID = " << ids[i] << " (0x" << std::hex << ids[i]
-					 << std::dec << ")" << std::endl;
+				log.info("%d: ID = %d (Ox%x)", (i + 1), ids[i], ids[i]);
 				if (ids[i] > idMax)
 				{
-					vout << "Error! This ID is invalid! Probably two or more drives share same ID."
-						 << "Communication will most likely be broken until IDs are unique!"
-						 << statusFAIL << std::endl;
+					log.warn(
+						"ID is invalid! Probably two or more drives share same ID."
+						"Communication will most likely be broken until IDs are unique!");
 					std::vector<uint16_t> empty;
 					return empty;
 				}
@@ -380,8 +372,7 @@ namespace mab
 	{
 		if (newId < 10 || newId > idMax)
 		{
-			vout << "CAN config change failed, ID out of range! Please use a valid ID [10-2000]"
-				 << statusFAIL << std::endl;
+			log.error("CAN config change failed, ID out of range! Valid ID range: <10-2000>");
 			return false;
 		}
 
@@ -397,18 +388,15 @@ namespace mab
 								 Md80Reg_E::runCanReinit,
 								 true))
 		{
-			vout << "CAN config change failed!" << statusFAIL << std::endl;
+			log.error("CAN config change failed!");
 			return false;
 		}
-
-		vout << "Drive ID: " << std::to_string(canId)
-			 << " was changed to ID: " << std::to_string(newId) << std::endl;
-		vout << "It's baudrate is now " << std::to_string(newBaudrateMbps) << "Mbps" << std::endl;
-		vout << "It's CAN timeout (watchdog) is now "
-			 << (newTimeout == 0 ? "disabled" : std::to_string(newTimeout) + "ms") << std::endl;
-		vout << "It's CAN termination resistor is "
-			 << (canTermination == true ? "enabled" : "disabled") << std::endl;
-		vout << "CAN config change successful!" << statusOK << std::endl;
+		log.info("Drive ID: %d was changed to ID: %d.", canId, newId);
+		log.info("Drive CAN baudrate is now: %dMbps", newBaudrateMbps);
+		log.info("Drive CAN timeout is now: %sms",
+				 (newTimeout == 0) ? "disabled" : std::to_string(newTimeout));
+		log.info("Drive CAN termination is %s", canTermination ? "enabled" : "disabled");
+		log.success("CAN config change successful!");
 		return true;
 	}
 
@@ -438,10 +426,10 @@ namespace mab
 	{
 		if (inUpdateMode() || !md80Register->write(canId, Md80Reg_E::motorIMax, currentLimit))
 		{
-			vout << "Setting new current limit failed at ID: " << canId << statusFAIL << std::endl;
+			log.error("Setting new current limit failed (ID: %d)", canId);
 			return false;
 		}
-		vout << "Setting new current limit successful at ID: " << canId << statusOK << std::endl;
+		log.success("Setting new current limit succesfull (ID: %d)", canId);
 		return true;
 	}
 
@@ -461,13 +449,12 @@ namespace mab
 			{
 				if (candleDeviceVersion.i < candleDeviceCompatibleVersion.i)
 				{
-					vout << "Your CANdle device firmware seems to be out-dated. Please see the "
-							"manual for intructions on how to update."
-						 << std::endl;
+					log.warn(
+						"Your CANdle device firmware seems to be out-dated. Please see the "
+						"manual for intructions on how to update.");
 					return false;
 				}
-				vout << "Device firmware version: v" << mab::getVersionString(candleDeviceVersion)
-					 << std::endl;
+				log.info("device firmare v%s", mab::getVersionString(candleDeviceVersion).c_str());
 			}
 			return true;
 		}
@@ -482,10 +469,10 @@ namespace mab
 												   Md80Reg_E::runCalibratePiGains,
 												   true))
 		{
-			vout << "Bandwidth change failed at ID: " << canId << statusFAIL << std::endl;
+			log.error("Bandwidth change failed (ID: %d)", canId);
 			return false;
 		}
-		vout << "Bandwidth succesfully changed at ID: " << canId << statusOK << std::endl;
+		log.success("Bandwidth succesfully %.0dchanged (ID: %d)", canId);
 		return true;
 	}
 
@@ -515,11 +502,10 @@ namespace mab
 		if (inUpdateMode() ||
 			!md80Register->write(canId, Md80Reg_E::motionModeCommand, static_cast<uint8_t>(mode)))
 		{
-			vout << "Setting control mode failed at ID: " << canId << statusFAIL << std::endl;
+			log.error("Setting control mode failed (ID: %d)", canId);
 			return false;
 		}
-
-		vout << "Setting control mode successful at ID: " << canId << statusOK << std::endl;
+		log.success("Setting control mode successful (ID: %d)", canId);
 		drive.__setControlMode(mode);
 		return true;
 	}
@@ -528,28 +514,23 @@ namespace mab
 		uint16_t controlword = enable ? 39 : 64;
 		if (inUpdateMode() || !md80Register->write(canId, Md80Reg_E::state, controlword))
 		{
-			vout << "Enabling/Disabling failed at ID: " << canId << statusFAIL << std::endl;
+			log.error("%s failed (ID: %d)", (enable ? "Enabling" : "Disabling"), canId);
 			return false;
 		}
-
-		if (enable)
-			vout << "Enabling successful at ID: " << canId << statusOK << std::endl;
-		else
-			vout << "Disabling successful at ID: " << canId << statusOK << std::endl;
-
+		log.success("%s succesfull (ID: %d)", (enable ? "Enabling" : "Disabling"), canId);
 		return true;
 	}
 	bool Candle::begin()
 	{
 		if (mode == CANdleMode_E::UPDATE)
 		{
-			vout << "Cannot run 'begin', already in update mode." << statusFAIL << std::endl;
+			log.warn("Cannot call 'begin()', already in update mode.");
 			return false;
 		}
 
 		if (sendBusFrame(BUS_FRAME_BEGIN, 10))
 		{
-			vout << "Beginnig auto update loop mode" << statusOK << std::endl;
+			log.success("Beginnig auto update loop mode");
 			mode				  = CANdleMode_E::UPDATE;
 			shouldStopTransmitter = false;
 			shouldStopReceiver	  = false;
@@ -566,7 +547,7 @@ namespace mab
 
 			return true;
 		}
-		vout << "Failed to begin auto update loop mode" << statusFAIL << std::endl;
+		log.error("Failed to begin auto update loop mode");
 		return false;
 	}
 	bool Candle::end()
@@ -595,10 +576,13 @@ namespace mab
 		for (auto& md : md80s)
 			controlMd80Enable(md, false);
 
-		vout << "Ending auto update loop mode"
-			 << (mode == CANdleMode_E::CONFIG ? statusOK : statusFAIL) << std::endl;
-
-		return mode == CANdleMode_E::CONFIG ? true : false;
+		if (mode == CANdleMode_E::CONFIG)
+		{
+			log.success("Ending auto update loop");
+			return true;
+		}
+		log.error("Failed to end auto update loop.");
+		return false;
 	}
 	bool Candle::reset() { return sendBusFrame(BUS_FRAME_RESET, 100); }
 	bool Candle::inUpdateMode() { return mode == CANdleMode_E::UPDATE; }
@@ -697,7 +681,7 @@ namespace mab
 												  Md80Reg_E::motorInductance,
 												  regR.RO.inductance))
 		{
-			vout << "Extended diagnostic failed at ID: " << canId << std::endl;
+			log.error("Extended diagnostic failed (ID: %d)", canId);
 			return false;
 		}
 
@@ -727,7 +711,7 @@ namespace mab
 								Md80Reg_E::hardwareVersion,
 								regR.RO.hardwareVersion))
 		{
-			vout << "Extended diagnostic failed at ID: " << canId << std::endl;
+			log.error("Extended diagnostic failed (ID: %d)", canId);
 			return false;
 		}
 
@@ -753,7 +737,7 @@ namespace mab
 								Md80Reg_E::outputEncoderVelocity,
 								regR.RO.outputEncoderVelocity))
 		{
-			vout << "Extended diagnostic failed at ID: " << canId << std::endl;
+			log.error("Extended diagnostic failed (ID: %d)", canId);
 			return false;
 		}
 
@@ -773,7 +757,7 @@ namespace mab
 								Md80Reg_E::calMainEncoderMaxE,
 								regR.RO.calMainEncoderMaxE))
 		{
-			vout << "Extended diagnostic failed at ID: " << canId << std::endl;
+			log.error("Extended diagnostic failed (ID: %d)", canId);
 			return false;
 		}
 
@@ -793,7 +777,7 @@ namespace mab
 								Md80Reg_E::motionErrors,
 								regR.RO.motionErrors))
 		{
-			vout << "Extended diagnostic failed at ID: " << canId << std::endl;
+			log.error("Extended diagnostic failed (ID: %d)", canId);
 			return false;
 		}
 
@@ -801,21 +785,18 @@ namespace mab
 								Md80Reg_E::outputEncoderCalibrationMode,
 								regR.RW.outputEncoderCalibrationMode))
 		{
-			vout << "Extended diagnostic failed at ID: " << canId
-				 << " while reading outputEncoderCalibrationMode register" << std::endl;
+			log.error("Extended diagnostic failed (ID: %d)", canId);
 			return false;
 		}
 		if (!md80Register->read(
 				canId, Md80Reg_E::motorCalibrationMode, regR.RW.motorCalibrationMode))
 		{
-			vout << "Extended diagnostic failed at ID: " << canId
-				 << " while reading motorCalibrationMode register" << std::endl;
+			log.error("Extended diagnostic failed (ID: %d)", canId);
 			return false;
 		}
 		if (!md80Register->read(canId, Md80Reg_E::shuntResistance, regR.RO.shuntResistance))
 		{
-			vout << "Extended diagnostic failed at ID: " << canId
-				 << " while reading shuntResistance register" << std::endl;
+			log.error("Extended diagnostic failed (ID: %d)", canId);
 			return false;
 		}
 
@@ -831,8 +812,7 @@ namespace mab
 								Md80Reg_E::homingErrors,
 								regR.RO.homingErrors))
 		{
-			vout << "Extended diagnostic failed at ID: " << canId
-				 << " while reading homing registers" << std::endl;
+			log.error("Extended diagnostic failed (ID: %d)", canId);
 			return false;
 		}
 
@@ -842,8 +822,7 @@ namespace mab
 								Md80Reg_E::positionLimitMax,
 								regR.RW.positionLimitMax))
 		{
-			vout << "Extended diagnostic failed at ID: " << canId
-				 << " while reading position limits registers" << std::endl;
+			log.error("Extended diagnostic failed (ID: %d)", canId);
 			return false;
 		}
 
@@ -857,8 +836,7 @@ namespace mab
 								Md80Reg_E::maxVelocity,
 								regR.RW.maxVelocity))
 		{
-			vout << "Extended diagnostic failed at ID: " << canId
-				 << " while reading motion limit registers" << std::endl;
+			log.error("Extended diagnostic failed (ID: %d)", canId);
 			return false;
 		}
 
@@ -872,8 +850,7 @@ namespace mab
 								Md80Reg_E::profileVelocity,
 								regR.RW.profileVelocity))
 		{
-			vout << "Extended diagnostic failed at ID: " << canId
-				 << " while reading acceleration control data registers" << std::endl;
+			log.error("Extended diagnostic failed (ID: %d)", canId);
 			return false;
 		}
 
@@ -903,10 +880,10 @@ namespace mab
 	{
 		if (inUpdateMode() || !md80Register->write(canId, reg, true))
 		{
-			vout << failMsg << canId << statusFAIL << std::endl;
+			log.error("%s %d", failMsg, canId);
 			return false;
 		}
-		vout << successMsg << canId << statusOK << std::endl;
+		log.success("%s %d", successMsg, canId);
 		return true;
 	}
 

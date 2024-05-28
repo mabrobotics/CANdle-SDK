@@ -25,31 +25,17 @@
 namespace ui
 {
 	void printVersion(const std::string& version);
-	void printTooFewArgs();
-	void printTooFewArgsNoHelp();
-	void printWrongArgumentsSpecified();
-	void printUnknownCmd(std::string arg);
-
-	void printHelp();
-	void printHelpConfig();
-	void printHelpSetup();
-	void printHelpTest();
 	void printLatencyTestResult(uint8_t actuatorCount, float average, float stdev, std::string bus);
 
 	bool getCalibrationConfirmation();
 	bool getCalibrationOutputConfirmation();
-	void printPosition(int id, float pos);
 	void printPositionAndVelocity(int id, float pos, float velocity);
-	void printDriveInfo(int id, float pos, float vel, float torque, float temperature,
-						uint16_t error, mab::CANdleBaudrate_E baud);
-	void printScanOutput(mab::Candle* candle);
 	void printFoundDrives(std::vector<uint16_t> ids);
 	void printUnableToFindCfgFile(std::string path);
 	void printDriveInfoExtended(mab::Md80& drive, bool printAll);
 	void printAllErrors(mab::Md80& drive);
 	void printErrorDetails(uint32_t error, const std::map<std::string, uint8_t>& errorMap);
 	void printParameterOutOfBounds(std::string category, std::string field);
-	void printFailedToSetupMotor(mab::Md80Reg_E regId);
 
 	bool getDifferentConfigsConfirmation(std::string configName);
 	bool getUpdateConfigConfirmation(std::string configName);
