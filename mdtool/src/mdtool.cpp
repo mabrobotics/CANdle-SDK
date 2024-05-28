@@ -10,78 +10,6 @@
 
 f32 lerp(f32 start, f32 end, f32 t) { return (start * (1.f - t)) + (end * t); }
 
-toolsOptions_E str2option(std::string& opt)
-{
-	if (opt == "current")
-		return toolsOptions_E::CURRENT;
-	if (opt == "can")
-		return toolsOptions_E::CAN;
-	if (opt == "zero")
-		return toolsOptions_E::ZERO;
-	if (opt == "save")
-		return toolsOptions_E::SAVE;
-	if (opt == "bandwidth")
-		return toolsOptions_E::BANDWIDTH;
-	if (opt == "calibration")
-		return toolsOptions_E::CALIBRATION;
-	if (opt == "calibration_out")
-		return toolsOptions_E::CALIBRATION_OUTPUT;
-	if (opt == "motor")
-		return toolsOptions_E::MOTOR;
-	if (opt == "info")
-		return toolsOptions_E::INFO;
-	if (opt == "latency")
-		return toolsOptions_E::LATENCY;
-	if (opt == "move")
-		return toolsOptions_E::MOVE;
-	if (opt == "encoder")
-		return toolsOptions_E::ENCODER;
-	if (opt == "main")
-		return toolsOptions_E::MAIN;
-	if (opt == "output")
-		return toolsOptions_E::OUTPUT;
-	if (opt == "homing")
-		return toolsOptions_E::HOMING;
-	if (opt == "absolute")
-		return toolsOptions_E::ABSOLUTE;
-	if (opt == "read")
-		return toolsOptions_E::READ;
-	if (opt == "write")
-		return toolsOptions_E::WRITE;
-	if (opt == "error")
-		return toolsOptions_E::ERROR;
-	if (opt == "warning")
-		return toolsOptions_E::WARNING;
-	if (opt == "clear")
-		return toolsOptions_E::CLEAR;
-
-	return toolsOptions_E::NONE;
-}
-toolsCmd_E str2cmd(std::string& cmd)
-{
-	if (cmd == "ping")
-		return toolsCmd_E::PING;
-	if (cmd == "config")
-		return toolsCmd_E::CONFIG;
-	if (cmd == "setup")
-		return toolsCmd_E::SETUP;
-	if (cmd == "test")
-		return toolsCmd_E::TEST;
-	if (cmd == "blink")
-		return toolsCmd_E::BLINK;
-	if (cmd == "encoder")
-		return toolsCmd_E::ENCODER;
-	if (cmd == "bus")
-		return toolsCmd_E::BUS;
-	if (cmd == "register")
-		return toolsCmd_E::REGISTER;
-	if (cmd == "clear")
-		return toolsCmd_E::CLEAR;
-	if (cmd == "reset")
-		return toolsCmd_E::RESET;
-	return toolsCmd_E::NONE;
-}
-
 mab::CANdleBaudrate_E str2baud(const std::string& baud)
 {
 	if (baud == "1M")
@@ -95,7 +23,7 @@ mab::CANdleBaudrate_E str2baud(const std::string& baud)
 	return mab::CANdleBaudrate_E::CAN_BAUD_1M;
 }
 
-MDtool::MDtool(const UserCommand& cmd)
+MDtool::MDtool()
 {
 	ui::printVersion(mab::Candle::getVersion());
 
@@ -126,8 +54,6 @@ MDtool::MDtool(const UserCommand& cmd)
 		}
 	}
 
-	/* defaults */
-	// toolsCmd_E			  cmd	  = toolsCmd_E::NONE;
 	mab::BusType_E		  busType = mab::BusType_E::USB;
 	mab::CANdleBaudrate_E baud	  = mab::CANdleBaudrate_E::CAN_BAUD_1M;
 
@@ -156,108 +82,6 @@ MDtool::MDtool(const UserCommand& cmd)
 		return;
 	}
 	return;
-
-	// switch (cmd.cmd)
-	// {
-	// 	case toolsCmd_E::PING:
-	// 		ping(args);
-	// 		break;
-	// 	case toolsCmd_E::CONFIG:
-	// 	{
-	// 		if (cmd.cmd.option == toolsOptions_E::CAN)
-	// 			configCan(args);
-	// 		else if (cmd.option == toolsOptions_E::SAVE)
-	// 			configSave(args);
-	// 		else if (cmd.option == toolsOptions_E::ZERO)
-	// 			configZero(args);
-	// 		else if (cmd.option == toolsOptions_E::CURRENT)
-	// 			configCurrent(args);
-	// 		else if (cmd.option == toolsOptions_E::BANDWIDTH)
-	// 			configBandwidth(args);
-	// 		else if (cmd.option == toolsOptions_E::CLEAR)
-	// 			configClear(args);
-	// 		else
-	// 			ui::printHelpConfig();
-	// 		break;
-	// 	}
-	// 	case toolsCmd_E::SETUP:
-	// 	{
-	// 		if (cmd.option == toolsOptions_E::CALIBRATION)
-	// 			setupCalibration(args);
-	// 		else if (cmd.option == toolsOptions_E::CALIBRATION_OUTPUT)
-	// 			setupCalibrationOutput(args);
-	// 		else if (cmd.option == toolsOptions_E::MOTOR)
-	// 			setupMotor(args);
-	// 		else if (cmd.option == toolsOptions_E::INFO)
-	// 			setupInfo(args);
-	// 		else if (cmd.option == toolsOptions_E::HOMING)
-	// 			setupHoming(args);
-	// 		else
-	// 			ui::printHelpSetup();
-	// 		break;
-	// 	}
-	// 	case toolsCmd_E::TEST:
-	// 	{
-	// 		if (cmd.option == toolsOptions_E::LATENCY)
-	// 			testLatency(args);
-	// 		else if (cmd.option == toolsOptions_E::MOVE)
-	// 		{
-	// 			if (cmd.option2 == toolsOptions_E::ABSOLUTE)
-	// 				testMoveAbsolute(args);
-	// 			else
-	// 				testMove(args);
-	// 		}
-	// 		else if (cmd.option == toolsOptions_E::ENCODER)
-	// 		{
-	// 			if (cmd.option2 == toolsOptions_E::MAIN)
-	// 				testEncoderMain(args);
-	// 			else if (cmd.option2 == toolsOptions_E::OUTPUT)
-	// 				testEncoderOutput(args);
-	// 			else
-	// 				ui::printHelpTest();
-	// 		}
-	// 		else
-	// 			ui::printHelpTest();
-	// 		break;
-	// 	}
-	// 	case toolsCmd_E::BLINK:
-	// 	{
-	// 		blink(args);
-	// 		break;
-	// 	}
-	// 	case toolsCmd_E::ENCODER:
-	// 	{
-	// 		encoder(args);
-	// 		break;
-	// 	}
-	// 	case toolsCmd_E::REGISTER:
-	// 	{
-	// 		if (cmd.option == toolsOptions_E::WRITE)
-	// 			registerWrite(args);
-	// 		else if (cmd.option == toolsOptions_E::READ)
-	// 			registerRead(args);
-	// 		else
-	// 			ui::printHelpTest();
-	// 		break;
-	// 	}
-	// 	case toolsCmd_E::CLEAR:
-	// 	{
-	// 		if (cmd.option == toolsOptions_E::ERROR)
-	// 			clearErrors(args);
-	// 		else if (cmd.option == toolsOptions_E::WARNING)
-	// 			clearWarnings(args);
-	// 		else
-	// 			ui::printHelpTest();
-	// 		break;
-	// 	}
-	// 	case toolsCmd_E::RESET:
-	// 	{
-	// 		reset(args);
-	// 		break;
-	// 	}
-	// 	default:
-	// 		return;
-	// }
 }
 
 void MDtool::ping(const std::string& variant)
@@ -288,7 +112,9 @@ void MDtool::configCan(u16 id, u16 newId, const std::string& baud, u16 timeout, 
 	candle->configMd80Can(id, newId, str2baud(baud), timeout, termination);
 }
 void MDtool::configSave(u16 id) { candle->configMd80Save(id); }
+
 void MDtool::configZero(u16 id) { candle->controlMd80SetEncoderZero(id); }
+
 void MDtool::configCurrent(u16 id, f32 current) { candle->configMd80SetCurrentLimit(id, current); }
 
 void MDtool::configBandwidth(u16 id, f32 bandwidth)
@@ -296,16 +122,14 @@ void MDtool::configBandwidth(u16 id, f32 bandwidth)
 	candle->configMd80TorqueBandwidth(id, bandwidth);
 }
 
-void MDtool::configClear(std::vector<std::string>& args)
+void MDtool::configClear(u16 id)
 {
-	int32_t id = checkArgsAndGetId(args, 4, 3);
-	if (id == -1)
-		return;
-
+	if(!tryAddMD80(id))
+		return ;
 	if (candle->writeMd80Register(id, mab::Md80Reg_E::runRestoreFactoryConfig, true))
-		std::cout << "[MDTOOL] Config reverted to factory state!" << std::endl;
+		log.success("Config reverted to factory state!");
 	else
-		std::cout << "[MDTOOL] Error reverting config to factory state!" << std::endl;
+		log.error("Error reverting config to factory state!");
 }
 
 void MDtool::setupCalibration(u16 id)
@@ -320,15 +144,13 @@ void MDtool::setupCalibrationOutput(u16 id)
 {
 	if (!ui::getCalibrationOutputConfirmation() || checkSetupError(id))
 		return;
-
 	u16 outputEncoder = 0;
 	candle->readMd80Register(id, mab::Md80Reg_E::outputEncoder, outputEncoder);
 	if (!outputEncoder)
 	{
-		std::cerr << "[MDTOOL] No output encoder is configured! " << RED__("[FAILED]") << std::endl;
+		log.error("No output encoder is configured!");
 		return;
 	}
-
 	candle->setupMd80CalibrationOutput(id);
 }
 
@@ -462,7 +284,7 @@ void MDtool::setupMotor(u16 id, const std::string& cfgFilename)
 	regW.RW.homingMode = getNumericParamFromList(cfg["homing"]["mode"], ui::homingModes);
 	regW.RW.brakeMode  = getNumericParamFromList(cfg["brake"]["mode"], ui::brakeModes);
 
-	auto floatFromField = [&](const char* category, const char* field) -> float
+	auto f32FromField = [&](const char* category, const char* field) -> f32
 	{ return atof(cfg[category][field].c_str()); };
 
 	/* motor base config */
@@ -506,29 +328,29 @@ void MDtool::setupMotor(u16 id, const std::string& cfgFilename)
 	/* motor motion config - Position and velocity PID*/
 	if (!candle->writeMd80Register(id,
 								   mab::Md80Reg_E::motorPosPidKp,
-								   floatFromField("position PID", "kp"),
+								   f32FromField("position PID", "kp"),
 								   mab::Md80Reg_E::motorPosPidKi,
-								   floatFromField("position PID", "ki"),
+								   f32FromField("position PID", "ki"),
 								   mab::Md80Reg_E::motorPosPidKd,
-								   floatFromField("position PID", "kd"),
+								   f32FromField("position PID", "kd"),
 								   mab::Md80Reg_E::motorPosPidWindup,
-								   floatFromField("position PID", "windup"),
+								   f32FromField("position PID", "windup"),
 								   mab::Md80Reg_E::motorVelPidKp,
-								   floatFromField("velocity PID", "kp"),
+								   f32FromField("velocity PID", "kp"),
 								   mab::Md80Reg_E::motorVelPidKi,
-								   floatFromField("velocity PID", "ki"),
+								   f32FromField("velocity PID", "ki"),
 								   mab::Md80Reg_E::motorVelPidKd,
-								   floatFromField("velocity PID", "kd"),
+								   f32FromField("velocity PID", "kd"),
 								   mab::Md80Reg_E::motorVelPidWindup,
-								   floatFromField("velocity PID", "windup")))
+								   f32FromField("velocity PID", "windup")))
 		ui::printFailedToSetupMotor(mab::Md80Reg_E::motorVelPidWindup);
 
 	/* motor motion config - Impedance PD*/
 	if (!candle->writeMd80Register(id,
 								   mab::Md80Reg_E::motorImpPidKp,
-								   floatFromField("impedance PD", "kp"),
+								   f32FromField("impedance PD", "kp"),
 								   mab::Md80Reg_E::motorImpPidKd,
-								   floatFromField("impedance PD", "kd"),
+								   f32FromField("impedance PD", "kd"),
 								   mab::Md80Reg_E::motorShutdownTemp,
 								   regW.RW.motorShutdownTemp))
 		ui::printFailedToSetupMotor(mab::Md80Reg_E::motorShutdownTemp);
@@ -545,16 +367,16 @@ void MDtool::setupMotor(u16 id, const std::string& cfgFilename)
 								   mab::Md80Reg_E::homingMode,
 								   regW.RW.homingMode,
 								   mab::Md80Reg_E::homingMaxTravel,
-								   floatFromField("homing", "max travel"),
+								   f32FromField("homing", "max travel"),
 								   mab::Md80Reg_E::homingTorque,
-								   floatFromField("homing", "max torque"),
+								   f32FromField("homing", "max torque"),
 								   mab::Md80Reg_E::homingVelocity,
-								   floatFromField("homing", "max velocity")))
+								   f32FromField("homing", "max velocity")))
 		ui::printFailedToSetupMotor(mab::Md80Reg_E::homingMode);
 
 	if (!candle->writeMd80Register(id,
 								   mab::Md80Reg_E::maxTorque,
-								   floatFromField("limits", "max torque"),
+								   f32FromField("limits", "max torque"),
 								   mab::Md80Reg_E::maxAcceleration,
 								   regW.RW.maxAcceleration,
 								   mab::Md80Reg_E::maxDeceleration,
@@ -562,20 +384,20 @@ void MDtool::setupMotor(u16 id, const std::string& cfgFilename)
 								   mab::Md80Reg_E::maxVelocity,
 								   regW.RW.maxVelocity,
 								   mab::Md80Reg_E::positionLimitMin,
-								   floatFromField("limits", "min position"),
+								   f32FromField("limits", "min position"),
 								   mab::Md80Reg_E::positionLimitMax,
-								   floatFromField("limits", "max position")))
+								   f32FromField("limits", "max position")))
 		ui::printFailedToSetupMotor(mab::Md80Reg_E::positionLimitMin);
 
 	if (!candle->writeMd80Register(id,
 								   mab::Md80Reg_E::profileAcceleration,
-								   floatFromField("profile", "acceleration"),
+								   f32FromField("profile", "acceleration"),
 								   mab::Md80Reg_E::profileDeceleration,
-								   floatFromField("profile", "deceleration"),
+								   f32FromField("profile", "deceleration"),
 								   mab::Md80Reg_E::quickStopDeceleration,
-								   floatFromField("profile", "quick stop deceleration"),
+								   f32FromField("profile", "quick stop deceleration"),
 								   mab::Md80Reg_E::profileVelocity,
-								   floatFromField("profile", "velocity")))
+								   f32FromField("profile", "velocity")))
 		ui::printFailedToSetupMotor(mab::Md80Reg_E::positionLimitMin);
 
 	if (!candle->writeMd80Register(id, mab::Md80Reg_E::brakeMode, regW.RW.brakeMode))
@@ -679,7 +501,7 @@ void MDtool::testLatency(const std::string& canBaudrate)
 
 	sleep(1);
 
-	for (uint32_t i = 0; i < timelen; i++)
+	for (u32 i = 0; i < timelen; i++)
 	{
 		sleep(1);
 		samples.push_back(candle->getActualCommunicationFrequency());
@@ -781,25 +603,25 @@ void MDtool::registerRead(u16 id, u16 reg)
 	switch (mab::Register::getType(regId))
 	{
 		case mab::Register::type::U8:
-			readRegisterToString<uint8_t>(id, regId, value);
+			readRegisterToString<u8>(id, regId, value);
 			break;
 		case mab::Register::type::I8:
 			readRegisterToString<int8_t>(id, regId, value);
 			break;
 		case mab::Register::type::U16:
-			readRegisterToString<uint16_t>(id, regId, value);
+			readRegisterToString<u16>(id, regId, value);
 			break;
 		case mab::Register::type::I16:
 			readRegisterToString<int16_t>(id, regId, value);
 			break;
 		case mab::Register::type::U32:
-			readRegisterToString<uint32_t>(id, regId, value);
+			readRegisterToString<u32>(id, regId, value);
 			break;
 		case mab::Register::type::I32:
 			readRegisterToString<int32_t>(id, regId, value);
 			break;
 		case mab::Register::type::F32:
-			readRegisterToString<float>(id, regId, value);
+			readRegisterToString<f32>(id, regId, value);
 			break;
 		case mab::Register::type::STR:
 		{
@@ -863,7 +685,7 @@ void MDtool::clearErrors(u16 id, const std::string& level)
 
 void MDtool::reset(u16 id) { candle->setupMd80PerformReset(id); }
 
-mab::CANdleBaudrate_E MDtool::checkSpeedForId(uint16_t id)
+mab::CANdleBaudrate_E MDtool::checkSpeedForId(u16 id)
 {
 	std::initializer_list<mab::CANdleBaudrate_E> bauds = {mab::CANdleBaudrate_E::CAN_BAUD_1M,
 														  mab::CANdleBaudrate_E::CAN_BAUD_2M,
@@ -880,7 +702,7 @@ mab::CANdleBaudrate_E MDtool::checkSpeedForId(uint16_t id)
 	return mab::CANdleBaudrate_E::CAN_BAUD_1M;
 }
 
-uint8_t MDtool::getNumericParamFromList(std::string& param, const std::vector<std::string>& list)
+u8 MDtool::getNumericParamFromList(std::string& param, const std::vector<std::string>& list)
 {
 	int i = 0;
 	for (auto& type : list)
@@ -892,7 +714,7 @@ uint8_t MDtool::getNumericParamFromList(std::string& param, const std::vector<st
 	return 0;
 }
 
-bool MDtool::hasError(uint16_t canId)
+bool MDtool::hasError(u16 canId)
 {
 	candle->setupMd80DiagnosticExtended(canId);
 
@@ -944,18 +766,7 @@ bool MDtool::getField(mINI::INIStructure& cfg,
 		return false;
 	}
 }
-
-bool MDtool::checkArgs(std::vector<std::string>& args, uint32_t size)
-{
-	if (args.size() < size)
-	{
-		ui::printTooFewArgsNoHelp();
-		return false;
-	}
-	return true;
-}
-
-bool MDtool::tryAddMD80(uint16_t id)
+bool MDtool::tryAddMD80(u16 id)
 {
 	checkSpeedForId(id);
 	if (!candle->addMd80(id))
@@ -965,28 +776,15 @@ bool MDtool::tryAddMD80(uint16_t id)
 	}
 	return true;
 }
-
-int MDtool::checkArgsAndGetId(std::vector<std::string>& args, uint32_t size, uint32_t idPos)
+bool MDtool::checkSetupError(u16 id)
 {
-	if (!checkArgs(args, size))
-		return -1;
-
-	int id = atoi(args[idPos].c_str());
-	if (!tryAddMD80(id))
-		return -1;
-
-	return id;
-}
-
-bool MDtool::checkSetupError(uint16_t id)
-{
-	uint32_t calibrationStatus = 0;
+	u32 calibrationStatus = 0;
 	candle->readMd80Register(id, mab::Md80Reg_E::calibrationErrors, calibrationStatus);
 
 	if (calibrationStatus & (1 << ui::calibrationErrorList.at(std::string("ERROR_SETUP"))))
 	{
-		std::cout << "[MDTOOL] Could not proceed due to " << RED__("ERROR_SETUP")
-				  << ". Please call mdtool setup motor <ID> <cfg> first." << std::endl;
+		log.error("Could not proceed due to %s. Please call mdtool setup motor <ID> <cfg> first.",
+				  RED__("ERROR_SETUP"));
 		return true;
 	}
 

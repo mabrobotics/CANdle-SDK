@@ -29,11 +29,13 @@ int main(int argc, char** argv)
 	auto* configSave = config->add_subcommand("save", "Save current config to MD flash memory.");
 	auto* configCurrent = config->add_subcommand("current");
 	auto* configBand	= config->add_subcommand("bandwidth");
+	auto* configClear	= config->add_subcommand("clear");
 	configZero->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 	configCan->add_option("<CAN ID>", cmd.id, "Current CAN ID.")->required();
 	configSave->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 	configCurrent->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 	configBand->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+	configClear->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 	configCan->add_option("<NEW CAN ID>", cmd.newId, "New CAN ID to set.")->required();
 	configCan->add_option("<CAN BAUD>", cmd.baud, "New CAN baudrate to set: 1M, 2M, 5M or 8M")
 		->required();
@@ -116,7 +118,7 @@ int main(int argc, char** argv)
 
 	CLI11_PARSE(app, argc, argv);
 
-	MDtool mdtool(cmd);
+	MDtool mdtool;
 	if (app.count_all() == 1)
 		std::cerr << app.help() << std::endl;
 
@@ -134,6 +136,8 @@ int main(int argc, char** argv)
 			mdtool.configCurrent(cmd.id, cmd.current);
 		if (configBand->parsed())
 			mdtool.configBandwidth(cmd.id, cmd.bandwidth);
+		if (configClear->parsed())
+			mdtool.configClear(cmd.id);
 	}
 	if (setup->parsed())
 	{
