@@ -41,8 +41,6 @@ namespace mab
 	Candle::Candle(CANdleBaudrate_E canBaudrate, bool printVerbose, std::shared_ptr<Bus> bus)
 		: printVerbose(printVerbose), bus(bus)
 	{
-		log.info("CANdlelib v%s", getVersion().c_str());
-
 		reset();
 		usleep(5000);
 
@@ -52,7 +50,7 @@ namespace mab
 			throw std::runtime_error("Failed to set up CANdle baudrate!");
 		}
 		if (bus->getType() == mab::BusType_E::USB)
-			log.info("CANdle 0x%x ready(USB)", getDeviceId());
+			log.info("CANdle 0x%x ready (USB)", getDeviceId());
 		else if (bus->getType() == mab::BusType_E::SPI)
 			log.info("CANdle ready (SPI)");
 		else if (bus->getType() == mab::BusType_E::UART)
@@ -454,7 +452,7 @@ namespace mab
 						"manual for intructions on how to update.");
 					return false;
 				}
-				log.info("device firmare v%s", mab::getVersionString(candleDeviceVersion).c_str());
+				log.info("CANdle firmware v%s", mab::getVersionString(candleDeviceVersion).c_str());
 			}
 			return true;
 		}
