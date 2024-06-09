@@ -295,7 +295,7 @@ namespace mab
 		}
 
 		if (printFailure)
-			log.error("Failed to add MD80 (ID: %d)");
+			log.error("Failed to add MD80 (ID: %d)", canId);
 		return false;
 	}
 	std::vector<uint16_t> Candle::ping(mab::CANdleBaudrate_E baudrate)
