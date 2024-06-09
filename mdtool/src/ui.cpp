@@ -403,7 +403,6 @@ namespace ui
 		vout << "[MDTOOL] Using default config." << std::endl;
 		return true;
 	}
-
 	bool getUpdateConfigConfirmation(std::string configName)
 	{
 		vout << "[MDTOOL] The " << configName << " config is not complete." << std::endl;

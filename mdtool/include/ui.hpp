@@ -31,7 +31,6 @@ namespace ui
 	bool getCalibrationOutputConfirmation();
 	void printPositionAndVelocity(int id, float pos, float velocity);
 	void printFoundDrives(std::vector<uint16_t> ids);
-	void printUnableToFindCfgFile(std::string path);
 	void printDriveInfoExtended(mab::Md80& drive, bool printAll);
 	void printAllErrors(mab::Md80& drive);
 	void printErrorDetails(uint32_t error, const std::map<std::string, uint8_t>& errorMap);

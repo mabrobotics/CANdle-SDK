@@ -146,40 +146,18 @@ void MDtool::setupCalibrationOutput(u16 id)
 	candle->setupMd80CalibrationOutput(id);
 }
 
-void MDtool::setupMotor(u16 id, const std::string& cfgFilename)
+void MDtool::setupMotor(u16 id, const std::string& cfgPath)
 {
-	std::string path = (mdtoolBaseDir + "/" + mdtoolMotorCfgDirName + "/" + cfgFilename);
+	ConfigManager configManager(cfgPath);
+	std::string	  path	   = configManager.getConfigPath();
+	std::string	  filename = configManager.getConfigName();
 
-	ConfigManager configManager(mdtoolConfigPath + mdtoolDirName + "/" + mdtoolMotorCfgDirName,
-								mdtoolBaseDir + "/" + mdtoolMotorCfgDirName);
-
-	if (configManager.isConfigDefault(cfgFilename) && configManager.isConifgDifferent(cfgFilename))
-	{
-		if (ui::getDifferentConfigsConfirmation(cfgFilename))
-		{
-			(void)!system(("cp " + mdtoolConfigPath + mdtoolDirName + "/" + mdtoolMotorCfgDirName +
-						   "/" + cfgFilename + " " + mdtoolBaseDir + "/" + mdtoolMotorCfgDirName +
-						   "/" + cfgFilename)
-							  .c_str());
-		}
-	}
-	if (configManager.isConfigDefault("default.ini") &&
-		configManager.isConifgDifferent("default.ini"))
-	{
-		(void)!system(("cp " + mdtoolConfigPath + mdtoolDirName + "/" + mdtoolMotorCfgDirName +
-					   "/default.ini" + " " + mdtoolBaseDir + "/" + mdtoolMotorCfgDirName +
-					   "/default.ini")
-						  .c_str());
-	}
-
-	if (!configManager.isConfigValid(cfgFilename))
-	{
-		if (ui::getUpdateConfigConfirmation(cfgFilename))
-		{
-			path = mdtoolBaseDir + "/" + mdtoolMotorCfgDirName + "/" +
-				   configManager.validateConfig(cfgFilename);
-		}
-	}
+	if (configManager.isConfigDefault() && configManager.isConifgDifferent())
+		if (ui::getDifferentConfigsConfirmation(cfgPath))
+			configManager.copyDefaultConfig(filename);
+	if (!configManager.isConfigValid())
+		if (ui::getUpdateConfigConfirmation(cfgPath))
+			path = configManager.validateConfig();
 
 	mINI::INIFile	   motorCfg(path);
 	mINI::INIStructure cfg;
@@ -396,7 +374,7 @@ void MDtool::setupMotor(u16 id, const std::string& cfgFilename)
 		log.error("Failed to setup motor!");
 
 	candle->configMd80Save(id);
-
+	log.debug("Rebooting md80...");
 	/* wait for a full reboot */
 	sleep(3);
 }
