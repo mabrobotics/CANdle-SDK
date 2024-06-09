@@ -8,7 +8,35 @@
 #include "ConfigManager.hpp"
 #include "ui.hpp"
 
-f32 lerp(f32 start, f32 end, f32 t) { return (start * (1.f - t)) + (end * t); }
+f32			lerp(f32 start, f32 end, f32 t) { return (start * (1.f - t)) + (end * t); }
+std::string floatToString(f32 value, bool noDecimals = false)
+{
+	std::stringstream ss;
+	ss << std::fixed;
+
+	if (noDecimals)
+	{
+		ss << std::setprecision(0);
+		ss << value;
+		return ss.str();
+	}
+	else
+	{
+		if (static_cast<int>(value) == value)
+		{
+			ss << std::setprecision(1);
+			ss << value;
+			return ss.str();
+		}
+		else
+		{
+			ss << std::setprecision(7);
+			ss << value;
+			std::string str = ss.str();
+			return str.substr(0, str.find_last_not_of('0') + 1);
+		}
+	}
+}
 
 mab::CANdleBaudrate_E str2baud(const std::string& baud)
 {
@@ -377,6 +405,201 @@ void MDtool::setupMotor(u16 id, const std::string& cfgPath)
 	log.debug("Rebooting md80...");
 	/* wait for a full reboot */
 	sleep(3);
+}
+void MDtool::setupReadConfig(u16 id, const std::string& cfgPath)
+{
+	if (!tryAddMD80(id))
+		return;
+
+	mINI::INIStructure readIni; /**< mINI structure for read data */
+	mab::regRead_st&   regR = candle->getMd80FromList(id).getReadReg(); /**< read register */
+	char			   motorNameChar[24];
+
+	std::string configName = cfgPath;
+	if (cfgPath == "")
+	{
+		if (!candle->readMd80Register(id, mab::Md80Reg_E::motorName, motorNameChar))
+		{
+			log.error("Failed to read motor conifg %d!", id);
+			snprintf(motorNameChar, 24, "UNKNOWN_MD");
+		}
+		configName = std::string(motorNameChar) + "_" + std::to_string(id) + "_read.cfg";
+	}
+	else
+		if(std::filesystem::path(configName).extension() == "")
+			configName += ".cfg";
+
+	/* Ask user if the motor config should be saved */
+	bool saveConfig = ui::getSaveMotorConfigConfirmation(configName);
+
+	/* Motor config - motor section */
+	if (!candle->readMd80Register(id,
+								  mab::Md80Reg_E::motorPolePairs,
+								  regR.RW.polePairs,
+								  mab::Md80Reg_E::motorKt,
+								  regR.RW.motorKt,
+								  mab::Md80Reg_E::motorIMax,
+								  regR.RW.iMax,
+								  mab::Md80Reg_E::motorGearRatio,
+								  regR.RW.gearRatio,
+								  mab::Md80Reg_E::motorTorgueBandwidth,
+								  regR.RW.torqueBandwidth,
+								  mab::Md80Reg_E::motorKV,
+								  regR.RW.motorKV))
+		log.warn("Failed to read motor config!");
+
+	readIni["motor"]["name"]			 = std::string(motorNameChar);
+	readIni["motor"]["pole pairs"]		 = floatToString(regR.RW.polePairs);
+	readIni["motor"]["KV"]				 = floatToString(regR.RW.motorKV);
+	readIni["motor"]["torque constant"]	 = floatToString(regR.RW.motorKt);
+	readIni["motor"]["gear ratio"]		 = floatToString(regR.RW.gearRatio);
+	readIni["motor"]["max current"]		 = floatToString(regR.RW.iMax);
+	readIni["motor"]["torque bandwidth"] = floatToString(regR.RW.torqueBandwidth);
+
+	if (!candle->readMd80Register(id, mab::Md80Reg_E::motorShutdownTemp, regR.RW.motorShutdownTemp))
+		log.warn("Failed to read motor config!");
+
+	readIni["motor"]["shutdown temp"] = floatToString(regR.RW.motorShutdownTemp);
+
+	/* Motor config - limits section */
+	if (!candle->readMd80Register(id,
+								  mab::Md80Reg_E::positionLimitMax,
+								  regR.RW.positionLimitMax,
+								  mab::Md80Reg_E::positionLimitMin,
+								  regR.RW.positionLimitMin,
+								  mab::Md80Reg_E::maxTorque,
+								  regR.RW.maxTorque,
+								  mab::Md80Reg_E::maxVelocity,
+								  regR.RW.maxVelocity,
+								  mab::Md80Reg_E::maxAcceleration,
+								  regR.RW.maxAcceleration,
+								  mab::Md80Reg_E::maxDeceleration,
+								  regR.RW.maxDeceleration))
+		log.warn("Failed to read motor config!");
+
+	readIni["limits"]["max torque"]		  = floatToString(regR.RW.maxTorque);
+	readIni["limits"]["max velocity"]	  = floatToString(regR.RW.maxVelocity);
+	readIni["limits"]["max position"]	  = floatToString(regR.RW.positionLimitMax);
+	readIni["limits"]["min position"]	  = floatToString(regR.RW.positionLimitMin);
+	readIni["limits"]["max acceleration"] = floatToString(regR.RW.maxAcceleration);
+	readIni["limits"]["max deceleration"] = floatToString(regR.RW.maxDeceleration);
+
+	/* Motor config - profile section */
+	if (!candle->readMd80Register(id,
+								  mab::Md80Reg_E::profileVelocity,
+								  regR.RW.profileVelocity,
+								  mab::Md80Reg_E::profileAcceleration,
+								  regR.RW.profileAcceleration,
+								  mab::Md80Reg_E::profileDeceleration,
+								  regR.RW.profileDeceleration))
+		log.warn("Failed to read motor config!");
+
+	readIni["profile"]["acceleration"] = floatToString(regR.RW.profileAcceleration);
+	readIni["profile"]["deceleration"] = floatToString(regR.RW.profileDeceleration);
+	readIni["profile"]["velocity"]	   = floatToString(regR.RW.profileVelocity);
+
+	/* Motor config - output encoder section */
+	if (!candle->readMd80Register(id,
+								  mab::Md80Reg_E::outputEncoder,
+								  regR.RW.outputEncoder,
+								  mab::Md80Reg_E::outputEncoderMode,
+								  regR.RW.outputEncoderMode))
+		log.warn("Failed to read motor config!");
+
+	if (regR.RW.outputEncoder == 0.f)
+		readIni["output encoder"]["output encoder"] = floatToString(0.f, true);
+	else
+		readIni["output encoder"]["output encoder"] = ui::encoderTypes[regR.RW.outputEncoder];
+
+	if (regR.RW.outputEncoderMode == 0.f)
+		readIni["output encoder"]["output encoder mode"] = floatToString(0.f, true);
+	else
+		readIni["output encoder"]["output encoder mode"] =
+			ui::encoderModes[regR.RW.outputEncoderMode];
+
+	/* Motor config - position PID section */
+	if (!candle->readMd80Register(id,
+								  mab::Md80Reg_E::motorPosPidKp,
+								  regR.RW.positionPidGains.kp,
+								  mab::Md80Reg_E::motorPosPidKi,
+								  regR.RW.positionPidGains.ki,
+								  mab::Md80Reg_E::motorPosPidKd,
+								  regR.RW.positionPidGains.kd,
+								  mab::Md80Reg_E::motorPosPidWindup,
+								  regR.RW.positionPidGains.intWindup))
+		log.warn("Failed to read motor config!");
+
+	readIni["position PID"]["kp"]	  = floatToString(regR.RW.positionPidGains.kp);
+	readIni["position PID"]["ki"]	  = floatToString(regR.RW.positionPidGains.ki);
+	readIni["position PID"]["kd"]	  = floatToString(regR.RW.positionPidGains.kd);
+	readIni["position PID"]["windup"] = floatToString(regR.RW.positionPidGains.intWindup);
+
+	/* Motor config - velocity PID section */
+	if (!candle->readMd80Register(id,
+								  mab::Md80Reg_E::motorVelPidKp,
+								  regR.RW.velocityPidGains.kp,
+								  mab::Md80Reg_E::motorVelPidKi,
+								  regR.RW.velocityPidGains.ki,
+								  mab::Md80Reg_E::motorVelPidKd,
+								  regR.RW.velocityPidGains.kd,
+								  mab::Md80Reg_E::motorVelPidWindup,
+								  regR.RW.velocityPidGains.intWindup))
+		log.warn("Failed to read motor config!");
+
+	readIni["velocity PID"]["kp"]	  = floatToString(regR.RW.velocityPidGains.kp);
+	readIni["velocity PID"]["ki"]	  = floatToString(regR.RW.velocityPidGains.ki);
+	readIni["velocity PID"]["kd"]	  = floatToString(regR.RW.velocityPidGains.kd);
+	readIni["velocity PID"]["windup"] = floatToString(regR.RW.velocityPidGains.intWindup);
+
+	/* Motor config - impedance PD section */
+	if (!candle->readMd80Register(id,
+								  mab::Md80Reg_E::motorImpPidKp,
+								  regR.RW.impedancePdGains.kp,
+								  mab::Md80Reg_E::motorImpPidKd,
+								  regR.RW.impedancePdGains.kd))
+		log.warn("Failed to read motor config!");
+
+	readIni["impedance PD"]["kp"] = floatToString(regR.RW.impedancePdGains.kp);
+	readIni["impedance PD"]["kd"] = floatToString(regR.RW.impedancePdGains.kd);
+
+	/* Motor config - homing section */
+	if (!candle->readMd80Register(id,
+								  mab::Md80Reg_E::homingMode,
+								  regR.RW.homingMode,
+								  mab::Md80Reg_E::homingMaxTravel,
+								  regR.RW.homingMaxTravel,
+								  mab::Md80Reg_E::homingVelocity,
+								  regR.RW.homingVelocity,
+								  mab::Md80Reg_E::homingTorque,
+								  regR.RW.homingTorque))
+		log.warn("Failed to read motor config!");
+
+	readIni["homing"]["mode"]		  = ui::homingModes[regR.RW.homingMode];
+	readIni["homing"]["max travel"]	  = floatToString(regR.RW.homingMaxTravel);
+	readIni["homing"]["max torque"]	  = floatToString(regR.RW.homingTorque);
+	readIni["homing"]["max velocity"] = floatToString(regR.RW.homingVelocity);
+
+	/* Saving motor config to file */
+	if (saveConfig)
+	{
+		std::string saveConfigPath;
+		char		buffer[PATH_MAX];
+
+		if (getcwd(buffer, sizeof(buffer)) != NULL)
+		{
+			saveConfigPath = buffer;
+		}
+		else
+		{
+			perror("getcwd() error");
+		}
+		saveConfigPath += "/" + configName;
+		mINI::INIFile configFile(saveConfigPath);
+		configFile.write(readIni);
+	}
+
+	/* Printing motor config */
+	ui::printMotorConfig(readIni);
 }
 
 void MDtool::setupInfo(u16 id, bool printAll)

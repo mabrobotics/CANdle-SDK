@@ -149,6 +149,8 @@ namespace ui
 					return "HW20";
 				case 3:
 					return "HW21";
+				case 4:
+					return "HW30";
 				default:
 					return "UNKNOWN";
 			}
@@ -387,6 +389,22 @@ namespace ui
 		vout << "Motor config parameter in category [" << category << "] named [" << field
 			 << "] is out of bounds!" << std::endl;
 	}
+	void printMotorConfig(mINI::INIStructure Ini)
+	{
+		vout << "Motor config:" << std::endl;
+		for (auto const& it : Ini)
+		{
+			auto const& section	   = it.first;
+			auto const& collection = it.second;
+			std::cout << "- " << section << ":" << std::endl;
+			for (auto const& it2 : collection)
+			{
+				auto const& key	  = it2.first;
+				auto const& value = it2.second;
+				std::cout << "   - " << key << ": " << value << std::endl;
+			}
+		}
+	}
 
 	bool getDifferentConfigsConfirmation(std::string configName)
 	{
@@ -421,4 +439,19 @@ namespace ui
 			 << std::endl;
 		return true;
 	}
+	bool getSaveMotorConfigConfirmation(std::string configName)
+	{
+		vout << "[MDTOOL] Would you like to save the motor config under the name: `" << configName
+			 << "` in your current directory? [Y/n]" << std::endl;
+		char x;
+		std::cin >> x;
+		if (x != 'Y' && x != 'y')
+		{
+			vout << "[MDTOOL] Reading the motor config without saving to a file." << std::endl;
+			return false;
+		}
+		vout << "[MDTOOL] Saving the motor config." << std::endl;
+		return true;
+	}
+
 }  // namespace ui

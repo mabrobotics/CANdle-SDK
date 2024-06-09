@@ -50,6 +50,8 @@ int main(int argc, char** argv)
 	auto* setupCalibOut = setup->add_subcommand("calibration_out", "Calibrate output encoder.");
 	auto* setupHoming	= setup->add_subcommand("homing", "Begin homing procedure.");
 	auto* setupMotor	= setup->add_subcommand("motor", "Upload actuator config from .cfg file.");
+	auto* setupReadCfg =
+		setup->add_subcommand("read_config", "Download actuator config from MD to .cfg file.");
 	setupInfo->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 	auto* setupInfoAllFlag = setupInfo->add_flag("-a", "Print ALL available info.");
 	setupCalib->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
@@ -60,6 +62,8 @@ int main(int argc, char** argv)
 		"<.cfg FILENAME>",
 		cmd.cfgPath,
 		"Filename of motor config. By default, searches `~/.config/mdtool/mdtool_motors/`.");
+	setupReadCfg->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+	setupReadCfg->add_option("<FILE>", cmd.value, "File to save config to.");
 
 	// TEST
 	auto* testMove	  = test->add_subcommand("move", "Validate if motor can move.");
@@ -151,6 +155,8 @@ int main(int argc, char** argv)
 			mdtool.setupHoming(cmd.id);
 		if (setupMotor->parsed())
 			mdtool.setupMotor(cmd.id, cmd.cfgPath);
+		if (setupReadCfg->parsed())
+			mdtool.setupReadConfig(cmd.id, cmd.value);
 	}
 	if (test->parsed())
 	{
