@@ -32,6 +32,7 @@ add_compile_options(
 
 set(mINI_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/mINI/inc/)
 
+set(CANDLE_BUILD_STATIC TRUE)
 add_subdirectory(commons)
 add_subdirectory(candlelib)
 add_subdirectory(mdtool)
