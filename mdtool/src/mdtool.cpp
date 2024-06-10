@@ -425,8 +425,9 @@ void MDtool::setupReadConfig(u16 id, const std::string& cfgName)
 		}
 		configName = std::string(motorNameChar) + "_" + std::to_string(id) + "_read.cfg";
 	}
-	else if (std::filesystem::path(configName).extension() == "")
-		configName += ".cfg";
+	else if ((std::filesystem::path(configName).extension() == "") ||
+			 !(std::filesystem::path(configName).extension() == ".cfg"))
+		configName = std::filesystem::path(configName).replace_extension(".cfg");
 
 	/* Ask user if the motor config should be saved */
 	bool saveConfig = ui::getSaveMotorConfigConfirmation(configName);
@@ -604,6 +605,11 @@ void MDtool::setupReadConfig(u16 id, const std::string& cfgName)
 					configName = ui::getNewMotorConfigName(configName);
 					saveConfigPath =
 						saveConfigPath.substr(0, saveConfigPath.find_last_of("/") + 1) + configName;
+
+					if ((std::filesystem::path(saveConfigPath).extension() == "") ||
+						!(std::filesystem::path(saveConfigPath).extension() == ".cfg"))
+						saveConfigPath =
+							std::filesystem::path(saveConfigPath).replace_extension(".cfg");
 				}
 				else
 					checkFile = false;

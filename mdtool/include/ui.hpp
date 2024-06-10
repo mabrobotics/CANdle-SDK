@@ -11,6 +11,7 @@
 #define REDSTART	"\033[1;31m"
 #define GREENSTART	"\033[1;32m"
 #define YELLOWSTART "\033[1;33m"
+#define BLUESTART	"\x1b[38;5;33m"
 #define RESETTEXT	"\033[0m"
 
 #define RED__(x) REDSTART x RESETTEXT
@@ -21,6 +22,9 @@
 
 #define YELLOW__(x) YELLOWSTART x RESETTEXT
 #define YELLOW_(x)	YELLOWSTART + x + RESETTEXT
+
+#define BLUE__(x) BLUESTART x RESETTEXT
+#define BLUE_(x)  BLUESTART + x + RESETTEXT
 
 namespace ui
 {
