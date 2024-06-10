@@ -32,11 +32,13 @@ int main(int argc, char** argv)
 	clear->add_option("<LEVEL>", cmd.variant, "Can be: warning, error, all")->required();
 
 	// CONFIG
-	auto* configBand	= config->add_subcommand("bandwidth");
+	auto* configBand = config->add_subcommand(
+		"bandwidth", "Set the torque bandwidth without recalibrating the actuator");
 	auto* configCan		= config->add_subcommand("can", "Set CAN parameters of MD drive.");
 	auto* configClear	= config->add_subcommand("clear");
-	auto* configCurrent = config->add_subcommand("current");
-	auto* configSave	= config->add_subcommand("save", "Save current config to MD flash memory.");
+	auto* configCurrent = config->add_subcommand(
+		"current", "Set the maximum phase current that is allowed to flow through the motor.");
+	auto* configSave = config->add_subcommand("save", "Save current config to MD flash memory.");
 	auto* configZero = config->add_subcommand("zero", "Set MD zero position at current position.");
 
 	configBand->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
