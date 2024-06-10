@@ -37,7 +37,7 @@ class MDtool
 	void setupMotor(u16 id, const std::string& cfgPath);
 	void setupInfo(u16 id, bool printAll);
 	void setupHoming(u16 id);
-	void setupReadConfig(u16 id, const std::string& cfgPath);
+	void setupReadConfig(u16 id, const std::string& cfgName);
 
 	void testMove(u16 id, f32 targetPosition);
 	void testMoveAbsolute(u16 id, f32 targetPos, f32 velLimit, f32 accLimit, f32 dccLimit);
