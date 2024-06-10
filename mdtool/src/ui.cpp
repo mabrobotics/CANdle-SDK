@@ -470,8 +470,8 @@ namespace ui
 	}
 	std::string getNewMotorConfigName(std::string configName)
 	{
-		std::string newName = configName.substr(0, configName.find_last_of(".")) + "_new";
-		vout << "[MDTOOL] Please type the new config name (without extension!)" << std::endl
+		std::string newName = configName.substr(0, configName.find_last_of(".")) + "_new.cfg";
+		vout << "[MDTOOL] Please type the new config name." << std::endl
 			 << "[MDTOOL] The default new name is: " << newName << std::endl
 			 << "[MDTOOL] (Press Enter to accept the default)" << std::endl;
 		std::string x;
@@ -480,8 +480,8 @@ namespace ui
 		if (!x.empty())
 		{
 			std::string str(x);
-			return str + ".cfg";
+			return str;
 		}
-		return newName + ".cfg";
+		return newName;
 	}
 }  // namespace ui
