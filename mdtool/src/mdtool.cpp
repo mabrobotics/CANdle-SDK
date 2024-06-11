@@ -599,7 +599,7 @@ void MDtool::setupReadConfig(u16 id, const std::string& cfgName)
 	/* Saving motor config to file */
 	if (saveConfig)
 	{
-		std::string saveConfigPath = std::filesystem::absolute(configName);
+		std::string saveConfigPath = std::filesystem::absolute(configName).string();
 
 		bool checkFile = true;
 		while (checkFile)

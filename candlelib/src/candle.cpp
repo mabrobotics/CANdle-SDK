@@ -1,7 +1,5 @@
 #include "candle.hpp"
 
-#include <unistd.h>
-
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -10,6 +8,14 @@
 
 #include "candle_protocol.hpp"
 #include "register.hpp"
+
+#ifdef WIN32
+void usleep(u32 us)
+{
+	u32 ms = us / 1000;
+	Sleep(ms == 0 ? 1 : ms);
+}
+#endif
 
 namespace mab
 {
@@ -83,6 +89,7 @@ namespace mab
 					std::make_shared<UsbDevice>(candleVid, candlePid, idsToIgnore, device);
 				return usb;
 			}
+#ifdef UNIX
 			case mab::BusType_E::SPI:
 			{
 				if (device != "")
@@ -90,7 +97,6 @@ namespace mab
 				else
 					return std::make_shared<SpiDevice>();
 			}
-
 			case mab::BusType_E::UART:
 			{
 				if (device != "")
@@ -98,6 +104,7 @@ namespace mab
 				else
 					return std::make_shared<UartDevice>();
 			}
+#endif
 			default:
 				throw std::runtime_error("Error wrong bus type specified!");
 		}
@@ -209,7 +216,7 @@ namespace mab
 
 	void Candle::setVebose(bool enable)
 	{
-		log.level = enable ? logger::LogLevel_E::INFO : logger::LogLevel_E::ERROR;
+			log.level = enable ? logger::LogLevel_E::INFO : (logger::LogLevel_E)30;
 	}
 
 	unsigned long Candle::getDeviceId() { return bus->getId(); }

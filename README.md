@@ -12,3 +12,8 @@ sudo apt install libusb-1.0-0-dev
 ```
 ./launch/buildForLinux.sh
 ```
+
+### Cross-compile for Windows
+```
+sudo apt install  g++-mingw-w64-x86-64-posix
+```

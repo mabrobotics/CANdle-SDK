@@ -277,7 +277,7 @@ void ConfigManager::computeFullPathAndName(std::string userPath)
 	if ((userPath.rfind("./", 0) == 0) || (userPath.rfind("/", 0) == 0))
 	{
 		if ((userPath.rfind("./", 0) == 0))
-			userConfigPath = std::filesystem::absolute(userPath.substr(2));
+			userConfigPath = std::filesystem::absolute(userPath.substr(2)).string();
 		else
 			userConfigPath = userPath;
 	}
