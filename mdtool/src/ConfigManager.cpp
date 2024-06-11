@@ -1,11 +1,8 @@
 #include "ConfigManager.hpp"
 
+#include <filesystem>
 #include <iostream>
-#ifdef _WIN32
-#include <windows.h>
-#else
 #include <unistd.h>
-#endif
 
 #include "dirent.h"
 
@@ -103,13 +100,17 @@ bool ConfigManager::isConifgDifferent()
 
 void ConfigManager::copyDefaultConfig(std::string configName)
 {
-	int result = system(
-		("cp " + originalConfigDir + "/" + configName + " " + userConfigDir + "/" + configName)
-			.c_str());
-	if (result)
-		std::cerr << "Error: Failed to copy the user's file: "
-				  << (originalConfigDir + "/" + configName).c_str() << std::endl
+	try
+	{
+		std::filesystem::copy(originalConfigDir + "/" + configName,
+							  userConfigDir + "/" + configName,
+							  std::filesystem::copy_options::overwrite_existing);
+	}
+	catch (const std::filesystem::filesystem_error& e)
+	{
+		std::cerr << "Error: Failed to copy the user's file: " << e.what() << std::endl
 				  << "Please check the file and try again." << std::endl;
+	}
 }
 
 bool ConfigManager::isConfigValid()
@@ -155,12 +156,18 @@ std::string ConfigManager::validateConfig()
 
 	std::string updatedUserConfigPath =
 		userConfigPath.substr(0, userConfigPath.find_last_of(".")) + "_updated.cfg";
-	/* copy motors configs directory - not the best practice to use
-	 * system() but std::filesystem is not available until C++17 */
-	int result = system(("cp " + userConfigPath + " " + updatedUserConfigPath).c_str());
-	if (result)
-		std::cerr << "Error: Failed to copy the user's file: " << userConfigPath << std::endl
+	/* copy motors configs directory */
+	try
+	{
+		std::filesystem::copy(userConfigPath,
+							  updatedUserConfigPath,
+							  std::filesystem::copy_options::overwrite_existing);
+	}
+	catch (const std::filesystem::filesystem_error& e)
+	{
+		std::cerr << "Error: Failed to copy the user's file: " << e.what() << std::endl
 				  << "Please check the file and try again." << std::endl;
+	}
 
 	// Read updated config file.
 	mINI::INIFile	   updatedFile(updatedUserConfigPath);
@@ -270,21 +277,7 @@ void ConfigManager::computeFullPathAndName(std::string userPath)
 	if ((userPath.rfind("./", 0) == 0) || (userPath.rfind("/", 0) == 0))
 	{
 		if ((userPath.rfind("./", 0) == 0))
-		{
-			char buffer[PATH_MAX];
-#ifdef _WIN32
-			if (GetCurrentDirectory(PATH_MAX, buffer))
-				return (buffer + userFilePath.substr(1));
-			else
-				throw std::runtime_error("GetCurrentDirectory() error: " +
-										 std::to_string(GetLastError()));
-#else
-			if (getcwd(buffer, sizeof(buffer)) != NULL)
-				userConfigPath = (buffer + userPath.substr(1));
-			else
-				perror("getcwd() error");
-#endif
-		}
+			userConfigPath = std::filesystem::absolute(userPath.substr(2));
 		else
 			userConfigPath = userPath;
 	}
