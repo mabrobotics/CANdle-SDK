@@ -1,9 +1,8 @@
 #include "mdtool.hpp"
 
-#include <unistd.h>
-
 #include <filesystem>
 #include <numeric>
+#include <unistd.h>
 
 #include "ConfigManager.hpp"
 #include "ui.hpp"
@@ -600,17 +599,7 @@ void MDtool::setupReadConfig(u16 id, const std::string& cfgName)
 	/* Saving motor config to file */
 	if (saveConfig)
 	{
-		std::string saveConfigPath;
-		char		buffer[PATH_MAX];
-
-		if (getcwd(buffer, sizeof(buffer)) != NULL)
-		{
-			saveConfigPath = std::string(buffer) + "/" + configName;
-		}
-		else
-		{
-			perror("getcwd() error");
-		}
+		std::string saveConfigPath = std::filesystem::absolute(configName);
 
 		bool checkFile = true;
 		while (checkFile)
