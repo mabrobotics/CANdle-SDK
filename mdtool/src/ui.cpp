@@ -435,14 +435,15 @@ namespace ui
 			return false;
 		}
 		vout << "[MDTOOL] Updating config with default values." << std::endl;
-		vout << "[MDTOOL] New confing saved under name: [config_original_name]_updated.cfg."
+		vout << "[MDTOOL] New confing saved under name: " +
+					configName.substr(0, configName.find_last_of(".")) + "_updated.cfg."
 			 << std::endl;
 		return true;
 	}
 	bool getSaveMotorConfigConfirmation(std::string configName)
 	{
-		vout << "[MDTOOL] Would you like to save the motor config under the name: `" << configName
-			 << "` in your current directory? [Y/n]" << std::endl;
+		vout << "[MDTOOL] Would you like to save the motor config under the name: " << configName
+			 << " in your current directory? [Y/n]" << std::endl;
 		char x;
 		std::cin >> x;
 		if (x != 'Y' && x != 'y')
@@ -453,5 +454,35 @@ namespace ui
 		vout << "[MDTOOL] Saving the motor config." << std::endl;
 		return true;
 	}
-
+	bool getOverwriteMotorConfigConfirmation(std::string configName)
+	{
+		vout << "[MDTOOL] The " << configName
+			 << " file already exist in your current directory, would you like to overwrite the "
+				"file? [Y/n]"
+			 << std::endl;
+		char x;
+		std::cin >> x;
+		if (x != 'Y' && x != 'y')
+		{
+			return false;
+		}
+		vout << "[MDTOOL] Overwriting the motor config file." << std::endl;
+		return true;
+	}
+	std::string getNewMotorConfigName(std::string configName)
+	{
+		std::string newName = configName.substr(0, configName.find_last_of(".")) + "_new.cfg";
+		vout << "[MDTOOL] Please type the new config name." << std::endl
+			 << "[MDTOOL] The default new name is: " << newName << std::endl
+			 << "[MDTOOL] (Press Enter to accept the default)" << std::endl;
+		std::string x;
+		std::cin.ignore();
+		std::getline(std::cin, x);
+		if (!x.empty())
+		{
+			std::string str(x);
+			return str;
+		}
+		return newName;
+	}
 }  // namespace ui

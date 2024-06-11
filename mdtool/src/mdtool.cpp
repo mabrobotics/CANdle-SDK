@@ -406,7 +406,7 @@ void MDtool::setupMotor(u16 id, const std::string& cfgPath)
 	/* wait for a full reboot */
 	sleep(3);
 }
-void MDtool::setupReadConfig(u16 id, const std::string& cfgPath)
+void MDtool::setupReadConfig(u16 id, const std::string& cfgName)
 {
 	if (!tryAddMD80(id))
 		return;
@@ -415,8 +415,8 @@ void MDtool::setupReadConfig(u16 id, const std::string& cfgPath)
 	mab::regRead_st&   regR = candle->getMd80FromList(id).getReadReg(); /**< read register */
 	char			   motorNameChar[24];
 
-	std::string configName = cfgPath;
-	if (cfgPath == "")
+	std::string configName = cfgName;
+	if (cfgName == "")
 	{
 		if (!candle->readMd80Register(id, mab::Md80Reg_E::motorName, motorNameChar))
 		{
@@ -425,9 +425,8 @@ void MDtool::setupReadConfig(u16 id, const std::string& cfgPath)
 		}
 		configName = std::string(motorNameChar) + "_" + std::to_string(id) + "_read.cfg";
 	}
-	else
-		if(std::filesystem::path(configName).extension() == "")
-			configName += ".cfg";
+	else if (std::filesystem::path(configName).extension() == "")
+		configName += ".cfg";
 
 	/* Ask user if the motor config should be saved */
 	bool saveConfig = ui::getSaveMotorConfigConfirmation(configName);
@@ -587,13 +586,35 @@ void MDtool::setupReadConfig(u16 id, const std::string& cfgPath)
 
 		if (getcwd(buffer, sizeof(buffer)) != NULL)
 		{
-			saveConfigPath = buffer;
+			saveConfigPath = std::string(buffer) + "/" + configName;
 		}
 		else
 		{
 			perror("getcwd() error");
 		}
-		saveConfigPath += "/" + configName;
+
+		bool checkFile = true;
+		while (checkFile)
+		{
+			struct stat st;
+			if (stat(saveConfigPath.c_str(), &st) == 0)
+			{
+				if (!ui::getOverwriteMotorConfigConfirmation(configName))
+				{
+					configName = ui::getNewMotorConfigName(configName);
+					saveConfigPath =
+						saveConfigPath.substr(0, saveConfigPath.find_last_of("/") + 1) + configName;
+
+					if (std::filesystem::path(saveConfigPath).extension() == "")
+						saveConfigPath += ".cfg";
+				}
+				else
+					checkFile = false;
+			}
+			else
+				checkFile = false;
+		}
+
 		mINI::INIFile configFile(saveConfigPath);
 		configFile.write(readIni);
 	}
