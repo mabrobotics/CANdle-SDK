@@ -1,6 +1,7 @@
 #include "ConfigManager.hpp"
 
 #include <iostream>
+#include <filesystem>
 #ifdef _WIN32
 #include <windows.h>
 #else
@@ -103,13 +104,17 @@ bool ConfigManager::isConifgDifferent()
 
 void ConfigManager::copyDefaultConfig(std::string configName)
 {
-	int result = system(
-		("cp " + originalConfigDir + "/" + configName + " " + userConfigDir + "/" + configName)
-			.c_str());
-	if (result)
-		std::cerr << "Error: Failed to copy the user's file: "
-				  << (originalConfigDir + "/" + configName).c_str() << std::endl
+	try
+	{
+		std::filesystem::copy(originalConfigDir + "/" + configName,
+							  userConfigDir + "/" + configName,
+							  std::filesystem::copy_options::overwrite_existing);
+	}
+	catch (const std::filesystem::filesystem_error& e)
+	{
+		std::cerr << "Error: Failed to copy the user's file: " << e.what() << std::endl
 				  << "Please check the file and try again." << std::endl;
+	}
 }
 
 bool ConfigManager::isConfigValid()
@@ -155,12 +160,18 @@ std::string ConfigManager::validateConfig()
 
 	std::string updatedUserConfigPath =
 		userConfigPath.substr(0, userConfigPath.find_last_of(".")) + "_updated.cfg";
-	/* copy motors configs directory - not the best practice to use
-	 * system() but std::filesystem is not available until C++17 */
-	int result = system(("cp " + userConfigPath + " " + updatedUserConfigPath).c_str());
-	if (result)
-		std::cerr << "Error: Failed to copy the user's file: " << userConfigPath << std::endl
+	/* copy motors configs directory */
+	try
+	{
+		std::filesystem::copy(userConfigPath,
+							  updatedUserConfigPath,
+							  std::filesystem::copy_options::overwrite_existing);
+	}
+	catch (const std::filesystem::filesystem_error& e)
+	{
+		std::cerr << "Error: Failed to copy the user's file: " << e.what() << std::endl
 				  << "Please check the file and try again." << std::endl;
+	}
 
 	// Read updated config file.
 	mINI::INIFile	   updatedFile(updatedUserConfigPath);

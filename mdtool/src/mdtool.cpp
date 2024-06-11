@@ -60,11 +60,22 @@ MDtool::MDtool()
 		std::string(getenv("HOME")) + "/" + mdtoolHomeConfigDirName + "/" + mdtoolDirName;
 	mdtoolIniFilePath = mdtoolBaseDir + "/" + mdtoolIniFileName;
 
-	/* copy motors configs directory - not the best practice to use system() but std::filesystem is
-	 * not available until C++17 */
+	/* copy motors configs directory */
 	struct stat info;
 	if (stat(mdtoolBaseDir.c_str(), &info) != 0)
-		(void)!system(("cp -r " + mdtoolConfigPath + mdtoolDirName + " " + mdtoolBaseDir).c_str());
+	{
+		try
+		{
+			std::filesystem::copy(mdtoolConfigPath + mdtoolDirName,
+								  mdtoolBaseDir,
+								  std::filesystem::copy_options::recursive |
+									  std::filesystem::copy_options::overwrite_existing);
+		}
+		catch (const std::filesystem::filesystem_error& e)
+		{
+			std::cerr << "Error: Failed to copy the directory: " << e.what() << std::endl;
+		}
+	}
 	else /* if the directory is not empty we should only copy the ini file (only if the version is
 			newer) and all default config files */
 	{
@@ -74,9 +85,17 @@ MDtool::MDtool()
 
 		if (ini["general"]["version"] != candle->getVersion())
 		{
-			(void)!system(("cp " + mdtoolConfigPath + mdtoolDirName + "/" + mdtoolIniFileName +
-						   " " + mdtoolBaseDir + "/")
-							  .c_str());
+			try
+			{
+				std::filesystem::copy(mdtoolConfigPath + mdtoolDirName + "/" + mdtoolIniFileName,
+									  mdtoolBaseDir + "/",
+									  std::filesystem::copy_options::overwrite_existing);
+			}
+			catch (const std::filesystem::filesystem_error& e)
+			{
+				std::cerr << "Error: Failed to copy the file: " << e.what() << std::endl;
+			}
+
 			file.read(ini);
 			ini["general"]["version"] = candle->getVersion();
 			file.write(ini);
