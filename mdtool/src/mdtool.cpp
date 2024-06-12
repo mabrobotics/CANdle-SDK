@@ -36,12 +36,12 @@ std::string floatToString(f32 value, bool noDecimals = false)
 		}
 	}
 }
-std::string getHomePath()
+std::string getConfigLocation()
 {
 #ifdef WIN32
-	return getenv("USERPROFILE");
+	return std::string("config/");
 #else
-	return getenv("HOME");
+	return std::string("/etc/mdtool/");
 #endif
 }
 
@@ -63,50 +63,10 @@ MDtool::MDtool()
 	std::cerr << "[CANDLESDK] Version: " << mab::Candle::getVersion() << std::endl;
 	log.tag = "MDTOOL";
 
-	mdtoolBaseDir	  = getHomePath() + "/" + mdtoolHomeConfigDirName + "/" + mdtoolDirName;
-	mdtoolIniFilePath = mdtoolBaseDir + "/" + mdtoolIniFileName;
+	mdtoolBaseDir	  = getConfigLocation() + "mdtool_motors/";
+	mdtoolIniFilePath = getConfigLocation() + mdtoolIniFileName;
 
 	/* copy motors configs directory */
-	struct stat info;
-	if (stat(mdtoolBaseDir.c_str(), &info) != 0)
-	{
-		try
-		{
-			std::filesystem::copy(mdtoolConfigPath + mdtoolDirName,
-								  mdtoolBaseDir,
-								  std::filesystem::copy_options::recursive |
-									  std::filesystem::copy_options::overwrite_existing);
-		}
-		catch (const std::filesystem::filesystem_error& e)
-		{
-			std::cerr << "Error: Failed to copy the directory: " << e.what() << std::endl;
-		}
-	}
-	else /* if the directory is not empty we should only copy the ini file (only if the version is
-			newer) and all default config files */
-	{
-		mINI::INIFile	   file(mdtoolIniFilePath);
-		mINI::INIStructure ini;
-		file.read(ini);
-
-		if (ini["general"]["version"] != candle->getVersion())
-		{
-			try
-			{
-				std::filesystem::copy(mdtoolConfigPath + mdtoolDirName + "/" + mdtoolIniFileName,
-									  mdtoolBaseDir + "/",
-									  std::filesystem::copy_options::overwrite_existing);
-			}
-			catch (const std::filesystem::filesystem_error& e)
-			{
-				std::cerr << "Error: Failed to copy the file: " << e.what() << std::endl;
-			}
-
-			file.read(ini);
-			ini["general"]["version"] = candle->getVersion();
-			file.write(ini);
-		}
-	}
 
 	mab::BusType_E		  busType = mab::BusType_E::USB;
 	mab::CANdleBaudrate_E baud	  = mab::CANdleBaudrate_E::CAN_BAUD_1M;
@@ -116,7 +76,6 @@ MDtool::MDtool()
 	file.read(ini);
 
 	busString = ini["communication"]["bus"];
-
 	if (busString == "SPI")
 		busType = mab::BusType_E::SPI;
 	else if (busString == "UART")
@@ -884,6 +843,10 @@ void MDtool::encoder(u16 id)
 }
 void MDtool::bus(const std::string& bus, const std::string& device)
 {
+#ifdef WIN32
+	log.error("bus - option not available on Windows OS.");
+	return;
+#endif
 	if (bus != "USB" && bus != "SPI" && bus != "UART")
 		return;
 	if ((bus == "SPI" || bus == "UART") && device == "")
@@ -896,7 +859,8 @@ void MDtool::bus(const std::string& bus, const std::string& device)
 	file.read(ini);
 	ini["communication"]["bus"]	   = bus;
 	ini["communication"]["device"] = device;
-	file.write(ini);
+	if (!file.write(ini))
+		log.error("failed to write ini file");
 }
 
 void MDtool::clearErrors(u16 id, const std::string& level)
