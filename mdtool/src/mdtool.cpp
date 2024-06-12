@@ -36,6 +36,14 @@ std::string floatToString(f32 value, bool noDecimals = false)
 		}
 	}
 }
+std::string getHomePath()
+{
+#ifdef WIN32
+	return getenv("USERPROFILE");
+#else
+	return getenv("HOME");
+#endif
+}
 
 mab::CANdleBaudrate_E str2baud(const std::string& baud)
 {
@@ -55,8 +63,7 @@ MDtool::MDtool()
 	std::cerr << "[CANDLESDK] Version: " << mab::Candle::getVersion() << std::endl;
 	log.tag = "MDTOOL";
 
-	mdtoolBaseDir =
-		std::string(getenv("HOME")) + "/" + mdtoolHomeConfigDirName + "/" + mdtoolDirName;
+	mdtoolBaseDir	  = getHomePath() + "/" + mdtoolHomeConfigDirName + "/" + mdtoolDirName;
 	mdtoolIniFilePath = mdtoolBaseDir + "/" + mdtoolIniFileName;
 
 	/* copy motors configs directory */
