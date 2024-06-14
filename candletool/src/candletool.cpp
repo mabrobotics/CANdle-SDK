@@ -1,4 +1,4 @@
-#include "mdtool.hpp"
+#include "candletool.hpp"
 
 #include <numeric>
 #include <unistd.h>
@@ -50,15 +50,15 @@ mab::CANdleBaudrate_E str2baud(const std::string& baud)
 }
 
 
-MDtool::MDtool()
+CandleTool::CandleTool()
 {
 	std::cerr << "[CANDLESDK] Version: " << mab::Candle::getVersion() << std::endl;
-	log.tag = "MDTOOL";
+	log.tag = "candletool";
 
 	mab::BusType_E		  busType = mab::BusType_E::USB;
 	mab::CANdleBaudrate_E baud	  = mab::CANdleBaudrate_E::CAN_BAUD_1M;
 
-	mINI::INIFile	   file(getMdtoolConfigPath());
+	mINI::INIFile	   file(getCandletoolConfigPath());
 	mINI::INIStructure ini;
 	file.read(ini);
 
@@ -84,7 +84,7 @@ MDtool::MDtool()
 	return;
 }
 
-void MDtool::ping(const std::string& variant)
+void CandleTool::ping(const std::string& variant)
 {
 	if (variant == "all")
 	{
@@ -97,23 +97,23 @@ void MDtool::ping(const std::string& variant)
 	candle->ping(str2baud(variant));
 }
 
-void MDtool::configCan(u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination)
+void CandleTool::configCan(u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination)
 {
 	checkSpeedForId(id);
 	candle->configMd80Can(id, newId, str2baud(baud), timeout, termination);
 }
-void MDtool::configSave(u16 id) { candle->configMd80Save(id); }
+void CandleTool::configSave(u16 id) { candle->configMd80Save(id); }
 
-void MDtool::configZero(u16 id) { candle->controlMd80SetEncoderZero(id); }
+void CandleTool::configZero(u16 id) { candle->controlMd80SetEncoderZero(id); }
 
-void MDtool::configCurrent(u16 id, f32 current) { candle->configMd80SetCurrentLimit(id, current); }
+void CandleTool::configCurrent(u16 id, f32 current) { candle->configMd80SetCurrentLimit(id, current); }
 
-void MDtool::configBandwidth(u16 id, f32 bandwidth)
+void CandleTool::configBandwidth(u16 id, f32 bandwidth)
 {
 	candle->configMd80TorqueBandwidth(id, bandwidth);
 }
 
-void MDtool::configClear(u16 id)
+void CandleTool::configClear(u16 id)
 {
 	if (!tryAddMD80(id))
 		return;
@@ -123,7 +123,7 @@ void MDtool::configClear(u16 id)
 		log.error("Error reverting config to factory state!");
 }
 
-void MDtool::setupCalibration(u16 id)
+void CandleTool::setupCalibration(u16 id)
 {
 	if (!ui::getCalibrationConfirmation() || checkSetupError(id))
 		return;
@@ -131,7 +131,7 @@ void MDtool::setupCalibration(u16 id)
 	candle->setupMd80Calibration(id);
 }
 
-void MDtool::setupCalibrationOutput(u16 id)
+void CandleTool::setupCalibrationOutput(u16 id)
 {
 	if (!ui::getCalibrationOutputConfirmation() || checkSetupError(id))
 		return;
@@ -145,7 +145,7 @@ void MDtool::setupCalibrationOutput(u16 id)
 	candle->setupMd80CalibrationOutput(id);
 }
 
-std::string MDtool::validateAndGetFinalConfigPath(const std::string& cfgPath)
+std::string CandleTool::validateAndGetFinalConfigPath(const std::string& cfgPath)
 {
 	std::string finalConfigPath		   = cfgPath;
 	std::string pathRelToDefaultConfig = getMotorsConfigPath() + cfgPath;
@@ -192,7 +192,7 @@ std::string MDtool::validateAndGetFinalConfigPath(const std::string& cfgPath)
 	return finalConfigPath;
 }
 
-void MDtool::setupMotor(u16 id, const std::string& cfgPath, bool force)
+void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
 {
 	std::string finalConfigPath = cfgPath;
 	if (!force)
@@ -217,7 +217,7 @@ void MDtool::setupMotor(u16 id, const std::string& cfgPath, bool force)
 	mINI::INIFile	   motorCfg(finalConfigPath);
 	mINI::INIStructure cfg;
 	motorCfg.read(cfg);
-	mINI::INIFile	   file(getMdtoolConfigPath());
+	mINI::INIFile	   file(getCandletoolConfigPath());
 	mINI::INIStructure ini;
 	file.read(ini);
 
@@ -226,7 +226,7 @@ void MDtool::setupMotor(u16 id, const std::string& cfgPath, bool force)
 	mab::regWrite_st& regW = candle->getMd80FromList(id).getWriteReg();
 	mab::regRead_st&  regR = candle->getMd80FromList(id).getReadReg();
 
-	/* add a field here only if you want to test it against limits form the mdtool.ini file */
+	/* add a field here only if you want to test it against limits form the candletool.ini file */
 	memcpy(
 		regW.RW.motorName, (cfg["motor"]["name"]).c_str(), strlen((cfg["motor"]["name"]).c_str()));
 	if (!getField(cfg, ini, "motor", "pole pairs", regW.RW.polePairs))
@@ -434,7 +434,7 @@ void MDtool::setupMotor(u16 id, const std::string& cfgPath, bool force)
 	else
 		log.warn("Failed to reboot (ID: %d)!", id);
 }
-void MDtool::setupReadConfig(u16 id, const std::string& cfgName)
+void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
 {
 	if (!tryAddMD80(id))
 		return;
@@ -641,7 +641,7 @@ void MDtool::setupReadConfig(u16 id, const std::string& cfgName)
 	ui::printMotorConfig(readIni);
 }
 
-void MDtool::setupInfo(u16 id, bool printAll)
+void CandleTool::setupInfo(u16 id, bool printAll)
 {
 	checkSpeedForId(id);
 	if (!candle->addMd80(id))
@@ -650,9 +650,9 @@ void MDtool::setupInfo(u16 id, bool printAll)
 	ui::printDriveInfoExtended(candle->getMd80FromList(id), printAll);
 }
 
-void MDtool::setupHoming(u16 id) { candle->setupMd80PerformHoming(id); }
+void CandleTool::setupHoming(u16 id) { candle->setupMd80PerformHoming(id); }
 
-void MDtool::testMove(u16 id, f32 targetPosition)
+void CandleTool::testMove(u16 id, f32 targetPosition)
 {
 	if (targetPosition > 10.0f)
 		targetPosition = 10.0f;
@@ -682,7 +682,7 @@ void MDtool::testMove(u16 id, f32 targetPosition)
 	candle->end();
 }
 
-void MDtool::testMoveAbsolute(u16 id, f32 targetPos, f32 velLimit, f32 accLimit, f32 dccLimit)
+void CandleTool::testMoveAbsolute(u16 id, f32 targetPos, f32 velLimit, f32 accLimit, f32 dccLimit)
 {
 	if (!tryAddMD80(id))
 		return;
@@ -706,7 +706,7 @@ void MDtool::testMoveAbsolute(u16 id, f32 targetPos, f32 velLimit, f32 accLimit,
 	candle->end();
 }
 
-void MDtool::testLatency(const std::string& canBaudrate)
+void CandleTool::testLatency(const std::string& canBaudrate)
 {
 #ifdef UNIX
 	struct sched_param sp;
@@ -753,7 +753,7 @@ void MDtool::testLatency(const std::string& canBaudrate)
 	candle->end();
 }
 
-void MDtool::testEncoderOutput(u16 id)
+void CandleTool::testEncoderOutput(u16 id)
 {
 	if (!tryAddMD80(id) && hasError(id))
 		return;
@@ -768,14 +768,14 @@ void MDtool::testEncoderOutput(u16 id)
 	candle->setupMd80TestOutputEncoder(id);
 }
 
-void MDtool::testEncoderMain(u16 id)
+void CandleTool::testEncoderMain(u16 id)
 {
 	if (!tryAddMD80(id) && hasError(id))
 		return;
 	candle->setupMd80TestMainEncoder(id);
 }
 
-void MDtool::registerWrite(u16 id, u16 reg, const std::string& value)
+void CandleTool::registerWrite(u16 id, u16 reg, const std::string& value)
 {
 	if (!tryAddMD80(id))
 		return;
@@ -824,7 +824,7 @@ void MDtool::registerWrite(u16 id, u16 reg, const std::string& value)
 		log.error("Writing register failed!");
 }
 
-void MDtool::registerRead(u16 id, u16 reg)
+void CandleTool::registerRead(u16 id, u16 reg)
 {
 	if (!tryAddMD80(id))
 		return;
@@ -868,8 +868,8 @@ void MDtool::registerRead(u16 id, u16 reg)
 	log.success("Register value: %s", value.c_str());
 }
 
-void MDtool::blink(u16 id) { candle->configMd80Blink(id); }
-void MDtool::encoder(u16 id)
+void CandleTool::blink(u16 id) { candle->configMd80Blink(id); }
+void CandleTool::encoder(u16 id)
 {
 	if (!tryAddMD80(id))
 		return;
@@ -884,7 +884,7 @@ void MDtool::encoder(u16 id)
 	}
 	candle->end();
 }
-void MDtool::bus(const std::string& bus, const std::string& device)
+void CandleTool::bus(const std::string& bus, const std::string& device)
 {
 #ifdef WIN32
 	log.error("bus - option not available on Windows OS.");
@@ -897,7 +897,7 @@ void MDtool::bus(const std::string& bus, const std::string& device)
 		log.error("Bus: %s, requires specifying device!", bus.c_str());
 		return;
 	}
-	mINI::INIFile	   file(getMdtoolConfigPath());
+	mINI::INIFile	   file(getCandletoolConfigPath());
 	mINI::INIStructure ini;
 	file.read(ini);
 	ini["communication"]["bus"]	   = bus;
@@ -906,7 +906,7 @@ void MDtool::bus(const std::string& bus, const std::string& device)
 		log.error("failed to write ini file");
 }
 
-void MDtool::clearErrors(u16 id, const std::string& level)
+void CandleTool::clearErrors(u16 id, const std::string& level)
 {
 	if (level == "error")
 		candle->setupMd80ClearErrors(id);
@@ -919,9 +919,9 @@ void MDtool::clearErrors(u16 id, const std::string& level)
 	}
 }
 
-void MDtool::reset(u16 id) { candle->setupMd80PerformReset(id); }
+void CandleTool::reset(u16 id) { candle->setupMd80PerformReset(id); }
 
-mab::CANdleBaudrate_E MDtool::checkSpeedForId(u16 id)
+mab::CANdleBaudrate_E CandleTool::checkSpeedForId(u16 id)
 {
 	std::initializer_list<mab::CANdleBaudrate_E> bauds = {mab::CANdleBaudrate_E::CAN_BAUD_1M,
 														  mab::CANdleBaudrate_E::CAN_BAUD_2M,
@@ -938,7 +938,7 @@ mab::CANdleBaudrate_E MDtool::checkSpeedForId(u16 id)
 	return mab::CANdleBaudrate_E::CAN_BAUD_1M;
 }
 
-u8 MDtool::getNumericParamFromList(std::string& param, const std::vector<std::string>& list)
+u8 CandleTool::getNumericParamFromList(std::string& param, const std::vector<std::string>& list)
 {
 	int i = 0;
 	for (auto& type : list)
@@ -950,7 +950,7 @@ u8 MDtool::getNumericParamFromList(std::string& param, const std::vector<std::st
 	return 0;
 }
 
-bool MDtool::hasError(u16 canId)
+bool CandleTool::hasError(u16 canId)
 {
 	candle->setupMd80DiagnosticExtended(canId);
 
@@ -971,7 +971,7 @@ bool MDtool::hasError(u16 canId)
 
 /* gets field only if the value is within bounds form the ini file */
 template <class T>
-bool MDtool::getField(mINI::INIStructure& cfg,
+bool CandleTool::getField(mINI::INIStructure& cfg,
 					  mINI::INIStructure& ini,
 					  std::string		  category,
 					  std::string		  field,
@@ -1007,7 +1007,7 @@ bool MDtool::getField(mINI::INIStructure& cfg,
 		return false;
 	}
 }
-bool MDtool::tryAddMD80(u16 id)
+bool CandleTool::tryAddMD80(u16 id)
 {
 	checkSpeedForId(id);
 	if (!candle->addMd80(id))
@@ -1017,14 +1017,14 @@ bool MDtool::tryAddMD80(u16 id)
 	}
 	return true;
 }
-bool MDtool::checkSetupError(u16 id)
+bool CandleTool::checkSetupError(u16 id)
 {
 	u32 calibrationStatus = 0;
 	candle->readMd80Register(id, mab::Md80Reg_E::calibrationErrors, calibrationStatus);
 
 	if (calibrationStatus & (1 << ui::calibrationErrorList.at(std::string("ERROR_SETUP"))))
 	{
-		log.error("Could not proceed due to %s. Please call mdtool setup motor <ID> <cfg> first.",
+		log.error("Could not proceed due to %s. Please call candletool setup motor <ID> <cfg> first.",
 				  RED__("ERROR_SETUP"));
 		return true;
 	}

@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "candle.hpp"
-#include "mdtool.hpp"
+#include "candletool.hpp"
 
 /* ERROR COLORING NOTE: may not work on all terminals! */
 #define REDSTART	"\033[1;31m"

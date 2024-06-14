@@ -1,10 +1,10 @@
-#include "mdtool.hpp"
+#include "candletool.hpp"
 #include "ui.hpp"
 #include "CLI11.hpp"
 
 int main(int argc, char** argv)
 {
-	CLI::App app{"mdtool"};
+	CLI::App app{"candletool"};
 	app.fallthrough();
 	app.ignore_case();
 	UserCommand cmd;
@@ -92,7 +92,7 @@ int main(int argc, char** argv)
 	setupMotor->add_option(
 		"<.cfg FILENAME>",
 		cmd.cfgPath,
-		"Filename of motor config. By default, searches `~/.config/mdtool/mdtool_motors/`.");
+		"Filename of motor config. Default config files are in:`/etc/candletool/config/motors/`.");
 	setupMotor->add_flag("-f", cmd.force, "Force uploading config file, without verification.");
 	setupReadCfg->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 	setupReadCfg->add_option("<FILE>", cmd.value, "File to save config to.");
@@ -126,72 +126,72 @@ int main(int argc, char** argv)
 
 	CLI11_PARSE(app, argc, argv);
 
-	MDtool mdtool;
+	CandleTool candleTool;
 	if (app.count_all() == 1)
 		std::cerr << app.help() << std::endl;
 
 	if (blink->parsed())
-		mdtool.blink(cmd.id);
+		candleTool.blink(cmd.id);
 	if (bus->parsed())
-		mdtool.bus(cmd.bus, cmd.variant);
+		candleTool.bus(cmd.bus, cmd.variant);
 	if (clear->parsed())
-		mdtool.clearErrors(cmd.id, cmd.variant);
+		candleTool.clearErrors(cmd.id, cmd.variant);
 	if (config->parsed())
 	{
 		if (configBand->parsed())
-			mdtool.configBandwidth(cmd.id, cmd.bandwidth);
+			candleTool.configBandwidth(cmd.id, cmd.bandwidth);
 		if (configCan->parsed())
-			mdtool.configCan(cmd.id, cmd.newId, cmd.baud, cmd.canWatchdog);
+			candleTool.configCan(cmd.id, cmd.newId, cmd.baud, cmd.canWatchdog);
 		if (configClear->parsed())
-			mdtool.configClear(cmd.id);
+			candleTool.configClear(cmd.id);
 		if (configCurrent->parsed())
-			mdtool.configCurrent(cmd.id, cmd.current);
+			candleTool.configCurrent(cmd.id, cmd.current);
 		if (configSave->parsed())
-			mdtool.configSave(cmd.id);
+			candleTool.configSave(cmd.id);
 		if (configZero->parsed())
-			mdtool.configZero(cmd.id);
+			candleTool.configZero(cmd.id);
 	}
 	if (encoder->parsed())
-		mdtool.encoder(cmd.id);
+		candleTool.encoder(cmd.id);
 	if (ping->parsed())
-		mdtool.ping(cmd.variant);
+		candleTool.ping(cmd.variant);
 	if (registr->parsed())
 	{
 		u16 reg = strtoul(cmd.reg.c_str(), nullptr, 16);
 		if (regRead->parsed())
-			mdtool.registerRead(cmd.id, reg);
+			candleTool.registerRead(cmd.id, reg);
 		if (regWrite->parsed())
-			mdtool.registerWrite(cmd.id, reg, cmd.value);
+			candleTool.registerWrite(cmd.id, reg, cmd.value);
 	}
 	if (reset->parsed())
-		mdtool.reset(cmd.id);
+		candleTool.reset(cmd.id);
 	if (setup->parsed())
 	{
 		if (setupCalib->parsed())
-			mdtool.setupCalibration(cmd.id);
+			candleTool.setupCalibration(cmd.id);
 		if (setupCalibOut->parsed())
-			mdtool.setupCalibrationOutput(cmd.id);
+			candleTool.setupCalibrationOutput(cmd.id);
 		if (setupHoming->parsed())
-			mdtool.setupHoming(cmd.id);
+			candleTool.setupHoming(cmd.id);
 		if (setupInfo->parsed())
-			mdtool.setupInfo(cmd.id, (setupInfoAllFlag->count() > 0 ? true : false));
+			candleTool.setupInfo(cmd.id, (setupInfoAllFlag->count() > 0 ? true : false));
 		if (setupMotor->parsed())
-			mdtool.setupMotor(cmd.id, cmd.cfgPath, cmd.force);
+			candleTool.setupMotor(cmd.id, cmd.cfgPath, cmd.force);
 		if (setupReadCfg->parsed())
-			mdtool.setupReadConfig(cmd.id, cmd.value);
+			candleTool.setupReadConfig(cmd.id, cmd.value);
 	}
 	if (test->parsed())
 	{
 		if (testEncoderMain->parsed())
-			mdtool.testEncoderMain(cmd.id);
+			candleTool.testEncoderMain(cmd.id);
 		if (testEncoderOut->parsed())
-			mdtool.testEncoderOutput(cmd.id);
+			candleTool.testEncoderOutput(cmd.id);
 		if (testLatency->parsed())
-			mdtool.testLatency(cmd.baud);
+			candleTool.testLatency(cmd.baud);
 		if (testMoveAbs->parsed())
-			mdtool.testMoveAbsolute(cmd.id, cmd.pos, cmd.vel, cmd.acc, cmd.dcc);
+			candleTool.testMoveAbsolute(cmd.id, cmd.pos, cmd.vel, cmd.acc, cmd.dcc);
 		if (testMoveRel->parsed())
-			mdtool.testMove(cmd.id, cmd.pos);
+			candleTool.testMove(cmd.id, cmd.pos);
 	}
 
 	return EXIT_SUCCESS;

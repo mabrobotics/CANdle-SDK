@@ -13,7 +13,7 @@ struct UserCommand
 	u32			canWatchdog = 100;
 	f32			current		= 1.f;
 	f32			bandwidth	= 100.f;
-	std::string cfgPath		= "~/.config/mdtool/mdtool_motors/";
+	std::string cfgPath		= "";
 	f32			pos = 0.f, vel = 10.f, acc = 5.f, dcc = 5.f;
 	bool		infoAll = false;
 	std::string bus		= "USB";
@@ -21,10 +21,10 @@ struct UserCommand
 	std::string value	= "";
 	bool		force	= false;
 };
-class MDtool
+class CandleTool
 {
   public:
-	MDtool();
+	CandleTool();
 	void ping(const std::string& variant);
 	void configCan(u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination = 0);
 	void configSave(u16 id);
@@ -54,13 +54,6 @@ class MDtool
 	void registerRead(u16 id, u16 reg);
 
   private:
-	const std::string mdtoolHomeConfigDirName = ".config";
-	const std::string mdtoolDirName			  = "mdtool";
-	const std::string mdtoolMotorCfgDirName	  = "mdtool_motors";
-	const std::string mdtoolIniFileName		  = "mdtool.ini";
-
-	const std::string mdtoolConfigPath = "/etc/";
-
 	logger						 log;
 	std::unique_ptr<mab::Candle> candle;
 

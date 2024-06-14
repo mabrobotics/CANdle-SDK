@@ -3,7 +3,7 @@
 cd ..
 mkdir build
 cd build
-cmake .. -DMAKE_TESTS_MDTOOL=ON
+cmake .. -DMAKE_TESTS_candletool=ON
 if make -j ; then
     echo "Build successful"
 else
@@ -11,4 +11,4 @@ else
     exit 1
 fi
 cd test
-./mdtool_test
+./candletool_test

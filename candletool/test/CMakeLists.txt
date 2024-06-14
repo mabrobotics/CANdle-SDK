@@ -12,16 +12,16 @@ add_library(GTest::GTest INTERFACE IMPORTED)
 
 file (GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS "*.cpp")
 
-include_directories(mdtool_test ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/candle/include
+include_directories(candletool_test ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/candle/include
                     ${CMAKE_SOURCE_DIR}/3rd_party/mINI/src)
 target_link_libraries(GTest::GTest INTERFACE gtest_main)
 
-add_executable(mdtool_test ${CMAKE_SOURCE_DIR}/src/ui.cpp ${TEST_SOURCES}
+add_executable(candletool_test ${CMAKE_SOURCE_DIR}/src/ui.cpp ${TEST_SOURCES}
                ${CMAKE_SOURCE_DIR}/src/ConfigManager.cpp)
 
-target_link_libraries(mdtool_test
+target_link_libraries(candletool_test
     PRIVATE
     GTest::GTest
     candle)
 
-add_test(mdtool_gtests mdtool_test)
+add_test(candletool_gtests candletool_test)

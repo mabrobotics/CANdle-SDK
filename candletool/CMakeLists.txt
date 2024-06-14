@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(mdtool)
+project(candletool)
 
 file(GLOB SRC "src/*.cpp")
 # enable_testing()
@@ -16,28 +16,28 @@ target_include_directories(
          ${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger
          ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src
          ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/CLI11/inc)
-target_compile_options(mdtool PRIVATE -g)
-set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "mdtool")
+target_compile_options(candletool PRIVATE -g)
+set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "candletool")
 
 target_compile_definitions(
   ${PROJECT_NAME}
-  PRIVATE MDTOOL_VMAJOR=${CANDLESDK_VERSION_1}
-  PRIVATE MDTOOL_VMINOR=${CANDLESDK_VERSION_2}
-  PRIVATE MDTOOL_VREVISION=${CANDLESDK_VERSION_3}
-  PRIVATE MDTOOL_VTAG=${CANDLESDK_VERSION_TAG})
+  PRIVATE CANDLETOOL_VMAJOR=${CANDLESDK_VERSION_1}
+  PRIVATE CANDLETOOL_VMINOR=${CANDLESDK_VERSION_2}
+  PRIVATE CANDLETOOL_VREVISION=${CANDLESDK_VERSION_3}
+  PRIVATE CANDLETOOL_VTAG=${CANDLESDK_VERSION_TAG})
 
-if(MAKE_TESTS_MDTOOL)
+if(MAKE_TESTS_CANDLETOOL)
   add_subdirectory(test)
 endif()
 
-add_custom_command(TARGET mdtool
+add_custom_command(TARGET ${PROJECT_NAME}
   POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/mdtool/ ${CMAKE_CURRENT_BINARY_DIR}/
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/ ${CMAKE_CURRENT_BINARY_DIR}/
   COMMENT "Copying configs..."
   )
 
 # package / installer
-set(CPACK_PROJECT_NAME "mdtool")
+set(CPACK_PROJECT_NAME "candletool")
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_VENDOR "MAB Robotics")
@@ -56,13 +56,13 @@ if(WIN32)
     -static
     logger)
   install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${INSTALL_PATH}
-                                          COMPONENT mdtool)
+                                          COMPONENT candletool)
   install(
-    DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/mdtool/config/motors"
+    DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/motors"
     DESTINATION "config/motors"
     COMPONENT _configs)
   install(
-    FILES "${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/config/mdtool.ini"
+    FILES "${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/config/candletool.ini"
     DESTINATION "config/"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
                 WORLD_WRITE
@@ -77,8 +77,8 @@ elseif(UNIX)
   install(TARGETS ${PROJECT_NAME} DESTINATION /usr/local/bin)
   install(DIRECTORY "${PROJECT_SOURCE_DIR}/template_package/etc" DESTINATION /)
   install(
-    FILES "${PROJECT_SOURCE_DIR}/template_package/etc/mdtool/config/mdtool.ini"
-    DESTINATION "/etc/mdtool/"
+    FILES "${PROJECT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini"
+    DESTINATION "/etc/candletool/"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
                 WORLD_WRITE)
 endif()

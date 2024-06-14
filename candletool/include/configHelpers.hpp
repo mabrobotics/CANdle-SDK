@@ -10,7 +10,7 @@ inline std::string getDefaultConfigDir()
 	GetModuleFileName(NULL, path, 256);
 	return std::filesystem::path(path).remove_filename().string() + std::string("config\\");
 #else
-	return std::string("/etc/mdtool/config/");
+	return std::string("/etc/candletool/config/");
 #endif
 }
 inline std::string getMotorsConfigPath()
@@ -22,7 +22,7 @@ inline std::string getMotorsConfigPath()
 #endif
 }
 inline std::string getDefaultConfigPath() { return getMotorsConfigPath() + "default.cfg"; }
-inline std::string getMdtoolConfigPath() { return getDefaultConfigDir() + "mdtool.ini"; }
+inline std::string getCandletoolConfigPath() { return getDefaultConfigDir() + "candletool.ini"; }
 inline bool		   fileExists(const std::string& filepath)
 {
 	std::ifstream fileStream(filepath);

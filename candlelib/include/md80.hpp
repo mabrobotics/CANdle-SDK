@@ -106,7 +106,7 @@ class Md80
 
 	/**
 	 * @brief Set the Max Torque in [Nm]
-	 * @note This settings affects all motion modes, and can also be changed using mdtool and saved
+	 * @note This settings affects all motion modes, and can also be changed using candletool and saved
 	 * @param maxTorque Torque limit in [Nm] for all motion modes.
 	 */
 	void setMaxTorque(float maxTorque);
