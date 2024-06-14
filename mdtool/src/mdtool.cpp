@@ -162,7 +162,7 @@ std::string MDtool::validateAndGetFinalConfigPath(const std::string& cfgPath)
 	}
 	if (!isConfigValid(finalConfigPath))
 	{
-		log.error("\"%s\" in not a valid motor .cfg file.", finalConfigPath.c_str());
+		log.error("\"%s\" is not a valid motor .cfg file.", finalConfigPath.c_str());
 		log.warn("Valid file must have .cfg extension, and size of < 1MB");
 		exit(1);
 	}
