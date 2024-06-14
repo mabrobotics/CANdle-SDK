@@ -1,11 +1,10 @@
 #include "mdtool.hpp"
 
-#include <filesystem>
 #include <numeric>
 #include <unistd.h>
 
-#include "ConfigManager.hpp"
 #include "ui.hpp"
+#include "configHelpers.hpp"
 
 f32			lerp(f32 start, f32 end, f32 t) { return (start * (1.f - t)) + (end * t); }
 std::string floatToString(f32 value, bool noDecimals = false)
@@ -50,26 +49,6 @@ mab::CANdleBaudrate_E str2baud(const std::string& baud)
 	return mab::CANdleBaudrate_E::CAN_BAUD_1M;
 }
 
-std::string getDefaultConfigDir()
-{
-#ifdef WIN32
-	char path[256];
-	GetModuleFileName(NULL, path, 256);
-	return std::filesystem::path(path).remove_filename().string() + std::string("config\\");
-#else
-	return std::string("/etc/mdtool/config/");
-#endif
-}
-std::string getMotorsConfigPath()
-{
-#ifdef WIN32
-	return getDefaultConfigDir() + "motors\\";
-#else
-	return getDefaultConfigDir() + "motors/";
-#endif
-}
-std::string getDefaultConfigPath() { return getMotorsConfigPath() + "default.cfg"; }
-std::string getMdtoolConfigPath() { return getDefaultConfigDir() + "mdtool.ini"; }
 
 MDtool::MDtool()
 {
@@ -166,89 +145,6 @@ void MDtool::setupCalibrationOutput(u16 id)
 	candle->setupMd80CalibrationOutput(id);
 }
 
-bool fileExists(const std::string& filepath)
-{
-	std::ifstream fileStream(filepath);
-	return fileStream.good();
-}
-bool isConfigValid(const std::string& pathToConfig)
-{
-	std::string fileExtension = std::filesystem::path(pathToConfig).extension().string();
-	if (!(fileExtension == ".cfg"))
-		return false;
-	std::error_code	  ec;
-	u32				  filesize = (u32)std::filesystem::file_size(pathToConfig, ec);
-	const std::size_t oneMB	   = 1048576;  // 1 MB in bytes
-	if (filesize > oneMB || ec)
-		return false;
-	return true;
-}
-bool isConfigComplete(const std::string& pathToConfig)
-{
-	mINI::INIFile	   defaultFile(getDefaultConfigPath());
-	mINI::INIStructure defaultIni;
-	defaultFile.read(defaultIni);
-
-	mINI::INIFile	   userFile(pathToConfig);
-	mINI::INIStructure userIni;
-	userFile.read(userIni);
-
-	// Loop fills all lacking fields in the user's config file.
-	for (auto const& it : defaultIni)
-	{
-		auto const& section	   = it.first;
-		auto const& collection = it.second;
-		for (auto const& it2 : collection)
-		{
-			auto const& key = it2.first;
-			if (!userIni[section].has(key))
-				return false;
-		}
-	}
-	return true;
-}
-std::string generateUpdatedConfigFile(const std::string& pathToConfig)
-{
-	mINI::INIFile	   defaultFile(getDefaultConfigPath());
-	mINI::INIStructure defaultIni;
-	defaultFile.read(defaultIni);
-	mINI::INIFile	   userFile(pathToConfig);
-	mINI::INIStructure userIni;
-	userFile.read(userIni);
-
-	std::string updatedUserConfigPath =
-		pathToConfig.substr(0, pathToConfig.find_last_of(".")) + "_updated.cfg";
-	mINI::INIFile	   updatedFile(updatedUserConfigPath);
-	mINI::INIStructure updatedIni;
-	updatedFile.read(updatedIni);
-
-	// Loop fills all lacking fields in the user's config file.
-	for (auto const& it : defaultIni)
-	{
-		auto const& section	   = it.first;
-		auto const& collection = it.second;
-		for (auto const& it2 : collection)
-		{
-			auto const& key	  = it2.first;
-			auto const& value = it2.second;
-			if (!userIni[section].has(key))
-				updatedIni[section][key] = value;
-			else
-				updatedIni[section][key] = userIni.get(section).get(key);
-		}
-	}
-	// Write an updated config file
-	updatedFile.write(updatedIni, true);
-	return updatedUserConfigPath;
-}
-bool getConfirmation()
-{
-	char x;
-	std::cin >> x;
-	if (x == 'Y' || x == 'y')
-		return true;
-	return false;
-}
 std::string MDtool::validateAndGetFinalConfigPath(const std::string& cfgPath)
 {
 	std::string finalConfigPath		   = cfgPath;
@@ -526,16 +422,16 @@ void MDtool::setupMotor(u16 id, const std::string& cfgPath, bool force)
 	if (!candle->writeMd80Register(id, mab::Md80Reg_E::brakeMode, regW.RW.brakeMode))
 		log.error("Failed to setup motor!");
 
-	if(candle->configMd80Save(id))
+	if (candle->configMd80Save(id))
 	{
 		log.success("Config save sucessfully!");
 		log.info("Rebooting md80...");
 	}
 	/* wait for a full reboot */
 	sleep(3);
-	if(candle->controlMd80Enable(id, false))
+	if (candle->controlMd80Enable(id, false))
 		log.success("Ready!");
-	else 
+	else
 		log.warn("Failed to reboot (ID: %d)!", id);
 }
 void MDtool::setupReadConfig(u16 id, const std::string& cfgName)
