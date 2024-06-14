@@ -62,7 +62,7 @@ if(WIN32)
     DESTINATION "config/motors"
     COMPONENT _configs)
   install(
-    FILES "${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/config/candletool.ini"
+    FILES "${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini"
     DESTINATION "config/"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
                 WORLD_WRITE
