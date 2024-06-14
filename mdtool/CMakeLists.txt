@@ -62,7 +62,7 @@ if(WIN32)
     DESTINATION "config/motors"
     COMPONENT _configs)
   install(
-    FILES "${CMAKE_CURRENT_SOURCE_DIR}/template_package/mdtool.ini"
+    FILES "${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/config/mdtool.ini"
     DESTINATION "config/"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
                 WORLD_WRITE
@@ -77,7 +77,7 @@ elseif(UNIX)
   install(TARGETS ${PROJECT_NAME} DESTINATION /usr/local/bin)
   install(DIRECTORY "${PROJECT_SOURCE_DIR}/template_package/etc" DESTINATION /)
   install(
-    FILES "${PROJECT_SOURCE_DIR}/template_package/mdtool.ini"
+    FILES "${PROJECT_SOURCE_DIR}/template_package/etc/mdtool/config/mdtool.ini"
     DESTINATION "/etc/mdtool/"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
                 WORLD_WRITE)

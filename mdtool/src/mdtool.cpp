@@ -52,17 +52,23 @@ mab::CANdleBaudrate_E str2baud(const std::string& baud)
 
 std::string getDefaultConfigDir()
 {
-#ifdef UNIX
-	return std::string("/etc/mdtool/config/");
-#endif
 #ifdef WIN32
-
 	char path[256];
 	GetModuleFileName(NULL, path, 256);
 	return std::filesystem::path(path).remove_filename().string() + std::string("config\\");
+#else
+	return std::string("/etc/mdtool/config/");
 #endif
 }
-std::string getDefaultConfigPath() { return getDefaultConfigDir() + "motors/default.cfg"; }
+std::string getMotorsConfigPath()
+{
+#ifdef WIN32
+	return getDefaultConfigDir() + "motors\\";
+#else
+	return getDefaultConfigDir() + "motors/";
+#endif
+}
+std::string getDefaultConfigPath() { return getMotorsConfigPath() + "default.cfg"; }
 std::string getMdtoolConfigPath() { return getDefaultConfigDir() + "mdtool.ini"; }
 
 MDtool::MDtool()
@@ -160,7 +166,7 @@ void MDtool::setupCalibrationOutput(u16 id)
 	candle->setupMd80CalibrationOutput(id);
 }
 
-bool		fileExists(const std::string& filepath)
+bool fileExists(const std::string& filepath)
 {
 	std::ifstream fileStream(filepath);
 	return fileStream.good();
@@ -243,16 +249,15 @@ bool getConfirmation()
 		return true;
 	return false;
 }
-
-void MDtool::setupMotor(u16 id, const std::string& cfgPath)
+std::string MDtool::validateAndGetFinalConfigPath(const std::string& cfgPath)
 {
-	std::string pathRelToDefaultConfig = getDefaultConfigDir() + "motors\\" + cfgPath;
 	std::string finalConfigPath		   = cfgPath;
+	std::string pathRelToDefaultConfig = getMotorsConfigPath() + cfgPath;
 	if (!fileExists(finalConfigPath))
 	{
 		if (!fileExists(pathRelToDefaultConfig))
 		{
-			log.error("Neither \"%s\", nor \"%s\", is a valid MD config file.",
+			log.error("Neither \"%s\", nor \"%s\", exists!.",
 					  cfgPath.c_str(),
 					  pathRelToDefaultConfig.c_str());
 			exit(1);
@@ -288,11 +293,35 @@ void MDtool::setupMotor(u16 id, const std::string& cfgPath)
 			exit(0);
 		log.level = prePromptLevel;
 	}
+	return finalConfigPath;
+}
 
+void MDtool::setupMotor(u16 id, const std::string& cfgPath, bool force)
+{
+	std::string finalConfigPath = cfgPath;
+	if (!force)
+		finalConfigPath = validateAndGetFinalConfigPath(cfgPath);
+	else
+	{
+		log.warn("Ommiting config validation on user request!");
+		if (!fileExists(finalConfigPath))
+		{
+			finalConfigPath = getMotorsConfigPath() + cfgPath;
+			if (!fileExists(finalConfigPath))
+			{
+				log.error("Neither \"%s\", nor \"%s\", exists!.",
+						  cfgPath.c_str(),
+						  finalConfigPath.c_str());
+				exit(1);
+			}
+		}
+	}
+
+	log.info("Uploading file from \"%s\"", finalConfigPath.c_str());
 	mINI::INIFile	   motorCfg(finalConfigPath);
 	mINI::INIStructure cfg;
 	motorCfg.read(cfg);
-	mINI::INIFile	   file(getDefaultConfigDir() + "mdtool.ini");
+	mINI::INIFile	   file(getMdtoolConfigPath());
 	mINI::INIStructure ini;
 	file.read(ini);
 
@@ -497,10 +526,17 @@ void MDtool::setupMotor(u16 id, const std::string& cfgPath)
 	if (!candle->writeMd80Register(id, mab::Md80Reg_E::brakeMode, regW.RW.brakeMode))
 		log.error("Failed to setup motor!");
 
-	candle->configMd80Save(id);
-	log.debug("Rebooting md80...");
+	if(candle->configMd80Save(id))
+	{
+		log.success("Config save sucessfully!");
+		log.info("Rebooting md80...");
+	}
 	/* wait for a full reboot */
 	sleep(3);
+	if(candle->controlMd80Enable(id, false))
+		log.success("Ready!");
+	else 
+		log.warn("Failed to reboot (ID: %d)!", id);
 }
 void MDtool::setupReadConfig(u16 id, const std::string& cfgName)
 {

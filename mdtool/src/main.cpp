@@ -93,6 +93,7 @@ int main(int argc, char** argv)
 		"<.cfg FILENAME>",
 		cmd.cfgPath,
 		"Filename of motor config. By default, searches `~/.config/mdtool/mdtool_motors/`.");
+	setupMotor->add_flag("-f", cmd.force, "Force uploading config file, without verification.");
 	setupReadCfg->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 	setupReadCfg->add_option("<FILE>", cmd.value, "File to save config to.");
 
@@ -175,7 +176,7 @@ int main(int argc, char** argv)
 		if (setupInfo->parsed())
 			mdtool.setupInfo(cmd.id, (setupInfoAllFlag->count() > 0 ? true : false));
 		if (setupMotor->parsed())
-			mdtool.setupMotor(cmd.id, cmd.cfgPath);
+			mdtool.setupMotor(cmd.id, cmd.cfgPath, cmd.force);
 		if (setupReadCfg->parsed())
 			mdtool.setupReadConfig(cmd.id, cmd.value);
 	}
