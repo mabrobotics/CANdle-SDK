@@ -36,14 +36,6 @@ std::string floatToString(f32 value, bool noDecimals = false)
 		}
 	}
 }
-std::string getConfigLocation()
-{
-#ifdef WIN32
-	return std::string("config/");
-#else
-	return std::string("/etc/mdtool/");
-#endif
-}
 
 mab::CANdleBaudrate_E str2baud(const std::string& baud)
 {
@@ -58,20 +50,30 @@ mab::CANdleBaudrate_E str2baud(const std::string& baud)
 	return mab::CANdleBaudrate_E::CAN_BAUD_1M;
 }
 
+std::string getDefaultConfigDir()
+{
+#ifdef UNIX
+	return std::string("/etc/mdtool/config/");
+#endif
+#ifdef WIN32
+
+	char path[256];
+	GetModuleFileName(NULL, path, 256);
+	return std::filesystem::path(path).remove_filename().string() + std::string("config\\");
+#endif
+}
+std::string getDefaultConfigPath() { return getDefaultConfigDir() + "motors/default.cfg"; }
+std::string getMdtoolConfigPath() { return getDefaultConfigDir() + "mdtool.ini"; }
+
 MDtool::MDtool()
 {
 	std::cerr << "[CANDLESDK] Version: " << mab::Candle::getVersion() << std::endl;
 	log.tag = "MDTOOL";
 
-	mdtoolBaseDir	  = getConfigLocation() + "mdtool_motors/";
-	mdtoolIniFilePath = getConfigLocation() + mdtoolIniFileName;
-
-	/* copy motors configs directory */
-
 	mab::BusType_E		  busType = mab::BusType_E::USB;
 	mab::CANdleBaudrate_E baud	  = mab::CANdleBaudrate_E::CAN_BAUD_1M;
 
-	mINI::INIFile	   file(mdtoolIniFilePath);
+	mINI::INIFile	   file(getMdtoolConfigPath());
 	mINI::INIStructure ini;
 	file.read(ini);
 
@@ -158,31 +160,141 @@ void MDtool::setupCalibrationOutput(u16 id)
 	candle->setupMd80CalibrationOutput(id);
 }
 
+bool		fileExists(const std::string& filepath)
+{
+	std::ifstream fileStream(filepath);
+	return fileStream.good();
+}
+bool isConfigValid(const std::string& pathToConfig)
+{
+	std::string fileExtension = std::filesystem::path(pathToConfig).extension().string();
+	if (!(fileExtension == ".cfg"))
+		return false;
+	std::error_code	  ec;
+	u32				  filesize = (u32)std::filesystem::file_size(pathToConfig, ec);
+	const std::size_t oneMB	   = 1048576;  // 1 MB in bytes
+	if (filesize > oneMB || ec)
+		return false;
+	return true;
+}
+bool isConfigComplete(const std::string& pathToConfig)
+{
+	mINI::INIFile	   defaultFile(getDefaultConfigPath());
+	mINI::INIStructure defaultIni;
+	defaultFile.read(defaultIni);
+
+	mINI::INIFile	   userFile(pathToConfig);
+	mINI::INIStructure userIni;
+	userFile.read(userIni);
+
+	// Loop fills all lacking fields in the user's config file.
+	for (auto const& it : defaultIni)
+	{
+		auto const& section	   = it.first;
+		auto const& collection = it.second;
+		for (auto const& it2 : collection)
+		{
+			auto const& key = it2.first;
+			if (!userIni[section].has(key))
+				return false;
+		}
+	}
+	return true;
+}
+std::string generateUpdatedConfigFile(const std::string& pathToConfig)
+{
+	mINI::INIFile	   defaultFile(getDefaultConfigPath());
+	mINI::INIStructure defaultIni;
+	defaultFile.read(defaultIni);
+	mINI::INIFile	   userFile(pathToConfig);
+	mINI::INIStructure userIni;
+	userFile.read(userIni);
+
+	std::string updatedUserConfigPath =
+		pathToConfig.substr(0, pathToConfig.find_last_of(".")) + "_updated.cfg";
+	mINI::INIFile	   updatedFile(updatedUserConfigPath);
+	mINI::INIStructure updatedIni;
+	updatedFile.read(updatedIni);
+
+	// Loop fills all lacking fields in the user's config file.
+	for (auto const& it : defaultIni)
+	{
+		auto const& section	   = it.first;
+		auto const& collection = it.second;
+		for (auto const& it2 : collection)
+		{
+			auto const& key	  = it2.first;
+			auto const& value = it2.second;
+			if (!userIni[section].has(key))
+				updatedIni[section][key] = value;
+			else
+				updatedIni[section][key] = userIni.get(section).get(key);
+		}
+	}
+	// Write an updated config file
+	updatedFile.write(updatedIni, true);
+	return updatedUserConfigPath;
+}
+bool getConfirmation()
+{
+	char x;
+	std::cin >> x;
+	if (x == 'Y' || x == 'y')
+		return true;
+	return false;
+}
+
 void MDtool::setupMotor(u16 id, const std::string& cfgPath)
 {
-	ConfigManager configManager(cfgPath);
-	std::string	  path	   = configManager.getConfigPath();
-	std::string	  filename = configManager.getConfigName();
+	std::string pathRelToDefaultConfig = getDefaultConfigDir() + "motors\\" + cfgPath;
+	std::string finalConfigPath		   = cfgPath;
+	if (!fileExists(finalConfigPath))
+	{
+		if (!fileExists(pathRelToDefaultConfig))
+		{
+			log.error("Neither \"%s\", nor \"%s\", is a valid MD config file.",
+					  cfgPath.c_str(),
+					  pathRelToDefaultConfig.c_str());
+			exit(1);
+		}
+		finalConfigPath = pathRelToDefaultConfig;
+	}
+	if (!isConfigValid(finalConfigPath))
+	{
+		log.error("\"%s\" in not a valid motor .cfg file.", finalConfigPath.c_str());
+		log.warn("Valid file must have .cfg extension, and size of < 1MB");
+		exit(1);
+	}
+	if (!fileExists(getDefaultConfigPath()))
+	{
+		log.warn("No default config found at expected location \"%s\"",
+				 getDefaultConfigPath().c_str());
+		log.warn("Cannot check completeness of the config file. Proceed with upload? [y/n]");
+		if (!getConfirmation())
+			exit(0);
+	}
+	if (fileExists(getDefaultConfigPath()) && !isConfigComplete(finalConfigPath))
+	{
+		logger::LogLevel_E prePromptLevel = log.level;
+		log.level						  = logger::LogLevel_E::INFO;
+		log.error("\"%s\" is incomplete.", finalConfigPath.c_str());
+		log.info("Generate updated file with all required fileds? [y/n]");
+		if (!getConfirmation())
+			exit(0);
+		finalConfigPath = generateUpdatedConfigFile(finalConfigPath);
+		log.info("Generated updated file \"%s\"", finalConfigPath.c_str());
+		log.info("Setup MD with newly generated config? [y/n]");
+		if (!getConfirmation())
+			exit(0);
+		log.level = prePromptLevel;
+	}
 
-	if (configManager.isConfigDefault() && configManager.isConifgDifferent())
-		if (ui::getDifferentConfigsConfirmation(cfgPath))
-			configManager.copyDefaultConfig(filename);
-	if (!configManager.isConfigValid())
-		if (ui::getUpdateConfigConfirmation(cfgPath))
-			path = configManager.validateConfig();
-
-	mINI::INIFile	   motorCfg(path);
+	mINI::INIFile	   motorCfg(finalConfigPath);
 	mINI::INIStructure cfg;
-
-	mINI::INIFile	   file(mdtoolIniFilePath);
+	motorCfg.read(cfg);
+	mINI::INIFile	   file(getDefaultConfigDir() + "mdtool.ini");
 	mINI::INIStructure ini;
 	file.read(ini);
-
-	if (!motorCfg.read(cfg))
-	{
-		log.error("Unable to find config file at %s", path.c_str());
-		return;
-	}
 
 	if (!tryAddMD80(id))
 		return;
@@ -664,16 +776,18 @@ void MDtool::testMoveAbsolute(u16 id, f32 targetPos, f32 velLimit, f32 accLimit,
 
 void MDtool::testLatency(const std::string& canBaudrate)
 {
+#ifdef UNIX
 	struct sched_param sp;
 	memset(&sp, 0, sizeof(sp));
 	sp.sched_priority = 99;
 	sched_setscheduler(0, SCHED_FIFO, &sp);
-
+#endif
+#ifdef WIN32
+	SetPriorityClass(GetCurrentProcess(), REALTIME_PRIORITY_CLASS);
+#endif
 	auto ids = candle->ping(str2baud(canBaudrate));
-
 	if (ids.size() == 0)
 		return;
-
 	checkSpeedForId(ids[0]);
 
 	for (auto& id : ids)
@@ -683,12 +797,9 @@ void MDtool::testLatency(const std::string& canBaudrate)
 	}
 
 	candle->begin();
-
 	std::vector<u32> samples;
 	const u32		 timelen = 10;
-
 	sleep(1);
-
 	for (u32 i = 0; i < timelen; i++)
 	{
 		sleep(1);
@@ -854,7 +965,7 @@ void MDtool::bus(const std::string& bus, const std::string& device)
 		log.error("Bus: %s, requires specifying device!", bus.c_str());
 		return;
 	}
-	mINI::INIFile	   file(mdtoolIniFilePath);
+	mINI::INIFile	   file(getMdtoolConfigPath());
 	mINI::INIStructure ini;
 	file.read(ini);
 	ini["communication"]["bus"]	   = bus;
@@ -955,7 +1066,12 @@ bool MDtool::getField(mINI::INIStructure& cfg,
 		return true;
 	else
 	{
-		ui::printParameterOutOfBounds(category, field);
+		log.error("Parameter [%s][%s] is out of bounds! Min: %.3f, max:%.3f, value: %.3f",
+				  category.c_str(),
+				  field.c_str(),
+				  (f32)min,
+				  (f32)max,
+				  (f32)value);
 		return false;
 	}
 }

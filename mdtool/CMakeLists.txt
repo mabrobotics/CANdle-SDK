@@ -30,6 +30,12 @@ if(MAKE_TESTS_MDTOOL)
   add_subdirectory(test)
 endif()
 
+add_custom_command(TARGET mdtool
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/mdtool/ ${CMAKE_CURRENT_BINARY_DIR}/
+  COMMENT "Copying configs..."
+  )
+
 # package / installer
 set(CPACK_PROJECT_NAME "mdtool")
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
@@ -40,6 +46,7 @@ set(CPACK_PACKAGE_DESCRIPTION
 )
 if(WIN32)
   set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL "ON")
+  set(CPACK_NSIS_MODIFY_PATH ON)
   target_link_libraries(
     ${PROJECT_NAME}
     -static
@@ -51,14 +58,15 @@ if(WIN32)
   install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${INSTALL_PATH}
                                           COMPONENT mdtool)
   install(
-    DIRECTORY "./template_package/etc/mdtool/"
-    DESTINATION "bin/config/"
-    COMPONENT Configuration)
+    DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/mdtool/config/motors"
+    DESTINATION "config/motors"
+    COMPONENT _configs)
   install(
-    FILES "${PROJECT_SOURCE_DIR}/template_package/mdtool.ini"
-    DESTINATION "bin/config/"
+    FILES "${CMAKE_CURRENT_SOURCE_DIR}/template_package/mdtool.ini"
+    DESTINATION "config/"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
-                WORLD_WRITE)
+                WORLD_WRITE
+    COMPONENT _configs)
 elseif(UNIX)
   set(CPACK_GENERATOR "DEB")
   set(CPACK_DEBIAN_PACKAGE_MAINTAINER "MAB Robotics <contact@mabrobotics.pl>")

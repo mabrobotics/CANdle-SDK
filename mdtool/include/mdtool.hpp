@@ -60,10 +60,7 @@ class MDtool
 
 	const std::string mdtoolConfigPath = "/etc/";
 
-	logger		log;
-	std::string mdtoolBaseDir = "";
-	std::string mdtoolIniFilePath = "";
-
+	logger						 log;
 	std::unique_ptr<mab::Candle> candle;
 
 	std::string busString;

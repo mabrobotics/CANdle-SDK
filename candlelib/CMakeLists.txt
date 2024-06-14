@@ -11,9 +11,9 @@ if(UNIX)
 endif()
 if(WIN32)
   set(LIBUSB_WINDOWS_DYNAMIC
-      ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/windows/libusb-1.0.dll)
+      ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/lib/windows/libusb-1.0.dll)
   set(LIBUSB_WINDOWS_STATIC
-      ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/windows/libusb-1.0.a)
+      ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/lib/windows/libusb-1.0.a)
   set(LIBUSB_INCLUDE_DIR
       ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/inc/libusb-1.0)
 endif()
