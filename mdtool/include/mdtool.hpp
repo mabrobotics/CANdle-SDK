@@ -19,6 +19,7 @@ struct UserCommand
 	std::string bus		= "USB";
 	std::string reg		= "0x0000";
 	std::string value	= "";
+	bool		force	= false;
 };
 class MDtool
 {
@@ -34,7 +35,7 @@ class MDtool
 
 	void setupCalibration(u16 id);
 	void setupCalibrationOutput(u16 id);
-	void setupMotor(u16 id, const std::string& cfgPath);
+	void setupMotor(u16 id, const std::string& cfgPath, bool force);
 	void setupInfo(u16 id, bool printAll);
 	void setupHoming(u16 id);
 	void setupReadConfig(u16 id, const std::string& cfgName);
@@ -60,15 +61,13 @@ class MDtool
 
 	const std::string mdtoolConfigPath = "/etc/";
 
-	logger		log;
-	std::string mdtoolBaseDir;
-	std::string mdtoolIniFilePath;
-
+	logger						 log;
 	std::unique_ptr<mab::Candle> candle;
 
 	std::string busString;
 
 	bool				  printVerbose = true;
+	std::string			  validateAndGetFinalConfigPath(const std::string& cfgPath);
 	mab::CANdleBaudrate_E checkSpeedForId(u16 id);
 
 	u8 getNumericParamFromList(std::string& param, const std::vector<std::string>& list);

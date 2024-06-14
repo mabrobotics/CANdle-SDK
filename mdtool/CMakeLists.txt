@@ -30,20 +30,57 @@ if(MAKE_TESTS_MDTOOL)
   add_subdirectory(test)
 endif()
 
-set(CPACK_GENERATOR "DEB")
+add_custom_command(TARGET mdtool
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/mdtool/ ${CMAKE_CURRENT_BINARY_DIR}/
+  COMMENT "Copying configs..."
+  )
+
+# package / installer
 set(CPACK_PROJECT_NAME "mdtool")
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "MAB Robotics <contact@mabrobotics.pl>")
 set(CPACK_PACKAGE_VENDOR "MAB Robotics")
 set(CPACK_PACKAGE_DESCRIPTION
-    "Console tool for configuring and setting up MD80 via CANdle")
-set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${ARCH})
-set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
-    "${PROJECT_SOURCE_DIR}/template_package/postinst")
+    "Console tool for configuring and setting up MAB MD motor controllers via CANdle."
+)
+if(WIN32)
+  set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL "ON")
+  set(CPACK_NSIS_MODIFY_PATH ON)
+  target_link_libraries(
+    ${PROJECT_NAME}
+    -static
+    candle
+    -static-libstdc++
+    -static-libgcc
+    -static
+    logger)
+  install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${INSTALL_PATH}
+                                          COMPONENT mdtool)
+  install(
+    DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/mdtool/config/motors"
+    DESTINATION "config/motors"
+    COMPONENT _configs)
+  install(
+    FILES "${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/config/mdtool.ini"
+    DESTINATION "config/"
+    PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
+                WORLD_WRITE
+    COMPONENT _configs)
+elseif(UNIX)
+  set(CPACK_GENERATOR "DEB")
+  set(CPACK_DEBIAN_PACKAGE_MAINTAINER "MAB Robotics <contact@mabrobotics.pl>")
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS libusb-1.0-0-dev)
+  set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${ARCH})
+  set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
+      "${PROJECT_SOURCE_DIR}/template_package/postinst")
+  install(TARGETS ${PROJECT_NAME} DESTINATION /usr/local/bin)
+  install(DIRECTORY "${PROJECT_SOURCE_DIR}/template_package/etc" DESTINATION /)
+  install(
+    FILES "${PROJECT_SOURCE_DIR}/template_package/etc/mdtool/config/mdtool.ini"
+    DESTINATION "/etc/mdtool/"
+    PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
+                WORLD_WRITE)
+endif()
 
-set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL "ON")
 include(CPack)
-
-install(TARGETS ${PROJECT_NAME} DESTINATION /usr/local/bin)
-install(DIRECTORY "${PROJECT_SOURCE_DIR}/template_package/etc" DESTINATION /)

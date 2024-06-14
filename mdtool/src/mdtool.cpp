@@ -1,11 +1,10 @@
 #include "mdtool.hpp"
 
-#include <filesystem>
 #include <numeric>
 #include <unistd.h>
 
-#include "ConfigManager.hpp"
 #include "ui.hpp"
+#include "configHelpers.hpp"
 
 f32			lerp(f32 start, f32 end, f32 t) { return (start * (1.f - t)) + (end * t); }
 std::string floatToString(f32 value, bool noDecimals = false)
@@ -50,66 +49,20 @@ mab::CANdleBaudrate_E str2baud(const std::string& baud)
 	return mab::CANdleBaudrate_E::CAN_BAUD_1M;
 }
 
+
 MDtool::MDtool()
 {
 	std::cerr << "[CANDLESDK] Version: " << mab::Candle::getVersion() << std::endl;
 	log.tag = "MDTOOL";
 
-	mdtoolBaseDir =
-		std::string(getenv("HOME")) + "/" + mdtoolHomeConfigDirName + "/" + mdtoolDirName;
-	mdtoolIniFilePath = mdtoolBaseDir + "/" + mdtoolIniFileName;
-
-	/* copy motors configs directory */
-	struct stat info;
-	if (stat(mdtoolBaseDir.c_str(), &info) != 0)
-	{
-		try
-		{
-			std::filesystem::copy(mdtoolConfigPath + mdtoolDirName,
-								  mdtoolBaseDir,
-								  std::filesystem::copy_options::recursive |
-									  std::filesystem::copy_options::overwrite_existing);
-		}
-		catch (const std::filesystem::filesystem_error& e)
-		{
-			std::cerr << "Error: Failed to copy the directory: " << e.what() << std::endl;
-		}
-	}
-	else /* if the directory is not empty we should only copy the ini file (only if the version is
-			newer) and all default config files */
-	{
-		mINI::INIFile	   file(mdtoolIniFilePath);
-		mINI::INIStructure ini;
-		file.read(ini);
-
-		if (ini["general"]["version"] != candle->getVersion())
-		{
-			try
-			{
-				std::filesystem::copy(mdtoolConfigPath + mdtoolDirName + "/" + mdtoolIniFileName,
-									  mdtoolBaseDir + "/",
-									  std::filesystem::copy_options::overwrite_existing);
-			}
-			catch (const std::filesystem::filesystem_error& e)
-			{
-				std::cerr << "Error: Failed to copy the file: " << e.what() << std::endl;
-			}
-
-			file.read(ini);
-			ini["general"]["version"] = candle->getVersion();
-			file.write(ini);
-		}
-	}
-
 	mab::BusType_E		  busType = mab::BusType_E::USB;
 	mab::CANdleBaudrate_E baud	  = mab::CANdleBaudrate_E::CAN_BAUD_1M;
 
-	mINI::INIFile	   file(mdtoolIniFilePath);
+	mINI::INIFile	   file(getMdtoolConfigPath());
 	mINI::INIStructure ini;
 	file.read(ini);
 
 	busString = ini["communication"]["bus"];
-
 	if (busString == "SPI")
 		busType = mab::BusType_E::SPI;
 	else if (busString == "UART")
@@ -192,31 +145,81 @@ void MDtool::setupCalibrationOutput(u16 id)
 	candle->setupMd80CalibrationOutput(id);
 }
 
-void MDtool::setupMotor(u16 id, const std::string& cfgPath)
+std::string MDtool::validateAndGetFinalConfigPath(const std::string& cfgPath)
 {
-	ConfigManager configManager(cfgPath);
-	std::string	  path	   = configManager.getConfigPath();
-	std::string	  filename = configManager.getConfigName();
+	std::string finalConfigPath		   = cfgPath;
+	std::string pathRelToDefaultConfig = getMotorsConfigPath() + cfgPath;
+	if (!fileExists(finalConfigPath))
+	{
+		if (!fileExists(pathRelToDefaultConfig))
+		{
+			log.error("Neither \"%s\", nor \"%s\", exists!.",
+					  cfgPath.c_str(),
+					  pathRelToDefaultConfig.c_str());
+			exit(1);
+		}
+		finalConfigPath = pathRelToDefaultConfig;
+	}
+	if (!isConfigValid(finalConfigPath))
+	{
+		log.error("\"%s\" is not a valid motor .cfg file.", finalConfigPath.c_str());
+		log.warn("Valid file must have .cfg extension, and size of < 1MB");
+		exit(1);
+	}
+	if (!fileExists(getDefaultConfigPath()))
+	{
+		log.warn("No default config found at expected location \"%s\"",
+				 getDefaultConfigPath().c_str());
+		log.warn("Cannot check completeness of the config file. Proceed with upload? [y/n]");
+		if (!getConfirmation())
+			exit(0);
+	}
+	if (fileExists(getDefaultConfigPath()) && !isConfigComplete(finalConfigPath))
+	{
+		logger::LogLevel_E prePromptLevel = log.level;
+		log.level						  = logger::LogLevel_E::INFO;
+		log.error("\"%s\" is incomplete.", finalConfigPath.c_str());
+		log.info("Generate updated file with all required fileds? [y/n]");
+		if (!getConfirmation())
+			exit(0);
+		finalConfigPath = generateUpdatedConfigFile(finalConfigPath);
+		log.info("Generated updated file \"%s\"", finalConfigPath.c_str());
+		log.info("Setup MD with newly generated config? [y/n]");
+		if (!getConfirmation())
+			exit(0);
+		log.level = prePromptLevel;
+	}
+	return finalConfigPath;
+}
 
-	if (configManager.isConfigDefault() && configManager.isConifgDifferent())
-		if (ui::getDifferentConfigsConfirmation(cfgPath))
-			configManager.copyDefaultConfig(filename);
-	if (!configManager.isConfigValid())
-		if (ui::getUpdateConfigConfirmation(cfgPath))
-			path = configManager.validateConfig();
+void MDtool::setupMotor(u16 id, const std::string& cfgPath, bool force)
+{
+	std::string finalConfigPath = cfgPath;
+	if (!force)
+		finalConfigPath = validateAndGetFinalConfigPath(cfgPath);
+	else
+	{
+		log.warn("Ommiting config validation on user request!");
+		if (!fileExists(finalConfigPath))
+		{
+			finalConfigPath = getMotorsConfigPath() + cfgPath;
+			if (!fileExists(finalConfigPath))
+			{
+				log.error("Neither \"%s\", nor \"%s\", exists!.",
+						  cfgPath.c_str(),
+						  finalConfigPath.c_str());
+				exit(1);
+			}
+		}
+	}
 
-	mINI::INIFile	   motorCfg(path);
+	log.info("Uploading file from \"%s\"", finalConfigPath.c_str());
+	mINI::INIFile	   motorCfg(finalConfigPath);
 	mINI::INIStructure cfg;
-
-	mINI::INIFile	   file(mdtoolIniFilePath);
+	motorCfg.read(cfg);
+	mINI::INIFile	   file(getMdtoolConfigPath());
 	mINI::INIStructure ini;
 	file.read(ini);
-
-	if (!motorCfg.read(cfg))
-	{
-		log.error("Unable to find config file at %s", path.c_str());
-		return;
-	}
 
 	if (!tryAddMD80(id))
 		return;
@@ -419,10 +422,17 @@ void MDtool::setupMotor(u16 id, const std::string& cfgPath)
 	if (!candle->writeMd80Register(id, mab::Md80Reg_E::brakeMode, regW.RW.brakeMode))
 		log.error("Failed to setup motor!");
 
-	candle->configMd80Save(id);
-	log.debug("Rebooting md80...");
+	if (candle->configMd80Save(id))
+	{
+		log.success("Config save sucessfully!");
+		log.info("Rebooting md80...");
+	}
 	/* wait for a full reboot */
 	sleep(3);
+	if (candle->controlMd80Enable(id, false))
+		log.success("Ready!");
+	else
+		log.warn("Failed to reboot (ID: %d)!", id);
 }
 void MDtool::setupReadConfig(u16 id, const std::string& cfgName)
 {
@@ -599,7 +609,7 @@ void MDtool::setupReadConfig(u16 id, const std::string& cfgName)
 	/* Saving motor config to file */
 	if (saveConfig)
 	{
-		std::string saveConfigPath = std::filesystem::absolute(configName);
+		std::string saveConfigPath = std::filesystem::absolute(configName).string();
 
 		bool checkFile = true;
 		while (checkFile)
@@ -698,16 +708,18 @@ void MDtool::testMoveAbsolute(u16 id, f32 targetPos, f32 velLimit, f32 accLimit,
 
 void MDtool::testLatency(const std::string& canBaudrate)
 {
+#ifdef UNIX
 	struct sched_param sp;
 	memset(&sp, 0, sizeof(sp));
 	sp.sched_priority = 99;
 	sched_setscheduler(0, SCHED_FIFO, &sp);
-
+#endif
+#ifdef WIN32
+	SetPriorityClass(GetCurrentProcess(), REALTIME_PRIORITY_CLASS);
+#endif
 	auto ids = candle->ping(str2baud(canBaudrate));
-
 	if (ids.size() == 0)
 		return;
-
 	checkSpeedForId(ids[0]);
 
 	for (auto& id : ids)
@@ -717,12 +729,9 @@ void MDtool::testLatency(const std::string& canBaudrate)
 	}
 
 	candle->begin();
-
 	std::vector<u32> samples;
 	const u32		 timelen = 10;
-
 	sleep(1);
-
 	for (u32 i = 0; i < timelen; i++)
 	{
 		sleep(1);
@@ -877,6 +886,10 @@ void MDtool::encoder(u16 id)
 }
 void MDtool::bus(const std::string& bus, const std::string& device)
 {
+#ifdef WIN32
+	log.error("bus - option not available on Windows OS.");
+	return;
+#endif
 	if (bus != "USB" && bus != "SPI" && bus != "UART")
 		return;
 	if ((bus == "SPI" || bus == "UART") && device == "")
@@ -884,12 +897,13 @@ void MDtool::bus(const std::string& bus, const std::string& device)
 		log.error("Bus: %s, requires specifying device!", bus.c_str());
 		return;
 	}
-	mINI::INIFile	   file(mdtoolIniFilePath);
+	mINI::INIFile	   file(getMdtoolConfigPath());
 	mINI::INIStructure ini;
 	file.read(ini);
 	ini["communication"]["bus"]	   = bus;
 	ini["communication"]["device"] = device;
-	file.write(ini);
+	if (!file.write(ini))
+		log.error("failed to write ini file");
 }
 
 void MDtool::clearErrors(u16 id, const std::string& level)
@@ -984,7 +998,12 @@ bool MDtool::getField(mINI::INIStructure& cfg,
 		return true;
 	else
 	{
-		ui::printParameterOutOfBounds(category, field);
+		log.error("Parameter [%s][%s] is out of bounds! Min: %.3f, max:%.3f, value: %.3f",
+				  category.c_str(),
+				  field.c_str(),
+				  (f32)min,
+				  (f32)max,
+				  (f32)value);
 		return false;
 	}
 }

@@ -14,9 +14,14 @@
 #include "candle_protocol.hpp"
 #include "mab_types.hpp"
 #include "md80.hpp"
+#include "usbDevice.hpp"
+
+#ifndef WIN32
 #include "spiDevice.hpp"
 #include "uartDevice.hpp"
-#include "usbDevice.hpp"
+#else
+#include <windows.h>
+#endif
 namespace mab
 {
 	enum CANdleMode_E
@@ -426,8 +431,10 @@ namespace mab
 						  uint32_t	   respLen = 2);
 
 		/* virtual methods for testing purposes */
+#ifdef UNIX
 		virtual std::shared_ptr<Bus> createSpi() { return std::make_shared<SpiDevice>(); }
 		virtual std::shared_ptr<Bus> createUart() { return std::make_shared<UartDevice>(); }
+#endif
 		virtual std::shared_ptr<Bus> createUsb() { return std::make_shared<UsbDevice>(); }
 	};
 

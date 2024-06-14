@@ -4,11 +4,20 @@ project(candlelib)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
-include(${CMAKE_MODULE_PATH}/Findlibusb.cmake)
-find_package(libusb REQUIRED)
+if(UNIX)
+  set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
+  include(${CMAKE_MODULE_PATH}/Findlibusb.cmake)
+  find_package(libusb REQUIRED)
+endif()
+if(WIN32)
+  set(LIBUSB_WINDOWS_DYNAMIC
+      ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/lib/windows/libusb-1.0.dll)
+  set(LIBUSB_WINDOWS_STATIC
+      ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/lib/windows/libusb-1.0.a)
+  set(LIBUSB_INCLUDE_DIR
+      ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/inc/libusb-1.0)
+endif()
 
-file(GLOB CANDLE_SOURCE "src/*cpp")
 if(CANDLE_BUILD_STATIC)
   set(CANDLE_BUILD_STATIC "TRUE")
   set(CANDLE_BUILD_SHARED "FALSE")
@@ -24,11 +33,20 @@ message(
     "\nCANDLE_BUILD_SHARED: ${CANDLE_BUILD_SHARED}\nCANDLE_BUILD_STATIC: ${CANDLE_BUILD_STATIC}"
 )
 
+target_sources(candle PRIVATE src/candle.cpp src/bus.cpp src/crc.cpp src/md80.cpp src/register.cpp src/usbDevice.cpp)
+if(UNIX)
+  target_sources(candle PRIVATE src/uartDevice.cpp src/spiDevice.cpp)
+endif()
 target_include_directories(
   candle PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
                 ${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger)
 target_include_directories(candle SYSTEM PRIVATE ${LIBUSB_INCLUDE_DIR})
-target_link_libraries(candle logger pthread ${LIBUSB_LIBRARY})
+if(UNIX)
+  target_link_libraries(candle logger pthread ${LIBUSB_LIBRARY})
+else()
+  target_link_libraries(candle logger pthread ${LIBUSB_WINDOWS_STATIC} -static)
+
+endif()
 set_target_properties(candle PROPERTIES PUBLIC_HEADER candle.hpp)
 target_compile_options(candle PRIVATE -Wall -Wextra -Wpedantic)
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
