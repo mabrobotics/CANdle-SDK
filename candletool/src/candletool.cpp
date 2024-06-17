@@ -213,7 +213,7 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
 		}
 	}
 
-	log.info("Uploading file from \"%s\"", finalConfigPath.c_str());
+	log.info("Uploading config from \"%s\"", finalConfigPath.c_str());
 	mINI::INIFile	   motorCfg(finalConfigPath);
 	mINI::INIStructure cfg;
 	motorCfg.read(cfg);
