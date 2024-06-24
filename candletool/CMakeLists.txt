@@ -59,11 +59,11 @@ if(WIN32)
                                           COMPONENT candletool)
   install(
     DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/motors"
-    DESTINATION "config/motors"
+    DESTINATION "bin/config"
     COMPONENT _configs)
   install(
     FILES "${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini"
-    DESTINATION "config/"
+    DESTINATION "bin/config/"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
                 WORLD_WRITE
     COMPONENT _configs)

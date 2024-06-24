@@ -16,7 +16,7 @@ mkdir %0\..\..\build
 set currentdir="%cd%"
 cd %0\..\..\build
 cmake -G"MinGW Makefiles" ..
-make -j
+make package -j
 cd %currentdir%
 exit /b 0
 
