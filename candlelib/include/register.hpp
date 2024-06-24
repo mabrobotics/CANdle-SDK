@@ -272,7 +272,7 @@ class Register
 	@return true if register was read
 	*/
 	template <typename T2, typename... Ts>
-	bool read(uint16_t canId, Md80Reg_E regId, const T2& regValue, const Ts&... vs)
+	bool read(uint16_t canId, Md80Reg_E regId, T2& regValue, const Ts&... vs)
 	{
 		/* prepare and send the request frame */
 		if (!prepare(canId, mab::Md80FrameId_E::FRAME_READ_REGISTER, regId, regValue, vs...))

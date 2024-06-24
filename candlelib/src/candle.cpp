@@ -113,7 +113,7 @@ namespace mab
 
 	const std::string Candle::getVersion()
 	{
-		return getVersionString({CANDLE_VTAG, CANDLE_VREVISION, CANDLE_VMINOR, CANDLE_VMAJOR});
+		return getVersionString({{CANDLE_VTAG, CANDLE_VREVISION, CANDLE_VMINOR, CANDLE_VMAJOR}});
 	}
 
 	int Candle::getActualCommunicationFrequency() { return static_cast<int>(usbCommsFreq); }
@@ -146,6 +146,28 @@ namespace mab
 				shouldStopReceiver	  = true;
 				shouldStopTransmitter = true;
 				sem_post(&received);
+			}
+		}
+	}
+	void Candle::transfer()
+	{
+		int		 counter		= 0;
+		uint64_t freqCheckStart = getTimestamp();
+		log.level				= logger::LogLevel_E::DEBUG;
+		while (!shouldStopTransmitter)
+		{
+			if (++counter == 250)
+			{
+				usbCommsFreq   = 250.0 / (float)(getTimestamp() - freqCheckStart) * 1000000.0f;
+				freqCheckStart = getTimestamp();
+				counter		   = 0;
+			}
+			transmitNewStdFrame();
+			msgsSent++;
+			if (bus->receive(sizeof(StdMd80ResponseFrame_t) * md80s.size() + 1), 1)
+			{
+				if (*bus->getRxBuffer() == BUS_FRAME_UPDATE)
+					manageReceivedFrame();
 			}
 		}
 	}
@@ -216,7 +238,7 @@ namespace mab
 
 	void Candle::setVebose(bool enable)
 	{
-			log.level = enable ? logger::LogLevel_E::INFO : (logger::LogLevel_E)30;
+		log.level = enable ? logger::LogLevel_E::INFO : (logger::LogLevel_E)30;
 	}
 
 	unsigned long Candle::getDeviceId() { return bus->getId(); }
@@ -399,7 +421,7 @@ namespace mab
 		log.info("Drive ID: %d was changed to ID: %d.", canId, newId);
 		log.info("Drive CAN baudrate is now: %dMbps", newBaudrateMbps);
 		log.info("Drive CAN timeout is now: %sms",
-				 (newTimeout == 0) ? "disabled" : std::to_string(newTimeout));
+				 (newTimeout == 0) ? "disabled" : std::to_string(newTimeout).c_str());
 		log.info("Drive CAN termination is %s", canTermination ? "enabled" : "disabled");
 		log.success("CAN config change successful!");
 		return true;
@@ -542,13 +564,8 @@ namespace mab
 			msgsSent			  = 0;
 			msgsReceived		  = 0;
 
-			sem_init(&transmitted, 0, 0);
-			sem_init(&received, 0, 0);
-
-			if (bus->getType() != mab::BusType_E::SPI)
-				receiverThread = std::thread(&Candle::receive, this);
-
-			transmitterThread = std::thread(&Candle::transmit, this);
+            log.info("Starting transfer thread...");
+			transmitterThread = std::thread(&Candle::transfer, this);
 
 			return true;
 		}

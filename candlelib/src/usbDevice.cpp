@@ -97,7 +97,7 @@ bool UsbDevice::transmit(
 {
 	(void)faultVerbose;
 	s32 sendLenActual = 0;
-	s32 ret = libusb_bulk_transfer(devh, outEndpointAdr, (u8*)buffer, len, &sendLenActual, 10);
+	s32 ret = libusb_bulk_transfer(devh, outEndpointAdr, (u8*)buffer, len, &sendLenActual, 2);
 	if (ret < 0)
 	{
 		cout << "[USB] Failed to transmit!" << endl;
