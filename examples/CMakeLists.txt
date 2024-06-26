@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.8)
 
 project(examples)
 
-set(mINI_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/mINI/inc/)
-
 file(GLOB APP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cpp/*.cpp)
 foreach(testsourcefile ${APP_SOURCES})
     get_filename_component(executable ${testsourcefile} NAME_WE)
