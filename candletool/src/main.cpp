@@ -129,9 +129,9 @@ int main(int argc, char** argv)
 
 	auto* candle_update = update->add_subcommand("candle", "Update firmware on Candle device.");
 	auto* md_update		= update->add_subcommand("md", "Update firmware on MD device.");
+	md_update->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 
-	std::string filename = "no_file";
-	update->add_option("-f,--file", filename, "Path to the .mab file");
+	update->add_option("-f,--file", cmd.firmwareFileName, "Path to the .mab file");
 
 	CLI11_PARSE(app, argc, argv);
 
@@ -205,21 +205,27 @@ int main(int argc, char** argv)
 
 	if (update->parsed())
 	{
-		if (candle_update->parsed())
-			std::cout << "candle update command parsed!" << ::std::endl;
-
-		if (md_update->parsed())
-			std::cout << "md update command parsed!" << std::endl;
-
-		if (filename == "no_file")
+		if (cmd.firmwareFileName == "no_file")
 		{
 			std::cout << "No filename given!" << std::endl;
+			// Place holder for future feature :: Automatically detect hw version and download
+			// firmware from our release pages...
 			std::cout << "Fetching most recent firmware online [ Not implemented yet ... ]"
 					  << std::endl;
 		}
 		else
 		{
-			std::cout << "using mab file [ " << filename << " ]" << std::endl;
+			// std::cout << "using mab file [ " << cmd.firmwareFileName << " ]" << std::endl;
+		}
+
+		if (candle_update->parsed())
+		{
+			candleTool.updateCandle(cmd.firmwareFileName);
+		}
+
+		if (md_update->parsed())
+		{
+			candleTool.updateMd(cmd.firmwareFileName, cmd.id);
 		}
 	}
 

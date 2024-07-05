@@ -15,11 +15,12 @@ struct UserCommand
 	f32			bandwidth	= 100.f;
 	std::string cfgPath		= "";
 	f32			pos = 0.f, vel = 10.f, acc = 5.f, dcc = 5.f;
-	bool		infoAll = false;
-	std::string bus		= "USB";
-	std::string reg		= "0x0000";
-	std::string value	= "";
-	bool		force	= false;
+	bool		infoAll			 = false;
+	std::string bus				 = "USB";
+	std::string reg				 = "0x0000";
+	std::string value			 = "";
+	bool		force			 = false;
+	std::string firmwareFileName = "";
 };
 class CandleTool
 {
