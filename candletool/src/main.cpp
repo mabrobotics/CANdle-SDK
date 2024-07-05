@@ -19,6 +19,7 @@ int main(int argc, char** argv)
 	auto* reset	  = app.add_subcommand("reset", "Reset MD drive.");
 	auto* setup	  = app.add_subcommand("setup", "Setup MD via config files, and calibrate.");
 	auto* test	  = app.add_subcommand("test", "Basic MD drive testing routines.");
+	auto* update  = app.add_subcommand("update", "Firmware update.");
 
 	// BLINK
 	blink->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
@@ -124,6 +125,14 @@ int main(int argc, char** argv)
 	testMoveRel->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 	testMoveRel->add_option("<REL POS>", cmd.pos, "Relative position to reach. <-10, 10>[rad]");
 
+	// Update
+
+	auto* candle_update = update->add_subcommand("candle", "Update firmware on Candle device.");
+	auto* md_update		= update->add_subcommand("md", "Update firmware on MD device.");
+
+	std::string filename = "no_file";
+	update->add_option("-f,--file", filename, "Path to the .mab file");
+
 	CLI11_PARSE(app, argc, argv);
 
 	CandleTool candleTool;
@@ -192,6 +201,26 @@ int main(int argc, char** argv)
 			candleTool.testMoveAbsolute(cmd.id, cmd.pos, cmd.vel, cmd.acc, cmd.dcc);
 		if (testMoveRel->parsed())
 			candleTool.testMove(cmd.id, cmd.pos);
+	}
+
+	if (update->parsed())
+	{
+		if (candle_update->parsed())
+			std::cout << "candle update command parsed!" << ::std::endl;
+
+		if (md_update->parsed())
+			std::cout << "md update command parsed!" << std::endl;
+
+		if (filename == "no_file")
+		{
+			std::cout << "No filename given!" << std::endl;
+			std::cout << "Fetching most recent firmware online [ Not implemented yet ... ]"
+					  << std::endl;
+		}
+		else
+		{
+			std::cout << "using mab file [ " << filename << " ]" << std::endl;
+		}
 	}
 
 	return EXIT_SUCCESS;

@@ -53,6 +53,21 @@ class CandleTool
 	void registerWrite(u16 id, u16 reg, const std::string& value);
 	void registerRead(u16 id, u16 reg);
 
+	/**
+	 * @brief Update firmware on Candle device
+	 *
+	 * @param firmwareFile path to firmware file (.mab)
+	 */
+	void updateCandle(const std::string& firmwareFile);
+
+	/**
+	 * @brief Update firmware on Motor Driver
+	 *
+	 * @param firmwareFile path to firmware file (.mab)
+	 * @param canId CAN ID of the motor driver to be updated
+	 */
+	void updateMd(const std::string& firmwareFile, uint16_t canId);
+
   private:
 	logger						 log;
 	std::unique_ptr<mab::Candle> candle;
