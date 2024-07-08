@@ -19,8 +19,10 @@ BinaryParser::Status BinaryParser::processFile(std::string filePath)
 
     if (m_firmwareEntry1.tag == "md")
         m_fileType = Type::MD;
+
     else if (m_firmwareEntry1.tag == "candle")
         m_fileType = Type::CANDLE;
+
     else if (ini.has("header2"))
     {
         m_firmwareEntry2 = parseFirmwareEntry(ini, std::string("header2"));
@@ -35,7 +37,7 @@ BinaryParser::Status BinaryParser::processFile(std::string filePath)
     }
     else
     {
-        log.error("Invalid tag in header1. Expected 'md80' or 'candle' but got '%s'",
+        log.error("Invalid tag in header1. Expected 'md' or 'candle' but got '%s'",
                   m_firmwareEntry1.tag.c_str());
         return Status::ERROR_TAG;
     }
