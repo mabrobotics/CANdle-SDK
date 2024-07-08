@@ -82,7 +82,11 @@ namespace mab
         : candle(_candle)
     {
         log.tag = "FW Uploader";
-        m_mabFile.processFile(mabFile);
+        if (BinaryParser::Status::OK != m_mabFile.processFile(mabFile))
+        {
+            log.error("Error while processing MAB file!");
+            exit(1);
+        }
     }
 
     bool FirmwareUploader::flashDevice(int id, bool directly)

@@ -29,6 +29,7 @@ namespace mab
          *
          * @param id The ID of the device to update.
          * @param directly If true, connect to bootloader directly. If false, connect to bootloader
+         *
          * via the application.
          * @return true
          * @return false
