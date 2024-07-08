@@ -130,7 +130,7 @@ int main(int argc, char** argv)
 	auto* candle_update = update->add_subcommand("candle", "Update firmware on Candle device.");
 	auto* md_update		= update->add_subcommand("md", "Update firmware on MD device.");
 	md_update->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
-
+	update->add_flag("-r", cmd.noReset, "Do not reset the device before updating firmware.");
 	update->add_option("-f,--file", cmd.firmwareFileName, "Path to the .mab file");
 
 	CLI11_PARSE(app, argc, argv);
@@ -221,11 +221,13 @@ int main(int argc, char** argv)
 		if (candle_update->parsed())
 		{
 			candleTool.updateCandle(cmd.firmwareFileName);
+			return EXIT_SUCCESS;
 		}
 
 		if (md_update->parsed())
 		{
 			candleTool.updateMd(cmd.firmwareFileName, cmd.id);
+			return EXIT_SUCCESS;
 		}
 	}
 

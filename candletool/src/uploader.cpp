@@ -7,6 +7,7 @@
 #include <cmath>
 #include "unistd.h"
 #include "mini/ini.h"
+#include "logger.hpp"
 
 namespace mab
 {
@@ -77,16 +78,25 @@ namespace mab
 		fflush(stdout);
 	}
 
-	FirmwareUploader::FirmwareUploader(Candle& _candle) : candle(_candle) {}
-
-	bool FirmwareUploader::flashDevice(std::string& mabFile, int id, bool directly)
+	FirmwareUploader::FirmwareUploader(Candle& _candle, const std::string& mabFile)
+		: candle(_candle)
 	{
-		// fileSize = md80_bin_len; TODO: Replace with parsed mab file data
-		float flashPagesNeeded = ceilf((float)fileSize / (float)pageSize);
-		pagesToUpload		   = (int)flashPagesNeeded;
+		log.tag = "Firmware upload";
+		m_mabFile.processFile(mabFile);
+	}
 
-		currentPage = 0;
-		currentId	= id;
+	bool FirmwareUploader::flashDevice(int id, bool directly)
+	{
+		log.debug("About to flash device...");
+
+		auto firmwareData = m_mabFile.getPrimaryFirmwareFile();
+
+		m_fileSize			   = firmwareData.size();
+		float flashPagesNeeded = ceilf((float)m_fileSize / (float)M_PAGE_SIZE);
+		m_pagesToUpload		   = (int)flashPagesNeeded;
+
+		m_currentPage = 0;
+		m_currentId	  = id;
 
 		/* send reset command to the md80 firmware */
 		if (directly == false)
@@ -98,19 +108,21 @@ namespace mab
 		if (!sendInitCmd())
 			return false;
 
+		// TODO: Some delay here?
+
 		/* enter page programming mode */
 		if (!sendPageProgCmd())
 			return false;
 
 		/* write data page per page */
-		while (currentPage < pagesToUpload)
+		while (m_currentPage < m_pagesToUpload)
 		{
 			if (!sendPage())
 			{
 				std::cout << std::endl;
 				return false;
 			}
-			printProgress((double)currentPage / pagesToUpload);
+			printProgress((double)m_currentPage / m_pagesToUpload);
 		}
 		/* reboot when done */
 		sendBootCmd();
@@ -128,7 +140,7 @@ namespace mab
 
 		std::cout << "[CANDLE] Entering bootloader mode..." << std::endl;
 
-		if (!candle.sendGenericFDCanFrame(currentId, 2, (const char*)txBuff, rxBuff, 1000))
+		if (!candle.sendGenericFDCanFrame(m_currentId, 2, (const char*)txBuff, rxBuff, 1000))
 		{
 			std::cout << "[CANDLE] Error while sendind bootloader enter command! Checking if not "
 						 "already in bootloader mode..."
@@ -144,11 +156,11 @@ namespace mab
 		char	rxBuff[64] = {0};
 
 		txBuff[0]			   = CMD_HOST_INIT;
-		*(uint32_t*)&txBuff[1] = address;
+		*(uint32_t*)&txBuff[1] = M_BOOT_ADDRESS;
 
-		std::cout << "[CANDLE] Detecting bootloader mode..." << std::endl;
+		log.info("[CANDLE] Detecting bootloader mode...");
 
-		candle.sendGenericFDCanFrame(currentId, 5, (const char*)txBuff, (char*)rxBuff, 50);
+		candle.sendGenericFDCanFrame(m_currentId, 5, (const char*)txBuff, (char*)rxBuff, 50);
 
 		if (strcmp("OK", (char*)rxBuff) == 0)
 			std::cout << "[CANDLE] Bootloader detected!" << std::endl;
@@ -172,7 +184,7 @@ namespace mab
 		txBuff[0] = CMD_PAGE_PROG;
 		txBuff[1] = 0x00;
 
-		candle.sendGenericFDCanFrame(currentId, 5, (const char*)txBuff, rxBuff, 500);
+		candle.sendGenericFDCanFrame(m_currentId, 5, (const char*)txBuff, rxBuff, 500);
 		if (strcmp("OK", (char*)rxBuff) == 0)
 			return true;
 
@@ -186,16 +198,16 @@ namespace mab
 		std::cout << std::endl << "[DEBUG] Sending page " << currentPage << "..." << std::endl;
 #endif
 
-		int		framesPerPage		 = pageSize / chunkSize;
-		uint8_t pageBuffer[pageSize] = {0};
-		// int pageBufferReadSize = pageSize;
-		/*
-		TODO: Replace with parsed mab file data
-				if(md80_bin_len - ((currentPage)*pageSize) < pageSize)
-					pageBufferReadSize = md80_bin_len - ((currentPage)*pageSize);
+		int		framesPerPage			= M_PAGE_SIZE / M_CHUNK_SIZE;
+		uint8_t pageBuffer[M_PAGE_SIZE] = {0};
+		int		pageBufferReadSize		= M_PAGE_SIZE;
+		auto	firmwareData			= m_mabFile.getPrimaryFirmwareFile();
+		size_t	binaryLength			= firmwareData.size();
 
-				memcpy(pageBuffer,&md80_bin[currentPage*pageSize],pageBufferReadSize);
-		*/
+		if (binaryLength - ((m_currentPage)*M_PAGE_SIZE) < M_PAGE_SIZE)
+			pageBufferReadSize = binaryLength - ((m_currentPage)*M_PAGE_SIZE);
+
+		memcpy(pageBuffer, &firmwareData[m_currentPage * M_PAGE_SIZE], pageBufferReadSize);
 
 		for (int i = 0; i < framesPerPage; i++)
 		{
@@ -205,15 +217,15 @@ namespace mab
 			memset(rxBuff, 0, 64);
 			memcpy(txBuff, &pageBuffer[i * 64], 64);
 
-			candle.sendGenericFDCanFrame(currentId, 64, (const char*)txBuff, rxBuff, 500);
+			candle.sendGenericFDCanFrame(m_currentId, 64, (const char*)txBuff, rxBuff, 500);
 			if (strcmp("OK", rxBuff) != 0)
 			{
-				std::cout << std::endl << "[CANDLE] Sending Page " << currentPage << " failed!";
+				log.error("Sending Page %u FAIL", m_currentPage);
 				return false;
 			}
 		}
-		currentPage++;
-		bool result = sendWriteCmd(pageBuffer, pageSize);
+		m_currentPage++;
+		bool result = sendWriteCmd(pageBuffer, M_PAGE_SIZE);
 		return result;
 	}
 
@@ -229,7 +241,7 @@ namespace mab
 		txBuff[0]			   = CMD_WRITE;
 		*(uint32_t*)&txBuff[1] = CalcCRC(pPageBuffer, (uint32_t)bufferSize);
 
-		candle.sendGenericFDCanFrame(currentId, 5, (const char*)txBuff, rxBuff, 500);
+		candle.sendGenericFDCanFrame(m_currentId, 5, (const char*)txBuff, rxBuff, 500);
 		usleep(50);
 		if (strcmp("OK", (char*)rxBuff) == 0)
 			return true;
@@ -250,7 +262,7 @@ namespace mab
 		txBuff[0] = CMD_BOOT;
 		txBuff[1] = 0x00;
 
-		candle.sendGenericFDCanFrame(currentId, 5, (const char*)txBuff, rxBuff, 500);
+		candle.sendGenericFDCanFrame(m_currentId, 5, (const char*)txBuff, rxBuff, 500);
 		if (strcmp("OK", rxBuff) == 0)
 			return true;
 

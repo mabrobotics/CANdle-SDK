@@ -873,17 +873,18 @@ void CandleTool::registerRead(u16 id, u16 reg)
 	log.success("Register value: %s", value.c_str());
 }
 
-void CandleTool::updateCandle(const std::string& firmwareFile)
+void CandleTool::updateCandle(const std::string& firmwareFile, bool noReset)
 {
 	log.info("Performing Candle firmware update.");
 	// TODO:
 }
 
-void CandleTool::updateMd(const std::string& firmwareFile, uint16_t canId)
+void CandleTool::updateMd(const std::string& mabFile, uint16_t canId, bool noReset)
 {
-	mab::FirmwareUploader firmwareUploader(*candle);
-	firmwareUploader.flashDevice(canId, false);
 	log.info("Performing MD( id [ %u ] ) firmware update.", canId);
+
+	mab::FirmwareUploader firmwareUploader(*candle, mabFile);
+	firmwareUploader.flashDevice(canId, noReset);
 }
 
 void CandleTool::blink(u16 id) { candle->configMd80Blink(id); }

@@ -21,6 +21,7 @@ struct UserCommand
 	std::string value			 = "";
 	bool		force			 = false;
 	std::string firmwareFileName = "";
+	bool		noReset			 = false;
 };
 class CandleTool
 {
@@ -59,7 +60,7 @@ class CandleTool
 	 *
 	 * @param firmwareFile path to firmware file (.mab)
 	 */
-	void updateCandle(const std::string& firmwareFile);
+	void updateCandle(const std::string& firmwareFile, bool noReset = false);
 
 	/**
 	 * @brief Update firmware on Motor Driver
@@ -67,7 +68,7 @@ class CandleTool
 	 * @param firmwareFile path to firmware file (.mab)
 	 * @param canId CAN ID of the motor driver to be updated
 	 */
-	void updateMd(const std::string& firmwareFile, uint16_t canId);
+	void updateMd(const std::string& firmwareFile, uint16_t canId, bool noReset = false);
 
   private:
 	logger						 log;
