@@ -15,11 +15,13 @@ struct UserCommand
 	f32			bandwidth	= 100.f;
 	std::string cfgPath		= "";
 	f32			pos = 0.f, vel = 10.f, acc = 5.f, dcc = 5.f;
-	bool		infoAll = false;
-	std::string bus		= "USB";
-	std::string reg		= "0x0000";
-	std::string value	= "";
-	bool		force	= false;
+	bool		infoAll			 = false;
+	std::string bus				 = "USB";
+	std::string reg				 = "0x0000";
+	std::string value			 = "";
+	bool		force			 = false;
+	std::string firmwareFileName = "";
+	bool		noReset			 = false;
 };
 class CandleTool
 {
@@ -52,6 +54,21 @@ class CandleTool
 	void reset(u16 id);
 	void registerWrite(u16 id, u16 reg, const std::string& value);
 	void registerRead(u16 id, u16 reg);
+
+	/**
+	 * @brief Update firmware on Candle device
+	 *
+	 * @param firmwareFile path to firmware file (.mab)
+	 */
+	void updateCandle(const std::string& firmwareFile, bool noReset = false);
+
+	/**
+	 * @brief Update firmware on Motor Driver
+	 *
+	 * @param firmwareFile path to firmware file (.mab)
+	 * @param canId CAN ID of the motor driver to be updated
+	 */
+	void updateMd(const std::string& firmwareFile, uint16_t canId, bool noReset = false);
 
   private:
 	logger						 log;

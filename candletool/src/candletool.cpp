@@ -6,6 +6,8 @@
 #include "ui.hpp"
 #include "configHelpers.hpp"
 
+#include "uploader.hpp"
+
 f32			lerp(f32 start, f32 end, f32 t) { return (start * (1.f - t)) + (end * t); }
 std::string floatToString(f32 value, bool noDecimals = false)
 {
@@ -48,7 +50,6 @@ mab::CANdleBaudrate_E str2baud(const std::string& baud)
 		return mab::CANdleBaudrate_E::CAN_BAUD_8M;
 	return mab::CANdleBaudrate_E::CAN_BAUD_1M;
 }
-
 
 CandleTool::CandleTool()
 {
@@ -97,7 +98,8 @@ void CandleTool::ping(const std::string& variant)
 	candle->ping(str2baud(variant));
 }
 
-void CandleTool::configCan(u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination)
+void CandleTool::configCan(
+	u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination)
 {
 	checkSpeedForId(id);
 	candle->configMd80Can(id, newId, str2baud(baud), timeout, termination);
@@ -106,7 +108,10 @@ void CandleTool::configSave(u16 id) { candle->configMd80Save(id); }
 
 void CandleTool::configZero(u16 id) { candle->controlMd80SetEncoderZero(id); }
 
-void CandleTool::configCurrent(u16 id, f32 current) { candle->configMd80SetCurrentLimit(id, current); }
+void CandleTool::configCurrent(u16 id, f32 current)
+{
+	candle->configMd80SetCurrentLimit(id, current);
+}
 
 void CandleTool::configBandwidth(u16 id, f32 bandwidth)
 {
@@ -868,6 +873,20 @@ void CandleTool::registerRead(u16 id, u16 reg)
 	log.success("Register value: %s", value.c_str());
 }
 
+void CandleTool::updateCandle(const std::string& firmwareFile, bool noReset)
+{
+	log.info("Performing Candle firmware update.");
+	// TODO:
+}
+
+void CandleTool::updateMd(const std::string& mabFile, uint16_t canId, bool noReset)
+{
+	log.info("Performing MD( id [ %u ] ) firmware update.", canId);
+
+	mab::FirmwareUploader firmwareUploader(*candle, mabFile);
+	firmwareUploader.flashDevice(canId, noReset);
+}
+
 void CandleTool::blink(u16 id) { candle->configMd80Blink(id); }
 void CandleTool::encoder(u16 id)
 {
@@ -972,10 +991,10 @@ bool CandleTool::hasError(u16 canId)
 /* gets field only if the value is within bounds form the ini file */
 template <class T>
 bool CandleTool::getField(mINI::INIStructure& cfg,
-					  mINI::INIStructure& ini,
-					  std::string		  category,
-					  std::string		  field,
-					  T&				  value)
+						  mINI::INIStructure& ini,
+						  std::string		  category,
+						  std::string		  field,
+						  T&				  value)
 {
 	T min = 0;
 	T max = 0;
@@ -1024,8 +1043,9 @@ bool CandleTool::checkSetupError(u16 id)
 
 	if (calibrationStatus & (1 << ui::calibrationErrorList.at(std::string("ERROR_SETUP"))))
 	{
-		log.error("Could not proceed due to %s. Please call candletool setup motor <ID> <cfg> first.",
-				  RED__("ERROR_SETUP"));
+		log.error(
+			"Could not proceed due to %s. Please call candletool setup motor <ID> <cfg> first.",
+			RED__("ERROR_SETUP"));
 		return true;
 	}
 

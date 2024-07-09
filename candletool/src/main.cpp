@@ -19,6 +19,7 @@ int main(int argc, char** argv)
 	auto* reset	  = app.add_subcommand("reset", "Reset MD drive.");
 	auto* setup	  = app.add_subcommand("setup", "Setup MD via config files, and calibrate.");
 	auto* test	  = app.add_subcommand("test", "Basic MD drive testing routines.");
+	auto* update  = app.add_subcommand("update", "Firmware update.");
 
 	// BLINK
 	blink->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
@@ -124,6 +125,14 @@ int main(int argc, char** argv)
 	testMoveRel->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 	testMoveRel->add_option("<REL POS>", cmd.pos, "Relative position to reach. <-10, 10>[rad]");
 
+	// Update
+
+	auto* candle_update = update->add_subcommand("candle", "Update firmware on Candle device.");
+	auto* md_update		= update->add_subcommand("md", "Update firmware on MD device.");
+	md_update->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+	update->add_flag("-r", cmd.noReset, "Do not reset the device before updating firmware.");
+	update->add_option("-f,--file", cmd.firmwareFileName, "Path to the .mab file");
+
 	CLI11_PARSE(app, argc, argv);
 
 	CandleTool candleTool;
@@ -192,6 +201,34 @@ int main(int argc, char** argv)
 			candleTool.testMoveAbsolute(cmd.id, cmd.pos, cmd.vel, cmd.acc, cmd.dcc);
 		if (testMoveRel->parsed())
 			candleTool.testMove(cmd.id, cmd.pos);
+	}
+
+	if (update->parsed())
+	{
+		if (cmd.firmwareFileName == "no_file")
+		{
+			std::cout << "No filename given!" << std::endl;
+			// Place holder for future feature :: Automatically detect hw version and download
+			// firmware from our release pages...
+			std::cout << "Fetching most recent firmware online [ Not implemented yet ... ]"
+					  << std::endl;
+		}
+		else
+		{
+			// std::cout << "using mab file [ " << cmd.firmwareFileName << " ]" << std::endl;
+		}
+
+		if (candle_update->parsed())
+		{
+			candleTool.updateCandle(cmd.firmwareFileName);
+			return EXIT_SUCCESS;
+		}
+
+		if (md_update->parsed())
+		{
+			candleTool.updateMd(cmd.firmwareFileName, cmd.id);
+			return EXIT_SUCCESS;
+		}
 	}
 
 	return EXIT_SUCCESS;
