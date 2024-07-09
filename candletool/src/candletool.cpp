@@ -893,10 +893,8 @@ void CandleTool::updateCandle(const std::string& firmwareFile, bool noReset)
 
 void CandleTool::updateMd(const std::string& mabFile, uint16_t canId, bool noReset)
 {
-    log.info("Performing MD( id [ %u ] ) firmware update.", canId);
-
-    mab::FirmwareUploader firmwareUploader(*candle, mabFile);
-    firmwareUploader.flashDevice(canId, noReset);
+    mab::FirmwareUploader firmwareUploader(*candle, mabFile, canId);
+    firmwareUploader.flashDevice(noReset);
 }
 
 void CandleTool::blink(u16 id)

@@ -1,4 +1,4 @@
-#include "BinaryParser.hpp"
+#include "mabFileParser.hpp"
 
 mabFileParser::mabFileParser()
 {
@@ -16,7 +16,6 @@ mabFileParser::Status_E mabFileParser::processFile(std::string filePath)
         return Status_E::ERROR_FILE;
 
     m_firmwareEntry1 = parseFirmwareEntry(ini, std::string("header1"));
-    m_firmwareEntry2 = parseFirmwareEntry(ini, std::string("header2"));
 
     if (m_firmwareEntry1.status == Status_E::ERROR_CHECKSUM ||
         m_firmwareEntry2.status == Status_E::ERROR_CHECKSUM)
@@ -29,8 +28,11 @@ mabFileParser::Status_E mabFileParser::processFile(std::string filePath)
     log.info("File type: [ %s ]", fileType2String(m_fileType).c_str());
     log.info("Primary firmware size: [ %d bytes ]", m_firmwareEntry1.size);
 
-    if (m_fileType == TargetDevice_E::BOOT)
+    if ((m_fileType == TargetDevice_E::BOOT) && (ini.has("header2")))
+    {
+        m_firmwareEntry2 = parseFirmwareEntry(ini, std::string("header2"));
         log.info("Secondary firmware size: [ %d bytes ]", m_firmwareEntry2.size);
+        }
 
     return Status_E::OK;
 }

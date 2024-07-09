@@ -130,7 +130,7 @@ namespace mab
         /* reboot when done */
         sendBootCmd();
 
-        return true;
+        return ERROR_E::OK;
     }
 
     void FirmwareUploader::sendResetCmd()
