@@ -42,7 +42,7 @@ struct logger
     /**
      * @brief Print a message without any prefix or newline
      */
-    void info_raw(const char* msg, ...);
+    void progress(double percentage);
     void success(const char* msg, ...);
     void debug(const char* msg, ...);
     void warn(const char* msg, ...);

@@ -58,35 +58,10 @@ namespace mab
         void    setVerbosity(bool verbosity);
 
       private:
-        enum BootloaderFrameId_t : uint8_t
-        {
-            CMD_TARGET_RESET = 0x13,
-            CMD_HOST_INIT    = 0xA1,
-            CMD_PAGE_PROG    = 0xA2,
-            CMD_BOOT         = 0xA3,
-            CMD_WRITE        = 0xA4,
-        };
-
-        mab::Candle& candle;
-        logger       log;
-
-        static constexpr size_t   M_PAGE_SIZE    = 2048;
-        static constexpr size_t   M_CHUNK_SIZE   = 64;
-        static constexpr uint32_t M_BOOT_ADDRESS = 0x08005000;
+        mab::Candle& m_candle;
+        logger       m_log;
 
         mabFileParser& m_mabFile;
-        size_t         m_fileSize;
-        size_t         m_bytesToUpload;
-        size_t         m_pagesToUpload;
-        uint32_t       m_currentPage;
-        uint32_t       m_currentId;
-
-        void sendResetCmd();
-        bool sendInitCmd();
-        bool sendPageProgCmd();
-        bool sendPage();
-        bool sendWriteCmd(uint8_t* pPageBuffer, int bufferSize);
-        bool sendBootCmd();
-        void printProgress(double percentage);
+        uint32_t       m_canId;
     };
 }  // namespace mab
