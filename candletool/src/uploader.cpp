@@ -72,6 +72,8 @@ namespace mab
         int val  = (int)(percentage * 100);
         int lpad = (int)(percentage * PBWIDTH);
         int rpad = PBWIDTH - lpad;
+        // TODO: Add functionality to logger so it will not print newline in some variant but still
+        // take care of verbosity
         printf("\r%3d%% [%.*s%*s] Downloading... ", val, lpad, PBSTR, rpad, "");
         if (fabs(percentage - 1.0) < 0.00001)
             printf("\r\n");

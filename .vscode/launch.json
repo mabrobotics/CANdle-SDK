@@ -15,23 +15,6 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
-        },
-        {
-            "name": "candletool fw update test",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/candletool/candletool",
-            // "args": [
-            //     "update",
-            //     "md",
-            //     "100",
-            //     "--file=\"${workspaceFolder}/candletool/test/test_md_fw_file.mab\""
-            // ],
-            "stopAtEntry": true,
-            "cwd": "${fileDirname}",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
         }
     ]
 }

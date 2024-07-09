@@ -29,8 +29,6 @@ class BinaryParser
         ERROR_CHECKSUM = 3,
     };
 
-    // static constexpr std::string MD_HEADER   = "MD";
-
   public:
     BinaryParser();
     Status               processFile(std::string filePath);
@@ -41,14 +39,13 @@ class BinaryParser
   private:
     struct FirmwareEntry
     {
+        std::string          mabFileVersion;
         std::string          tag;
         size_t               size;
         std::string          checksum;
         std::vector<uint8_t> binary;
         Status               status = Status::OK;
-        FirmwareEntry()
-        {
-        } /* this is to fix GCC bug with default initializers */
+        // FirmwareEntry()             = default
     };
 
     logger log;
@@ -57,7 +54,6 @@ class BinaryParser
     FirmwareEntry m_firmwareEntry2;
     Type          m_fileType = Type::MD;
 
-  private:
     FirmwareEntry        parseFirmwareEntry(mINI::INIStructure& ini, std::string&& header);
     std::vector<uint8_t> hexStringToBytes(std::string str);
     std::string          fileType2String(Type type);
