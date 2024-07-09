@@ -1,85 +1,79 @@
 #include "BinaryParser.hpp"
 
-BinaryParser::BinaryParser()
+mabFileParser::mabFileParser()
 {
     log.tag = "MAB FILE";
 }
 
-BinaryParser::Status BinaryParser::processFile(std::string filePath)
+mabFileParser::Status_E mabFileParser::processFile(std::string filePath)
 {
-    BinaryParser::log.info("Processing file: %s", filePath.c_str());
+    mabFileParser::log.info("Processing file: %s", filePath.c_str());
 
     mINI::INIFile      file(filePath);
     mINI::INIStructure ini;
 
     if (!file.read(ini))
-        return Status::ERROR_FILE;
+        return Status_E::ERROR_FILE;
 
     m_firmwareEntry1 = parseFirmwareEntry(ini, std::string("header1"));
+    m_firmwareEntry2 = parseFirmwareEntry(ini, std::string("header2"));
 
-    if (m_firmwareEntry1.tag == "md")
-        m_fileType = Type::MD;
-
-    else if (m_firmwareEntry1.tag == "candle")
-        m_fileType = Type::CANDLE;
-
-    else if (ini.has("header2"))
-    {
-        m_firmwareEntry2 = parseFirmwareEntry(ini, std::string("header2"));
-        if (m_firmwareEntry1.tag == "boot_primary" && m_firmwareEntry2.tag == "boot_secondary")
-            m_fileType = Type::BOOT;
-        else
-        {
-            log.error("Invalid tag in header2. Expected 'boot_secondary' but got '%s'",
-                      m_firmwareEntry2.tag.c_str());
-            return Status::ERROR_TAG;
-        }
-    }
-    else
-    {
-        log.error("Invalid tag in header1. Expected 'md' or 'candle' but got '%s'",
-                  m_firmwareEntry1.tag.c_str());
-        return Status::ERROR_TAG;
-    }
-
-    if (m_firmwareEntry1.status == Status::ERROR_CHECKSUM ||
-        m_firmwareEntry2.status == Status::ERROR_CHECKSUM)
+    if (m_firmwareEntry1.status == Status_E::ERROR_CHECKSUM ||
+        m_firmwareEntry2.status == Status_E::ERROR_CHECKSUM)
     {
         log.error("Checksum validation failed");
-        return Status::ERROR_CHECKSUM;
+        return Status_E::ERROR_CHECKSUM;
     }
 
     log.success("File processed successfully");
     log.info("File type: [ %s ]", fileType2String(m_fileType).c_str());
     log.info("Primary firmware size: [ %d bytes ]", m_firmwareEntry1.size);
-    if (m_fileType == Type::BOOT)
+
+    if (m_fileType == TargetDevice_E::BOOT)
         log.info("Secondary firmware size: [ %d bytes ]", m_firmwareEntry2.size);
 
-    return Status::OK;
+    return Status_E::OK;
 }
 
-std::vector<uint8_t> BinaryParser::getPrimaryFirmwareFile()
+mabFileParser::TargetDevice_E mabFileParser::parseTargetDevice(std::string tag)
+{
+    if (tag == "md")
+        return TargetDevice_E::MD;
+
+    else if (tag == "candle")
+        return TargetDevice_E::CANDLE;
+
+    else if (tag == "boot")
+        return TargetDevice_E::BOOT;
+
+    else if (tag == "pds")
+        return TargetDevice_E::PDS;
+    else
+        return TargetDevice_E::INVALID;
+}
+
+std::vector<uint8_t> mabFileParser::getPrimaryFirmwareFile()
 {
     return m_firmwareEntry1.binary;
 }
 
-std::vector<uint8_t> BinaryParser::getSecondaryFirmwareFile()
+std::vector<uint8_t> mabFileParser::getSecondaryFirmwareFile()
 {
     return m_firmwareEntry2.binary;
 }
 
-BinaryParser::Type BinaryParser::getFirmwareFileType()
+mabFileParser::TargetDevice_E mabFileParser::getFirmwareFileType()
 {
     return m_fileType;
 }
 
-BinaryParser::FirmwareEntry BinaryParser::parseFirmwareEntry(mINI::INIStructure& ini,
-                                                             std::string&&       header)
+mabFileParser::FirmwareEntry mabFileParser::parseFirmwareEntry(mINI::INIStructure& ini,
+                                                               std::string&&       header)
 {
     FirmwareEntry temp{};
-    temp.tag      = ini.get(header).get("tag");
-    temp.size     = stoi(ini.get(header).get("size"));
-    temp.checksum = ini.get(header).get("checksum");
+    temp.targetDevice = parseTargetDevice(ini.get(header).get("tag"));
+    temp.size         = stoi(ini.get(header).get("size"));
+    temp.checksum     = ini.get(header).get("checksum");
 
     temp.binary = hexStringToBytes(ini.get(header).get("binary"));
 
@@ -118,7 +112,7 @@ BinaryParser::FirmwareEntry BinaryParser::parseFirmwareEntry(mINI::INIStructure&
 // 	return true;
 // }
 
-std::vector<uint8_t> BinaryParser::hexStringToBytes(std::string str)
+std::vector<uint8_t> mabFileParser::hexStringToBytes(std::string str)
 {
     std::vector<uint8_t> result;
 
@@ -131,15 +125,15 @@ std::vector<uint8_t> BinaryParser::hexStringToBytes(std::string str)
     return result;
 }
 
-std::string BinaryParser::fileType2String(Type type)
+std::string mabFileParser::fileType2String(TargetDevice_E type)
 {
     switch (type)
     {
-        case Type::MD:
+        case TargetDevice_E::MD:
             return "MD";
-        case Type::CANDLE:
+        case TargetDevice_E::CANDLE:
             return "CANDLE";
-        case Type::BOOT:
+        case TargetDevice_E::BOOT:
             return "BOOT";
         default:
             return "UNKNOWN";

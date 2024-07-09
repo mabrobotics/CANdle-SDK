@@ -564,7 +564,7 @@ namespace mab
 			msgsSent			  = 0;
 			msgsReceived		  = 0;
 
-            log.info("Starting transfer thread...");
+			log.info("Starting transfer thread...");
 			transmitterThread = std::thread(&Candle::transfer, this);
 
 			return true;

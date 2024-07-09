@@ -80,27 +80,28 @@ namespace mab
         fflush(stdout);
     }
 
-    FirmwareUploader::FirmwareUploader(Candle& _candle, const std::string& mabFile)
-        : candle(_candle)
+    FirmwareUploader::FirmwareUploader(Candle& _candle, const std::string& mabFile, int mdId)
+        : candle(_candle), m_currentId(mdId)
     {
         log.tag = "FW Uploader";
-        if (BinaryParser::Status::OK != m_mabFile.processFile(mabFile))
+        if (mabFileParser::Status_E::OK != m_mabFile.processFile(mabFile))
         {
             log.error("Error while processing MAB file!");
             exit(1);
         }
     }
 
-    bool FirmwareUploader::flashDevice(int id, bool directly)
+    FirmwareUploader::ERROR_E FirmwareUploader::flashDevice(bool directly)
     {
         auto firmwareData = m_mabFile.getPrimaryFirmwareFile();
+
+        // TODO: Use CAN_UPLOADER or USB_UPLOADER objects depending on target device
 
         m_fileSize             = firmwareData.size();
         float flashPagesNeeded = ceilf((float)m_fileSize / (float)M_PAGE_SIZE);
         m_pagesToUpload        = (int)flashPagesNeeded;
 
         m_currentPage = 0;
-        m_currentId   = id;
 
         /* send reset command to the md80 firmware */
         if (directly == false)
@@ -110,13 +111,11 @@ namespace mab
 
         /* init bootloader (change mode from idle) */
         if (!sendInitCmd())
-            return false;
-
-        // TODO: Some delay here?
+            return ERROR_E::ERROR_INIT;
 
         /* enter page programming mode */
         if (!sendPageProgCmd())
-            return false;
+            return ERROR_E::ERROR_PAGE_PROG;
 
         /* write data page per page */
         while (m_currentPage < m_pagesToUpload)
@@ -124,7 +123,7 @@ namespace mab
             if (!sendPage())
             {
                 std::cout << std::endl;
-                return false;
+                return ERROR_E::ERROR_WRITE;
             }
             printProgress((double)m_currentPage / m_pagesToUpload);
         }
