@@ -1,8 +1,12 @@
 #include "mabFileParser.hpp"
 
-mabFileParser::mabFileParser()
+mabFileParser::mabFileParser(std::string filePath)
 {
     log.tag = "MAB FILE";
+    if (Status_E::OK != processFile(filePath))
+    {
+        throw std::runtime_error("Error processing file");
+    }
 }
 
 mabFileParser::Status_E mabFileParser::processFile(std::string filePath)
@@ -25,14 +29,14 @@ mabFileParser::Status_E mabFileParser::processFile(std::string filePath)
     }
 
     log.success("File processed successfully");
-    log.info("File type: [ %s ]", fileType2String(m_fileType).c_str());
+    log.info("Target device: [ %s ]", fileType2String(m_firmwareEntry1.targetDevice).c_str());
     log.info("Primary firmware size: [ %d bytes ]", m_firmwareEntry1.size);
 
-    if ((m_fileType == TargetDevice_E::BOOT) && (ini.has("header2")))
+    if ((m_firmwareEntry1.targetDevice == TargetDevice_E::BOOT) && (ini.has("header2")))
     {
         m_firmwareEntry2 = parseFirmwareEntry(ini, std::string("header2"));
         log.info("Secondary firmware size: [ %d bytes ]", m_firmwareEntry2.size);
-        }
+    }
 
     return Status_E::OK;
 }
@@ -52,21 +56,6 @@ mabFileParser::TargetDevice_E mabFileParser::parseTargetDevice(std::string tag)
         return TargetDevice_E::PDS;
     else
         return TargetDevice_E::INVALID;
-}
-
-std::vector<uint8_t> mabFileParser::getPrimaryFirmwareFile()
-{
-    return m_firmwareEntry1.binary;
-}
-
-std::vector<uint8_t> mabFileParser::getSecondaryFirmwareFile()
-{
-    return m_firmwareEntry2.binary;
-}
-
-mabFileParser::TargetDevice_E mabFileParser::getFirmwareFileType()
-{
-    return m_fileType;
 }
 
 mabFileParser::FirmwareEntry mabFileParser::parseFirmwareEntry(mINI::INIStructure& ini,

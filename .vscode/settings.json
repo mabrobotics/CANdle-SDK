@@ -73,4 +73,7 @@
         "typeinfo": "cpp",
         "variant": "cpp"
     },
+    "cSpell.words": [
+        "Bootloader"
+    ],
 }

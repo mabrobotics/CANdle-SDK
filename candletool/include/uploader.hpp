@@ -38,19 +38,11 @@ namespace mab
         FirmwareUploader() = delete;
 
         /**
-         * @brief Construct a new Firmware Uploader object
-         *
-         * @param _candle
-         */
-        FirmwareUploader(Candle& _candle) : candle(_candle)
-        {
-        }
-        /**
          * @brief Constructs a FirmwareUploader object.
          * @param _candle The reference to the Candle object.
          * @param mabFile The path to the MAB file containing the firmware.
          */
-        FirmwareUploader(Candle& _candle, const std::string& mabFile, int mdId = 0);
+        FirmwareUploader(Candle& _candle, mabFileParser& mabFile, int mdId = 0);
 
         /**
          * @brief Performs the firmware update.
@@ -66,9 +58,6 @@ namespace mab
         void    setVerbosity(bool verbosity);
 
       private:
-        mab::Candle& candle;
-        logger       log;
-
         enum BootloaderFrameId_t : uint8_t
         {
             CMD_TARGET_RESET = 0x13,
@@ -78,16 +67,19 @@ namespace mab
             CMD_WRITE        = 0xA4,
         };
 
+        mab::Candle& candle;
+        logger       log;
+
         static constexpr size_t   M_PAGE_SIZE    = 2048;
         static constexpr size_t   M_CHUNK_SIZE   = 64;
         static constexpr uint32_t M_BOOT_ADDRESS = 0x08005000;
 
-        mabFileParser m_mabFile;
-        size_t        m_fileSize;
-        size_t        m_bytesToUpload;
-        size_t        m_pagesToUpload;
-        uint32_t      m_currentPage;
-        uint32_t      m_currentId;
+        mabFileParser& m_mabFile;
+        size_t         m_fileSize;
+        size_t         m_bytesToUpload;
+        size_t         m_pagesToUpload;
+        uint32_t       m_currentPage;
+        uint32_t       m_currentId;
 
         void sendResetCmd();
         bool sendInitCmd();

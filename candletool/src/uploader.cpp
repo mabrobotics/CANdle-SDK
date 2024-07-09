@@ -8,6 +8,7 @@
 #include "unistd.h"
 #include "mini/ini.h"
 #include "logger.hpp"
+#include "canLoader.hpp"
 
 namespace mab
 {
@@ -78,24 +79,22 @@ namespace mab
         fflush(stdout);
     }
 
-    FirmwareUploader::FirmwareUploader(Candle& _candle, const std::string& mabFile, int mdId)
-        : candle(_candle), m_currentId(mdId)
+    FirmwareUploader::FirmwareUploader(Candle& _candle, mabFileParser& mabFile, int mdId)
+        : candle(_candle), m_mabFile(mabFile), m_currentId(mdId)
     {
         log.tag = "FW Uploader";
-        if (mabFileParser::Status_E::OK != m_mabFile.processFile(mabFile))
-        {
-            log.error("Error while processing MAB file!");
-            exit(1);
-        }
     }
 
     FirmwareUploader::ERROR_E FirmwareUploader::flashDevice(bool directly)
     {
-        auto firmwareData = m_mabFile.getPrimaryFirmwareFile();
-
+        // iLoader* loader = null
+        // auto firmwareData = m_mabFile.getPrimaryFirmwareFile();
+        // if (m_mabFile.m_firmwareEntry1.targetDevice == mabFileParser::TargetDevice_E::MD)
+        // {
+        // }
         // TODO: Use CAN_UPLOADER or USB_UPLOADER objects depending on target device
 
-        m_fileSize             = firmwareData.size();
+        m_fileSize             = m_mabFile.m_firmwareEntry1.size;
         float flashPagesNeeded = ceilf((float)m_fileSize / (float)M_PAGE_SIZE);
         m_pagesToUpload        = (int)flashPagesNeeded;
 
@@ -200,13 +199,15 @@ namespace mab
         int     framesPerPage           = M_PAGE_SIZE / M_CHUNK_SIZE;
         uint8_t pageBuffer[M_PAGE_SIZE] = {0};
         int     pageBufferReadSize      = M_PAGE_SIZE;
-        auto    firmwareData            = m_mabFile.getPrimaryFirmwareFile();
-        size_t  binaryLength            = firmwareData.size();
+
+        size_t binaryLength = m_mabFile.m_firmwareEntry1.size;
 
         if (binaryLength - ((m_currentPage)*M_PAGE_SIZE) < M_PAGE_SIZE)
             pageBufferReadSize = binaryLength - ((m_currentPage)*M_PAGE_SIZE);
 
-        memcpy(pageBuffer, &firmwareData[m_currentPage * M_PAGE_SIZE], pageBufferReadSize);
+        memcpy(pageBuffer,
+               &m_mabFile.m_firmwareEntry1.binary[m_currentPage * M_PAGE_SIZE],
+               pageBufferReadSize);
 
         for (int i = 0; i < framesPerPage; i++)
         {

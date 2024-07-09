@@ -31,15 +31,6 @@ class mabFileParser
         ERROR_CHECKSUM = 3,
     };
 
-  public:
-    mabFileParser();
-    Status_E                      processFile(std::string filePath);
-    TargetDevice_E                parseTargetDevice(std::string tag);
-    std::vector<uint8_t>          getPrimaryFirmwareFile();
-    std::vector<uint8_t>          getSecondaryFirmwareFile();
-    mabFileParser::TargetDevice_E getFirmwareFileType();
-
-  private:
     struct FirmwareEntry
     {
         std::string          mabFileVersion;
@@ -48,18 +39,24 @@ class mabFileParser
         std::string          checksum;
         std::vector<uint8_t> binary;
         Status_E             status = Status_E::OK;
-        // FirmwareEntry()             = default
     };
 
+  public:
+    mabFileParser(std::string filePath);
+
+    FirmwareEntry m_firmwareEntry1;
+    FirmwareEntry m_firmwareEntry2;
+
+  private:
     logger log;
+    // TargetDevice_E m_fileType = TargetDevice_E::MD;
 
-    FirmwareEntry  m_firmwareEntry1;
-    FirmwareEntry  m_firmwareEntry2;
-    TargetDevice_E m_fileType = TargetDevice_E::MD;
-
-    FirmwareEntry        parseFirmwareEntry(mINI::INIStructure& ini, std::string&& header);
-    std::vector<uint8_t> hexStringToBytes(std::string str);
-    std::string          fileType2String(TargetDevice_E type);
+    Status_E                      processFile(std::string filePath);
+    mabFileParser::TargetDevice_E getFirmwareFileType();
+    TargetDevice_E                parseTargetDevice(std::string tag);
+    FirmwareEntry                 parseFirmwareEntry(mINI::INIStructure& ini, std::string&& header);
+    std::vector<uint8_t>          hexStringToBytes(std::string str);
+    std::string                   fileType2String(TargetDevice_E type);
 
     // TODO: Code left for future implementation
     // static bool validateChecksum(std::vector<uint8_t>& data, std::string& expectedChecksum);
