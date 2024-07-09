@@ -12,6 +12,17 @@ void logger::info(const char* msg, ...)
     printf("\n");
     va_end(args);
 }
+
+void logger::info_raw(const char* msg, ...)
+{
+    if (level > LogLevel_E::INFO)
+        return;
+    va_list args;
+    va_start(args, msg);
+    vfprintf(stderr, msg, args);
+    va_end(args);
+}
+
 void logger::success(const char* msg, ...)
 {
     if (level > LogLevel_E::INFO)
