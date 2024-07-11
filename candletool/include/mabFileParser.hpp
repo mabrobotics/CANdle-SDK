@@ -1,5 +1,5 @@
-#ifndef BINARY_PARSER_HPP
-#define BINARY_PARSER_HPP
+#ifndef MAB_FILE_PARSER_HPP
+#define MAB_FILE_PARSER_HPP
 
 #include <openssl/evp.h>
 
@@ -41,7 +41,7 @@ class mabFileParser
         Status_E             status = Status_E::OK;
     };
 
-  public:
+    mabFileParser() = delete;
     mabFileParser(std::string filePath);
 
     FirmwareEntry m_firmwareEntry1;
@@ -49,17 +49,15 @@ class mabFileParser
 
   private:
     logger log;
-    // TargetDevice_E m_fileType = TargetDevice_E::MD;
 
-    Status_E                      processFile(std::string filePath);
-    mabFileParser::TargetDevice_E getFirmwareFileType();
-    TargetDevice_E                parseTargetDevice(std::string tag);
-    FirmwareEntry                 parseFirmwareEntry(mINI::INIStructure& ini, std::string&& header);
-    std::vector<uint8_t>          hexStringToBytes(std::string str);
-    std::string                   fileType2String(TargetDevice_E type);
+    Status_E             processFile(std::string filePath);
+    TargetDevice_E       parseTargetDevice(std::string tag);
+    FirmwareEntry        parseFirmwareEntry(mINI::INIStructure& ini, std::string&& header);
+    std::vector<uint8_t> hexStringToBytes(std::string str);
+    std::string          fileType2String(TargetDevice_E type);
 
     // TODO: Code left for future implementation
     // static bool validateChecksum(std::vector<uint8_t>& data, std::string& expectedChecksum);
 };
 
-#endif
+#endif /*MAB_FILE_PARSER_HPP*/

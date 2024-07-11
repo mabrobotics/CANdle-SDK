@@ -8,6 +8,7 @@
 #include "mini/ini.h"
 #include "logger.hpp"
 #include "canLoader.hpp"
+#include "usbLoader.hpp"
 
 namespace mab
 {
@@ -29,8 +30,8 @@ namespace mab
                 break;
 
             case mabFileParser::TargetDevice_E::CANDLE:
-                // loader = new CanLoader(m_candle, m_mabFile, m_canId);
-                return ERROR_E::ERROR_UNKNOWN;
+                loader = new UsbLoader(m_candle, m_mabFile);
+                break;
 
             default:
                 m_log.error("Unsupported target device!");

@@ -117,7 +117,7 @@ bool CanLoader::sendPage()
 {
     m_log.debug("Sending page [ %u ]", m_currentPage);
 
-    int     framesPerPage           = M_PAGE_SIZE / M_CHUNK_SIZE;
+    int     framesPerPage           = M_PAGE_SIZE / M_CAN_CHUNK_SIZE;
     uint8_t pageBuffer[M_PAGE_SIZE] = {0};
     int     pageBufferReadSize      = M_PAGE_SIZE;
 
@@ -132,13 +132,13 @@ bool CanLoader::sendPage()
 
     for (int i = 0; i < framesPerPage; i++)
     {
-        uint8_t txBuff[64];
-        char    rxBuff[64];
-        memset(txBuff, 0, 64);
-        memset(rxBuff, 0, 64);
-        memcpy(txBuff, &pageBuffer[i * 64], 64);
+        uint8_t txBuff[M_CAN_CHUNK_SIZE];
+        char    rxBuff[M_CAN_CHUNK_SIZE];
+        memset(txBuff, 0, M_CAN_CHUNK_SIZE);
+        memset(rxBuff, 0, M_CAN_CHUNK_SIZE);
+        memcpy(txBuff, &pageBuffer[i * M_CAN_CHUNK_SIZE], M_CAN_CHUNK_SIZE);
 
-        m_candle.sendGenericFDCanFrame(m_canId, 64, (const char*)txBuff, rxBuff, 500);
+        m_candle.sendGenericFDCanFrame(m_canId, M_CAN_CHUNK_SIZE, (const char*)txBuff, rxBuff, 500);
         if (strcmp("OK", rxBuff) != 0)
         {
             m_log.error("Sending Page %u FAIL", m_currentPage);

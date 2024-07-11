@@ -14,6 +14,7 @@ using std::cout, std::endl;
 
 UsbDevice::UsbDevice(u16 vid, u16 pid, const std::vector<u32>& idsToIgnore, const std::string& id)
 {
+	m_log.tag					= "UsbDevice";
 	busType						= mab::BusType_E::USB;
 	struct libusb_device** devs = nullptr;
 
@@ -44,8 +45,8 @@ UsbDevice::UsbDevice(u16 vid, u16 pid, const std::vector<u32>& idsToIgnore, cons
 		{
 			if (ignoreId == hashedRequestedId)
 			{
-				cout << "[USB] Device with requested ID: " << id
-					 << " is already created! Quitting!" << endl;
+				cout << "[USB] Device with requested ID: " << id << " is already created! Quitting!"
+					 << endl;
 				shouldBreak = true;
 				throw("Device iwth ID " + id + " already created!");
 				break;
@@ -85,6 +86,7 @@ UsbDevice::UsbDevice(u16 vid, u16 pid, const std::vector<u32>& idsToIgnore, cons
 		throw "Device not found in USB bus!";
 	}
 }
+
 UsbDevice::~UsbDevice()
 {
 	libusb_release_interface(devh, 0);
@@ -92,15 +94,69 @@ UsbDevice::~UsbDevice()
 	libusb_exit(nullptr);
 }
 
+bool UsbDevice::reconnect(u16 vid, u16 pid)
+{
+	(void)vid;
+	(void)pid;
+	libusb_release_interface(devh, 0);
+	libusb_close(devh);
+	libusb_exit(nullptr);
+	devh   = nullptr;
+	int rc = libusb_init(NULL);
+	if (rc < 0)
+	{
+		cout << "[USB] Failed to init libusb!" << endl;
+		throw "Failed to init libusb!";
+	}
+	struct libusb_device** devs = nullptr;
+	int32_t				   cnt	= libusb_get_device_list(NULL, &devs);
+	for (int i = 0; i < cnt; i++)
+	{
+		libusb_device*					dev = devs[i];
+		struct libusb_device_descriptor desc;
+
+		rc = libusb_get_device_descriptor(dev, &desc);
+		if (desc.idVendor != vid || desc.idProduct != pid)
+			continue;
+		rc = libusb_open(dev, &devh);
+		if (rc < 0)
+		{
+			cout << "[USB] Failed to open device!" << endl;
+			throw "Failed to open device!";
+		}
+		for (int if_num = 0; if_num < 2; if_num++)
+		{
+			if (libusb_kernel_driver_active(devh, if_num))
+				libusb_detach_kernel_driver(devh, if_num);
+
+			rc = libusb_claim_interface(devh, if_num);
+			if (rc < 0)
+			{
+				cout << "[USB] Failed to claim interface!" << endl;
+				throw "Failed to claim libusb interface!";
+			}
+		}
+		break;
+	}
+	libusb_free_device_list(devs, 1);
+	if (devh == nullptr)
+	{
+		cout << "[USB] CANdle not found on USB bus!" << endl;
+		throw "Device not found in USB bus!";
+	}
+	return true;
+}
+
 bool UsbDevice::transmit(
 	char* buffer, int len, bool waitForResponse, int timeout, int responseLen, bool faultVerbose)
 {
 	(void)faultVerbose;
+	memset(rxBuffer, 0, sizeof(rxBuffer));
 	s32 sendLenActual = 0;
 	s32 ret = libusb_bulk_transfer(devh, outEndpointAdr, (u8*)buffer, len, &sendLenActual, 2);
-	if (ret < 0)
+	if (ret < LIBUSB_SUCCESS)
 	{
-		cout << "[USB] Failed to transmit!" << endl;
+		m_log.error("Failed to transmit! [ libusb error %d ]", ret);
 		return false;
 	}
 	if (waitForResponse)

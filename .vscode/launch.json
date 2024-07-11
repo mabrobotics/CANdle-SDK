@@ -33,6 +33,38 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
+        },
+        {
+            "name": "update_candle",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/candletool/candletool",
+            "args": [
+                "update",
+                "candle",
+                "-f",
+                "/home/emka/Projects/mab/mab_firmware/build-EMBEDDED-release/app/candle_legacy/MAB_candle_app_LEGACY.mab"
+            ],
+            "stopAtEntry": true,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+        },
+        {
+            "name": "candletool ping all",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/candletool/candletool",
+            "args": [
+                "ping",
+                "all",
+            ],
+            "stopAtEntry": true,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
         }
     ]
 }

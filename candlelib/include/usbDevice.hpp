@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "bus.hpp"
+#include "logger.hpp"
 
 class UsbDevice : public mab::Bus
 {
@@ -16,13 +17,18 @@ class UsbDevice : public mab::Bus
 			  u16					  pid		  = 0x0000,
 			  const std::vector<u32>& idsToIgnore = {},
 			  const std::string&	  requestID	  = "");
+
 	~UsbDevice();
+
+	bool reconnect(u16 vid, u16 pid);
+
 	bool transmit(char* buffer,
 				  int	len,
 				  bool	waitForResponse = false,
 				  int	timeout			= 100,
 				  int	responseLen		= 0,
 				  bool	faultVerbose	= true) override;
+
 	bool receive(int  responseLen,
 				 int  timeoutMs	   = 100,
 				 bool checkCrc	   = true,
@@ -32,6 +38,7 @@ class UsbDevice : public mab::Bus
 	std::string	  getDeviceName() override { return ""; }
 
   private:
+	logger		  m_log;
 	unsigned long serialDeviceId = 0;
 
 	struct libusb_device_handle* devh = nullptr;

@@ -42,11 +42,14 @@ namespace mab
 				   const std::string device)
 		: Candle(canBaudrate, printVerbose, makeBus(busType, device))
 	{
+		// log.info("Foo");
 	}
 
 	Candle::Candle(CANdleBaudrate_E canBaudrate, bool printVerbose, std::shared_ptr<Bus> bus)
 		: printVerbose(printVerbose), bus(bus)
 	{
+		// log.info("Bar");
+
 		reset();
 		usleep(5000);
 
@@ -924,6 +927,47 @@ namespace mab
 		if (bus->transmit(tx, cmdLen, true, timeout, respLen))
 			return ((rx[0] == id && rx[1] == true) || (rx[0] == BUS_FRAME_PING_START));
 		return false;
+	}
+
+	bool Candle::sendBootloaderBusFrame(BootloaderBusFrameId_E id,
+										uint32_t			   timeout,
+										char*				   payload,
+										uint32_t			   payloadLength,
+										uint32_t			   respLen)
+	{
+		char tx[2048]{};
+		tx[0] = id;
+		tx[1] = (char)0xAA;	 // Preambles ???
+		tx[2] = (char)0xAA;	 // Preambles ???
+
+		if (payload)
+			memcpy(&tx[3], payload, payloadLength);
+
+		char* rx = bus->getRxBuffer(0);
+
+		if (bus->transmit(tx, payloadLength + 3, true, timeout, respLen))
+		{
+			if (strcmp("OK", &rx[1]) != 0)
+			{
+				log.error("Bootloader bad response: %s", &rx[1]);
+				return false;
+			}
+			return true;
+		}
+
+		return false;
+	}
+
+	bool Candle::reconnectToCandleBootloader()
+	{
+		log.info("Reconnecting to CANdle bootloader...");
+		return static_cast<UsbDevice*>(bus.get())->reconnect(candleVid, bootloaderPid);
+	}
+
+	bool Candle::reconnectToCandleApp()
+	{
+		log.info("Reconnecting to CANdle application...");
+		return static_cast<UsbDevice*>(bus.get())->reconnect(candleVid, candlePid);
 	}
 
 }  // namespace mab

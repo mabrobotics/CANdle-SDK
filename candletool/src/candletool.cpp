@@ -82,10 +82,12 @@ CandleTool::CandleTool()
         else
             candle = std::make_unique<mab::Candle>(baud, printVerbose, busType);
     }
+
     catch (const char* e)
     {
         return;
     }
+
     return;
 }
 
@@ -889,7 +891,9 @@ void CandleTool::registerRead(u16 id, u16 reg)
 void CandleTool::updateCandle(const std::string& mabFilePath, bool noReset)
 {
     log.info("Performing Candle firmware update.");
-    // TODO:
+    mabFileParser         mabFile(mabFilePath);
+    mab::FirmwareUploader firmwareUploader(*candle, mabFile);
+    firmwareUploader.flashDevice(noReset);
 }
 
 void CandleTool::updateMd(const std::string& mabFilePath, uint16_t canId, bool noReset)

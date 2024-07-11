@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdint.h>
 #include "mabFileParser.hpp"
 
@@ -37,9 +39,10 @@ class iLoader
     virtual Error_E sendBootCommand() = 0;
 
   protected:
-    static constexpr size_t   M_PAGE_SIZE    = 2048;
-    static constexpr size_t   M_CHUNK_SIZE   = 64;
-    static constexpr uint32_t M_BOOT_ADDRESS = 0x08005000;
+    static constexpr size_t   M_PAGE_SIZE      = 2048U;
+    static constexpr size_t   M_CAN_CHUNK_SIZE = 64U;
+    static constexpr size_t   M_USB_CHUNK_SIZE = 64U;
+    static constexpr uint32_t M_BOOT_ADDRESS   = 0x08005000;
 
     mabFileParser m_mabFile;
 };
