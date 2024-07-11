@@ -381,9 +381,9 @@ namespace mab
 
 		bool sendBootloaderBusFrame(BootloaderBusFrameId_E id,
 									uint32_t			   timeout,
-									char*				   payload = nullptr,
-									uint32_t			   cmdLen  = 3,
-									uint32_t			   respLen = 4);
+									char*				   payload		 = nullptr,
+									uint32_t			   payloadLength = 0,
+									uint32_t			   respLen		 = 4);
 
 		bool reconnectToCandleBootloader();
 		bool reconnectToCandleApp();
@@ -405,7 +405,7 @@ namespace mab
 		std::thread transmitterThread;
 		sem_t		transmitted;
 		sem_t		received;
-		logger		log = {.tag = "CANDLE"};
+		logger		log;
 
 		bool printVerbose = true;
 

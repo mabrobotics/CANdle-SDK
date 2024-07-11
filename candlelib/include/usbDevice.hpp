@@ -37,7 +37,10 @@ class UsbDevice : public mab::Bus
 	unsigned long getId() override;
 	std::string	  getDeviceName() override { return ""; }
 
+	bool isConnected();
+
   private:
+	bool		  m_isConnected = false;
 	logger		  m_log;
 	unsigned long serialDeviceId = 0;
 

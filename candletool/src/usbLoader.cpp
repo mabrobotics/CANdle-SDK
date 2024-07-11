@@ -29,9 +29,11 @@ UsbLoader::Error_E UsbLoader::enterBootloader()
 
 UsbLoader::Error_E UsbLoader::uploadFirmware()
 {
+    // m_log.level = logger::LogLevel_E::DEBUG;
     /* write data page per page */
     while (m_currentPage < m_pagesToUpload)
     {
+        m_log.debug("Uploading page [ %u ]", m_currentPage);
         if (!sendPage())
         {
             std::cout << std::endl;
@@ -39,6 +41,8 @@ UsbLoader::Error_E UsbLoader::uploadFirmware()
         }
         m_log.progress((double)m_currentPage / m_pagesToUpload);
     }
+
+    m_log.level = logger::LogLevel_E::INFO;
     m_log.success("Firmware upload complete!");
 
     return Error_E::OK;
@@ -54,8 +58,8 @@ UsbLoader::Error_E UsbLoader::sendBootCommand()
         return Error_E::ERROR_UNKNOWN;
     }
 
-    if (!m_candle.reconnectToCandleApp())
-        return Error_E::ERROR_UNKNOWN;
+    // if (!m_candle.reconnectToCandleApp())
+    // return Error_E::ERROR_UNKNOWN;
 
     return Error_E::OK;
 }
@@ -98,12 +102,13 @@ bool UsbLoader::sendInitCmd()
 
 bool UsbLoader::sendPage()
 {
-    bool result = false;
     m_log.debug("Sending page [ %u ]", m_currentPage);
 
-    int     framesPerPage           = M_PAGE_SIZE / M_USB_CHUNK_SIZE;
-    uint8_t pageBuffer[M_PAGE_SIZE] = {0};
-    int     pageBufferReadSize      = M_PAGE_SIZE;
+    bool     result                  = false;
+    uint32_t bytesSent               = 0;
+    uint32_t framesPerPage           = M_PAGE_SIZE / M_USB_CHUNK_SIZE;
+    uint8_t  pageBuffer[M_PAGE_SIZE] = {0};
+    int      pageBufferReadSize      = M_PAGE_SIZE;
 
     size_t binaryLength = m_mabFile.m_firmwareEntry1.size;
 
@@ -115,19 +120,23 @@ bool UsbLoader::sendPage()
            pageBufferReadSize);
 
     /* framesPerPage + 1 is for the rest of data that is not a whole chunk in size */
-    for (int i = 0; i < framesPerPage + 1; i++)
+    for (uint32_t i = 0; i < framesPerPage + 1; i++)
     {
-        uint8_t txBuff[M_USB_CHUNK_SIZE];
-        char    rxBuff[M_USB_CHUNK_SIZE];
+        uint32_t frameSize = M_USB_CHUNK_SIZE;
+        uint8_t  txBuff[M_USB_CHUNK_SIZE];
+        // char    rxBuff[M_USB_CHUNK_SIZE];
         memset(txBuff, 0, M_USB_CHUNK_SIZE);
-        memset(rxBuff, 0, M_USB_CHUNK_SIZE);
-        memcpy(txBuff, &pageBuffer[i * M_USB_CHUNK_SIZE], M_USB_CHUNK_SIZE);
+        // memset(rxBuff, 0, M_USB_CHUNK_SIZE);
 
+        if (pageBufferReadSize - bytesSent < M_USB_CHUNK_SIZE)
+            frameSize = (pageBufferReadSize - bytesSent);
+
+        memcpy(txBuff, &pageBuffer[i * M_USB_CHUNK_SIZE], frameSize);
         result =
             m_candle.sendBootloaderBusFrame(mab::BootloaderBusFrameId_E::BOOTLOADER_FRAME_SEND_PAGE,
-                                            100,
+                                            2000,
                                             (char*)txBuff,
-                                            M_USB_CHUNK_SIZE,
+                                            frameSize,
                                             4);
 
         if (!result)
@@ -135,16 +144,18 @@ bool UsbLoader::sendPage()
             m_log.error("Sending Page %u FAIL", m_currentPage);
             return false;
         }
+
+        bytesSent += frameSize;
+    }
+
+    result = sendWriteCmd(pageBuffer, bytesSent);
+    if (!result)
+    {
+        m_log.error("Sending write command failed on page [ %u ]!", m_currentPage);
+        return false;
     }
 
     m_currentPage++;
-
-    result = sendWriteCmd(pageBuffer, M_PAGE_SIZE);
-    if (!result)
-    {
-        m_log.error("Sending write command failed!");
-        return false;
-    }
 
     return result;
 }

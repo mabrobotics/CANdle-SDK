@@ -42,13 +42,13 @@ namespace mab
 				   const std::string device)
 		: Candle(canBaudrate, printVerbose, makeBus(busType, device))
 	{
-		// log.info("Foo");
+		log.tag = "Candle";
 	}
 
 	Candle::Candle(CANdleBaudrate_E canBaudrate, bool printVerbose, std::shared_ptr<Bus> bus)
 		: printVerbose(printVerbose), bus(bus)
 	{
-		// log.info("Bar");
+		log.tag = "Candle";
 
 		reset();
 		usleep(5000);
@@ -81,15 +81,38 @@ namespace mab
 			case mab::BusType_E::USB:
 			{
 				std::vector<u32> idsToIgnore;
+
 				for (Candle* instance : Candle::instances)
+				{
 					if (instance->bus->getType() == BusType_E::USB)
 						idsToIgnore.push_back(instance->bus->getId());
+				}
+
 				if (idsToIgnore.size() == 0 && searchMultipleDevicesOnUSB(candlePid, candleVid) > 1)
+				{
 					log.warn(
 						"Multiple CANdle detected! If ID is unspecified in the constructor, the "
 						"one with the smallest ID will be used by default!");
-				std::shared_ptr<UsbDevice> usb =
-					std::make_shared<UsbDevice>(candleVid, candlePid, idsToIgnore, device);
+				}
+
+				std::shared_ptr<UsbDevice> usb = nullptr;
+
+				usb = std::make_shared<UsbDevice>(candleVid, candlePid, idsToIgnore, device);
+
+				if (!usb->isConnected())
+				{
+					// log.warn("Failed to connect to CANdle device! Trying bootloader mode...");
+					usb = std::make_shared<UsbDevice>(candleVid, bootloaderPid);
+
+					if (!usb->isConnected())
+					{
+						log.error("Unable to connect to Candle device!");
+						exit(1);
+					}
+
+					log.warn("Connected to CANdle in bootloader mode!");
+				}
+
 				return usb;
 			}
 #ifdef UNIX
@@ -960,13 +983,17 @@ namespace mab
 
 	bool Candle::reconnectToCandleBootloader()
 	{
+		bool result = false;
 		log.info("Reconnecting to CANdle bootloader...");
-		return static_cast<UsbDevice*>(bus.get())->reconnect(candleVid, bootloaderPid);
+		result = static_cast<UsbDevice*>(bus.get())->reconnect(candleVid, bootloaderPid);
+		return result;
 	}
 
 	bool Candle::reconnectToCandleApp()
 	{
 		log.info("Reconnecting to CANdle application...");
+		usleep(5000000);
+
 		return static_cast<UsbDevice*>(bus.get())->reconnect(candleVid, candlePid);
 	}
 

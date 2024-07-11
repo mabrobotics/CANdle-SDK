@@ -83,16 +83,25 @@ UsbDevice::UsbDevice(u16 vid, u16 pid, const std::vector<u32>& idsToIgnore, cons
 	if (devh == nullptr)
 	{
 		cout << "[USB] CANdle not found on USB bus!" << endl;
-		throw "Device not found in USB bus!";
+		return;
+	}
+	else
+	{
+		m_isConnected = true;
 	}
 }
 
 UsbDevice::~UsbDevice()
 {
-	libusb_release_interface(devh, 0);
-	libusb_close(devh);
-	libusb_exit(nullptr);
+	if (m_isConnected)
+	{
+		libusb_release_interface(devh, 0);
+		libusb_close(devh);
+		libusb_exit(nullptr);
+	}
 }
+
+bool UsbDevice::isConnected() { return m_isConnected; }
 
 bool UsbDevice::reconnect(u16 vid, u16 pid)
 {
@@ -101,8 +110,10 @@ bool UsbDevice::reconnect(u16 vid, u16 pid)
 	libusb_release_interface(devh, 0);
 	libusb_close(devh);
 	libusb_exit(nullptr);
-	devh   = nullptr;
-	int rc = libusb_init(NULL);
+	devh = nullptr;
+
+	m_isConnected = false;
+	int rc		  = libusb_init(NULL);
 	if (rc < 0)
 	{
 		cout << "[USB] Failed to init libusb!" << endl;
@@ -142,8 +153,14 @@ bool UsbDevice::reconnect(u16 vid, u16 pid)
 	if (devh == nullptr)
 	{
 		cout << "[USB] CANdle not found on USB bus!" << endl;
-		throw "Device not found in USB bus!";
+		// throw "Device not found in USB bus!";
+		return false;
 	}
+	else
+	{
+		m_isConnected = true;
+	}
+
 	return true;
 }
 
@@ -153,7 +170,7 @@ bool UsbDevice::transmit(
 	(void)faultVerbose;
 	memset(rxBuffer, 0, sizeof(rxBuffer));
 	s32 sendLenActual = 0;
-	s32 ret = libusb_bulk_transfer(devh, outEndpointAdr, (u8*)buffer, len, &sendLenActual, 2);
+	s32 ret = libusb_bulk_transfer(devh, outEndpointAdr, (u8*)buffer, len, &sendLenActual, 200);
 	if (ret < LIBUSB_SUCCESS)
 	{
 		m_log.error("Failed to transmit! [ libusb error %d ]", ret);
