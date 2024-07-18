@@ -3,6 +3,7 @@ build
 install
 log
 bin
+dist
 
 # Prerequisites
 *.d

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.15...3.25)
 
 include(git_func.cmake)
 
@@ -35,5 +35,7 @@ set(mINI_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/mINI/inc/)
 set(CANDLE_BUILD_STATIC TRUE)
 add_subdirectory(commons)
 add_subdirectory(candlelib)
+if(PYTHON_BUILD)
+    add_subdirectory(pycandle)
+endif()
 add_subdirectory(mdtool)
-# add_subdirectory(examples)
