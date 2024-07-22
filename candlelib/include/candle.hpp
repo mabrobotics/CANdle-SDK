@@ -379,7 +379,7 @@ namespace mab
 	  private:
 		/* TODO make a proper version class as the reverse initalization is not elegant */
 		const version_ut candleDeviceCompatibleVersion = {'r', 0, 2, 2};
-		const version_ut md80CompatibleVersion		   = {'r', 0, 3, 2};
+		const version_ut md80CompatibleVersion		   = {'r', 0, 4, 2};
 
 		static std::vector<Candle*> instances;
 		inline static constexpr u32 candleVid = 0x0069;
