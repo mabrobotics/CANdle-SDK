@@ -9,7 +9,7 @@ import csv
 
 # if no path is given, the default path is used
 if(len(sys.argv) == 1):
-    path = "./src/candle/include/register.hpp"
+    path = "../candlelib/include/register.hpp"
 else:
     path = sys.argv[1]
 
