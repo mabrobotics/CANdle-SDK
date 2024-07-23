@@ -52,3 +52,16 @@ Using powershell run
 ```
 ./launch/buildForWindows.bat
 ```
+
+### Compiling Python module
+
+Dependencies are listed inside pyproject.toml
+
+To compile for the current system run build command inside repository using your preferred python binary, for eg. `python -m build`.
+
+To compile against multiple versions of libc and python use:
+```
+./launch/pythonBuildWheel.sh
+```
+
+To install use pip install on the desired wheel, for eg. `python -m pip install ./dist/pycandlemab-1.7.0-cp310-cp310-linux_x86_64.whl` for CPython 3.10, glibc and x86-64 arch.
