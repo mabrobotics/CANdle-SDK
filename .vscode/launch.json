@@ -43,7 +43,7 @@
                 "update",
                 "candle",
                 "-f",
-                "/home/emka/mab/mab_firmware/build_release_embedded/app/candle_legacy/MAB_candle_app_LEGACY.mab",
+                "/home/emka/mab/mab_firmware/build/EMBEDDED-MAB/candle_legacy/MAB_candle_app_LEGACY.mab",
             ],
             "stopAtEntry": true,
             "cwd": "${fileDirname}",
