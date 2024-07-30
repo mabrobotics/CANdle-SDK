@@ -88,6 +88,7 @@ UsbDevice::UsbDevice(u16 vid, u16 pid, const std::vector<u32>& idsToIgnore, cons
 UsbDevice::~UsbDevice()
 {
 	libusb_release_interface(devh, 0);
+	libusb_release_interface(devh, 1);
 	libusb_close(devh);
 	libusb_exit(nullptr);
 }

@@ -49,6 +49,10 @@ namespace mab
 	{
 		reset();
 		usleep(5000);
+		if (sem_init(&received,true,0) == -1)
+		{
+			throw std::runtime_error("Failed to set up receive semaphore");
+		}
 
 		if (!configCandleBaudrate(canBaudrate, true))
 		{
@@ -69,6 +73,8 @@ namespace mab
 	{
 		if (inUpdateMode())
 			end();
+		transmitterThread.request_stop();
+		sem_destroy(&received);
 	}
 
 	std::shared_ptr<Bus> Candle::makeBus(mab::BusType_E busType, std::string device)
@@ -123,38 +129,12 @@ namespace mab
 		transmitterDelay = delayUs < 20 ? 20 : delayUs;
 	}
 
-	void Candle::receive()
-	{
-		while (!shouldStopReceiver)
-		{
-			/* wait for a frame to be transmitted */
-			sem_wait(&transmitted);
-
-			if (!shouldStopReceiver &&
-				bus->receive(sizeof(StdMd80ResponseFrame_t) * md80s.size() + 1))
-			{
-				/* notify a frame was received */
-				sem_post(&received);
-
-				if (*bus->getRxBuffer() == BUS_FRAME_UPDATE)
-					manageReceivedFrame();
-			}
-			else
-			{
-				if (!shouldStopReceiver)
-					log.warn("Did not receive response from CANdle!");
-				shouldStopReceiver	  = true;
-				shouldStopTransmitter = true;
-				sem_post(&received);
-			}
-		}
-	}
-	void Candle::transfer()
+	void Candle::transfer(std::stop_token stop_token)
 	{
 		int		 counter		= 0;
 		uint64_t freqCheckStart = getTimestamp();
 		log.level				= logger::LogLevel_E::DEBUG;
-		while (!shouldStopTransmitter)
+		while (!shouldStopTransmitter || stop_token.stop_requested())
 		{
 			if (++counter == 250)
 			{
@@ -169,63 +149,6 @@ namespace mab
 				if (*bus->getRxBuffer() == BUS_FRAME_UPDATE)
 					manageReceivedFrame();
 			}
-		}
-	}
-	void Candle::transmit()
-	{
-		int		 txCounter		= 0;
-		uint64_t freqCheckStart = getTimestamp();
-		while (!shouldStopTransmitter)
-		{
-			if (++txCounter == 250)
-			{
-				usbCommsFreq   = 250.0 / (float)(getTimestamp() - freqCheckStart) * 1000000.0f;
-				freqCheckStart = getTimestamp();
-				txCounter	   = 0;
-			}
-
-			transmitNewStdFrame();
-
-			/* notify a frame was sent */
-			if (bus->getType() != mab::BusType_E::SPI)
-				sem_post(&transmitted);
-
-			/* transmit thread is also the receive thread for SPI in update mode */
-			if (bus->getType() == mab::BusType_E::SPI && *bus->getRxBuffer() == BUS_FRAME_UPDATE)
-				manageReceivedFrame();
-
-			msgsSent++;
-
-			if (bus->getType() == mab::BusType_E::SPI)
-			{
-				switch (canBaudrate)
-				{
-					case CAN_BAUD_1M:
-					{
-						usleep(750 * md80s.size());
-						break;
-					}
-					case CAN_BAUD_2M:
-					{
-						usleep(450 * md80s.size());
-						break;
-					}
-					case CAN_BAUD_5M:
-					{
-						usleep(250 * md80s.size());
-						break;
-					}
-					case CAN_BAUD_8M:
-					{
-						usleep(200 * md80s.size());
-						break;
-					}
-				}
-			}
-			/* wait for a frame to be received */
-			else
-				sem_wait(&received);
-			usleep(transmitterDelay);
 		}
 	}
 
@@ -560,12 +483,12 @@ namespace mab
 			log.success("Beginnig auto update loop mode");
 			mode				  = CANdleMode_E::UPDATE;
 			shouldStopTransmitter = false;
-			shouldStopReceiver	  = false;
 			msgsSent			  = 0;
 			msgsReceived		  = 0;
 
             log.info("Starting transfer thread...");
-			transmitterThread = std::thread(&Candle::transfer, this);
+			//bind_front used to enable stop_token in jthread, jthread used to avoid unexpected termination
+			transmitterThread = std::jthread(std::bind_front(&Candle::transfer,this));
 
 			return true;
 		}
@@ -581,14 +504,6 @@ namespace mab
 		sem_post(&received);
 		if (transmitterThread.joinable())
 			transmitterThread.join();
-
-		shouldStopReceiver = true;
-		if (bus->getType() != mab::BusType_E::SPI)
-		{
-			sem_post(&transmitted);
-			if (receiverThread.joinable())
-				receiverThread.join();
-		}
 
 		bus->flushReceiveBuffer();
 
@@ -626,7 +541,7 @@ namespace mab
 		if (bus->getType() == BusType_E::SPI)
 			bus->transfer(tx, cmdSize, respSize);
 		else
-			bus->transmit(tx, cmdSize, false, 100, respSize);
+			if(!bus->transmit(tx, cmdSize, false, 100, respSize)) throw std::runtime_error("Failed to transmit to candle!");
 	}
 
 	bool Candle::setupMd80Calibration(uint16_t canId)
