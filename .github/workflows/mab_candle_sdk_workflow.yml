@@ -19,7 +19,7 @@ jobs:
 
     - name: CMake configure
       run: |
-        cmake -G "Unix Makefiles" .
+        cmake -B build -G "Unix Makefiles" .
 
     - name: Build
       run: cmake --build ./build
