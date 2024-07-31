@@ -1,5 +1,5 @@
 #include "candle.hpp"
-#include "BinaryParser.hpp"
+#include "mabFileParser.hpp"
 
 #include <string>
 #include <vector>
@@ -17,12 +17,32 @@ namespace mab
     class FirmwareUploader
     {
       public:
+        enum class ERROR_E : uint8_t
+        {
+            OK = 0,
+            ERROR_FILE,
+            ERROR_CHECKSUM,
+            ERROR_INIT,
+            ERROR_PAGE_PROG,
+            ERROR_WRITE,
+            ERROR_BOOT,
+            ERROR_RESET,
+            ERROR_TIMEOUT,
+            ERROR_UNKNOWN,
+        };
+
+        /**
+         * @brief Construct a new Firmware Uploader object
+         *
+         */
+        FirmwareUploader() = delete;
+
         /**
          * @brief Constructs a FirmwareUploader object.
          * @param _candle The reference to the Candle object.
          * @param mabFile The path to the MAB file containing the firmware.
          */
-        FirmwareUploader(Candle& _candle, const std::string& mabFile);
+        FirmwareUploader(Candle& _candle, mabFileParser& mabFile, int mdId = 0);
 
         /**
          * @brief Performs the firmware update.
@@ -34,39 +54,14 @@ namespace mab
          * @return true
          * @return false
          */
-        bool flashDevice(int id, bool directly);
-        void setVerbosity(bool verbosity);
+        ERROR_E flashDevice(bool directly);
+        void    setVerbosity(bool verbosity);
 
       private:
-        mab::Candle& candle;
-        logger       log;
+        mab::Candle& m_candle;
+        logger       m_log;
 
-        enum BootloaderFrameId_t : uint8_t
-        {
-            CMD_TARGET_RESET = 0x13,
-            CMD_HOST_INIT    = 0xA1,
-            CMD_PAGE_PROG    = 0xA2,
-            CMD_BOOT         = 0xA3,
-            CMD_WRITE        = 0xA4,
-        };
-
-        static constexpr size_t   M_PAGE_SIZE    = 2048;
-        static constexpr size_t   M_CHUNK_SIZE   = 64;
-        static constexpr uint32_t M_BOOT_ADDRESS = 0x08005000;
-
-        BinaryParser m_mabFile;
-        size_t       m_fileSize;
-        size_t       m_bytesToUpload;
-        size_t       m_pagesToUpload;
-        uint32_t     m_currentPage;
-        uint32_t     m_currentId;
-
-        void sendResetCmd();
-        bool sendInitCmd();
-        bool sendPageProgCmd();
-        bool sendPage();
-        bool sendWriteCmd(uint8_t* pPageBuffer, int bufferSize);
-        bool sendBootCmd();
-        void printProgress(double percentage);
+        mabFileParser& m_mabFile;
+        uint32_t       m_canId;
     };
 }  // namespace mab

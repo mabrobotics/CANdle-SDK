@@ -71,25 +71,9 @@
         "thread": "cpp",
         "cinttypes": "cpp",
         "typeinfo": "cpp",
-        "variant": "cpp",
-        "cassert": "cpp",
-        "ccomplex": "cpp",
-        "cerrno": "cpp",
-        "cfloat": "cpp",
-        "ciso646": "cpp",
-        "climits": "cpp",
-        "complex": "cpp",
-        "forward_list": "cpp",
-        "filesystem": "cpp",
-        "future": "cpp",
-        "ios": "cpp",
-        "locale": "cpp",
-        "queue": "cpp",
-        "stack": "cpp",
-        "cstdbool": "cpp",
-        "typeindex": "cpp",
-        "valarray": "cpp",
-        "version": "cpp"
+        "variant": "cpp"
     },
-    "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
+    "cSpell.words": [
+        "Bootloader"
+    ],
 }
