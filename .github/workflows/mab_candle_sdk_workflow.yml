@@ -1,0 +1,25 @@
+# MAB Robotics CANDLE SDK GitHub Actions workflow file
+name: CANDLE_SDK_CI
+
+on:
+  push:
+    branches: [ "candletool", "github_workflows" ]
+  pull_request:
+    branches: [ "candletool" ]
+
+jobs:
+  build-candleSDK-linux:
+    runs-on: ubuntu-22.04
+    container:
+      image: mabroboticsofficial/mab_build_environment
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: CMake configure
+      run: |
+        cmake -G "Unix Makefiles" .
+
+    - name: Build
+      run: cmake --build ./build
