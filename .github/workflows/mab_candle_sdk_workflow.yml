@@ -11,7 +11,7 @@ jobs:
   build-candleSDK-linux:
     runs-on: ubuntu-22.04
     container:
-      image: mabroboticsofficial/mab_build_environment
+      image: mabroboticsofficial/candlesdk_linux
 
     steps:
     - name: Checkout
