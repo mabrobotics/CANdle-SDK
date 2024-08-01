@@ -23,3 +23,6 @@ jobs:
 
     - name: Build
       run: cmake --build ./build
+
+    - name: Create .deb package
+      run: make -C ./build package
