@@ -1,6 +1,9 @@
 {
     "recommendations": [
         "ms-vscode.cpptools-extension-pack",
-        "cschlosser.doxdocgen"
+        "ms-vscode-remote.remote-containers",
+        "cschlosser.doxdocgen",
+        "ms-azuretools.vscode-docker",
+        "streetsidesoftware.code-spell-checker",
     ]
 }
