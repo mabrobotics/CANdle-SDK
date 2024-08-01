@@ -33,3 +33,38 @@ jobs:
         name: Candletool-build-artifacts
         path: |
           build/*.deb
+  
+  release:
+    runs-on: ubuntu-22.04
+    needs: build-candleSDK-linux
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download .deb files artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: deb-files
+          path: ./release
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.sha }}
+          release_name: Release ${{ github.sha }}
+          draft: false
+          prerelease: false
+
+      - name: Upload .deb files to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/*.deb
+          asset_name: my-deb-file.deb
+          asset_content_type: application/octet-stream
