@@ -56,10 +56,20 @@ namespace mab
 		{
 			throw std::runtime_error("Failed to set up receive semaphore");
 		}
+		for (u32 i = 0; i < 10; i++)
+		{
+			if (!sendBusFrame(BUS_FRAME_END, 100))
+				log.error("Candle not responding");
+			else
+			{
+				log.info("Bus communication functional");
+				break;
+			}
+		}
 
 		if (!configCandleBaudrate(canBaudrate, true))
 		{
-			log.error("Failed to set up CANdle baudrate @%sMbps", canBaudrate);
+			log.error("Failed to set up CANdle baudrate @%dMbps", canBaudrate);
 			throw std::runtime_error("Failed to set up CANdle baudrate!");
 		}
 		if (bus->getType() == mab::BusType_E::USB)
@@ -314,7 +324,7 @@ namespace mab
 		}
 		return ids;
 	}
-	std::vector<uint16_t> Candle::ping() { return ping(canBaudrate); }
+	std::vector<uint16_t> Candle::ping() { return ping(m_canBaudrate); }
 	bool				  Candle::sendGenericFDCanFrame(
 		 uint16_t canId, int msgLen, const char* txBuffer, char* rxBuffer, int timeoutMs)
 	{
@@ -411,10 +421,10 @@ namespace mab
 
 	bool Candle::configCandleBaudrate(CANdleBaudrate_E canBaudrate, bool printVersionInfo)
 	{
-		this->canBaudrate = canBaudrate;
+		this->m_canBaudrate = canBaudrate;
 
 		char payload[1]{};
-		payload[0] = static_cast<uint8_t>(canBaudrate);
+		payload[0] = static_cast<uint8_t>(m_canBaudrate);
 
 		if (sendBusFrame(BUS_FRAME_CANDLE_CONFIG_BAUDRATE, 50, payload, 2, 6))
 		{
@@ -831,7 +841,7 @@ namespace mab
 
 		return true;
 	}
-	mab::CANdleBaudrate_E Candle::getCurrentBaudrate() { return canBaudrate; }
+	mab::CANdleBaudrate_E Candle::getCurrentBaudrate() { return m_canBaudrate; }
 	bool				  Candle::checkMd80ForBaudrate(uint16_t canId)
 	{
 		uint16_t status;

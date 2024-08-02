@@ -415,7 +415,7 @@ namespace mab
 		static constexpr uint16_t idMax		 = 2000;
 		static constexpr int	  maxDevices = 16;
 		bool					  shouldStopTransmitter;
-		mab::CANdleBaudrate_E	  canBaudrate;
+		mab::CANdleBaudrate_E	  m_canBaudrate;
 
 		int		 msgsReceived	  = 0;
 		int		 msgsSent		  = 0;
