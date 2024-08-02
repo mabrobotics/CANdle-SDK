@@ -403,8 +403,8 @@ namespace mab
 		inline static constexpr u32 bootloaderPid = 0x2000;
 
 		std::jthread transmitterThread;
-		sem_t		received;
-		logger		log;
+		sem_t		 received;
+		logger		 log;
 
 		bool printVerbose = true;
 

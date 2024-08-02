@@ -52,7 +52,7 @@ namespace mab
 
 		reset();
 		usleep(5000);
-		if (sem_init(&received,true,0) == -1)
+		if (sem_init(&received, true, 0) == -1)
 		{
 			throw std::runtime_error("Failed to set up receive semaphore");
 		}
@@ -493,6 +493,17 @@ namespace mab
 			log.error("%s failed (ID: %d)", (enable ? "Enabling" : "Disabling"), canId);
 			return false;
 		}
+
+		if (enable)
+		{
+			mab::Md80Mode_E mode{mab::Md80Mode_E::POSITION_PID};
+			if (!md80Register->read(canId, Md80Reg_E::motionModeStatus, mode))
+				throw std::runtime_error("Could not read motion mode from the driver");
+			if (mode == mab::Md80Mode_E::IDLE)
+			{
+				log.warn("Drive %d has no motion mode set, it will be idle", canId);
+			}
+		}
 		log.success("%s succesfull (ID: %d)", (enable ? "Enabling" : "Disabling"), canId);
 		return true;
 	}
@@ -512,9 +523,10 @@ namespace mab
 			msgsSent			  = 0;
 			msgsReceived		  = 0;
 
-            log.info("Starting transfer thread...");
-			//bind_front used to enable stop_token in jthread, jthread used to avoid unexpected termination
-			transmitterThread = std::jthread(std::bind_front(&Candle::transfer,this));
+			log.info("Starting transfer thread...");
+			// bind_front used to enable stop_token in jthread, jthread used to avoid unexpected
+			// termination
+			transmitterThread = std::jthread(std::bind_front(&Candle::transfer, this));
 
 			return true;
 		}
@@ -566,8 +578,8 @@ namespace mab
 
 		if (bus->getType() == BusType_E::SPI)
 			bus->transfer(tx, cmdSize, respSize);
-		else
-			if(!bus->transmit(tx, cmdSize, false, 100, respSize)) throw std::runtime_error("Failed to transmit to candle!");
+		else if (!bus->transmit(tx, cmdSize, false, 100, respSize))
+			throw std::runtime_error("Failed to transmit to candle!");
 	}
 
 	bool Candle::setupMd80Calibration(uint16_t canId)
