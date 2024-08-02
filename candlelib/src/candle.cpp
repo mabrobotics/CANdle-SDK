@@ -336,9 +336,7 @@ namespace mab
 			else if (firmwareVersion.s.major > md80CompatibleVersion.s.major ||
 					 firmwareVersion.s.minor > md80CompatibleVersion.s.minor)
 			{
-				log.error("MD80 firmware (ID: %d) is a future version. Update your CANdle library.",
-						  canId);
-				return false;
+				log.warn("MD80 firmware (ID: %d) is a future version.", canId);
 			}
 			log.success("Added MD80 (ID: %d)", canId);
 			md80s.push_back(Md80(canId));
