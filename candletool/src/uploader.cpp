@@ -9,11 +9,12 @@
 #include "logger.hpp"
 #include "canLoader.hpp"
 #include "usbLoader.hpp"
+// #include <memory>
 
 namespace mab
 {
 
-    FirmwareUploader::FirmwareUploader(Candle& _candle, mabFileParser& mabFile, int mdId)
+    FirmwareUploader::FirmwareUploader(Candle& _candle, MabFileParser& mabFile, int mdId)
         : m_candle(_candle), m_mabFile(mabFile), m_canId(mdId)
     {
         m_log.tag = "FW Uploader";
@@ -21,16 +22,16 @@ namespace mab
 
     FirmwareUploader::ERROR_E FirmwareUploader::flashDevice(bool directly)
     {
-        iLoader* loader = nullptr;
+        std::unique_ptr<I_Loader> pLoader = nullptr;
 
         switch (m_mabFile.m_firmwareEntry1.targetDevice)
         {
-            case mabFileParser::TargetDevice_E::MD:
-                loader = new CanLoader(m_candle, m_mabFile, m_canId);
+            case MabFileParser::TargetDevice_E::MD:
+                pLoader = std::make_unique<CanLoader>(m_candle, m_mabFile, m_canId);
                 break;
 
-            case mabFileParser::TargetDevice_E::CANDLE:
-                loader = new UsbLoader(m_candle, m_mabFile);
+            case MabFileParser::TargetDevice_E::CANDLE:
+                pLoader = std::make_unique<UsbLoader>(m_candle, m_mabFile);
                 break;
 
             default:
@@ -40,23 +41,23 @@ namespace mab
 
         /* send reset command to the md80 firmware */
         if (directly == false)
-            loader->resetDevice();
+            pLoader->resetDevice();
 
-        if (iLoader::Error_E::OK != loader->enterBootloader())
+        if (I_Loader::Error_E::OK != pLoader->enterBootloader())
         {
             m_log.error("Failed to enter bootloader mode!");
             return ERROR_E::ERROR_UNKNOWN;
         }
 
         /* upload firmware */
-        if (iLoader::Error_E::OK != loader->uploadFirmware())
+        if (I_Loader::Error_E::OK != pLoader->uploadFirmware())
         {
             m_log.error("Failed to upload firmware!");
             return ERROR_E::ERROR_UNKNOWN;
         }
 
         /* send boot command */
-        if (iLoader::Error_E::OK != loader->sendBootCommand())
+        if (I_Loader::Error_E::OK != pLoader->sendBootCommand())
         {
             m_log.error("Failed to send boot command!");
             return ERROR_E::ERROR_UNKNOWN;

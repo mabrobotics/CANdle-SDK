@@ -5,11 +5,11 @@
 #include "candle.hpp"
 #include "logger.hpp"
 
-class CanLoader : public iLoader
+class CanLoader : public I_Loader
 {
   public:
     CanLoader() = delete;
-    CanLoader(mab::Candle& candle, mabFileParser& mabFile, uint32_t canId);
+    CanLoader(mab::Candle& candle, MabFileParser& mabFile, uint32_t canId);
 
     ~CanLoader() = default;
     Error_E resetDevice() override;

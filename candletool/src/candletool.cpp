@@ -891,14 +891,14 @@ void CandleTool::registerRead(u16 id, u16 reg)
 void CandleTool::updateCandle(const std::string& mabFilePath, bool noReset)
 {
     log.info("Performing Candle firmware update.");
-    mabFileParser         mabFile(mabFilePath);
+    MabFileParser         mabFile(mabFilePath);
     mab::FirmwareUploader firmwareUploader(*candle, mabFile);
     firmwareUploader.flashDevice(noReset);
 }
 
 void CandleTool::updateMd(const std::string& mabFilePath, uint16_t canId, bool noReset)
 {
-    mabFileParser         mabFile(mabFilePath);
+    MabFileParser         mabFile(mabFilePath);
     mab::FirmwareUploader firmwareUploader(*candle, mabFile, canId);
     firmwareUploader.flashDevice(noReset);
 }

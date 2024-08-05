@@ -4,11 +4,11 @@
 #include "candle.hpp"
 #include "logger.hpp"
 
-class UsbLoader : public iLoader
+class UsbLoader : public I_Loader
 {
   public:
     UsbLoader() = delete;
-    UsbLoader(mab::Candle& candle, mabFileParser& mabFile);
+    UsbLoader(mab::Candle& candle, MabFileParser& mabFile);
 
     ~UsbLoader() = default;
     Error_E resetDevice() override;
@@ -17,7 +17,7 @@ class UsbLoader : public iLoader
     Error_E sendBootCommand() override;
 
   private:
-      mab::Candle& m_candle;
+    mab::Candle& m_candle;
     uint32_t     m_canId;
     logger       m_log;
     size_t       m_fileSize;
