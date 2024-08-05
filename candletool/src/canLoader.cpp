@@ -1,8 +1,8 @@
 #include "canLoader.hpp"
 #include "mab_crc.hpp"
 
-CanLoader::CanLoader(mab::Candle& candle, mabFileParser& mabFile, uint32_t canId)
-    : iLoader(mabFile), m_candle(candle), m_canId(canId)
+CanLoader::CanLoader(mab::Candle& candle, MabFileParser& mabFile, uint32_t canId)
+    : I_Loader(mabFile), m_candle(candle), m_canId(canId)
 {
     m_log.tag = "CanLoader";
 

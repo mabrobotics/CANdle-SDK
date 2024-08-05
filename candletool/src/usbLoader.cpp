@@ -1,8 +1,8 @@
 #include "usbLoader.hpp"
 #include "mab_crc.hpp"
 
-UsbLoader::UsbLoader(mab::Candle& candle, mabFileParser& mabFile)
-    : iLoader(mabFile), m_candle(candle)
+UsbLoader::UsbLoader(mab::Candle& candle, MabFileParser& mabFile)
+    : I_Loader(mabFile), m_candle(candle)
 {
     m_log.tag = "UsbLoader";
 

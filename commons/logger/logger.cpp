@@ -20,9 +20,9 @@ void logger::info(const char* msg, ...)
 
 void logger::progress(double percentage)
 {
-    int val  = (int)(percentage * 100);
-    int lpad = (int)(percentage * PBWIDTH);
-    int rpad = PBWIDTH - lpad;
+    uint16_t val  = (uint16_t)(percentage * 100);
+    uint16_t lpad = (uint16_t)(percentage * PBWIDTH);
+    uint16_t rpad = PBWIDTH - lpad;
     printf("\r%3d%% [%.*s%*s]", val, lpad, PBSTR, rpad, "");
     if (fabs(percentage - 1.0) < 0.00001)
         printf("\r\n");
