@@ -108,6 +108,7 @@ bool UsbDevice::reconnect(u16 vid, u16 pid)
 	(void)vid;
 	(void)pid;
 	libusb_release_interface(devh, 0);
+	libusb_release_interface(devh, 1);
 	libusb_close(devh);
 	libusb_exit(nullptr);
 	devh = nullptr;

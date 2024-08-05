@@ -8,6 +8,7 @@
 #include <thread>
 #include <type_traits>
 #include <vector>
+#include <atomic>
 
 #include "logger.hpp"
 #include "bus.hpp"
@@ -394,30 +395,27 @@ namespace mab
 	  private:
 		/* TODO make a proper version class as the reverse initialization is not elegant */
 		const version_ut candleDeviceCompatibleVersion = {{'r', 0, 2, 2}};
-		const version_ut md80CompatibleVersion		   = {{'r', 0, 3, 2}};
+		const version_ut md80CompatibleVersion		   = {{'r', 0, 4, 2}};
 
 		static std::vector<Candle*> instances;
 		inline static constexpr u32 candleVid	  = 0x0069;
 		inline static constexpr u32 candlePid	  = 0x1000;
 		inline static constexpr u32 bootloaderPid = 0x2000;
 
-		std::thread receiverThread;
-		std::thread transmitterThread;
-		sem_t		transmitted;
-		sem_t		received;
-		logger		log;
+		std::jthread transmitterThread;
+		sem_t		 received;
+		logger		 log;
 
 		bool printVerbose = true;
 
-		CANdleMode_E mode = CANdleMode_E::CONFIG;
+		std::atomic<CANdleMode_E> mode{CANdleMode_E::CONFIG};
 
 		std::shared_ptr<Bus> bus = nullptr;
 
 		static constexpr uint16_t idMax		 = 2000;
 		static constexpr int	  maxDevices = 16;
-		bool					  shouldStopReceiver;
 		bool					  shouldStopTransmitter;
-		mab::CANdleBaudrate_E	  canBaudrate;
+		mab::CANdleBaudrate_E	  m_canBaudrate;
 
 		int		 msgsReceived	  = 0;
 		int		 msgsSent		  = 0;
@@ -426,10 +424,8 @@ namespace mab
 
 		void transmitNewStdFrame();
 
-		void receive();
 		void manageReceivedFrame();
-		void transmit();
-		void transfer();
+		void transfer(std::stop_token stop_token);
 
 		bool inUpdateMode();
 
