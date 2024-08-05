@@ -42,11 +42,14 @@ namespace mab
 				   const std::string device)
 		: Candle(canBaudrate, printVerbose, makeBus(busType, device))
 	{
+		log.tag = "Candle";
 	}
 
 	Candle::Candle(CANdleBaudrate_E canBaudrate, bool printVerbose, std::shared_ptr<Bus> bus)
 		: printVerbose(printVerbose), bus(bus)
 	{
+		log.tag = "Candle";
+
 		reset();
 		usleep(5000);
 
@@ -78,15 +81,37 @@ namespace mab
 			case mab::BusType_E::USB:
 			{
 				std::vector<u32> idsToIgnore;
+
 				for (Candle* instance : Candle::instances)
+				{
 					if (instance->bus->getType() == BusType_E::USB)
 						idsToIgnore.push_back(instance->bus->getId());
+				}
+
 				if (idsToIgnore.size() == 0 && searchMultipleDevicesOnUSB(candlePid, candleVid) > 1)
+				{
 					log.warn(
 						"Multiple CANdle detected! If ID is unspecified in the constructor, the "
 						"one with the smallest ID will be used by default!");
+				}
+
 				std::shared_ptr<UsbDevice> usb =
 					std::make_shared<UsbDevice>(candleVid, candlePid, idsToIgnore, device);
+
+				if (!usb->isConnected())
+				{
+					// log.warn("Failed to connect to CANdle device! Trying bootloader mode...");
+					usb = std::make_shared<UsbDevice>(candleVid, bootloaderPid);
+
+					if (!usb->isConnected())
+					{
+						log.error("Unable to connect to Candle device!");
+						exit(1);
+					}
+
+					log.warn("Connected to CANdle in bootloader mode!");
+				}
+
 				return usb;
 			}
 #ifdef UNIX
@@ -310,9 +335,7 @@ namespace mab
 			else if (firmwareVersion.s.major > md80CompatibleVersion.s.major ||
 					 firmwareVersion.s.minor > md80CompatibleVersion.s.minor)
 			{
-				log.error("MD80 firmware (ID: %d) is a future version. Update your CANdle library.",
-						  canId);
-				return false;
+				log.warn("MD80 firmware (ID: %d) is a future version.", canId);
 			}
 			log.success("Added MD80 (ID: %d)", canId);
 			md80s.push_back(Md80(canId));
@@ -564,7 +587,7 @@ namespace mab
 			msgsSent			  = 0;
 			msgsReceived		  = 0;
 
-            log.info("Starting transfer thread...");
+			log.info("Starting transfer thread...");
 			transmitterThread = std::thread(&Candle::transfer, this);
 
 			return true;
@@ -924,6 +947,51 @@ namespace mab
 		if (bus->transmit(tx, cmdLen, true, timeout, respLen))
 			return ((rx[0] == id && rx[1] == true) || (rx[0] == BUS_FRAME_PING_START));
 		return false;
+	}
+
+	bool Candle::sendBootloaderBusFrame(BootloaderBusFrameId_E id,
+										uint32_t			   timeout,
+										char*				   payload,
+										uint32_t			   payloadLength,
+										uint32_t			   respLen)
+	{
+		char tx[2048]{};
+		tx[0] = id;
+		tx[1] = (char)0xAA;	 // Preambles ???
+		tx[2] = (char)0xAA;	 // Preambles ???
+
+		if (payload)
+			memcpy(&tx[3], payload, payloadLength);
+
+		char* rx = bus->getRxBuffer(0);
+
+		if (bus->transmit(tx, payloadLength + 3, true, timeout, respLen))
+		{
+			if (strcmp("OK", &rx[1]) != 0)
+			{
+				log.error("Bootloader bad response: %s", &rx[1]);
+				return false;
+			}
+			return true;
+		}
+
+		return false;
+	}
+
+	bool Candle::reconnectToCandleBootloader()
+	{
+		bool result = false;
+		log.info("Reconnecting to CANdle bootloader...");
+		result = static_cast<UsbDevice*>(bus.get())->reconnect(candleVid, bootloaderPid);
+		return result;
+	}
+
+	bool Candle::reconnectToCandleApp()
+	{
+		log.info("Reconnecting to CANdle application...");
+		usleep(5000000);
+
+		return static_cast<UsbDevice*>(bus.get())->reconnect(candleVid, candlePid);
 	}
 
 }  // namespace mab

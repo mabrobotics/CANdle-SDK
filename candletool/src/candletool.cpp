@@ -7,6 +7,7 @@
 #include "configHelpers.hpp"
 
 #include "uploader.hpp"
+#include "mabFileParser.hpp"
 
 f32 lerp(f32 start, f32 end, f32 t)
 {
@@ -81,10 +82,12 @@ CandleTool::CandleTool()
         else
             candle = std::make_unique<mab::Candle>(baud, printVerbose, busType);
     }
+
     catch (const char* e)
     {
         return;
     }
+
     return;
 }
 
@@ -885,18 +888,19 @@ void CandleTool::registerRead(u16 id, u16 reg)
     log.success("Register value: %s", value.c_str());
 }
 
-void CandleTool::updateCandle(const std::string& firmwareFile, bool noReset)
+void CandleTool::updateCandle(const std::string& mabFilePath, bool noReset)
 {
     log.info("Performing Candle firmware update.");
-    // TODO:
+    MabFileParser         mabFile(mabFilePath);
+    mab::FirmwareUploader firmwareUploader(*candle, mabFile);
+    firmwareUploader.flashDevice(noReset);
 }
 
-void CandleTool::updateMd(const std::string& mabFile, uint16_t canId, bool noReset)
+void CandleTool::updateMd(const std::string& mabFilePath, uint16_t canId, bool noReset)
 {
-    log.info("Performing MD( id [ %u ] ) firmware update.", canId);
-
-    mab::FirmwareUploader firmwareUploader(*candle, mabFile);
-    firmwareUploader.flashDevice(canId, noReset);
+    MabFileParser         mabFile(mabFilePath);
+    mab::FirmwareUploader firmwareUploader(*candle, mabFile, canId);
+    firmwareUploader.flashDevice(noReset);
 }
 
 void CandleTool::blink(u16 id)

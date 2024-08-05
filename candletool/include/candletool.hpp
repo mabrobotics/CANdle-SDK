@@ -60,7 +60,7 @@ class CandleTool
      *
      * @param firmwareFile path to firmware file (.mab)
      */
-    void updateCandle(const std::string& firmwareFile, bool noReset = false);
+    void updateCandle(const std::string& mabFilePath, bool noReset = false);
 
     /**
      * @brief Update firmware on Motor Driver
@@ -68,7 +68,7 @@ class CandleTool
      * @param firmwareFile path to firmware file (.mab)
      * @param canId CAN ID of the motor driver to be updated
      */
-    void updateMd(const std::string& firmwareFile, uint16_t canId, bool noReset = false);
+    void updateMd(const std::string& mabFilePath, uint16_t canId, bool noReset = false);
 
   private:
     logger                       log;

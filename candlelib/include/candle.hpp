@@ -372,24 +372,40 @@ namespace mab
 		{
 			return md80Register->write(canId, regId, regValue, vs...);
 		}
+		// TODO: Move back to private when uploaders functionality will be integrated into candle
+		bool sendBusFrame(BusFrameId_t id,
+						  uint32_t	   timeout,
+						  char*		   payload = nullptr,
+						  uint32_t	   cmdLen  = 2,
+						  uint32_t	   respLen = 2);
+
+		bool sendBootloaderBusFrame(BootloaderBusFrameId_E id,
+									uint32_t			   timeout,
+									char*				   payload		 = nullptr,
+									uint32_t			   payloadLength = 0,
+									uint32_t			   respLen		 = 4);
+
+		bool reconnectToCandleBootloader();
+		bool reconnectToCandleApp();
 
 	  protected:
 		std::shared_ptr<Register> md80Register;
 
 	  private:
-		/* TODO make a proper version class as the reverse initalization is not elegant */
+		/* TODO make a proper version class as the reverse initialization is not elegant */
 		const version_ut candleDeviceCompatibleVersion = {{'r', 0, 2, 2}};
 		const version_ut md80CompatibleVersion		   = {{'r', 0, 3, 2}};
 
 		static std::vector<Candle*> instances;
-		inline static constexpr u32 candleVid = 0x0069;
-		inline static constexpr u32 candlePid = 0x1000;
+		inline static constexpr u32 candleVid	  = 0x0069;
+		inline static constexpr u32 candlePid	  = 0x1000;
+		inline static constexpr u32 bootloaderPid = 0x2000;
 
 		std::thread receiverThread;
 		std::thread transmitterThread;
 		sem_t		transmitted;
 		sem_t		received;
-		logger		log = {.tag = "CANDLE"};
+		logger		log;
 
 		bool printVerbose = true;
 
@@ -425,11 +441,6 @@ namespace mab
 							Md80Reg_E	reg,
 							const char* failMsg,
 							const char* successMsg);
-		bool sendBusFrame(BusFrameId_t id,
-						  uint32_t	   timeout,
-						  char*		   payload = nullptr,
-						  uint32_t	   cmdLen  = 2,
-						  uint32_t	   respLen = 2);
 
 		/* virtual methods for testing purposes */
 #ifdef UNIX
