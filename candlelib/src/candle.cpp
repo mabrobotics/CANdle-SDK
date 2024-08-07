@@ -261,8 +261,10 @@ namespace mab
 
 			if (firmwareVersion.i < md80CompatibleVersion.i)
 			{
-				log.error("MD80 firmware (ID: %d) is outdated. Update with MAB_CAN_Flasher.",
-						  canId);
+				log.warn(
+					"MD80 firmware (ID: %d) is outdated. Please see the manual for intructions on "
+					"how to update.",
+					canId);
 			}
 			else if (firmwareVersion.s.major > md80CompatibleVersion.s.major ||
 					 firmwareVersion.s.minor > md80CompatibleVersion.s.minor)
@@ -432,7 +434,7 @@ namespace mab
 				if (candleDeviceVersion.i < candleDeviceCompatibleVersion.i)
 				{
 					log.warn(
-						"Your CANdle device firmware seems to be out-dated. Please see the "
+						"Your CANdle device firmware is outdated. Please see the "
 						"manual for intructions on how to update.");
 				}
 				log.info("CANdle firmware v%s", mab::getVersionString(candleDeviceVersion).c_str());
