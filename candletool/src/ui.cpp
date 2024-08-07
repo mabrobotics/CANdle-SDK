@@ -210,15 +210,15 @@ namespace ui
             float stddevE = drive.getReadReg().RO.calMainEncoderStdDev;
             float minE    = drive.getReadReg().RO.calMainEncoderMinE;
             float maxE    = drive.getReadReg().RO.calMainEncoderMaxE;
-            vout << "- main encoder last check error stddev: "
+            vout << "- main encoder last check error standard deviation: "
                  << (stddevE < mainEncoderStdDevMax ? std::to_string(stddevE)
                                                     : YELLOW_(std::to_string(stddevE)))
                  << " rad" << std::endl;
-            vout << "- main encoder last check min error "
+            vout << "- main encoder last check max negative error: "
                  << (minE > -mainEncoderMaxError ? std::to_string(minE)
                                                  : YELLOW_(std::to_string(minE)))
                  << " rad" << std::endl;
-            vout << "- main encoder last check max error: "
+            vout << "- main encoder last check max positive error: "
                  << (maxE < mainEncoderMaxError ? std::to_string(maxE)
                                                 : YELLOW_(std::to_string(maxE)))
                  << " rad" << std::endl;
@@ -253,11 +253,11 @@ namespace ui
                      << (stddevE < outputEncoderStdDevMax ? std::to_string(stddevE)
                                                           : YELLOW_(std::to_string(stddevE)))
                      << " rad" << std::endl;
-                vout << "   - output encoder last check min error "
+                vout << "   - output encoder last check max negative error: "
                      << (minE > -outputEncoderMaxError ? std::to_string(minE)
                                                        : YELLOW_(std::to_string(minE)))
                      << " rad" << std::endl;
-                vout << "   - output encoder last check max error: "
+                vout << "   - output encoder last check max positive error: "
                      << (maxE < outputEncoderMaxError ? std::to_string(maxE)
                                                       : YELLOW_(std::to_string(maxE)))
                      << " rad" << std::endl;
@@ -408,55 +408,55 @@ namespace ui
 
     bool getDifferentConfigsConfirmation(std::string configName)
     {
-        vout << "[MDTOOL] The default " << configName << " config was modified." << std::endl;
-        vout << "[MDTOOL] Would you like to revert it to default before downloading? [Y/n]"
+        vout << "[CANDLETOOL] The default " << configName << " config was modified." << std::endl;
+        vout << "[CANDLETOOL] Would you like to revert it to default before downloading? [Y/n]"
              << std::endl;
         char x;
         std::cin >> x;
         if (x != 'Y' && x != 'y')
         {
-            vout << "[MDTOOL] Using modified config." << std::endl;
+            vout << "[CANDLETOOL] Using modified config." << std::endl;
             return false;
         }
-        vout << "[MDTOOL] Using default config." << std::endl;
+        vout << "[CANDLETOOL] Using default config." << std::endl;
         return true;
     }
     bool getUpdateConfigConfirmation(std::string configName)
     {
-        vout << "[MDTOOL] The " << configName << " config is not complete." << std::endl;
-        vout << "[MDTOOL] Would you like to update lacking fields with default values before "
+        vout << "[CANDLETOOL] The " << configName << " config is not complete." << std::endl;
+        vout << "[CANDLETOOL] Would you like to update lacking fields with default values before "
                 "downloading? [Y/n]"
              << std::endl;
         char x;
         std::cin >> x;
         if (x != 'Y' && x != 'y')
         {
-            vout << "[MDTOOL] Using unchanged user's config." << std::endl;
+            vout << "[CANDLETOOL] Using unchanged user's config." << std::endl;
             return false;
         }
-        vout << "[MDTOOL] Updating config with default values." << std::endl;
-        vout << "[MDTOOL] New confing saved under name: " +
+        vout << "[CANDLETOOL] Updating config with default values." << std::endl;
+        vout << "[CANDLETOOL] New confing saved under name: " +
                     configName.substr(0, configName.find_last_of(".")) + "_updated.cfg."
              << std::endl;
         return true;
     }
     bool getSaveMotorConfigConfirmation(std::string configName)
     {
-        vout << "[MDTOOL] Would you like to save the motor config under the name: " << configName
-             << " in your current directory? [Y/n]" << std::endl;
+        vout << "[CANDLETOOL] Would you like to save the motor config under the name: "
+             << configName << " in your current directory? [Y/n]" << std::endl;
         char x;
         std::cin >> x;
         if (x != 'Y' && x != 'y')
         {
-            vout << "[MDTOOL] Reading the motor config without saving to a file." << std::endl;
+            vout << "[CANDLETOOL] Reading the motor config without saving to a file." << std::endl;
             return false;
         }
-        vout << "[MDTOOL] Saving the motor config." << std::endl;
+        vout << "[CANDLETOOL] Saving the motor config." << std::endl;
         return true;
     }
     bool getOverwriteMotorConfigConfirmation(std::string configName)
     {
-        vout << "[MDTOOL] The " << configName
+        vout << "[CANDLETOOL] The " << configName
              << " file already exist in your current directory, would you like to overwrite the "
                 "file? [Y/n]"
              << std::endl;
@@ -466,15 +466,15 @@ namespace ui
         {
             return false;
         }
-        vout << "[MDTOOL] Overwriting the motor config file." << std::endl;
+        vout << "[CANDLETOOL] Overwriting the motor config file." << std::endl;
         return true;
     }
     std::string getNewMotorConfigName(std::string configName)
     {
         std::string newName = configName.substr(0, configName.find_last_of(".")) + "_new.cfg";
-        vout << "[MDTOOL] Please type the new config name." << std::endl
-             << "[MDTOOL] The default new name is: " << newName << std::endl
-             << "[MDTOOL] (Press Enter to accept the default)" << std::endl;
+        vout << "[CANDLETOOL] Please type the new config name." << std::endl
+             << "[CANDLETOOL] The default new name is: " << newName << std::endl
+             << "[CANDLETOOL] (Press Enter to accept the default)" << std::endl;
         std::string x;
         std::cin.ignore();
         std::getline(std::cin, x);
