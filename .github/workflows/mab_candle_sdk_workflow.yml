@@ -3,9 +3,7 @@ name: CANDLE_SDK_CI
 
 on:
   push:
-    branches: [ "candletool", "github_workflows" ]
-  pull_request:
-    branches: [ "candletool" ]
+    branches: "**"
 
 jobs:
   build-candleSDK-linux:
@@ -35,6 +33,25 @@ jobs:
         name: Candletool-build-artifacts
         path: |
           build/*.deb
+  test-candleSDK-linux:
+    runs-on: ubuntu-22.04
+    container:
+      image: mabroboticsofficial/candlesdk_linux    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: 
+          submodules: 'true'
+  
+      - name: CMake configure
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Release -B build -G "Unix Makefiles" .
+  
+      - name: Build
+        run: cmake --build ./build
+      
+      - name: Test
+        run: ./launch/run_all_tests.sh
   
   # release-candleSDK-linux:
   #   runs-on: ubuntu-22.04
