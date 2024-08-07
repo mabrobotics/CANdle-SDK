@@ -210,15 +210,15 @@ namespace ui
             float stddevE = drive.getReadReg().RO.calMainEncoderStdDev;
             float minE    = drive.getReadReg().RO.calMainEncoderMinE;
             float maxE    = drive.getReadReg().RO.calMainEncoderMaxE;
-            vout << "- main encoder last check error stddev: "
+            vout << "- main encoder last check error standard deviation: "
                  << (stddevE < mainEncoderStdDevMax ? std::to_string(stddevE)
                                                     : YELLOW_(std::to_string(stddevE)))
                  << " rad" << std::endl;
-            vout << "- main encoder last check min error "
+            vout << "- main encoder last check max negative error: "
                  << (minE > -mainEncoderMaxError ? std::to_string(minE)
                                                  : YELLOW_(std::to_string(minE)))
                  << " rad" << std::endl;
-            vout << "- main encoder last check max error: "
+            vout << "- main encoder last check max positive error: "
                  << (maxE < mainEncoderMaxError ? std::to_string(maxE)
                                                 : YELLOW_(std::to_string(maxE)))
                  << " rad" << std::endl;
@@ -253,11 +253,11 @@ namespace ui
                      << (stddevE < outputEncoderStdDevMax ? std::to_string(stddevE)
                                                           : YELLOW_(std::to_string(stddevE)))
                      << " rad" << std::endl;
-                vout << "   - output encoder last check min error "
+                vout << "   - output encoder last check max negative error: "
                      << (minE > -outputEncoderMaxError ? std::to_string(minE)
                                                        : YELLOW_(std::to_string(minE)))
                      << " rad" << std::endl;
-                vout << "   - output encoder last check max error: "
+                vout << "   - output encoder last check max positive error: "
                      << (maxE < outputEncoderMaxError ? std::to_string(maxE)
                                                       : YELLOW_(std::to_string(maxE)))
                      << " rad" << std::endl;
