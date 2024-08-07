@@ -1,20 +1,19 @@
 #include "mabFileParser.hpp"
 
-mabFileParser::mabFileParser(std::string filePath)
+MabFileParser::MabFileParser(std::string filePath)
 {
     log.tag = "MAB FILE";
     if (Status_E::OK != processFile(filePath))
     {
         log.error("Error processing file\n\r[ %s ]\n\rCheck file path and format.",
                   filePath.c_str());
-        exit(1);
-        // throw std::runtime_error("Error processing file");
+        throw std::runtime_error("Error processing file");
     }
 }
 
-mabFileParser::Status_E mabFileParser::processFile(std::string filePath)
+MabFileParser::Status_E MabFileParser::processFile(std::string filePath)
 {
-    mabFileParser::log.info("Processing file: %s", filePath.c_str());
+    MabFileParser::log.info("Processing file: %s", filePath.c_str());
 
     mINI::INIFile      file(filePath);
     mINI::INIStructure ini;
@@ -44,7 +43,7 @@ mabFileParser::Status_E mabFileParser::processFile(std::string filePath)
     return Status_E::OK;
 }
 
-mabFileParser::TargetDevice_E mabFileParser::parseTargetDevice(std::string tag)
+MabFileParser::TargetDevice_E MabFileParser::parseTargetDevice(std::string tag)
 {
     if (tag == "md")
         return TargetDevice_E::MD;
@@ -61,7 +60,7 @@ mabFileParser::TargetDevice_E mabFileParser::parseTargetDevice(std::string tag)
         return TargetDevice_E::INVALID;
 }
 
-mabFileParser::FirmwareEntry mabFileParser::parseFirmwareEntry(mINI::INIStructure& ini,
+MabFileParser::FirmwareEntry MabFileParser::parseFirmwareEntry(mINI::INIStructure& ini,
                                                                std::string&&       header)
 {
     FirmwareEntry temp{};
@@ -106,7 +105,7 @@ mabFileParser::FirmwareEntry mabFileParser::parseFirmwareEntry(mINI::INIStructur
 // 	return true;
 // }
 
-std::vector<uint8_t> mabFileParser::hexStringToBytes(std::string str)
+std::vector<uint8_t> MabFileParser::hexStringToBytes(std::string str)
 {
     std::vector<uint8_t> result;
 
@@ -119,7 +118,7 @@ std::vector<uint8_t> mabFileParser::hexStringToBytes(std::string str)
     return result;
 }
 
-std::string mabFileParser::fileType2String(TargetDevice_E type)
+std::string MabFileParser::fileType2String(TargetDevice_E type)
 {
     switch (type)
     {

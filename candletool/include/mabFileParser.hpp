@@ -1,7 +1,7 @@
 #ifndef MAB_FILE_PARSER_HPP
 #define MAB_FILE_PARSER_HPP
 
-#include <openssl/evp.h>
+// #include <openssl/evp.h>
 
 #include <fstream>
 #include <string>
@@ -10,7 +10,7 @@
 
 #include "mini/ini.h"
 
-class mabFileParser
+class MabFileParser
 {
   public:
     enum class TargetDevice_E : uint8_t
@@ -41,8 +41,8 @@ class mabFileParser
         Status_E             status = Status_E::OK;
     };
 
-    mabFileParser() = delete;
-    mabFileParser(std::string filePath);
+    MabFileParser() = delete;
+    MabFileParser(std::string filePath);
 
     FirmwareEntry m_firmwareEntry1;
     FirmwareEntry m_firmwareEntry2;

@@ -52,10 +52,24 @@ namespace mab
 
 		reset();
 		usleep(5000);
+		if (sem_init(&received, true, 0) == -1)
+		{
+			throw std::runtime_error("Failed to set up receive semaphore");
+		}
+		for (u32 i = 0; i < 10; i++)
+		{
+			if (!sendBusFrame(BUS_FRAME_END, 100))
+				log.error("Candle not responding");
+			else
+			{
+				log.info("Bus communication functional");
+				break;
+			}
+		}
 
 		if (!configCandleBaudrate(canBaudrate, true))
 		{
-			log.error("Failed to set up CANdle baudrate @%sMbps", canBaudrate);
+			log.error("Failed to set up CANdle baudrate @%dMbps", canBaudrate);
 			throw std::runtime_error("Failed to set up CANdle baudrate!");
 		}
 		if (bus->getType() == mab::BusType_E::USB)
@@ -72,6 +86,8 @@ namespace mab
 	{
 		if (inUpdateMode())
 			end();
+		transmitterThread.request_stop();
+		sem_destroy(&received);
 	}
 
 	std::shared_ptr<Bus> Candle::makeBus(mab::BusType_E busType, std::string device)
@@ -95,9 +111,8 @@ namespace mab
 						"one with the smallest ID will be used by default!");
 				}
 
-				std::shared_ptr<UsbDevice> usb = nullptr;
-
-				usb = std::make_shared<UsbDevice>(candleVid, candlePid, idsToIgnore, device);
+				std::shared_ptr<UsbDevice> usb =
+					std::make_shared<UsbDevice>(candleVid, candlePid, idsToIgnore, device);
 
 				if (!usb->isConnected())
 				{
@@ -149,38 +164,12 @@ namespace mab
 		transmitterDelay = delayUs < 20 ? 20 : delayUs;
 	}
 
-	void Candle::receive()
-	{
-		while (!shouldStopReceiver)
-		{
-			/* wait for a frame to be transmitted */
-			sem_wait(&transmitted);
-
-			if (!shouldStopReceiver &&
-				bus->receive(sizeof(StdMd80ResponseFrame_t) * md80s.size() + 1))
-			{
-				/* notify a frame was received */
-				sem_post(&received);
-
-				if (*bus->getRxBuffer() == BUS_FRAME_UPDATE)
-					manageReceivedFrame();
-			}
-			else
-			{
-				if (!shouldStopReceiver)
-					log.warn("Did not receive response from CANdle!");
-				shouldStopReceiver	  = true;
-				shouldStopTransmitter = true;
-				sem_post(&received);
-			}
-		}
-	}
-	void Candle::transfer()
+	void Candle::transfer(std::stop_token stop_token)
 	{
 		int		 counter		= 0;
 		uint64_t freqCheckStart = getTimestamp();
 		log.level				= logger::LogLevel_E::DEBUG;
-		while (!shouldStopTransmitter)
+		while (!shouldStopTransmitter || stop_token.stop_requested())
 		{
 			if (++counter == 250)
 			{
@@ -195,63 +184,6 @@ namespace mab
 				if (*bus->getRxBuffer() == BUS_FRAME_UPDATE)
 					manageReceivedFrame();
 			}
-		}
-	}
-	void Candle::transmit()
-	{
-		int		 txCounter		= 0;
-		uint64_t freqCheckStart = getTimestamp();
-		while (!shouldStopTransmitter)
-		{
-			if (++txCounter == 250)
-			{
-				usbCommsFreq   = 250.0 / (float)(getTimestamp() - freqCheckStart) * 1000000.0f;
-				freqCheckStart = getTimestamp();
-				txCounter	   = 0;
-			}
-
-			transmitNewStdFrame();
-
-			/* notify a frame was sent */
-			if (bus->getType() != mab::BusType_E::SPI)
-				sem_post(&transmitted);
-
-			/* transmit thread is also the receive thread for SPI in update mode */
-			if (bus->getType() == mab::BusType_E::SPI && *bus->getRxBuffer() == BUS_FRAME_UPDATE)
-				manageReceivedFrame();
-
-			msgsSent++;
-
-			if (bus->getType() == mab::BusType_E::SPI)
-			{
-				switch (canBaudrate)
-				{
-					case CAN_BAUD_1M:
-					{
-						usleep(750 * md80s.size());
-						break;
-					}
-					case CAN_BAUD_2M:
-					{
-						usleep(450 * md80s.size());
-						break;
-					}
-					case CAN_BAUD_5M:
-					{
-						usleep(250 * md80s.size());
-						break;
-					}
-					case CAN_BAUD_8M:
-					{
-						usleep(200 * md80s.size());
-						break;
-					}
-				}
-			}
-			/* wait for a frame to be received */
-			else
-				sem_wait(&received);
-			usleep(transmitterDelay);
 		}
 	}
 
@@ -336,9 +268,7 @@ namespace mab
 			else if (firmwareVersion.s.major > md80CompatibleVersion.s.major ||
 					 firmwareVersion.s.minor > md80CompatibleVersion.s.minor)
 			{
-				log.error("MD80 firmware (ID: %d) is a future version. Update your CANdle library.",
-						  canId);
-				return false;
+				log.warn("MD80 firmware (ID: %d) is a future version.", canId);
 			}
 			log.success("Added MD80 (ID: %d)", canId);
 			md80s.push_back(Md80(canId));
@@ -391,7 +321,7 @@ namespace mab
 		}
 		return ids;
 	}
-	std::vector<uint16_t> Candle::ping() { return ping(canBaudrate); }
+	std::vector<uint16_t> Candle::ping() { return ping(m_canBaudrate); }
 	bool				  Candle::sendGenericFDCanFrame(
 		 uint16_t canId, int msgLen, const char* txBuffer, char* rxBuffer, int timeoutMs)
 	{
@@ -488,10 +418,10 @@ namespace mab
 
 	bool Candle::configCandleBaudrate(CANdleBaudrate_E canBaudrate, bool printVersionInfo)
 	{
-		this->canBaudrate = canBaudrate;
+		this->m_canBaudrate = canBaudrate;
 
 		char payload[1]{};
-		payload[0] = static_cast<uint8_t>(canBaudrate);
+		payload[0] = static_cast<uint8_t>(m_canBaudrate);
 
 		if (sendBusFrame(BUS_FRAME_CANDLE_CONFIG_BAUDRATE, 50, payload, 2, 6))
 		{
@@ -570,6 +500,17 @@ namespace mab
 			log.error("%s failed (ID: %d)", (enable ? "Enabling" : "Disabling"), canId);
 			return false;
 		}
+
+		if (enable)
+		{
+			mab::Md80Mode_E mode{mab::Md80Mode_E::POSITION_PID};
+			if (!md80Register->read(canId, Md80Reg_E::motionModeStatus, mode))
+				throw std::runtime_error("Could not read motion mode from the driver");
+			if (mode == mab::Md80Mode_E::IDLE)
+			{
+				log.warn("Drive %d has no motion mode set, it will be idle", canId);
+			}
+		}
 		log.success("%s succesfull (ID: %d)", (enable ? "Enabling" : "Disabling"), canId);
 		return true;
 	}
@@ -586,12 +527,13 @@ namespace mab
 			log.success("Beginnig auto update loop mode");
 			mode				  = CANdleMode_E::UPDATE;
 			shouldStopTransmitter = false;
-			shouldStopReceiver	  = false;
 			msgsSent			  = 0;
 			msgsReceived		  = 0;
 
 			log.info("Starting transfer thread...");
-			transmitterThread = std::thread(&Candle::transfer, this);
+			// bind_front used to enable stop_token in jthread, jthread used to avoid unexpected
+			// termination
+			transmitterThread = std::jthread(std::bind_front(&Candle::transfer, this));
 
 			return true;
 		}
@@ -607,14 +549,6 @@ namespace mab
 		sem_post(&received);
 		if (transmitterThread.joinable())
 			transmitterThread.join();
-
-		shouldStopReceiver = true;
-		if (bus->getType() != mab::BusType_E::SPI)
-		{
-			sem_post(&transmitted);
-			if (receiverThread.joinable())
-				receiverThread.join();
-		}
 
 		bus->flushReceiveBuffer();
 
@@ -651,8 +585,8 @@ namespace mab
 
 		if (bus->getType() == BusType_E::SPI)
 			bus->transfer(tx, cmdSize, respSize);
-		else
-			bus->transmit(tx, cmdSize, false, 100, respSize);
+		else if (!bus->transmit(tx, cmdSize, false, 100, respSize))
+			throw std::runtime_error("Failed to transmit to candle!");
 	}
 
 	bool Candle::setupMd80Calibration(uint16_t canId)
@@ -904,7 +838,7 @@ namespace mab
 
 		return true;
 	}
-	mab::CANdleBaudrate_E Candle::getCurrentBaudrate() { return canBaudrate; }
+	mab::CANdleBaudrate_E Candle::getCurrentBaudrate() { return m_canBaudrate; }
 	bool				  Candle::checkMd80ForBaudrate(uint16_t canId)
 	{
 		uint16_t status;

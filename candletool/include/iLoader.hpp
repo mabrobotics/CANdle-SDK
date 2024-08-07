@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include "mabFileParser.hpp"
 
-class iLoader
+class I_Loader
 {
   public:
     enum class Error_E : uint8_t
@@ -11,9 +11,9 @@ class iLoader
         OK = 0,
         ERROR_UNKNOWN,
     };
-    iLoader() = delete;
-    iLoader(mabFileParser& mabFile)
-        : m_mabFile(mabFile){
+    I_Loader() = delete;
+    I_Loader(MabFileParser& mabFile)
+        : m_mabFile(mabFile) {
 
           };
 
@@ -44,5 +44,5 @@ class iLoader
     static constexpr size_t   M_USB_CHUNK_SIZE = 2044;
     static constexpr uint32_t M_BOOT_ADDRESS   = 0x08005000;
 
-    mabFileParser m_mabFile;
+    MabFileParser m_mabFile;
 };

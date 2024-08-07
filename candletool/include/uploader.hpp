@@ -42,7 +42,7 @@ namespace mab
          * @param _candle The reference to the Candle object.
          * @param mabFile The path to the MAB file containing the firmware.
          */
-        FirmwareUploader(Candle& _candle, mabFileParser& mabFile, int mdId = 0);
+        FirmwareUploader(Candle& _candle, MabFileParser& mabFile, int mdId = 0);
 
         /**
          * @brief Performs the firmware update.
@@ -61,7 +61,7 @@ namespace mab
         mab::Candle& m_candle;
         logger       m_log;
 
-        mabFileParser& m_mabFile;
+        MabFileParser& m_mabFile;
         uint32_t       m_canId;
     };
 }  // namespace mab
