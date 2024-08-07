@@ -831,7 +831,7 @@ void CandleTool::registerWrite(u16 id, u16 reg, const std::string& value)
         case mab::Register::type::STR:
         {
             char str[24] = {};
-            strncpy(str, value.c_str(), sizeof(str));
+            memcpy(str, value.c_str(), sizeof(str));
             success = candle->writeMd80Register(id, regId, str);
             break;
         }

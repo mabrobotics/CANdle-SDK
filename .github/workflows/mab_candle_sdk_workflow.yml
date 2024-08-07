@@ -21,7 +21,7 @@ jobs:
 
     - name: CMake configure
       run: |
-        cmake -B build -G "Unix Makefiles" .
+        cmake -DCMAKE_BUILD_TYPE=Release -B build -G "Unix Makefiles" .
 
     - name: Build
       run: cmake --build ./build
