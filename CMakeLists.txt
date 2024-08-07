@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.8)
 include(git_func.cmake)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_BUILD_TYPE Debug)
 set(CANDLESDK_VERSION 0.2.0)
 get_tag(CANDLESDK_VERSION_TAG)
 
