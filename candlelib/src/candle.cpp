@@ -116,7 +116,7 @@ namespace mab
 
 				if (!usb->isConnected())
 				{
-					// log.warn("Failed to connect to CANdle device! Trying bootloader mode...");
+					log.warn("Failed to connect to CANdle device! Trying bootloader mode...");
 					usb = std::make_shared<UsbDevice>(candleVid, bootloaderPid);
 
 					if (!usb->isConnected())
