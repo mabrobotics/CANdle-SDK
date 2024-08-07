@@ -33,6 +33,17 @@ add_compile_options(
 set(mINI_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/mINI/inc/)
 
 set(CANDLE_BUILD_STATIC TRUE)
+
+macro(add_unit_test_executable test_name)
+
+    add_executable(test_${test_name} ${ARGN})
+    target_link_libraries(test_${test_name} PRIVATE Unit_test)
+    set_target_properties(test_${test_name} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/ut_runners/
+    )
+
+endmacro(add_unit_test_executable)
+
 add_subdirectory(commons)
 add_subdirectory(candlelib)
 add_subdirectory(candletool)

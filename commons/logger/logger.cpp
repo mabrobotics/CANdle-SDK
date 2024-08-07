@@ -1,5 +1,6 @@
 #include <logger.hpp>
 #include <stdarg.h>
+#include <cmath>
 
 void logger::info(const char* msg, ...)
 {
@@ -12,6 +13,22 @@ void logger::info(const char* msg, ...)
     printf("\n");
     va_end(args);
 }
+
+/* progress bar */
+#define PBSTR   "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
+#define PBWIDTH 60
+
+void logger::progress(double percentage)
+{
+    uint16_t val  = (uint16_t)(percentage * 100);
+    uint16_t lpad = (uint16_t)(percentage * PBWIDTH);
+    uint16_t rpad = PBWIDTH - lpad;
+    printf("\r%3d%% [%.*s%*s]", val, lpad, PBSTR, rpad, "");
+    if (fabs(percentage - 1.0) < 0.00001)
+        printf("\r\n");
+    fflush(stdout);
+}
+
 void logger::success(const char* msg, ...)
 {
     if (level > LogLevel_E::INFO)

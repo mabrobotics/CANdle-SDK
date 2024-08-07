@@ -15,6 +15,56 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
+        },
+        {
+            "name": "update_md",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/candletool/candletool",
+            "args": [
+                "update",
+                "md",
+                "100",
+                "-f",
+                "~/mab/mab_firmware/build-EMBEDDED/app/motor_driver_legacy/MAB_md_app_legacy.mab"
+            ],
+            "stopAtEntry": true,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+        },
+        {
+            "name": "update_candle",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/candletool/candletool",
+            "args": [
+                "update",
+                "candle",
+                "-f",
+                "/home/emka/mab/mab_firmware/build/EMBEDDED-MAB/candle_legacy/MAB_candle_app_LEGACY.mab",
+            ],
+            "stopAtEntry": true,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+        },
+        {
+            "name": "candletool ping all",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/candletool/candletool",
+            "args": [
+                "ping",
+                "all",
+            ],
+            "stopAtEntry": true,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
         }
     ]
 }

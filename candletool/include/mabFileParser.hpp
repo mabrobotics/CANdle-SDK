@@ -1,7 +1,7 @@
-#ifndef BINARY_PARSER_HPP
-#define BINARY_PARSER_HPP
+#ifndef MAB_FILE_PARSER_HPP
+#define MAB_FILE_PARSER_HPP
 
-#include <openssl/evp.h>
+// #include <openssl/evp.h>
 
 #include <fstream>
 #include <string>
@@ -10,18 +10,20 @@
 
 #include "mini/ini.h"
 
-class BinaryParser
+class MabFileParser
 {
   public:
-    enum class Type : uint8_t
+    enum class TargetDevice_E : uint8_t
     {
-        NONE   = 0,
-        MD     = 1,
-        CANDLE = 2,
-        BOOT   = 3,
+        NONE    = 0,
+        MD      = 1,
+        CANDLE  = 2,
+        PDS     = 3,
+        BOOT    = 4,
+        INVALID = 0xFF,
     };
 
-    enum class Status : uint8_t
+    enum class Status_E : uint8_t
     {
         OK             = 0,
         ERROR_FILE     = 1,
@@ -29,37 +31,33 @@ class BinaryParser
         ERROR_CHECKSUM = 3,
     };
 
-  public:
-    BinaryParser();
-    Status               processFile(std::string filePath);
-    std::vector<uint8_t> getPrimaryFirmwareFile();
-    std::vector<uint8_t> getSecondaryFirmwareFile();
-    BinaryParser::Type   getFirmwareFileType();
-
-  private:
     struct FirmwareEntry
     {
         std::string          mabFileVersion;
-        std::string          tag;
+        TargetDevice_E       targetDevice;
         size_t               size;
         std::string          checksum;
         std::vector<uint8_t> binary;
-        Status               status = Status::OK;
-        // FirmwareEntry()             = default
+        Status_E             status = Status_E::OK;
     };
 
-    logger log;
+    MabFileParser() = delete;
+    MabFileParser(std::string filePath);
 
     FirmwareEntry m_firmwareEntry1;
     FirmwareEntry m_firmwareEntry2;
-    Type          m_fileType = Type::MD;
 
+  private:
+    logger log;
+
+    Status_E             processFile(std::string filePath);
+    TargetDevice_E       parseTargetDevice(std::string tag);
     FirmwareEntry        parseFirmwareEntry(mINI::INIStructure& ini, std::string&& header);
     std::vector<uint8_t> hexStringToBytes(std::string str);
-    std::string          fileType2String(Type type);
+    std::string          fileType2String(TargetDevice_E type);
 
     // TODO: Code left for future implementation
     // static bool validateChecksum(std::vector<uint8_t>& data, std::string& expectedChecksum);
 };
 
-#endif
+#endif /*MAB_FILE_PARSER_HPP*/

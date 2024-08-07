@@ -220,13 +220,13 @@ int main(int argc, char** argv)
 
         if (candle_update->parsed())
         {
-            candleTool.updateCandle(cmd.firmwareFileName);
+            candleTool.updateCandle(cmd.firmwareFileName, cmd.noReset);
             return EXIT_SUCCESS;
         }
 
         if (md_update->parsed())
         {
-            candleTool.updateMd(cmd.firmwareFileName, cmd.id);
+            candleTool.updateMd(cmd.firmwareFileName, cmd.id, cmd.noReset);
             return EXIT_SUCCESS;
         }
     }

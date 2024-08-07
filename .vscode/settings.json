@@ -74,6 +74,8 @@
         "variant": "cpp"
     },
     "cSpell.words": [
-        "Devcontainers"
+        "Devcontainers",
+        "Bootloader"
     ],
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
 }
