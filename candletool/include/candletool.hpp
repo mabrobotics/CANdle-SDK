@@ -70,6 +70,14 @@ class CandleTool
      */
     void updateMd(const std::string& mabFilePath, uint16_t canId, bool noReset = false);
 
+    /**
+     * @brief Update firmware on PDS
+     *
+     * @param firmwareFile path to firmware file (.mab)
+     * @param canId CAN ID of the PDS to be updated
+     */
+    void updatePds(const std::string& mabFilePath, uint16_t canId, bool noReset = false);
+
   private:
     logger                       log;
     std::unique_ptr<mab::Candle> candle;
