@@ -3,19 +3,25 @@ cmake_minimum_required(VERSION 3.8)
 include(git_func.cmake)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CANDLESDK_VERSION 0.2.0)
-get_tag(CANDLESDK_VERSION_TAG)
+
 
 if(NOT DEFINED PLATFORM)
   set(PLATFORM "native")
   message("Compiling for native system")
 elseif("${PLATFORM}" STREQUAL "WIN")
   message("Cross - compiling for Windows")
-  set(CMAKE_CXX_COMPILER /usr/bin/x86_64-w64-mingw32-g++-posix)
+  set(CMAKE_CXX_COMPILER /usr/bin/x86_64-w64-mingw32-g++-posix) #TODO: Convert this into toolchain file
   set(CMAKE_C_COMPILER /usr/bin/x86_64-w64-mingw32-gcc-posix)
   set(CMAKE_SYSTEM_NAME Windows)
 endif()
-project(candlesdk)
+
+set(CANDLESDK_VERSION_1 1)
+set(CANDLESDK_VERSION_2 0)
+set(CANDLESDK_VERSION_3 0)
+set(CANDLESDK_VERSION ${CANDLESDK_VERSION_1}.${CANDLESDK_VERSION_2}.${CANDLESDK_VERSION_3})
+get_tag(CANDLESDK_VERSION_TAG)
+
+project(candlesdk VERSION ${CANDLESDK_VERSION_1}.${CANDLESDK_VERSION_2}.${CANDLESDK_VERSION_3})
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

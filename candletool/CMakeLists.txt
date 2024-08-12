@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(candletool)
+project(candletool VERSION ${CANDLESDK_VERSION_1}.${CANDLESDK_VERSION_2}.${CANDLESDK_VERSION_3})
 
 file(GLOB SRC "src/*.cpp")
 # enable_testing()
@@ -39,7 +39,7 @@ add_custom_command(TARGET ${PROJECT_NAME}
 # package / installer
 set(CPACK_PROJECT_NAME "candletool")
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
-set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
+set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}-${PROJECT_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR})
 set(CPACK_PACKAGE_VENDOR "MAB Robotics")
 set(CPACK_PACKAGE_DESCRIPTION
     "Console tool for configuring and setting up MAB MD motor controllers via CANdle."
@@ -70,8 +70,11 @@ if(WIN32)
 elseif(UNIX)
   set(CPACK_GENERATOR "DEB")
   set(CPACK_DEBIAN_PACKAGE_MAINTAINER "MAB Robotics <contact@mabrobotics.pl>")
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS libusb-1.0-0-dev)
-  set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${ARCH})
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS libusb-1.0-0)
+  set(CPACK_DEBIAN_PACKAGE_VERSION)
+  if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
+    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "arm64")
+  endif()
   set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
       "${PROJECT_SOURCE_DIR}/template_package/postinst")
   install(TARGETS ${PROJECT_NAME} DESTINATION /usr/local/bin)
