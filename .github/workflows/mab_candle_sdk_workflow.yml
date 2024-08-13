@@ -30,9 +30,38 @@ jobs:
     - name: Store artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: Candletool-build-artifacts
+        name: Candletool-build-artifacts-x86_64
         path: |
           build/*.deb
+
+  build-candleSDK-linux-arm64:
+    runs-on: ubuntu-22.04
+    container:
+      image: mabroboticsofficial/candlesdk_linux_arm64
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with: 
+        submodules: 'true'
+
+    - name: CMake configure
+      run: |
+        cmake -DCMAKE_BUILD_TYPE=Release --toolchain ./cmake/linux.arm64.toolchain.cmake ./ -B build -G "Unix Makefiles" .
+
+    - name: Build
+      run: cmake --build ./build
+
+    - name: Create .deb package
+      run: make -C ./build package
+
+    - name: Store artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: Candletool-build-artifacts-arm64
+        path: |
+          build/*.deb
+        
   test-candleSDK-linux:
     runs-on: ubuntu-22.04
     container:
@@ -52,6 +81,7 @@ jobs:
       
       - name: Test
         run: ./launch/run_all_tests.sh
+    
   
   # release-candleSDK-linux:
   #   runs-on: ubuntu-22.04
