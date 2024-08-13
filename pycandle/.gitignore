@@ -1,0 +1,11 @@
+.vscode
+*.swp
+*.egg-info
+*.pyc
+*.err
+dist
+build
+wheelhouse
+tmpvenv
+src/pyCandleMAB.egg-info
+venv/

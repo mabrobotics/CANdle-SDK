@@ -3,6 +3,8 @@ build
 install
 log
 bin
+dist
+wheelhouse
 
 # Prerequisites
 *.d

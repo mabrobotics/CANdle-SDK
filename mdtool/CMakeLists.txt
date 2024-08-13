@@ -36,7 +36,7 @@ add_custom_command(TARGET mdtool
   COMMENT "Copying configs..."
   )
 
-# package / installer
+# package / installe
 set(CPACK_PROJECT_NAME "mdtool")
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
@@ -74,13 +74,13 @@ elseif(UNIX)
   set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${ARCH})
   set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
       "${PROJECT_SOURCE_DIR}/template_package/postinst")
-  install(TARGETS ${PROJECT_NAME} DESTINATION /usr/local/bin)
-  install(DIRECTORY "${PROJECT_SOURCE_DIR}/template_package/etc" DESTINATION /)
+  install(TARGETS ${PROJECT_NAME} DESTINATION /usr/local/bin EXCLUDE_FROM_ALL)
+  install(DIRECTORY "${PROJECT_SOURCE_DIR}/template_package/etc" DESTINATION / EXCLUDE_FROM_ALL)
   install(
     FILES "${PROJECT_SOURCE_DIR}/template_package/etc/mdtool/config/mdtool.ini"
     DESTINATION "/etc/mdtool/"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
-                WORLD_WRITE)
+                WORLD_WRITE EXCLUDE_FROM_ALL)
 endif()
 
 include(CPack)

@@ -15,5 +15,5 @@ foreach(testsourcefile ${APP_SOURCES})
     target_include_directories(${executable} SYSTEM PRIVATE 
         # ${SPDLOG_INCLUDE_DIR} 
         ${mINI_INCLUDE_DIR})
-    target_link_libraries(${executable} pthread candlelib -static-libstdc++ -static-libgcc)
+    target_link_libraries(${executable} pthread candle -static-libstdc++ -static-libgcc)
 endforeach(testsourcefile ${APP_SOURCES})
