@@ -2,7 +2,7 @@
 
 MabFileParser::MabFileParser(std::string filePath)
 {
-    log.tag = "MAB FILE";
+    log.m_tag = "MAB FILE";
     if (Status_E::OK != processFile(filePath))
     {
         log.error("Error processing file\n\r[ %s ]\n\rCheck file path and format.",
@@ -10,6 +10,10 @@ MabFileParser::MabFileParser(std::string filePath)
         throw std::runtime_error("Error processing file");
     }
 }
+
+// MabFileParser::MabFileParser(MabFileParser& MabFileParser)
+// {
+// }
 
 MabFileParser::Status_E MabFileParser::processFile(std::string filePath)
 {

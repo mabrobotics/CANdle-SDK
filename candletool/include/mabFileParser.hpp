@@ -43,12 +43,13 @@ class MabFileParser
 
     MabFileParser() = delete;
     MabFileParser(std::string filePath);
+    MabFileParser(MabFileParser&) = default;
 
     FirmwareEntry m_firmwareEntry1;
     FirmwareEntry m_firmwareEntry2;
 
   private:
-    logger log;
+    Logger log;
 
     Status_E             processFile(std::string filePath);
     TargetDevice_E       parseTargetDevice(std::string tag);

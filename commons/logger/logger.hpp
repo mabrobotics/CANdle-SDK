@@ -1,6 +1,9 @@
 #pragma once
 #include <string>
 #include <cstdint>
+#include <atomic>
+#include <optional>
+#include <mutex>
 
 #ifndef _WIN32
 
@@ -11,6 +14,7 @@
 #define ORANGE   "\x1b[38;5;202m"
 #define GREY     "\x1b[38;5;240m"
 #define RESETCLR "\x1b[0m"
+#define NEW_LINE "\n"
 
 #else
 
@@ -21,11 +25,13 @@
 #define ORANGE
 #define GREY
 #define RESETCLR
+#define NEW_LINE "\r\n"
 
 #endif
 
-struct logger
+class Logger
 {
+  public:
     enum class LogLevel_E : uint8_t
     {
         DEBUG  = 0,
@@ -34,17 +40,20 @@ struct logger
         ERROR  = 30,
         SILENT = 255
     };
-    LogLevel_E  level = LogLevel_E::INFO;
-    std::string tag   = "";
 
-    void info(const char* msg, ...);
+    LogLevel_E  m_level = LogLevel_E::INFO;
+    std::string m_tag   = "";
 
-    /**
-     * @brief Print a message without any prefix or newline
-     */
     void progress(double percentage);
+
+    void ui(const char* msg, ...);
+    void info(const char* msg, ...);
     void success(const char* msg, ...);
     void debug(const char* msg, ...);
     void warn(const char* msg, ...);
     void error(const char* msg, ...);
+
+  private:
+    inline static std::mutex g_m_printfLock;
+    void                     print(FILE* steam, const char* header, const char* msg, va_list args);
 };

@@ -19,7 +19,7 @@ class UsbLoader : public I_Loader
   private:
     mab::Candle& m_candle;
     uint32_t     m_canId;
-    logger       m_log;
+    Logger       m_log;
     size_t       m_fileSize;
     size_t       m_bytesToUpload;
     size_t       m_pagesToUpload;

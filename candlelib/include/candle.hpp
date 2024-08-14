@@ -404,7 +404,7 @@ namespace mab
 
 		std::jthread transmitterThread;
 		sem_t		 received;
-		logger		 log;
+		Logger		 log;
 
 		bool printVerbose = true;
 

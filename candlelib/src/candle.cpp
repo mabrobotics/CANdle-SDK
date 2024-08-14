@@ -42,13 +42,13 @@ namespace mab
 				   const std::string device)
 		: Candle(canBaudrate, printVerbose, makeBus(busType, device))
 	{
-		log.tag = "Candle";
+		log.m_tag = "Candle";
 	}
 
 	Candle::Candle(CANdleBaudrate_E canBaudrate, bool printVerbose, std::shared_ptr<Bus> bus)
 		: printVerbose(printVerbose), bus(bus)
 	{
-		log.tag = "Candle";
+		log.m_tag = "Candle";
 
 		reset();
 		usleep(5000);
@@ -168,7 +168,7 @@ namespace mab
 	{
 		int		 counter		= 0;
 		uint64_t freqCheckStart = getTimestamp();
-		log.level				= logger::LogLevel_E::DEBUG;
+		log.m_level				= Logger::LogLevel_E::DEBUG;
 		while (!shouldStopTransmitter || stop_token.stop_requested())
 		{
 			if (++counter == 250)
@@ -196,7 +196,7 @@ namespace mab
 
 	void Candle::setVebose(bool enable)
 	{
-		log.level = enable ? logger::LogLevel_E::INFO : (logger::LogLevel_E)30;
+		log.m_level = enable ? Logger::LogLevel_E::INFO : (Logger::LogLevel_E)30;
 	}
 
 	unsigned long Candle::getDeviceId() { return bus->getId(); }

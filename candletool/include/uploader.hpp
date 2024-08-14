@@ -59,7 +59,7 @@ namespace mab
 
       private:
         mab::Candle& m_candle;
-        logger       m_log;
+        Logger       m_log;
 
         MabFileParser& m_mabFile;
         uint32_t       m_canId;
