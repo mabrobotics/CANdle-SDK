@@ -2,6 +2,7 @@
 
 #include <numeric>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include "ui.hpp"
 #include "configHelpers.hpp"
@@ -48,7 +49,6 @@ mab::CANdleBaudrate_E str2baud(const std::string& baud)
 		return mab::CANdleBaudrate_E::CAN_BAUD_8M;
 	return mab::CANdleBaudrate_E::CAN_BAUD_1M;
 }
-
 
 CandleTool::CandleTool()
 {
@@ -97,7 +97,8 @@ void CandleTool::ping(const std::string& variant)
 	candle->ping(str2baud(variant));
 }
 
-void CandleTool::configCan(u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination)
+void CandleTool::configCan(
+	u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination)
 {
 	checkSpeedForId(id);
 	candle->configMd80Can(id, newId, str2baud(baud), timeout, termination);
@@ -106,7 +107,10 @@ void CandleTool::configSave(u16 id) { candle->configMd80Save(id); }
 
 void CandleTool::configZero(u16 id) { candle->controlMd80SetEncoderZero(id); }
 
-void CandleTool::configCurrent(u16 id, f32 current) { candle->configMd80SetCurrentLimit(id, current); }
+void CandleTool::configCurrent(u16 id, f32 current)
+{
+	candle->configMd80SetCurrentLimit(id, current);
+}
 
 void CandleTool::configBandwidth(u16 id, f32 bandwidth)
 {
@@ -774,6 +778,97 @@ void CandleTool::testEncoderMain(u16 id)
 		return;
 	candle->setupMd80TestMainEncoder(id);
 }
+void CandleTool::updateMd(u16 id)
+{
+	// if (!tryAddMD80(id) && hasError(id))
+	// 	return;
+
+	FILE*  file = fopen("fw.mab", "r");
+	char*  line;
+	size_t len;
+	// size_t read;
+	if (!file)
+		return log.error("Could not open .mab file!");
+	getline(&line, &len, file);
+	getline(&line, &len, file);
+	if (strncmp(line, "tag = md", 8) != 0)
+		return log.error(".mab file corrupted or not dedicatedfor MD!");
+	getline(&line, &len, file);
+	if (strncmp(line, "size = ", 7) != 0)
+		return log.error(".mab file corrupted, cannot read firmware size!");
+	u32 fwSize = atof((char*)((size_t)line + 6));
+	getline(&line, &len, file);
+	if (strncmp(line, "checksum = ", 11) != 0)
+		return log.error(".mab file corrupted, cannot read firmware checksum!");
+	char checksum[65] = {};
+	strncpy(checksum, (char*)((size_t)line + 11), 64);
+	log.info("fwSize: %d, checksum: %s ", fwSize, checksum);
+
+	char fileBuffer[4096];
+	char pageBuffer[2048];
+	fgets((char*)pageBuffer, 9, file);
+	// Here firmware starts
+	// TODO: use lseek to check how many bytes are left and compare to fwSize
+	// fgets((char*)fileBuffer, 16, file);
+
+	// candle->setupMd80PerformReset(id);
+	usleep(300000);
+
+	char txData[64] = {}, rxData[64] = {};
+	txData[0]		  = (u8)0xb1;
+	*(u32*)&txData[1] = 0x8005000;
+	*(u32*)&txData[5] = fwSize;
+	candle->sendGenericFDCanFrame(id, 9, txData, rxData, 100);
+	if (strncmp(rxData, "OK", 2) != 0)
+		return log.error("HOST INIT failed!");
+	log.info("HOST OK");
+	usleep(50000);
+	txData[0] = (u8)0xb2;
+	candle->sendGenericFDCanFrame(id, 9, txData, rxData, 500);
+	if (strncmp(rxData, "OK", 2) != 0)
+		return log.error("ERASE PAGE failed!");
+	log.info("ERASE OK");
+	usleep(50000);
+	txData[0] = (u8)0xb3;
+	txData[0] = 0;
+	candle->sendGenericFDCanFrame(id, 18, txData, rxData, 100);
+	if (strncmp(rxData, "OK", 2) != 0)
+		return log.error("PROG failed!");
+	log.info("PROG OK");
+	usleep(50000);
+	u32 page		 = 0;
+	u32 bytesWritten = 0;
+	while (bytesWritten < fwSize)
+	{
+		page++;
+		fgets((char*)fileBuffer, 4096, file);
+		for (int i = 0; i < 2048; i++)
+		{
+			char hex[3]	  = {fileBuffer[2 * i], fileBuffer[2 * i + 1], 0};
+			pageBuffer[i] = strtol(hex, nullptr, 16);
+		}
+		for (int i = 0; i < 32; i++)
+		{
+			memcpy(txData, &pageBuffer[i * 64], 64);
+			candle->sendGenericFDCanFrame(id, 64, txData, rxData, 200);
+			if (strncmp(rxData, "OK", 2) != 0)
+				return log.error("Page %d at %d failed!", page, i * 64);
+			usleep(50000);
+		}
+		txData[0] = (u8)0xb4;
+		candle->sendGenericFDCanFrame(id, 5, txData, rxData, 500);
+		if (strncmp(rxData, "OK", 2) != 0)
+			return log.error("WRITE at page %d failed!", page);
+		log.info("WRITE OK");
+		usleep(50000);
+		bytesWritten += 2048;
+	}
+	txData[0] = (u8)0xb5;
+	candle->sendGenericFDCanFrame(id, 5, txData, rxData, 200);
+	if (strncmp(rxData, "OK", 2) != 0)
+		return log.error("BOOT failed!", page);
+	log.info("BOOT OK");
+}
 
 void CandleTool::registerWrite(u16 id, u16 reg, const std::string& value)
 {
@@ -972,10 +1067,10 @@ bool CandleTool::hasError(u16 canId)
 /* gets field only if the value is within bounds form the ini file */
 template <class T>
 bool CandleTool::getField(mINI::INIStructure& cfg,
-					  mINI::INIStructure& ini,
-					  std::string		  category,
-					  std::string		  field,
-					  T&				  value)
+						  mINI::INIStructure& ini,
+						  std::string		  category,
+						  std::string		  field,
+						  T&				  value)
 {
 	T min = 0;
 	T max = 0;
@@ -1024,8 +1119,9 @@ bool CandleTool::checkSetupError(u16 id)
 
 	if (calibrationStatus & (1 << ui::calibrationErrorList.at(std::string("ERROR_SETUP"))))
 	{
-		log.error("Could not proceed due to %s. Please call candletool setup motor <ID> <cfg> first.",
-				  RED__("ERROR_SETUP"));
+		log.error(
+			"Could not proceed due to %s. Please call candletool setup motor <ID> <cfg> first.",
+			RED__("ERROR_SETUP"));
 		return true;
 	}
 

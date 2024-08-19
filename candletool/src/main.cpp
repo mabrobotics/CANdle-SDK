@@ -19,6 +19,7 @@ int main(int argc, char** argv)
 	auto* reset	  = app.add_subcommand("reset", "Reset MD drive.");
 	auto* setup	  = app.add_subcommand("setup", "Setup MD via config files, and calibrate.");
 	auto* test	  = app.add_subcommand("test", "Basic MD drive testing routines.");
+	auto* update  = app.add_subcommand("update", "Update Firmware of MAB devices.");
 
 	// BLINK
 	blink->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
@@ -91,7 +92,7 @@ int main(int argc, char** argv)
 	setupMotor->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 	setupMotor->add_option(
 		"<.cfg FILENAME>",
-		cmd.cfgPath,
+		cmd.path,
 		"Filename of motor config. Default config files are in:`/etc/candletool/config/motors/`.");
 	setupMotor->add_flag("-f", cmd.force, "Force uploading config file, without verification.");
 	setupReadCfg->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
@@ -123,6 +124,15 @@ int main(int argc, char** argv)
 	testMoveAbs->add_option("<MAX DCC>", cmd.dcc, "Profile max deceleration [rad/s^2].");
 	testMoveRel->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 	testMoveRel->add_option("<REL POS>", cmd.pos, "Relative position to reach. <-10, 10>[rad]");
+
+	// UPDATE
+	auto* updateMD = update->add_subcommand("MD", "Update MD20/80 via FDCAN.");
+	// TODO:
+	// auto* updatePDS = test->add_subcommand("PDS", "Update PDS via FDCAN.");
+	// auto* updateCANdle = test->add_subcommand("CANdle" "Update CANdle via USB.");
+	updateMD->add_option("<CAN ID>", cmd.id, "CAN ID of device to interact with.")->required();
+	//TODO: updateMD->add_flag("-f", cmd.path, "Path to .mab file with firmware."); 
+	//TODO: updateMD->add_flag("-v", cmd.variant, "Version string, eg. `-v 3.0.0` or `-v latest`");
 
 	CLI11_PARSE(app, argc, argv);
 
@@ -176,7 +186,7 @@ int main(int argc, char** argv)
 		if (setupInfo->parsed())
 			candleTool.setupInfo(cmd.id, (setupInfoAllFlag->count() > 0 ? true : false));
 		if (setupMotor->parsed())
-			candleTool.setupMotor(cmd.id, cmd.cfgPath, cmd.force);
+			candleTool.setupMotor(cmd.id, cmd.path, cmd.force);
 		if (setupReadCfg->parsed())
 			candleTool.setupReadConfig(cmd.id, cmd.value);
 	}
@@ -192,6 +202,11 @@ int main(int argc, char** argv)
 			candleTool.testMoveAbsolute(cmd.id, cmd.pos, cmd.vel, cmd.acc, cmd.dcc);
 		if (testMoveRel->parsed())
 			candleTool.testMove(cmd.id, cmd.pos);
+	}
+	if (update->parsed())
+	{
+		if (updateMD->parsed())
+			candleTool.updateMd(cmd.id);
 	}
 
 	return EXIT_SUCCESS;

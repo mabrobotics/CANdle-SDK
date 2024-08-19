@@ -13,7 +13,7 @@ struct UserCommand
 	u32			canWatchdog = 100;
 	f32			current		= 1.f;
 	f32			bandwidth	= 100.f;
-	std::string cfgPath		= "";
+	std::string path		= "";
 	f32			pos = 0.f, vel = 10.f, acc = 5.f, dcc = 5.f;
 	bool		infoAll = false;
 	std::string bus		= "USB";
@@ -45,6 +45,9 @@ class CandleTool
 	void testLatency(const std::string& canBaudrate);
 	void testEncoderOutput(u16 id);
 	void testEncoderMain(u16 id);
+
+    void updateMd(u16 id);
+
 	void blink(u16 id);
 	void encoder(u16 id);
 	void bus(const std::string& bus, const std::string& device);
