@@ -806,41 +806,52 @@ void CandleTool::updateMd(u16 id)
 
 	char fileBuffer[4096];
 	char pageBuffer[2048];
-	fgets((char*)pageBuffer, 9, file);
+	fgets((char*)pageBuffer, 10, file);
 	// Here firmware starts
 	// TODO: use lseek to check how many bytes are left and compare to fwSize
 	// fgets((char*)fileBuffer, 16, file);
 
-	// candle->setupMd80PerformReset(id);
+	candle->setupMd80PerformReset(id);
 	usleep(300000);
 
-	char txData[64] = {}, rxData[64] = {};
-	txData[0]		  = (u8)0xb1;
-	*(u32*)&txData[1] = 0x8005000;
-	*(u32*)&txData[5] = fwSize;
-	candle->sendGenericFDCanFrame(id, 9, txData, rxData, 100);
-	if (strncmp(rxData, "OK", 2) != 0)
+	char tx[64] = {}, rx[64] = {};
+	tx[0]		  = (u8)0xb1;
+	*(u32*)&tx[1] = 0x8005000;
+	*(u32*)&tx[5] = fwSize;
+	if (!candle->sendGenericFDCanFrame(id, 9, tx, rx, 100) || strncmp(rx, "OK", 2) != 0)
 		return log.error("HOST INIT failed!");
 	log.info("HOST OK");
+	memset(rx, 0, 2);
 	usleep(50000);
-	txData[0] = (u8)0xb2;
-	candle->sendGenericFDCanFrame(id, 9, txData, rxData, 500);
-	if (strncmp(rxData, "OK", 2) != 0)
-		return log.error("ERASE PAGE failed!");
-	log.info("ERASE OK");
-	usleep(50000);
-	txData[0] = (u8)0xb3;
-	txData[0] = 0;
-	candle->sendGenericFDCanFrame(id, 18, txData, rxData, 100);
-	if (strncmp(rxData, "OK", 2) != 0)
+
+	u32 bulkEraseSize = 8 * 2048;
+	s32 bytesToErase  = fwSize + bulkEraseSize;
+	tx[0]			  = (u8)0xb2;
+	*(u32*)&tx[5]	  = bulkEraseSize;
+	u32 bulksErase	  = 0;
+	while (bytesToErase > 0)
+	{
+		if (!candle->sendGenericFDCanFrame(id, 9, tx, rx, 250) || strncmp(rx, "OK", 2) != 0)
+			return log.error("ERASE PAGE failed!");
+		memset(rx, 0, 2);
+		*(u32*)&tx[1] = *(u32*)&tx[1] + bulkEraseSize;
+		bytesToErase -= bulkEraseSize;
+		bulksErase++;
+		log.info("ERASED: %d bulks [%d bytes]", bulksErase, bulkEraseSize * bulksErase);
+		usleep(50000);
+	}
+	tx[0] = (u8)0xb3;
+	tx[1] = 0;
+	if (!candle->sendGenericFDCanFrame(id, 18, tx, rx, 100) || strncmp(rx, "OK", 2) != 0)
 		return log.error("PROG failed!");
 	log.info("PROG OK");
+	memset(rx, 0, 2);
 	usleep(50000);
 	u32 page		 = 0;
 	u32 bytesWritten = 0;
 	while (bytesWritten < fwSize)
 	{
-		page++;
+		log.info("Sending Page %d", page);
 		fgets((char*)fileBuffer, 4096, file);
 		for (int i = 0; i < 2048; i++)
 		{
@@ -849,24 +860,24 @@ void CandleTool::updateMd(u16 id)
 		}
 		for (int i = 0; i < 32; i++)
 		{
-			memcpy(txData, &pageBuffer[i * 64], 64);
-			candle->sendGenericFDCanFrame(id, 64, txData, rxData, 200);
-			if (strncmp(rxData, "OK", 2) != 0)
-				return log.error("Page %d at %d failed!", page, i * 64);
-			usleep(50000);
+			memcpy(tx, &pageBuffer[i * 64], 64);
+			if (candle->sendGenericFDCanFrame(id, 64, tx, rx, 200))
+				if (strncmp(rx, "OK", 2) != 0)
+					return log.error("Page %d at %d failed!", page, i * 64);
 		}
-		txData[0] = (u8)0xb4;
-		candle->sendGenericFDCanFrame(id, 5, txData, rxData, 500);
-		if (strncmp(rxData, "OK", 2) != 0)
-			return log.error("WRITE at page %d failed!", page);
+		tx[0] = (u8)0xb4;
+		if (candle->sendGenericFDCanFrame(id, 5, tx, rx, 200))
+			if (strncmp(rx, "OK", 2) != 0)
+				return log.error("WRITE at page %d failed!", page);
 		log.info("WRITE OK");
 		usleep(50000);
 		bytesWritten += 2048;
+		page++;
 	}
-	txData[0] = (u8)0xb5;
-	candle->sendGenericFDCanFrame(id, 5, txData, rxData, 200);
-	if (strncmp(rxData, "OK", 2) != 0)
-		return log.error("BOOT failed!", page);
+	tx[0] = (u8)0xb5;
+	if (candle->sendGenericFDCanFrame(id, 5, tx, rx, 200))
+		if (strncmp(rx, "OK", 2) != 0)
+			return log.error("BOOT failed!", page);
 	log.info("BOOT OK");
 }
 
