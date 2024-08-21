@@ -124,10 +124,16 @@ std::string MabFileParser::fileType2String(TargetDevice_E type)
     {
         case TargetDevice_E::MD:
             return "MD";
+
+        case TargetDevice_E::PDS:
+            return "PDS";
+
         case TargetDevice_E::CANDLE:
             return "CANDLE";
+
         case TargetDevice_E::BOOT:
             return "BOOT";
+
         default:
             return "UNKNOWN";
     }

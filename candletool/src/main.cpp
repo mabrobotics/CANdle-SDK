@@ -127,9 +127,12 @@ int main(int argc, char** argv)
 
     // Update
 
-    auto* candle_update = update->add_subcommand("candle", "Update firmware on Candle device.");
-    auto* md_update     = update->add_subcommand("md", "Update firmware on MD device.");
-    md_update->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    auto* candleUpdate = update->add_subcommand("candle", "Update firmware on Candle device.");
+    auto* mdUpdate     = update->add_subcommand("md", "Update firmware on MD device.");
+    auto* pdsUpdate    = update->add_subcommand("pds", "Update firmware on PDS device.");
+
+    mdUpdate->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    pdsUpdate->add_option("<CAN ID>", cmd.id, "CAN ID of the PDS to interact with.")->required();
     update->add_flag("-r", cmd.noReset, "Do not reset the device before updating firmware.");
     update->add_option("-f,--file", cmd.firmwareFileName, "Path to the .mab file");
 
@@ -218,15 +221,21 @@ int main(int argc, char** argv)
             // std::cout << "using mab file [ " << cmd.firmwareFileName << " ]" << std::endl;
         }
 
-        if (candle_update->parsed())
+        if (candleUpdate->parsed())
         {
             candleTool.updateCandle(cmd.firmwareFileName, cmd.noReset);
             return EXIT_SUCCESS;
         }
 
-        if (md_update->parsed())
+        if (mdUpdate->parsed())
         {
             candleTool.updateMd(cmd.firmwareFileName, cmd.id, cmd.noReset);
+            return EXIT_SUCCESS;
+        }
+
+        if (pdsUpdate->parsed())
+        {
+            candleTool.updatePds(cmd.firmwareFileName, cmd.id, cmd.noReset);
             return EXIT_SUCCESS;
         }
     }

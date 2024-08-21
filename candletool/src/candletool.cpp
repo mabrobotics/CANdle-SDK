@@ -903,6 +903,13 @@ void CandleTool::updateMd(const std::string& mabFilePath, uint16_t canId, bool n
     firmwareUploader.flashDevice(noReset);
 }
 
+void CandleTool::updatePds(const std::string& mabFilePath, uint16_t canId, bool noReset)
+{
+    MabFileParser         mabFile(mabFilePath);
+    mab::FirmwareUploader firmwareUploader(*candle, mabFile, canId);
+    firmwareUploader.flashDevice(noReset);
+}
+
 void CandleTool::blink(u16 id)
 {
     candle->configMd80Blink(id);
