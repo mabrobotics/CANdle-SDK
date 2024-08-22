@@ -46,7 +46,7 @@ class CandleTool
 	void testEncoderOutput(u16 id);
 	void testEncoderMain(u16 id);
 
-    void updateMd(u16 id);
+    void updateMd(u16 id, const std::string& path);
 
 	void blink(u16 id);
 	void encoder(u16 id);

@@ -778,113 +778,151 @@ void CandleTool::testEncoderMain(u16 id)
 		return;
 	candle->setupMd80TestMainEncoder(id);
 }
-void CandleTool::updateMd(u16 id)
+
+bool hexStringToBytes(u8 buffer[], u32 bufferLen, const std::string& str)
 {
-	// if (!tryAddMD80(id) && hasError(id))
-	// 	return;
-
-	FILE*  file = fopen("fw.mab", "r");
-	char*  line;
-	size_t len;
-	// size_t read;
-	if (!file)
-		return log.error("Could not open .mab file!");
-	getline(&line, &len, file);
-	getline(&line, &len, file);
-	if (strncmp(line, "tag = md", 8) != 0)
-		return log.error(".mab file corrupted or not dedicatedfor MD!");
-	getline(&line, &len, file);
-	if (strncmp(line, "size = ", 7) != 0)
-		return log.error(".mab file corrupted, cannot read firmware size!");
-	u32 fwSize = atof((char*)((size_t)line + 6));
-	getline(&line, &len, file);
-	if (strncmp(line, "checksum = ", 11) != 0)
-		return log.error(".mab file corrupted, cannot read firmware checksum!");
-	char checksum[65] = {};
-	strncpy(checksum, (char*)((size_t)line + 11), 64);
-	log.info("fwSize: %d, checksum: %s ", fwSize, checksum);
-
-	const u32 maxFwSize				= 512 * 1024;
-	char	  fileBuffer[maxFwSize] = {};
-	fgets((char*)fileBuffer, 10, file);
-
-	// Here firmware starts
-	u32 bytesProcessed = 0;
-	// FILE* rawBin		 = fopen("test.bin", "w");
-	while (bytesProcessed < fwSize)
+	if (bufferLen < (str.length() + 1) / 2 || str.length() % 2 == 1)
+		return false;
+	for (size_t i = 0; i < str.length() / 2; i++)
 	{
-		char hex[3] = {};
-		fgets(hex, 3, file);
-		fileBuffer[bytesProcessed] = strtol(hex, nullptr, 16);
-		// fputc(pageBuffer[bytesProcessed], rawBin);
-		bytesProcessed++;
+		std::string byteString = str.substr(2 * i, 2);
+		buffer[i]			   = std::stoi(byteString.c_str(), nullptr, 16);
 	}
-	// fclose(rawBin);
-	// TODO: use lseek to check how many bytes are left and compare to fwSize
-	// fgets((char*)fileBuffer, 16, file);
+	return true;
+}
+
+bool sendHostInit(mab::Candle& candle, logger& log, u16 id, u32 fwStartAdr, u32 fwSize)
+{
+	char tx[64] = {}, rx[64] = {};
+	tx[0]		  = (u8)0xb1;
+	*(u32*)&tx[1] = fwStartAdr;
+	*(u32*)&tx[5] = fwSize;
+	return (candle.sendGenericFDCanFrame(id, 9, tx, rx, 100) && strncmp(rx, "OK", 2) == 0);
+}
+bool sendErase(mab::Candle& candle, logger& log, u16 id, u32 eraseStart, u32 eraseSize)
+{
+	char tx[64] = {}, rx[64] = {};
+	s32	 maxEraseSize		   = 8 * 2048;
+	s32	 remainingBytesToErase = eraseSize;
+
+	tx[0]		  = (u8)0xb2;
+	*(u32*)&tx[1] = eraseStart;
+	while (remainingBytesToErase > 0)
+	{
+		u32 bytesToErase = maxEraseSize;
+		if (remainingBytesToErase < maxEraseSize)
+			bytesToErase = remainingBytesToErase;
+		*(u32*)&tx[5] = bytesToErase;
+		log.debug("ERASE @ %x, %d bytes.", *(u32*)&tx[1], *(u32*)&tx[5]);
+		if (!candle.sendGenericFDCanFrame(id, 9, tx, rx, 250) || strncmp(rx, "OK", 2) != 0)
+			return false;
+		memset(rx, 0, 2);
+		*(u32*)&tx[1] += bytesToErase;
+		remainingBytesToErase -= bytesToErase;
+	}
+	return true;
+}
+bool sendProgStart(mab::Candle& candle, u16 id, bool cipher, u8* iv)
+{
+	char tx[64] = {}, rx[64] = {};
+	tx[0] = (u8)0xb3;
+	rx[1] = (u8)cipher;
+	memcpy(&tx[2], iv, 16);
+	return (candle.sendGenericFDCanFrame(id, 18, tx, rx, 100) && strncmp(rx, "OK", 2) == 0);
+}
+bool sendWrite(mab::Candle& candle, u16 id, u8* pagePtr, u32 dataSize)
+{
+	char tx[64] = {}, rx[64] = {};
+	tx[0] = (u8)0xb4;  // Send Write
+	return (candle.sendGenericFDCanFrame(id, 5, tx, rx, 200) && (strncmp(rx, "OK", 2) == 0));
+}
+bool sendSendFirmware(mab::Candle& candle, logger& log, u16 id, u32 fwSize, u8* fwBuffer)
+{
+	char tx[64] = {}, rx[64] = {};
+	u32	 page		  = 0;
+	u32	 bytesWritten = 0;
+	while (bytesWritten < fwSize)
+	{
+		log.debug("Sending Page %d", page);
+		for (int i = 0; i < 32; i++)
+		{
+			memcpy(tx, &fwBuffer[page * 2048 + i * 64], 64);
+			bool success =
+				(candle.sendGenericFDCanFrame(id, 64, tx, rx, 200) && strncmp(rx, "OK", 2) == 0);
+			if (!success)
+			{
+				log.error("Page %d at %d failed!", page, i * 64);
+				return false;
+			}
+		}
+		if (!sendWrite(candle, id, &fwBuffer[page * 2048], 2048))
+			return false;
+		log.debug("WRITE OK");
+		bytesWritten += 2048;
+		page++;
+	}
+	return true;
+}
+bool sendBoot(mab::Candle& candle, u16 id, u32 fwStart)
+{
+	char tx[64] = {}, rx[64] = {};
+	tx[0]		  = (u8)0xb5;
+	*(u32*)&tx[1] = fwStart;
+	return (candle.sendGenericFDCanFrame(id, 5, tx, rx, 200) && (strncmp(rx, "OK", 2) == 0));
+}
+void CandleTool::updateMd(u16 id, const std::string& path)
+{
+	u8	 iv[16]			= {};
+	char fwVersion[10]	= {};
+	u32	 fwStartAddress = 0x8000000;
+
+	log.level = logger::LogLevel_E::DEBUG;
+	mINI::INIFile	   file(path);
+	mINI::INIStructure ini;
+
+	if (!file.read(ini))
+		return log.error("Could not open .mab file!");
+	std::string tag		 = ini.get("firmware").get("tag");
+	s32			fwSize	 = atoi(ini.get("firmware").get("size").c_str());
+	std::string checksum = ini.get("firmware").get("checksum");
+	fwStartAddress		 = strtol(ini.get("firmware").get("start").c_str(), nullptr, 16);
+	strcpy(fwVersion, ini.get("firmware").get("version").c_str());
+	hexStringToBytes(iv, 16, ini.get("firmware").get("iv"));
+	if (fwSize == 0 || tag != "md" || checksum == "")
+		return log.error("Firmware file invalid.");
+	log.info("Firmware - tag: [%s] v[%s], size: [%d], adress: [0x%x], checksum: [%s].",
+			 tag.c_str(),
+			 fwVersion,
+			 fwSize,
+			 fwStartAddress,
+			 checksum.c_str());
+	log.warn("Continue? [y/n]");
+	char confirm = getchar();
+	if (confirm != 'y')
+		return;
+
+	u8 fileBuffer[512 * 1024] = {};
+	hexStringToBytes(fileBuffer, 512 * 1024, ini.get("firmware").get("binary"));
 
 	candle->setupMd80PerformReset(id);
 	usleep(300000);
 
-	char tx[64] = {}, rx[64] = {};
-	tx[0]		  = (u8)0xb1;
-	*(u32*)&tx[1] = 0x8005000;
-	*(u32*)&tx[5] = fwSize;
-	if (!candle->sendGenericFDCanFrame(id, 9, tx, rx, 100) || strncmp(rx, "OK", 2) != 0)
+	if (!sendHostInit(*candle, log, id, fwStartAddress, fwSize))
 		return log.error("HOST INIT failed!");
-	log.info("HOST OK");
-	memset(rx, 0, 2);
-	usleep(50000);
-
-	u32 bulkEraseSize = 8 * 2048;
-	s32 bytesToErase  = fwSize + bulkEraseSize;
-	tx[0]			  = (u8)0xb2;
-	*(u32*)&tx[5]	  = bulkEraseSize;
-	u32 bulksErase	  = 0;
-	while (bytesToErase > 0)
-	{
-		if (!candle->sendGenericFDCanFrame(id, 9, tx, rx, 250) || strncmp(rx, "OK", 2) != 0)
-			return log.error("ERASE PAGE failed!");
-		memset(rx, 0, 2);
-		*(u32*)&tx[1] = *(u32*)&tx[1] + bulkEraseSize;
-		bytesToErase -= bulkEraseSize;
-		bulksErase++;
-		log.info("ERASED: %d bulks [%d bytes]", bulksErase, bulkEraseSize * bulksErase);
-		usleep(50000);
-	}
-	tx[0] = (u8)0xb3;
-	tx[1] = 0;
-	if (!candle->sendGenericFDCanFrame(id, 18, tx, rx, 100) || strncmp(rx, "OK", 2) != 0)
+	log.debug("HOST OK");
+	if (!sendErase(*candle, log, id, fwStartAddress, fwSize))
+		return log.error("ERASE failed!");
+	log.debug("ERASE OK");
+	if (!sendProgStart(*candle, id, false, iv))
 		return log.error("PROG failed!");
-	log.info("PROG OK");
-	memset(rx, 0, 2);
-	usleep(50000);
-	u32 page		 = 0;
-	u32 bytesWritten = 0;
-	while (bytesWritten < fwSize)
-	{
-		log.info("Sending Page %d", page);
-		for (int i = 0; i < 32; i++)
-		{
-			memcpy(tx, &fileBuffer[page * 2048 + i * 64], 64);
-			if (candle->sendGenericFDCanFrame(id, 64, tx, rx, 200))
-				if (strncmp(rx, "OK", 2) != 0)
-					return log.error("Page %d at %d failed!", page, i * 64);
-		}
-		tx[0] = (u8)0xb4;
-		if (candle->sendGenericFDCanFrame(id, 5, tx, rx, 200))
-			if (strncmp(rx, "OK", 2) != 0)
-				return log.error("WRITE at page %d failed!", page);
-		log.info("WRITE OK");
-		usleep(10000);
-		bytesWritten += 2048;
-		page++;
-	}
-	tx[0] = (u8)0xb5;
-	if (candle->sendGenericFDCanFrame(id, 5, tx, rx, 200))
-		if (strncmp(rx, "OK", 2) != 0)
-			return log.error("BOOT failed!", page);
-	log.info("BOOT OK");
+	log.debug("PROG OK");
+	if (!sendSendFirmware(*candle, log, id, fwSize, fileBuffer))
+		return log.error("UPDATE failed!");
+	log.debug("Update OK");
+	if (!sendBoot(*candle, id, fwStartAddress))
+		return log.error("BOOT failed!");
+	log.debug("BOOT OK");
+	log.success("MD@%d update succesfull!", id);
 }
 
 void CandleTool::registerWrite(u16 id, u16 reg, const std::string& value)

@@ -131,7 +131,7 @@ int main(int argc, char** argv)
 	// auto* updatePDS = test->add_subcommand("PDS", "Update PDS via FDCAN.");
 	// auto* updateCANdle = test->add_subcommand("CANdle" "Update CANdle via USB.");
 	updateMD->add_option("<CAN ID>", cmd.id, "CAN ID of device to interact with.")->required();
-	//TODO: updateMD->add_flag("-f", cmd.path, "Path to .mab file with firmware."); 
+	updateMD->add_option("<.mab FILE>", cmd.path, "Path to .mab file with firmware."); 
 	//TODO: updateMD->add_flag("-v", cmd.variant, "Version string, eg. `-v 3.0.0` or `-v latest`");
 
 	CLI11_PARSE(app, argc, argv);
@@ -206,7 +206,7 @@ int main(int argc, char** argv)
 	if (update->parsed())
 	{
 		if (updateMD->parsed())
-			candleTool.updateMd(cmd.id);
+			candleTool.updateMd(cmd.id, cmd.path);
 	}
 
 	return EXIT_SUCCESS;
