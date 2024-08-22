@@ -804,10 +804,22 @@ void CandleTool::updateMd(u16 id)
 	strncpy(checksum, (char*)((size_t)line + 11), 64);
 	log.info("fwSize: %d, checksum: %s ", fwSize, checksum);
 
-	char fileBuffer[4096];
-	char pageBuffer[2048];
-	fgets((char*)pageBuffer, 10, file);
+	const u32 maxFwSize				= 512 * 1024;
+	char	  fileBuffer[maxFwSize] = {};
+	fgets((char*)fileBuffer, 10, file);
+
 	// Here firmware starts
+	u32 bytesProcessed = 0;
+	// FILE* rawBin		 = fopen("test.bin", "w");
+	while (bytesProcessed < fwSize)
+	{
+		char hex[3] = {};
+		fgets(hex, 3, file);
+		fileBuffer[bytesProcessed] = strtol(hex, nullptr, 16);
+		// fputc(pageBuffer[bytesProcessed], rawBin);
+		bytesProcessed++;
+	}
+	// fclose(rawBin);
 	// TODO: use lseek to check how many bytes are left and compare to fwSize
 	// fgets((char*)fileBuffer, 16, file);
 
@@ -852,15 +864,9 @@ void CandleTool::updateMd(u16 id)
 	while (bytesWritten < fwSize)
 	{
 		log.info("Sending Page %d", page);
-		fgets((char*)fileBuffer, 4096, file);
-		for (int i = 0; i < 2048; i++)
-		{
-			char hex[3]	  = {fileBuffer[2 * i], fileBuffer[2 * i + 1], 0};
-			pageBuffer[i] = strtol(hex, nullptr, 16);
-		}
 		for (int i = 0; i < 32; i++)
 		{
-			memcpy(tx, &pageBuffer[i * 64], 64);
+			memcpy(tx, &fileBuffer[page * 2048 + i * 64], 64);
 			if (candle->sendGenericFDCanFrame(id, 64, tx, rx, 200))
 				if (strncmp(rx, "OK", 2) != 0)
 					return log.error("Page %d at %d failed!", page, i * 64);
@@ -870,7 +876,7 @@ void CandleTool::updateMd(u16 id)
 			if (strncmp(rx, "OK", 2) != 0)
 				return log.error("WRITE at page %d failed!", page);
 		log.info("WRITE OK");
-		usleep(50000);
+		usleep(10000);
 		bytesWritten += 2048;
 		page++;
 	}
