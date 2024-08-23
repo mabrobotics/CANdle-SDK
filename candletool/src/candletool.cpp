@@ -870,6 +870,21 @@ bool sendBoot(mab::Candle& candle, u16 id, u32 fwStart)
 	*(u32*)&tx[1] = fwStart;
 	return (candle.sendGenericFDCanFrame(id, 5, tx, rx, 200) && (strncmp(rx, "OK", 2) == 0));
 }
+bool sendMeta(mab::Candle& candle, u16 id, u8* checksum)
+{
+	char tx[64] = {}, rx[64] = {};
+	tx[0] = (u8)0xb6;
+	memcpy(&tx[1], checksum, 32);
+	if (!(candle.sendGenericFDCanFrame(id, 64, tx, rx, 200) && (strncmp(rx, "OK", 2) == 0)))
+		return false;
+	tx[0] = (u8)0xb7;
+	tx[1] = (u8)true;
+	*(u32*)&tx[2] = 0; //This is META save address override, left for futureproffing 
+	memcpy(&tx[6], &checksum[32], 32);
+	if (!(candle.sendGenericFDCanFrame(id, 64, tx, rx, 200) && (strncmp(rx, "OK", 2) == 0)))
+		return false;
+    return true;
+}
 void CandleTool::updateMd(u16 id, const std::string& path)
 {
 	u8	 iv[16]			= {};
@@ -919,6 +934,11 @@ void CandleTool::updateMd(u16 id, const std::string& path)
 	if (!sendSendFirmware(*candle, log, id, fwSize, fileBuffer))
 		return log.error("UPDATE failed!");
 	log.debug("Update OK");
+	if (!sendHostInit(*candle, log, id, fwStartAddress, fwSize))
+		return log.error("HOST INIT failed!");
+	if (!sendMeta(*candle, id, (u8*)checksum.c_str()))
+		return log.error("META failed!");
+	log.debug("META OK");
 	if (!sendBoot(*candle, id, fwStartAddress))
 		return log.error("BOOT failed!");
 	log.debug("BOOT OK");
