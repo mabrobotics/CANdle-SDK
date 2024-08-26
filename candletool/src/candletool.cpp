@@ -877,9 +877,10 @@ bool sendMeta(mab::Candle& candle, u16 id, u8* checksum)
 	memcpy(&tx[1], checksum, 32);
 	if (!(candle.sendGenericFDCanFrame(id, 64, tx, rx, 200) && (strncmp(rx, "OK", 2) == 0)))
 		return false;
+	memset(rx, 0, 2);
 	tx[0] = (u8)0xb7;
 	tx[1] = (u8)true;
-	*(u32*)&tx[2] = 0; //This is META save address override, left for futureproffing 
+	*(u32*)&tx[2] = 0x8005000; //This is META save address override, left for futureproffing 
 	memcpy(&tx[6], &checksum[32], 32);
 	if (!(candle.sendGenericFDCanFrame(id, 64, tx, rx, 200) && (strncmp(rx, "OK", 2) == 0)))
 		return false;
@@ -936,6 +937,7 @@ void CandleTool::updateMd(u16 id, const std::string& path)
 	log.debug("Update OK");
 	if (!sendHostInit(*candle, log, id, fwStartAddress, fwSize))
 		return log.error("HOST INIT failed!");
+	log.debug("HOST OK");
 	if (!sendMeta(*candle, id, (u8*)checksum.c_str()))
 		return log.error("META failed!");
 	log.debug("META OK");
