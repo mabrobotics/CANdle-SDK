@@ -3,27 +3,34 @@
 #include <cmath>
 #include <mutex>
 
+Logger ::Logger(const Logger& logger_)
+{
+    m_layer     = logger_.m_layer;
+    m_verbosity = logger_.m_verbosity;
+    m_tag       = logger_.m_tag;
+}
+
 void Logger::ui(const char* msg, ...)
 {
-    if (m_level == LogLevel_E::SILENT)
+    if (getVerbosity() == LogLevel_E::SILENT)
         return;
 
     va_list args;
     va_start(args, msg);
-    Logger::print(stderr, "", msg, args);
+    Logger::printLog(stderr, "", msg, args);
     va_end(args);
 }
 
 void Logger::info(const char* msg, ...)
 {
-    if (m_level > LogLevel_E::INFO)
+    if (getVerbosity() > LogLevel_E::INFO)
         return;
 
     const std::string header("[" BLUE "INFO" RESETCLR "][" + m_tag + "] ");
 
     va_list args;
     va_start(args, msg);
-    Logger::print(stderr, header.c_str(), msg, args);
+    Logger::printLog(stderr, header.c_str(), msg, args);
     va_end(args);
 }
 
@@ -33,7 +40,7 @@ void Logger::info(const char* msg, ...)
 
 void Logger::progress(double percentage)
 {
-    if (m_level == LogLevel_E::SILENT)
+    if (getVerbosity() == LogLevel_E::SILENT)
         return;
     uint16_t val  = (uint16_t)(percentage * 100);
     uint16_t lpad = (uint16_t)(percentage * PBWIDTH);
@@ -49,60 +56,65 @@ void Logger::progress(double percentage)
 
 void Logger::success(const char* msg, ...)
 {
-    if (m_level > LogLevel_E::INFO)
+    if (getVerbosity() > LogLevel_E::INFO)
         return;
 
     const std::string header("[" GREEN " OK " RESETCLR "][" + m_tag + "] ");
 
     va_list args;
     va_start(args, msg);
-    Logger::print(stderr, header.c_str(), msg, args);
+    Logger::printLog(stderr, header.c_str(), msg, args);
     va_end(args);
 }
 
 void Logger::debug(const char* msg, ...)
 {
-    if (m_level > LogLevel_E::DEBUG)
+    if (getVerbosity() > LogLevel_E::DEBUG)
         return;
 
     const std::string header("[" ORANGE "DEBUG" RESETCLR "][" + m_tag + "] ");
 
     va_list args;
     va_start(args, msg);
-    Logger::print(stderr, header.c_str(), msg, args);
+    Logger::printLog(stderr, header.c_str(), msg, args);
     va_end(args);
 }
 
 void Logger::warn(const char* msg, ...)
 {
-    if (m_level > LogLevel_E::WARN)
+    if (getVerbosity() > LogLevel_E::WARN)
         return;
 
     const std::string header("[" YELLOW "WARNING" RESETCLR "][" + m_tag + "] ");
 
     va_list args;
     va_start(args, msg);
-    Logger::print(stderr, header.c_str(), msg, args);
+    Logger::printLog(stderr, header.c_str(), msg, args);
     va_end(args);
 }
 
 void Logger::error(const char* msg, ...)
 {
-    if (m_level > LogLevel_E::ERROR)
+    if (getVerbosity() > LogLevel_E::ERROR)
         return;
 
     const std::string header("[" RED "ERROR" RESETCLR "][" + m_tag + "] ");
 
     va_list args;
     va_start(args, msg);
-    Logger::print(stderr, header.c_str(), msg, args);
+    Logger::printLog(stderr, header.c_str(), msg, args);
     va_end(args);
 }
 
-void Logger::print(FILE* steam, const char* header, const char* msg, va_list args)
+Logger::LogLevel_E Logger::getVerbosity()
+{
+    return g_m_verbosityTable[static_cast<uint8_t>(*m_verbosity)][static_cast<uint8_t>(m_layer)];
+}
+
+void Logger::printLog(FILE* stream, const char* header, const char* msg, va_list args)
 {
     std::lock_guard<std::mutex> lock(g_m_printfLock);
-    fprintf(steam, header, this->m_tag.c_str());
-    vfprintf(steam, msg, args);
-    fprintf(steam, NEW_LINE);
+    fprintf(stream, header, this->m_tag.c_str());
+    vfprintf(stream, msg, args);
+    fprintf(stream, NEW_LINE);
 }

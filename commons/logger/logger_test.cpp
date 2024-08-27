@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 #include <logger.hpp>
-#include <type_traits>
 
 class LoggerTests : public ::testing::Test
 {
@@ -13,39 +12,13 @@ class LoggerTests : public ::testing::Test
 TEST_F(LoggerTests, printError)
 {
     Logger log;
-    log.m_level = Logger::LogLevel_E::ERROR;
-    log.m_tag   = "TEST";
-    log.error("Some error!");
-}
-
-TEST_F(LoggerTests, printWarning)
-{
-    Logger log;
-    log.m_level = Logger::LogLevel_E::WARN;
-    log.m_tag   = "TEST";
-    log.warn("Some warning!");
-}
-
-TEST_F(LoggerTests, printInfo)
-{
-    Logger log;
-    log.m_level = Logger::LogLevel_E::INFO;
-    log.m_tag   = "TEST";
-    log.info("Some info!");
-}
-
-TEST_F(LoggerTests, printDebug)
-{
-    Logger log;
-    log.m_level = Logger::LogLevel_E::DEBUG;
-    log.m_tag   = "TEST";
-    log.debug("Some debug!");
-}
-
-TEST_F(LoggerTests, printUI)
-{
-    Logger log;
-    log.m_level = Logger::LogLevel_E::ERROR;
-    log.m_tag   = "TEST";
-    log.ui("Some ui stuff!%s", "123123123");
+    log.m_layer      = Logger::ProgramLayer_E::TOP;
+    *log.m_verbosity = Logger::Verbosity_E::DEFAULT;
+    ASSERT_EQ(log.getVerbosity(), Logger::LogLevel_E::WARN);
+    log.m_layer      = Logger::ProgramLayer_E::BOTTOM;
+    *log.m_verbosity = Logger::Verbosity_E::VERBOSITY_3;
+    ASSERT_EQ(log.getVerbosity(), Logger::LogLevel_E::DEBUG);
+    log.m_layer      = Logger::ProgramLayer_E::MIDDLE;
+    *log.m_verbosity = Logger::Verbosity_E::SILENT;
+    ASSERT_EQ(log.getVerbosity(), Logger::LogLevel_E::SILENT);
 }
