@@ -827,7 +827,7 @@ bool sendProgStart(mab::Candle& candle, u16 id, bool cipher, u8* iv)
 {
 	char tx[64] = {}, rx[64] = {};
 	tx[0] = (u8)0xb3;
-	rx[1] = (u8)cipher;
+	tx[1] = (u8)cipher;
 	memcpy(&tx[2], iv, 16);
 	return (candle.sendGenericFDCanFrame(id, 18, tx, rx, 100) && strncmp(rx, "OK", 2) == 0);
 }
@@ -931,7 +931,7 @@ void CandleTool::updateMd(u16 id, const std::string& path)
 	if (!sendErase(*candle, log, id, fwStartAddress, fwSize))
 		return log.error("ERASE failed!");
 	log.debug("ERASE OK");
-	if (!sendProgStart(*candle, id, false, iv))
+	if (!sendProgStart(*candle, id, true, iv))
 		return log.error("PROG failed!");
 	log.debug("PROG OK");
 	if (!sendSendFirmware(*candle, log, id, fwSize, fileBuffer))
