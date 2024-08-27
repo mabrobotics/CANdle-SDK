@@ -6,6 +6,7 @@
 
 #include "ui.hpp"
 #include "configHelpers.hpp"
+#include "checksum.hpp"
 
 f32			lerp(f32 start, f32 end, f32 t) { return (start * (1.f - t)) + (end * t); }
 std::string floatToString(f32 value, bool noDecimals = false)
@@ -834,6 +835,7 @@ bool sendWrite(mab::Candle& candle, u16 id, u8* pagePtr, u32 dataSize)
 {
 	char tx[64] = {}, rx[64] = {};
 	tx[0] = (u8)0xb4;  // Send Write
+    *(u32*)&tx[1] = Checksum::crc32(pagePtr, dataSize);
 	return (candle.sendGenericFDCanFrame(id, 5, tx, rx, 200) && (strncmp(rx, "OK", 2) == 0));
 }
 bool sendSendFirmware(mab::Candle& candle, logger& log, u16 id, u32 fwSize, u8* fwBuffer)
