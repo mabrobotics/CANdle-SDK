@@ -834,8 +834,8 @@ bool sendProgStart(mab::Candle& candle, u16 id, bool cipher, u8* iv)
 bool sendWrite(mab::Candle& candle, u16 id, u8* pagePtr, u32 dataSize)
 {
 	char tx[64] = {}, rx[64] = {};
-	tx[0] = (u8)0xb4;  // Send Write
-    *(u32*)&tx[1] = Checksum::crc32(pagePtr, dataSize);
+	tx[0]		  = (u8)0xb4;  // Send Write
+	*(u32*)&tx[1] = Checksum::crc32(pagePtr, dataSize);
 	return (candle.sendGenericFDCanFrame(id, 5, tx, rx, 200) && (strncmp(rx, "OK", 2) == 0));
 }
 bool sendSendFirmware(mab::Candle& candle, logger& log, u16 id, u32 fwSize, u8* fwBuffer)
@@ -875,22 +875,16 @@ bool sendBoot(mab::Candle& candle, u16 id, u32 fwStart)
 bool sendMeta(mab::Candle& candle, u16 id, u8* checksum)
 {
 	char tx[64] = {}, rx[64] = {};
-	tx[0] = (u8)0xb6;
-	memcpy(&tx[1], checksum, 32);
-	if (!(candle.sendGenericFDCanFrame(id, 64, tx, rx, 200) && (strncmp(rx, "OK", 2) == 0)))
-		return false;
-	memset(rx, 0, 2);
-	tx[0] = (u8)0xb7;
-	tx[1] = (u8)true;
-	*(u32*)&tx[2] = 0x8005000; //This is META save address override, left for futureproffing 
-	memcpy(&tx[6], &checksum[32], 32);
-	if (!(candle.sendGenericFDCanFrame(id, 64, tx, rx, 200) && (strncmp(rx, "OK", 2) == 0)))
-		return false;
-    return true;
+	tx[0]		  = (u8)0xb6;
+	tx[1]		  = (u8) true;
+	*(u32*)&tx[2] = 0x8005000;	// This is META save address override, left for futureproffing
+	memcpy(&tx[6], checksum, 32);
+	return (candle.sendGenericFDCanFrame(id, 64, tx, rx, 200) && (strncmp(rx, "OK", 2) == 0));
 }
 void CandleTool::updateMd(u16 id, const std::string& path)
 {
 	u8	 iv[16]			= {};
+	u8	 checksum[32]	= {};
 	char fwVersion[10]	= {};
 	u32	 fwStartAddress = 0x8000000;
 
@@ -900,20 +894,21 @@ void CandleTool::updateMd(u16 id, const std::string& path)
 
 	if (!file.read(ini))
 		return log.error("Could not open .mab file!");
-	std::string tag		 = ini.get("firmware").get("tag");
-	s32			fwSize	 = atoi(ini.get("firmware").get("size").c_str());
-	std::string checksum = ini.get("firmware").get("checksum");
-	fwStartAddress		 = strtol(ini.get("firmware").get("start").c_str(), nullptr, 16);
+	std::string tag	   = ini.get("firmware").get("tag");
+	s32			fwSize = atoi(ini.get("firmware").get("size").c_str());
+	std::string sha256 = ini.get("firmware").get("checksum");
+    hexStringToBytes(checksum, 32, sha256);
+	fwStartAddress	   = strtol(ini.get("firmware").get("start").c_str(), nullptr, 16);
 	strcpy(fwVersion, ini.get("firmware").get("version").c_str());
 	hexStringToBytes(iv, 16, ini.get("firmware").get("iv"));
-	if (fwSize == 0 || tag != "md" || checksum == "")
+	if (fwSize == 0 || tag != "md" || sha256 == "")
 		return log.error("Firmware file invalid.");
 	log.info("Firmware - tag: [%s] v[%s], size: [%d], adress: [0x%x], checksum: [%s].",
 			 tag.c_str(),
 			 fwVersion,
 			 fwSize,
 			 fwStartAddress,
-			 checksum.c_str());
+			 sha256.c_str());
 	log.warn("Continue? [y/n]");
 	char confirm = getchar();
 	if (confirm != 'y')
@@ -940,7 +935,7 @@ void CandleTool::updateMd(u16 id, const std::string& path)
 	if (!sendHostInit(*candle, log, id, fwStartAddress, fwSize))
 		return log.error("HOST INIT failed!");
 	log.debug("HOST OK");
-	if (!sendMeta(*candle, id, (u8*)checksum.c_str()))
+	if (!sendMeta(*candle, id, checksum))
 		return log.error("META failed!");
 	log.debug("META OK");
 	if (!sendBoot(*candle, id, fwStartAddress))
