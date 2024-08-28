@@ -57,7 +57,7 @@ mab::CANdleBaudrate_E str2baud(const std::string& baud)
 
 CandleTool::CandleTool()
 {
-    std::cerr << "[CANDLESDK] Version: " << mab::Candle::getVersion() << std::endl;
+    log << "[CANDLESDK] Version: " << mab::Candle::getVersion() << std::endl;
     log.m_tag = "candletool";
 
     mab::BusType_E        busType = mab::BusType_E::USB;
@@ -193,8 +193,7 @@ std::string CandleTool::validateAndGetFinalConfigPath(const std::string& cfgPath
     }
     if (fileExists(getDefaultConfigPath()) && !isConfigComplete(finalConfigPath))
     {
-        Logger::LogLevel_E prePromptLevel = log.m_level;
-        log.m_level                       = Logger::LogLevel_E::INFO;
+        log.m_layer = Logger::ProgramLayer_E::TOP;
         log.error("\"%s\" is incomplete.", finalConfigPath.c_str());
         log.info("Generate updated file with all required fileds? [y/n]");
         if (!getConfirmation())
@@ -204,7 +203,6 @@ std::string CandleTool::validateAndGetFinalConfigPath(const std::string& cfgPath
         log.info("Setup MD with newly generated config? [y/n]");
         if (!getConfirmation())
             exit(0);
-        log.m_level = prePromptLevel;
     }
     return finalConfigPath;
 }
@@ -694,7 +692,7 @@ void CandleTool::testMove(u16 id, f32 targetPosition)
     for (f32 t = 0.f; t < 1.f; t += 0.01f)
     {
         f32 target  = lerp(pos, targetPosition, t);
-        log.m_level = Logger::LogLevel_E::DEBUG;
+        log.m_layer = Logger::ProgramLayer_E::TOP;
         md.setTargetPosition(target);
         log.info("[%4d] Position: %4.2f, Velocity: %4.1f", id, md.getPosition(), md.getVelocity());
         usleep(30000);

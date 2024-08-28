@@ -101,11 +101,6 @@ namespace mab
 		std::vector<Md80> md80s;
 
 		/**
-		@brief Enables/disables extended printing.
-		*/
-		void setVebose(bool enable);
-
-		/**
 		 * @brief Returns actual USB communication rate with CANdle. This is calculated by measuring
 		 * how much time was needed to send 250 messages.
 		 * @return average communication frequency in Hertz

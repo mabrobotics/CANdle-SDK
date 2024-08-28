@@ -2,7 +2,8 @@
 
 MabFileParser::MabFileParser(std::string filePath)
 {
-    log.m_tag = "MAB FILE";
+    log.m_tag   = "MAB FILE";
+    log.m_layer = Logger::ProgramLayer_E::MIDDLE;
     if (Status_E::OK != processFile(filePath))
     {
         log.error("Error processing file\n\r[ %s ]\n\rCheck file path and format.",

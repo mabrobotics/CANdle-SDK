@@ -1,4 +1,5 @@
 #include "candletool.hpp"
+#include "logger.hpp"
 #include "ui.hpp"
 #include "CLI11.hpp"
 
@@ -133,7 +134,23 @@ int main(int argc, char** argv)
     update->add_flag("-r", cmd.noReset, "Do not reset the device before updating firmware.");
     update->add_option("-f,--file", cmd.firmwareFileName, "Path to the .mab file");
 
+    // Verbosity
+    uint32_t verbosityMode{0};
+    bool     silentMode{false};
+    app.add_flag("-v{1},--verbosity{1}", verbosityMode, "Verbose modes (1,2,3)")
+        ->default_val(0)
+        ->expected(0, 1);
+    app.add_flag("-s,--silent", silentMode, "Silent mode")->default_val(0);
+
     CLI11_PARSE(app, argc, argv);
+
+    // set global verbosity for loggers
+    if (silentMode)
+        Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
+    else if (verbosityMode < static_cast<uint32_t>(Logger::Verbosity_E::SILENT))
+        Logger::g_m_verbosity = static_cast<Logger::Verbosity_E>(verbosityMode);
+    else
+        throw std::runtime_error("Verbosity outside of range");
 
     CandleTool candleTool;
     if (app.count_all() == 1)

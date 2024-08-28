@@ -168,7 +168,7 @@ namespace mab
 	{
 		int		 counter		= 0;
 		uint64_t freqCheckStart = getTimestamp();
-		log.m_level				= Logger::LogLevel_E::DEBUG;
+		log.m_layer				= Logger::ProgramLayer_E::TOP;
 		while (!shouldStopTransmitter || stop_token.stop_requested())
 		{
 			if (++counter == 250)
@@ -192,11 +192,6 @@ namespace mab
 		for (size_t i = 0; i < md80s.size(); i++)
 			md80s[i].__updateResponseData(
 				(StdMd80ResponseFrame_t*)bus->getRxBuffer(1 + i * sizeof(StdMd80ResponseFrame_t)));
-	}
-
-	void Candle::setVebose(bool enable)
-	{
-		log.m_level = enable ? Logger::LogLevel_E::INFO : (Logger::LogLevel_E)30;
 	}
 
 	unsigned long Candle::getDeviceId() { return bus->getId(); }
