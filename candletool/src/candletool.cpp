@@ -7,6 +7,7 @@
 #include "ui.hpp"
 #include "configHelpers.hpp"
 #include "checksum.hpp"
+#include "canUpdater.hpp"
 
 f32			lerp(f32 start, f32 end, f32 t) { return (start * (1.f - t)) + (end * t); }
 std::string floatToString(f32 value, bool noDecimals = false)
@@ -780,165 +781,45 @@ void CandleTool::testEncoderMain(u16 id)
 	candle->setupMd80TestMainEncoder(id);
 }
 
-bool hexStringToBytes(u8 buffer[], u32 bufferLen, const std::string& str)
-{
-	if (bufferLen < (str.length() + 1) / 2 || str.length() % 2 == 1)
-		return false;
-	for (size_t i = 0; i < str.length() / 2; i++)
-	{
-		std::string byteString = str.substr(2 * i, 2);
-		buffer[i]			   = std::stoi(byteString.c_str(), nullptr, 16);
-	}
-	return true;
-}
-
-bool sendHostInit(mab::Candle& candle, logger& log, u16 id, u32 fwStartAdr, u32 fwSize)
-{
-	char tx[64] = {}, rx[64] = {};
-	tx[0]		  = (u8)0xb1;
-	*(u32*)&tx[1] = fwStartAdr;
-	*(u32*)&tx[5] = fwSize;
-	return (candle.sendGenericFDCanFrame(id, 9, tx, rx, 100) && strncmp(rx, "OK", 2) == 0);
-}
-bool sendErase(mab::Candle& candle, logger& log, u16 id, u32 eraseStart, u32 eraseSize)
-{
-	char tx[64] = {}, rx[64] = {};
-	s32	 maxEraseSize		   = 8 * 2048;
-	s32	 remainingBytesToErase = eraseSize;
-
-	tx[0]		  = (u8)0xb2;
-	*(u32*)&tx[1] = eraseStart;
-	while (remainingBytesToErase > 0)
-	{
-		u32 bytesToErase = maxEraseSize;
-		if (remainingBytesToErase < maxEraseSize)
-			bytesToErase = remainingBytesToErase;
-		*(u32*)&tx[5] = bytesToErase;
-		log.debug("ERASE @ %x, %d bytes.", *(u32*)&tx[1], *(u32*)&tx[5]);
-		if (!candle.sendGenericFDCanFrame(id, 9, tx, rx, 250) || strncmp(rx, "OK", 2) != 0)
-			return false;
-		memset(rx, 0, 2);
-		*(u32*)&tx[1] += bytesToErase;
-		remainingBytesToErase -= bytesToErase;
-	}
-	return true;
-}
-bool sendProgStart(mab::Candle& candle, u16 id, bool cipher, u8* iv)
-{
-	char tx[64] = {}, rx[64] = {};
-	tx[0] = (u8)0xb3;
-	tx[1] = (u8)cipher;
-	memcpy(&tx[2], iv, 16);
-	return (candle.sendGenericFDCanFrame(id, 18, tx, rx, 100) && strncmp(rx, "OK", 2) == 0);
-}
-bool sendWrite(mab::Candle& candle, u16 id, u8* pagePtr, u32 dataSize)
-{
-	char tx[64] = {}, rx[64] = {};
-	tx[0]		  = (u8)0xb4;  // Send Write
-	*(u32*)&tx[1] = Checksum::crc32(pagePtr, dataSize);
-	return (candle.sendGenericFDCanFrame(id, 5, tx, rx, 200) && (strncmp(rx, "OK", 2) == 0));
-}
-bool sendSendFirmware(mab::Candle& candle, logger& log, u16 id, u32 fwSize, u8* fwBuffer)
-{
-	char tx[64] = {}, rx[64] = {};
-	u32	 page		  = 0;
-	u32	 bytesWritten = 0;
-	while (bytesWritten < fwSize)
-	{
-		log.debug("Sending Page %d", page);
-		for (int i = 0; i < 32; i++)
-		{
-			memcpy(tx, &fwBuffer[page * 2048 + i * 64], 64);
-			bool success =
-				(candle.sendGenericFDCanFrame(id, 64, tx, rx, 200) && strncmp(rx, "OK", 2) == 0);
-			if (!success)
-			{
-				log.error("Page %d at %d failed!", page, i * 64);
-				return false;
-			}
-		}
-		if (!sendWrite(candle, id, &fwBuffer[page * 2048], 2048))
-			return false;
-		log.debug("WRITE OK");
-		bytesWritten += 2048;
-		page++;
-	}
-	return true;
-}
-bool sendBoot(mab::Candle& candle, u16 id, u32 fwStart)
-{
-	char tx[64] = {}, rx[64] = {};
-	tx[0]		  = (u8)0xb5;
-	*(u32*)&tx[1] = fwStart;
-	return (candle.sendGenericFDCanFrame(id, 5, tx, rx, 200) && (strncmp(rx, "OK", 2) == 0));
-}
-bool sendMeta(mab::Candle& candle, u16 id, u8* checksum)
-{
-	char tx[64] = {}, rx[64] = {};
-	tx[0]		  = (u8)0xb6;
-	tx[1]		  = (u8) true;
-	*(u32*)&tx[2] = 0x8005000;	// This is META save address override, left for futureproffing
-	memcpy(&tx[6], checksum, 32);
-	return (candle.sendGenericFDCanFrame(id, 64, tx, rx, 200) && (strncmp(rx, "OK", 2) == 0));
-}
 void CandleTool::updateMd(u16 id, const std::string& path)
 {
-	u8	 iv[16]			= {};
-	u8	 checksum[32]	= {};
-	char fwVersion[10]	= {};
-	u32	 fwStartAddress = 0x8000000;
-
 	log.level = logger::LogLevel_E::DEBUG;
-	mINI::INIFile	   file(path);
-	mINI::INIStructure ini;
+	canUpdater::mabData mab;
+	if (!canUpdater::parseMabFile(path.c_str(), "md", mab))
+		log.error("Could not parse provided .mab file, at: %s", path.c_str());
 
-	if (!file.read(ini))
-		return log.error("Could not open .mab file!");
-	std::string tag	   = ini.get("firmware").get("tag");
-	s32			fwSize = atoi(ini.get("firmware").get("size").c_str());
-	std::string sha256 = ini.get("firmware").get("checksum");
-    hexStringToBytes(checksum, 32, sha256);
-	fwStartAddress	   = strtol(ini.get("firmware").get("start").c_str(), nullptr, 16);
-	strcpy(fwVersion, ini.get("firmware").get("version").c_str());
-	hexStringToBytes(iv, 16, ini.get("firmware").get("iv"));
-	if (fwSize == 0 || tag != "md" || sha256 == "")
-		return log.error("Firmware file invalid.");
-	log.info("Firmware - tag: [%s] v[%s], size: [%d], adress: [0x%x], checksum: [%s].",
-			 tag.c_str(),
-			 fwVersion,
-			 fwSize,
-			 fwStartAddress,
-			 sha256.c_str());
+	log.info("Firmware - tag: [%s] v[%s], size: [%d], adress: [0x%x].",
+			 mab.tag,
+			 mab.fwVersion,
+			 mab.fwSize,
+			 mab.fwStartAddress);
 	log.warn("Continue? [y/n]");
 	char confirm = getchar();
 	if (confirm != 'y')
 		return;
 
-	u8 fileBuffer[512 * 1024] = {};
-	hexStringToBytes(fileBuffer, 512 * 1024, ini.get("firmware").get("binary"));
-
 	candle->setupMd80PerformReset(id);
 	usleep(300000);
 
-	if (!sendHostInit(*candle, log, id, fwStartAddress, fwSize))
+	if (!canUpdater::sendHostInit(*candle, log, id, mab.fwStartAddress, mab.fwSize))
 		return log.error("HOST INIT failed!");
 	log.debug("HOST OK");
-	if (!sendErase(*candle, log, id, fwStartAddress, fwSize))
+	if (!canUpdater::sendErase(*candle, log, id, mab.fwStartAddress, mab.fwSize))
 		return log.error("ERASE failed!");
 	log.debug("ERASE OK");
-	if (!sendProgStart(*candle, id, true, iv))
+	if (!canUpdater::sendProgStart(*candle, id, true, mab.iv))
 		return log.error("PROG failed!");
 	log.debug("PROG OK");
-	if (!sendSendFirmware(*candle, log, id, fwSize, fileBuffer))
+	if (!canUpdater::sendSendFirmware(*candle, log, id, mab.fwSize, mab.fwData))
 		return log.error("UPDATE failed!");
 	log.debug("Update OK");
-	if (!sendHostInit(*candle, log, id, fwStartAddress, fwSize))
+	if (!canUpdater::sendHostInit(*candle, log, id, mab.fwStartAddress, mab.fwSize))
 		return log.error("HOST INIT failed!");
 	log.debug("HOST OK");
-	if (!sendMeta(*candle, id, checksum))
+	if (!canUpdater::sendMeta(*candle, id, mab.checksum))
 		return log.error("META failed!");
 	log.debug("META OK");
-	if (!sendBoot(*candle, id, fwStartAddress))
+	if (!canUpdater::sendBoot(*candle, id, mab.fwStartAddress))
 		return log.error("BOOT failed!");
 	log.debug("BOOT OK");
 	log.success("MD@%d update succesfull!", id);

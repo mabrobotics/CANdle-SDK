@@ -42,4 +42,7 @@ struct logger
 	void debug(const char* msg, ...);
 	void warn(const char* msg, ...);
 	void error(const char* msg, ...);
+    
+    // Same as info, but does not do newline
+    void infoProgress(const char* msg, ...);
 };

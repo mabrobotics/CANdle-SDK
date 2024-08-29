@@ -104,7 +104,7 @@ bool UsbDevice::transmit(
 		return false;
 	}
 	if (waitForResponse)
-		receive(responseLen, timeout);
+		return receive(responseLen, timeout);
 	return true;
 }
 
