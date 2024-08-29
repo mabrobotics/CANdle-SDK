@@ -3,9 +3,11 @@
 #include <cstdint>
 #include <mutex>
 #include <iostream>
+#include <fstream>
 #include <memory>
 #include <array>
 #include <optional>
+#include <functional>
 
 #ifndef _WIN32
 
@@ -79,8 +81,7 @@ class Logger
     /// layer/verbosity level.
     std::optional<LogLevel_E> m_optionalLevel;
 
-    template <typename T>
-    [[nodiscard]] static bool setStream(T path_);
+    [[nodiscard]] static bool setStream(const char* path_);
 
     /// @brief special logger function to display progress bar
     void progress(double percentage);
@@ -107,6 +108,7 @@ class Logger
     {
         if (getCurrentLevel() == LogLevel_E::SILENT)
             return *this;
+
         std::lock_guard<std::mutex> lock(g_m_printfLock);
         std::cout << value;
         return *this;

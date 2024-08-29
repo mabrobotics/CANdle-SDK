@@ -142,6 +142,9 @@ int main(int argc, char** argv)
         ->expected(0, 1);
     app.add_flag("-s,--silent", silentMode, "Silent mode")->default_val(0);
 
+    std::string logPath = "";
+    app.add_flag("--log", logPath, "Redirect output to file")->default_val("")->expected(1);
+
     CLI11_PARSE(app, argc, argv);
 
     // set global verbosity for loggers
@@ -151,6 +154,13 @@ int main(int argc, char** argv)
         Logger::g_m_verbosity = static_cast<Logger::Verbosity_E>(verbosityMode);
     else
         throw std::runtime_error("Verbosity outside of range");
+
+    // redirect logger if asked for
+    if (logPath != "")
+    {
+        if (!Logger::setStream(logPath.c_str()))
+            throw std::runtime_error("Could not create log file!");
+    }
 
     CandleTool candleTool;
     if (app.count_all() == 1)

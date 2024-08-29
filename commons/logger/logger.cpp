@@ -10,16 +10,22 @@ Logger ::Logger(const Logger& logger_)
     m_tag   = logger_.m_tag;
 }
 
-template <typename T>
-bool Logger::setStream(T path_)
+bool Logger ::setStream(const char* path_)
 {
-    char* path = static_cast<std::string>(path_).c_str();
-    FILE* file = fopen(path, "w");  // TODO: it can not be this way!
-    if (file == NULL)
+    if (Logger::g_m_streamOverride.has_value())
     {
-        throw std::runtime_error(std::strerror(errno));
+        fclose(Logger::g_m_streamOverride.value());
+        Logger::g_m_streamOverride.reset();
     }
-    g_m_streamOverride = file;
+
+    FILE* fileRaw = fopen(path_, "w");
+    if (fileRaw == nullptr)
+    {
+        return false;
+    }
+
+    Logger::g_m_streamOverride = fileRaw;
+    return true;
 }
 
 /* progress bar */
@@ -130,7 +136,8 @@ Logger::LogLevel_E Logger::getCurrentLevel()
 void Logger::printLog(FILE* stream, const char* header, const char* msg, va_list args)
 {
     std::lock_guard<std::mutex> lock(g_m_printfLock);
-    fprintf(stream, header, this->m_tag.c_str());
-    vfprintf(stream, msg, args);
-    fprintf(stream, NEW_LINE);
+
+    fprintf(g_m_streamOverride.value_or(stream), header, this->m_tag.c_str());
+    vfprintf(g_m_streamOverride.value_or(stream), msg, args);
+    fprintf(g_m_streamOverride.value_or(stream), NEW_LINE);
 }

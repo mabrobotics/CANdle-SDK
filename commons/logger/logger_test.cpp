@@ -13,7 +13,7 @@ TEST_F(LoggerTests, printError)
 {
     Logger log;
     log.m_layer = Logger::ProgramLayer_E::TOP;
-    ASSERT_EQ(log.getCurrentLevel(), Logger::LogLevel_E::WARN);
+    ASSERT_EQ(log.getCurrentLevel(), Logger::LogLevel_E::INFO);
     log.m_layer           = Logger::ProgramLayer_E::BOTTOM;
     Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_3;
     ASSERT_EQ(log.getCurrentLevel(), Logger::LogLevel_E::DEBUG);
