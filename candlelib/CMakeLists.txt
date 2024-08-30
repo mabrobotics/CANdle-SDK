@@ -33,7 +33,16 @@ message(
     "\nCANDLE_BUILD_SHARED: ${CANDLE_BUILD_SHARED}\nCANDLE_BUILD_STATIC: ${CANDLE_BUILD_STATIC}"
 )
 
-target_sources(candle PRIVATE src/candle.cpp src/bus.cpp src/crc.cpp src/md80.cpp src/register.cpp src/usbDevice.cpp)
+target_sources(candle PRIVATE
+  src/candle.cpp
+  src/bus.cpp
+  src/crc.cpp
+  src/md80.cpp
+  src/pds.cpp
+  src/register.cpp
+  src/usbDevice.cpp
+)
+
 if(UNIX)
   target_sources(candle PRIVATE src/uartDevice.cpp src/spiDevice.cpp)
 endif()

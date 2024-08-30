@@ -65,6 +65,17 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
+        },
+        {
+            "name": "PDS Example",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/examples/pds_example1",
+            "stopAtEntry": true,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
         }
     ]
 }

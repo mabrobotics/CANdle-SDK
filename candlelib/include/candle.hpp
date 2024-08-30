@@ -135,6 +135,15 @@ namespace mab
 		std::vector<uint16_t> ping(mab::CANdleBaudrate_E baudrate);
 
 		/**
+		 * @brief Sends "Get info" message to IDs in range (10 - 2047), and validates response
+		 * to determine the type of device that responds to the message.
+		 *
+		 * @param baudrate specific baudrate to be pinged.
+		 * @return std::vector<BusDevice_S> Vector of structs that holds Device ID and type
+		 */
+		std::vector<BusDevice_S> pingNew(mab::CANdleBaudrate_E baudrate);
+
+		/**
 		@brief Sends a Generic FDCAN Frame to the IDs in range (10 - 2047), and checks for valid
 		responses from MD80;
 		@param canId FDCAN ID of the device

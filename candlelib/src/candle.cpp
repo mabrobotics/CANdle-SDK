@@ -42,7 +42,8 @@ namespace mab
 				   const std::string device)
 		: Candle(canBaudrate, printVerbose, makeBus(busType, device))
 	{
-		log.tag = "Candle";
+		log.tag	  = "Candle";
+		log.level = logger::LogLevel_E::DEBUG;
 	}
 
 	Candle::Candle(CANdleBaudrate_E canBaudrate, bool printVerbose, std::shared_ptr<Bus> bus)
@@ -282,10 +283,12 @@ namespace mab
 			log.error("Failed to add MD80 (ID: %d)", canId);
 		return false;
 	}
+
 	std::vector<uint16_t> Candle::ping(mab::CANdleBaudrate_E baudrate)
 	{
 		if (!configCandleBaudrate(baudrate))
 			return std::vector<uint16_t>();
+
 		log.info("Starting pinging drives at baudrate: %dM", baudrate);
 		std::vector<uint16_t> ids{};
 
@@ -322,11 +325,35 @@ namespace mab
 		}
 		return ids;
 	}
+
+	std::vector<BusDevice_S> Candle::pingNew(mab::CANdleBaudrate_E baudrate)
+	{
+		if (!configCandleBaudrate(baudrate))
+			return std::vector<BusDevice_S>();
+
+		// Same TX Buffer for all messages...
+		const char txBuffer[]	= {FRAME_GET_INFO, 0x00};
+		char	   rxBuffer[64] = {0};
+
+		for (uint16_t canId = 10; canId < 2075; canId++)
+		{
+			if (sendGenericFDCanFrame(canId, sizeof(txBuffer), txBuffer, rxBuffer, 10))
+				log.debug("Pinging ID [ %u ] OK", canId);
+			else
+				log.debug("Pinging ID [ %u ] --", canId);
+		}
+
+		log.debug("Finish!");
+
+		return std::vector<BusDevice_S>();
+	}
+
 	std::vector<uint16_t> Candle::ping() { return ping(m_canBaudrate); }
 	bool				  Candle::sendGenericFDCanFrame(
 		 uint16_t canId, int msgLen, const char* txBuffer, char* rxBuffer, int timeoutMs)
 	{
 		GenericMd80Frame64 frame;
+
 		frame.frameId	 = mab::BusFrameId_t::BUS_FRAME_MD80_GENERIC_FRAME;
 		frame.driveCanId = canId;
 		frame.canMsgLen	 = msgLen;
