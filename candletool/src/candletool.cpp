@@ -168,7 +168,7 @@ std::string CandleTool::validateAndGetFinalConfigPath(const std::string& cfgPath
 	}
 	if (!isConfigValid(finalConfigPath))
 	{
-		log.error("\"%s\" in not a valid motor .cfg file.", finalConfigPath.c_str());
+		log.error("\"%s\" is not a valid motor .cfg file.", finalConfigPath.c_str());
 		log.warn("Valid file must have .cfg extension, and size of < 1MB");
 		exit(1);
 	}
@@ -861,7 +861,7 @@ void CandleTool::registerWrite(u16 id, u16 reg, const std::string& value)
 		case mab::Register::type::STR:
 		{
 			char str[24] = {};
-			strncpy(str, value.c_str(), sizeof(str));
+			memcpy(str, value.c_str(), sizeof(str));
 			success = candle->writeMd80Register(id, regId, str);
 			break;
 		}

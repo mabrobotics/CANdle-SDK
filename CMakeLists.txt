@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.15...3.25)
 
 include(git_func.cmake)
 
@@ -41,3 +41,7 @@ add_subdirectory(examples)
 message(
   "CANdleSDK v${CANDLESDK_VERSION}.${CANDLESDK_VERSION_TAG} build from branch ${GIT_BRANCH} at ${GIT_HASH}"
 )
+if(PYTHON_BUILD)
+    add_subdirectory(pycandle)
+endif()
+add_subdirectory(examples)

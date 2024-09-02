@@ -5,6 +5,8 @@ log
 bin
 .cache
 compile_commands.json
+dist
+wheelhouse
 
 # Prerequisites
 *.d
