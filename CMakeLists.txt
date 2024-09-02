@@ -44,4 +44,3 @@ message(
 if(PYTHON_BUILD)
     add_subdirectory(pycandle)
 endif()
-add_subdirectory(examples)
