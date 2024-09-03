@@ -4,10 +4,8 @@
 #include <mutex>
 #include <cstring>
 
-Logger ::Logger(const Logger& logger_)
+Logger ::Logger(const Logger& logger_) : m_layer(logger_.m_layer), m_tag(logger_.m_tag)
 {
-    m_layer = logger_.m_layer;
-    m_tag   = logger_.m_tag;
 }
 
 bool Logger ::setStream(const char* path_)
@@ -68,7 +66,7 @@ void Logger::info(const char* msg, ...)
 
     va_list args;
     va_start(args, msg);
-    Logger::printLog(stdout, header.c_str(), msg, args);
+    Logger::printLog(g_m_streamOverride.value_or(stdout), header.c_str(), msg, args);
     va_end(args);
 }
 
@@ -81,7 +79,7 @@ void Logger::success(const char* msg, ...)
 
     va_list args;
     va_start(args, msg);
-    Logger::printLog(stdout, header.c_str(), msg, args);
+    Logger::printLog(g_m_streamOverride.value_or(stdout), header.c_str(), msg, args);
     va_end(args);
 }
 
@@ -94,7 +92,7 @@ void Logger::debug(const char* msg, ...)
 
     va_list args;
     va_start(args, msg);
-    Logger::printLog(stdout, header.c_str(), msg, args);
+    Logger::printLog(g_m_streamOverride.value_or(stdout), header.c_str(), msg, args);
     va_end(args);
 }
 
@@ -107,7 +105,7 @@ void Logger::warn(const char* msg, ...)
 
     va_list args;
     va_start(args, msg);
-    Logger::printLog(stderr, header.c_str(), msg, args);
+    Logger::printLog(g_m_streamOverride.value_or(stderr), header.c_str(), msg, args);
     va_end(args);
 }
 
@@ -120,7 +118,7 @@ void Logger::error(const char* msg, ...)
 
     va_list args;
     va_start(args, msg);
-    Logger::printLog(stderr, header.c_str(), msg, args);
+    Logger::printLog(g_m_streamOverride.value_or(stderr), header.c_str(), msg, args);
     va_end(args);
 }
 

@@ -8,6 +8,8 @@
 #include <array>
 #include <optional>
 #include <functional>
+#include <sstream>
+#include <algorithm>
 
 #ifndef _WIN32
 
@@ -36,6 +38,9 @@
 class Logger
 {
   public:
+    Logger() = default;
+    Logger(const Logger& logger);
+
     enum class LogLevel_E : uint8_t
     {
         DEBUG  = 0,
@@ -67,14 +72,11 @@ class Logger
          {{LogLevel_E::DEBUG, LogLevel_E::DEBUG, LogLevel_E::DEBUG}},       // V3
          {{LogLevel_E::SILENT, LogLevel_E::SILENT, LogLevel_E::SILENT}}}};  // SILENT
 
-    Logger() = default;
-    Logger(const Logger& logger);
-
-    /// @brief header to display where the information came from if using standard logger functions
-    std::string m_tag = "";
     /// @brief abstraction layer of the logger, influences how verbose the module will be. TOP is
     /// the most verbose
     ProgramLayer_E m_layer = ProgramLayer_E::TOP;
+    /// @brief header to display where the information came from if using standard logger functions
+    std::string m_tag = "";
     /// @brief verbosity of the whole program. Entered via CLI.
     inline static std::optional<Verbosity_E> g_m_verbosity;
     /// @brief by assigning this variable, custom LogLevel will be set. It will override regular
@@ -109,8 +111,23 @@ class Logger
         if (getCurrentLevel() == LogLevel_E::SILENT)
             return *this;
 
-        std::lock_guard<std::mutex> lock(g_m_printfLock);
-        std::cout << value;
+        std::stringstream buffer;
+        buffer << value;
+
+        // Process buffer contents character by character
+        for (auto& character : buffer.str())
+        {
+            constexpr char termination = '\n';
+            if (character == termination)
+            {
+                info(m_str.str().c_str());
+                m_str.str("");
+            }
+            else
+            {
+                m_str << character;
+            }
+        }
         return *this;
     }
     /// @brief special overload case for stream manipulators (like std::endl)
@@ -120,8 +137,17 @@ class Logger
     {
         if (getCurrentLevel() == LogLevel_E::SILENT)
             return *this;
-        std::lock_guard<std::mutex> lock(g_m_printfLock);
-        std::cout << manip;
+
+        // Invoke the manipulator on the internal stream
+        manip(m_str);
+
+        // Check if the manipulator inserted a newline, if so flush the buffer
+        if (m_str.str().find('\n') != std::string::npos)
+        {
+            info(m_str.str().c_str());
+            m_str.str("");
+        }
+
         return *this;
     }
 
@@ -132,4 +158,6 @@ class Logger
     void printLog(FILE* stream, const char* header, const char* msg, va_list args);
 
     inline static std::optional<FILE*> g_m_streamOverride;
+
+    std::stringstream m_str;
 };
