@@ -337,10 +337,8 @@ namespace mab
 
 		for (uint16_t canId = 10; canId < 2075; canId++)
 		{
-			if (sendGenericFDCanFrame(canId, sizeof(txBuffer), txBuffer, rxBuffer, 10))
+			if (sendGenericFDCanFrame(canId, sizeof(txBuffer), txBuffer, rxBuffer, 1))
 				log.debug("Pinging ID [ %u ] OK", canId);
-			else
-				log.debug("Pinging ID [ %u ] --", canId);
 		}
 
 		log.debug("Finish!");
