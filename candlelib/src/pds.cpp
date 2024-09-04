@@ -69,18 +69,15 @@ typedef struct __attribute__((packed)) moduleData_S
 	moduleVersion_E version;
 	uint16_t		temperature;
 	uint16_t		busVoltage;
+	int16_t			current;
 	bool			isEnabled;
-
 } moduleData_S;
+
+constexpr size_t NUMBER_OF_MODULES = 6u;
 
 typedef struct __attribute__((packed)) pdsInfo_S
 {
-	moduleData_S module1;
-	moduleData_S module2;
-	moduleData_S module3;
-	moduleData_S module4;
-	moduleData_S module5;
-	moduleData_S module6;
+	moduleData_S module[NUMBER_OF_MODULES];
 
 } pdsInfo_S;
 
@@ -110,76 +107,24 @@ namespace mab
 
 			m_log.info("PDS modules:");
 
-			if (pdsInfo.module1.isDetected)
+			for (uint8_t nModule = 0; nModule < NUMBER_OF_MODULES; nModule++)
 			{
-				m_log.info("MODULE [ 1 ] DETECTED");
-				m_log.info("\tType : [ %s ]", type2String(pdsInfo.module1.type).c_str());
-				m_log.info("\tVersion : [ %s ]", version2String(pdsInfo.module1.version).c_str());
-				m_log.info("\tBus voltage : [ %u ]", pdsInfo.module1.busVoltage);
-			}
-			else
-			{
-				m_log.info("MODULE [ 1 ] NOT DETECTED");
-			}
-
-			if (pdsInfo.module2.isDetected)
-			{
-				m_log.info("MODULE [ 2 ] DETECTED");
-				m_log.info("\tType : [ %s ]", type2String(pdsInfo.module2.type).c_str());
-				m_log.info("\tVersion : [ %s ]", version2String(pdsInfo.module2.version).c_str());
-				m_log.info("\tBus voltage : [ %u ]", pdsInfo.module2.busVoltage);
-			}
-			else
-			{
-				m_log.info("MODULE [ 2 ] NOT DETECTED");
-			}
-
-			if (pdsInfo.module3.isDetected)
-			{
-				m_log.info("MODULE [ 3 ] DETECTED");
-				m_log.info("\tType : [ %s ]", type2String(pdsInfo.module3.type).c_str());
-				m_log.info("\tVersion : [ %s ]", version2String(pdsInfo.module3.version).c_str());
-				m_log.info("\tBus voltage : [ %u ]", pdsInfo.module3.busVoltage);
-			}
-			else
-			{
-				m_log.info("MODULE [ 3 ] NOT DETECTED");
-			}
-
-			if (pdsInfo.module4.isDetected)
-			{
-				m_log.info("MODULE [ 4 ] DETECTED");
-				m_log.info("\tType : [ %s ]", type2String(pdsInfo.module4.type).c_str());
-				m_log.info("\tVersion : [ %s ]", version2String(pdsInfo.module4.version).c_str());
-				m_log.info("\tBus voltage : [ %u ]", pdsInfo.module4.busVoltage);
-			}
-			else
-			{
-				m_log.info("MODULE [ 4 ] NOT DETECTED");
-			}
-
-			if (pdsInfo.module5.isDetected)
-			{
-				m_log.info("MODULE [ 5 ] DETECTED");
-				m_log.info("\tType : [ %s ]", type2String(pdsInfo.module5.type).c_str());
-				m_log.info("\tVersion : [ %s ]", version2String(pdsInfo.module5.version).c_str());
-				m_log.info("\tBus voltage : [ %u ]", pdsInfo.module5.busVoltage);
-			}
-			else
-			{
-				m_log.info("MODULE [ 5 ] NOT DETECTED");
-			}
-
-			if (pdsInfo.module6.isDetected)
-			{
-				m_log.info("MODULE [ 6 ] DETECTED");
-				m_log.info("\tType : [ %s ]", type2String(pdsInfo.module6.type).c_str());
-				m_log.info("\tVersion : [ %s ]", version2String(pdsInfo.module6.version).c_str());
-				m_log.info("\tBus voltage : [ %u ]", pdsInfo.module6.busVoltage);
-			}
-			else
-			{
-				m_log.info("MODULE [ 6 ] NOT DETECTED");
+				if (pdsInfo.module[nModule].isDetected)
+				{
+					m_log.info("MODULE [ %u ] DETECTED", nModule);
+					m_log.info("\tType : [ %s ]",
+							   type2String(pdsInfo.module[nModule].type).c_str());
+					m_log.info("\tVersion : [ %s ]",
+							   version2String(pdsInfo.module[nModule].version).c_str());
+					m_log.info("\tEnabled [ %s ]",
+							   pdsInfo.module[nModule].isEnabled ? "YES" : "NO");
+					m_log.info("\tBus voltage : [ %u ]", pdsInfo.module[nModule].busVoltage);
+					m_log.info("\tCurrent : [ %d ]", pdsInfo.module[nModule].current);
+				}
+				else
+				{
+					m_log.info("MODULE [ %u ] NOT DETECTED", nModule);
+				}
 			}
 		}
 		else

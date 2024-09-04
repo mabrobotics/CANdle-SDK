@@ -1,5 +1,6 @@
 #include "candle.hpp"
 #include "pds.hpp"
+#include "time.h"
 
 using namespace mab;
 int main()
@@ -14,7 +15,11 @@ int main()
 
     Pds examplePds(100, pCandle);
 
-    examplePds.getPdsInfo();
+    while (1)
+    {
+        examplePds.getPdsInfo();
+        usleep(500000);
+    }
 
     return EXIT_SUCCESS;
 }
