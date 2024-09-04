@@ -10,6 +10,7 @@
 #include <functional>
 #include <sstream>
 #include <algorithm>
+#include <chrono>
 
 #ifndef _WIN32
 
@@ -37,8 +38,11 @@
 
 class Logger
 {
+    using preferredClock_t          = std::chrono::high_resolution_clock;
+    using preferredClockTimepoint_t = std::chrono::time_point<preferredClock_t>;
+
   public:
-    Logger() = default;
+    Logger();
     Logger(const Logger& logger);
 
     enum class LogLevel_E : uint8_t
@@ -62,6 +66,14 @@ class Logger
         TOP    = 0,
         MIDDLE = 1,
         BOTTOM = 2
+    };
+    enum class MessageType_E : uint8_t
+    {
+        INFO = 0,
+        SUCCESS,
+        DEBUG,
+        WARN,
+        ERROR
     };
 
     static constexpr std::array<std::array<LogLevel_E, 3>, 5> g_m_verbosityTable{
@@ -87,8 +99,6 @@ class Logger
 
     /// @brief special logger function to display progress bar
     void progress(double percentage);
-    /// @brief special logger function to display ui info without header
-    void ui(const char* msg, ...);
 
     // standard logger functions with formatting
     void info(const char* msg, ...);
@@ -114,18 +124,18 @@ class Logger
         std::stringstream buffer;
         buffer << value;
 
+        constexpr char termination = '\n';
         // Process buffer contents character by character
         for (auto& character : buffer.str())
         {
-            constexpr char termination = '\n';
             if (character == termination)
             {
-                info(m_str.str().c_str());
-                m_str.str("");
+                info(m_internalStrBuffer.str().c_str());
+                m_internalStrBuffer.str("");
             }
             else
             {
-                m_str << character;
+                m_internalStrBuffer << character;
             }
         }
         return *this;
@@ -138,14 +148,20 @@ class Logger
         if (getCurrentLevel() == LogLevel_E::SILENT)
             return *this;
 
-        // Invoke the manipulator on the internal stream
-        manip(m_str);
+        // Apply the manipulator to the internal stream
+        manip(m_internalStrBuffer);
 
-        // Check if the manipulator inserted a newline, if so flush the buffer
-        if (m_str.str().find('\n') != std::string::npos)
+        // Check if the manipulator inserted a newline
+        constexpr char newlineChar = '\n';
+        auto           newlinePos  = m_internalStrBuffer.str().find(newlineChar);
+
+        if (newlinePos != std::string::npos)
         {
-            info(m_str.str().c_str());
-            m_str.str("");
+            std::string temp = m_internalStrBuffer.str();
+            m_internalStrBuffer.str("");
+            // Remove all newline characters from the string
+            temp.erase(std::remove(temp.begin(), temp.end(), newlineChar), temp.end());
+            info(temp.c_str());
         }
 
         return *this;
@@ -153,11 +169,12 @@ class Logger
 
   private:
     /// @brief global mutex for stream access
-    inline static std::mutex g_m_printfLock;
+    inline static std::mutex                                 g_m_printfLock;
+    inline static std::optional<FILE*>                       g_m_streamOverride;
+    inline static std::unique_ptr<preferredClockTimepoint_t> g_m_start;
 
-    void printLog(FILE* stream, const char* header, const char* msg, va_list args);
+    void        printLog(FILE* stream, const char* header, const char* msg, va_list args);
+    std::string generateHeader(Logger::MessageType_E messageType) const noexcept;
 
-    inline static std::optional<FILE*> g_m_streamOverride;
-
-    std::stringstream m_str;
+    std::stringstream m_internalStrBuffer;
 };

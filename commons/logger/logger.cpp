@@ -4,6 +4,16 @@
 #include <mutex>
 #include <cstring>
 
+Logger ::Logger()
+{
+    // first initialization of logger is a base point
+    if (Logger::g_m_start == nullptr)
+    {
+        Logger::g_m_start =
+            std::make_unique<Logger::preferredClockTimepoint_t>(Logger::preferredClock_t::now());
+    }
+}
+
 Logger ::Logger(const Logger& logger_) : m_layer(logger_.m_layer), m_tag(logger_.m_tag)
 {
 }
@@ -46,27 +56,16 @@ void Logger::progress(double percentage)
     fflush(stdout);
 }
 
-void Logger::ui(const char* msg, ...)
-{
-    if (getCurrentLevel() == LogLevel_E::SILENT)
-        return;
-
-    va_list args;
-    va_start(args, msg);
-    Logger::printLog(stdout, "", msg, args);
-    va_end(args);
-}
-
 void Logger::info(const char* msg, ...)
 {
     if (getCurrentLevel() > LogLevel_E::INFO)
         return;
 
-    const std::string header("[" BLUE "INFO" RESETCLR "][" + m_tag + "] ");
+    const std::string header(generateHeader(MessageType_E::INFO).c_str());
 
     va_list args;
     va_start(args, msg);
-    Logger::printLog(g_m_streamOverride.value_or(stdout), header.c_str(), msg, args);
+    Logger::printLog(stdout, header.c_str(), msg, args);
     va_end(args);
 }
 
@@ -79,7 +78,7 @@ void Logger::success(const char* msg, ...)
 
     va_list args;
     va_start(args, msg);
-    Logger::printLog(g_m_streamOverride.value_or(stdout), header.c_str(), msg, args);
+    Logger::printLog(stdout, header.c_str(), msg, args);
     va_end(args);
 }
 
@@ -92,7 +91,7 @@ void Logger::debug(const char* msg, ...)
 
     va_list args;
     va_start(args, msg);
-    Logger::printLog(g_m_streamOverride.value_or(stdout), header.c_str(), msg, args);
+    Logger::printLog(stdout, header.c_str(), msg, args);
     va_end(args);
 }
 
@@ -105,7 +104,7 @@ void Logger::warn(const char* msg, ...)
 
     va_list args;
     va_start(args, msg);
-    Logger::printLog(g_m_streamOverride.value_or(stderr), header.c_str(), msg, args);
+    Logger::printLog(stderr, header.c_str(), msg, args);
     va_end(args);
 }
 
@@ -118,7 +117,7 @@ void Logger::error(const char* msg, ...)
 
     va_list args;
     va_start(args, msg);
-    Logger::printLog(g_m_streamOverride.value_or(stderr), header.c_str(), msg, args);
+    Logger::printLog(stderr, header.c_str(), msg, args);
     va_end(args);
 }
 
@@ -138,4 +137,45 @@ void Logger::printLog(FILE* stream, const char* header, const char* msg, va_list
     fprintf(g_m_streamOverride.value_or(stream), header, this->m_tag.c_str());
     vfprintf(g_m_streamOverride.value_or(stream), msg, args);
     fprintf(g_m_streamOverride.value_or(stream), NEW_LINE);
+}
+
+std::string Logger ::generateHeader(Logger::MessageType_E messageType) const noexcept
+{
+    std::string header;
+    using MT_E = Logger::MessageType_E;
+    switch (messageType)
+    {
+        case MT_E::INFO:
+            header = "[" BLUE "INFO" RESETCLR "]";
+            break;
+        case MT_E::DEBUG:
+            header = "[" ORANGE "DEBUG" RESETCLR "]";
+            break;
+        case MT_E::SUCCESS:
+            header = "[" GREEN "SUCCESS" RESETCLR "]";
+            break;
+        case MT_E::WARN:
+            header = "[" BLUE "WARN" RESETCLR "]";
+            break;
+        case MT_E::ERROR:
+            header = "[" BLUE "ERROR" RESETCLR "]";
+            break;
+        default:
+            break;
+    }
+    header.append("[" + m_tag + "]");
+    const uint32_t durationMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                    (preferredClock_t::now() - *g_m_start))
+                                    .count();
+    const uint32_t durationSec = durationMs / 1000u;
+    const uint32_t durationMin = durationSec / 60u;
+    const uint32_t durationHr  = durationMin / 60u;
+
+    const std::string timestamp = "[" + std::to_string(durationHr) + ":" +
+                                  std::to_string(durationMin) + ":" + std::to_string(durationSec) +
+                                  "." + std::to_string(durationMs) + "] ";
+
+    header.append(timestamp);
+
+    return header;
 }
