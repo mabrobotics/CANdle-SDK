@@ -13,7 +13,7 @@ namespace ui
     std::ostream nocout(&nostreambuf);
 #define vout (log)  // For easy customization later on
 
-    Logger log;
+    Logger log(Logger::ProgramLayer_E::TOP, "Candle");
 
     void printVersion(const std::string& version)
     {

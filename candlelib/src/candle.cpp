@@ -92,6 +92,7 @@ namespace mab
 
 	std::shared_ptr<Bus> Candle::makeBus(mab::BusType_E busType, std::string device)
 	{
+		log.m_tag = "Candle";
 		switch (busType)
 		{
 			case mab::BusType_E::USB:

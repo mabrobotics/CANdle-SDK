@@ -2,12 +2,8 @@
 #include <string>
 #include <cstdint>
 #include <mutex>
-#include <iostream>
-#include <fstream>
-#include <memory>
 #include <array>
 #include <optional>
-#include <functional>
 #include <sstream>
 #include <algorithm>
 #include <chrono>
@@ -42,9 +38,6 @@ class Logger
     using preferredClockTimepoint_t = std::chrono::time_point<preferredClock_t>;
 
   public:
-    Logger();
-    Logger(const Logger& logger);
-
     enum class LogLevel_E : uint8_t
     {
         DEBUG  = 0,
@@ -75,6 +68,14 @@ class Logger
         WARN,
         ERROR
     };
+    Logger() = default;
+    /// @brief constructor with all the necessary parameters
+    /// @param programLayer layer on which the logger instance is living (lower layers are less
+    /// verbose)
+    /// @param tag header on messages
+    Logger(ProgramLayer_E programLayer, std::string tag);
+    Logger(const Logger& logger);
+    ~Logger() = default;
 
     static constexpr std::array<std::array<LogLevel_E, 3>, 5> g_m_verbosityTable{
         // TOP, MIDDLE, BOTTOM
@@ -87,32 +88,35 @@ class Logger
     /// @brief abstraction layer of the logger, influences how verbose the module will be. TOP is
     /// the most verbose
     ProgramLayer_E m_layer = ProgramLayer_E::TOP;
-    /// @brief header to display where the information came from if using standard logger functions
+    /// @brief header informing where the information came from
     std::string m_tag = "";
-    /// @brief verbosity of the whole program. Entered via CLI.
+    /// @brief verbosity of the whole program, global
     inline static std::optional<Verbosity_E> g_m_verbosity;
     /// @brief by assigning this variable, custom LogLevel will be set. It will override regular
-    /// layer/verbosity level.
+    /// layer/verbosity levels.
     std::optional<LogLevel_E> m_optionalLevel;
 
+    /// @brief Log redirect function, can be used to stream to files
+    /// @param path_ path to file
+    /// @return operation successful on true
     [[nodiscard]] static bool setStream(const char* path_);
 
     /// @brief special logger function to display progress bar
-    void progress(double percentage);
+    void progress(double percentage) const;
 
-    // standard logger functions with formatting
-    void info(const char* msg, ...);
-    void success(const char* msg, ...);
-    void debug(const char* msg, ...);
-    void warn(const char* msg, ...);
-    void error(const char* msg, ...);
+    // standard logger functions with formatting, printf syntax
+    void info(const char* msg, ...) const;
+    void success(const char* msg, ...) const;
+    void debug(const char* msg, ...) const;
+    void warn(const char* msg, ...) const;
+    void error(const char* msg, ...) const;
 
-    /// @brief helper function
-    /// @return current log level
-    LogLevel_E getCurrentLevel();
+    /// @brief
+    /// @return current log level of this instance
+    LogLevel_E getCurrentLevel() const;
 
-    /// @brief overload for << operator fort writing to std output
-    /// @tparam T type to stream
+    /// @brief overload for << operator fort writing to std output, prints on newline characters
+    /// @tparam T type to stream, like const char *
     /// @param value value to stream
     /// @return instance of logger
     template <typename T>
@@ -124,7 +128,7 @@ class Logger
         std::stringstream buffer;
         buffer << value;
 
-        constexpr char termination = '\n';
+        constexpr char termination = *NEW_LINE;
         // Process buffer contents character by character
         for (auto& character : buffer.str())
         {
@@ -140,7 +144,8 @@ class Logger
         }
         return *this;
     }
-    /// @brief special overload case for stream manipulators (like std::endl)
+    /// @brief special overload case for stream manipulators (like std::endl), prints on newline
+    /// characters
     /// @param manip stream manipulator
     /// @return instance of the logger
     Logger& operator<<(std::ostream& (*manip)(std::ostream&))
@@ -152,7 +157,7 @@ class Logger
         manip(m_internalStrBuffer);
 
         // Check if the manipulator inserted a newline
-        constexpr char newlineChar = '\n';
+        constexpr char newlineChar = *NEW_LINE;
         auto           newlinePos  = m_internalStrBuffer.str().find(newlineChar);
 
         if (newlinePos != std::string::npos)
@@ -168,13 +173,18 @@ class Logger
     }
 
   private:
-    /// @brief global mutex for stream access
-    inline static std::mutex                                 g_m_printfLock;
-    inline static std::optional<FILE*>                       g_m_streamOverride;
-    inline static std::unique_ptr<preferredClockTimepoint_t> g_m_start;
+    inline static std::mutex g_m_printfLock;  // global print lock
+    inline static std::optional<FILE*>
+        g_m_streamOverride;  // if set all streams will be redirected here
 
-    void        printLog(FILE* stream, const char* header, const char* msg, va_list args);
+    void        printLogLine(FILE* stream, const char* header, const char* msg, va_list args) const;
+    void        printLog(FILE* stream, const char* header, const char* msg, va_list args) const;
     std::string generateHeader(Logger::MessageType_E messageType) const noexcept;
 
     std::stringstream m_internalStrBuffer;
+
+    static inline bool printSpecials()
+    {
+        return !g_m_streamOverride.has_value();
+    }
 };

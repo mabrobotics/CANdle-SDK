@@ -3,15 +3,12 @@
 #include <cmath>
 #include <mutex>
 #include <cstring>
+#include <iomanip>
 
-Logger ::Logger()
+// PUBLICS
+
+Logger ::Logger(ProgramLayer_E programLayer, std::string tag) : m_layer(programLayer), m_tag(tag)
 {
-    // first initialization of logger is a base point
-    if (Logger::g_m_start == nullptr)
-    {
-        Logger::g_m_start =
-            std::make_unique<Logger::preferredClockTimepoint_t>(Logger::preferredClock_t::now());
-    }
 }
 
 Logger ::Logger(const Logger& logger_) : m_layer(logger_.m_layer), m_tag(logger_.m_tag)
@@ -40,23 +37,25 @@ bool Logger ::setStream(const char* path_)
 #define PBSTR   "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
 #define PBWIDTH 60
 
-void Logger::progress(double percentage)
+void Logger::progress(double percentage) const
 {
     if (getCurrentLevel() == LogLevel_E::SILENT)
         return;
-    uint16_t val  = (uint16_t)(percentage * 100);
-    uint16_t lpad = (uint16_t)(percentage * PBWIDTH);
-    uint16_t rpad = PBWIDTH - lpad;
+    const uint16_t val  = (uint16_t)(percentage * 100);
+    const uint16_t lpad = (uint16_t)(percentage * PBWIDTH);
+    const uint16_t rpad = PBWIDTH - lpad;
 
-    std::lock_guard<std::mutex> lock(g_m_printfLock);
+    const char* progBarTemplate = "%3d%% [%.*s%*s]";
+    char        progBar[PBWIDTH];
+    snprintf(progBar, PBWIDTH, progBarTemplate, val, lpad, PBSTR, rpad, "");
 
-    printf("\r%3d%% [%.*s%*s]", val, lpad, PBSTR, rpad, "");
+    printLog(stdout, "", "\r", NULL);
+    printLog(stdout, generateHeader(MessageType_E::INFO).c_str(), progBar, NULL);
     if (fabs(percentage - 1.0) < 0.00001)
-        printf("\r\n");
-    fflush(stdout);
+        printLogLine(stdout, "", "\r", NULL);
 }
 
-void Logger::info(const char* msg, ...)
+void Logger::info(const char* msg, ...) const
 {
     if (getCurrentLevel() > LogLevel_E::INFO)
         return;
@@ -65,63 +64,63 @@ void Logger::info(const char* msg, ...)
 
     va_list args;
     va_start(args, msg);
-    Logger::printLog(stdout, header.c_str(), msg, args);
+    Logger::printLogLine(stdout, header.c_str(), msg, args);
     va_end(args);
 }
 
-void Logger::success(const char* msg, ...)
+void Logger::success(const char* msg, ...) const
 {
     if (getCurrentLevel() > LogLevel_E::INFO)
         return;
 
-    const std::string header("[" GREEN " OK " RESETCLR "][" + m_tag + "] ");
+    const std::string header(generateHeader(MessageType_E::SUCCESS).c_str());
 
     va_list args;
     va_start(args, msg);
-    Logger::printLog(stdout, header.c_str(), msg, args);
+    Logger::printLogLine(stdout, header.c_str(), msg, args);
     va_end(args);
 }
 
-void Logger::debug(const char* msg, ...)
+void Logger::debug(const char* msg, ...) const
 {
     if (getCurrentLevel() > LogLevel_E::DEBUG)
         return;
 
-    const std::string header("[" ORANGE "DEBUG" RESETCLR "][" + m_tag + "] ");
+    const std::string header(generateHeader(MessageType_E::DEBUG).c_str());
 
     va_list args;
     va_start(args, msg);
-    Logger::printLog(stdout, header.c_str(), msg, args);
+    Logger::printLogLine(stdout, header.c_str(), msg, args);
     va_end(args);
 }
 
-void Logger::warn(const char* msg, ...)
+void Logger::warn(const char* msg, ...) const
 {
     if (getCurrentLevel() > LogLevel_E::WARN)
         return;
 
-    const std::string header("[" YELLOW "WARNING" RESETCLR "][" + m_tag + "] ");
+    const std::string header(generateHeader(MessageType_E::WARN).c_str());
 
     va_list args;
     va_start(args, msg);
-    Logger::printLog(stderr, header.c_str(), msg, args);
+    Logger::printLogLine(stderr, header.c_str(), msg, args);
     va_end(args);
 }
 
-void Logger::error(const char* msg, ...)
+void Logger::error(const char* msg, ...) const
 {
     if (getCurrentLevel() > LogLevel_E::ERROR)
         return;
 
-    const std::string header("[" RED "ERROR" RESETCLR "][" + m_tag + "] ");
+    const std::string header(generateHeader(MessageType_E::ERROR).c_str());
 
     va_list args;
     va_start(args, msg);
-    Logger::printLog(stderr, header.c_str(), msg, args);
+    Logger::printLogLine(stderr, header.c_str(), msg, args);
     va_end(args);
 }
 
-Logger::LogLevel_E Logger::getCurrentLevel()
+Logger::LogLevel_E Logger::getCurrentLevel() const
 {
     if (m_optionalLevel.has_value())
         return m_optionalLevel.value();
@@ -130,52 +129,77 @@ Logger::LogLevel_E Logger::getCurrentLevel()
             g_m_verbosity.value_or(Logger::Verbosity_E::DEFAULT))][static_cast<uint8_t>(m_layer)];
 }
 
-void Logger::printLog(FILE* stream, const char* header, const char* msg, va_list args)
+// PRIVATES
+
+void Logger::printLogLine(FILE* stream, const char* header, const char* msg, va_list args) const
+{
+    printLog(stream, header, msg, args);
+
+    std::lock_guard<std::mutex> lock(g_m_printfLock);
+    fprintf(g_m_streamOverride.value_or(stream), NEW_LINE);
+}
+
+void Logger::printLog(FILE* stream, const char* header, const char* msg, va_list args) const
 {
     std::lock_guard<std::mutex> lock(g_m_printfLock);
 
     fprintf(g_m_streamOverride.value_or(stream), header, this->m_tag.c_str());
-    vfprintf(g_m_streamOverride.value_or(stream), msg, args);
-    fprintf(g_m_streamOverride.value_or(stream), NEW_LINE);
+    if (args != NULL)
+        vfprintf(g_m_streamOverride.value_or(stream), msg, args);
+    else
+        fprintf(g_m_streamOverride.value_or(stream), "%s", msg);
+    fflush(NULL);
 }
 
 std::string Logger ::generateHeader(Logger::MessageType_E messageType) const noexcept
 {
     std::string header;
+
+    if (Logger::g_m_verbosity != Logger::Verbosity_E::DEFAULT &&
+        Logger::g_m_verbosity != Logger::Verbosity_E::SILENT)
+    {
+        const uint32_t sec = std::chrono::duration_cast<std::chrono::seconds>(
+                                 (preferredClock_t::now().time_since_epoch()))
+                                 .count();
+        const uint32_t nsec = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                  (preferredClock_t::now().time_since_epoch()))
+                                  .count() %
+                              1'000'000'000;
+
+        std::stringstream timestamp;
+        timestamp << "[" << sec << "." << std::setw(9) << std::setfill('0') << nsec << "]";
+        header.append(timestamp.str());
+    }
+
+    header.append("[" + m_tag + "]");
+
+    const std::string orange   = Logger::printSpecials() ? ORANGE : "";
+    const std::string green    = Logger::printSpecials() ? GREEN : "";
+    const std::string yellow   = Logger::printSpecials() ? YELLOW : "";
+    const std::string red      = Logger::printSpecials() ? RED : "";
+    const std::string resetClr = Logger::printSpecials() ? RESETCLR : "";
+
     using MT_E = Logger::MessageType_E;
     switch (messageType)
     {
         case MT_E::INFO:
-            header = "[" BLUE "INFO" RESETCLR "]";
+            header.append(" ");
             break;
         case MT_E::DEBUG:
-            header = "[" ORANGE "DEBUG" RESETCLR "]";
+            header.append("[" + orange + "DEBUG" + resetClr + "] ");
             break;
         case MT_E::SUCCESS:
-            header = "[" GREEN "SUCCESS" RESETCLR "]";
+            header.append("[" + green + "SUCCESS" + resetClr + "] ");
             break;
         case MT_E::WARN:
-            header = "[" BLUE "WARN" RESETCLR "]";
+            header.append("[" + yellow + "WARN" + resetClr + "] ");
             break;
         case MT_E::ERROR:
-            header = "[" BLUE "ERROR" RESETCLR "]";
+            header.append("[" + red + "ERROR" + resetClr + "] ");
             break;
         default:
             break;
     }
-    header.append("[" + m_tag + "]");
-    const uint32_t durationMs = std::chrono::duration_cast<std::chrono::milliseconds>(
-                                    (preferredClock_t::now() - *g_m_start))
-                                    .count();
-    const uint32_t durationSec = durationMs / 1000u;
-    const uint32_t durationMin = durationSec / 60u;
-    const uint32_t durationHr  = durationMin / 60u;
-
-    const std::string timestamp = "[" + std::to_string(durationHr) + ":" +
-                                  std::to_string(durationMin) + ":" + std::to_string(durationSec) +
-                                  "." + std::to_string(durationMs) + "] ";
-
-    header.append(timestamp);
 
     return header;
 }

@@ -57,8 +57,9 @@ mab::CANdleBaudrate_E str2baud(const std::string& baud)
 
 CandleTool::CandleTool()
 {
-    log << "[CANDLESDK] Version: " << mab::Candle::getVersion() << std::endl;
-    log.m_tag = "candletool";
+    log.m_tag   = "CANDLETOOL";
+    log.m_layer = Logger::ProgramLayer_E::TOP;
+    log << "CandleSDK Version: " << mab::Candle::getVersion() << std::endl;
 
     mab::BusType_E        busType = mab::BusType_E::USB;
     mab::CANdleBaudrate_E baud    = mab::CANdleBaudrate_E::CAN_BAUD_1M;
