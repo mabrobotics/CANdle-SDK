@@ -46,8 +46,8 @@ void Logger::progress(double percentage) const
     const uint16_t rpad = PBWIDTH - lpad;
 
     const char* progBarTemplate = "%3d%% [%.*s%*s]";
-    char        progBar[PBWIDTH];
-    sprintf(progBar, progBarTemplate, val, lpad, PBSTR, rpad, "");
+    char        progBar[PBWIDTH + 100];
+    snprintf(progBar, PBWIDTH + 100, progBarTemplate, val, lpad, PBSTR, rpad, "");
 
     printLog(stdout, "", "\r", NULL);
     printLog(stdout, generateHeader(MessageType_E::INFO).c_str(), progBar, NULL);
