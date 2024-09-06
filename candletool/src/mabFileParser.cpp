@@ -12,10 +12,6 @@ MabFileParser::MabFileParser(std::string filePath)
     }
 }
 
-// MabFileParser::MabFileParser(MabFileParser& MabFileParser)
-// {
-// }
-
 MabFileParser::Status_E MabFileParser::processFile(std::string filePath)
 {
     MabFileParser::log.info("Processing file: %s", filePath.c_str());
