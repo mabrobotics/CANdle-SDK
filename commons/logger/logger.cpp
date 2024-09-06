@@ -45,14 +45,15 @@ void Logger::progress(double percentage) const
     const uint16_t lpad = (uint16_t)(percentage * PBWIDTH);
     const uint16_t rpad = PBWIDTH - lpad;
 
-    const char* progBarTemplate = "%3d%% [%.*s%*s]";
-    char        progBar[PBWIDTH + 100];
-    snprintf(progBar, PBWIDTH + 100, progBarTemplate, val, lpad, PBSTR, rpad, "");
+    const char*    progBarTemplate = "%3d%% [%.*s%*s]";
+    const uint16_t progBarTrueLen  = PBWIDTH + 8;
+    char           progBar[progBarTrueLen];
+    snprintf(progBar, progBarTrueLen, progBarTemplate, val, lpad, PBSTR, rpad, "");
 
-    printLog(stdout, "", "\r", NULL);
-    printLog(stdout, generateHeader(MessageType_E::INFO).c_str(), progBar, NULL);
+    printLog(stdout, "", "\r");
+    printLog(stdout, generateHeader(MessageType_E::INFO).c_str(), progBar);
     if (fabs(percentage - 1.0) < 0.00001)
-        printLogLine(stdout, "", "\r", NULL);
+        printLogLine(stdout, "", "\r");
 }
 
 void Logger::info(const char* msg, ...) const
@@ -138,16 +139,28 @@ void Logger::printLogLine(FILE* stream, const char* header, const char* msg, va_
     std::lock_guard<std::mutex> lock(g_m_printfLock);
     fprintf(g_m_streamOverride.value_or(stream), NEW_LINE);
 }
+void Logger::printLogLine(FILE* stream, const char* header, const char* msg) const
+{
+    printLog(stream, header, msg);
+
+    std::lock_guard<std::mutex> lock(g_m_printfLock);
+    fprintf(g_m_streamOverride.value_or(stream), NEW_LINE);
+}
 
 void Logger::printLog(FILE* stream, const char* header, const char* msg, va_list args) const
 {
     std::lock_guard<std::mutex> lock(g_m_printfLock);
 
     fprintf(g_m_streamOverride.value_or(stream), header, this->m_tag.c_str());
-    if (args != NULL)
-        vfprintf(g_m_streamOverride.value_or(stream), msg, args);
-    else
-        fprintf(g_m_streamOverride.value_or(stream), "%s", msg);
+    vfprintf(g_m_streamOverride.value_or(stream), msg, args);
+    fflush(NULL);
+}
+void Logger::printLog(FILE* stream, const char* header, const char* msg) const
+{
+    std::lock_guard<std::mutex> lock(g_m_printfLock);
+
+    fprintf(g_m_streamOverride.value_or(stream), header, this->m_tag.c_str());
+    fprintf(g_m_streamOverride.value_or(stream), "%s", msg);
     fflush(NULL);
 }
 

@@ -178,7 +178,9 @@ class Logger
         g_m_streamOverride;  // if set all streams will be redirected here
 
     void        printLogLine(FILE* stream, const char* header, const char* msg, va_list args) const;
+    void        printLogLine(FILE* stream, const char* header, const char* msg) const;
     void        printLog(FILE* stream, const char* header, const char* msg, va_list args) const;
+    void        printLog(FILE* stream, const char* header, const char* msg) const;
     std::string generateHeader(Logger::MessageType_E messageType) const noexcept;
 
     std::stringstream m_internalStrBuffer;
