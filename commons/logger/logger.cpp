@@ -41,14 +41,13 @@ void Logger::progress(double percentage) const
 {
     if (getCurrentLevel() == LogLevel_E::SILENT)
         return;
-    const uint16_t val  = (uint16_t)(percentage * 100);
-    const uint16_t lpad = (uint16_t)(percentage * PBWIDTH);
-    const uint16_t rpad = PBWIDTH - lpad;
+    const uint8_t val  = (uint8_t)(percentage * 100);
+    const uint8_t lpad = (uint8_t)(percentage * PBWIDTH);
+    const uint8_t rpad = PBWIDTH - lpad;
 
-    const char*    progBarTemplate = "%3d%% [%.*s%*s]";
-    const uint16_t progBarTrueLen  = PBWIDTH + 8;
-    char           progBar[progBarTrueLen];
-    snprintf(progBar, progBarTrueLen, progBarTemplate, val, lpad, PBSTR, rpad, "");
+    const char* progBarTemplate = "%3d%% [%.*s%*s]";
+    char        progBar[512];
+    snprintf(progBar, sizeof(progBar), progBarTemplate, val, lpad, PBSTR, rpad, "");
 
     printLog(stdout, "", "\r");
     printLog(stdout, generateHeader(MessageType_E::INFO).c_str(), progBar);
