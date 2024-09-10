@@ -67,13 +67,13 @@ typedef struct __attribute__((packed)) moduleData_S
 	bool			isDetected;
 	moduleType_E	type;
 	moduleVersion_E version;
-	uint16_t		temperature;
+	float			temperature;
 	uint16_t		busVoltage;
 	int16_t			current;
 	bool			isEnabled;
 } moduleData_S;
 
-constexpr size_t NUMBER_OF_MODULES = 6u;
+constexpr size_t NUMBER_OF_MODULES = 3u;
 
 typedef struct __attribute__((packed)) pdsInfo_S
 {
@@ -120,6 +120,7 @@ namespace mab
 							   pdsInfo.module[nModule].isEnabled ? "YES" : "NO");
 					m_log.info("\tBus voltage : [ %u ]", pdsInfo.module[nModule].busVoltage);
 					m_log.info("\tCurrent : [ %d ]", pdsInfo.module[nModule].current);
+					m_log.info("\tTemperature : [ %.2f ]", pdsInfo.module[nModule].temperature);
 				}
 				else
 				{
