@@ -13,7 +13,7 @@ class I_Loader
     };
     I_Loader() = delete;
     I_Loader(MabFileParser& mabFile)
-        : m_mabFile(mabFile) {
+        : m_mabFile(mabFile){
 
           };
 

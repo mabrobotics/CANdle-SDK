@@ -17,7 +17,8 @@ namespace mab
     FirmwareUploader::FirmwareUploader(Candle& _candle, MabFileParser& mabFile, int mdId)
         : m_candle(_candle), m_mabFile(mabFile), m_canId(mdId)
     {
-        m_log.tag = "FW Uploader";
+        m_log.m_tag   = "FW Uploader";
+        m_log.m_layer = Logger::ProgramLayer_E::LAYER_2;
     }
 
     FirmwareUploader::ERROR_E FirmwareUploader::flashDevice(bool directly)
