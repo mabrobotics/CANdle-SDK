@@ -5,7 +5,7 @@ CanLoader::CanLoader(mab::Candle& candle, MabFileParser& mabFile, uint32_t canId
     : I_Loader(mabFile), m_candle(candle), m_canId(canId)
 {
     m_log.m_tag   = "CanLoader";
-    m_log.m_layer = Logger::ProgramLayer_E::MIDDLE;
+    m_log.m_layer = Logger::ProgramLayer_E::LAYER_2;
 
     m_fileSize             = m_mabFile.m_firmwareEntry1.size;
     float flashPagesNeeded = ceilf((float)m_fileSize / (float)M_PAGE_SIZE);

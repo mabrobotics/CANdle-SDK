@@ -5,7 +5,7 @@ UsbLoader::UsbLoader(mab::Candle& candle, MabFileParser& mabFile)
     : I_Loader(mabFile), m_candle(candle)
 {
     m_log.m_tag   = "UsbLoader";
-    m_log.m_layer = Logger::ProgramLayer_E::MIDDLE;
+    m_log.m_layer = Logger::ProgramLayer_E::LAYER_2;
 
     // TODO: This stuff might be moved to the iLoader interface
     m_fileSize             = m_mabFile.m_firmwareEntry1.size;
@@ -43,7 +43,7 @@ UsbLoader::Error_E UsbLoader::uploadFirmware()
         m_log.progress((double)m_currentPage / m_pagesToUpload);
     }
 
-    m_log.m_layer = Logger::ProgramLayer_E::MIDDLE;
+    m_log.m_layer = Logger::ProgramLayer_E::LAYER_2;
     m_log.success("Firmware upload complete!");
 
     return Error_E::OK;

@@ -135,7 +135,7 @@ int main(int argc, char** argv)
     update->add_option("-f,--file", cmd.firmwareFileName, "Path to the .mab file");
 
     // Verbosity
-    uint32_t verbosityMode{0};
+    uint32_t verbosityMode = 0;
     bool     silentMode{false};
     app.add_flag("-v{1},--verbosity{1}", verbosityMode, "Verbose modes (1,2,3)")
         ->default_val(0)

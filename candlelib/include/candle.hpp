@@ -399,7 +399,7 @@ namespace mab
 
 		std::jthread transmitterThread;
 		sem_t		 received;
-		Logger		 log;
+		Logger		 log = Logger(Logger::ProgramLayer_E::TOP, "CANDLE");
 
 		bool printVerbose = true;
 

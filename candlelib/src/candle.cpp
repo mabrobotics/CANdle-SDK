@@ -42,14 +42,11 @@ namespace mab
 				   const std::string device)
 		: Candle(canBaudrate, printVerbose, makeBus(busType, device))
 	{
-		log.m_tag = "Candle";
 	}
 
 	Candle::Candle(CANdleBaudrate_E canBaudrate, bool printVerbose, std::shared_ptr<Bus> bus)
 		: printVerbose(printVerbose), bus(bus)
 	{
-		log.m_tag = "Candle";
-
 		reset();
 		usleep(5000);
 		if (sem_init(&received, true, 0) == -1)
@@ -92,7 +89,6 @@ namespace mab
 
 	std::shared_ptr<Bus> Candle::makeBus(mab::BusType_E busType, std::string device)
 	{
-		log.m_tag = "Candle";
 		switch (busType)
 		{
 			case mab::BusType_E::USB:
@@ -169,7 +165,6 @@ namespace mab
 	{
 		int		 counter		= 0;
 		uint64_t freqCheckStart = getTimestamp();
-		log.m_layer				= Logger::ProgramLayer_E::TOP;
 		while (!shouldStopTransmitter || stop_token.stop_requested())
 		{
 			if (++counter == 250)

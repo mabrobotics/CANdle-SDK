@@ -7,6 +7,7 @@
 #include <sstream>
 #include <algorithm>
 #include <chrono>
+#include <iostream>
 
 #ifndef _WIN32
 
@@ -32,6 +33,8 @@
 
 #endif
 
+using std::cout, std::endl;
+
 class Logger
 {
     using preferredClock_t          = std::chrono::high_resolution_clock;
@@ -56,9 +59,9 @@ class Logger
     };
     enum class ProgramLayer_E : uint8_t
     {
-        TOP    = 0,
-        MIDDLE = 1,
-        BOTTOM = 2
+        TOP     = 0,
+        LAYER_2 = 1,
+        BOTTOM  = 2
     };
     enum class MessageType_E : uint8_t
     {
@@ -78,7 +81,7 @@ class Logger
     ~Logger() = default;
 
     static constexpr std::array<std::array<LogLevel_E, 3>, 5> g_m_verbosityTable{
-        // TOP, MIDDLE, BOTTOM
+        // TOP, LAYER_2, BOTTOM
         {{{LogLevel_E::INFO, LogLevel_E::WARN, LogLevel_E::ERROR}},         // DEFAULT
          {{LogLevel_E::INFO, LogLevel_E::INFO, LogLevel_E::WARN}},          // V1
          {{LogLevel_E::DEBUG, LogLevel_E::INFO, LogLevel_E::INFO}},         // V2

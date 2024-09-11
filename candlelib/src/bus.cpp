@@ -29,7 +29,7 @@ namespace mab
 		if (errorCnt > errorThreshold)
 		{
 			const char* msg = "Fatal communication error!";
-			std::cout << msg << std::endl;
+			m_log.error(msg);
 			throw msg;
 		}
 		if (msgCnt > msgCntThreshold)

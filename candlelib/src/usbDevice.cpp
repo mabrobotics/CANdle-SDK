@@ -10,8 +10,6 @@
 
 unsigned long hash(const char* str);
 
-using std::cout, std::endl;
-
 UsbDevice::UsbDevice(u16 vid, u16 pid, const std::vector<u32>& idsToIgnore, const std::string& id)
 {
 	m_log.m_tag					= "USB";
