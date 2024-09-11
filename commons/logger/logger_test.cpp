@@ -17,7 +17,7 @@ TEST_F(LoggerTests, printError)
     log.m_layer           = Logger::ProgramLayer_E::BOTTOM;
     Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_3;
     ASSERT_EQ(log.getCurrentLevel(), Logger::LogLevel_E::DEBUG);
-    log.m_layer           = Logger::ProgramLayer_E::MIDDLE;
+    log.m_layer           = Logger::ProgramLayer_E::LAYER_2;
     Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
     ASSERT_EQ(log.getCurrentLevel(), Logger::LogLevel_E::SILENT);
 }
