@@ -39,6 +39,7 @@ target_sources(candle PRIVATE
   src/crc.cpp
   src/md80.cpp
   src/pds.cpp
+  src/pds_module.cpp
   src/register.cpp
   src/usbDevice.cpp
 )
