@@ -5,21 +5,23 @@
 using namespace mab;
 int main()
 {
-    // Create CANdle object and ping FDCAN bus in search of drives.
-    // Any found drives will be printed out by the ping() method.
+    // This could be Uniq ptr instead of shared ptr
+    logger log;
+    log.tag = "PDS Example";
 
     std::shared_ptr<Candle> pCandle = std::make_shared<Candle>(mab::CAN_BAUD_1M, true);
+    Pds                     pds(100, pCandle);
 
-    // std::vector<mab::BusDevice_S> busDevices =
-    // pCandle->pingNew(mab::CANdleBaudrate_E::CAN_BAUD_1M);
+    Pds::modules_S pdsModules = {0};
 
-    Pds examplePds(100, pCandle);
+    pds.getModules(pdsModules);
 
-    while (1)
-    {
-        examplePds.getPdsInfo();
-        usleep(500000);
-    }
+    log.info("PDS have the following numbers of connected modules:");
+    log.info("\t PS V1 :: [ %u ]", pdsModules.powerStageV1);
+    log.info("\t PS V2 :: [ %u ]", pdsModules.powerStageV2);
+    log.info("\t IC 12 :: [ %u ]", pdsModules.isolatedConverter12V);
+    log.info("\t PS 5  :: [ %u ]", pdsModules.isolatedConverter5V);
+    log.info("\t BR    :: [ %u ]", pdsModules.brakeResistor);
 
     return EXIT_SUCCESS;
 }

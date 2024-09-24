@@ -1,7 +1,11 @@
 #pragma once
 
+#include <stdint.h>
+
 #include "candle.hpp"
 #include "logger.hpp"
+
+#include "pds_module.hpp"
 
 namespace mab
 {
@@ -13,6 +17,26 @@ namespace mab
 	class Pds
 	{
 	  public:
+		enum class error_E : int8_t
+		{
+			COMMUNICATION_ERROR = -2,
+			UNKNOWN_ERROR		= -1,
+			OK					= 0,
+		};
+
+		/**
+		 * @brief This struct holds the amount of each connected module type
+		 */
+		struct modules_S
+		{
+			uint8_t powerStageV1;
+			uint8_t powerStageV2;
+			uint8_t brakeResistor;
+			uint8_t isolatedConverter12V;
+			uint8_t isolatedConverter5V;
+			/* */
+		};
+
 		Pds() = delete;
 
 		/**
@@ -25,9 +49,16 @@ namespace mab
 		 */
 		Pds(uint16_t canId, std::shared_ptr<Candle> sp_Candle);
 
-		void getPdsInfo(void);
+		/**
+		 * @brief Get the Modules structure
+		 *
+		 * @param modules reference to modules structure
+		 */
+		void getModules(modules_S& modules);
 
 	  private:
+		//   Maximum pds modules number
+		static constexpr size_t MAX_MODULES = 6u;
 		/**
 		 * @brief Member pointer to Candle object representing Candle device the PDS is
 		 * connected to over CANBus is connected over the CANBus
@@ -35,9 +66,15 @@ namespace mab
 		 */
 		std::shared_ptr<Candle> msp_Candle = nullptr;
 
-		logger m_log;
+		logger	  m_log;
+		uint16_t  m_canId	= 0;
+		modules_S m_modules = {0};
 
-		uint16_t m_canId = 0;
+		/**
+		 * @brief Read information about connected modules from physical device
+		 * @return error_E
+		 */
+		error_E readModules(void);
 	};
 
 }  // namespace mab
