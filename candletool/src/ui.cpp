@@ -11,7 +11,9 @@ namespace ui
     };
     mystreambuf  nostreambuf;
     std::ostream nocout(&nostreambuf);
-#define vout (std::cout)  // For easy customization later on
+#define vout (log)  // For easy customization later on
+
+    Logger log(Logger::ProgramLayer_E::TOP, "Candle");
 
     void printVersion(const std::string& version)
     {

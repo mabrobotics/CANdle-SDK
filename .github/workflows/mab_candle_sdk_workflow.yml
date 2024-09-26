@@ -2,7 +2,8 @@
 name: CANDLE_SDK_CI
 
 on:
-  push:
+  pull_request:
+    types: [assigned, opened, synchronize, reopened]
     branches: "**"
 
 jobs:

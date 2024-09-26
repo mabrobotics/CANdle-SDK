@@ -79,7 +79,7 @@ class CandleTool
     void updatePds(const std::string& mabFilePath, uint16_t canId, bool noReset = false);
 
   private:
-    logger                       log;
+    Logger                       log;
     std::unique_ptr<mab::Candle> candle;
 
     std::string busString;

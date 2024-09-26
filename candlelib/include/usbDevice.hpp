@@ -41,7 +41,7 @@ class UsbDevice : public mab::Bus
 
   private:
 	bool		  m_isConnected = false;
-	logger		  m_log;
+	Logger		  m_log;
 	unsigned long serialDeviceId = 0;
 
 	struct libusb_device_handle* devh = nullptr;

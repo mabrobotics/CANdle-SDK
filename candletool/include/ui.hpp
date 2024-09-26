@@ -6,6 +6,7 @@
 
 #include "candle.hpp"
 #include "candletool.hpp"
+#include "logger.hpp"
 
 /* ERROR COLORING NOTE: may not work on all terminals! */
 #define REDSTART    "\033[1;31m"

@@ -2,6 +2,8 @@
 
 #include "iostream"
 #include "mab_types.hpp"
+#include "logger.hpp"
+#include "string"
 namespace mab
 {
 	enum class BusType_E
@@ -44,6 +46,8 @@ namespace mab
 		static const uint32_t msgCntThreshold = 1000;
 		uint32_t			  msgCnt		  = 0;
 		uint32_t			  errorCnt		  = 0;
+
+		Logger m_log = Logger(Logger::ProgramLayer_E::BOTTOM, "BUS");
 
 	  protected:
 		BusType_E				  busType;
