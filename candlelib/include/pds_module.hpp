@@ -53,7 +53,7 @@ namespace mab
            still should not be instantiated.
         */
         PdsModule(socket_E socket);
-        logger m_log;
+        Logger m_log;
 
         type_E m_type;
 

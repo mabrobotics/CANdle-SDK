@@ -42,8 +42,8 @@ namespace mab
                    const std::string device)
         : Candle(canBaudrate, printVerbose, makeBus(busType, device))
     {
-        log.tag   = "Candle";
-        log.level = logger::LogLevel_E::DEBUG;
+        log.m_tag   = "Candle";
+        log.m_layer = Logger::ProgramLayer_E::TOP;
     }
 
     Candle::Candle(CANdleBaudrate_E canBaudrate, bool printVerbose, std::shared_ptr<Bus> bus)

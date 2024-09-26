@@ -72,7 +72,7 @@ namespace mab
          */
         std::shared_ptr<Candle> msp_Candle = nullptr;
 
-        logger   m_log;
+        Logger   m_log;
         uint16_t m_canId = 0;
 
         std::vector<std::unique_ptr<BrakeResistor>>  m_brakeResistors;

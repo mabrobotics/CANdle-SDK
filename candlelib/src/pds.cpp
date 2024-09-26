@@ -17,8 +17,8 @@ namespace mab
     Pds::Pds(uint16_t canId, std::shared_ptr<Candle> sp_Candle)
         : msp_Candle(sp_Candle), m_canId(canId)
     {
-        m_log.tag   = "PDS";
-        m_log.level = logger::LogLevel_E::DEBUG;
+        m_log.m_tag   = "PDS";
+        m_log.m_layer = Logger::ProgramLayer_E::LAYER_2;
         if (readModules() != error_E::OK)
             m_log.error("Unable to read modules data from PDS...");
     }

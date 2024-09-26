@@ -16,8 +16,8 @@ using namespace mab;
 
 int main()
 {
-    logger log;
-    log.tag = "PDS Example";
+    Logger log;
+    log.m_tag = "PDS Example";
 
     std::shared_ptr<Candle> pCandle = std::make_shared<Candle>(mab::CAN_BAUD_1M, true);
     Pds                     pds(100, pCandle);
