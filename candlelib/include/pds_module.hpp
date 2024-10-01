@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include "logger.hpp"
 
+#include "pds_types.hpp"
+
 namespace mab
 {
 
@@ -19,31 +21,9 @@ namespace mab
             OK            = 0,
         };
 
-        enum class type_E : uint8_t
-        {
-            // Undefined means that module is not connected or PDS could not determine its type.
-            UNDEFINED = 0x00,
-            BRAKE_RESISTOR,
-            ISOLATED_CONVERTER_12V,
-            ISOLATED_CONVERTER_5V,
-            POWER_STAGE_V1,
-            POWER_STAGE_V2,
-            /* NEW MODULE TYPES HERE */
-        };
-
-        enum class socket_E : uint8_t
-        {
-            SOCKET_1 = 0x00,
-            SOCKET_2 = 0x01,
-            SOCKET_3 = 0x02,
-            SOCKET_4 = 0x03,
-            SOCKET_5 = 0x04,
-            SOCKET_6 = 0x05,
-        };
-
         PdsModule() = delete;
 
-        socket_E getSocket();
+        socketIndex_E getSocket();
 
         // static std::string moduleType2String(moduleType_E type);
 
@@ -52,51 +32,60 @@ namespace mab
            Constructor is protected because even if this class has no pure virtual methods, it
            still should not be instantiated.
         */
-        PdsModule(socket_E socket);
+        PdsModule(socketIndex_E socket, moduleType_E type);
         Logger m_log;
 
-        type_E m_type;
+        const socketIndex_E m_socketIndex;
+        const moduleType_E  m_type;
 
         // Represents physical socket index number that the particular module is connected to.
-        socket_E m_socketIndex;
     };
 
     class BrakeResistor : public PdsModule
     {
       public:
         BrakeResistor() = delete;
-        BrakeResistor(socket_E socket);
+        BrakeResistor(socketIndex_E socket);
         ~BrakeResistor() = default;
 
         // TODO: concept function. Might be removed in the future ( To be discussed )
         error_E setOperatingVoltageThreshold(uint16_t voltage);
     };
 
-    class PowerStageV1 : public PdsModule
+    class PowerStage : public PdsModule
     {
       public:
-        PowerStageV1() = delete;
-        PowerStageV1(socket_E socket);
-        ~PowerStageV1() = default;
+        PowerStage() = delete;
+        PowerStage(socketIndex_E socket);
+        ~PowerStage() = default;
 
         error_E enable();
         error_E disable();
         error_E isEnabled(bool& enabled);
-    };
 
-    class PowerStageV2 : public PdsModule
-    {
-      public:
-        PowerStageV2() = delete;
-        PowerStageV2(socket_E socket);
-        ~PowerStageV2() = default;
+      private:
+        /*
+          Control parameters indexes used internally for creating protocol messages
+          for this particular module type. Note that the control parameters may differ
+          from type to type so they all provide own enumerator definition even if they share
+          exact same set of control parameters.
+        */
+        enum class controlParameters_E : uint8_t
+        {
+
+            ENABLED      = 0x00,  // Indicates if the module is enabled or not
+            BUS_VOLTAGE  = 0x01,
+            LOAD_CURRENT = 0x02,
+            TEMPERATURE  = 0x03,
+
+        };
     };
 
     class IsolatedConv12 : public PdsModule
     {
       public:
         IsolatedConv12() = delete;
-        IsolatedConv12(socket_E socket);
+        IsolatedConv12(socketIndex_E socket);
         ~IsolatedConv12() = default;
     };
 
@@ -104,7 +93,7 @@ namespace mab
     {
       public:
         IsolatedConv5() = delete;
-        IsolatedConv5(socket_E socket);
+        IsolatedConv5(socketIndex_E socket);
         ~IsolatedConv5() = default;
     };
 

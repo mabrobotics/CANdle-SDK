@@ -27,8 +27,7 @@ int main()
     pds.getModules(pdsModules);
 
     log.info("PDS have the following numbers of connected modules:");
-    log.info("\t PS V1 :: [ %u ]", pdsModules.powerStageV1);
-    log.info("\t PS V2 :: [ %u ]", pdsModules.powerStageV2);
+    log.info("\t PS    :: [ %u ]", pdsModules.powerStage);
     log.info("\t IC 12 :: [ %u ]", pdsModules.isolatedConv12V);
     log.info("\t PS 5  :: [ %u ]", pdsModules.isolatedConverter5V);
     log.info("\t BR    :: [ %u ]", pdsModules.brakeResistor);

@@ -28,7 +28,7 @@ namespace mab
         const char txBuffer[]   = {FRAME_GET_INFO, 0x00};
         char       rxBuffer[64] = {0};
 
-        PdsModule::type_E modules[MAX_MODULES] = {PdsModule::type_E::UNDEFINED};
+        moduleType_E modules[MAX_MODULES] = {moduleType_E::UNDEFINED};
 
         if (msp_Candle->sendGenericFDCanFrame(m_canId, sizeof(txBuffer), txBuffer, rxBuffer, 100))
         {
@@ -36,30 +36,26 @@ namespace mab
 
             for (uint8_t i = 0; i < MAX_MODULES; i++)
             {
-                PdsModule::socket_E socketIndex = static_cast<PdsModule::socket_E>(i);
+                socketIndex_E socketIndex = static_cast<socketIndex_E>(i);
                 switch (modules[i])
                 {
-                    case PdsModule::type_E::BRAKE_RESISTOR:
+                    case moduleType_E::BRAKE_RESISTOR:
                         m_brakeResistors.push_back(std::make_unique<BrakeResistor>(socketIndex));
                         break;
 
-                    case PdsModule::type_E::ISOLATED_CONVERTER_12V:
+                    case moduleType_E::ISOLATED_CONVERTER_12V:
                         m_IsolatedConv12s.push_back(std::make_unique<IsolatedConv12>(socketIndex));
                         break;
 
-                    case PdsModule::type_E::ISOLATED_CONVERTER_5V:
+                    case moduleType_E::ISOLATED_CONVERTER_5V:
                         m_IsolatedConv5s.push_back(std::make_unique<IsolatedConv5>(socketIndex));
                         break;
 
-                    case PdsModule::type_E::POWER_STAGE_V1:
-                        m_powerStageV1s.push_back(std::make_unique<PowerStageV1>(socketIndex));
+                    case moduleType_E::POWER_STAGE:
+                        m_powerStages.push_back(std::make_unique<PowerStage>(socketIndex));
                         break;
 
-                    case PdsModule::type_E::POWER_STAGE_V2:
-                        m_powerStageV2s.push_back(std::make_unique<PowerStageV2>(socketIndex));
-                        break;
-
-                    case PdsModule::type_E::UNDEFINED:
+                    case moduleType_E::UNDEFINED:
                     default:
                         break;
                 }
@@ -79,11 +75,10 @@ namespace mab
         modules.brakeResistor       = m_brakeResistors.size();
         modules.isolatedConv12V     = m_IsolatedConv12s.size();
         modules.isolatedConverter5V = m_IsolatedConv5s.size();
-        modules.powerStageV1        = m_powerStageV1s.size();
-        modules.powerStageV2        = m_powerStageV2s.size();
+        modules.powerStage          = m_powerStages.size();
     }
 
-    std::unique_ptr<BrakeResistor> Pds::attachBrakeResistor(const PdsModule::socket_E socket)
+    std::unique_ptr<BrakeResistor> Pds::attachBrakeResistor(const socketIndex_E socket)
     {
         if (!m_brakeResistors.empty())
         {
@@ -102,11 +97,11 @@ namespace mab
         return nullptr;
     }
 
-    std::unique_ptr<PowerStageV1> Pds::attachPowerStageV1(const PdsModule::socket_E socket)
+    std::unique_ptr<PowerStage> Pds::attachPowerStage(const socketIndex_E socket)
     {
-        if (!m_powerStageV1s.empty())
+        if (!m_powerStages.empty())
         {
-            for (auto& module : m_powerStageV1s)
+            for (auto& module : m_powerStages)
             {
                 if (module->getSocket() == socket)
                     return std::move(module);
@@ -122,27 +117,7 @@ namespace mab
         return nullptr;
     }
 
-    std::unique_ptr<PowerStageV2> Pds::attachPowerStageV2(const PdsModule::socket_E socket)
-    {
-        if (!m_powerStageV2s.empty())
-        {
-            for (auto& module : m_powerStageV2s)
-            {
-                if (module->getSocket() == socket)
-                    return std::move(module);
-            }
-
-            m_log.error("No power stage V2 module connected to socket [ %u ]!",
-                        static_cast<uint8_t>(socket) + 1);
-
-            return nullptr;
-        }
-
-        m_log.error("No power stage V2 modules connected to PDS device!");
-        return nullptr;
-    }
-
-    std::unique_ptr<IsolatedConv12> Pds::attachIsolatedConverter12(const PdsModule::socket_E socket)
+    std::unique_ptr<IsolatedConv12> Pds::attachIsolatedConverter12(const socketIndex_E socket)
     {
         if (!m_IsolatedConv12s.empty())
         {
@@ -162,7 +137,7 @@ namespace mab
         return nullptr;
     }
 
-    std::unique_ptr<IsolatedConv5> Pds::attachIsolatedConverter5(const PdsModule::socket_E socket)
+    std::unique_ptr<IsolatedConv5> Pds::attachIsolatedConverter5(const socketIndex_E socket)
     {
         if (!m_IsolatedConv5s.empty())
         {

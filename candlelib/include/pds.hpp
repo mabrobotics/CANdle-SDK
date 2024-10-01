@@ -6,6 +6,7 @@
 #include "logger.hpp"
 
 #include "pds_module.hpp"
+#include "pds_types.hpp"
 
 namespace mab
 {
@@ -29,8 +30,7 @@ namespace mab
          */
         struct modules_S
         {
-            uint8_t powerStageV1;
-            uint8_t powerStageV2;
+            uint8_t powerStage;
             uint8_t brakeResistor;
             uint8_t isolatedConv12V;
             uint8_t isolatedConverter5V;
@@ -56,11 +56,10 @@ namespace mab
          */
         void getModules(modules_S& modules);
 
-        std::unique_ptr<BrakeResistor>  attachBrakeResistor(PdsModule::socket_E socket);
-        std::unique_ptr<PowerStageV1>   attachPowerStageV1(PdsModule::socket_E socket);
-        std::unique_ptr<PowerStageV2>   attachPowerStageV2(PdsModule::socket_E socket);
-        std::unique_ptr<IsolatedConv12> attachIsolatedConverter12(PdsModule::socket_E socket);
-        std::unique_ptr<IsolatedConv5>  attachIsolatedConverter5(PdsModule::socket_E socket);
+        std::unique_ptr<BrakeResistor>  attachBrakeResistor(socketIndex_E socket);
+        std::unique_ptr<PowerStage>     attachPowerStage(socketIndex_E socket);
+        std::unique_ptr<IsolatedConv12> attachIsolatedConverter12(socketIndex_E socket);
+        std::unique_ptr<IsolatedConv5>  attachIsolatedConverter5(socketIndex_E socket);
 
       private:
         //   Maximum pds modules number
@@ -76,8 +75,7 @@ namespace mab
         uint16_t m_canId = 0;
 
         std::vector<std::unique_ptr<BrakeResistor>>  m_brakeResistors;
-        std::vector<std::unique_ptr<PowerStageV1>>   m_powerStageV1s;
-        std::vector<std::unique_ptr<PowerStageV2>>   m_powerStageV2s;
+        std::vector<std::unique_ptr<PowerStage>>     m_powerStages;
         std::vector<std::unique_ptr<IsolatedConv12>> m_IsolatedConv12s;
         std::vector<std::unique_ptr<IsolatedConv5>>  m_IsolatedConv5s;
 
