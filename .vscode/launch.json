@@ -76,6 +76,17 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
+        },
+        {
+            "name": "PDS Protocol unit tests",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/ut_runners/test_pds_protocol_test",
+            "stopAtEntry": true,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
         }
     ]
 }

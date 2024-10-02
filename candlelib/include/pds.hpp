@@ -26,7 +26,7 @@ namespace mab
         };
 
         /**
-         * @brief This struct holds the amount of each connected module type
+         * @brief This struct holds the amount of each connected modules type
          */
         struct modules_S
         {
@@ -69,7 +69,7 @@ namespace mab
          * connected to over CANBus is connected over the CANBus
          *
          */
-        std::shared_ptr<Candle> msp_Candle = nullptr;
+        const std::shared_ptr<Candle> msp_Candle;
 
         Logger   m_log;
         uint16_t m_canId = 0;

@@ -40,19 +40,23 @@ namespace mab
                 switch (modules[i])
                 {
                     case moduleType_E::BRAKE_RESISTOR:
-                        m_brakeResistors.push_back(std::make_unique<BrakeResistor>(socketIndex));
+                        m_brakeResistors.push_back(
+                            std::make_unique<BrakeResistor>(socketIndex, msp_Candle, m_canId));
                         break;
 
                     case moduleType_E::ISOLATED_CONVERTER_12V:
-                        m_IsolatedConv12s.push_back(std::make_unique<IsolatedConv12>(socketIndex));
+                        m_IsolatedConv12s.push_back(
+                            std::make_unique<IsolatedConv12>(socketIndex, msp_Candle, m_canId));
                         break;
 
                     case moduleType_E::ISOLATED_CONVERTER_5V:
-                        m_IsolatedConv5s.push_back(std::make_unique<IsolatedConv5>(socketIndex));
+                        m_IsolatedConv5s.push_back(
+                            std::make_unique<IsolatedConv5>(socketIndex, msp_Candle, m_canId));
                         break;
 
                     case moduleType_E::POWER_STAGE:
-                        m_powerStages.push_back(std::make_unique<PowerStage>(socketIndex));
+                        m_powerStages.push_back(
+                            std::make_unique<PowerStage>(socketIndex, msp_Candle, m_canId));
                         break;
 
                     case moduleType_E::UNDEFINED:

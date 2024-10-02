@@ -78,3 +78,8 @@ if(MAKE_TESTS)
   enable_testing()
   add_subdirectory(test)
 endif()
+
+add_unit_test_executable(pds_protocol_test test/pds_protocol_test.cpp)
+target_sources(pds_protocol_test PRIVATE src/pds_protocol.cpp)
+target_include_directories(pds_protocol_test PRIVATE include)
+target_link_libraries(pds_protocol_test PRIVATE logger)

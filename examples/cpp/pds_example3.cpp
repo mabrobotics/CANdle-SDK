@@ -1,7 +1,7 @@
 /*
     MAB Robotics
 
-    Power Distribution System Example 2
+    Power Distribution System Example 3
 
     This example shows the usage of Power Stage module.
     It assumes that at least one Power Stage module is connected
@@ -44,6 +44,8 @@ int main()
     std::unique_ptr<PowerStage> p_powerStage = pds.attachPowerStage(POWER_STAGE_SOCKET_INDEX);
     if (p_powerStage == nullptr)
         log.error("Unable to attach power stage module!");
+
+    p_powerStage->enable();
 
     return EXIT_SUCCESS;
 }

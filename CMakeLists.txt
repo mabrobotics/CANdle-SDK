@@ -55,6 +55,7 @@ add_subdirectory(candlelib)
 add_subdirectory(candletool)
 add_subdirectory(examples)
 
+
 message(
   "CANdleSDK v${CANDLESDK_VERSION}.${CANDLESDK_VERSION_TAG} build from branch ${GIT_BRANCH} at ${GIT_HASH}"
 )

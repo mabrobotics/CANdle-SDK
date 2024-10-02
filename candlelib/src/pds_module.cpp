@@ -6,8 +6,11 @@ namespace mab
 
     constexpr Logger::ProgramLayer_E DEFAULT_PDS_MODULE_LOG_LAYER = Logger::ProgramLayer_E::LAYER_2;
 
-    PdsModule::PdsModule(socketIndex_E socket, moduleType_E type)
-        : m_socketIndex(socket), m_type(type)
+    PdsModule::PdsModule(socketIndex_E           socket,
+                         moduleType_E            type,
+                         std::shared_ptr<Candle> sp_Candle,
+                         u16                     canId)
+        : m_socketIndex(socket), m_type(type), msp_Candle(sp_Candle), m_canId(canId)
     {
         m_log.m_layer = DEFAULT_PDS_MODULE_LOG_LAYER;
     }
@@ -17,14 +20,15 @@ namespace mab
         return m_socketIndex;
     }
 
-    BrakeResistor::BrakeResistor(socketIndex_E socket)
-        : PdsModule(socket, moduleType_E::BRAKE_RESISTOR)
+    BrakeResistor::BrakeResistor(socketIndex_E socket, std::shared_ptr<Candle> sp_Candle, u16 canId)
+        : PdsModule(socket, moduleType_E::BRAKE_RESISTOR, sp_Candle, canId)
     {
         m_log.m_tag = "BR  :: " + std::to_string(static_cast<int>(socket) + 1);
         m_log.debug("Object created");
     }
 
-    PowerStage::PowerStage(socketIndex_E socket) : PdsModule(socket, moduleType_E::POWER_STAGE)
+    PowerStage::PowerStage(socketIndex_E socket, std::shared_ptr<Candle> sp_Candle, u16 canId)
+        : PdsModule(socket, moduleType_E::POWER_STAGE, sp_Candle, canId)
     {
         m_log.m_tag = "PS  :: " + std::to_string(static_cast<int>(socket) + 1);
         m_log.debug("Object created");
@@ -32,20 +36,30 @@ namespace mab
 
     PdsModule::error_E PowerStage::enable()
     {
-        SetPropertyMessage enableMessage(m_type, m_socketIndex);
+        PropertyWriteMessage enableMessage(m_type, m_socketIndex);
 
+        u8 responseBuffer[64] = {0};
+
+        enableMessage.addProperty(controlParameters_E::ENABLED, true);
+        std::vector<u8> serializedMessage = enableMessage.serialize();
+        msp_Candle->sendGenericFDCanFrame(m_canId,
+                                          serializedMessage.size(),
+                                          reinterpret_cast<const char*>(serializedMessage.data()),
+                                          reinterpret_cast<char*>(responseBuffer));
         return error_E::OK;
     }
 
-    IsolatedConv12::IsolatedConv12(socketIndex_E socket)
-        : PdsModule(socket, moduleType_E::ISOLATED_CONVERTER_12V)
+    IsolatedConv12::IsolatedConv12(socketIndex_E           socket,
+                                   std::shared_ptr<Candle> sp_Candle,
+                                   u16                     canId)
+        : PdsModule(socket, moduleType_E::ISOLATED_CONVERTER_12V, sp_Candle, canId)
     {
         m_log.m_tag = "IC12:: " + std::to_string(static_cast<int>(socket) + 1);
         m_log.debug("Object created");
     }
 
-    IsolatedConv5::IsolatedConv5(socketIndex_E socket)
-        : PdsModule(socket, moduleType_E::ISOLATED_CONVERTER_5V)
+    IsolatedConv5::IsolatedConv5(socketIndex_E socket, std::shared_ptr<Candle> sp_Candle, u16 canId)
+        : PdsModule(socket, moduleType_E::ISOLATED_CONVERTER_5V, sp_Candle, canId)
     {
         m_log.m_tag = "IC5 :: " + std::to_string(static_cast<int>(socket) + 1);
         m_log.debug("Object created");
