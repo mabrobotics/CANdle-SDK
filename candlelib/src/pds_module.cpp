@@ -36,16 +36,51 @@ namespace mab
 
     PdsModule::error_E PowerStage::enable()
     {
-        PropertyWriteMessage enableMessage(m_type, m_socketIndex);
+        PdsMessage::error_E result = PdsMessage::error_E::OK;
+        PropertySetMessage  enableMessage(m_type, m_socketIndex);
 
         u8 responseBuffer[64] = {0};
 
         enableMessage.addProperty(controlParameters_E::ENABLED, true);
         std::vector<u8> serializedMessage = enableMessage.serialize();
+
         msp_Candle->sendGenericFDCanFrame(m_canId,
                                           serializedMessage.size(),
                                           reinterpret_cast<const char*>(serializedMessage.data()),
                                           reinterpret_cast<char*>(responseBuffer));
+
+        result = enableMessage.parseResponse(responseBuffer);
+
+        if (result != PdsMessage::error_E::OK)
+        {
+            return error_E::PROTOCOL_ERROR;
+        }
+
+        return error_E::OK;
+    }
+
+    PdsModule::error_E PowerStage::disable()
+    {
+        PdsMessage::error_E result = PdsMessage::error_E::OK;
+        PropertySetMessage  enableMessage(m_type, m_socketIndex);
+
+        u8 responseBuffer[64] = {0};
+
+        enableMessage.addProperty(controlParameters_E::ENABLED, false);
+        std::vector<u8> serializedMessage = enableMessage.serialize();
+
+        msp_Candle->sendGenericFDCanFrame(m_canId,
+                                          serializedMessage.size(),
+                                          reinterpret_cast<const char*>(serializedMessage.data()),
+                                          reinterpret_cast<char*>(responseBuffer));
+
+        result = enableMessage.parseResponse(responseBuffer);
+
+        if (result != PdsMessage::error_E::OK)
+        {
+            return error_E::PROTOCOL_ERROR;
+        }
+
         return error_E::OK;
     }
 
@@ -56,6 +91,56 @@ namespace mab
     {
         m_log.m_tag = "IC12:: " + std::to_string(static_cast<int>(socket) + 1);
         m_log.debug("Object created");
+    }
+
+    PdsModule::error_E IsolatedConv12::enable()
+    {
+        PdsMessage::error_E result = PdsMessage::error_E::OK;
+        PropertySetMessage  enableMessage(m_type, m_socketIndex);
+
+        u8 responseBuffer[64] = {0};
+
+        enableMessage.addProperty(controlParameters_E::ENABLED, true);
+        std::vector<u8> serializedMessage = enableMessage.serialize();
+
+        msp_Candle->sendGenericFDCanFrame(m_canId,
+                                          serializedMessage.size(),
+                                          reinterpret_cast<const char*>(serializedMessage.data()),
+                                          reinterpret_cast<char*>(responseBuffer));
+
+        result = enableMessage.parseResponse(responseBuffer);
+
+        if (result != PdsMessage::error_E::OK)
+        {
+            return error_E::PROTOCOL_ERROR;
+        }
+
+        return error_E::OK;
+    }
+
+    PdsModule::error_E IsolatedConv12::disable()
+    {
+        PdsMessage::error_E result = PdsMessage::error_E::OK;
+        PropertySetMessage  enableMessage(m_type, m_socketIndex);
+
+        u8 responseBuffer[64] = {0};
+
+        enableMessage.addProperty(controlParameters_E::ENABLED, false);
+        std::vector<u8> serializedMessage = enableMessage.serialize();
+
+        msp_Candle->sendGenericFDCanFrame(m_canId,
+                                          serializedMessage.size(),
+                                          reinterpret_cast<const char*>(serializedMessage.data()),
+                                          reinterpret_cast<char*>(responseBuffer));
+
+        result = enableMessage.parseResponse(responseBuffer);
+
+        if (result != PdsMessage::error_E::OK)
+        {
+            return error_E::PROTOCOL_ERROR;
+        }
+
+        return error_E::OK;
     }
 
     IsolatedConv5::IsolatedConv5(socketIndex_E socket, std::shared_ptr<Candle> sp_Candle, u16 canId)

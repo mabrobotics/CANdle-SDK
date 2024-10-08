@@ -25,7 +25,7 @@ namespace mab
 
     Pds::error_E Pds::readModules(void)
     {
-        const char txBuffer[]   = {FRAME_GET_INFO, 0x00};
+        const char txBuffer[]   = {FRAME_GET_INFO, 0x00, 0x00};
         char       rxBuffer[64] = {0};
 
         moduleType_E modules[MAX_MODULES] = {moduleType_E::UNDEFINED};

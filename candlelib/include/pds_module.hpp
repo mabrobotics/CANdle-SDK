@@ -18,8 +18,9 @@ namespace mab
       public:
         enum class error_E : int8_t
         {
-            UNKNOWN_ERROR = -1,
-            OK            = 0,
+            PROTOCOL_ERROR = -2,
+            UNKNOWN_ERROR  = -1,
+            OK             = 0,
         };
 
         PdsModule() = delete;
@@ -126,6 +127,27 @@ namespace mab
         IsolatedConv12() = delete;
         IsolatedConv12(socketIndex_E socket, std::shared_ptr<Candle> sp_Candle, u16 canId);
         ~IsolatedConv12() = default;
+
+        error_E enable();
+        error_E disable();
+
+        error_E isEnabled(bool& enabled);
+
+        /*
+          Control parameters indexes used internally for creating protocol messages
+          for this particular module type. Note that the control parameters may differ
+          from type to type so they all provide own enumerator definition even if they share
+          exact same set of control parameters.
+        */
+        enum class controlParameters_E : uint8_t
+        {
+
+            ENABLED      = 0x00,  // Indicates if the module is enabled or not
+            BUS_VOLTAGE  = 0x01,
+            LOAD_CURRENT = 0x02,
+            TEMPERATURE  = 0x03,
+
+        };
     };
 
     /**

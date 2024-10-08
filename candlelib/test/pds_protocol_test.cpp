@@ -26,18 +26,15 @@ namespace mab
 
     TEST_F(BrakeResistorMessageTest, SerializePropertyWriteMessageWithNoProperties)
     {
-        std::vector<u8>      EXPECTED_SERIALIZED_MESSAGE = {0x01, 0x00};
-        PropertyWriteMessage testMessage(moduleType_E::BRAKE_RESISTOR, socketIndex_E::SOCKET_1);
-        std::vector<u8>      serializedMessage = testMessage.serialize();
-
-        ASSERT_EQ(EXPECTED_SERIALIZED_MESSAGE.size(), serializedMessage.size());
-        EXPECT_EQ(EXPECTED_SERIALIZED_MESSAGE, serializedMessage);
+        PropertySetMessage testMessage(moduleType_E::BRAKE_RESISTOR, socketIndex_E::SOCKET_1);
+        EXPECT_THROW(testMessage.serialize(), std::runtime_error);
     }
 
     TEST_F(BrakeResistorMessageTest, CheckSerializedMessageWhenPropertyAdded)
     {
-        std::vector<u8> EXPECTED_SERIALIZED_MESSAGE = {0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
-        PropertyWriteMessage testMessage(moduleType_E::BRAKE_RESISTOR, socketIndex_E::SOCKET_1);
+        std::vector<u8> EXPECTED_SERIALIZED_MESSAGE = {
+            0x21, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01};
+        PropertySetMessage testMessage(moduleType_E::BRAKE_RESISTOR, socketIndex_E::SOCKET_1);
         testMessage.addProperty(PowerStage::controlParameters_E::ENABLED, true);
         std::vector<u8> serializedMessage = testMessage.serialize();
 
@@ -47,7 +44,7 @@ namespace mab
 
     TEST_F(BrakeResistorMessageTest, HandleExceededMessageSizeAfterSerialization)
     {
-        PropertyWriteMessage testMessage(moduleType_E::BRAKE_RESISTOR, socketIndex_E::SOCKET_1);
+        PropertySetMessage testMessage(moduleType_E::BRAKE_RESISTOR, socketIndex_E::SOCKET_1);
         /*
             TODO: Expecting that this code should be refactored in the future.
             The idea is that addProperty will be checking if property given is settable

@@ -23,6 +23,20 @@ namespace mab
             UNKNOWN_ERROR = 0x01
         };
 
+        enum class commandCode_E
+        {
+            GET_MODULES         = 0x05,
+            GET_MODULE_PROPERTY = 0x20,
+            SET_MODULE_PROPERTY = 0x21
+        };
+
+        enum class responseCode_E
+        {
+            OK                   = 0x00,
+            INVALID_COMMAND_CODE = 0x01,
+            INVALID_SOCKET_INDEX = 0x02
+        };
+
       protected:
         /* ModuleType / socket AKA who / where */
         PdsMessage(moduleType_E moduleType, socketIndex_E socket);
@@ -31,12 +45,12 @@ namespace mab
         const socketIndex_E m_socketIndex;
     };
 
-    class PropertyWriteMessage : public PdsMessage
+    class PropertySetMessage : public PdsMessage
     {
       public:
-        PropertyWriteMessage() = delete;
-        PropertyWriteMessage(moduleType_E moduleType, socketIndex_E socket);
-        ~PropertyWriteMessage() = default;
+        PropertySetMessage() = delete;
+        PropertySetMessage(moduleType_E moduleType, socketIndex_E socket);
+        ~PropertySetMessage() = default;
 
         template <typename propertyT, typename valueT>
         void addProperty(propertyT propertyType, valueT value)
@@ -48,6 +62,7 @@ namespace mab
         }
 
         std::vector<u8> serialize();
+        error_E         parseResponse(u8* p_response);
 
       private:
         std::vector<std::pair<u8, u32>> m_properties;

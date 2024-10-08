@@ -45,7 +45,14 @@ int main()
     if (p_powerStage == nullptr)
         log.error("Unable to attach power stage module!");
 
-    p_powerStage->enable();
+    p_powerStage->disable();
+
+    // std::unique_ptr<IsolatedConv12> p_ic12 =
+    //     pds.attachIsolatedConverter12(mab::socketIndex_E::SOCKET_3);
+    // if (p_ic12 == nullptr)
+    //     log.error("Unable to attach power stage module!");
+
+    // p_ic12->disable();
 
     return EXIT_SUCCESS;
 }
