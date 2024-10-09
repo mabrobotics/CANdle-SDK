@@ -95,7 +95,11 @@ namespace mab
         error_E enable();
         error_E disable();
 
-        error_E isEnabled(bool& enabled);
+        error_E getEnabled(bool& enabled);
+
+        error_E bindBrakeResistor(socketIndex_E brakeResistorSocketIndex);
+
+        // error_E setBrakeResistorTriggerVoltage(uint32_t brTriggerVoltage);
 
         /*
           Control parameters indexes used internally for creating protocol messages

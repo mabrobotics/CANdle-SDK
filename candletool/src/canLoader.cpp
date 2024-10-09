@@ -64,7 +64,7 @@ void CanLoader::sendResetCmd()
 
     m_log.info("Entering bootloader mode...");
 
-    if (!m_candle.sendGenericFDCanFrame(m_canId, 2, (const char*)txBuff, rxBuff, 1000))
+    if (!m_candle.sendGenericFDCanFrame(m_canId, 2, (const char*)txBuff, rxBuff, nullptr, 1000))
     {
         m_log.error(
             "Error while sendind bootloader enter command! Checking if not already in "
@@ -84,7 +84,7 @@ bool CanLoader::sendInitCmd()
 
     m_log.info("Detecting bootloader mode...");
 
-    m_candle.sendGenericFDCanFrame(m_canId, 5, (const char*)txBuff, (char*)rxBuff, 50);
+    m_candle.sendGenericFDCanFrame(m_canId, 5, (const char*)txBuff, (char*)rxBuff, nullptr, 50);
 
     if (strcmp("OK", (char*)rxBuff) == 0)
         m_log.success("Bootloader detected!");
@@ -106,7 +106,7 @@ bool CanLoader::sendPageProgCmd()
     txBuff[0] = CMD_PAGE_PROG;
     txBuff[1] = 0x00;
 
-    m_candle.sendGenericFDCanFrame(m_canId, 5, (const char*)txBuff, rxBuff, 500);
+    m_candle.sendGenericFDCanFrame(m_canId, 5, (const char*)txBuff, rxBuff, nullptr, 500);
     if (strcmp("OK", (char*)rxBuff) == 0)
         return true;
 
@@ -139,7 +139,8 @@ bool CanLoader::sendPage()
         memset(rxBuff, 0, M_CAN_CHUNK_SIZE);
         memcpy(txBuff, &pageBuffer[i * M_CAN_CHUNK_SIZE], M_CAN_CHUNK_SIZE);
 
-        m_candle.sendGenericFDCanFrame(m_canId, M_CAN_CHUNK_SIZE, (const char*)txBuff, rxBuff, 500);
+        m_candle.sendGenericFDCanFrame(
+            m_canId, M_CAN_CHUNK_SIZE, (const char*)txBuff, rxBuff, nullptr, 500);
         if (strcmp("OK", rxBuff) != 0)
         {
             m_log.error("Sending Page %u FAIL", m_currentPage);
@@ -161,7 +162,7 @@ bool CanLoader::sendWriteCmd(uint8_t* pPageBuffer, int bufferSize)
     txBuff[0]              = CMD_WRITE;
     *(uint32_t*)&txBuff[1] = mab::CalcCRC(pPageBuffer, (uint32_t)bufferSize);
 
-    m_candle.sendGenericFDCanFrame(m_canId, 5, (const char*)txBuff, rxBuff, 500);
+    m_candle.sendGenericFDCanFrame(m_canId, 5, (const char*)txBuff, rxBuff, nullptr, 500);
     usleep(50);
     if (strcmp("OK", (char*)rxBuff) == 0)
         return true;
@@ -180,7 +181,7 @@ bool CanLoader::sendBootCmd()
     txBuff[0] = CMD_BOOT;
     txBuff[1] = 0x00;
 
-    m_candle.sendGenericFDCanFrame(m_canId, 5, (const char*)txBuff, rxBuff, 500);
+    m_candle.sendGenericFDCanFrame(m_canId, 5, (const char*)txBuff, rxBuff, nullptr, 500);
     if (strcmp("OK", rxBuff) == 0)
         return true;
 

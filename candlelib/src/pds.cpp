@@ -30,7 +30,9 @@ namespace mab
 
         moduleType_E modules[MAX_MODULES] = {moduleType_E::UNDEFINED};
 
-        if (msp_Candle->sendGenericFDCanFrame(m_canId, sizeof(txBuffer), txBuffer, rxBuffer, 100))
+        // TODO: Handle rx buff length
+        if (msp_Candle->sendGenericFDCanFrame(
+                m_canId, sizeof(txBuffer), txBuffer, rxBuffer, nullptr, 100))
         {
             memcpy(&modules, rxBuffer, sizeof(modules));
 

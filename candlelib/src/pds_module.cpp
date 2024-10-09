@@ -39,7 +39,8 @@ namespace mab
         PdsMessage::error_E result = PdsMessage::error_E::OK;
         PropertySetMessage  enableMessage(m_type, m_socketIndex);
 
-        u8 responseBuffer[64] = {0};
+        u8     responseBuffer[64] = {0};
+        size_t responseLength     = 0;
 
         enableMessage.addProperty(controlParameters_E::ENABLED, true);
         std::vector<u8> serializedMessage = enableMessage.serialize();
@@ -47,9 +48,10 @@ namespace mab
         msp_Candle->sendGenericFDCanFrame(m_canId,
                                           serializedMessage.size(),
                                           reinterpret_cast<const char*>(serializedMessage.data()),
-                                          reinterpret_cast<char*>(responseBuffer));
+                                          reinterpret_cast<char*>(responseBuffer),
+                                          &responseLength);
 
-        result = enableMessage.parseResponse(responseBuffer);
+        result = enableMessage.parseResponse(responseBuffer, responseLength);
 
         if (result != PdsMessage::error_E::OK)
         {
@@ -64,7 +66,8 @@ namespace mab
         PdsMessage::error_E result = PdsMessage::error_E::OK;
         PropertySetMessage  enableMessage(m_type, m_socketIndex);
 
-        u8 responseBuffer[64] = {0};
+        u8     responseBuffer[64] = {0};
+        size_t responseLength     = 0;
 
         enableMessage.addProperty(controlParameters_E::ENABLED, false);
         std::vector<u8> serializedMessage = enableMessage.serialize();
@@ -72,15 +75,55 @@ namespace mab
         msp_Candle->sendGenericFDCanFrame(m_canId,
                                           serializedMessage.size(),
                                           reinterpret_cast<const char*>(serializedMessage.data()),
-                                          reinterpret_cast<char*>(responseBuffer));
+                                          reinterpret_cast<char*>(responseBuffer),
+                                          &responseLength);
 
-        result = enableMessage.parseResponse(responseBuffer);
+        result = enableMessage.parseResponse(responseBuffer, responseLength);
 
         if (result != PdsMessage::error_E::OK)
         {
             return error_E::PROTOCOL_ERROR;
         }
 
+        return error_E::OK;
+    }
+
+    PdsModule::error_E PowerStage::getEnabled(bool& enabled)
+    {
+        PdsMessage::error_E result = PdsMessage::error_E::OK;
+
+        uint32_t receivedPropertyBuffer = 0;
+
+        PropertyGetMessage getEnabledMessage(m_type, m_socketIndex);
+
+        u8     responseBuffer[64] = {0};
+        size_t responseLength     = 0;
+
+        getEnabledMessage.addProperty(PowerStage::controlParameters_E::ENABLED);
+
+        std::vector<u8> serializedMessage = getEnabledMessage.serialize();
+        msp_Candle->sendGenericFDCanFrame(m_canId,
+                                          serializedMessage.size(),
+                                          reinterpret_cast<const char*>(serializedMessage.data()),
+                                          reinterpret_cast<char*>(responseBuffer),
+                                          &responseLength);
+
+        result = getEnabledMessage.parseResponse(responseBuffer, responseLength);
+        if (result != PdsMessage::error_E::OK)
+            return error_E::PROTOCOL_ERROR;
+
+        result = getEnabledMessage.getProperty(PowerStage::controlParameters_E::ENABLED,
+                                               &receivedPropertyBuffer);
+        if (result != PdsMessage::error_E::OK)
+            return error_E::PROTOCOL_ERROR;
+
+        enabled = static_cast<bool>(receivedPropertyBuffer);
+
+        return error_E::OK;
+    }
+
+    PdsModule::error_E PowerStage::bindBrakeResistor(socketIndex_E brakeResistorSocketIndex)
+    {
         return error_E::OK;
     }
 
@@ -98,7 +141,8 @@ namespace mab
         PdsMessage::error_E result = PdsMessage::error_E::OK;
         PropertySetMessage  enableMessage(m_type, m_socketIndex);
 
-        u8 responseBuffer[64] = {0};
+        u8     responseBuffer[64] = {0};
+        size_t responseLength     = 0;
 
         enableMessage.addProperty(controlParameters_E::ENABLED, true);
         std::vector<u8> serializedMessage = enableMessage.serialize();
@@ -106,9 +150,10 @@ namespace mab
         msp_Candle->sendGenericFDCanFrame(m_canId,
                                           serializedMessage.size(),
                                           reinterpret_cast<const char*>(serializedMessage.data()),
-                                          reinterpret_cast<char*>(responseBuffer));
+                                          reinterpret_cast<char*>(responseBuffer),
+                                          &responseLength);
 
-        result = enableMessage.parseResponse(responseBuffer);
+        result = enableMessage.parseResponse(responseBuffer, responseLength);
 
         if (result != PdsMessage::error_E::OK)
         {
@@ -123,7 +168,8 @@ namespace mab
         PdsMessage::error_E result = PdsMessage::error_E::OK;
         PropertySetMessage  enableMessage(m_type, m_socketIndex);
 
-        u8 responseBuffer[64] = {0};
+        u8     responseBuffer[64] = {0};
+        size_t responseLength     = 0;
 
         enableMessage.addProperty(controlParameters_E::ENABLED, false);
         std::vector<u8> serializedMessage = enableMessage.serialize();
@@ -131,9 +177,10 @@ namespace mab
         msp_Candle->sendGenericFDCanFrame(m_canId,
                                           serializedMessage.size(),
                                           reinterpret_cast<const char*>(serializedMessage.data()),
-                                          reinterpret_cast<char*>(responseBuffer));
+                                          reinterpret_cast<char*>(responseBuffer),
+                                          &responseLength);
 
-        result = enableMessage.parseResponse(responseBuffer);
+        result = enableMessage.parseResponse(responseBuffer, responseLength);
 
         if (result != PdsMessage::error_E::OK)
         {
