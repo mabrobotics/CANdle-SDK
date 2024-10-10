@@ -374,7 +374,7 @@ namespace mab
                 size_t rxLength = bus->getBytesReceived() - 2;
                 memcpy(p_rxBuffer, bus->getRxBuffer(2), rxLength);
                 if (p_rxLength != nullptr)
-                    *p_rxLength = rxLength;
+                    *p_rxLength = bytesReceived - 2;
 
                 return true;
             }

@@ -17,25 +17,26 @@ namespace mab
         PdsMessage()  = delete;
         ~PdsMessage() = default;
 
-        enum class error_E
+        enum class error_E : u8
         {
-            OK               = 0x00,
-            UNKNOWN_ERROR    = 0x01,
-            INVALID_RESPONSE = 0x02,
+            OK                        = 0x00,
+            UNKNOWN_ERROR             = 0x01,
+            RESPONSE_STATUS_ERROR     = 0x02,
+            INVALID_RESPONSE_LENGTH   = 0x03,
+            INVALID_PROPERTIES_NUMBER = 0x04,
         };
 
-        enum class commandCode_E
+        enum class commandCode_E : u8
         {
             GET_MODULES         = 0x05,
             GET_MODULE_PROPERTY = 0x20,
             SET_MODULE_PROPERTY = 0x21
         };
 
-        enum class responseCode_E
+        enum class responseCode_E : u8
         {
-            OK                   = 0x00,
-            INVALID_COMMAND_CODE = 0x01,
-            INVALID_SOCKET_INDEX = 0x02
+            OK    = 0x00,
+            ERROR = 0x01,
         };
 
       protected:
@@ -96,7 +97,7 @@ namespace mab
                 return error_E::OK;
             }
 
-            return error_E::INVALID_RESPONSE;
+            return error_E::RESPONSE_STATUS_ERROR;
         }
 
         std::vector<u8> serialize();

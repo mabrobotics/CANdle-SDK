@@ -18,14 +18,15 @@ namespace mab
       public:
         enum class error_E : int8_t
         {
-            PROTOCOL_ERROR = -2,
-            UNKNOWN_ERROR  = -1,
-            OK             = 0,
+            COMMUNICATION_ERROR = -3,
+            PROTOCOL_ERROR      = -2,
+            UNKNOWN_ERROR       = -1,
+            OK                  = 0,
         };
 
         PdsModule() = delete;
 
-        socketIndex_E getSocket();
+        socketIndex_E getSocketIndex();
 
         // static std::string moduleType2String(moduleType_E type);
 
@@ -75,8 +76,19 @@ namespace mab
         BrakeResistor(socketIndex_E socket, std::shared_ptr<Candle> sp_Candle, u16 canId);
         ~BrakeResistor() = default;
 
-        // TODO: concept function. Might be removed in the future ( To be discussed )
-        error_E setOperatingVoltageThreshold(uint16_t voltage);
+        /*
+          Control parameters indexes used internally for creating protocol messages
+          for this particular module type. Note that the control parameters may differ
+          from type to type so they all provide own enumerator definition even if they share
+          exact same set of control parameters.
+        */
+        enum class controlParameters_E : uint8_t
+        {
+
+            ENABLED     = 0x00,  // Indicates if the module is enabled or not
+            TEMPERATURE = 0x01,
+
+        };
     };
 
     /**
@@ -97,9 +109,23 @@ namespace mab
 
         error_E getEnabled(bool& enabled);
 
+        /**
+         * @brief Set the socket index which the Brake resistor we want to bind is connected to.
+         *
+         * @param brakeResistorSocketIndex
+         * @return error_E
+         */
         error_E bindBrakeResistor(socketIndex_E brakeResistorSocketIndex);
 
-        // error_E setBrakeResistorTriggerVoltage(uint32_t brTriggerVoltage);
+        /**
+         * @brief Set the Brake Resistor Trigger Voltage. When the bus voltage will exceed this
+         * value, the binded brake resistor will trigger. If there is no Brake resistor binded this
+         * method has no effect
+         *
+         * @param brTriggerVoltage Bus voltage in [ mV ]
+         * @return error_E
+         */
+        error_E setBrakeResistorTriggerVoltage(uint32_t brTriggerVoltage);
 
         /*
           Control parameters indexes used internally for creating protocol messages
@@ -110,10 +136,14 @@ namespace mab
         enum class controlParameters_E : uint8_t
         {
 
-            ENABLED      = 0x00,  // Indicates if the module is enabled or not
-            BUS_VOLTAGE  = 0x01,
-            LOAD_CURRENT = 0x02,
-            TEMPERATURE  = 0x03,
+            ENABLED         = 0x00,  // Indicates if the module is enabled or not
+            TEMPERATURE     = 0x01,
+            BUS_VOLTAGE     = 0x02,
+            BR_SOCKET_INDEX = 0x03,  // Brake Resistor socket index for binding purpose
+            LOAD_CURRENT    = 0x04,
+
+            /* If bus voltage will exceed this value, the bind brake resistor will trigger */
+            BR_TRIGGER_VOLTAGE = 0x05,
 
         };
         // private:

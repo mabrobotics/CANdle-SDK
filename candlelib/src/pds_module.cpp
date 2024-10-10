@@ -15,7 +15,7 @@ namespace mab
         m_log.m_layer = DEFAULT_PDS_MODULE_LOG_LAYER;
     }
 
-    socketIndex_E PdsModule::getSocket()
+    socketIndex_E PdsModule::getSocketIndex()
     {
         return m_socketIndex;
     }
@@ -124,6 +124,63 @@ namespace mab
 
     PdsModule::error_E PowerStage::bindBrakeResistor(socketIndex_E brakeResistorSocketIndex)
     {
+        PdsMessage::error_E result = PdsMessage::error_E::OK;
+        PropertySetMessage  message(m_type, m_socketIndex);
+        u8                  responseBuffer[64] = {0};
+        size_t              responseLength     = 0;
+
+        m_log.debug("Binding power stage [ %u ] with brake resistor [ %u ]");
+
+        message.addProperty(controlParameters_E::BR_SOCKET_INDEX, brakeResistorSocketIndex);
+        std::vector<u8> serializedMessage = message.serialize();
+
+        if (!(msp_Candle->sendGenericFDCanFrame(
+                m_canId,
+                serializedMessage.size(),
+                reinterpret_cast<const char*>(serializedMessage.data()),
+                reinterpret_cast<char*>(responseBuffer),
+                &responseLength)))
+        {
+            m_log.error("Communication error");
+            return error_E::COMMUNICATION_ERROR;
+        }
+
+        result = message.parseResponse(responseBuffer, responseLength);
+        if (result != PdsMessage::error_E::OK)
+        {
+            m_log.error("PDS Message error [ %u ]", static_cast<u8>(result));
+            return error_E::PROTOCOL_ERROR;
+        }
+
+        return error_E::OK;
+    }
+
+    PdsModule::error_E PowerStage::setBrakeResistorTriggerVoltage(uint32_t brTriggerVoltage)
+    {
+        PdsMessage::error_E result = PdsMessage::error_E::OK;
+        PropertySetMessage  message(m_type, m_socketIndex);
+        u8                  responseBuffer[64] = {0};
+        size_t              responseLength     = 0;
+
+        m_log.debug("Binding power stage [ %u ] with brake resistor [ %u ]");
+
+        message.addProperty(controlParameters_E::BR_TRIGGER_VOLTAGE, brTriggerVoltage);
+        std::vector<u8> serializedMessage = message.serialize();
+
+        if (!(msp_Candle->sendGenericFDCanFrame(
+                m_canId,
+                serializedMessage.size(),
+                reinterpret_cast<const char*>(serializedMessage.data()),
+                reinterpret_cast<char*>(responseBuffer),
+                &responseLength)))
+        {
+            return error_E::COMMUNICATION_ERROR;
+        }
+
+        result = message.parseResponse(responseBuffer, responseLength);
+        if (result != PdsMessage::error_E::OK)
+            return error_E::PROTOCOL_ERROR;
+
         return error_E::OK;
     }
 

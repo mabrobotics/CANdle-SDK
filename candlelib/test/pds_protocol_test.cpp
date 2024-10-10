@@ -37,7 +37,7 @@ namespace mab
         std::vector<u8> EXPECTED_SERIALIZED_MESSAGE = {
             0x21, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00};
         PropertySetMessage testMessage(moduleType_E::BRAKE_RESISTOR, socketIndex_E::SOCKET_1);
-        testMessage.addProperty(PowerStage::controlParameters_E::ENABLED, true);
+        testMessage.addProperty(BrakeResistor::controlParameters_E::ENABLED, true);
         std::vector<u8> serializedMessage = testMessage.serialize();
 
         ASSERT_EQ(EXPECTED_SERIALIZED_MESSAGE.size(), serializedMessage.size())
@@ -62,7 +62,7 @@ namespace mab
         // Adding 100 properties for sure will exceed the fdcan buffer range.
         for (uint8_t i = 0; i < 100u; i++)
         {
-            testMessage.addProperty(PowerStage::controlParameters_E::ENABLED, 0xFFFFFFFF);
+            testMessage.addProperty(BrakeResistor::controlParameters_E::ENABLED, 0xFFFFFFFF);
         }
 
         EXPECT_THROW(testMessage.serialize(), std::runtime_error);
@@ -91,7 +91,7 @@ namespace mab
         // Adding 100 properties for sure will exceed the fdcan buffer range.
         for (uint8_t i = 0; i < 100u; i++)
         {
-            testMessage.addProperty(PowerStage::controlParameters_E::ENABLED);
+            testMessage.addProperty(BrakeResistor::controlParameters_E::ENABLED);
         }
 
         EXPECT_THROW(testMessage.serialize(), std::runtime_error);
@@ -101,7 +101,7 @@ namespace mab
     {
         std::vector<u8>    EXPECTED_SERIALIZED_MESSAGE = {0x20, 0x01, 0x00, 0x01, 0x00};
         PropertyGetMessage testMessage(moduleType_E::BRAKE_RESISTOR, socketIndex_E::SOCKET_1);
-        testMessage.addProperty(PowerStage::controlParameters_E::ENABLED);
+        testMessage.addProperty(BrakeResistor::controlParameters_E::ENABLED);
         std::vector<u8> serializedMessage = testMessage.serialize();
 
         ASSERT_EQ(EXPECTED_SERIALIZED_MESSAGE.size(), serializedMessage.size())
@@ -119,10 +119,14 @@ namespace mab
         std::vector<u8> EXPECTED_SERIALIZED_MESSAGE = {0x20, 0x01, 0x00, 0x01, 0x00};
         std::vector<u8> RESPONSE                    = {0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00};
 
+        constexpr bool EXPECTED_READ_ENABLE_PROPERTY = true;
+
         PdsMessage::error_E result = PdsMessage::error_E::OK;
 
+        bool readEnableProperty = false;
+
         PropertyGetMessage testMessage(moduleType_E::BRAKE_RESISTOR, socketIndex_E::SOCKET_1);
-        testMessage.addProperty(PowerStage::controlParameters_E::ENABLED);
+        testMessage.addProperty(BrakeResistor::controlParameters_E::ENABLED);
         std::vector<u8> serializedMessage = testMessage.serialize();
 
         ASSERT_EQ(EXPECTED_SERIALIZED_MESSAGE.size(), serializedMessage.size())
@@ -136,6 +140,29 @@ namespace mab
 
         result = testMessage.parseResponse(RESPONSE.data(), RESPONSE.size());
         ASSERT_EQ(PdsMessage::error_E::OK, result);
+
+        u32 rawPropertyData = 0;
+
+        result =
+            testMessage.getProperty(BrakeResistor::controlParameters_E::ENABLED, &rawPropertyData);
+        ASSERT_EQ(PdsMessage::error_E::OK, result);
+
+        readEnableProperty = static_cast<bool>(rawPropertyData);
+
+        ASSERT_EQ(EXPECTED_READ_ENABLE_PROPERTY, readEnableProperty);
+    }
+
+    TEST_F(GetPropertyMessageTest, parseResponseWithResponseStatusError)
+    {
+        // Response containing single byte ( Response code :: ERROR )
+        std::vector<u8> RESPONSE = {0x01};
+
+        PdsMessage::error_E result = PdsMessage::error_E::OK;
+
+        PropertyGetMessage testMessage(moduleType_E::BRAKE_RESISTOR, socketIndex_E::SOCKET_1);
+
+        result = testMessage.parseResponse(RESPONSE.data(), RESPONSE.size());
+        ASSERT_EQ(PdsMessage::error_E::RESPONSE_STATUS_ERROR, result);
     }
 
 }  // namespace mab

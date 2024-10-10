@@ -90,7 +90,7 @@ namespace mab
         {
             for (auto& module : m_brakeResistors)
             {
-                if (module->getSocket() == socket)
+                if (module->getSocketIndex() == socket)
                     return std::move(module);
             }
             m_log.error("No brake resistor module connected to socket [ %u ]!",
@@ -109,7 +109,7 @@ namespace mab
         {
             for (auto& module : m_powerStages)
             {
-                if (module->getSocket() == socket)
+                if (module->getSocketIndex() == socket)
                     return std::move(module);
             }
 
@@ -129,7 +129,7 @@ namespace mab
         {
             for (auto& module : m_IsolatedConv12s)
             {
-                if (module->getSocket() == socket)
+                if (module->getSocketIndex() == socket)
                     return std::move(module);
             }
 
@@ -149,7 +149,7 @@ namespace mab
         {
             for (auto& module : m_IsolatedConv5s)
             {
-                if (module->getSocket() == socket)
+                if (module->getSocketIndex() == socket)
                     return std::move(module);
             }
 
