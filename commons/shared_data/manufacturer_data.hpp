@@ -2,6 +2,11 @@
 
 #include "mab_types.hpp"
 
+/* When editing this file please iterate
+version in manufacturerData_S,
+and update md_station OTP-FLASH.py file
+with new device map */
+
 namespace mab
 {
 
