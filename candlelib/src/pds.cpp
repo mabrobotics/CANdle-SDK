@@ -38,7 +38,7 @@ namespace mab
 
             for (uint8_t i = 0; i < MAX_MODULES; i++)
             {
-                socketIndex_E socketIndex = static_cast<socketIndex_E>(i);
+                socketIndex_E socketIndex = static_cast<socketIndex_E>(i + 1);
                 switch (modules[i])
                 {
                     case moduleType_E::BRAKE_RESISTOR:

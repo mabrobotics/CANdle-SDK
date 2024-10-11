@@ -135,17 +135,18 @@ namespace mab
           from type to type so they all provide own enumerator definition even if they share
           exact same set of control parameters.
         */
-        enum class controlParameters_E : uint8_t
+        enum class properties_E : uint8_t
         {
 
             ENABLED         = 0x00,  // Indicates if the module is enabled or not
             TEMPERATURE     = 0x01,
             BUS_VOLTAGE     = 0x02,
             BR_SOCKET_INDEX = 0x03,  // Brake Resistor socket index for binding purpose
-            LOAD_CURRENT    = 0x04,
 
             /* If bus voltage will exceed this value, the bind brake resistor will trigger */
-            BR_TRIGGER_VOLTAGE = 0x05,
+            BR_TRIGGER_VOLTAGE = 0x04,
+
+            LOAD_CURRENT = 0x05,
 
         };
         // private:

@@ -20,12 +20,14 @@ namespace mab
     // Pluggable type socket index
     enum class socketIndex_E : uint8_t
     {
-        SOCKET_1 = 0x00,
-        SOCKET_2 = 0x01,
-        SOCKET_3 = 0x02,
-        SOCKET_4 = 0x03,
-        SOCKET_5 = 0x04,
-        SOCKET_6 = 0x05,
+        UNASSIGNED = 0x00,
+
+        SOCKET_1 = 0x01,
+        SOCKET_2 = 0x02,
+        SOCKET_3 = 0x03,
+        SOCKET_4 = 0x04,
+        SOCKET_5 = 0x05,
+        SOCKET_6 = 0x06,
     };
 
 }  // namespace mab

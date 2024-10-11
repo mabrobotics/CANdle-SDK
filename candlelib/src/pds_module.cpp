@@ -42,7 +42,7 @@ namespace mab
         u8     responseBuffer[64] = {0};
         size_t responseLength     = 0;
 
-        enableMessage.addProperty(controlParameters_E::ENABLED, true);
+        enableMessage.addProperty(properties_E::ENABLED, true);
         std::vector<u8> serializedMessage = enableMessage.serialize();
 
         msp_Candle->sendGenericFDCanFrame(m_canId,
@@ -69,7 +69,7 @@ namespace mab
         u8     responseBuffer[64] = {0};
         size_t responseLength     = 0;
 
-        enableMessage.addProperty(controlParameters_E::ENABLED, false);
+        enableMessage.addProperty(properties_E::ENABLED, false);
         std::vector<u8> serializedMessage = enableMessage.serialize();
 
         msp_Candle->sendGenericFDCanFrame(m_canId,
@@ -99,7 +99,7 @@ namespace mab
         u8     responseBuffer[64] = {0};
         size_t responseLength     = 0;
 
-        getEnabledMessage.addProperty(PowerStage::controlParameters_E::ENABLED);
+        getEnabledMessage.addProperty(PowerStage::properties_E::ENABLED);
 
         std::vector<u8> serializedMessage = getEnabledMessage.serialize();
         msp_Candle->sendGenericFDCanFrame(m_canId,
@@ -112,7 +112,7 @@ namespace mab
         if (result != PdsMessage::error_E::OK)
             return error_E::PROTOCOL_ERROR;
 
-        result = getEnabledMessage.getProperty(PowerStage::controlParameters_E::ENABLED,
+        result = getEnabledMessage.getProperty(PowerStage::properties_E::ENABLED,
                                                &receivedPropertyBuffer);
         if (result != PdsMessage::error_E::OK)
             return error_E::PROTOCOL_ERROR;
@@ -131,7 +131,7 @@ namespace mab
 
         m_log.debug("Binding power stage [ %u ] with brake resistor [ %u ]");
 
-        message.addProperty(controlParameters_E::BR_SOCKET_INDEX, brakeResistorSocketIndex);
+        message.addProperty(properties_E::BR_SOCKET_INDEX, brakeResistorSocketIndex);
         std::vector<u8> serializedMessage = message.serialize();
 
         if (!(msp_Candle->sendGenericFDCanFrame(
@@ -164,7 +164,7 @@ namespace mab
 
         m_log.debug("Binding power stage [ %u ] with brake resistor [ %u ]");
 
-        message.addProperty(controlParameters_E::BR_TRIGGER_VOLTAGE, brTriggerVoltage);
+        message.addProperty(properties_E::BR_TRIGGER_VOLTAGE, brTriggerVoltage);
         std::vector<u8> serializedMessage = message.serialize();
 
         if (!(msp_Candle->sendGenericFDCanFrame(
@@ -192,7 +192,7 @@ namespace mab
         u8     responseBuffer[64] = {0};
         size_t responseLength     = 0;
 
-        message.addProperty(PowerStage::controlParameters_E::BUS_VOLTAGE);
+        message.addProperty(PowerStage::properties_E::BUS_VOLTAGE);
 
         std::vector<u8> serializedMessage = message.serialize();
         msp_Candle->sendGenericFDCanFrame(m_canId,
@@ -205,7 +205,7 @@ namespace mab
         if (result != PdsMessage::error_E::OK)
             return error_E::PROTOCOL_ERROR;
 
-        result = message.getProperty(PowerStage::controlParameters_E::BUS_VOLTAGE, &outputVoltage);
+        result = message.getProperty(PowerStage::properties_E::BUS_VOLTAGE, &outputVoltage);
         if (result != PdsMessage::error_E::OK)
             return error_E::PROTOCOL_ERROR;
 

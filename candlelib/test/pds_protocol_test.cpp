@@ -165,7 +165,7 @@ namespace mab
         u32 receivedBusVoltage = 0;
 
         PropertyGetMessage testMessage(moduleType_E::POWER_STAGE, socketIndex_E::SOCKET_1);
-        testMessage.addProperty(PowerStage::controlParameters_E::BUS_VOLTAGE);
+        testMessage.addProperty(PowerStage::properties_E::BUS_VOLTAGE);
         std::vector<u8> serializedMessage = testMessage.serialize();
 
         ASSERT_EQ(EXPECTED_SERIALIZED_MESSAGE.size(), serializedMessage.size())
@@ -180,8 +180,8 @@ namespace mab
         result = testMessage.parseResponse(RESPONSE.data(), RESPONSE.size());
         ASSERT_EQ(PdsMessage::error_E::OK, result);
 
-        result = testMessage.getProperty(PowerStage::controlParameters_E::BUS_VOLTAGE,
-                                         &receivedBusVoltage);
+        result =
+            testMessage.getProperty(PowerStage::properties_E::BUS_VOLTAGE, &receivedBusVoltage);
         ASSERT_EQ(PdsMessage::error_E::OK, result);
 
         ASSERT_EQ(EXPECTED_RECEIVED_BUS_VOLTAGE, receivedBusVoltage);

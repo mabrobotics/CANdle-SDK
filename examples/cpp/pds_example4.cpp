@@ -71,12 +71,19 @@ int main()
         log.error("Unable to bind BR!");
         exit(EXIT_FAILURE);
     }
-    else
-        log.success("Power stage [ %u ] And Brake resistor [ %u ] binding success!",
-                    p_powerStage->getSocketIndex(),
-                    p_brakeResistor->getSocketIndex());
 
-    p_powerStage->disable();
+    log.success("BR Bind OK");
+
+    result = p_powerStage->setBrakeResistorTriggerVoltage(28000);
+    if (result != PdsModule::error_E::OK)
+    {
+        log.error("Unable to set BR Trigger voltage!");
+        exit(EXIT_FAILURE);
+    }
+
+    log.success("BR Trigger voltage set");
+
+    p_powerStage->enable();
 
     while (1)
     {
