@@ -93,11 +93,13 @@ namespace mab
             for (auto& property : m_receivedProperties)
             {
                 if (property.first == castedPropertyType)
+                {
                     *p_propertyValue = property.second;
-                return error_E::OK;
+                    return error_E::OK;
+                }
             }
 
-            return error_E::RESPONSE_STATUS_ERROR;
+            return error_E::UNKNOWN_ERROR;
         }
 
         std::vector<u8> serialize();

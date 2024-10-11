@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include "pds_protocol.hpp"
 #include "pds_module.hpp"
+#include <string>
+#include <cstring>
 
 namespace mab
 {
@@ -114,10 +116,10 @@ namespace mab
         }
     }
 
-    TEST_F(GetPropertyMessageTest, parseResponseWithSinglePropertyWithoutErrors)
+    TEST_F(GetPropertyMessageTest, parseResponseWithSingleBoolPropertyWithoutErrors)
     {
         std::vector<u8> EXPECTED_SERIALIZED_MESSAGE = {0x20, 0x01, 0x00, 0x01, 0x00};
-        std::vector<u8> RESPONSE                    = {0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00};
+        std::vector<u8> RESPONSE                    = {0x00, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00};
 
         constexpr bool EXPECTED_READ_ENABLE_PROPERTY = true;
 
@@ -150,6 +152,39 @@ namespace mab
         readEnableProperty = static_cast<bool>(rawPropertyData);
 
         ASSERT_EQ(EXPECTED_READ_ENABLE_PROPERTY, readEnableProperty);
+    }
+
+    TEST_F(GetPropertyMessageTest, parsePowerStageGetBusVoltageResponse)
+    {
+        std::vector<u8> EXPECTED_SERIALIZED_MESSAGE   = {0x20, 0x04, 0x00, 0x01, 0x02};
+        std::vector<u8> RESPONSE                      = {0x00, 0x01, 0x01, 0xE0, 0x5B, 0x00, 0x00};
+        constexpr u32   EXPECTED_RECEIVED_BUS_VOLTAGE = 23520;
+
+        PdsMessage::error_E result = PdsMessage::error_E::OK;
+
+        u32 receivedBusVoltage = 0;
+
+        PropertyGetMessage testMessage(moduleType_E::POWER_STAGE, socketIndex_E::SOCKET_1);
+        testMessage.addProperty(PowerStage::controlParameters_E::BUS_VOLTAGE);
+        std::vector<u8> serializedMessage = testMessage.serialize();
+
+        ASSERT_EQ(EXPECTED_SERIALIZED_MESSAGE.size(), serializedMessage.size())
+            << "Serialized message has invalid size!";
+
+        for (u8 i = 0; i < serializedMessage.size(); i++)
+        {
+            EXPECT_EQ(EXPECTED_SERIALIZED_MESSAGE[i], serializedMessage[i])
+                << "Invalid byte at index: " << i;
+        }
+
+        result = testMessage.parseResponse(RESPONSE.data(), RESPONSE.size());
+        ASSERT_EQ(PdsMessage::error_E::OK, result);
+
+        result = testMessage.getProperty(PowerStage::controlParameters_E::BUS_VOLTAGE,
+                                         &receivedBusVoltage);
+        ASSERT_EQ(PdsMessage::error_E::OK, result);
+
+        ASSERT_EQ(EXPECTED_RECEIVED_BUS_VOLTAGE, receivedBusVoltage);
     }
 
     TEST_F(GetPropertyMessageTest, parseResponseWithResponseStatusError)

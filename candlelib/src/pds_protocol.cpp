@@ -50,7 +50,7 @@ namespace mab
         if (p_response == nullptr)
             return error_E::UNKNOWN_ERROR;
 
-        if ((responseLength == 0) || responseLength > 1)
+        if (responseLength < 1)
             return error_E::INVALID_RESPONSE_LENGTH;
 
         responseCode_E responseCode = static_cast<responseCode_E>(*p_response);
@@ -108,10 +108,10 @@ namespace mab
             * two heading bytes ( Response status and number of properties in response )
             * 5 bytes for each property that was added to command
         */
-        size_t expectedResponseLength = 2 + (m_properties.size() * 5);
+        // size_t expectedResponseLength = 2 + (m_properties.size() * 5);
 
-        if (responseLength != expectedResponseLength)
-            return error_E::INVALID_RESPONSE_LENGTH;
+        // if (responseLength != expectedResponseLength)
+        //     return error_E::INVALID_RESPONSE_LENGTH;
 
         numberOfReceivedProperties = static_cast<size_t>(*p_response++);
         if (numberOfReceivedProperties != m_properties.size())
@@ -119,10 +119,12 @@ namespace mab
 
         for (uint8_t i = 0; i < numberOfReceivedProperties; i++)
         {
-            u8  type     = *p_response++;
-            u32 rawValue = 0;
+            u8   type           = m_properties[i];
+            u32  rawValue       = 0;
+            bool propertyStatus = static_cast<bool>(*p_response++);
             memcpy(&rawValue, p_response, sizeof(u32));
-            m_receivedProperties.push_back(std::make_pair(type, rawValue));
+            if (propertyStatus)
+                m_receivedProperties.push_back(std::make_pair(type, rawValue));
             p_response += 4;
         }
 

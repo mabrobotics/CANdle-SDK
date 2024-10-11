@@ -18,10 +18,10 @@ namespace mab
       public:
         enum class error_E : int8_t
         {
-            COMMUNICATION_ERROR = -3,
-            PROTOCOL_ERROR      = -2,
-            UNKNOWN_ERROR       = -1,
             OK                  = 0,
+            UNKNOWN_ERROR       = 1,
+            PROTOCOL_ERROR      = 2,
+            COMMUNICATION_ERROR = 3,
         };
 
         PdsModule() = delete;
@@ -126,6 +126,8 @@ namespace mab
          * @return error_E
          */
         error_E setBrakeResistorTriggerVoltage(uint32_t brTriggerVoltage);
+
+        error_E getOutputVoltage(u32& outputVoltage);
 
         /*
           Control parameters indexes used internally for creating protocol messages

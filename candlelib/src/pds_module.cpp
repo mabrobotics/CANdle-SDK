@@ -184,6 +184,34 @@ namespace mab
         return error_E::OK;
     }
 
+    PdsModule::error_E PowerStage::getOutputVoltage(u32& outputVoltage)
+    {
+        PdsMessage::error_E result = PdsMessage::error_E::OK;
+        PropertyGetMessage  message(m_type, m_socketIndex);
+
+        u8     responseBuffer[64] = {0};
+        size_t responseLength     = 0;
+
+        message.addProperty(PowerStage::controlParameters_E::BUS_VOLTAGE);
+
+        std::vector<u8> serializedMessage = message.serialize();
+        msp_Candle->sendGenericFDCanFrame(m_canId,
+                                          serializedMessage.size(),
+                                          reinterpret_cast<const char*>(serializedMessage.data()),
+                                          reinterpret_cast<char*>(responseBuffer),
+                                          &responseLength);
+
+        result = message.parseResponse(responseBuffer, responseLength);
+        if (result != PdsMessage::error_E::OK)
+            return error_E::PROTOCOL_ERROR;
+
+        result = message.getProperty(PowerStage::controlParameters_E::BUS_VOLTAGE, &outputVoltage);
+        if (result != PdsMessage::error_E::OK)
+            return error_E::PROTOCOL_ERROR;
+
+        return error_E::OK;
+    }
+
     IsolatedConv12::IsolatedConv12(socketIndex_E           socket,
                                    std::shared_ptr<Candle> sp_Candle,
                                    u16                     canId)

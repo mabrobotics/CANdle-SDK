@@ -28,10 +28,14 @@ int main()
     Logger log;
     log.m_tag = "PDS Example";
 
+    u32 vbusVoltage = 0;
+
     std::shared_ptr<Candle> pCandle = std::make_shared<Candle>(mab::CAN_BAUD_1M, true);
     Pds                     pds(100, pCandle);
 
     Pds::modules_S pdsModules = {0};
+
+    PdsModule::error_E result = PdsModule::error_E::OK;
 
     pds.getModules(pdsModules);
 
@@ -43,16 +47,27 @@ int main()
 
     std::unique_ptr<PowerStage> p_powerStage = pds.attachPowerStage(POWER_STAGE_SOCKET_INDEX);
     if (p_powerStage == nullptr)
+    {
         log.error("Unable to attach power stage module!");
+        exit(EXIT_FAILURE);
+    }
 
-    p_powerStage->disable();
+    result = p_powerStage->enable();
+    if (result != PdsModule::error_E::OK)
+    {
+        log.error("Power stage enable error [ %u ]", static_cast<u8>(result));
+        exit(EXIT_FAILURE);
+    }
 
-    // std::unique_ptr<IsolatedConv12> p_ic12 =
-    //     pds.attachIsolatedConverter12(mab::socketIndex_E::SOCKET_3);
-    // if (p_ic12 == nullptr)
-    //     log.error("Unable to attach power stage module!");
-
-    // p_ic12->disable();
+    while (1)
+    {
+        usleep(100000);
+        result = p_powerStage->getOutputVoltage(vbusVoltage);
+        if (result != PdsModule::error_E::OK)
+            log.error("Reading VBus voltage error [ %u ]", static_cast<u8>(result));
+        else
+            log.info("Power stage VBus voltage [ %u V ]", vbusVoltage);
+    }
 
     return EXIT_SUCCESS;
 }
