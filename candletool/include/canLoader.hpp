@@ -18,7 +18,7 @@ class CanLoader : public I_Loader
     Error_E sendBootCommand() override;
 
   private:
-    enum BootloaderFrameId_E : uint8_t  // todo: suffix _E
+    enum BootloaderFrameId_E : uint8_t
     {
         CMD_TARGET_RESET = 0x13,
         CMD_HOST_INIT    = 0xA1,
