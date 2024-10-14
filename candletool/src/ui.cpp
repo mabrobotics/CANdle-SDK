@@ -338,6 +338,9 @@ namespace ui
         vout << "- motion status: 	0x" << std::hex
              << (unsigned short)drive.getReadReg().RO.motionErrors << std::dec;
         printErrorDetails(drive.getReadReg().RO.motionErrors, motionErrorList);
+        vout << "- misc status: 	0x" << std::hex
+             << (unsigned short)drive.getReadReg().RO.miscStatus << std::dec;
+        printErrorDetails(drive.getReadReg().RO.miscStatus, miscErrorList);
 
         if (drive.getReadReg().RW.homingMode != 0)
         {

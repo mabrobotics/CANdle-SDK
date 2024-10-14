@@ -126,6 +126,8 @@ namespace ui
                                                             {"WARNING_VELOCITY_CLIPPED", 26},
                                                             {"WARNING_POSITION_CLIPPED", 27}};
 
+    const std::map<std::string, uint8_t> miscErrorList = {{"ERROR_OTP_MEMORY_CORRUPTED", 0}};
+
     template <class T>
     bool checkParamLimit(T value, T min, T max)
     {

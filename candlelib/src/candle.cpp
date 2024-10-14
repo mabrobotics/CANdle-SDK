@@ -748,7 +748,9 @@ namespace mab
 								Md80Reg_E::communicationErrors,
 								regR.RO.communicationErrors,
 								Md80Reg_E::motionErrors,
-								regR.RO.motionErrors))
+								regR.RO.motionErrors,
+								Md80Reg_E::miscStatus,
+								regR.RO.miscStatus))
 		{
 			log.error("Extended diagnostic failed (ID: %d)", canId);
 			return false;
