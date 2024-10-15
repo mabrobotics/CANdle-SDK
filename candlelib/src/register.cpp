@@ -135,7 +135,7 @@ namespace mab
 			case Md80Reg_E::outputEncoderMode:
 			case Md80Reg_E::bridgeType:
 			case Md80Reg_E::outputEncoder:
-			case Md80Reg_E::hardwareVersion:
+			case Md80Reg_E::legacyHardwareVersion:
 			case Md80Reg_E::canTermination:
 			case Md80Reg_E::motorShutdownTemp:
 			case Md80Reg_E::runCalibrateCmd:

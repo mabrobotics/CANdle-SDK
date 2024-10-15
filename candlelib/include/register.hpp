@@ -22,7 +22,7 @@ namespace mab
 	typedef struct
 	{
 		uint32_t firmwareVersion;
-		uint8_t	 hardwareVersion;
+		uint8_t	 legacyHardwareVersion;
 		uint32_t buildDate;
 		char	 commitHash[8];
 		uint8_t	 bridgeType;
@@ -225,24 +225,24 @@ namespace mab
 
 		shuntResistance = 0x700,
 
-		buildDate			= 0x800,
-		commitHash			= 0x801,
-		firmwareVersion		= 0x802,
-		hardwareVersion		= 0x803,
-		bridgeType			= 0x804,
-		quickStatus			= 0x805,
-		mosfetTemperature	= 0x806,
-		motorTemperature	= 0x807,
-		motorShutdownTemp	= 0x808,
-		mainEncoderErrors	= 0x809,
-		outputEncoderErrors = 0x80A,
-		calibrationErrors	= 0x80B,
-		bridgeErrors		= 0x80C,
-		hardwareErrors		= 0x80D,
-		communicationErrors = 0x80E,
-		homingErrors		= 0x80F,
-		motionErrors		= 0x810,
-		miscStatus			= 0x812
+		buildDate			  = 0x800,
+		commitHash			  = 0x801,
+		firmwareVersion		  = 0x802,
+		legacyHardwareVersion = 0x803,
+		bridgeType			  = 0x804,
+		quickStatus			  = 0x805,
+		mosfetTemperature	  = 0x806,
+		motorTemperature	  = 0x807,
+		motorShutdownTemp	  = 0x808,
+		mainEncoderErrors	  = 0x809,
+		outputEncoderErrors	  = 0x80A,
+		calibrationErrors	  = 0x80B,
+		bridgeErrors		  = 0x80C,
+		hardwareErrors		  = 0x80D,
+		communicationErrors	  = 0x80E,
+		homingErrors		  = 0x80F,
+		motionErrors		  = 0x810,
+		miscStatus			  = 0x812
 
 	} Md80Reg_E;
 	class Register

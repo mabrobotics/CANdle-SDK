@@ -139,7 +139,7 @@ namespace ui
                    "20" + std::to_string(date / 10000);
         };
 
-        auto getHardwareVersion = [](uint8_t version)
+        auto getLegacyHardwareVersion = [](uint8_t version)
         {
             switch (version)
             {
@@ -178,8 +178,8 @@ namespace ui
         mab::version_ut firmwareVersion = {{0, 0, 0, 0}};
         firmwareVersion.i               = drive.getReadReg().RO.firmwareVersion;
         vout << "- firmware version: v" << mab::getVersionString(firmwareVersion) << std::endl;
-        vout << "- hardware version: " << getHardwareVersion(drive.getReadReg().RO.hardwareVersion)
-             << std::endl;
+        vout << "- hardware version: "
+             << getLegacyHardwareVersion(drive.getReadReg().RO.legacyHardwareVersion) << std::endl;
         vout << "- build date: " << getStringBuildDate(drive.getReadReg().RO.buildDate)
              << std::endl;
         vout << "- commit hash: " << drive.getReadReg().RO.commitHash << std::endl;

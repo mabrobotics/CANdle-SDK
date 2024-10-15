@@ -681,8 +681,8 @@ namespace mab
 								regR.RO.mosfetTemperature,
 								Md80Reg_E::motorKV,
 								regR.RW.motorKV,
-								Md80Reg_E::hardwareVersion,
-								regR.RO.hardwareVersion))
+								Md80Reg_E::legacyHardwareVersion,
+								regR.RO.legacyHardwareVersion))
 		{
 			log.error("Extended diagnostic failed (ID: %d)", canId);
 			return false;
