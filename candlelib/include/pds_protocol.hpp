@@ -35,8 +35,13 @@ namespace mab
 
         enum class responseCode_E : u8
         {
-            OK    = 0x00,
-            ERROR = 0x01,
+            OK                          = 0x00,
+            UNKNOWN_ERROR               = 0x01,
+            INVALID_MSG_BODY            = 0x02,
+            INVALID_MODULE_TYPE         = 0x03,
+            NO_MODULE_TYPE_AT_SOCKET    = 0x04,
+            WRONG_MODULE_TYPE_AT_SOCKET = 0x05,
+            MODULE_PROPERTY_ERROR       = 0x06,
         };
 
       protected:

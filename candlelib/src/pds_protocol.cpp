@@ -102,16 +102,10 @@ namespace mab
         responseStatusCode = static_cast<responseCode_E>(*p_response++);
         if (responseStatusCode != responseCode_E::OK)
             return error_E::RESPONSE_STATUS_ERROR;
-        /*
-            Calculate correct response length from previously created properties set
-            Expecting:
-            * two heading bytes ( Response status and number of properties in response )
-            * 5 bytes for each property that was added to command
-        */
-        // size_t expectedResponseLength = 2 + (m_properties.size() * 5);
 
-        // if (responseLength != expectedResponseLength)
-        //     return error_E::INVALID_RESPONSE_LENGTH;
+        // Remove all previously parsed properties. It allows to reuse previously defined message to
+        // be used multiple times
+        m_receivedProperties.clear();
 
         numberOfReceivedProperties = static_cast<size_t>(*p_response++);
         if (numberOfReceivedProperties != m_properties.size())

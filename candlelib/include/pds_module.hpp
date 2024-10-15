@@ -127,26 +127,58 @@ namespace mab
          */
         error_E setBrakeResistorTriggerVoltage(uint32_t brTriggerVoltage);
 
+        /**
+         * @brief Get the Output Voltage of Power Stage module
+         *
+         * @param outputVoltage
+         * @return error_E
+         */
         error_E getOutputVoltage(u32& outputVoltage);
 
+        /**
+         * @brief Get the Load Current of the Power Stage module
+         *
+         * @param loadCurrent
+         * @return error_E
+         */
+        error_E getLoadCurrent(s32& loadCurrent);
+
+        /**
+         * @brief Get the momentary Power that goes through the Power Stage module
+         * @note  Note that this parameter is calculated by the PDS device internally
+         * so it may have been calculated from different current and voltage data then that
+         * read by host SBC
+         * @param power
+         *
+         * @return error_E
+         */
+        error_E getPower(s32& power);
+
+        /**
+         * @brief Get the total Energy that was delivered by the Power Stage module
+         *
+         * @param energy
+         * @return error_E
+         */
+        error_E getEnergy(s32& energy);
+
         /*
-          Control parameters indexes used internally for creating protocol messages
-          for this particular module type. Note that the control parameters may differ
+          Properties indexes used internally for creating protocol messages
+          for this particular module type. Note that the properties may differ
           from type to type so they all provide own enumerator definition even if they share
-          exact same set of control parameters.
+          exact same set of properties.
         */
         enum class properties_E : uint8_t
         {
 
-            ENABLED         = 0x00,  // Indicates if the module is enabled or not
-            TEMPERATURE     = 0x01,
-            BUS_VOLTAGE     = 0x02,
-            BR_SOCKET_INDEX = 0x03,  // Brake Resistor socket index for binding purpose
-
-            /* If bus voltage will exceed this value, the bind brake resistor will trigger */
-            BR_TRIGGER_VOLTAGE = 0x04,
-
-            LOAD_CURRENT = 0x05,
+            ENABLED         = 0x00,  // [ BOOL ] Indicates if the module is enabled or not
+            TEMPERATURE     = 0x01,  // [ uint32_t ]
+            BUS_VOLTAGE     = 0x02,  // [ uint32_t ] ( mV )
+            BR_SOCKET_INDEX = 0x03,  // [ uint8_t ] Brake Resistor socket index for binding purpose
+            BR_TRIGGER_VOLTAGE = 0x04,  // Brake Resistor trigger voltage
+            LOAD_CURRENT       = 0x05,
+            LOAD_POWER         = 0x06,
+            TOTAL_ENERGY       = 0x07,
 
         };
         // private:
