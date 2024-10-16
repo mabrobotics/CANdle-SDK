@@ -28,15 +28,12 @@ namespace mab
         switch (m_mabFile.m_firmwareEntry1.targetDevice)
         {
             case MabFileParser::TargetDevice_E::MD:
+            case MabFileParser::TargetDevice_E::PDS:
                 pLoader = std::make_unique<CanLoader>(m_candle, m_mabFile, m_canId);
                 break;
 
             case MabFileParser::TargetDevice_E::CANDLE:
                 pLoader = std::make_unique<UsbLoader>(m_candle, m_mabFile);
-                break;
-
-            case MabFileParser::TargetDevice_E::PDS:
-                pLoader = std::make_unique<CanLoader>(m_candle, m_mabFile, m_canId);
                 break;
 
             default:

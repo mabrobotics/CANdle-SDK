@@ -74,8 +74,9 @@
         "cinttypes": "cpp",
         "typeindex": "cpp",
         "typeinfo": "cpp",
+        "variant": "cpp",
+        "format": "cpp",
         "valarray": "cpp",
-        "variant": "cpp"
     },
     "cSpell.words": [
         "Devcontainers",
