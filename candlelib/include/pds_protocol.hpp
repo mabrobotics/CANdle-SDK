@@ -4,6 +4,7 @@
 #include "pds_types.hpp"
 #include "logger.hpp"
 #include "mab_types.hpp"
+#include <vector>
 
 namespace mab
 {
