@@ -76,17 +76,23 @@ namespace mab
         BrakeResistor(socketIndex_E socket, std::shared_ptr<Candle> sp_Candle, u16 canId);
         ~BrakeResistor() = default;
 
+        error_E enable();
+        error_E disable();
+
         /*
-          Control parameters indexes used internally for creating protocol messages
-          for this particular module type. Note that the control parameters may differ
+          Properties indexes used internally for creating protocol messages
+          for this particular module type. Note that the properties may differ
           from type to type so they all provide own enumerator definition even if they share
-          exact same set of control parameters.
+          exact same set of properties.
         */
-        enum class controlParameters_E : uint8_t
+        enum class properties_E : uint8_t
         {
 
-            ENABLED     = 0x00,  // Indicates if the module is enabled or not
-            TEMPERATURE = 0x01,
+            ENABLED      = 0x00,  // [ BOOL ] Indicates if the module is enabled or not
+            TEMPERATURE  = 0x01,  // [ uint32_t ]
+            LOAD_CURRENT = 0x05,
+            LOAD_POWER   = 0x06,
+            TOTAL_ENERGY = 0x07,
 
         };
     };
