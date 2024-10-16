@@ -682,7 +682,9 @@ namespace mab
 								Md80Reg_E::motorKV,
 								regR.RW.motorKV,
 								Md80Reg_E::legacyHardwareVersion,
-								regR.RO.legacyHardwareVersion))
+								regR.RO.legacyHardwareVersion,
+								Md80Reg_E::hardwareType,
+								regR.RO.hardwareType))
 		{
 			log.error("Extended diagnostic failed (ID: %d)", canId);
 			return false;

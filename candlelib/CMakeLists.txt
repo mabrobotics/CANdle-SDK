@@ -34,6 +34,7 @@ message(
 )
 
 target_sources(candle PRIVATE src/candle.cpp src/bus.cpp src/crc.cpp src/md80.cpp src/register.cpp src/usbDevice.cpp)
+
 if(UNIX)
   target_sources(candle PRIVATE src/uartDevice.cpp src/spiDevice.cpp)
 endif()
@@ -42,9 +43,9 @@ target_include_directories(
                 ${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger)
 target_include_directories(candle SYSTEM PRIVATE ${LIBUSB_INCLUDE_DIR})
 if(UNIX)
-  target_link_libraries(candle logger pthread ${LIBUSB_LIBRARY})
+  target_link_libraries(candle shared_data logger pthread ${LIBUSB_LIBRARY})
 else()
-  target_link_libraries(candle logger pthread ${LIBUSB_WINDOWS_STATIC} -static)
+  target_link_libraries(candle shared_data logger pthread ${LIBUSB_WINDOWS_STATIC} -static)
 
 endif()
 set_target_properties(candle PROPERTIES PUBLIC_HEADER candle.hpp)

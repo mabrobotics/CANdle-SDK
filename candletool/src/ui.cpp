@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <iostream>
 #include <streambuf>
+#include "manufacturer_data.hpp"
 
 namespace ui
 {
@@ -158,6 +159,39 @@ namespace ui
             }
         };
 
+        auto getHardwareType = [](mab::hardwareType_S hwType_)
+        {
+            std::string deviceType = "UNKNOWN";
+            switch (hwType_.deviceType)
+            {
+                case mab::deviceType_E::CANDLE:
+                    deviceType = "CANDLE";
+                    break;
+                case mab::deviceType_E::CANDLE_HAT:
+                    deviceType = "CANDLE_HAT";
+                    break;
+                case mab::deviceType_E::MD20:
+                    deviceType = "MD20";
+                    break;
+                case mab::deviceType_E::MD80:
+                    deviceType = "MD80";
+                    break;
+                case mab::deviceType_E::MD80HV:
+                    deviceType = "MD80HV";
+                    break;
+                case mab::deviceType_E::PDS:
+                    deviceType = "PDS";
+                    break;
+                default:
+                    break;
+            }
+            deviceType += " v";
+            deviceType += std::to_string(hwType_.deviceRevision / 10);
+            deviceType += ".";
+            deviceType += std::to_string(hwType_.deviceRevision % 10);
+            return deviceType;
+        };
+
         auto getListElement = [](std::vector<std::string> vec, uint32_t idx)
         {
             if (idx < vec.size())
@@ -178,8 +212,10 @@ namespace ui
         mab::version_ut firmwareVersion = {{0, 0, 0, 0}};
         firmwareVersion.i               = drive.getReadReg().RO.firmwareVersion;
         vout << "- firmware version: v" << mab::getVersionString(firmwareVersion) << std::endl;
-        vout << "- hardware version: "
+        vout << "- hardware version(legacy): "
              << getLegacyHardwareVersion(drive.getReadReg().RO.legacyHardwareVersion) << std::endl;
+        vout << "- hardware type: " << getHardwareType(drive.getReadReg().RO.hardwareType)
+             << std::endl;
         vout << "- build date: " << getStringBuildDate(drive.getReadReg().RO.buildDate)
              << std::endl;
         vout << "- commit hash: " << drive.getReadReg().RO.commitHash << std::endl;

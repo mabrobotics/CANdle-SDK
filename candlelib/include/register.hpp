@@ -6,6 +6,7 @@
 #include <type_traits>
 
 #include "mab_types.hpp"
+#include "manufacturer_data.hpp"
 
 namespace mab
 {
@@ -21,37 +22,38 @@ namespace mab
 	/* READ ONLY PARAMS */
 	typedef struct
 	{
-		uint32_t firmwareVersion;
-		uint8_t	 legacyHardwareVersion;
-		uint32_t buildDate;
-		char	 commitHash[8];
-		uint8_t	 bridgeType;
-		float	 resistance;
-		float	 inductance;
-		uint16_t quickStatus;
-		float	 mosfetTemperature;
-		float	 motorTemperature;
-		float	 mainEncoderVelocity;
-		float	 mainEncoderPosition;
-		float	 motorTorque;
-		float	 outputEncoderVelocity;
-		float	 outputEncoderPosition;
-		float	 calOutputEncoderStdDev;
-		float	 calOutputEncoderMinE;
-		float	 calOutputEncoderMaxE;
-		float	 calMainEncoderStdDev;
-		float	 calMainEncoderMinE;
-		float	 calMainEncoderMaxE;
-		uint32_t mainEncoderErrors;
-		uint32_t outputEncoderErrors;
-		uint32_t calibrationErrors;
-		uint32_t bridgeErrors;
-		uint32_t hardwareErrors;
-		uint32_t communicationErrors;
-		uint32_t homingErrors;
-		uint32_t motionErrors;
-		u32		 miscStatus;
-		float	 shuntResistance;
+		uint32_t			firmwareVersion;
+		uint8_t				legacyHardwareVersion;
+		mab::hardwareType_S hardwareType;
+		uint32_t			buildDate;
+		char				commitHash[8];
+		uint8_t				bridgeType;
+		float				resistance;
+		float				inductance;
+		uint16_t			quickStatus;
+		float				mosfetTemperature;
+		float				motorTemperature;
+		float				mainEncoderVelocity;
+		float				mainEncoderPosition;
+		float				motorTorque;
+		float				outputEncoderVelocity;
+		float				outputEncoderPosition;
+		float				calOutputEncoderStdDev;
+		float				calOutputEncoderMinE;
+		float				calOutputEncoderMaxE;
+		float				calMainEncoderStdDev;
+		float				calMainEncoderMinE;
+		float				calMainEncoderMaxE;
+		uint32_t			mainEncoderErrors;
+		uint32_t			outputEncoderErrors;
+		uint32_t			calibrationErrors;
+		uint32_t			bridgeErrors;
+		uint32_t			hardwareErrors;
+		uint32_t			communicationErrors;
+		uint32_t			homingErrors;
+		uint32_t			motionErrors;
+		u32					miscStatus;
+		float				shuntResistance;
 	} regRO_st;
 
 	/* READ WRITE PARAMS */
@@ -225,6 +227,7 @@ namespace mab
 
 		shuntResistance = 0x700,
 
+		hardwareType		  = 0x7FF,
 		buildDate			  = 0x800,
 		commitHash			  = 0x801,
 		firmwareVersion		  = 0x802,

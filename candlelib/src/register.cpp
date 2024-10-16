@@ -120,7 +120,7 @@ namespace mab
 		}
 		return 0;
 	}
-
+	// TODO: THIS SECTION NEEDS REWORK IN THE FUTURE
 	Register::type Register::getType(uint16_t regId)
 	{
 		switch (regId)
@@ -159,6 +159,7 @@ namespace mab
 			case Md80Reg_E::quickStatus:
 			case Md80Reg_E::motorKV:
 			case Md80Reg_E::state:
+			case Md80Reg_E::hardwareType:
 				return type::U16;
 			case Md80Reg_E::outputEncoderDefaultBaud:
 			case Md80Reg_E::canBaudrate:
