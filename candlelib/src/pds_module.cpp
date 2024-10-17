@@ -84,6 +84,46 @@ namespace mab
         return readModuleProperty(properties_E::LOAD_POWER, power);
     }
 
+    PdsModule::error_E PowerStage::getEnergy(s32& energy)
+    {
+        return readModuleProperty(properties_E::TOTAL_ENERGY, energy);
+    }
+
+    PdsModule::error_E PowerStage::getTemperature(f32& temperature)
+    {
+        return readModuleProperty(properties_E::TEMPERATURE, temperature);
+    }
+
+    PdsModule::error_E PowerStage::setOcdLevel(u32 ocdLevel)
+    {
+        return writeModuleProperty(properties_E::OCD_LEVEL, ocdLevel);
+    }
+
+    PdsModule::error_E PowerStage::getOcdLevel(u32& ocdLevel)
+    {
+        return readModuleProperty(properties_E::OCD_LEVEL, ocdLevel);
+    }
+
+    PdsModule::error_E PowerStage::setOcdDelay(u32 ocdDelay)
+    {
+        return writeModuleProperty(properties_E::OCD_DELAY, ocdDelay);
+    }
+
+    PdsModule::error_E PowerStage::getOcdDelay(u32& ocdDelay)
+    {
+        return readModuleProperty(properties_E::OCD_DELAY, ocdDelay);
+    }
+
+    PdsModule::error_E PowerStage::setTemperatureLimit(f32 temperatureLimit)
+    {
+        return writeModuleProperty(properties_E::TEMPERATURE_LIMIT, temperatureLimit);
+    }
+
+    PdsModule::error_E PowerStage::getTemperatureLimit(f32& temperatureLimit)
+    {
+        return readModuleProperty(properties_E::TEMPERATURE_LIMIT, temperatureLimit);
+    }
+
     IsolatedConv12::IsolatedConv12(socketIndex_E           socket,
                                    std::shared_ptr<Candle> sp_Candle,
                                    u16                     canId)

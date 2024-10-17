@@ -29,6 +29,13 @@ int main()
     log.m_tag = "PDS Example";
 
     u32 vbusVoltage = 0;
+    s32 loadCurrent = 0;
+    s32 loadPower   = 0;
+
+    float vBusVoltage_f = 0.0f;
+    float loadCurrent_f = 0.0f;
+    float loadPower_f   = 0.0f;
+    float temperature   = 0.0f;
 
     std::shared_ptr<Candle> pCandle = std::make_shared<Candle>(mab::CAN_BAUD_1M, true);
     Pds                     pds(100, pCandle);
@@ -65,8 +72,28 @@ int main()
         result = p_powerStage->getOutputVoltage(vbusVoltage);
         if (result != PdsModule::error_E::OK)
             log.error("Reading VBus voltage error [ %u ]", static_cast<u8>(result));
-        else
-            log.info("Power stage VBus voltage [ %u V ]", vbusVoltage);
+
+        result = p_powerStage->getLoadCurrent(loadCurrent);
+        if (result != PdsModule::error_E::OK)
+            log.error("Reading load current error [ %u ]", static_cast<u8>(result));
+
+        result = p_powerStage->getPower(loadPower);
+        if (result != PdsModule::error_E::OK)
+            log.error("Reading load power error [ %u ]", static_cast<u8>(result));
+
+        result = p_powerStage->getTemperature(temperature);
+        if (result != PdsModule::error_E::OK)
+            log.error("Reading temperature error [ %u ]", static_cast<u8>(result));
+
+        vBusVoltage_f = static_cast<float>(vbusVoltage) / 1000.0f;
+        loadCurrent_f = static_cast<float>(loadCurrent) / 1000.0f;
+        loadPower_f   = static_cast<float>(loadPower) / 1000.0f;
+
+        log.info("[ %.2f V ] [ %.2f A ] [ %.2f W ] [ %.2f *C ]",
+                 vBusVoltage_f,
+                 loadCurrent_f,
+                 loadPower_f,
+                 temperature);
     }
 
     return EXIT_SUCCESS;

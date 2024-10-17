@@ -64,8 +64,9 @@ namespace mab
          * object */
         const u16 m_canId;
 
-        template <typename propertyT, typename dataT>
-        PdsModule::error_E readModuleProperty(propertyT property, dataT& data)
+        template <typename propertyT, typename dataValueT>
+        [[nodiscard]] PdsModule::error_E readModuleProperty(propertyT   property,
+                                                            dataValueT& dataValue)
         {
             PdsMessage::error_E result = PdsMessage::error_E::OK;
             PropertyGetMessage  message(m_type, m_socketIndex);
@@ -92,20 +93,21 @@ namespace mab
             if (result != PdsMessage::error_E::OK)
                 return error_E::PROTOCOL_ERROR;
 
-            data = *reinterpret_cast<dataT*>(&rawData);
+            dataValue = *reinterpret_cast<dataValueT*>(&rawData);
 
             return error_E::OK;
         }
 
-        template <typename propertyT, typename dataT>
-        PdsModule::error_E writeModuleProperty(propertyT property, dataT data)
+        template <typename propertyT, typename dataValueT>
+        [[nodiscard]] PdsModule::error_E writeModuleProperty(propertyT  property,
+                                                             dataValueT dataValue)
         {
             PdsMessage::error_E result = PdsMessage::error_E::OK;
             PropertySetMessage  message(m_type, m_socketIndex);
             u8                  responseBuffer[64] = {0};
             size_t              responseLength     = 0;
 
-            message.addProperty(property, data);
+            message.addProperty(property, dataValue);
             std::vector<u8> serializedMessage = message.serialize();
 
             if (!(msp_Candle->sendGenericFDCanFrame(
@@ -236,7 +238,44 @@ namespace mab
          * @param temperature
          * @return error_E
          */
-        error_E getTemperature(u32& temperature);
+        error_E getTemperature(f32& temperature);
+
+        /**
+         * @brief Set the Over-Current Detection Level of the Power stage module ( in mA )
+         *
+         * @param ocdLevel
+         * @return error_E
+         */
+        error_E setOcdLevel(u32 ocdLevel);
+
+        /**
+         * @brief Get the Over-Current Detection Level of the Power stage module ( in mA )
+         *
+         * @param ocdLevel
+         * @return error_E
+         */
+        error_E getOcdLevel(u32& ocdLevel);
+
+        /**
+         * @brief Set the Over-Current Detection Delay of the Power stage module ( in uS ).
+         * If the measured current exceeds the limit ( set with setOcdLevel method )
+         *
+         * @param ocdDelay
+         * @return error_E
+         */
+        error_E setOcdDelay(u32 ocdDelay);
+
+        /**
+         * @brief Get the Over-Current Detection Delay of the Power stage module ( in uS ).
+         * If the measured current exceeds the limit ( set with setOcdLevel method )
+         *
+         * @param ocdDelay
+         * @return error_E
+         */
+        error_E getOcdDelay(u32& ocdDelay);
+
+        error_E setTemperatureLimit(f32 temperatureLimit);
+        error_E getTemperatureLimit(f32& temperatureLimit);
 
         /*
           Properties indexes used internally for creating protocol messages
