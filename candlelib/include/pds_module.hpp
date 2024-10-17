@@ -4,6 +4,7 @@
 #include "logger.hpp"
 
 #include "pds_types.hpp"
+#include "pds_protocol.hpp"
 #include "candle.hpp"
 
 namespace mab
@@ -62,6 +63,67 @@ namespace mab
         /* CAN ID of the parent PDS device. Assumed to be passed in a constructor from parent PDS
          * object */
         const u16 m_canId;
+
+        template <typename propertyT, typename dataT>
+        PdsModule::error_E readModuleProperty(propertyT property, dataT& data)
+        {
+            PdsMessage::error_E result = PdsMessage::error_E::OK;
+            PropertyGetMessage  message(m_type, m_socketIndex);
+
+            u8     responseBuffer[64] = {0};
+            size_t responseLength     = 0;
+            u32    rawData            = 0;
+
+            message.addProperty(property);
+
+            std::vector<u8> serializedMessage = message.serialize();
+            msp_Candle->sendGenericFDCanFrame(
+                m_canId,
+                serializedMessage.size(),
+                reinterpret_cast<const char*>(serializedMessage.data()),
+                reinterpret_cast<char*>(responseBuffer),
+                &responseLength);
+
+            result = message.parseResponse(responseBuffer, responseLength);
+            if (result != PdsMessage::error_E::OK)
+                return error_E::PROTOCOL_ERROR;
+
+            result = message.getProperty(property, &rawData);
+            if (result != PdsMessage::error_E::OK)
+                return error_E::PROTOCOL_ERROR;
+
+            data = *reinterpret_cast<dataT*>(&rawData);
+
+            return error_E::OK;
+        }
+
+        template <typename propertyT, typename dataT>
+        PdsModule::error_E writeModuleProperty(propertyT property, dataT data)
+        {
+            PdsMessage::error_E result = PdsMessage::error_E::OK;
+            PropertySetMessage  message(m_type, m_socketIndex);
+            u8                  responseBuffer[64] = {0};
+            size_t              responseLength     = 0;
+
+            message.addProperty(property, data);
+            std::vector<u8> serializedMessage = message.serialize();
+
+            if (!(msp_Candle->sendGenericFDCanFrame(
+                    m_canId,
+                    serializedMessage.size(),
+                    reinterpret_cast<const char*>(serializedMessage.data()),
+                    reinterpret_cast<char*>(responseBuffer),
+                    &responseLength)))
+            {
+                return error_E::COMMUNICATION_ERROR;
+            }
+
+            result = message.parseResponse(responseBuffer, responseLength);
+            if (result != PdsMessage::error_E::OK)
+                return error_E::PROTOCOL_ERROR;
+
+            return error_E::OK;
+        }
     };
 
     /**
@@ -168,6 +230,14 @@ namespace mab
          */
         error_E getEnergy(s32& energy);
 
+        /**
+         * @brief Get the Temperature of the module
+         *
+         * @param temperature
+         * @return error_E
+         */
+        error_E getTemperature(u32& temperature);
+
         /*
           Properties indexes used internally for creating protocol messages
           for this particular module type. Note that the properties may differ
@@ -177,15 +247,17 @@ namespace mab
         enum class properties_E : uint8_t
         {
 
-            ENABLED         = 0x00,  // [ BOOL ] Indicates if the module is enabled or not
-            TEMPERATURE     = 0x01,  // [ uint32_t ]
-            BUS_VOLTAGE     = 0x02,  // [ uint32_t ] ( mV )
-            BR_SOCKET_INDEX = 0x03,  // [ uint8_t ] Brake Resistor socket index for binding purpose
+            ENABLED            = 0x00,  // [ BOOL ] Indicates if the module is enabled or not
+            TEMPERATURE        = 0x01,  // [ uint32_t ]
+            BUS_VOLTAGE        = 0x02,  // [ uint32_t ] ( mV )
+            BR_SOCKET_INDEX    = 0x03,  // [ uint8_t ] Brake Resistor socket index
             BR_TRIGGER_VOLTAGE = 0x04,  // Brake Resistor trigger voltage
             LOAD_CURRENT       = 0x05,
             LOAD_POWER         = 0x06,
             TOTAL_ENERGY       = 0x07,
-
+            OCD_LEVEL          = 0x08,  // [ mA ]
+            OCD_DELAY          = 0x09,  // [ us ]
+            TEMPERATURE_LIMIT  = 0x0A,  // [ *C/10 ]
         };
         // private:
     };
@@ -209,19 +281,23 @@ namespace mab
         error_E isEnabled(bool& enabled);
 
         /*
-          Control parameters indexes used internally for creating protocol messages
-          for this particular module type. Note that the control parameters may differ
+          Properties indexes used internally for creating protocol messages
+          for this particular module type. Note that the properties may differ
           from type to type so they all provide own enumerator definition even if they share
-          exact same set of control parameters.
+          exact same set of properties.
         */
-        enum class controlParameters_E : uint8_t
+        enum class properties_E : uint8_t
         {
 
-            ENABLED      = 0x00,  // Indicates if the module is enabled or not
-            BUS_VOLTAGE  = 0x01,
-            LOAD_CURRENT = 0x02,
-            TEMPERATURE  = 0x03,
-
+            ENABLED           = 0x00,  // [ BOOL ] Indicates if the module is enabled or not
+            TEMPERATURE       = 0x01,  // [ uint32_t ]
+            BUS_VOLTAGE       = 0x02,  // [ uint32_t ] ( mV )
+            LOAD_CURRENT      = 0x05,
+            LOAD_POWER        = 0x06,
+            TOTAL_ENERGY      = 0x07,
+            OCD_LEVEL         = 0x08,  // [ mA ]
+            OCD_DELAY         = 0x09,  // [ us ]
+            TEMPERATURE_LIMIT = 0x0A,  // [ *C/10 ]
         };
     };
 

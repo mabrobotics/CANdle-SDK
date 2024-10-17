@@ -29,56 +29,12 @@ namespace mab
 
     PdsModule::error_E BrakeResistor::enable()
     {
-        PdsMessage::error_E result = PdsMessage::error_E::OK;
-        PropertySetMessage  enableMessage(m_type, m_socketIndex);
-
-        u8     responseBuffer[64] = {0};
-        size_t responseLength     = 0;
-
-        enableMessage.addProperty(properties_E::ENABLED, true);
-        std::vector<u8> serializedMessage = enableMessage.serialize();
-
-        msp_Candle->sendGenericFDCanFrame(m_canId,
-                                          serializedMessage.size(),
-                                          reinterpret_cast<const char*>(serializedMessage.data()),
-                                          reinterpret_cast<char*>(responseBuffer),
-                                          &responseLength);
-
-        result = enableMessage.parseResponse(responseBuffer, responseLength);
-
-        if (result != PdsMessage::error_E::OK)
-        {
-            return error_E::PROTOCOL_ERROR;
-        }
-
-        return error_E::OK;
+        return writeModuleProperty(properties_E::ENABLED, true);
     }
 
     PdsModule::error_E BrakeResistor::disable()
     {
-        PdsMessage::error_E result = PdsMessage::error_E::OK;
-        PropertySetMessage  enableMessage(m_type, m_socketIndex);
-
-        u8     responseBuffer[64] = {0};
-        size_t responseLength     = 0;
-
-        enableMessage.addProperty(properties_E::ENABLED, false);
-        std::vector<u8> serializedMessage = enableMessage.serialize();
-
-        msp_Candle->sendGenericFDCanFrame(m_canId,
-                                          serializedMessage.size(),
-                                          reinterpret_cast<const char*>(serializedMessage.data()),
-                                          reinterpret_cast<char*>(responseBuffer),
-                                          &responseLength);
-
-        result = enableMessage.parseResponse(responseBuffer, responseLength);
-
-        if (result != PdsMessage::error_E::OK)
-        {
-            return error_E::PROTOCOL_ERROR;
-        }
-
-        return error_E::OK;
+        return writeModuleProperty(properties_E::ENABLED, false);
     }
 
     PowerStage::PowerStage(socketIndex_E socket, std::shared_ptr<Candle> sp_Candle, u16 canId)
@@ -90,242 +46,42 @@ namespace mab
 
     PdsModule::error_E PowerStage::enable()
     {
-        PdsMessage::error_E result = PdsMessage::error_E::OK;
-        PropertySetMessage  enableMessage(m_type, m_socketIndex);
-
-        u8     responseBuffer[64] = {0};
-        size_t responseLength     = 0;
-
-        enableMessage.addProperty(properties_E::ENABLED, true);
-        std::vector<u8> serializedMessage = enableMessage.serialize();
-
-        msp_Candle->sendGenericFDCanFrame(m_canId,
-                                          serializedMessage.size(),
-                                          reinterpret_cast<const char*>(serializedMessage.data()),
-                                          reinterpret_cast<char*>(responseBuffer),
-                                          &responseLength);
-
-        result = enableMessage.parseResponse(responseBuffer, responseLength);
-
-        if (result != PdsMessage::error_E::OK)
-        {
-            return error_E::PROTOCOL_ERROR;
-        }
-
-        return error_E::OK;
+        return writeModuleProperty(properties_E::ENABLED, true);
     }
 
     PdsModule::error_E PowerStage::disable()
     {
-        PdsMessage::error_E result = PdsMessage::error_E::OK;
-        PropertySetMessage  enableMessage(m_type, m_socketIndex);
-
-        u8     responseBuffer[64] = {0};
-        size_t responseLength     = 0;
-
-        enableMessage.addProperty(properties_E::ENABLED, false);
-        std::vector<u8> serializedMessage = enableMessage.serialize();
-
-        msp_Candle->sendGenericFDCanFrame(m_canId,
-                                          serializedMessage.size(),
-                                          reinterpret_cast<const char*>(serializedMessage.data()),
-                                          reinterpret_cast<char*>(responseBuffer),
-                                          &responseLength);
-
-        result = enableMessage.parseResponse(responseBuffer, responseLength);
-
-        if (result != PdsMessage::error_E::OK)
-        {
-            return error_E::PROTOCOL_ERROR;
-        }
-
-        return error_E::OK;
+        return writeModuleProperty(properties_E::ENABLED, false);
     }
 
     PdsModule::error_E PowerStage::getEnabled(bool& enabled)
     {
-        PdsMessage::error_E result = PdsMessage::error_E::OK;
-
-        uint32_t receivedPropertyBuffer = 0;
-
-        PropertyGetMessage getEnabledMessage(m_type, m_socketIndex);
-
-        u8     responseBuffer[64] = {0};
-        size_t responseLength     = 0;
-
-        getEnabledMessage.addProperty(PowerStage::properties_E::ENABLED);
-
-        std::vector<u8> serializedMessage = getEnabledMessage.serialize();
-        msp_Candle->sendGenericFDCanFrame(m_canId,
-                                          serializedMessage.size(),
-                                          reinterpret_cast<const char*>(serializedMessage.data()),
-                                          reinterpret_cast<char*>(responseBuffer),
-                                          &responseLength);
-
-        result = getEnabledMessage.parseResponse(responseBuffer, responseLength);
-        if (result != PdsMessage::error_E::OK)
-            return error_E::PROTOCOL_ERROR;
-
-        result = getEnabledMessage.getProperty(PowerStage::properties_E::ENABLED,
-                                               &receivedPropertyBuffer);
-        if (result != PdsMessage::error_E::OK)
-            return error_E::PROTOCOL_ERROR;
-
-        enabled = static_cast<bool>(receivedPropertyBuffer);
-
-        return error_E::OK;
+        return readModuleProperty(properties_E::ENABLED, enabled);
     }
 
     PdsModule::error_E PowerStage::bindBrakeResistor(socketIndex_E brakeResistorSocketIndex)
     {
-        PdsMessage::error_E result = PdsMessage::error_E::OK;
-        PropertySetMessage  message(m_type, m_socketIndex);
-        u8                  responseBuffer[64] = {0};
-        size_t              responseLength     = 0;
-
-        m_log.debug("Binding power stage [ %u ] with brake resistor [ %u ]");
-
-        message.addProperty(properties_E::BR_SOCKET_INDEX, brakeResistorSocketIndex);
-        std::vector<u8> serializedMessage = message.serialize();
-
-        if (!(msp_Candle->sendGenericFDCanFrame(
-                m_canId,
-                serializedMessage.size(),
-                reinterpret_cast<const char*>(serializedMessage.data()),
-                reinterpret_cast<char*>(responseBuffer),
-                &responseLength)))
-        {
-            m_log.error("Communication error");
-            return error_E::COMMUNICATION_ERROR;
-        }
-
-        result = message.parseResponse(responseBuffer, responseLength);
-        if (result != PdsMessage::error_E::OK)
-        {
-            m_log.error("PDS Message error [ %u ]", static_cast<u8>(result));
-            return error_E::PROTOCOL_ERROR;
-        }
-
-        return error_E::OK;
+        return writeModuleProperty(properties_E::BR_SOCKET_INDEX, brakeResistorSocketIndex);
     }
 
     PdsModule::error_E PowerStage::setBrakeResistorTriggerVoltage(uint32_t brTriggerVoltage)
     {
-        PdsMessage::error_E result = PdsMessage::error_E::OK;
-        PropertySetMessage  message(m_type, m_socketIndex);
-        u8                  responseBuffer[64] = {0};
-        size_t              responseLength     = 0;
-
-        m_log.debug("Binding power stage [ %u ] with brake resistor [ %u ]");
-
-        message.addProperty(properties_E::BR_TRIGGER_VOLTAGE, brTriggerVoltage);
-        std::vector<u8> serializedMessage = message.serialize();
-
-        if (!(msp_Candle->sendGenericFDCanFrame(
-                m_canId,
-                serializedMessage.size(),
-                reinterpret_cast<const char*>(serializedMessage.data()),
-                reinterpret_cast<char*>(responseBuffer),
-                &responseLength)))
-        {
-            return error_E::COMMUNICATION_ERROR;
-        }
-
-        result = message.parseResponse(responseBuffer, responseLength);
-        if (result != PdsMessage::error_E::OK)
-            return error_E::PROTOCOL_ERROR;
-
-        return error_E::OK;
+        return writeModuleProperty(properties_E::BR_TRIGGER_VOLTAGE, brTriggerVoltage);
     }
 
     PdsModule::error_E PowerStage::getOutputVoltage(u32& outputVoltage)
     {
-        PdsMessage::error_E result = PdsMessage::error_E::OK;
-        PropertyGetMessage  message(m_type, m_socketIndex);
-
-        u8     responseBuffer[64] = {0};
-        size_t responseLength     = 0;
-
-        message.addProperty(PowerStage::properties_E::BUS_VOLTAGE);
-
-        std::vector<u8> serializedMessage = message.serialize();
-        msp_Candle->sendGenericFDCanFrame(m_canId,
-                                          serializedMessage.size(),
-                                          reinterpret_cast<const char*>(serializedMessage.data()),
-                                          reinterpret_cast<char*>(responseBuffer),
-                                          &responseLength);
-
-        result = message.parseResponse(responseBuffer, responseLength);
-        if (result != PdsMessage::error_E::OK)
-            return error_E::PROTOCOL_ERROR;
-
-        result = message.getProperty(PowerStage::properties_E::BUS_VOLTAGE, &outputVoltage);
-        if (result != PdsMessage::error_E::OK)
-            return error_E::PROTOCOL_ERROR;
-
-        return error_E::OK;
+        return readModuleProperty(properties_E::BUS_VOLTAGE, outputVoltage);
     }
 
     PdsModule::error_E PowerStage::getLoadCurrent(s32& loadCurrent)
     {
-        PdsMessage::error_E result = PdsMessage::error_E::OK;
-        PropertyGetMessage  message(m_type, m_socketIndex);
-
-        u8     responseBuffer[64] = {0};
-        size_t responseLength     = 0;
-        u32    rawCurrentData     = 0;
-
-        message.addProperty(PowerStage::properties_E::LOAD_CURRENT);
-
-        std::vector<u8> serializedMessage = message.serialize();
-        msp_Candle->sendGenericFDCanFrame(m_canId,
-                                          serializedMessage.size(),
-                                          reinterpret_cast<const char*>(serializedMessage.data()),
-                                          reinterpret_cast<char*>(responseBuffer),
-                                          &responseLength);
-
-        result = message.parseResponse(responseBuffer, responseLength);
-        if (result != PdsMessage::error_E::OK)
-            return error_E::PROTOCOL_ERROR;
-
-        result = message.getProperty(PowerStage::properties_E::LOAD_CURRENT, &rawCurrentData);
-        if (result != PdsMessage::error_E::OK)
-            return error_E::PROTOCOL_ERROR;
-
-        loadCurrent = *reinterpret_cast<s32*>(&rawCurrentData);
-
-        return error_E::OK;
+        return readModuleProperty(properties_E::LOAD_CURRENT, loadCurrent);
     }
 
     PdsModule::error_E PowerStage::getPower(s32& power)
     {
-        PdsMessage::error_E result = PdsMessage::error_E::OK;
-        PropertyGetMessage  message(m_type, m_socketIndex);
-
-        u8     responseBuffer[64] = {0};
-        size_t responseLength     = 0;
-        u32    rawData            = 0;
-
-        message.addProperty(PowerStage::properties_E::LOAD_POWER);
-
-        std::vector<u8> serializedMessage = message.serialize();
-        msp_Candle->sendGenericFDCanFrame(m_canId,
-                                          serializedMessage.size(),
-                                          reinterpret_cast<const char*>(serializedMessage.data()),
-                                          reinterpret_cast<char*>(responseBuffer),
-                                          &responseLength);
-
-        result = message.parseResponse(responseBuffer, responseLength);
-        if (result != PdsMessage::error_E::OK)
-            return error_E::PROTOCOL_ERROR;
-
-        result = message.getProperty(PowerStage::properties_E::LOAD_POWER, &rawData);
-        if (result != PdsMessage::error_E::OK)
-            return error_E::PROTOCOL_ERROR;
-
-        power = *reinterpret_cast<s32*>(&rawData);
-
-        return error_E::OK;
+        return readModuleProperty(properties_E::LOAD_POWER, power);
     }
 
     IsolatedConv12::IsolatedConv12(socketIndex_E           socket,
@@ -339,56 +95,12 @@ namespace mab
 
     PdsModule::error_E IsolatedConv12::enable()
     {
-        PdsMessage::error_E result = PdsMessage::error_E::OK;
-        PropertySetMessage  enableMessage(m_type, m_socketIndex);
-
-        u8     responseBuffer[64] = {0};
-        size_t responseLength     = 0;
-
-        enableMessage.addProperty(controlParameters_E::ENABLED, true);
-        std::vector<u8> serializedMessage = enableMessage.serialize();
-
-        msp_Candle->sendGenericFDCanFrame(m_canId,
-                                          serializedMessage.size(),
-                                          reinterpret_cast<const char*>(serializedMessage.data()),
-                                          reinterpret_cast<char*>(responseBuffer),
-                                          &responseLength);
-
-        result = enableMessage.parseResponse(responseBuffer, responseLength);
-
-        if (result != PdsMessage::error_E::OK)
-        {
-            return error_E::PROTOCOL_ERROR;
-        }
-
-        return error_E::OK;
+        return writeModuleProperty(properties_E::ENABLED, true);
     }
 
     PdsModule::error_E IsolatedConv12::disable()
     {
-        PdsMessage::error_E result = PdsMessage::error_E::OK;
-        PropertySetMessage  enableMessage(m_type, m_socketIndex);
-
-        u8     responseBuffer[64] = {0};
-        size_t responseLength     = 0;
-
-        enableMessage.addProperty(controlParameters_E::ENABLED, false);
-        std::vector<u8> serializedMessage = enableMessage.serialize();
-
-        msp_Candle->sendGenericFDCanFrame(m_canId,
-                                          serializedMessage.size(),
-                                          reinterpret_cast<const char*>(serializedMessage.data()),
-                                          reinterpret_cast<char*>(responseBuffer),
-                                          &responseLength);
-
-        result = enableMessage.parseResponse(responseBuffer, responseLength);
-
-        if (result != PdsMessage::error_E::OK)
-        {
-            return error_E::PROTOCOL_ERROR;
-        }
-
-        return error_E::OK;
+        return writeModuleProperty(properties_E::ENABLED, false);
     }
 
     IsolatedConv5::IsolatedConv5(socketIndex_E socket, std::shared_ptr<Candle> sp_Candle, u16 canId)
