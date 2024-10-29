@@ -136,13 +136,6 @@ namespace mab
     class BrakeResistor : public PdsModule
     {
       public:
-        BrakeResistor() = delete;
-        BrakeResistor(socketIndex_E socket, std::shared_ptr<Candle> sp_Candle, u16 canId);
-        ~BrakeResistor() = default;
-
-        error_E enable();
-        error_E disable();
-
         /*
           Properties indexes used internally for creating protocol messages
           for this particular module type. Note that the properties may differ
@@ -159,6 +152,15 @@ namespace mab
             TOTAL_ENERGY = 0x07,
 
         };
+
+        BrakeResistor() = delete;
+        BrakeResistor(socketIndex_E socket, std::shared_ptr<Candle> sp_Candle, u16 canId);
+        ~BrakeResistor() = default;
+
+        error_E enable();
+        error_E disable();
+
+        error_E getEnabled(bool& enabled);
     };
 
     /**
@@ -170,12 +172,43 @@ namespace mab
     class PowerStage : public PdsModule
     {
       public:
+        /*
+    Properties indexes used internally for creating protocol messages
+    for this particular module type. Note that the properties may differ
+    from type to type so they all provide own enumerator definition even if they share
+    exact same set of properties.
+  */
+        enum class properties_E : uint8_t
+        {
+            // TODO: Move
+            STATUS             = 0x00,  // [ uint32_t ] Contains status bits
+            ENABLED            = 0x01,  // [ BOOL ] Indicates if the module is enabled or not
+            TEMPERATURE        = 0x02,  // [ uint32_t ]
+            BUS_VOLTAGE        = 0x03,  // [ uint32_t ] ( mV )
+            BR_SOCKET_INDEX    = 0x04,  // [ uint8_t ] Brake Resistor socket index
+            BR_TRIGGER_VOLTAGE = 0x05,  // [ uint32_t ] Brake Resistor trigger voltage [ mV ]
+            LOAD_CURRENT       = 0x06,
+            LOAD_POWER         = 0x07,
+            TOTAL_ENERGY       = 0x08,
+            OCD_LEVEL          = 0x09,  // [ mA ]
+            OCD_DELAY          = 0x0A,  // [ us ]
+            TEMPERATURE_LIMIT  = 0x0B,  // [ *C/10 ]
+        };
+
+        struct status_S
+        {
+            bool OCD_EVENT;  // Over-current detection event
+            bool OVT_EVENT;  // Over-temperature event
+        };
+
         PowerStage() = delete;
         PowerStage(socketIndex_E socket, std::shared_ptr<Candle> sp_Candle, u16 canId);
-        ~PowerStage() = default;
+        ~PowerStage();
 
         error_E enable();
         error_E disable();
+
+        error_E getStatus(status_S& status);
 
         error_E getEnabled(bool& enabled);
 
@@ -276,28 +309,6 @@ namespace mab
 
         error_E setTemperatureLimit(f32 temperatureLimit);
         error_E getTemperatureLimit(f32& temperatureLimit);
-
-        /*
-          Properties indexes used internally for creating protocol messages
-          for this particular module type. Note that the properties may differ
-          from type to type so they all provide own enumerator definition even if they share
-          exact same set of properties.
-        */
-        enum class properties_E : uint8_t
-        {
-
-            ENABLED            = 0x00,  // [ BOOL ] Indicates if the module is enabled or not
-            TEMPERATURE        = 0x01,  // [ uint32_t ]
-            BUS_VOLTAGE        = 0x02,  // [ uint32_t ] ( mV )
-            BR_SOCKET_INDEX    = 0x03,  // [ uint8_t ] Brake Resistor socket index
-            BR_TRIGGER_VOLTAGE = 0x04,  // Brake Resistor trigger voltage
-            LOAD_CURRENT       = 0x05,
-            LOAD_POWER         = 0x06,
-            TOTAL_ENERGY       = 0x07,
-            OCD_LEVEL          = 0x08,  // [ mA ]
-            OCD_DELAY          = 0x09,  // [ us ]
-            TEMPERATURE_LIMIT  = 0x0A,  // [ *C/10 ]
-        };
         // private:
     };
 
@@ -327,16 +338,16 @@ namespace mab
         */
         enum class properties_E : uint8_t
         {
-
-            ENABLED           = 0x00,  // [ BOOL ] Indicates if the module is enabled or not
-            TEMPERATURE       = 0x01,  // [ uint32_t ]
-            BUS_VOLTAGE       = 0x02,  // [ uint32_t ] ( mV )
-            LOAD_CURRENT      = 0x05,
-            LOAD_POWER        = 0x06,
-            TOTAL_ENERGY      = 0x07,
-            OCD_LEVEL         = 0x08,  // [ mA ]
-            OCD_DELAY         = 0x09,  // [ us ]
-            TEMPERATURE_LIMIT = 0x0A,  // [ *C/10 ]
+            STATUS            = 0x00,  // [ uint32_t ] Contains status bits
+            ENABLED           = 0x01,  // [ BOOL ] Indicates if the module is enabled or not
+            TEMPERATURE       = 0x02,  // [ uint32_t ]
+            BUS_VOLTAGE       = 0x05,  // [ uint32_t ] ( mV )
+            LOAD_CURRENT      = 0x06,
+            LOAD_POWER        = 0x07,
+            TOTAL_ENERGY      = 0x08,
+            OCD_LEVEL         = 0x09,  // [ mA ]
+            OCD_DELAY         = 0x0A,  // [ us ]
+            TEMPERATURE_LIMIT = 0x0B,  // [ *C/10 ]
         };
     };
 

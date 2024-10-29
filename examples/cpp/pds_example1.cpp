@@ -29,7 +29,7 @@ int main()
     log.info("PDS have the following numbers of connected modules:");
     log.info("\t PS    :: [ %u ]", pdsModules.powerStage);
     log.info("\t IC 12 :: [ %u ]", pdsModules.isolatedConv12V);
-    log.info("\t PS 5  :: [ %u ]", pdsModules.isolatedConverter5V);
+    log.info("\t IC 5  :: [ %u ]", pdsModules.isolatedConverter5V);
     log.info("\t BR    :: [ %u ]", pdsModules.brakeResistor);
 
     return EXIT_SUCCESS;

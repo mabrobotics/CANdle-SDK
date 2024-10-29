@@ -94,7 +94,7 @@ namespace mab
                     return std::move(module);
             }
             m_log.error("No brake resistor module connected to socket [ %u ]!",
-                        static_cast<uint8_t>(socket) + 1);
+                        static_cast<uint8_t>(socket));
 
             return nullptr;
         }
@@ -114,7 +114,7 @@ namespace mab
             }
 
             m_log.error("No power stage module connected to socket [ %u ]!",
-                        static_cast<uint8_t>(socket) + 1);
+                        static_cast<uint8_t>(socket));
 
             return nullptr;
         }
@@ -134,7 +134,7 @@ namespace mab
             }
 
             m_log.error("No Isolated Converter 12V module connected to socket [ %u ]!",
-                        static_cast<uint8_t>(socket) + 1);
+                        static_cast<uint8_t>(socket));
 
             return nullptr;
         }
@@ -154,7 +154,7 @@ namespace mab
             }
 
             m_log.error("No Isolated Converter 5V module connected to socket [ %u ]!",
-                        static_cast<uint8_t>(socket) + 1);
+                        static_cast<uint8_t>(socket));
 
             return nullptr;
         }

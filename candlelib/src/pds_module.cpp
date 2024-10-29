@@ -44,6 +44,11 @@ namespace mab
         m_log.debug("Object created");
     }
 
+    PowerStage::~PowerStage()
+    {
+        disable();
+    }
+
     PdsModule::error_E PowerStage::enable()
     {
         return writeModuleProperty(properties_E::ENABLED, true);
@@ -54,7 +59,17 @@ namespace mab
         return writeModuleProperty(properties_E::ENABLED, false);
     }
 
+    PdsModule::error_E PowerStage::getStatus(status_S& status)
+    {
+        return readModuleProperty(properties_E::STATUS, status);
+    }
+
     PdsModule::error_E PowerStage::getEnabled(bool& enabled)
+    {
+        return readModuleProperty(properties_E::ENABLED, enabled);
+    }
+
+    PdsModule::error_E BrakeResistor::getEnabled(bool& enabled)
     {
         return readModuleProperty(properties_E::ENABLED, enabled);
     }
