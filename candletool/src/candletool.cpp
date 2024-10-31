@@ -311,6 +311,9 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
 
 	auto f32FromField = [&](const char* category, const char* field) -> f32
 	{ return atof(cfg[category][field].c_str()); };
+	f32 quickStopDeceleration = f32FromField("profile", "quick stop deceleration");
+	if (quickStopDeceleration <= 1.f)
+		quickStopDeceleration = 1.f;
 
 	/* motor base config */
 	if (!candle->writeMd80Register(id,
@@ -420,7 +423,7 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
 								   mab::Md80Reg_E::profileDeceleration,
 								   f32FromField("profile", "deceleration"),
 								   mab::Md80Reg_E::quickStopDeceleration,
-								   f32FromField("profile", "quick stop deceleration"),
+								   quickStopDeceleration,
 								   mab::Md80Reg_E::profileVelocity,
 								   f32FromField("profile", "velocity")))
 		log.error("Failed to setup motor!");
