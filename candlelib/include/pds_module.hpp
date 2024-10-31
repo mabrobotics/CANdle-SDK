@@ -29,6 +29,19 @@ namespace mab
 
         socketIndex_E getSocketIndex();
 
+        /**
+         * @brief This enum represents common status bits position in status word for all modules
+         * @note Assuming that only first 8 ( LSBits ) are reserved for common status. Other bits
+         * are for modules specific status information
+         * TODO: Move to the CANdleSDK shared resources!
+         */
+        enum class status_E : uint32_t
+        {
+            ENABLED                = (1 << 0x00),
+            OVER_TEMPERATURE_EVENT = (1 << 0x01),
+            OVER_CURRENT_EVENT     = (1 << 0x02),
+        };
+
         // static std::string moduleType2String(moduleType_E type);
 
       protected:
@@ -181,22 +194,24 @@ namespace mab
         enum class properties_E : uint8_t
         {
             // TODO: Move
-            STATUS             = 0x00,  // [ uint32_t ] Contains status bits
-            ENABLED            = 0x01,  // [ BOOL ] Indicates if the module is enabled or not
-            TEMPERATURE        = 0x02,  // [ uint32_t ]
-            BUS_VOLTAGE        = 0x03,  // [ uint32_t ] ( mV )
-            BR_SOCKET_INDEX    = 0x04,  // [ uint8_t ] Brake Resistor socket index
-            BR_TRIGGER_VOLTAGE = 0x05,  // [ uint32_t ] Brake Resistor trigger voltage [ mV ]
-            LOAD_CURRENT       = 0x06,
-            LOAD_POWER         = 0x07,
-            TOTAL_ENERGY       = 0x08,
-            OCD_LEVEL          = 0x09,  // [ mA ]
-            OCD_DELAY          = 0x0A,  // [ us ]
-            TEMPERATURE_LIMIT  = 0x0B,  // [ *C/10 ]
+            STATUS          = 0x00,  // [ uint32_t ] Contains status bits
+            STATUS_CLEAR    = 0x01,  // [ uint32_t ] Write only property used to clear status bits
+            ENABLED         = 0x02,  // [ BOOL ] Indicates if the module is enabled or not
+            TEMPERATURE     = 0x03,  // [ uint32_t ]
+            BUS_VOLTAGE     = 0x04,  // [ uint32_t ] ( mV )
+            BR_SOCKET_INDEX = 0x05,  // [ uint8_t ] Brake Resistor socket index
+            BR_TRIGGER_VOLTAGE = 0x06,  // [ uint32_t ] Brake Resistor trigger voltage [ mV ]
+            LOAD_CURRENT       = 0x07,
+            LOAD_POWER         = 0x08,
+            TOTAL_ENERGY       = 0x09,
+            OCD_LEVEL          = 0x0A,  // [ mA ]
+            OCD_DELAY          = 0x0B,  // [ us ]
+            TEMPERATURE_LIMIT  = 0x0C,  // [ *C/10 ]
         };
 
         struct status_S
         {
+            bool ENABLED;
             bool OCD_EVENT;  // Over-current detection event
             bool OVT_EVENT;  // Over-temperature event
         };
@@ -209,6 +224,7 @@ namespace mab
         error_E disable();
 
         error_E getStatus(status_S& status);
+        error_E clearStatus(status_S status);
 
         error_E getEnabled(bool& enabled);
 

@@ -55,7 +55,7 @@ int main()
     Logger log;
     log.m_tag = "PDS Example";
 
-    bool enabled = false;
+    PowerStage::status_S powerStageStatus = {0};
 
     u32 vbusVoltage = 0;
     s32 loadCurrent = 0;
@@ -138,7 +138,7 @@ int main()
         {
             if (ch == ' ')
             {  // Check if the pressed key is the space key
-                if (enabled)
+                if (powerStageStatus.ENABLED)
                 {
                     result = p_powerStage->disable();
                     if (result != PdsModule::error_E::OK)
@@ -214,11 +214,23 @@ int main()
                 if (result != PdsModule::error_E::OK)
                     log.error("Brake resistor enable error [ %u ]", static_cast<u8>(result));
             }
+
+            else if (ch == 'c')
+            {
+                PowerStage::status_S statusClear = {
+                    .OCD_EVENT = true,
+                    .OVT_EVENT = true,
+                };
+
+                result = p_powerStage->clearStatus(statusClear);
+                if (result != PdsModule::error_E::OK)
+                    log.error("Unable to clear Power Stage status [ %u ]", static_cast<u8>(result));
+            }
         }
 
-        result = p_powerStage->getEnabled(enabled);
+        result = p_powerStage->getStatus(powerStageStatus);
         if (result != PdsModule::error_E::OK)
-            log.error("Reading enable property error [ %u ]", static_cast<u8>(result));
+            log.error("Reading status property error [ %u ]", static_cast<u8>(result));
 
         result = p_powerStage->getOutputVoltage(vbusVoltage);
         if (result != PdsModule::error_E::OK)
@@ -251,10 +263,13 @@ int main()
         ocdDelay_f    = static_cast<float>(ocdDelay) / 1000.0f;
 
         log.info(
-            "Power stage [ %u ] [ %s ] [ %.2f V ] [ %.2f A ] [ %.2f W ] [ %.2f *C ] [ %.1f A ] [ "
+            "Power stage [ %u ] [ %s ] [ %s ] [ %s ] [ %.2f V ] [ %.2f A ] [ %.2f W ] [ %.2f *C ] "
+            "[ %.1f A ] [ "
             "%.1f ms ]",
             static_cast<uint8_t>(POWER_STAGE_SOCKET_INDEX),
-            enabled ? "ON" : "OFF",
+            powerStageStatus.ENABLED ? "ON" : "OFF",
+            powerStageStatus.OCD_EVENT ? "OCD" : "---",
+            powerStageStatus.OVT_EVENT ? "OVT" : "---",
             vBusVoltage_f,
             loadCurrent_f,
             loadPower_f,
