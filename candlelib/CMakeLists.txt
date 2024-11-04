@@ -38,9 +38,9 @@ target_sources(candle PRIVATE
   src/bus.cpp
   src/crc.cpp
   src/md80.cpp
-  src/pds.cpp
-  src/pds_module.cpp
-  src/pds_protocol.cpp
+  src/pds/pds.cpp
+  src/pds/pds_module.cpp
+  src/pds/pds_protocol.cpp
   src/register.cpp
   src/usbDevice.cpp
 )
@@ -48,9 +48,11 @@ target_sources(candle PRIVATE
 if(UNIX)
   target_sources(candle PRIVATE src/uartDevice.cpp src/spiDevice.cpp)
 endif()
-target_include_directories(
-  candle PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-                ${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger)
+target_include_directories(candle PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/pds
+  ${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger
+  )
 target_include_directories(candle SYSTEM PRIVATE ${LIBUSB_INCLUDE_DIR})
 if(UNIX)
   target_link_libraries(candle logger pthread ${LIBUSB_LIBRARY})
@@ -80,6 +82,9 @@ if(MAKE_TESTS)
 endif()
 
 add_unit_test_executable(pds_protocol_test test/pds_protocol_test.cpp)
-target_sources(pds_protocol_test PRIVATE src/pds_protocol.cpp)
-target_include_directories(pds_protocol_test PRIVATE include)
+target_sources(pds_protocol_test PRIVATE src/pds/pds_protocol.cpp)
+target_include_directories(pds_protocol_test PRIVATE
+  include
+  src/pds
+)
 target_link_libraries(pds_protocol_test PRIVATE logger)
