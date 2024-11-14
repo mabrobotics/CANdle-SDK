@@ -14,8 +14,9 @@ int main()
 
 	// Create CANdle object and set FDCAN baudrate to 8Mbps
 	mab::Candle candle(mab::CAN_BAUD_8M, true, mab::BusType_E::SPI);
-	// If your SPI device is different from the default one ("/dev/spidev0.0") use the following constructor:
-	// mab::Candle candle(mab::CAN_BAUD_8M, true, mab::BusType_E::SPI, "/dev/spidev0.1");
+	// If your SPI device is different from the default one ("/dev/spidev0.0") use the following
+	// constructor: mab::Candle candle(mab::CAN_BAUD_8M, true, mab::BusType_E::SPI,
+	// "/dev/spidev0.1");
 
 	// Ping FDCAN bus in search of drives
 	auto ids = candle.ping(mab::CAN_BAUD_8M);
@@ -30,12 +31,12 @@ int main()
 	// Now we shall loop over all found drives to change control mode and enable them one by one
 	for (auto& md : candle.md80s)
 	{
-		candle.controlMd80SetEncoderZero(md);					 // Reset encoder at current position
+		candle.controlMd80SetEncoderZero(md);  // Reset encoder at current position
 		candle.controlMd80Mode(md, mab::Md80Mode_E::IMPEDANCE);	 // Set mode to impedance control
 		candle.controlMd80Enable(md, true);						 // Enable the drive
 	}
 
-	float t = 0.0f;
+	float t	 = 0.0f;
 	float dt = 0.004f;
 
 	// Begin update loop (it starts in the background)
@@ -43,8 +44,8 @@ int main()
 
 	for (int i = 0; i < 10000; i++)
 	{
-		// Once again we loop over all drives, this time setting thier position target. All drives should now perform
-		// a nice synchronized movement.
+		// Once again we loop over all drives, this time setting thier position target. All drives
+		// should now perform a nice synchronized movement.
 		for (auto& md : candle.md80s)
 			md.setTargetPosition(sin(t) * 2.0f);
 

@@ -24,7 +24,7 @@ int main()
 	candle.controlMd80Mode(ids[0], mab::Md80Mode_E::IMPEDANCE);	 // Set mode to impedance control
 	candle.controlMd80Enable(ids[0], true);						 // Enable the drive
 
-	float t = 0.0f;
+	float t	 = 0.0f;
 	float dt = 0.04f;
 
 	// Begin update loop (it starts in the background)

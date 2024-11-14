@@ -49,7 +49,6 @@ mab::CANdleBaudrate_E str2baud(const std::string& baud)
 	return mab::CANdleBaudrate_E::CAN_BAUD_1M;
 }
 
-
 MDtool::MDtool()
 {
 	std::cerr << "[CANDLESDK] Version: " << mab::Candle::getVersion() << std::endl;

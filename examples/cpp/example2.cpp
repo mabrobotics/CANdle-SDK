@@ -19,11 +19,12 @@ int main()
 	// Begin update loop (it starts in the background)
 	candle.begin();
 
-	// Auto update loop is running in the background updating data in candle.md80s vector. Each md80 object can be
-	// called for data at any time
+	// Auto update loop is running in the background updating data in candle.md80s vector. Each md80
+	// object can be called for data at any time
 	for (int i = 0; i < 1000; i++)
 	{
-		std::cout << "Drive Id: " << candle.md80s[0].getId() << " Position: " << candle.md80s[0].getPosition() << std::endl;
+		std::cout << "Drive Id: " << candle.md80s[0].getId()
+				  << " Position: " << candle.md80s[0].getPosition() << std::endl;
 		usleep(100000);
 	}
 

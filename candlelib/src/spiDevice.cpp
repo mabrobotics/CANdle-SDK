@@ -12,7 +12,8 @@ SpiDevice::SpiDevice(const std::string device) : device(device)
 	fd = open(device.c_str(), O_RDWR);
 	if (fd < 0)
 	{
-		const char* msg = "[SPI] Could not open the SPI device... (is SPI bus available on your device?)";
+		const char* msg =
+			"[SPI] Could not open the SPI device... (is SPI bus available on your device?)";
 		std::cout << msg << std::endl;
 		throw msg;
 	}
@@ -47,22 +48,24 @@ SpiDevice::SpiDevice(const std::string device) : device(device)
 	/* set transfer parameters that are constant in each cycle */
 	memset(&trx, 0, sizeof(trx));
 	trx.bits_per_word = 8;
-	trx.speed_hz = spiSpeed;
+	trx.speed_hz	  = spiSpeed;
 }
 
-SpiDevice::~SpiDevice()
-{
-	close(fd);
-}
+SpiDevice::~SpiDevice() { close(fd); }
 
-bool SpiDevice::transmit(char* buffer, int commandLen, bool waitForResponse, int timeout, int responseLen, bool faultVerbose)
+bool SpiDevice::transmit(char* buffer,
+						 int   commandLen,
+						 bool  waitForResponse,
+						 int   timeout,
+						 int   responseLen,
+						 bool  faultVerbose)
 {
 	/* CRC */
 	commandLen = crc.addCrcToBuf(buffer, commandLen);
 
 	trx.tx_buf = (unsigned long)buffer;
 	trx.rx_buf = (unsigned long)rxBuffer;
-	trx.len = commandLen;
+	trx.len	   = commandLen;
 
 	/* send */
 	sendMessage(SPI_IOC_MESSAGE(1), &trx);
@@ -81,21 +84,22 @@ bool SpiDevice::receive(int timeout, int responseLen, bool faultVerbose)
 {
 	memset(rxBuffer, 0, rxBufferSize);
 	rxLock.lock();
-	int delayUs = 200;
-	int timeoutBusOutUs = timeout * 1000;
-	uint8_t dummyTx = 0;
-	uint8_t byteRx = 0;
-	bytesReceived = 0;
+	int		delayUs			= 200;
+	int		timeoutBusOutUs = timeout * 1000;
+	uint8_t dummyTx			= 0;
+	uint8_t byteRx			= 0;
+	bytesReceived			= 0;
 
 	while (timeoutBusOutUs > 0 && bytesReceived < responseLen)
 	{
 		trx.tx_buf = (unsigned long)&dummyTx;
 		trx.rx_buf = (unsigned long)&byteRx;
-		trx.len = 1;
+		trx.len	   = 1;
 
 		sendMessage(SPI_IOC_MESSAGE(1), &trx);
 		timeoutBusOutUs -= delayUs;
-		/* if the received byte is non-zero, continue with a larger transfer for the rest (responseLen -1) */
+		/* if the received byte is non-zero, continue with a larger transfer for the rest
+		 * (responseLen -1) */
 		if (byteRx != 0)
 		{
 			responseLen += crc.getCrcLen();
@@ -105,7 +109,7 @@ bool SpiDevice::receive(int timeout, int responseLen, bool faultVerbose)
 			/* update SPI structure */
 			trx.tx_buf = (unsigned long)&dummyTxa;
 			trx.rx_buf = (unsigned long)&rxBuffer[1];
-			trx.len = responseLen - 1;
+			trx.len	   = responseLen - 1;
 			/* send request */
 			sendMessage(SPI_IOC_MESSAGE(1), &trx);
 			bytesReceived += (responseLen - 1);
@@ -125,7 +129,7 @@ bool SpiDevice::receive(int timeout, int responseLen, bool faultVerbose)
 		displayDebugMsg(rxBuffer, bytesReceived);
 #endif
 		/* clear the command byte -> the frame will be rejected */
-		rxBuffer[0] = 0;
+		rxBuffer[0]	  = 0;
 		bytesReceived = 0;
 		std::cout << "[SPI] ERROR CRC!" << std::endl;
 	}
@@ -144,15 +148,9 @@ bool SpiDevice::receive(int timeout, int responseLen, bool faultVerbose)
 	return false;
 }
 
-unsigned long SpiDevice::getId()
-{
-	return 0;
-}
+unsigned long SpiDevice::getId() { return 0; }
 
-std::string SpiDevice::getDeviceName()
-{
-	return device;
-}
+std::string SpiDevice::getDeviceName() { return device; }
 
 bool SpiDevice::transfer(char* buffer, int commandLen, int responseLen)
 {
@@ -169,7 +167,7 @@ bool SpiDevice::transfer(char* buffer, int commandLen, int responseLen)
 
 	trx.tx_buf = (unsigned long)txBuffer;
 	trx.rx_buf = (unsigned long)rxBuffer;
-	trx.len = responseLen > commandLen ? responseLen : commandLen;
+	trx.len	   = responseLen > commandLen ? responseLen : commandLen;
 	/* make the transfer */
 	sendMessage(SPI_IOC_MESSAGE(1), &trx);
 
@@ -183,7 +181,7 @@ bool SpiDevice::transfer(char* buffer, int commandLen, int responseLen)
 		displayDebugMsg(rxBuffer, bytesReceived);
 #endif
 		/* clear the command byte -> the frame will be rejected */
-		rxBuffer[0] = 0;
+		rxBuffer[0]	  = 0;
 		bytesReceived = 0;
 		std::cout << "[SPI] ERROR CRC!" << std::endl;
 	}
@@ -222,7 +220,8 @@ void SpiDevice::sendMessage(unsigned long request, spi_ioc_transfer* trx)
 
 	if (errno != 0)
 	{
-		std::cout << "[SPI] low level error! Returned (" << errno << ") " << strerror(errno) << std::endl;
+		std::cout << "[SPI] low level error! Returned (" << errno << ") " << strerror(errno)
+				  << std::endl;
 		throw("[SPI] low level error!");
 	}
 }

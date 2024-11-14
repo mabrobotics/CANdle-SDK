@@ -46,14 +46,14 @@ int main(int argc, char** argv)
 	candle.controlMd80Mode(ids[0], mab::Md80Mode_E::IMPEDANCE);	 // Set mode to impedance control
 	candle.controlMd80Enable(ids[0], true);						 // Enable the drive
 
-	// Now we modify the Impedance controller parameters - the drive will behave much different than in
-	// previous examples. The drive will change default params to the ones we select below.
+	// Now we modify the Impedance controller parameters - the drive will behave much different than
+	// in previous examples. The drive will change default params to the ones we select below.
 	candle.md80s[0].setImpedanceControllerParams(kp, kd);
 
-	// To reload default controller parameters, simply disable the drive (contorlMd80Enable(id, false)),
-	// stop the communications (candle.end()) or power cycle the drive (off-on).
+	// To reload default controller parameters, simply disable the drive (contorlMd80Enable(id,
+	// false)), stop the communications (candle.end()) or power cycle the drive (off-on).
 
-	float t = 0.0f;
+	float t	 = 0.0f;
 	float dt = 0.04f;
 
 	// Begin update loop (it starts in the background)

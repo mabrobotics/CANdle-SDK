@@ -24,31 +24,34 @@ UartDevice::UartDevice(const std::string device) : device(device)
 
 	if (tcgetattr(fd, &tty) != 0)
 	{
-		const char* msg = "[UART] Could not open the UART device... (is UART bus available on your device?)";
+		const char* msg =
+			"[UART] Could not open the UART device... (is UART bus available on your device?)";
 		std::cout << msg << std::endl;
 		throw msg;
 	}
 
-	tty.c_cflag &= ~PARENB;			// Clear parity bit, disabling parity (most common)
-	tty.c_cflag &= ~CSTOPB;			// Clear stop field, only one stop bit used in communication (most common)
+	tty.c_cflag &= ~PARENB;	 // Clear parity bit, disabling parity (most common)
+	tty.c_cflag &=
+		~CSTOPB;  // Clear stop field, only one stop bit used in communication (most common)
 	tty.c_cflag &= ~CSIZE;			// Clear all bits that set the data size
 	tty.c_cflag |= CS8;				// 8 bits per byte (most common)
 	tty.c_cflag &= ~CRTSCTS;		// Disable RTS/CTS hardware flow control (most common)
 	tty.c_cflag |= CREAD | CLOCAL;	// Turn on READ & ignore ctrl lines (CLOCAL = 1)
 
 	tty.c_lflag &= ~ICANON;
-	tty.c_lflag &= ~ECHO;														  // Disable echo
-	tty.c_lflag &= ~ECHOE;														  // Disable erasure
-	tty.c_lflag &= ~ECHONL;														  // Disable new-line echo
-	tty.c_lflag &= ~ISIG;														  // Disable interpretation of INTR, QUIT and SUSP
-	tty.c_iflag &= ~(IXON | IXOFF | IXANY);										  // Turn off s/w flow ctrl
-	tty.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL);  // Disable any special handling of received bytes
+	tty.c_lflag &= ~ECHO;					 // Disable echo
+	tty.c_lflag &= ~ECHOE;					 // Disable erasure
+	tty.c_lflag &= ~ECHONL;					 // Disable new-line echo
+	tty.c_lflag &= ~ISIG;					 // Disable interpretation of INTR, QUIT and SUSP
+	tty.c_iflag &= ~(IXON | IXOFF | IXANY);	 // Turn off s/w flow ctrl
+	tty.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR |
+					 ICRNL);  // Disable any special handling of received bytes
 
 	tty.c_oflag &= ~OPOST;	// Prevent special interpretation of output bytes (e.g. newline chars)
 	tty.c_oflag &= ~ONLCR;	// Prevent conversion of newline to carriage return/line feed
 
 	tty.c_cc[VTIME] = 0;
-	tty.c_cc[VMIN] = 0;
+	tty.c_cc[VMIN]	= 0;
 
 	cfsetispeed(&tty, uartSpeed);
 	cfsetospeed(&tty, uartSpeed);
@@ -56,24 +59,25 @@ UartDevice::UartDevice(const std::string device) : device(device)
 	// Save tty settings, also checking for error
 	if (tcsetattr(fd, TCSANOW, &tty) != 0)
 	{
-		std::cout << "[UART] Error " << errno << " from tcgetattr: " << strerror(errno) << std::endl;
+		std::cout << "[UART] Error " << errno << " from tcgetattr: " << strerror(errno)
+				  << std::endl;
 		return;
 	}
 
-	/* frame used to automatically detect baudrate on Slave device side -> send twice so that it can be easily discarded on the Candle slave device */
+	/* frame used to automatically detect baudrate on Slave device side -> send twice so that it can
+	 * be easily discarded on the Candle slave device */
 	char detectFrame[10] = {0x55, 0x55};
 	if (write(fd, detectFrame, 2) == -1)
 		std::cout << "[UART] Writing to UART Device failed. Device Unavailable!" << std::endl;
-	/* allow the frame to be detected by the slave, before a next one is sent (the receiver timeout is set to a rather high value to ensure stable communication)*/
+	/* allow the frame to be detected by the slave, before a next one is sent (the receiver timeout
+	 * is set to a rather high value to ensure stable communication)*/
 	usleep(20000);
 }
 
-UartDevice::~UartDevice()
-{
-	close(fd);
-}
+UartDevice::~UartDevice() { close(fd); }
 
-bool UartDevice::transmit(char* buffer, int len, bool waitForResponse, int timeout, int responseLen, bool faultVerbose)
+bool UartDevice::transmit(
+	char* buffer, int len, bool waitForResponse, int timeout, int responseLen, bool faultVerbose)
 {
 	len = crc.addCrcToBuf(buffer, len);
 
@@ -94,13 +98,15 @@ bool UartDevice::receive(int responseLen, int timeoutMs, bool checkCrc, bool fau
 	bytesReceived = 0;
 
 	using namespace std::chrono;
-	long long timestampStart = duration_cast<microseconds>(system_clock::now().time_since_epoch()).count();
+	long long timestampStart =
+		duration_cast<microseconds>(system_clock::now().time_since_epoch()).count();
 	long long timestampAct = timestampStart;
 
-	while ((timestampAct - timestampStart) < (timeoutMs * 1000) && bytesReceived < (int)(responseLen + crc.getCrcLen()))
+	while ((timestampAct - timestampStart) < (timeoutMs * 1000) &&
+		   bytesReceived < (int)(responseLen + crc.getCrcLen()))
 	{
 		char newByte;
-		int bytesRead = read(fd, &newByte, 1);
+		int	 bytesRead = read(fd, &newByte, 1);
 		if (bytesRead > 0)
 		{
 			rxBuffer[bytesReceived++] = newByte;
@@ -120,12 +126,13 @@ bool UartDevice::receive(int responseLen, int timeoutMs, bool checkCrc, bool fau
 		displayDebugMsg(rxBuffer, bytesReceived);
 #endif
 		/* clear the command byte -> the frame will be rejected */
-		rxBuffer[0] = 0;
+		rxBuffer[0]	  = 0;
 		bytesReceived = 0;
 		std::cout << "[UART] ERROR CRC!" << std::endl;
 	}
 	else if (bytesReceived == 0)
-		if (faultVerbose) std::cout << "[UART] Did not receive response from UART Device." << std::endl;
+		if (faultVerbose)
+			std::cout << "[UART] Did not receive response from UART Device." << std::endl;
 
 #if UART_VERBOSE == 1
 	displayDebugMsg(rxBuffer, bytesReceived);
@@ -135,15 +142,9 @@ bool UartDevice::receive(int responseLen, int timeoutMs, bool checkCrc, bool fau
 	return false;
 }
 
-unsigned long UartDevice::getId()
-{
-	return 0;
-}
+unsigned long UartDevice::getId() { return 0; }
 
-std::string UartDevice::getDeviceName()
-{
-	return device;
-}
+std::string UartDevice::getDeviceName() { return device; }
 
 void UartDevice::flushReceiveBuffer()
 {

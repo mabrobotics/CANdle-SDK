@@ -44,8 +44,8 @@ UsbDevice::UsbDevice(u16 vid, u16 pid, const std::vector<u32>& idsToIgnore, cons
 		{
 			if (ignoreId == hashedRequestedId)
 			{
-				cout << "[USB] Device with requested ID: " << id
-					 << " is already created! Quitting!" << endl;
+				cout << "[USB] Device with requested ID: " << id << " is already created! Quitting!"
+					 << endl;
 				shouldBreak = true;
 				throw("Device iwth ID " + id + " already created!");
 				break;

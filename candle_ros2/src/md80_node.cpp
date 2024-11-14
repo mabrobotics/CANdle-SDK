@@ -6,13 +6,15 @@ Md80Node::Md80Node(int argc, char** argv) : Node("candle_ros2_node")
 {
 	if (argc < 2 || argc > 4)
 	{
-		std::cout << "Wrong arguments specified, please see candle_ros candle_ros_node --help" << std::endl;
+		std::cout << "Wrong arguments specified, please see candle_ros candle_ros_node --help"
+				  << std::endl;
 		return;
 	}
 
 	if (strcmp(argv[1], "--help") == 0)
 	{
-		std::cout << "usage: candle_ros candle_ros_node <bus> <baud> [<device>] [--help]" << std::endl;
+		std::cout << "usage: candle_ros candle_ros_node <bus> <baud> [<device>] [--help]"
+				  << std::endl;
 		std::cout << "<bus> can be SPI/USB/UART" << std::endl;
 		std::cout << "<baud> can be 1M/2M/5M/8M" << std::endl;
 		std::cout << "<device> SPI or UART device if default is not suitable" << std::endl;
@@ -20,7 +22,7 @@ Md80Node::Md80Node(int argc, char** argv) : Node("candle_ros2_node")
 		return;
 	}
 
-	mab::BusType_E bus = mab::BusType_E::USB;
+	mab::BusType_E		  bus  = mab::BusType_E::USB;
 	mab::CANdleBaudrate_E baud = mab::CAN_BAUD_1M;
 
 	if (strcmp(argv[1], "SPI") == 0)
@@ -75,28 +77,45 @@ Md80Node::Md80Node(int argc, char** argv) : Node("candle_ros2_node")
 		candleInstances.push_back(candle);
 	}
 
-	addMd80Service = this->create_service<candle_ros2::srv::AddMd80s>(this->get_name() + std::string("/add_md80s"),
-																	  std::bind(&Md80Node::service_addMd80, this, std::placeholders::_1, std::placeholders::_2));
-	zeroMd80Service = this->create_service<candle_ros2::srv::GenericMd80Msg>(this->get_name() + std::string("/zero_md80s"),
-																			 std::bind(&Md80Node::service_zeroMd80, this, std::placeholders::_1, std::placeholders::_2));
-	setModeMd80Service = this->create_service<candle_ros2::srv::SetModeMd80s>(this->get_name() + std::string("/set_mode_md80s"),
-																			  std::bind(&Md80Node::service_setModeMd80, this, std::placeholders::_1, std::placeholders::_2));
-	enableMd80Service = this->create_service<candle_ros2::srv::GenericMd80Msg>(this->get_name() + std::string("/enable_md80s"),
-																			   std::bind(&Md80Node::service_enableMd80, this, std::placeholders::_1, std::placeholders::_2));
-	disableMd80Service = this->create_service<candle_ros2::srv::GenericMd80Msg>(this->get_name() + std::string("/disable_md80s"),
-																				std::bind(&Md80Node::service_disableMd80, this, std::placeholders::_1, std::placeholders::_2));
+	addMd80Service = this->create_service<candle_ros2::srv::AddMd80s>(
+		this->get_name() + std::string("/add_md80s"),
+		std::bind(&Md80Node::service_addMd80, this, std::placeholders::_1, std::placeholders::_2));
+	zeroMd80Service = this->create_service<candle_ros2::srv::GenericMd80Msg>(
+		this->get_name() + std::string("/zero_md80s"),
+		std::bind(&Md80Node::service_zeroMd80, this, std::placeholders::_1, std::placeholders::_2));
+	setModeMd80Service = this->create_service<candle_ros2::srv::SetModeMd80s>(
+		this->get_name() + std::string("/set_mode_md80s"),
+		std::bind(
+			&Md80Node::service_setModeMd80, this, std::placeholders::_1, std::placeholders::_2));
+	enableMd80Service = this->create_service<candle_ros2::srv::GenericMd80Msg>(
+		this->get_name() + std::string("/enable_md80s"),
+		std::bind(
+			&Md80Node::service_enableMd80, this, std::placeholders::_1, std::placeholders::_2));
+	disableMd80Service = this->create_service<candle_ros2::srv::GenericMd80Msg>(
+		this->get_name() + std::string("/disable_md80s"),
+		std::bind(
+			&Md80Node::service_disableMd80, this, std::placeholders::_1, std::placeholders::_2));
 
-	motionCommandSub = this->create_subscription<candle_ros2::msg::MotionCommand>("md80/motion_command", 10,
-																				  std::bind(&Md80Node::motionCommandCallback, this, std::placeholders::_1));
-	impedanceCommandSub = this->create_subscription<candle_ros2::msg::ImpedanceCommand>("md80/impedance_command", 10,
-																						std::bind(&Md80Node::impedanceCommandCallback, this, std::placeholders::_1));
-	velocityCommandSub = this->create_subscription<candle_ros2::msg::VelocityPidCommand>("md80/velocity_pid_command", 10,
-																						 std::bind(&Md80Node::velocityCommandCallback, this, std::placeholders::_1));
-	positionCommandSub = this->create_subscription<candle_ros2::msg::PositionPidCommand>("md80/position_pid_command", 10,
-																						 std::bind(&Md80Node::positionCommandCallback, this, std::placeholders::_1));
+	motionCommandSub = this->create_subscription<candle_ros2::msg::MotionCommand>(
+		"md80/motion_command",
+		10,
+		std::bind(&Md80Node::motionCommandCallback, this, std::placeholders::_1));
+	impedanceCommandSub = this->create_subscription<candle_ros2::msg::ImpedanceCommand>(
+		"md80/impedance_command",
+		10,
+		std::bind(&Md80Node::impedanceCommandCallback, this, std::placeholders::_1));
+	velocityCommandSub = this->create_subscription<candle_ros2::msg::VelocityPidCommand>(
+		"md80/velocity_pid_command",
+		10,
+		std::bind(&Md80Node::velocityCommandCallback, this, std::placeholders::_1));
+	positionCommandSub = this->create_subscription<candle_ros2::msg::PositionPidCommand>(
+		"md80/position_pid_command",
+		10,
+		std::bind(&Md80Node::positionCommandCallback, this, std::placeholders::_1));
 
 	jointStatePub = this->create_publisher<sensor_msgs::msg::JointState>("md80/joint_states", 10);
-	pubTimer = this->create_wall_timer(std::chrono::milliseconds(10), std::bind(&Md80Node::publishJointStates, this));
+	pubTimer	  = this->create_wall_timer(std::chrono::milliseconds(10),
+										std::bind(&Md80Node::publishJointStates, this));
 	pubTimer->cancel();
 	RCLCPP_INFO(this->get_logger(), "candle_ros2_node %s has started.", version.c_str());
 }
@@ -113,19 +132,20 @@ mab::Candle* Md80Node::findCandleByMd80Id(uint16_t md80Id)
 	{
 		for (auto id : candle->md80s)
 		{
-			if (id.getId() == md80Id) return candle;
+			if (id.getId() == md80Id)
+				return candle;
 		}
 	}
 	return NULL;
 }
 
 void Md80Node::service_addMd80(const std::shared_ptr<candle_ros2::srv::AddMd80s::Request> request,
-							   std::shared_ptr<candle_ros2::srv::AddMd80s::Response> response)
+							   std::shared_ptr<candle_ros2::srv::AddMd80s::Response>	  response)
 {
 	for (auto& id : request->drive_ids)
 	{
 		unsigned int md80NotFound = 0;
-		unsigned int md80Found = 0;
+		unsigned int md80Found	  = 0;
 
 		for (auto candle : candleInstances)
 		{
@@ -153,8 +173,9 @@ void Md80Node::service_addMd80(const std::shared_ptr<candle_ros2::srv::AddMd80s:
 
 	response->total_number_of_drives = totalNumberOfDrives;
 }
-void Md80Node::service_zeroMd80(const std::shared_ptr<candle_ros2::srv::GenericMd80Msg::Request> request,
-								std::shared_ptr<candle_ros2::srv::GenericMd80Msg::Response> response)
+void Md80Node::service_zeroMd80(
+	const std::shared_ptr<candle_ros2::srv::GenericMd80Msg::Request> request,
+	std::shared_ptr<candle_ros2::srv::GenericMd80Msg::Response>		 response)
 {
 	for (auto& id : request->drive_ids)
 	{
@@ -168,8 +189,9 @@ void Md80Node::service_zeroMd80(const std::shared_ptr<candle_ros2::srv::GenericM
 		}
 	}
 }
-void Md80Node::service_setModeMd80(const std::shared_ptr<candle_ros2::srv::SetModeMd80s::Request> request,
-								   std::shared_ptr<candle_ros2::srv::SetModeMd80s::Response> response)
+void Md80Node::service_setModeMd80(
+	const std::shared_ptr<candle_ros2::srv::SetModeMd80s::Request> request,
+	std::shared_ptr<candle_ros2::srv::SetModeMd80s::Response>	   response)
 {
 	if (request->drive_ids.size() != request->mode.size())
 	{
@@ -178,7 +200,8 @@ void Md80Node::service_setModeMd80(const std::shared_ptr<candle_ros2::srv::SetMo
 			(void)id;
 			response->drives_success.push_back(false);
 		}
-		RCLCPP_WARN(this->get_logger(), "SetMode request incomplete. Sizes of arrays do not match!");
+		RCLCPP_WARN(this->get_logger(),
+					"SetMode request incomplete. Sizes of arrays do not match!");
 		return;
 	}
 	for (int i = 0; i < (int)request->drive_ids.size(); i++)
@@ -195,21 +218,27 @@ void Md80Node::service_setModeMd80(const std::shared_ptr<candle_ros2::srv::SetMo
 			mode = mab::Md80Mode_E::RAW_TORQUE;
 		else
 		{
-			RCLCPP_WARN(this->get_logger(), "MODE %s not recognized, setting IDLE for driveID = %d", request->mode[i].c_str(), request->drive_ids[i]);
+			RCLCPP_WARN(this->get_logger(),
+						"MODE %s not recognized, setting IDLE for driveID = %d",
+						request->mode[i].c_str(),
+						request->drive_ids[i]);
 			mode = mab::Md80Mode_E::IDLE;
 		}
 		auto candle = findCandleByMd80Id(request->drive_ids[i]);
 		if (candle != NULL)
-			response->drives_success.push_back(candle->controlMd80Mode(request->drive_ids[i], mode));
+			response->drives_success.push_back(
+				candle->controlMd80Mode(request->drive_ids[i], mode));
 		else
 		{
 			response->drives_success.push_back(false);
-			RCLCPP_WARN(this->get_logger(), "Drive with ID: %d is not added!", request->drive_ids[i]);
+			RCLCPP_WARN(
+				this->get_logger(), "Drive with ID: %d is not added!", request->drive_ids[i]);
 		}
 	}
 }
-void Md80Node::service_enableMd80(const std::shared_ptr<candle_ros2::srv::GenericMd80Msg::Request> request,
-								  std::shared_ptr<candle_ros2::srv::GenericMd80Msg::Response> response)
+void Md80Node::service_enableMd80(
+	const std::shared_ptr<candle_ros2::srv::GenericMd80Msg::Request> request,
+	std::shared_ptr<candle_ros2::srv::GenericMd80Msg::Response>		 response)
 {
 	std::vector<mab::Candle*> candlesToBegin;
 
@@ -219,8 +248,10 @@ void Md80Node::service_enableMd80(const std::shared_ptr<candle_ros2::srv::Generi
 		if (candle != NULL)
 		{
 			response->drives_success.push_back(candle->controlMd80Enable(id, true));
-			/* this is to ensure only one copy of CANdle object is present for the begin procedure */
-			if (std::find(candlesToBegin.begin(), candlesToBegin.end(), candle) == candlesToBegin.end())
+			/* this is to ensure only one copy of CANdle object is present for the begin procedure
+			 */
+			if (std::find(candlesToBegin.begin(), candlesToBegin.end(), candle) ==
+				candlesToBegin.end())
 				candlesToBegin.push_back(candle);
 		}
 		else
@@ -238,8 +269,9 @@ void Md80Node::service_enableMd80(const std::shared_ptr<candle_ros2::srv::Generi
 
 	pubTimer->reset();
 }
-void Md80Node::service_disableMd80(const std::shared_ptr<candle_ros2::srv::GenericMd80Msg::Request> request,
-								   std::shared_ptr<candle_ros2::srv::GenericMd80Msg::Response> response)
+void Md80Node::service_disableMd80(
+	const std::shared_ptr<candle_ros2::srv::GenericMd80Msg::Request> request,
+	std::shared_ptr<candle_ros2::srv::GenericMd80Msg::Response>		 response)
 {
 	std::vector<mab::Candle*> candlesToEnd;
 
@@ -293,10 +325,13 @@ void Md80Node::publishJointStates()
 }
 void Md80Node::motionCommandCallback(const std::shared_ptr<candle_ros2::msg::MotionCommand> msg)
 {
-	if (msg->drive_ids.size() != msg->target_position.size() || msg->drive_ids.size() != msg->target_velocity.size() ||
+	if (msg->drive_ids.size() != msg->target_position.size() ||
+		msg->drive_ids.size() != msg->target_velocity.size() ||
 		msg->drive_ids.size() != msg->target_torque.size())
 	{
-		RCLCPP_WARN(this->get_logger(), "Motion Command message incomplete. Sizes of arrays do not match! Ignoring message.");
+		RCLCPP_WARN(
+			this->get_logger(),
+			"Motion Command message incomplete. Sizes of arrays do not match! Ignoring message.");
 		return;
 	}
 	for (int i = 0; i < (int)msg->drive_ids.size(); i++)
@@ -312,7 +347,8 @@ void Md80Node::motionCommandCallback(const std::shared_ptr<candle_ros2::msg::Mot
 				md.setTargetTorque(msg->target_torque[i]);
 			}
 			else
-				RCLCPP_WARN(this->get_logger(), "Drive with ID: %d is not added!", msg->drive_ids[i]);
+				RCLCPP_WARN(
+					this->get_logger(), "Drive with ID: %d is not added!", msg->drive_ids[i]);
 		}
 		catch (const char* eMsg)
 		{
@@ -320,11 +356,14 @@ void Md80Node::motionCommandCallback(const std::shared_ptr<candle_ros2::msg::Mot
 		}
 	}
 }
-void Md80Node::impedanceCommandCallback(const std::shared_ptr<candle_ros2::msg::ImpedanceCommand> msg)
+void Md80Node::impedanceCommandCallback(
+	const std::shared_ptr<candle_ros2::msg::ImpedanceCommand> msg)
 {
 	if (msg->drive_ids.size() != msg->kp.size() || msg->drive_ids.size() != msg->kd.size())
 	{
-		RCLCPP_WARN(this->get_logger(), "Impedance Command message incomplete. Sizes of arrays do not match! Ignoring message.");
+		RCLCPP_WARN(this->get_logger(),
+					"Impedance Command message incomplete. Sizes of arrays do not match! Ignoring "
+					"message.");
 		return;
 	}
 	for (int i = 0; i < (int)msg->drive_ids.size(); i++)
@@ -339,7 +378,8 @@ void Md80Node::impedanceCommandCallback(const std::shared_ptr<candle_ros2::msg::
 				md.setMaxTorque(msg->max_output[i]);
 			}
 			else
-				RCLCPP_WARN(this->get_logger(), "Drive with ID: %d is not added!", msg->drive_ids[i]);
+				RCLCPP_WARN(
+					this->get_logger(), "Drive with ID: %d is not added!", msg->drive_ids[i]);
 		}
 		catch (const char* eMsg)
 		{
@@ -347,11 +387,14 @@ void Md80Node::impedanceCommandCallback(const std::shared_ptr<candle_ros2::msg::
 		}
 	}
 }
-void Md80Node::velocityCommandCallback(const std::shared_ptr<candle_ros2::msg::VelocityPidCommand> msg)
+void Md80Node::velocityCommandCallback(
+	const std::shared_ptr<candle_ros2::msg::VelocityPidCommand> msg)
 {
 	if (msg->drive_ids.size() != msg->velocity_pid.size())
 	{
-		RCLCPP_WARN(this->get_logger(), "Velocity Command message incomplete. Sizes of arrays do not match! Ignoring message.");
+		RCLCPP_WARN(
+			this->get_logger(),
+			"Velocity Command message incomplete. Sizes of arrays do not match! Ignoring message.");
 		return;
 	}
 	for (int i = 0; i < (int)msg->drive_ids.size(); i++)
@@ -362,11 +405,15 @@ void Md80Node::velocityCommandCallback(const std::shared_ptr<candle_ros2::msg::V
 			if (candle != NULL)
 			{
 				auto& md = candle->getMd80FromList(msg->drive_ids[i]);
-				md.setVelocityControllerParams(msg->velocity_pid[i].kp, msg->velocity_pid[i].ki, msg->velocity_pid[i].kd, msg->velocity_pid[i].i_windup);
+				md.setVelocityControllerParams(msg->velocity_pid[i].kp,
+											   msg->velocity_pid[i].ki,
+											   msg->velocity_pid[i].kd,
+											   msg->velocity_pid[i].i_windup);
 				md.setMaxTorque(msg->velocity_pid[i].max_output);
 			}
 			else
-				RCLCPP_WARN(this->get_logger(), "Drive with ID: %d is not added!", msg->drive_ids[i]);
+				RCLCPP_WARN(
+					this->get_logger(), "Drive with ID: %d is not added!", msg->drive_ids[i]);
 		}
 		catch (const char* eMsg)
 		{
@@ -374,11 +421,14 @@ void Md80Node::velocityCommandCallback(const std::shared_ptr<candle_ros2::msg::V
 		}
 	}
 }
-void Md80Node::positionCommandCallback(const std::shared_ptr<candle_ros2::msg::PositionPidCommand> msg)
+void Md80Node::positionCommandCallback(
+	const std::shared_ptr<candle_ros2::msg::PositionPidCommand> msg)
 {
 	if (msg->drive_ids.size() != msg->position_pid.size())
 	{
-		RCLCPP_WARN(this->get_logger(), "Position Command message incomplete. Sizes of arrays do not match! Ignoring message.");
+		RCLCPP_WARN(
+			this->get_logger(),
+			"Position Command message incomplete. Sizes of arrays do not match! Ignoring message.");
 		return;
 	}
 	for (int i = 0; i < (int)msg->drive_ids.size(); i++)
@@ -389,16 +439,23 @@ void Md80Node::positionCommandCallback(const std::shared_ptr<candle_ros2::msg::P
 			if (candle != NULL)
 			{
 				auto& md = candle->getMd80FromList(msg->drive_ids[i]);
-				md.setPositionControllerParams(msg->position_pid[i].kp, msg->position_pid[i].ki, msg->position_pid[i].kd, msg->position_pid[i].i_windup);
+				md.setPositionControllerParams(msg->position_pid[i].kp,
+											   msg->position_pid[i].ki,
+											   msg->position_pid[i].kd,
+											   msg->position_pid[i].i_windup);
 				md.setProfileVelocity(msg->position_pid[i].max_output);
 				if (i < (int)msg->velocity_pid.size())
 				{
-					md.setVelocityControllerParams(msg->velocity_pid[i].kp, msg->velocity_pid[i].ki, msg->velocity_pid[i].kd, msg->velocity_pid[i].i_windup);
+					md.setVelocityControllerParams(msg->velocity_pid[i].kp,
+												   msg->velocity_pid[i].ki,
+												   msg->velocity_pid[i].kd,
+												   msg->velocity_pid[i].i_windup);
 					md.setMaxTorque(msg->velocity_pid[i].max_output);
 				}
 			}
 			else
-				RCLCPP_WARN(this->get_logger(), "Drive with ID: %d is not added!", msg->drive_ids[i]);
+				RCLCPP_WARN(
+					this->get_logger(), "Drive with ID: %d is not added!", msg->drive_ids[i]);
 		}
 		catch (const char* eMsg)
 		{

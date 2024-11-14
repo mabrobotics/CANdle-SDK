@@ -9,12 +9,16 @@ using namespace testing;
 
 class MockSpiDevice : public mab::Bus
 {
-   public:
-	MockSpiDevice()
-	{
-		busType = mab::BusType_E::SPI;
-	}
-	MOCK_METHOD(bool, transmit, (char* buffer, int len, bool waitForResponse, int timeout, int responseLen, bool faultVerbose));
+  public:
+	MockSpiDevice() { busType = mab::BusType_E::SPI; }
+	MOCK_METHOD(bool,
+				transmit,
+				(char* buffer,
+				 int   len,
+				 bool  waitForResponse,
+				 int   timeout,
+				 int   responseLen,
+				 bool  faultVerbose));
 	MOCK_METHOD(bool, transfer, (char* buffer, int commandLen, int responseLen), (override));
 	MOCK_METHOD(unsigned long, getId, (), (override));
 	MOCK_METHOD(std::string, getDeviceName, (), (override));
@@ -27,10 +31,7 @@ class MockSpiDevice : public mab::Bus
 	}
 };
 
-TEST(CANdle_test, Test_Dummy)
-{
-	ASSERT_EQ(1, true);
-}
+TEST(CANdle_test, Test_Dummy) { ASSERT_EQ(1, true); }
 
 TEST(TestCandle, test_contructor)
 {
@@ -42,7 +43,8 @@ TEST(TestCandle, test_contructor)
 		.With(Args<0, 1>(ElementsAreArray(ex1)))
 		.WillOnce(Return(true));
 
-	static const char ex2[2] = {mab::BusFrameId_t::BUS_FRAME_CANDLE_CONFIG_BAUDRATE, mab::CAN_BAUD_1M};
+	static const char ex2[2] = {mab::BusFrameId_t::BUS_FRAME_CANDLE_CONFIG_BAUDRATE,
+								mab::CAN_BAUD_1M};
 
 	const char rx1[3] = {mab::BusFrameId_t::BUS_FRAME_CANDLE_CONFIG_BAUDRATE, 1, 0x14};
 
