@@ -19,34 +19,34 @@
 class UartDevice : public mab::Bus
 {
   public:
-	UartDevice(const std::string device = "/dev/ttyAMA0");
-	~UartDevice();
+    UartDevice(const std::string device = "/dev/ttyAMA0");
+    ~UartDevice();
 
-	bool transmit(char* buffer,
-				  int	len,
-				  bool	waitForResponse = false,
-				  int	timeout			= 100,
-				  int	responseLen		= 0,
-				  bool	faultVerbose	= true) override;
-	bool receive(int  responseLen,
-				 int  timeoutMs	   = 100,
-				 bool checkCrc	   = true,
-				 bool faultVerbose = true) override;
+    bool transmit(char* buffer,
+                  int   len,
+                  bool  waitForResponse = false,
+                  int   timeout         = 100,
+                  int   responseLen     = 0,
+                  bool  faultVerbose    = true) override;
+    bool receive(int  responseLen,
+                 int  timeoutMs    = 100,
+                 bool checkCrc     = true,
+                 bool faultVerbose = true) override;
 
-	unsigned long getId() override;
-	std::string	  getDeviceName() override;
-	void		  flushReceiveBuffer() override;
+    unsigned long getId() override;
+    std::string   getDeviceName() override;
+    void          flushReceiveBuffer() override;
 
   private:
-	Crc crc;
+    Crc crc;
 
-	/* UART settings */
-	std::string	   device;
-	const uint32_t uartSpeed = B1000000;
+    /* UART settings */
+    std::string    device;
+    const uint32_t uartSpeed = B1000000;
 
-	int			   fd;
-	struct termios tty;
-	std::mutex	   rxLock;
+    int            fd;
+    struct termios tty;
+    std::mutex     rxLock;
 
-	void displayDebugMsg(char* buffer, int bytesReceived);
+    void displayDebugMsg(char* buffer, int bytesReceived);
 };

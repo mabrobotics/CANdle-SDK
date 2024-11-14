@@ -6,103 +6,109 @@
 inline std::string getDefaultConfigDir()
 {
 #ifdef WIN32
-	char path[256];
-	GetModuleFileName(NULL, path, 256);
-	return std::filesystem::path(path).remove_filename().string() + std::string("config\\");
+    char path[256];
+    GetModuleFileName(NULL, path, 256);
+    return std::filesystem::path(path).remove_filename().string() + std::string("config\\");
 #else
-	return std::string("/etc/mdtool/config/");
+    return std::string("/etc/mdtool/config/");
 #endif
 }
 inline std::string getMotorsConfigPath()
 {
 #ifdef WIN32
-	return getDefaultConfigDir() + "motors\\";
+    return getDefaultConfigDir() + "motors\\";
 #else
-	return getDefaultConfigDir() + "motors/";
+    return getDefaultConfigDir() + "motors/";
 #endif
 }
-inline std::string getDefaultConfigPath() { return getMotorsConfigPath() + "default.cfg"; }
-inline std::string getMdtoolConfigPath() { return getDefaultConfigDir() + "mdtool.ini"; }
-inline bool		   fileExists(const std::string& filepath)
+inline std::string getDefaultConfigPath()
 {
-	std::ifstream fileStream(filepath);
-	return fileStream.good();
+    return getMotorsConfigPath() + "default.cfg";
+}
+inline std::string getMdtoolConfigPath()
+{
+    return getDefaultConfigDir() + "mdtool.ini";
+}
+inline bool fileExists(const std::string& filepath)
+{
+    std::ifstream fileStream(filepath);
+    return fileStream.good();
 }
 inline bool isConfigValid(const std::string& pathToConfig)
 {
-	std::string fileExtension = std::filesystem::path(pathToConfig).extension().string();
-	if (!(fileExtension == ".cfg"))
-		return false;
-	std::error_code	  ec;
-	u32				  filesize = (u32)std::filesystem::file_size(pathToConfig, ec);
-	const std::size_t oneMB	   = 1048576;  // 1 MB in bytes
-	if (filesize > oneMB || ec)
-		return false;
-	return true;
+    std::string fileExtension = std::filesystem::path(pathToConfig).extension().string();
+    if (!(fileExtension == ".cfg"))
+        return false;
+    std::error_code   ec;
+    u32               filesize = (u32)std::filesystem::file_size(pathToConfig, ec);
+    const std::size_t oneMB    = 1048576;  // 1 MB in bytes
+    if (filesize > oneMB || ec)
+        return false;
+    return true;
 }
 inline bool isConfigComplete(const std::string& pathToConfig)
 {
-	mINI::INIFile	   defaultFile(getDefaultConfigPath());
-	mINI::INIStructure defaultIni;
-	defaultFile.read(defaultIni);
+    mINI::INIFile      defaultFile(getDefaultConfigPath());
+    mINI::INIStructure defaultIni;
+    defaultFile.read(defaultIni);
 
-	mINI::INIFile	   userFile(pathToConfig);
-	mINI::INIStructure userIni;
-	userFile.read(userIni);
+    mINI::INIFile      userFile(pathToConfig);
+    mINI::INIStructure userIni;
+    userFile.read(userIni);
 
-	// Loop fills all lacking fields in the user's config file.
-	for (auto const& it : defaultIni)
-	{
-		auto const& section	   = it.first;
-		auto const& collection = it.second;
-		for (auto const& it2 : collection)
-		{
-			auto const& key = it2.first;
-			if (!userIni[section].has(key))
-				return false;
-		}
-	}
-	return true;
+    // Loop fills all lacking fields in the user's config file.
+    for (auto const& it : defaultIni)
+    {
+        auto const& section    = it.first;
+        auto const& collection = it.second;
+        for (auto const& it2 : collection)
+        {
+            auto const& key = it2.first;
+            if (!userIni[section].has(key))
+                return false;
+        }
+    }
+    return true;
 }
 inline std::string generateUpdatedConfigFile(const std::string& pathToConfig)
 {
-	mINI::INIFile	   defaultFile(getDefaultConfigPath());
-	mINI::INIStructure defaultIni;
-	defaultFile.read(defaultIni);
-	mINI::INIFile	   userFile(pathToConfig);
-	mINI::INIStructure userIni;
-	userFile.read(userIni);
+    mINI::INIFile      defaultFile(getDefaultConfigPath());
+    mINI::INIStructure defaultIni;
+    defaultFile.read(defaultIni);
+    mINI::INIFile      userFile(pathToConfig);
+    mINI::INIStructure userIni;
+    userFile.read(userIni);
 
-	std::string updatedUserConfigPath =
-		pathToConfig.substr(0, pathToConfig.find_last_of(".")) + "_updated.cfg";
-	mINI::INIFile	   updatedFile(updatedUserConfigPath);
-	mINI::INIStructure updatedIni;
-	updatedFile.read(updatedIni);
+    std::string updatedUserConfigPath =
+        pathToConfig.substr(0, pathToConfig.find_last_of(".")) + "_updated.cfg";
+    mINI::INIFile      updatedFile(updatedUserConfigPath);
+    mINI::INIStructure updatedIni;
+    updatedFile.read(updatedIni);
 
-	// Loop fills all lacking fields in the user's config file.
-	for (auto const& it : defaultIni)
-	{
-		auto const& section	   = it.first;
-		auto const& collection = it.second;
-		for (auto const& it2 : collection)
-		{
-			auto const& key	  = it2.first;
-			auto const& value = it2.second;
-			if (!userIni[section].has(key))
-				updatedIni[section][key] = value;
-			else
-				updatedIni[section][key] = userIni.get(section).get(key);
-		}
-	}
-	// Write an updated config file
-	updatedFile.write(updatedIni, true);
-	return updatedUserConfigPath;
+    // Loop fills all lacking fields in the user's config file.
+    for (auto const& it : defaultIni)
+    {
+        auto const& section    = it.first;
+        auto const& collection = it.second;
+        for (auto const& it2 : collection)
+        {
+            auto const& key   = it2.first;
+            auto const& value = it2.second;
+            if (!userIni[section].has(key))
+                updatedIni[section][key] = value;
+            else
+                updatedIni[section][key] = userIni.get(section).get(key);
+        }
+    }
+    // Write an updated config file
+    updatedFile.write(updatedIni, true);
+    return updatedUserConfigPath;
 }
 inline bool getConfirmation()
 {
-	char x;
-	std::cin >> x;
-	if (x == 'Y' || x == 'y')
-		return true;
-	return false;
+    char x;
+    std::cin >> x;
+    if (x == 'Y' || x == 'y')
+        return true;
+    return false;
 }
