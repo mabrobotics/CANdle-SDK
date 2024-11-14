@@ -32,7 +32,8 @@ int main()
 
 bool getExampleConfirmation()
 {
-	std::cout << "This example will spin the motor very fast if the output shaft is unloaded." << std::endl;
+	std::cout << "This example will spin the motor very fast if the output shaft is unloaded."
+			  << std::endl;
 	std::cout << "Are you sure you want to proceed? [Y/n]" << std::endl;
 	char x;
 	std::cin >> x;

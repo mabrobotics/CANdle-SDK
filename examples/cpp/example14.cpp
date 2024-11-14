@@ -28,7 +28,7 @@ int main()
 
 	candle.writeMd80Register(ids[0], mab::Md80Reg_E::quickStopDeceleration, 200.0f);
 
-	candle.controlMd80SetEncoderZero(ids[0]);							// Reset encoder at current position
+	candle.controlMd80SetEncoderZero(ids[0]);  // Reset encoder at current position
 	candle.controlMd80Mode(ids[0], mab::Md80Mode_E::POSITION_PROFILE);	// Set mode to position PID
 	candle.controlMd80Enable(ids[0], true);								// Enable the drive
 

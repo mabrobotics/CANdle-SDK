@@ -17,6 +17,7 @@ class UsbDevice : public mab::Bus
 			  const std::vector<u32>& idsToIgnore = {},
 			  const std::string&	  requestID	  = "");
 	~UsbDevice();
+
 	bool transmit(char* buffer,
 				  int	len,
 				  bool	waitForResponse = false,

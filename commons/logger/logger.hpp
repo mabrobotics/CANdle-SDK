@@ -28,10 +28,10 @@ struct logger
 {
 	enum class LogLevel_E : uint8_t
 	{
-		DEBUG = 0,
-		INFO = 10,
-		WARN = 20,
-		ERROR = 30,
+		DEBUG  = 0,
+		INFO   = 10,
+		WARN   = 20,
+		ERROR  = 30,
 		SILENT = 255
 	};
 	LogLevel_E	level = LogLevel_E::INFO;

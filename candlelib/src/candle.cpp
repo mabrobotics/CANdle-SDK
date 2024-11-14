@@ -216,7 +216,7 @@ namespace mab
 
 	void Candle::setVebose(bool enable)
 	{
-			log.level = enable ? logger::LogLevel_E::INFO : (logger::LogLevel_E)30;
+		log.level = enable ? logger::LogLevel_E::INFO : (logger::LogLevel_E)30;
 	}
 
 	unsigned long Candle::getDeviceId() { return bus->getId(); }
@@ -289,7 +289,7 @@ namespace mab
 					 firmwareVersion.s.minor > md80CompatibleVersion.s.minor)
 			{
 				log.warn("MD80 firmware (ID: %d) is a future version. Update your CANdle library.",
-						  canId);
+						 canId);
 			}
 			log.success("Added MD80 (ID: %d)", canId);
 			md80s.push_back(Md80(canId));

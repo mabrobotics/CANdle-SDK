@@ -26,10 +26,10 @@ int main()
 
 	// Uncomment the line below to change the *.cfg file defaults
 	// candle.md80s[0].setVelocityControllerParams(0.1f, 0.25f, 0.0, 1.0f);
-	// To reload default controller parameters, simply disable the drive (contorlMd80Enable(id, false)),
-	// stop the communications (candle.end()) or power cycle the drive (off-on).
+	// To reload default controller parameters, simply disable the drive (contorlMd80Enable(id,
+	// false)), stop the communications (candle.end()) or power cycle the drive (off-on).
 
-	float t = 0.0f;
+	float t	 = 0.0f;
 	float dt = 0.04f;
 
 	// Begin update loop (it starts in the background)
@@ -42,7 +42,8 @@ int main()
 			targetVelocity += 1.0f;
 		t += dt;
 		candle.md80s[0].setTargetVelocity(targetVelocity);
-		std::cout << "Drive ID = " << candle.md80s[0].getId() << " Velocity: " << candle.md80s[0].getVelocity() << std::endl;
+		std::cout << "Drive ID = " << candle.md80s[0].getId()
+				  << " Velocity: " << candle.md80s[0].getVelocity() << std::endl;
 		usleep(10000);
 	}
 
