@@ -30,6 +30,35 @@ namespace mab
             m_log.error("Unable to read modules data from PDS [ %d ]", static_cast<int8_t>(result));
     }
 
+    PdsModule::error_E Pds::createModule(moduleType_E type, socketIndex_E socket)
+    {
+        switch (type)
+        {
+            case moduleType_E::BRAKE_RESISTOR:
+                m_brakeResistors.push_back(
+                    std::make_unique<BrakeResistor>(socket, m_candle, m_canId));
+                return PdsModule::error_E::OK;
+
+            case moduleType_E::ISOLATED_CONVERTER_12V:
+                m_IsolatedConv12s.push_back(
+                    std::make_unique<IsolatedConv12>(socket, m_candle, m_canId));
+                return PdsModule::error_E::OK;
+
+            case moduleType_E::ISOLATED_CONVERTER_5V:
+                m_IsolatedConv5s.push_back(
+                    std::make_unique<IsolatedConv5>(socket, m_candle, m_canId));
+                return PdsModule::error_E::OK;
+
+            case moduleType_E::POWER_STAGE:
+                m_powerStages.push_back(std::make_unique<PowerStage>(socket, m_candle, m_canId));
+                return PdsModule::error_E::OK;
+
+            case moduleType_E::UNDEFINED:
+            default:
+                return PdsModule::error_E::UNKNOWN_ERROR;
+        }
+    }
+
     PdsModule::error_E Pds::readModules(void)
     {
         PdsMessage::error_E result = PdsMessage::error_E::OK;
@@ -63,70 +92,45 @@ namespace mab
         result = message.getProperty(properties_E::SOCKET_1_MODULE, &rawData);
         if (result != PdsMessage::error_E::OK)
             return PdsModule::error_E ::COMMUNICATION_ERROR;
-        m_moduleTypes[0] = decodeModuleType(rawData);
+        m_modulesSet.moduleTypeSocket1 = decodeModuleType(rawData);
+        createModule(m_modulesSet.moduleTypeSocket1, socketIndex_E::SOCKET_1);
 
         result = message.getProperty(properties_E::SOCKET_2_MODULE, &rawData);
         if (result != PdsMessage::error_E::OK)
             return PdsModule::error_E ::COMMUNICATION_ERROR;
-        m_moduleTypes[1] = decodeModuleType(rawData);
+        m_modulesSet.moduleTypeSocket2 = decodeModuleType(rawData);
+        createModule(m_modulesSet.moduleTypeSocket2, socketIndex_E::SOCKET_2);
 
         result = message.getProperty(properties_E::SOCKET_3_MODULE, &rawData);
         if (result != PdsMessage::error_E::OK)
             return PdsModule::error_E ::COMMUNICATION_ERROR;
-        m_moduleTypes[2] = decodeModuleType(rawData);
+        m_modulesSet.moduleTypeSocket3 = decodeModuleType(rawData);
+        createModule(m_modulesSet.moduleTypeSocket3, socketIndex_E::SOCKET_3);
 
         result = message.getProperty(properties_E::SOCKET_4_MODULE, &rawData);
         if (result != PdsMessage::error_E::OK)
             return PdsModule::error_E ::COMMUNICATION_ERROR;
-        m_moduleTypes[3] = decodeModuleType(rawData);
+        m_modulesSet.moduleTypeSocket4 = decodeModuleType(rawData);
+        createModule(m_modulesSet.moduleTypeSocket4, socketIndex_E::SOCKET_4);
 
         result = message.getProperty(properties_E::SOCKET_5_MODULE, &rawData);
         if (result != PdsMessage::error_E::OK)
             return PdsModule::error_E ::COMMUNICATION_ERROR;
-        m_moduleTypes[4] = decodeModuleType(rawData);
+        m_modulesSet.moduleTypeSocket5 = decodeModuleType(rawData);
+        createModule(m_modulesSet.moduleTypeSocket5, socketIndex_E::SOCKET_5);
 
         result = message.getProperty(properties_E::SOCKET_6_MODULE, &rawData);
         if (result != PdsMessage::error_E::OK)
             return PdsModule::error_E ::COMMUNICATION_ERROR;
-        m_moduleTypes[5] = decodeModuleType(rawData);
-
-        for (uint8_t i = 0; i < MAX_MODULES; i++)
-        {
-            socketIndex_E socketIndex = static_cast<socketIndex_E>(i + 1);
-            switch (m_moduleTypes[i])
-            {
-                case moduleType_E::BRAKE_RESISTOR:
-                    m_brakeResistors.push_back(
-                        std::make_unique<BrakeResistor>(socketIndex, m_candle, m_canId));
-                    break;
-
-                case moduleType_E::ISOLATED_CONVERTER_12V:
-                    m_IsolatedConv12s.push_back(
-                        std::make_unique<IsolatedConv12>(socketIndex, m_candle, m_canId));
-                    break;
-
-                case moduleType_E::ISOLATED_CONVERTER_5V:
-                    m_IsolatedConv5s.push_back(
-                        std::make_unique<IsolatedConv5>(socketIndex, m_candle, m_canId));
-                    break;
-
-                case moduleType_E::POWER_STAGE:
-                    m_powerStages.push_back(
-                        std::make_unique<PowerStage>(socketIndex, m_candle, m_canId));
-                    break;
-
-                case moduleType_E::UNDEFINED:
-                default:
-                    break;
-            }
-        }
+        m_modulesSet.moduleTypeSocket6 = decodeModuleType(rawData);
+        createModule(m_modulesSet.moduleTypeSocket6, socketIndex_E::SOCKET_6);
 
         return PdsModule::error_E ::OK;
     }
 
-    Pds::modulesSet_t Pds::getModules(void)
+    Pds::modulesSet_S Pds::getModules(void)
     {
-        return m_moduleTypes;
+        return m_modulesSet;
     }
 
     std::unique_ptr<BrakeResistor> Pds::attachBrakeResistor(const socketIndex_E socket)

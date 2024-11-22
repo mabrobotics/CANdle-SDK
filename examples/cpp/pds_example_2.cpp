@@ -1,9 +1,9 @@
 /*
     MAB Robotics
 
-    Power Distribution System Example 1
+    Power Distribution System Example 2
 
-    Reading the submodules connected to the PDS Device
+    Basic submodules operations
 
 */
 
@@ -13,6 +13,8 @@
 using namespace mab;
 
 constexpr u16 PDS_CAN_ID = 100;
+
+constexpr socketIndex_E POWER_STAGE_SI = socketIndex_E::SOCKET_1;
 
 int main()
 {

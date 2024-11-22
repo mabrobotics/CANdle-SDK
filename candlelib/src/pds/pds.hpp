@@ -25,7 +25,15 @@ namespace mab
         //   Maximum pds modules number
         static constexpr size_t MAX_MODULES = 6u;
 
-        using modulesSet_t = std::array<moduleType_E, MAX_MODULES>;
+        struct modulesSet_S
+        {
+            moduleType_E moduleTypeSocket1;
+            moduleType_E moduleTypeSocket2;
+            moduleType_E moduleTypeSocket3;
+            moduleType_E moduleTypeSocket4;
+            moduleType_E moduleTypeSocket5;
+            moduleType_E moduleTypeSocket6;
+        };
 
         /*
         Properties indexes used internally for creating protocol messages
@@ -63,7 +71,7 @@ namespace mab
          */
         Pds(uint16_t canId, Candle& candle);
 
-        modulesSet_t getModules(void);
+        modulesSet_S getModules(void);
 
         std::unique_ptr<BrakeResistor>  attachBrakeResistor(socketIndex_E socket);
         std::unique_ptr<PowerStage>     attachPowerStage(socketIndex_E socket);
@@ -85,12 +93,14 @@ namespace mab
         Logger   m_log;
         uint16_t m_canId = 0;
 
-        modulesSet_t m_moduleTypes = {moduleType_E::UNDEFINED};
+        modulesSet_S m_modulesSet = {moduleType_E::UNDEFINED};
 
         std::vector<std::unique_ptr<BrakeResistor>>  m_brakeResistors;
         std::vector<std::unique_ptr<PowerStage>>     m_powerStages;
         std::vector<std::unique_ptr<IsolatedConv12>> m_IsolatedConv12s;
         std::vector<std::unique_ptr<IsolatedConv5>>  m_IsolatedConv5s;
+
+        PdsModule::error_E createModule(moduleType_E type, socketIndex_E socket);
 
         PdsModule::error_E readModules(void);
 
