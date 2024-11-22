@@ -14,25 +14,30 @@ using namespace mab;
 
 constexpr u16 PDS_CAN_ID = 100;
 
-constexpr socketIndex_E POWER_STAGE_SI = socketIndex_E::SOCKET_1;
+constexpr socketIndex_E POWER_STAGE_SOCKET_INDEX        = socketIndex_E::SOCKET_1;
+constexpr socketIndex_E BRAKE_RESISTOR_SOCKET_INDEX     = socketIndex_E::SOCKET_2;
+constexpr socketIndex_E ISOLATED_CONVERTER_SOCKET_INDEX = socketIndex_E::SOCKET_3;
 
 int main()
 {
     Logger _log;
-    _log.m_tag = "PDS Example 1";
+    _log.m_tag = "PDS Example 2";
 
     Candle candle(mab::CAN_BAUD_1M, true);
     Pds    pds(PDS_CAN_ID, candle);
 
-    Pds::modulesSet_S pdsModules = pds.getModules();
+    auto powerStage        = pds.attachPowerStage(POWER_STAGE_SOCKET_INDEX);
+    auto brakeResistor     = pds.attachBrakeResistor(BRAKE_RESISTOR_SOCKET_INDEX);
+    auto isolatedConverter = pds.attachIsolatedConverter12(ISOLATED_CONVERTER_SOCKET_INDEX);
 
-    _log.info("PDS have the following numbers of connected modules:");
-    _log.info("\t1\t:: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket1));
-    _log.info("\t2\t:: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket2));
-    _log.info("\t3\t:: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket3));
-    _log.info("\t4\t:: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket4));
-    _log.info("\t5\t:: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket5));
-    _log.info("\t6\t:: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket6));
+    if (powerStage == nullptr)
+        exit(EXIT_FAILURE);
+
+    if (brakeResistor == nullptr)
+        exit(EXIT_FAILURE);
+
+    if (isolatedConverter == nullptr)
+        exit(EXIT_FAILURE);
 
     return EXIT_SUCCESS;
 }
