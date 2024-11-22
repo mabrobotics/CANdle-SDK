@@ -1,6 +1,8 @@
 #include "pds.hpp"
 
+#include "pds_protocol.hpp"
 #include <string>
+#include <bit>
 
 enum moduleVersion_E : uint8_t
 {
@@ -14,74 +16,117 @@ enum moduleVersion_E : uint8_t
 namespace mab
 {
 
-    Pds::Pds(uint16_t canId, std::shared_ptr<Candle> sp_Candle)
-        : msp_Candle(sp_Candle), m_canId(canId)
+    Pds::Pds(uint16_t canId, Candle& candle)
+        : PdsModule(socketIndex_E::UNASSIGNED, moduleType_E::CONTROL_BOARD, candle, canId),
+          m_candle(candle),
+          m_canId(canId)
     {
+        PdsModule::error_E result;
         m_log.m_tag   = "PDS";
         m_log.m_layer = Logger::ProgramLayer_E::LAYER_2;
-        if (readModules() != error_E::OK)
-            m_log.error("Unable to read modules data from PDS...");
+        // m_log.g_m_verbosity = Logger::Verbosity_E::VERBOSITY_3;
+        result = readModules();
+        if (result != PdsModule::error_E ::OK)
+            m_log.error("Unable to read modules data from PDS [ %d ]", static_cast<int8_t>(result));
     }
 
-    Pds::error_E Pds::readModules(void)
+    PdsModule::error_E Pds::readModules(void)
     {
-        const char txBuffer[]   = {FRAME_GET_INFO, 0x00, 0x00};
-        char       rxBuffer[64] = {0};
+        PdsMessage::error_E result = PdsMessage::error_E::OK;
+        PropertyGetMessage  message(moduleType_E::CONTROL_BOARD, socketIndex_E::UNASSIGNED);
 
-        moduleType_E modules[MAX_MODULES] = {moduleType_E::UNDEFINED};
+        u8     responseBuffer[64] = {0};
+        size_t responseLength     = 0;
+        u32    rawData            = 0;
 
-        // TODO: Handle rx buff length
-        if (msp_Candle->sendGenericFDCanFrame(
-                m_canId, sizeof(txBuffer), txBuffer, rxBuffer, nullptr, 100))
+        message.addProperty(properties_E::SOCKET_1_MODULE);
+        message.addProperty(properties_E::SOCKET_2_MODULE);
+        message.addProperty(properties_E::SOCKET_3_MODULE);
+        message.addProperty(properties_E::SOCKET_4_MODULE);
+        message.addProperty(properties_E::SOCKET_5_MODULE);
+        message.addProperty(properties_E::SOCKET_6_MODULE);
+
+        std::vector<u8> serializedMessage = message.serialize();
+
+        if (!m_candle.sendGenericFDCanFrame(m_canId,
+                                            serializedMessage.size(),
+                                            reinterpret_cast<const char*>(serializedMessage.data()),
+                                            reinterpret_cast<char*>(responseBuffer),
+                                            &responseLength,
+                                            500))
+            return PdsModule::error_E ::COMMUNICATION_ERROR;
+
+        result = message.parseResponse(responseBuffer, responseLength);
+        if (result != PdsMessage::error_E::OK)
+            return PdsModule::error_E ::COMMUNICATION_ERROR;
+
+        result = message.getProperty(properties_E::SOCKET_1_MODULE, &rawData);
+        if (result != PdsMessage::error_E::OK)
+            return PdsModule::error_E ::COMMUNICATION_ERROR;
+        m_moduleTypes[0] = decodeModuleType(rawData);
+
+        result = message.getProperty(properties_E::SOCKET_2_MODULE, &rawData);
+        if (result != PdsMessage::error_E::OK)
+            return PdsModule::error_E ::COMMUNICATION_ERROR;
+        m_moduleTypes[1] = decodeModuleType(rawData);
+
+        result = message.getProperty(properties_E::SOCKET_3_MODULE, &rawData);
+        if (result != PdsMessage::error_E::OK)
+            return PdsModule::error_E ::COMMUNICATION_ERROR;
+        m_moduleTypes[2] = decodeModuleType(rawData);
+
+        result = message.getProperty(properties_E::SOCKET_4_MODULE, &rawData);
+        if (result != PdsMessage::error_E::OK)
+            return PdsModule::error_E ::COMMUNICATION_ERROR;
+        m_moduleTypes[3] = decodeModuleType(rawData);
+
+        result = message.getProperty(properties_E::SOCKET_5_MODULE, &rawData);
+        if (result != PdsMessage::error_E::OK)
+            return PdsModule::error_E ::COMMUNICATION_ERROR;
+        m_moduleTypes[4] = decodeModuleType(rawData);
+
+        result = message.getProperty(properties_E::SOCKET_6_MODULE, &rawData);
+        if (result != PdsMessage::error_E::OK)
+            return PdsModule::error_E ::COMMUNICATION_ERROR;
+        m_moduleTypes[5] = decodeModuleType(rawData);
+
+        for (uint8_t i = 0; i < MAX_MODULES; i++)
         {
-            memcpy(&modules, rxBuffer, sizeof(modules));
-
-            for (uint8_t i = 0; i < MAX_MODULES; i++)
+            socketIndex_E socketIndex = static_cast<socketIndex_E>(i + 1);
+            switch (m_moduleTypes[i])
             {
-                socketIndex_E socketIndex = static_cast<socketIndex_E>(i + 1);
-                switch (modules[i])
-                {
-                    case moduleType_E::BRAKE_RESISTOR:
-                        m_brakeResistors.push_back(
-                            std::make_unique<BrakeResistor>(socketIndex, msp_Candle, m_canId));
-                        break;
+                case moduleType_E::BRAKE_RESISTOR:
+                    m_brakeResistors.push_back(
+                        std::make_unique<BrakeResistor>(socketIndex, m_candle, m_canId));
+                    break;
 
-                    case moduleType_E::ISOLATED_CONVERTER_12V:
-                        m_IsolatedConv12s.push_back(
-                            std::make_unique<IsolatedConv12>(socketIndex, msp_Candle, m_canId));
-                        break;
+                case moduleType_E::ISOLATED_CONVERTER_12V:
+                    m_IsolatedConv12s.push_back(
+                        std::make_unique<IsolatedConv12>(socketIndex, m_candle, m_canId));
+                    break;
 
-                    case moduleType_E::ISOLATED_CONVERTER_5V:
-                        m_IsolatedConv5s.push_back(
-                            std::make_unique<IsolatedConv5>(socketIndex, msp_Candle, m_canId));
-                        break;
+                case moduleType_E::ISOLATED_CONVERTER_5V:
+                    m_IsolatedConv5s.push_back(
+                        std::make_unique<IsolatedConv5>(socketIndex, m_candle, m_canId));
+                    break;
 
-                    case moduleType_E::POWER_STAGE:
-                        m_powerStages.push_back(
-                            std::make_unique<PowerStage>(socketIndex, msp_Candle, m_canId));
-                        break;
+                case moduleType_E::POWER_STAGE:
+                    m_powerStages.push_back(
+                        std::make_unique<PowerStage>(socketIndex, m_candle, m_canId));
+                    break;
 
-                    case moduleType_E::UNDEFINED:
-                    default:
-                        break;
-                }
+                case moduleType_E::UNDEFINED:
+                default:
+                    break;
             }
         }
-        else
-        {
-            m_log.error("PDS not responding");
-            return error_E::COMMUNICATION_ERROR;
-        }
 
-        return error_E::OK;
+        return PdsModule::error_E ::OK;
     }
 
-    void Pds::getModules(modules_S& modules)
+    Pds::modulesSet_t Pds::getModules(void)
     {
-        modules.brakeResistor       = m_brakeResistors.size();
-        modules.isolatedConv12V     = m_IsolatedConv12s.size();
-        modules.isolatedConverter5V = m_IsolatedConv5s.size();
-        modules.powerStage          = m_powerStages.size();
+        return m_moduleTypes;
     }
 
     std::unique_ptr<BrakeResistor> Pds::attachBrakeResistor(const socketIndex_E socket)
@@ -161,6 +206,62 @@ namespace mab
 
         m_log.error("No Isolated Converter 5V modules connected to PDS device!");
         return nullptr;
+    }
+
+    PdsModule::error_E Pds::getBusVoltage(u32& busVoltage)
+    {
+        return readModuleProperty(properties_E::BUS_VOLTAGE, busVoltage);
+    }
+
+    PdsModule::error_E Pds::getTemperature(f32& temperature)
+    {
+        return readModuleProperty(properties_E::TEMPERATURE, temperature);
+    }
+
+    moduleType_E Pds::decodeModuleType(uint8_t moduleTypeCode)
+    {
+        switch (moduleTypeCode)
+        {
+            case static_cast<u8>(moduleType_E::CONTROL_BOARD):
+                return moduleType_E::CONTROL_BOARD;
+
+            case static_cast<u8>(moduleType_E::BRAKE_RESISTOR):
+                return moduleType_E::BRAKE_RESISTOR;
+
+            case static_cast<u8>(moduleType_E::ISOLATED_CONVERTER_12V):
+                return moduleType_E::ISOLATED_CONVERTER_12V;
+
+            case static_cast<u8>(moduleType_E::ISOLATED_CONVERTER_5V):
+                return moduleType_E::ISOLATED_CONVERTER_5V;
+
+            case static_cast<u8>(moduleType_E::POWER_STAGE):
+                return moduleType_E::POWER_STAGE;
+
+            default:
+                return moduleType_E::UNDEFINED;
+        }
+    }
+
+    const char* Pds::moduleTypeToString(moduleType_E type)
+    {
+        switch (type)
+        {
+            case moduleType_E::UNDEFINED:
+                return "UNDEFINED";
+            case moduleType_E::CONTROL_BOARD:
+                return "CONTROL_BOARD";
+            case moduleType_E::BRAKE_RESISTOR:
+                return "BRAKE_RESISTOR";
+            case moduleType_E::ISOLATED_CONVERTER_12V:
+                return "ISOLATED_CONVERTER_12V";
+            case moduleType_E::ISOLATED_CONVERTER_5V:
+                return "ISOLATED_CONVERTER_5V";
+            case moduleType_E::POWER_STAGE:
+                return "POWER_STAGE";
+            /* NEW MODULE TYPES HANDLED HERE */
+            default:
+                return "UNKNOWN_MODULE_TYPE";
+        }
     }
 
 }  // namespace mab

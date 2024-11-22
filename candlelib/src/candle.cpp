@@ -348,6 +348,7 @@ namespace mab
     {
         return ping(m_canBaudrate);
     }
+
     bool Candle::sendGenericFDCanFrame(uint16_t    canId,
                                        int         msgLen,
                                        const char* p_txBuffer,
@@ -378,7 +379,10 @@ namespace mab
 
                 return true;
             }
+            log.error("BAD RESPONSE");
+            return false;
         }
+        log.error("TIMEOUT");
         return false;
     }
 
@@ -481,7 +485,7 @@ namespace mab
     bool Candle::configMd80TorqueBandwidth(uint16_t canId, uint16_t torqueBandwidth)
     {
         if (inUpdateMode() || !md80Register->write(canId,
-                                                   Md80Reg_E::motorTorgueBandwidth,
+                                                   Md80Reg_E::motorTorqueBandwidth,
                                                    torqueBandwidth,
                                                    Md80Reg_E::runCalibratePiGains,
                                                    true))
@@ -720,7 +724,7 @@ namespace mab
                                 regR.RO.bridgeType,
                                 Md80Reg_E::canWatchdog,
                                 regR.RW.canWatchdog,
-                                Md80Reg_E::motorTorgueBandwidth,
+                                Md80Reg_E::motorTorqueBandwidth,
                                 regR.RW.torqueBandwidth,
                                 Md80Reg_E::canBaudrate,
                                 regR.RW.canBaudrate,

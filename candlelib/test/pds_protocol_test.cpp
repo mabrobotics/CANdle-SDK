@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include "pds_protocol.hpp"
 #include "pds_module.hpp"
+#include "power_stage.hpp"
+#include "brake_resistor.hpp"
 #include <string>
 #include <cstring>
 

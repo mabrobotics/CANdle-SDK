@@ -41,6 +41,9 @@ target_sources(candle PRIVATE
   src/pds/pds.cpp
   src/pds/pds_module.cpp
   src/pds/pds_protocol.cpp
+  src/pds/power_stage.cpp
+  src/pds/brake_resistor.cpp
+  src/pds/isolated_converter.cpp
   src/register.cpp
   src/usbDevice.cpp
 )

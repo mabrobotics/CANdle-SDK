@@ -10,10 +10,11 @@ namespace mab
     {
         // Undefined means that module is not connected or PDS could not determine its type.
         UNDEFINED              = 0x00,
-        BRAKE_RESISTOR         = 0x01,
-        ISOLATED_CONVERTER_12V = 0x02,
-        ISOLATED_CONVERTER_5V  = 0x03,
-        POWER_STAGE            = 0x04,
+        CONTROL_BOARD          = 0x01,
+        BRAKE_RESISTOR         = 0x02,
+        ISOLATED_CONVERTER_12V = 0x03,
+        ISOLATED_CONVERTER_5V  = 0x04,
+        POWER_STAGE            = 0x05,
         /* NEW MODULE TYPES HERE */
     };
 

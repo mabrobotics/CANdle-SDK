@@ -6,6 +6,10 @@
 #include "logger.hpp"
 
 #include "pds_module.hpp"
+#include "power_stage.hpp"
+#include "brake_resistor.hpp"
+#include "isolated_converter.hpp"
+
 #include "pds_types.hpp"
 
 namespace mab
@@ -15,26 +19,36 @@ namespace mab
      * @brief Power distribution system class
      *
      */
-    class Pds
+    class Pds : public PdsModule
     {
       public:
-        enum class error_E : int8_t
-        {
-            COMMUNICATION_ERROR = -2,
-            UNKNOWN_ERROR       = -1,
-            OK                  = 0,
-        };
+        //   Maximum pds modules number
+        static constexpr size_t MAX_MODULES = 6u;
 
-        /**
-         * @brief This struct holds the amount of each connected modules type
-         */
-        struct modules_S
+        using modulesSet_t = std::array<moduleType_E, MAX_MODULES>;
+
+        /*
+        Properties indexes used internally for creating protocol messages
+        for this particular module type. Note that the properties may differ
+        from type to type so they all provide own enumerator definition even if they share
+        exact same set of properties.
+        */
+        enum class properties_E : uint8_t
         {
-            uint8_t powerStage;
-            uint8_t brakeResistor;
-            uint8_t isolatedConv12V;
-            uint8_t isolatedConverter5V;
-            /* */
+
+            STATUS            = 0x00,
+            STATUS_CLEAR      = 0x01,
+            ENABLED           = 0x02,  // [ BOOL ] Indicates if the module is enabled or not
+            TEMPERATURE       = 0x03,  // [ uint32_t ]
+            TEMPERATURE_LIMIT = 0x04,  // [ uint32_t ]
+            BUS_VOLTAGE       = 0x05,
+            SOCKET_1_MODULE   = 0x06,  // SOCKET 1 Connected module type
+            SOCKET_2_MODULE   = 0x07,  // SOCKET 2 Connected module type
+            SOCKET_3_MODULE   = 0x08,  // SOCKET 3 Connected module type
+            SOCKET_4_MODULE   = 0x09,  // SOCKET 4 Connected module type
+            SOCKET_5_MODULE   = 0x0A,  // SOCKET 5 Connected module type
+            SOCKET_6_MODULE   = 0x0B,  // SOCKET 6 Connected module type
+
         };
 
         Pds() = delete;
@@ -47,43 +61,40 @@ namespace mab
          * @note Note that default constructor is deleted so PDS Class is forced to take Candle
          * dependency during creation
          */
-        Pds(uint16_t canId, std::shared_ptr<Candle> sp_Candle);
+        Pds(uint16_t canId, Candle& candle);
 
-        /**
-         * @brief Get the Modules structure
-         *
-         * @param modules reference to modules structure
-         */
-        void getModules(modules_S& modules);
+        modulesSet_t getModules(void);
 
         std::unique_ptr<BrakeResistor>  attachBrakeResistor(socketIndex_E socket);
         std::unique_ptr<PowerStage>     attachPowerStage(socketIndex_E socket);
         std::unique_ptr<IsolatedConv12> attachIsolatedConverter12(socketIndex_E socket);
         std::unique_ptr<IsolatedConv5>  attachIsolatedConverter5(socketIndex_E socket);
 
+        PdsModule::error_E getBusVoltage(u32& busVoltage);
+        PdsModule::error_E getTemperature(f32& temperature);
+
+        static const char* moduleTypeToString(moduleType_E type);
+
       private:
-        //   Maximum pds modules number
-        static constexpr size_t MAX_MODULES = 6u;
         /**
-         * @brief Member pointer to Candle object representing Candle device the PDS is
-         * connected to over CANBus is connected over the CANBus
-         *
+         * @brief Member reference to Candle object representing Candle device the PDS is
+         * connected to over CANBus
          */
-        const std::shared_ptr<Candle> msp_Candle;
+        Candle& m_candle;
 
         Logger   m_log;
         uint16_t m_canId = 0;
+
+        modulesSet_t m_moduleTypes = {moduleType_E::UNDEFINED};
 
         std::vector<std::unique_ptr<BrakeResistor>>  m_brakeResistors;
         std::vector<std::unique_ptr<PowerStage>>     m_powerStages;
         std::vector<std::unique_ptr<IsolatedConv12>> m_IsolatedConv12s;
         std::vector<std::unique_ptr<IsolatedConv5>>  m_IsolatedConv5s;
 
-        /**
-         * @brief Read information about connected modules from physical PDS device
-         * @return error_E
-         */
-        error_E readModules(void);
+        PdsModule::error_E readModules(void);
+
+        static moduleType_E decodeModuleType(uint8_t moduleTypeCode);
     };
 
 }  // namespace mab

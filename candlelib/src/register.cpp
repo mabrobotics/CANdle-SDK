@@ -154,7 +154,7 @@ namespace mab
             case Md80Reg_E::runCanReinit:
             case Md80Reg_E::brakeMode:
                 return type::U8;
-            case Md80Reg_E::motorTorgueBandwidth:
+            case Md80Reg_E::motorTorqueBandwidth:
             case Md80Reg_E::canWatchdog:
             case Md80Reg_E::quickStatus:
             case Md80Reg_E::motorKV:

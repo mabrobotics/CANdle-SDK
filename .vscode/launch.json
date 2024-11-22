@@ -70,7 +70,7 @@
             "name": "PDS Example",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/examples/pds_example3",
+            "program": "${workspaceFolder}/build/examples/pds_basic_example",
             "stopAtEntry": true,
             "cwd": "${fileDirname}",
             "environment": [],
