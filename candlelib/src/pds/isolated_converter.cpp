@@ -20,10 +20,100 @@ namespace mab
         return writeModuleProperty(properties_E::ENABLED, false);
     }
 
+    PdsModule::error_E IsolatedConv12::getStatus(status_S& status)
+    {
+        error_E result     = error_E::UNKNOWN_ERROR;
+        u32     statusWord = 0;
+
+        result = readModuleProperty(properties_E::STATUS, statusWord);
+
+        status.ENABLED   = (statusWord & static_cast<u32>(status_E::ENABLED));
+        status.OCD_EVENT = (statusWord & static_cast<u32>(status_E::OVER_CURRENT_EVENT));
+        status.OVT_EVENT = (statusWord & static_cast<u32>(status_E::OVER_TEMPERATURE_EVENT));
+
+        return result;
+    }
+
+    PdsModule::error_E IsolatedConv12::clearStatus(status_S status)
+    {
+        u32 statusClearWord = 0;
+
+        if (status.ENABLED)
+            statusClearWord |= static_cast<u32>(status_E::ENABLED);
+
+        if (status.OCD_EVENT)
+            statusClearWord |= static_cast<u32>(status_E::OVER_CURRENT_EVENT);
+
+        if (status.OVT_EVENT)
+            statusClearWord |= static_cast<u32>(status_E::OVER_TEMPERATURE_EVENT);
+
+        return writeModuleProperty(properties_E::STATUS_CLEAR, statusClearWord);
+    }
+
+    PdsModule::error_E IsolatedConv12::getEnabled(bool& enabled)
+    {
+        return readModuleProperty(properties_E::ENABLED, enabled);
+    }
+
+    PdsModule::error_E IsolatedConv12::getOutputVoltage(u32& outputVoltage)
+    {
+        return readModuleProperty(properties_E::BUS_VOLTAGE, outputVoltage);
+    }
+
+    PdsModule::error_E IsolatedConv12::getLoadCurrent(s32& loadCurrent)
+    {
+        return readModuleProperty(properties_E::LOAD_CURRENT, loadCurrent);
+    }
+
+    PdsModule::error_E IsolatedConv12::getPower(s32& power)
+    {
+        return readModuleProperty(properties_E::LOAD_POWER, power);
+    }
+
+    PdsModule::error_E IsolatedConv12::getEnergy(s32& energy)
+    {
+        return readModuleProperty(properties_E::TOTAL_ENERGY, energy);
+    }
+
+    PdsModule::error_E IsolatedConv12::getTemperature(f32& temperature)
+    {
+        return readModuleProperty(properties_E::TEMPERATURE, temperature);
+    }
+
+    PdsModule::error_E IsolatedConv12::setOcdLevel(u32 ocdLevel)
+    {
+        return writeModuleProperty(properties_E::OCD_LEVEL, ocdLevel);
+    }
+
+    PdsModule::error_E IsolatedConv12::getOcdLevel(u32& ocdLevel)
+    {
+        return readModuleProperty(properties_E::OCD_LEVEL, ocdLevel);
+    }
+
+    PdsModule::error_E IsolatedConv12::setOcdDelay(u32 ocdDelay)
+    {
+        return writeModuleProperty(properties_E::OCD_DELAY, ocdDelay);
+    }
+
+    PdsModule::error_E IsolatedConv12::getOcdDelay(u32& ocdDelay)
+    {
+        return readModuleProperty(properties_E::OCD_DELAY, ocdDelay);
+    }
+
+    PdsModule::error_E IsolatedConv12::setTemperatureLimit(f32 temperatureLimit)
+    {
+        return writeModuleProperty(properties_E::TEMPERATURE_LIMIT, temperatureLimit);
+    }
+
+    PdsModule::error_E IsolatedConv12::getTemperatureLimit(f32& temperatureLimit)
+    {
+        return readModuleProperty(properties_E::TEMPERATURE_LIMIT, temperatureLimit);
+    }
     IsolatedConv5::IsolatedConv5(socketIndex_E socket, Candle& candle, u16 canId)
         : PdsModule(socket, moduleType_E::ISOLATED_CONVERTER_5V, candle, canId)
     {
         m_log.m_tag = "IC5 :: " + std::to_string(static_cast<int>(socket) + 1);
         m_log.debug("Object created");
     }
+
 }  // namespace mab

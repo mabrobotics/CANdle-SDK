@@ -39,6 +39,13 @@ namespace mab
 
         };
 
+        struct status_S
+        {
+            bool ENABLED;
+            bool OCD_EVENT;  // Over-current detection event
+            bool OVT_EVENT;  // Over-temperature event
+        };
+
         PowerStage() = delete;
         PowerStage(socketIndex_E socket, Candle& candle, u16 canId);
         ~PowerStage();
@@ -139,7 +146,8 @@ namespace mab
         /**
          * @brief Set the Over-Current Detection Delay of the Power stage module ( in uS ).
          * If the measured current exceeds the limit ( set with setOcdLevel method )
-         *
+         * it will switch to disabled state after this time. Note that the PDS Control loop
+         * frequency is 5KHz so the effective value will be rounded to the multiple of 200uS.
          * @param ocdDelay
          * @return error_E
          */

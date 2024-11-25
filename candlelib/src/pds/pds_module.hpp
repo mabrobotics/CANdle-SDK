@@ -46,13 +46,6 @@ namespace mab
             OVER_CURRENT_EVENT     = (1 << 0x02),
         };
 
-        struct status_S
-        {
-            bool ENABLED;
-            bool OCD_EVENT;  // Over-current detection event
-            bool OVT_EVENT;  // Over-temperature event
-        };
-
         // static std::string moduleType2String(moduleType_E type);
 
       protected:

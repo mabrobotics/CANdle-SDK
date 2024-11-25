@@ -32,6 +32,13 @@ namespace mab
 
         };
 
+        struct status_S
+        {
+            bool ENABLED;
+            bool OCD_EVENT;  // Over-current detection event
+            bool OVT_EVENT;  // Over-temperature event
+        };
+
         BrakeResistor() = delete;
         BrakeResistor(socketIndex_E socket, Candle& candle, u16 canId);
         ~BrakeResistor() = default;

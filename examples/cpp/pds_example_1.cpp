@@ -24,6 +24,23 @@ int main()
 
     Pds::modulesSet_S pdsModules = pds.getModules();
 
+    Pds::status_S status      = {};
+    u32           busVoltage  = 0;
+    float         temperature = 0.0f;
+
+    pds.setCanId(225);  // Change FDCAN ID
+
+    pds.getStatus(status);
+    pds.getBusVoltage(busVoltage);
+    pds.getTemperature(temperature);
+
+    _log.info("Enabled :: [ %s ]", status.ENABLED ? "ON" : "OFF");
+    _log.info("STO1 Event :: [ %s ]", status.STO1_EVENT ? "ON" : "OFF");
+    _log.info("STO2 Event :: [ %s ]", status.STO2_EVENT ? "ON" : "OFF");
+    _log.info("CAN Timeout Event :: [ %s ]", status.FDCAN_TIMEOUT_EVENT ? "ON" : "OFF");
+    _log.info("Over temperature event :: [ %s ]", status.OVT_EVENT ? "YES" : "NO");
+    _log.info("Voltage :: [ %.2f ]", static_cast<float>(busVoltage / 1000.0f));
+
     _log.info("PDS have the following numbers of connected modules:");
     _log.info("\t1\t:: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket1));
     _log.info("\t2\t:: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket2));

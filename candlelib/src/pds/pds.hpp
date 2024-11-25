@@ -56,7 +56,18 @@ namespace mab
             SOCKET_4_MODULE   = 0x09,  // SOCKET 4 Connected module type
             SOCKET_5_MODULE   = 0x0A,  // SOCKET 5 Connected module type
             SOCKET_6_MODULE   = 0x0B,  // SOCKET 6 Connected module type
+            CAN_ID,
+            CAN_BAUDRATE,
 
+        };
+
+        struct status_S
+        {
+            bool ENABLED;
+            bool OVT_EVENT;  // Over-temperature event
+            bool STO1_EVENT;
+            bool STO2_EVENT;
+            bool FDCAN_TIMEOUT_EVENT;
         };
 
         Pds() = delete;
@@ -78,8 +89,14 @@ namespace mab
         std::unique_ptr<IsolatedConv12> attachIsolatedConverter12(socketIndex_E socket);
         std::unique_ptr<IsolatedConv5>  attachIsolatedConverter5(socketIndex_E socket);
 
-        PdsModule::error_E getBusVoltage(u32& busVoltage);
-        PdsModule::error_E getTemperature(f32& temperature);
+        error_E getStatus(status_S& status);
+        error_E clearStatus(status_S status);
+
+        error_E setCanId(u16 canId);
+        error_E setCanBaudrate(CANdleBaudrate_E canBaudrate);
+
+        error_E getBusVoltage(u32& busVoltage);
+        error_E getTemperature(f32& temperature);
 
         static const char* moduleTypeToString(moduleType_E type);
 
@@ -100,9 +117,9 @@ namespace mab
         std::vector<std::unique_ptr<IsolatedConv12>> m_IsolatedConv12s;
         std::vector<std::unique_ptr<IsolatedConv5>>  m_IsolatedConv5s;
 
-        PdsModule::error_E createModule(moduleType_E type, socketIndex_E socket);
+        error_E createModule(moduleType_E type, socketIndex_E socket);
 
-        PdsModule::error_E readModules(void);
+        error_E readModules(void);
 
         static moduleType_E decodeModuleType(uint8_t moduleTypeCode);
     };
