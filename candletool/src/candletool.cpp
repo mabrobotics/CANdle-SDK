@@ -1006,7 +1006,8 @@ bool CandleTool::hasError(u16 canId)
         candle->getMd80FromList(canId).getReadReg().RO.calibrationErrors & 0x0000ffff ||
         candle->getMd80FromList(canId).getReadReg().RO.hardwareErrors & 0x0000ffff ||
         candle->getMd80FromList(canId).getReadReg().RO.bridgeErrors & 0x0000ffff ||
-        candle->getMd80FromList(canId).getReadReg().RO.communicationErrors & 0x0000ffff)
+        candle->getMd80FromList(canId).getReadReg().RO.communicationErrors & 0x0000ffff ||
+        candle->getMd80FromList(canId).getReadReg().RO.miscStatus & 0x0000ffff)
     {
         log.error("Cannot execute command. MD has error:");
         ui::printAllErrors(candle->md80s[0]);

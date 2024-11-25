@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <iostream>
 #include <streambuf>
+#include "manufacturer_data.hpp"
 
 namespace ui
 {
@@ -139,7 +140,7 @@ namespace ui
                    "20" + std::to_string(date / 10000);
         };
 
-        auto getHardwareVersion = [](uint8_t version)
+        auto getLegacyHardwareVersion = [](uint8_t version)
         {
             switch (version)
             {
@@ -156,6 +157,39 @@ namespace ui
                 default:
                     return "UNKNOWN";
             }
+        };
+
+        auto getHardwareType = [](mab::hardwareType_S hwType_)
+        {
+            std::string deviceType = "UNKNOWN";
+            switch (hwType_.deviceType)
+            {
+                case mab::deviceType_E::CANDLE:
+                    deviceType = "CANDLE";
+                    break;
+                case mab::deviceType_E::CANDLE_HAT:
+                    deviceType = "CANDLE_HAT";
+                    break;
+                case mab::deviceType_E::MD20:
+                    deviceType = "MD20";
+                    break;
+                case mab::deviceType_E::MD80:
+                    deviceType = "MD80";
+                    break;
+                case mab::deviceType_E::MD80HV:
+                    deviceType = "MD80HV";
+                    break;
+                case mab::deviceType_E::PDS:
+                    deviceType = "PDS";
+                    break;
+                default:
+                    break;
+            }
+            deviceType += " v";
+            deviceType += std::to_string(hwType_.deviceRevision / 10);
+            deviceType += ".";
+            deviceType += std::to_string(hwType_.deviceRevision % 10);
+            return deviceType;
         };
 
         auto getListElement = [](std::vector<std::string> vec, uint32_t idx)
@@ -178,7 +212,9 @@ namespace ui
         mab::version_ut firmwareVersion = {{0, 0, 0, 0}};
         firmwareVersion.i               = drive.getReadReg().RO.firmwareVersion;
         vout << "- firmware version: v" << mab::getVersionString(firmwareVersion) << std::endl;
-        vout << "- hardware version: " << getHardwareVersion(drive.getReadReg().RO.hardwareVersion)
+        vout << "- hardware version(legacy): "
+             << getLegacyHardwareVersion(drive.getReadReg().RO.legacyHardwareVersion) << std::endl;
+        vout << "- hardware type: " << getHardwareType(drive.getReadReg().RO.hardwareType)
              << std::endl;
         vout << "- build date: " << getStringBuildDate(drive.getReadReg().RO.buildDate)
              << std::endl;
@@ -338,6 +374,9 @@ namespace ui
         vout << "- motion status: 	0x" << std::hex
              << (unsigned short)drive.getReadReg().RO.motionErrors << std::dec;
         printErrorDetails(drive.getReadReg().RO.motionErrors, motionErrorList);
+        vout << "- misc status: 	0x" << std::hex
+             << (unsigned short)drive.getReadReg().RO.miscStatus << std::dec;
+        printErrorDetails(drive.getReadReg().RO.miscStatus, miscErrorList);
 
         if (drive.getReadReg().RW.homingMode != 0)
         {

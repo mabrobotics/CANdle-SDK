@@ -722,8 +722,10 @@ namespace mab
                                 regR.RO.mosfetTemperature,
                                 Md80Reg_E::motorKV,
                                 regR.RW.motorKV,
-                                Md80Reg_E::hardwareVersion,
-                                regR.RO.hardwareVersion))
+                                Md80Reg_E::legacyHardwareVersion,
+                                regR.RO.legacyHardwareVersion,
+                                Md80Reg_E::hardwareType,
+                                regR.RO.hardwareType))
         {
             log.error("Extended diagnostic failed (ID: %d)", canId);
             return false;
@@ -790,6 +792,27 @@ namespace mab
                                 regR.RO.communicationErrors,
                                 Md80Reg_E::motionErrors,
                                 regR.RO.motionErrors))
+        {
+            log.error("Extended diagnostic failed (ID: %d)", canId);
+            return false;
+        }
+        if (!md80Register->read(canId,
+                                Md80Reg_E::mainEncoderErrors,
+                                regR.RO.mainEncoderErrors,
+                                Md80Reg_E::outputEncoderErrors,
+                                regR.RO.outputEncoderErrors,
+                                Md80Reg_E::calibrationErrors,
+                                regR.RO.calibrationErrors,
+                                Md80Reg_E::bridgeErrors,
+                                regR.RO.bridgeErrors,
+                                Md80Reg_E::hardwareErrors,
+                                regR.RO.hardwareErrors,
+                                Md80Reg_E::communicationErrors,
+                                regR.RO.communicationErrors,
+                                Md80Reg_E::motionErrors,
+                                regR.RO.motionErrors,
+                                Md80Reg_E::miscStatus,
+                                regR.RO.miscStatus))
         {
             log.error("Extended diagnostic failed (ID: %d)", canId);
             return false;
