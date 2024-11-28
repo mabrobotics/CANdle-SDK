@@ -39,36 +39,36 @@ static const uint32_t crc_table[0x100] = {
 
 uint32_t Crc::calcCrc(char* pData, uint32_t dataLength)
 {
-	uint32_t Checksum = 0xFFFFFFFF;
-	for (unsigned int i = 0; i < dataLength; i++)
-	{
-		uint8_t top = (uint8_t)(Checksum >> 24);
-		top ^= pData[i];
-		Checksum = (Checksum << 8) ^ crc_table[top];
-	}
-	return Checksum;
+    uint32_t Checksum = 0xFFFFFFFF;
+    for (unsigned int i = 0; i < dataLength; i++)
+    {
+        uint8_t top = (uint8_t)(Checksum >> 24);
+        top ^= pData[i];
+        Checksum = (Checksum << 8) ^ crc_table[top];
+    }
+    return Checksum;
 }
 
 uint32_t Crc::addCrcToBuf(char* buffer, uint32_t dataLength)
 {
-	/* include CRC in the transmit frame */
-	CRC_ut crcSend;
-	crcSend.u32 = calcCrc(buffer, dataLength);
-	memcpy(&buffer[dataLength], crcSend.u8, crcLen);
-	/* return modified buffer len */
-	return dataLength + crcLen;
+    /* include CRC in the transmit frame */
+    CRC_ut crcSend;
+    crcSend.u32 = calcCrc(buffer, dataLength);
+    memcpy(&buffer[dataLength], crcSend.u8, crcLen);
+    /* return modified buffer len */
+    return dataLength + crcLen;
 }
 
 bool Crc::checkCrcBuf(char* buffer, uint32_t dataLength)
 {
-	/* not a valida data length */
-	if (dataLength <= crcLen)
-		return false;
+    /* not a valida data length */
+    if (dataLength <= crcLen)
+        return false;
 
-	uint32_t crcExp = calcCrc(buffer, dataLength - crcLen);
-	/* compare to received CRC */
-	if (*(uint32_t*)&buffer[dataLength - crcLen] == crcExp)
-		return true;
+    uint32_t crcExp = calcCrc(buffer, dataLength - crcLen);
+    /* compare to received CRC */
+    if (*(uint32_t*)&buffer[dataLength - crcLen] == crcExp)
+        return true;
 
-	return false;
+    return false;
 }

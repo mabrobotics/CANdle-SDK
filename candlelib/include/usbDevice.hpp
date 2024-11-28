@@ -10,8 +10,8 @@
 
 class UsbDevice : public mab::Bus
 {
-	static constexpr int inEndpointAdr	= 0x81;	 ///< CANdle USB input endpoint address.
-	static constexpr int outEndpointAdr = 0x01;	 ///< CANdle USB output endpoint address.
+    static constexpr int inEndpointAdr  = 0x81;  ///< CANdle USB input endpoint address.
+    static constexpr int outEndpointAdr = 0x01;  ///< CANdle USB output endpoint address.
   public:
 	UsbDevice(u16					  vid		  = 0x0000,
 			  u16					  pid		  = 0x0000,
@@ -44,7 +44,7 @@ class UsbDevice : public mab::Bus
 	Logger		  m_log;
 	unsigned long serialDeviceId = 0;
 
-	struct libusb_device_handle* devh = nullptr;
+    struct libusb_device_handle* devh = nullptr;
 };
 
 u32 searchMultipleDevicesOnUSB(u16 pid, u16 vid);

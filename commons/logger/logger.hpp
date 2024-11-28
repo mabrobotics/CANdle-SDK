@@ -17,6 +17,12 @@
 #define YELLOW   "\x1b[38;5;226m"
 #define ORANGE   "\x1b[38;5;202m"
 #define GREY     "\x1b[38;5;240m"
+#define RED      "\x1b[38;5;196m"
+#define GREEN    "\x1b[38;5;46m"
+#define BLUE     "\x1b[38;5;33m"
+#define YELLOW   "\x1b[38;5;226m"
+#define ORANGE   "\x1b[38;5;202m"
+#define GREY     "\x1b[38;5;240m"
 #define RESETCLR "\x1b[0m"
 #define NEW_LINE "\n"
 

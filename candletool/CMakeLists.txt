@@ -77,13 +77,13 @@ elseif(UNIX)
   endif()
   set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
       "${PROJECT_SOURCE_DIR}/template_package/postinst")
-  install(TARGETS ${PROJECT_NAME} DESTINATION /usr/local/bin)
-  install(DIRECTORY "${PROJECT_SOURCE_DIR}/template_package/etc" DESTINATION /)
+  install(TARGETS ${PROJECT_NAME} DESTINATION /usr/local/bin EXCLUDE_FROM_ALL)
+  install(DIRECTORY "${PROJECT_SOURCE_DIR}/template_package/etc" DESTINATION / EXCLUDE_FROM_ALL)
   install(
     FILES "${PROJECT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini"
     DESTINATION "/etc/candletool/"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
-                WORLD_WRITE)
+                WORLD_WRITE EXCLUDE_FROM_ALL)
 endif()
 
 include(CPack)
