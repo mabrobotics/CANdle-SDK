@@ -8,6 +8,7 @@
 #include <thread>
 #include <type_traits>
 #include <vector>
+#include <atomic>
 
 #include "logger.hpp"
 #include "bus.hpp"
@@ -92,17 +93,12 @@ namespace mab
          */
         unsigned long int getDeviceId();
 
-        /**
-         * @brief A vector holding all md80 instances that were succesfully added via `addMd80`
-         * method. This vector can be used to modify regulator and control parameters of the md80
-         * drives.
-         */
-        std::vector<Md80> md80s;
-
-        /**
-        @brief Enables/disables extended printing.
-        */
-        void setVebose(bool enable);
+		/**
+		 * @brief A vector holding all md80 instances that were succesfully added via `addMd80`
+		 * method. This vector can be used to modify regulator and control parameters of the md80
+		 * drives.
+		 */
+		std::vector<Md80> md80s;
 
         /**
          * @brief Returns actual USB communication rate with CANdle. This is calculated by measuring
@@ -117,21 +113,30 @@ namespace mab
          */
         void setTransmitDelayUs(uint32_t delayUs);
 
-        /**
-        @brief Sends a FDCAN Frame to IDs in range (10 - 2047), and checks for valid responses from
-        Md80 at 1M baudrate.
-        @return the vector FDCAN IDs of drives that were found. If no drives were found, the vector
-        is empty
-        */
-        std::vector<uint16_t> ping();
-        /**
-        @brief Sends a FDCAN Frame to IDs in range (10 - 2047), and checks for valid responses from
-        MD80; Pings at specific baudrate
-        @param baudrate specific baudrate to be pinged.
-        @return the vector FDCAN IDs of drives that were found. If no drives were found, the vector
-        is empty
-        */
-        std::vector<uint16_t> ping(mab::CANdleBaudrate_E baudrate);
+		/**
+		@brief Sends a FDCAN Frame to IDs in range (10 - 2047), and checks for valid responses from
+		Md80 at 1M baudrate.
+		@return the vector FDCAN IDs of drives that were found. If no drives were found, the vector
+		is empty
+		*/
+		std::vector<uint16_t> ping();
+		/**
+		@brief Sends a FDCAN Frame to IDs in range (10 - 2047), and checks for valid responses from
+		MD80; Pings at specific baudrate
+		@param baudrate specific baudrate to be pinged.
+		@return the vector FDCAN IDs of drives that were found. If no drives were found, the vector
+		is empty
+		*/
+		std::vector<uint16_t> ping(mab::CANdleBaudrate_E baudrate);
+
+		/**
+		 * @brief Sends "Get info" message to IDs in range (10 - 2047), and validates response
+		 * to determine the type of device that responds to the message.
+		 *
+		 * @param baudrate specific baudrate to be pinged.
+		 * @return std::vector<BusDevice_S> Vector of structs that holds Device ID and type
+		 */
+		std::vector<BusDevice_S> pingNew(mab::CANdleBaudrate_E baudrate);
 
         /**
         @brief Sends a Generic FDCAN Frame to the IDs in range (10 - 2047), and checks for valid
@@ -276,132 +281,145 @@ namespace mab
         */
         bool reset();
 
-        /**
-        @brief Triggers a calibration routine of the drive's internal electronics.
-        @param canId ID of the drive
-        @return true if the calibration started succesfully, false otherwise
-        */
-        bool setupMd80Calibration(uint16_t canId);
-        /**
-        @brief Triggers an output encoder calibration routine of the drive's internal electronics.
-        @param canId ID of the drive
-        @return true if the calibration started succesfully, false otherwise
-        */
-        bool setupMd80CalibrationOutput(uint16_t canId);
-        /**
-        @brief Triggers an output encoder check routine. After routine completion min, max and
-        stdDev error can be read from registers.
-        @param canId ID of the drive
-        @return true if the check routine started succesfully, false otherwise
-        */
-        bool setupMd80TestOutputEncoder(uint16_t canId);
-        /**
-        @brief Triggers a main encoder check routine. After routine completion min, max and stdDev
-        error can be read from registers.
-        @param canId ID of the drive
-        @return true if the check routine started succesfully, false otherwise
-        */
-        bool setupMd80TestMainEncoder(uint16_t canId);
-        /**
-        @brief Triggers a homing routine.
-        @return true if the homing routine started succesfully, false otherwise.
-        */
-        bool setupMd80PerformHoming(uint16_t canId);
-        /**
-        @brief Triggers a controller reset.
-        @return true if the reset routine started succesfully, false otherwise.
-        */
-        bool setupMd80PerformReset(uint16_t canId);
-        /**
-        @brief Clears all non-critical errors.
-        @return true if succeded, false otherwise.
-        */
-        bool setupMd80ClearErrors(uint16_t canId);
-        /**
-        @brief Clears all warnings.
-        @return true if succeded, false otherwise.
-        */
-        bool setupMd80ClearWarnings(uint16_t canId);
-        /**
-        @brief Prints diagnostic message from md80.
-        @param canId ID of the drive
-        @return true if the succesfull, false otherwise
-        */
-        bool setupMd80Diagnostic(uint16_t canId);
-        /**
-        @brief Retrieves extended diagnostic parameters from md80
-        @param canId ID of the drive
-        @return true if the succesfull, false otherwise
-        */
-        bool setupMd80DiagnosticExtended(uint16_t canId);
-        /**
-        @brief Returns current CAN baudrate
-        @return either mab::CANdleBaudrate_E::1M, mab::CANdleBaudrate_E::2M,
-        mab::CANdleBaudrate_E::5M, or mab::CANdleBaudrate_E::8M
-        */
-        mab::CANdleBaudrate_E getCurrentBaudrate();
-        /**
-        @brief checks if a drive could be reached with current baudrate
-        @param canId ID of the drive
-        @return true if drive was successfully contacted, false otherwise
-        */
-        bool checkMd80ForBaudrate(uint16_t canId);
-        /**
-        @brief reads single-field registers
-        @param canId ID of the drive
-        @param regId first register's ID
-        @param value first reference to a variable where the read value should be stored
-        @param ...	remaining regId-value pairs to be read
-        @return true if register was read
-        */
-        template <typename T2, typename... Ts>
-        bool readMd80Register(uint16_t canId, Md80Reg_E regId, const T2& regValue, const Ts&... vs)
-        {
-            return md80Register->read(canId, regId, regValue, vs...);
-        }
-        /**
-        @brief writes single-field registers
-        @param canId ID of the drive
-        @param regId first register's ID
-        @param value first reference to a value that should be written
-        @param ...	remaining regId-value pairs to be written
-        @return true if register was written
-        */
-        template <typename T2, typename... Ts>
-        bool writeMd80Register(uint16_t canId, Md80Reg_E regId, const T2& regValue, const Ts&... vs)
-        {
-            return md80Register->write(canId, regId, regValue, vs...);
-        }
+		/**
+		@brief Triggers a calibration routine of the drive's internal electronics.
+		@param canId ID of the drive
+		@return true if the calibration started succesfully, false otherwise
+		*/
+		bool setupMd80Calibration(uint16_t canId);
+		/**
+		@brief Triggers an output encoder calibration routine of the drive's internal electronics.
+		@param canId ID of the drive
+		@return true if the calibration started succesfully, false otherwise
+		*/
+		bool setupMd80CalibrationOutput(uint16_t canId);
+		/**
+		@brief Triggers an output encoder check routine. After routine completion min, max and
+		stdDev error can be read from registers.
+		@param canId ID of the drive
+		@return true if the check routine started succesfully, false otherwise
+		*/
+		bool setupMd80TestOutputEncoder(uint16_t canId);
+		/**
+		@brief Triggers a main encoder check routine. After routine completion min, max and stdDev
+		error can be read from registers.
+		@param canId ID of the drive
+		@return true if the check routine started succesfully, false otherwise
+		*/
+		bool setupMd80TestMainEncoder(uint16_t canId);
+		/**
+		@brief Triggers a homing routine.
+		@return true if the homing routine started succesfully, false otherwise.
+		*/
+		bool setupMd80PerformHoming(uint16_t canId);
+		/**
+		@brief Triggers a controller reset.
+		@return true if the reset routine started succesfully, false otherwise.
+		*/
+		bool setupMd80PerformReset(uint16_t canId);
+		/**
+		@brief Clears all non-critical errors.
+		@return true if succeded, false otherwise.
+		*/
+		bool setupMd80ClearErrors(uint16_t canId);
+		/**
+		@brief Clears all warnings.
+		@return true if succeded, false otherwise.
+		*/
+		bool setupMd80ClearWarnings(uint16_t canId);
+		/**
+		@brief Prints diagnostic message from md80.
+		@param canId ID of the drive
+		@return true if the succesfull, false otherwise
+		*/
+		bool setupMd80Diagnostic(uint16_t canId);
+		/**
+		@brief Retrieves extended diagnostic parameters from md80
+		@param canId ID of the drive
+		@return true if the succesfull, false otherwise
+		*/
+		bool setupMd80DiagnosticExtended(uint16_t canId);
+		/**
+		@brief Returns current CAN baudrate
+		@return either mab::CANdleBaudrate_E::1M, mab::CANdleBaudrate_E::2M,
+		mab::CANdleBaudrate_E::5M, or mab::CANdleBaudrate_E::8M
+		*/
+		mab::CANdleBaudrate_E getCurrentBaudrate();
+		/**
+		@brief checks if a drive could be reached with current baudrate
+		@param canId ID of the drive
+		@return true if drive was successfully contacted, false otherwise
+		*/
+		bool checkMd80ForBaudrate(uint16_t canId);
+		/**
+		@brief reads single-field registers
+		@param canId ID of the drive
+		@param regId first register's ID
+		@param value first reference to a variable where the read value should be stored
+		@param ...	remaining regId-value pairs to be read
+		@return true if register was read
+		*/
+		template <typename T2, typename... Ts>
+		bool readMd80Register(uint16_t canId, Md80Reg_E regId, const T2& regValue, const Ts&... vs)
+		{
+			return md80Register->read(canId, regId, regValue, vs...);
+		}
+		/**
+		@brief writes single-field registers
+		@param canId ID of the drive
+		@param regId first register's ID
+		@param value first reference to a value that should be written
+		@param ...	remaining regId-value pairs to be written
+		@return true if register was written
+		*/
+		template <typename T2, typename... Ts>
+		bool writeMd80Register(uint16_t canId, Md80Reg_E regId, const T2& regValue, const Ts&... vs)
+		{
+			return md80Register->write(canId, regId, regValue, vs...);
+		}
+		// TODO: Move back to private when uploaders functionality will be integrated into candle
+		bool sendBusFrame(BusFrameId_t id,
+						  uint32_t	   timeout,
+						  char*		   payload = nullptr,
+						  uint32_t	   cmdLen  = 2,
+						  uint32_t	   respLen = 2);
+
+		bool sendBootloaderBusFrame(BootloaderBusFrameId_E id,
+									uint32_t			   timeout,
+									char*				   payload		 = nullptr,
+									uint32_t			   payloadLength = 0,
+									uint32_t			   respLen		 = 4);
+
+		bool reconnectToCandleBootloader();
+		bool reconnectToCandleApp();
 
       protected:
         std::shared_ptr<Register> md80Register;
 
-      private:
-        /* TODO make a proper version class as the reverse initalization is not elegant */
-        const version_ut candleDeviceCompatibleVersion = {'r', 0, 2, 2};
-        const version_ut md80CompatibleVersion         = {'r', 0, 4, 2};
+	  private:
+		/* TODO make a proper version class as the reverse initialization is not elegant */
+		const version_ut candleDeviceCompatibleVersion = {{'r', 0, 2, 2}};
+		const version_ut md80CompatibleVersion		   = {{'r', 0, 4, 2}};
 
-        static std::vector<Candle*> instances;
-        inline static constexpr u32 candleVid = 0x0069;
-        inline static constexpr u32 candlePid = 0x1000;
+		static std::vector<Candle*> instances;
+		inline static constexpr u32 candleVid	  = 0x0069;
+		inline static constexpr u32 candlePid	  = 0x1000;
+		inline static constexpr u32 bootloaderPid = 0x2000;
 
-        std::thread receiverThread;
-        std::thread transmitterThread;
-        sem_t       transmitted;
-        sem_t       received;
-        logger      log = {.tag = "CANDLE"};
+		std::jthread transmitterThread;
+		sem_t		 received;
+		Logger		 log = Logger(Logger::ProgramLayer_E::TOP, "CANDLE");
 
         bool printVerbose = true;
 
-        CANdleMode_E mode = CANdleMode_E::CONFIG;
+		std::atomic<CANdleMode_E> mode{CANdleMode_E::CONFIG};
 
         std::shared_ptr<Bus> bus = nullptr;
 
-        static constexpr uint16_t idMax      = 2000;
-        static constexpr int      maxDevices = 16;
-        bool                      shouldStopReceiver;
-        bool                      shouldStopTransmitter;
-        mab::CANdleBaudrate_E     canBaudrate;
+		static constexpr uint16_t idMax		 = 2000;
+		static constexpr int	  maxDevices = 16;
+		bool					  shouldStopTransmitter;
+		mab::CANdleBaudrate_E	  m_canBaudrate;
 
         int      msgsReceived     = 0;
         int      msgsSent         = 0;
@@ -410,9 +428,8 @@ namespace mab
 
         void transmitNewStdFrame();
 
-        void receive();
-        void manageReceivedFrame();
-        void transmit();
+		void manageReceivedFrame();
+		void transfer(std::stop_token stop_token);
 
         bool inUpdateMode();
 
@@ -420,15 +437,10 @@ namespace mab
 
         std::shared_ptr<Bus> makeBus(mab::BusType_E busType, std::string device);
 
-        bool executeCommand(uint16_t    canId,
-                            Md80Reg_E   reg,
-                            const char* failMsg,
-                            const char* successMsg);
-        bool sendBusFrame(BusFrameId_t id,
-                          uint32_t     timeout,
-                          char*        payload = nullptr,
-                          uint32_t     cmdLen  = 2,
-                          uint32_t     respLen = 2);
+		bool executeCommand(uint16_t	canId,
+							Md80Reg_E	reg,
+							const char* failMsg,
+							const char* successMsg);
 
         /* virtual methods for testing purposes */
 #ifdef UNIX

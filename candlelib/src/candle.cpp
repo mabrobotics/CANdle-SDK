@@ -42,6 +42,8 @@ namespace mab
                    const std::string device)
         : Candle(canBaudrate, printVerbose, makeBus(busType, device))
     {
+        log.m_tag   = "Candle";
+        log.m_layer = Logger::ProgramLayer_E::TOP;
     }
 
     Candle::Candle(CANdleBaudrate_E canBaudrate, bool printVerbose, std::shared_ptr<Bus> bus)
@@ -49,10 +51,24 @@ namespace mab
     {
         reset();
         usleep(5000);
+        if (sem_init(&received, true, 0) == -1)
+        {
+            throw std::runtime_error("Failed to set up receive semaphore");
+        }
+        for (u32 i = 0; i < 10; i++)
+        {
+            if (!sendBusFrame(BUS_FRAME_END, 100))
+                log.error("Candle not responding");
+            else
+            {
+                log.info("Bus communication functional");
+                break;
+            }
+        }
 
         if (!configCandleBaudrate(canBaudrate, true))
         {
-            log.error("Failed to set up CANdle baudrate @%sMbps", canBaudrate);
+            log.error("Failed to set up CANdle baudrate @%dMbps", canBaudrate);
             throw std::runtime_error("Failed to set up CANdle baudrate!");
         }
         if (bus->getType() == mab::BusType_E::USB)
@@ -69,6 +85,8 @@ namespace mab
     {
         if (inUpdateMode())
             end();
+        transmitterThread.request_stop();
+        sem_destroy(&received);
     }
 
     std::shared_ptr<Bus> Candle::makeBus(mab::BusType_E busType, std::string device)
@@ -78,15 +96,37 @@ namespace mab
             case mab::BusType_E::USB:
             {
                 std::vector<u32> idsToIgnore;
+
                 for (Candle* instance : Candle::instances)
+                {
                     if (instance->bus->getType() == BusType_E::USB)
                         idsToIgnore.push_back(instance->bus->getId());
+                }
+
                 if (idsToIgnore.size() == 0 && searchMultipleDevicesOnUSB(candlePid, candleVid) > 1)
+                {
                     log.warn(
                         "Multiple CANdle detected! If ID is unspecified in the constructor, the "
                         "one with the smallest ID will be used by default!");
+                }
+
                 std::shared_ptr<UsbDevice> usb =
                     std::make_shared<UsbDevice>(candleVid, candlePid, idsToIgnore, device);
+
+                if (!usb->isConnected())
+                {
+                    log.warn("Failed to connect to CANdle device! Trying bootloader mode...");
+                    usb = std::make_shared<UsbDevice>(candleVid, bootloaderPid);
+
+                    if (!usb->isConnected())
+                    {
+                        log.error("Unable to connect to Candle device!");
+                        exit(1);
+                    }
+
+                    log.warn("Connected to CANdle in bootloader mode!");
+                }
+
                 return usb;
             }
 #ifdef UNIX
@@ -113,7 +153,7 @@ namespace mab
 
     const std::string Candle::getVersion()
     {
-        return getVersionString({CANDLE_VTAG, CANDLE_VREVISION, CANDLE_VMINOR, CANDLE_VMAJOR});
+        return getVersionString({{CANDLE_VTAG, CANDLE_VREVISION, CANDLE_VMINOR, CANDLE_VMAJOR}});
     }
 
     int Candle::getActualCommunicationFrequency()
@@ -126,87 +166,25 @@ namespace mab
         transmitterDelay = delayUs < 20 ? 20 : delayUs;
     }
 
-    void Candle::receive()
+    void Candle::transfer(std::stop_token stop_token)
     {
-        while (!shouldStopReceiver)
-        {
-            /* wait for a frame to be transmitted */
-            sem_wait(&transmitted);
-
-            if (!shouldStopReceiver &&
-                bus->receive(sizeof(StdMd80ResponseFrame_t) * md80s.size() + 1))
-            {
-                /* notify a frame was received */
-                sem_post(&received);
-
-                if (*bus->getRxBuffer() == BUS_FRAME_UPDATE)
-                    manageReceivedFrame();
-            }
-            else
-            {
-                if (!shouldStopReceiver)
-                    log.warn("Did not receive response from CANdle!");
-                shouldStopReceiver    = true;
-                shouldStopTransmitter = true;
-                sem_post(&received);
-            }
-        }
-    }
-    void Candle::transmit()
-    {
-        int      txCounter      = 0;
+        int      counter        = 0;
         uint64_t freqCheckStart = getTimestamp();
-        while (!shouldStopTransmitter)
+        while (!shouldStopTransmitter || stop_token.stop_requested())
         {
-            if (++txCounter == 250)
+            if (++counter == 250)
             {
                 usbCommsFreq   = 250.0 / (float)(getTimestamp() - freqCheckStart) * 1000000.0f;
                 freqCheckStart = getTimestamp();
-                txCounter      = 0;
+                counter        = 0;
             }
-
             transmitNewStdFrame();
-
-            /* notify a frame was sent */
-            if (bus->getType() != mab::BusType_E::SPI)
-                sem_post(&transmitted);
-
-            /* transmit thread is also the receive thread for SPI in update mode */
-            if (bus->getType() == mab::BusType_E::SPI && *bus->getRxBuffer() == BUS_FRAME_UPDATE)
-                manageReceivedFrame();
-
             msgsSent++;
-
-            if (bus->getType() == mab::BusType_E::SPI)
+            if (bus->receive(sizeof(StdMd80ResponseFrame_t) * md80s.size() + 1), 1)
             {
-                switch (canBaudrate)
-                {
-                    case CAN_BAUD_1M:
-                    {
-                        usleep(750 * md80s.size());
-                        break;
-                    }
-                    case CAN_BAUD_2M:
-                    {
-                        usleep(450 * md80s.size());
-                        break;
-                    }
-                    case CAN_BAUD_5M:
-                    {
-                        usleep(250 * md80s.size());
-                        break;
-                    }
-                    case CAN_BAUD_8M:
-                    {
-                        usleep(200 * md80s.size());
-                        break;
-                    }
-                }
+                if (*bus->getRxBuffer() == BUS_FRAME_UPDATE)
+                    manageReceivedFrame();
             }
-            /* wait for a frame to be received */
-            else
-                sem_wait(&received);
-            usleep(transmitterDelay);
         }
     }
 
@@ -215,11 +193,6 @@ namespace mab
         for (size_t i = 0; i < md80s.size(); i++)
             md80s[i].__updateResponseData(
                 (StdMd80ResponseFrame_t*)bus->getRxBuffer(1 + i * sizeof(StdMd80ResponseFrame_t)));
-    }
-
-    void Candle::setVebose(bool enable)
-    {
-        log.level = enable ? logger::LogLevel_E::INFO : (logger::LogLevel_E)30;
     }
 
     unsigned long Candle::getDeviceId()
@@ -287,15 +260,15 @@ namespace mab
 
             if (firmwareVersion.i < md80CompatibleVersion.i)
             {
-                log.error("MD80 firmware (ID: %d) is outdated. Update with MAB_CAN_Flasher.",
-                          canId);
-                return false;
+                log.warn(
+                    "MD80 firmware (ID: %d) is outdated. Please see the manual for intructions on "
+                    "how to update.",
+                    canId);
             }
             else if (firmwareVersion.s.major > md80CompatibleVersion.s.major ||
                      firmwareVersion.s.minor > md80CompatibleVersion.s.minor)
             {
-                log.warn("MD80 firmware (ID: %d) is a future version. Update your CANdle library.",
-                         canId);
+                log.warn("MD80 firmware (ID: %d) is a future version.", canId);
             }
             log.success("Added MD80 (ID: %d)", canId);
             md80s.push_back(Md80(canId));
@@ -308,10 +281,12 @@ namespace mab
             log.error("Failed to add MD80 (ID: %d)", canId);
         return false;
     }
+
     std::vector<uint16_t> Candle::ping(mab::CANdleBaudrate_E baudrate)
     {
         if (!configCandleBaudrate(baudrate))
             return std::vector<uint16_t>();
+
         log.info("Starting pinging drives at baudrate: %dM", baudrate);
         std::vector<uint16_t> ids{};
 
@@ -348,14 +323,36 @@ namespace mab
         }
         return ids;
     }
+
+    std::vector<BusDevice_S> Candle::pingNew(mab::CANdleBaudrate_E baudrate)
+    {
+        if (!configCandleBaudrate(baudrate))
+            return std::vector<BusDevice_S>();
+
+        // Same TX Buffer for all messages...
+        const char txBuffer[]   = {FRAME_GET_INFO, 0x00};
+        char       rxBuffer[64] = {0};
+
+        for (uint16_t canId = 10; canId < 2075; canId++)
+        {
+            if (sendGenericFDCanFrame(canId, sizeof(txBuffer), txBuffer, rxBuffer, 1))
+                log.debug("Pinging ID [ %u ] OK", canId);
+        }
+
+        log.debug("Finish!");
+
+        return std::vector<BusDevice_S>();
+    }
+
     std::vector<uint16_t> Candle::ping()
     {
-        return ping(canBaudrate);
+        return ping(m_canBaudrate);
     }
     bool Candle::sendGenericFDCanFrame(
         uint16_t canId, int msgLen, const char* txBuffer, char* rxBuffer, int timeoutMs)
     {
         GenericMd80Frame64 frame;
+
         frame.frameId    = mab::BusFrameId_t::BUS_FRAME_MD80_GENERIC_FRAME;
         frame.driveCanId = canId;
         frame.canMsgLen  = msgLen;
@@ -407,7 +404,7 @@ namespace mab
         log.info("Drive ID: %d was changed to ID: %d.", canId, newId);
         log.info("Drive CAN baudrate is now: %dMbps", newBaudrateMbps);
         log.info("Drive CAN timeout is now: %sms",
-                 (newTimeout == 0) ? "disabled" : std::to_string(newTimeout));
+                 (newTimeout == 0) ? "disabled" : std::to_string(newTimeout).c_str());
         log.info("Drive CAN termination is %s", canTermination ? "enabled" : "disabled");
         log.success("CAN config change successful!");
         return true;
@@ -448,10 +445,10 @@ namespace mab
 
     bool Candle::configCandleBaudrate(CANdleBaudrate_E canBaudrate, bool printVersionInfo)
     {
-        this->canBaudrate = canBaudrate;
+        this->m_canBaudrate = canBaudrate;
 
         char payload[1]{};
-        payload[0] = static_cast<uint8_t>(canBaudrate);
+        payload[0] = static_cast<uint8_t>(m_canBaudrate);
 
         if (sendBusFrame(BUS_FRAME_CANDLE_CONFIG_BAUDRATE, 50, payload, 2, 6))
         {
@@ -463,9 +460,8 @@ namespace mab
                 if (candleDeviceVersion.i < candleDeviceCompatibleVersion.i)
                 {
                     log.warn(
-                        "Your CANdle device firmware seems to be out-dated. Please see the "
+                        "Your CANdle device firmware is outdated. Please see the "
                         "manual for intructions on how to update.");
-                    return false;
                 }
                 log.info("CANdle firmware v%s", mab::getVersionString(candleDeviceVersion).c_str());
             }
@@ -530,6 +526,17 @@ namespace mab
             log.error("%s failed (ID: %d)", (enable ? "Enabling" : "Disabling"), canId);
             return false;
         }
+
+        if (enable)
+        {
+            mab::Md80Mode_E mode{mab::Md80Mode_E::POSITION_PID};
+            if (!md80Register->read(canId, Md80Reg_E::motionModeStatus, mode))
+                throw std::runtime_error("Could not read motion mode from the driver");
+            if (mode == mab::Md80Mode_E::IDLE)
+            {
+                log.warn("Drive %d has no motion mode set, it will be idle", canId);
+            }
+        }
         log.success("%s succesfull (ID: %d)", (enable ? "Enabling" : "Disabling"), canId);
         return true;
     }
@@ -546,17 +553,13 @@ namespace mab
             log.success("Beginnig auto update loop mode");
             mode                  = CANdleMode_E::UPDATE;
             shouldStopTransmitter = false;
-            shouldStopReceiver    = false;
             msgsSent              = 0;
             msgsReceived          = 0;
 
-            sem_init(&transmitted, 0, 0);
-            sem_init(&received, 0, 0);
-
-            if (bus->getType() != mab::BusType_E::SPI)
-                receiverThread = std::thread(&Candle::receive, this);
-
-            transmitterThread = std::thread(&Candle::transmit, this);
+            log.info("Starting transfer thread...");
+            // bind_front used to enable stop_token in jthread, jthread used to avoid unexpected
+            // termination
+            transmitterThread = std::jthread(std::bind_front(&Candle::transfer, this));
 
             return true;
         }
@@ -572,14 +575,6 @@ namespace mab
         sem_post(&received);
         if (transmitterThread.joinable())
             transmitterThread.join();
-
-        shouldStopReceiver = true;
-        if (bus->getType() != mab::BusType_E::SPI)
-        {
-            sem_post(&transmitted);
-            if (receiverThread.joinable())
-                receiverThread.join();
-        }
 
         bus->flushReceiveBuffer();
 
@@ -622,8 +617,8 @@ namespace mab
 
         if (bus->getType() == BusType_E::SPI)
             bus->transfer(tx, cmdSize, respSize);
-        else
-            bus->transmit(tx, cmdSize, false, 100, respSize);
+        else if (!bus->transmit(tx, cmdSize, false, 100, respSize))
+            throw std::runtime_error("Failed to transmit to candle!");
     }
 
     bool Candle::setupMd80Calibration(uint16_t canId)
@@ -727,8 +722,10 @@ namespace mab
                                 regR.RO.mosfetTemperature,
                                 Md80Reg_E::motorKV,
                                 regR.RW.motorKV,
-                                Md80Reg_E::hardwareVersion,
-                                regR.RO.hardwareVersion))
+                                Md80Reg_E::legacyHardwareVersion,
+                                regR.RO.legacyHardwareVersion,
+                                Md80Reg_E::hardwareType,
+                                regR.RO.hardwareType))
         {
             log.error("Extended diagnostic failed (ID: %d)", canId);
             return false;
@@ -795,6 +792,27 @@ namespace mab
                                 regR.RO.communicationErrors,
                                 Md80Reg_E::motionErrors,
                                 regR.RO.motionErrors))
+        {
+            log.error("Extended diagnostic failed (ID: %d)", canId);
+            return false;
+        }
+        if (!md80Register->read(canId,
+                                Md80Reg_E::mainEncoderErrors,
+                                regR.RO.mainEncoderErrors,
+                                Md80Reg_E::outputEncoderErrors,
+                                regR.RO.outputEncoderErrors,
+                                Md80Reg_E::calibrationErrors,
+                                regR.RO.calibrationErrors,
+                                Md80Reg_E::bridgeErrors,
+                                regR.RO.bridgeErrors,
+                                Md80Reg_E::hardwareErrors,
+                                regR.RO.hardwareErrors,
+                                Md80Reg_E::communicationErrors,
+                                regR.RO.communicationErrors,
+                                Md80Reg_E::motionErrors,
+                                regR.RO.motionErrors,
+                                Md80Reg_E::miscStatus,
+                                regR.RO.miscStatus))
         {
             log.error("Extended diagnostic failed (ID: %d)", canId);
             return false;
@@ -877,7 +895,7 @@ namespace mab
     }
     mab::CANdleBaudrate_E Candle::getCurrentBaudrate()
     {
-        return canBaudrate;
+        return m_canBaudrate;
     }
     bool Candle::checkMd80ForBaudrate(uint16_t canId)
     {
@@ -924,6 +942,51 @@ namespace mab
         if (bus->transmit(tx, cmdLen, true, timeout, respLen))
             return ((rx[0] == id && rx[1] == true) || (rx[0] == BUS_FRAME_PING_START));
         return false;
+    }
+
+    bool Candle::sendBootloaderBusFrame(BootloaderBusFrameId_E id,
+                                        uint32_t               timeout,
+                                        char*                  payload,
+                                        uint32_t               payloadLength,
+                                        uint32_t               respLen)
+    {
+        char tx[2048]{};
+        tx[0] = id;
+        tx[1] = (char)0xAA;  // Preambles ???
+        tx[2] = (char)0xAA;  // Preambles ???
+
+        if (payload)
+            memcpy(&tx[3], payload, payloadLength);
+
+        char* rx = bus->getRxBuffer(0);
+
+        if (bus->transmit(tx, payloadLength + 3, true, timeout, respLen))
+        {
+            if (strcmp("OK", &rx[1]) != 0)
+            {
+                log.error("Bootloader bad response: %s", &rx[1]);
+                return false;
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    bool Candle::reconnectToCandleBootloader()
+    {
+        bool result = false;
+        log.info("Reconnecting to CANdle bootloader...");
+        result = static_cast<UsbDevice*>(bus.get())->reconnect(candleVid, bootloaderPid);
+        return result;
+    }
+
+    bool Candle::reconnectToCandleApp()
+    {
+        log.info("Reconnecting to CANdle application...");
+        usleep(5000000);
+
+        return static_cast<UsbDevice*>(bus.get())->reconnect(candleVid, candlePid);
     }
 
 }  // namespace mab

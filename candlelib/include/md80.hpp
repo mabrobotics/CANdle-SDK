@@ -106,52 +106,47 @@ namespace mab
          */
         void setImpedanceControllerParams(float kp, float kd);
 
-        /**
-         * @brief Set the Max Torque in [Nm]
-         * @note This settings affects all motion modes, and can also be changed using mdtool and
-         * saved
-         * @param maxTorque Torque limit in [Nm] for all motion modes.
-         */
-        void setMaxTorque(float maxTorque);
-        /**
-         * @brief Set the Profile Velocity for Position Profile and Velocity Profile modes.
-         * @note Has no effect in Position PID, Velocity PID, Raw Torque or Impedance modes.
-         * @param profileVelocity
-         */
-        void setProfileVelocity(float profileVelocity);
-        /**
-         * @brief Set the Max Acceleration and Deceleration for Position Profile and Velocity
-         * Profile modes.
-         * @note Has no effect in Position PID, Velocity PID, Raw Torque or Impedance modes.
-         * @param profileAcceleration profileAccelerationin rad/s^2 (radians per second squared)
-         */
-        void setProfileAcceleration(float profileAcceleration);
-        /**
-         * @brief Set the Target Position
-         * @param target target position in radians
-         */
-        void setTargetPosition(float target)
-        {
-            targets.positionTarget = target;
-            targetPositionReached  = false;
-        };
-        /**
-         * @brief Set the Target Velocity
-         * @param target target velocity in rad/s (radians per second)
-         */
-        void setTargetVelocity(float target)
-        {
-            targets.velocityTarget = target;
-            targetVelocityReached  = false;
-        };
-        /**
-         * @brief Set the Torque target
-         * @param target target torque in Nm (Newton-meters)
-         */
-        void setTargetTorque(float target)
-        {
-            targets.torqueTarget = target;
-        };
+	/**
+	 * @brief Set the Max Torque in [Nm]
+	 * @note This settings affects all motion modes, and can also be changed using candletool and saved
+	 * @param maxTorque Torque limit in [Nm] for all motion modes.
+	 */
+	void setMaxTorque(float maxTorque);
+	/**
+	 * @brief Set the Profile Velocity for Position Profile and Velocity Profile modes.
+	 * @note Has no effect in Position PID, Velocity PID, Raw Torque or Impedance modes.
+	 * @param profileVelocity
+	 */
+	void setProfileVelocity(float profileVelocity);
+	/**
+	 * @brief Set the Max Acceleration and Deceleration for Position Profile and Velocity Profile modes.
+	 * @note Has no effect in Position PID, Velocity PID, Raw Torque or Impedance modes.
+	 * @param profileAcceleration profileAccelerationin rad/s^2 (radians per second squared)
+	 */
+	void setProfileAcceleration(float profileAcceleration);
+	/**
+	 * @brief Set the Target Position
+	 * @param target target position in radians
+	 */
+	void setTargetPosition(float target)
+	{
+		targets.positionTarget = target;
+		targetPositionReached = false;
+	};
+	/**
+	 * @brief Set the Target Velocity
+	 * @param target target velocity in rad/s (radians per second)
+	 */
+	void setTargetVelocity(float target)
+	{
+		targets.velocityTarget = target;
+		targetVelocityReached = false;
+	};
+	/**
+	 * @brief Set the Torque target
+	 * @param target target torque in Nm (Newton-meters)
+	 */
+	void setTargetTorque(float target) { targets.torqueTarget = target; };
 
         /**
          * @brief Get the Quick Status of the md80
