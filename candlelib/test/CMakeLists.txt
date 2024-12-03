@@ -1,2 +1,8 @@
 add_unit_test_executable(register_tests ../src/register_tests.cpp)
+add_unit_test_executable(receiver_pipe_tests ./communication_pipe_test/receiver_pipe_test.cpp)
+add_unit_test_executable(transmitter_pipe_tests ./communication_pipe_test/transmitter_pipe_test.cpp)
+
 target_link_libraries(register_tests PUBLIC candle)
+
+target_link_libraries(receiver_pipe_tests PUBLIC candle)
+target_link_libraries(transmitter_pipe_tests PUBLIC candle)

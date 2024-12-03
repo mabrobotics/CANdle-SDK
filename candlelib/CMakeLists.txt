@@ -47,6 +47,8 @@ target_sources(candle PRIVATE
   src/pds_module.cpp
   src/register.cpp
   src/usbDevice.cpp
+  src/communication_pipe/receiver_pipe.cpp
+  src/communication_pipe/transmitter_pipe.cpp
 )
 
 if(UNIX)
@@ -54,7 +56,8 @@ if(UNIX)
 endif()
 target_include_directories(
   candle PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-                ${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger)
+                ${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger
+                ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_pipe)
 target_include_directories(candle SYSTEM PRIVATE ${LIBUSB_INCLUDE_DIR})
 if(UNIX)
   target_link_libraries(candle shared_data logger pthread ${LIBUSB_LIBRARY})
