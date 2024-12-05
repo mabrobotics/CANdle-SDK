@@ -4,6 +4,7 @@
 #include <memory>
 #include <functional>
 #include <utility>
+#include <semaphore>
 
 using namespace mab;
 
@@ -22,11 +23,28 @@ TEST_F(TransmitterPipeTests, shouldPass)
 
 TEST_F(TransmitterPipeTests, CheckPipeWithQueue)
 {
-    std::vector<u8> testData = {1, 2, 3, 4};
-    std::vector<u8> outputBufferTest;
-    auto            outputLambda = [&](std::vector<u8> data) { outputBufferTest = data; };
-    TransmitterPipe tp(outputLambda);
-    tp.enqueue(testData);
-    tp.awaitComplete();
-    ASSERT_THAT(outputBufferTest, testing::ElementsAre(1, 2, 3, 4));
+    std::vector<u8>       testData = {1, 2, 3, 4};
+    std::vector<u8>       outputBufferTest;
+    std::binary_semaphore smphSignalMainToThread{0}, smphSignalThreadToMain{0};
+
+    static auto outputLambda = [&](std::vector<u8> data)
+    {
+        smphSignalMainToThread.acquire();
+        outputBufferTest = data;
+        smphSignalThreadToMain.release();
+    };
+    TransmitterPipe*                        tp      = new TransmitterPipe(outputLambda);
+    TransmitterPipe::transmitterPipeError_E errCode = tp->enqueue(testData);
+    smphSignalMainToThread.release();
+    if (errCode != TransmitterPipe::transmitterPipeError_E::OK)
+        FAIL();
+    smphSignalThreadToMain.acquire();
+    EXPECT_THAT(outputBufferTest, testing::ElementsAre(1, 2, 3, 4));
+    testData = {4, 2, 1, 1};
+    errCode  = tp->enqueue(testData);
+    if (errCode != TransmitterPipe::transmitterPipeError_E::OK)
+        FAIL();
+    smphSignalMainToThread.release();
+    delete (tp);
+    EXPECT_THAT(outputBufferTest, testing::ElementsAre(4, 2, 1, 1));
 }
