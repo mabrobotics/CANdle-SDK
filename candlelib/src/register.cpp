@@ -120,7 +120,7 @@ namespace mab
         }
         return 0;
     }
-
+    // TODO: THIS SECTION NEEDS REWORK IN THE FUTURE
     Register::type Register::getType(uint16_t regId)
     {
         switch (regId)
@@ -135,7 +135,7 @@ namespace mab
             case Md80Reg_E::outputEncoderMode:
             case Md80Reg_E::bridgeType:
             case Md80Reg_E::outputEncoder:
-            case Md80Reg_E::hardwareVersion:
+            case Md80Reg_E::legacyHardwareVersion:
             case Md80Reg_E::canTermination:
             case Md80Reg_E::motorShutdownTemp:
             case Md80Reg_E::runCalibrateCmd:
@@ -154,11 +154,12 @@ namespace mab
             case Md80Reg_E::runCanReinit:
             case Md80Reg_E::brakeMode:
                 return type::U8;
-            case Md80Reg_E::motorTorqueBandwidth:
+            case Md80Reg_E::motorTorgueBandwidth:
             case Md80Reg_E::canWatchdog:
             case Md80Reg_E::quickStatus:
             case Md80Reg_E::motorKV:
             case Md80Reg_E::state:
+            case Md80Reg_E::hardwareType:
                 return type::U16;
             case Md80Reg_E::outputEncoderDefaultBaud:
             case Md80Reg_E::canBaudrate:
@@ -169,6 +170,7 @@ namespace mab
             case Md80Reg_E::calibrationErrors:
             case Md80Reg_E::bridgeErrors:
             case Md80Reg_E::hardwareErrors:
+            case Md80Reg_E::miscStatus:
             case Md80Reg_E::communicationErrors:
             case Md80Reg_E::homingErrors:
             case Md80Reg_E::motionErrors:

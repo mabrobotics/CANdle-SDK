@@ -39,14 +39,9 @@ namespace mab
                     std::make_unique<BrakeResistor>(socket, m_candle, m_canId));
                 return PdsModule::error_E::OK;
 
-            case moduleType_E::ISOLATED_CONVERTER_12V:
+            case moduleType_E::ISOLATED_CONVERTER:
                 m_IsolatedConv12s.push_back(
                     std::make_unique<IsolatedConv12>(socket, m_candle, m_canId));
-                return PdsModule::error_E::OK;
-
-            case moduleType_E::ISOLATED_CONVERTER_5V:
-                m_IsolatedConv5s.push_back(
-                    std::make_unique<IsolatedConv5>(socket, m_candle, m_canId));
                 return PdsModule::error_E::OK;
 
             case moduleType_E::POWER_STAGE:
@@ -232,11 +227,8 @@ namespace mab
             case static_cast<u8>(moduleType_E::BRAKE_RESISTOR):
                 return moduleType_E::BRAKE_RESISTOR;
 
-            case static_cast<u8>(moduleType_E::ISOLATED_CONVERTER_12V):
-                return moduleType_E::ISOLATED_CONVERTER_12V;
-
-            case static_cast<u8>(moduleType_E::ISOLATED_CONVERTER_5V):
-                return moduleType_E::ISOLATED_CONVERTER_5V;
+            case static_cast<u8>(moduleType_E::ISOLATED_CONVERTER):
+                return moduleType_E::ISOLATED_CONVERTER;
 
             case static_cast<u8>(moduleType_E::POWER_STAGE):
                 return moduleType_E::POWER_STAGE;
@@ -256,10 +248,8 @@ namespace mab
                 return "CONTROL_BOARD";
             case moduleType_E::BRAKE_RESISTOR:
                 return "BRAKE_RESISTOR";
-            case moduleType_E::ISOLATED_CONVERTER_12V:
-                return "ISOLATED_CONVERTER_12V";
-            case moduleType_E::ISOLATED_CONVERTER_5V:
-                return "ISOLATED_CONVERTER_5V";
+            case moduleType_E::ISOLATED_CONVERTER:
+                return "ISOLATED_CONVERTER";
             case moduleType_E::POWER_STAGE:
                 return "POWER_STAGE";
             /* NEW MODULE TYPES HANDLED HERE */

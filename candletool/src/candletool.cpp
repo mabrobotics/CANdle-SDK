@@ -336,7 +336,7 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
                                    regW.RW.gearRatio,
                                    mab::Md80Reg_E::motorIMax,
                                    regW.RW.iMax,
-                                   mab::Md80Reg_E::motorTorqueBandwidth,
+                                   mab::Md80Reg_E::motorTorgueBandwidth,
                                    regW.RW.torqueBandwidth))
         log.error("Failed to setup motor!");
 
@@ -485,7 +485,7 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
                                   regR.RW.iMax,
                                   mab::Md80Reg_E::motorGearRatio,
                                   regR.RW.gearRatio,
-                                  mab::Md80Reg_E::motorTorqueBandwidth,
+                                  mab::Md80Reg_E::motorTorgueBandwidth,
                                   regR.RW.torqueBandwidth,
                                   mab::Md80Reg_E::motorKV,
                                   regR.RW.motorKV))

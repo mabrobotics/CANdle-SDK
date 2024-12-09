@@ -1,10 +1,12 @@
 #pragma once
 
+#include "mab_types.hpp"
+
 namespace mab
 {
 
     // TODO: full names of board types
-    enum class moduleType_E : uint8_t
+    enum class moduleType_E : u8
     {
         UNDEFINED = 0x00,
         CONTROL_BOARD,
@@ -16,7 +18,7 @@ namespace mab
         OUT_OF_RANGE,
     };
 
-    enum class socketIndex_E : uint8_t
+    enum class socketIndex_E : u8
     {
 
         UNASSIGNED = 0x00,

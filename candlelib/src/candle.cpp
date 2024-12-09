@@ -348,41 +348,37 @@ namespace mab
     {
         return ping(m_canBaudrate);
     }
-
     bool Candle::sendGenericFDCanFrame(uint16_t    canId,
                                        int         msgLen,
-                                       const char* p_txBuffer,
-                                       char*       p_rxBuffer,
-                                       size_t*     p_rxLength,
+                                       const char* txBuffer,
+                                       char*       rxBuffer,
+                                       size_t*     pRxLength,
                                        int         timeoutMs)
     {
         GenericMd80Frame64 frame;
+
+        size_t rxLength = 0;
 
         frame.frameId    = mab::BusFrameId_t::BUS_FRAME_MD80_GENERIC_FRAME;
         frame.driveCanId = canId;
         frame.canMsgLen  = msgLen;
         frame.timeoutMs  = timeoutMs < 3 ? 3 : timeoutMs - 3;
-        memcpy(frame.canMsg, p_txBuffer, msgLen);
+        memcpy(frame.canMsg, txBuffer, msgLen);
         char tx[96];
         int  len = sizeof(frame) - sizeof(frame.canMsg) + msgLen;
         memcpy(tx, &frame, len);
         if (bus->transmit(tx, len, true, timeoutMs, 66, false))  // Got some response
         {
-            if (*bus->getRxBuffer(0) == tx[0] &&  // USB Frame ID matches
-                *bus->getRxBuffer(1) == true &&
-                bus->getBytesReceived() <= 64 + 2)  // response can ID matches
+            rxLength = bus->getBytesReceived();
+            if (*bus->getRxBuffer(0) == tx[0] &&                     // USB Frame ID matches
+                *bus->getRxBuffer(1) == true && rxLength <= 64 + 2)  // response can ID matches
             {
-                size_t rxLength = bus->getBytesReceived() - 2;
-                memcpy(p_rxBuffer, bus->getRxBuffer(2), rxLength);
-                if (p_rxLength != nullptr)
-                    *p_rxLength = rxLength;
-
+                memcpy(rxBuffer, bus->getRxBuffer(2), rxLength - 2);
+                if (pRxLength != nullptr)
+                    *pRxLength = rxLength;
                 return true;
             }
-            log.error("BAD RESPONSE");
-            return false;
         }
-        log.error("TIMEOUT");
         return false;
     }
 
@@ -485,7 +481,7 @@ namespace mab
     bool Candle::configMd80TorqueBandwidth(uint16_t canId, uint16_t torqueBandwidth)
     {
         if (inUpdateMode() || !md80Register->write(canId,
-                                                   Md80Reg_E::motorTorqueBandwidth,
+                                                   Md80Reg_E::motorTorgueBandwidth,
                                                    torqueBandwidth,
                                                    Md80Reg_E::runCalibratePiGains,
                                                    true))
@@ -724,7 +720,7 @@ namespace mab
                                 regR.RO.bridgeType,
                                 Md80Reg_E::canWatchdog,
                                 regR.RW.canWatchdog,
-                                Md80Reg_E::motorTorqueBandwidth,
+                                Md80Reg_E::motorTorgueBandwidth,
                                 regR.RW.torqueBandwidth,
                                 Md80Reg_E::canBaudrate,
                                 regR.RW.canBaudrate,

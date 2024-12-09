@@ -95,4 +95,4 @@ target_include_directories(pds_protocol_test PRIVATE
   include
   src/pds
 )
-target_link_libraries(pds_protocol_test PRIVATE logger)
+target_link_libraries(pds_protocol_test PRIVATE logger shared_data)
