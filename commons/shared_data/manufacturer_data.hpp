@@ -27,7 +27,7 @@ namespace mab
 
     struct hardwareType_S
     {
-        deviceType_E deviceType;  // 0xAX - hosts, 0x0X - peripherials
+        deviceType_E deviceType;  // 0xAX - hosts, 0x0X - peripherals
         u8           deviceRevision;
     };
 
