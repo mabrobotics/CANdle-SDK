@@ -17,11 +17,6 @@ class TransmitterPipeTests : public ::testing::Test
     }
 };
 
-TEST_F(TransmitterPipeTests, shouldPass)
-{
-    ASSERT_TRUE(true);
-}
-
 TEST_F(TransmitterPipeTests, CheckPipeWithQueue)
 {
     std::vector<u8>       testData = {1, 2, 3, 4};

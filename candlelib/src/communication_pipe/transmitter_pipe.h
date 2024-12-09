@@ -71,13 +71,14 @@ namespace mab
         transmitterPipeError_E enqueue(std::vector<u8> data);
 
       private:
+        std::future<transmitterPipeError_E> m_pipeFuture;
+
         static transmitterPipeError_E addToQueue(
             std::stop_token                                   stopToken,
             std::shared_ptr<ThreadSafeQueue<std::vector<u8>>> tsQueue,
             const TransmitterPipe::externalOutputFunction_t&  output,
             std::shared_ptr<Logger>                           log);
 
-        std::future<transmitterPipeError_E> m_pipeFuture;
-        bool                                isThreadDead();
+        bool isThreadDead();
     };
 }  // namespace mab
