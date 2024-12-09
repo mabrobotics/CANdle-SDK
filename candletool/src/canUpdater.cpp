@@ -48,7 +48,7 @@ namespace canUpdater
 			*(u32*)&tx[1] = fwStartAdr;
 			*(u32*)&tx[5] = fwSize;
 			success =
-				(candle.sendGenericFDCanFrame(id, 9, tx, rx, 100) && strncmp(rx, "OK", 2) == 0);
+				(candle.sendGenericFDCanFrame(id, 9, tx, rx, 250) && strncmp(rx, "OK", 2) == 0);
 		} while (!success && retries-- > 0);
 		return success;
 	}
@@ -67,18 +67,9 @@ namespace canUpdater
 				bytesToErase = remainingBytesToErase;
 			*(u32*)&tx[5] = bytesToErase;
 			log.debug("ERASE @ %x, %d bytes.", *(u32*)&tx[1], *(u32*)&tx[5]);
-			// u32	 retries = 50000;
-			// bool success = false;
 
 			if (!(candle.sendGenericFDCanFrame(id, 9, tx, rx, 250) && strncmp(rx, "OK", 2) == 0))
                 return false;
-			// do
-			// {
-			// 	success =
-			// 		(candle.sendGenericFDCanFrame(id, 9, tx, rx, 250) && strncmp(rx, "OK", 2) == 0);
-			// 	memset(rx, 0, 2);
-			// 	usleep(100000);
-			// } while (!success & retries-- > 0);
 			memset(rx, 0, 2);
 			*(u32*)&tx[1] += bytesToErase;
 			remainingBytesToErase -= bytesToErase;
@@ -144,8 +135,7 @@ namespace canUpdater
 		char tx[64] = {}, rx[64] = {};
 		tx[0]		  = (u8)0xb6;
 		tx[1]		  = (u8) true;
-		*(u32*)&tx[2] = 0x8005000;	// This is META save address override, left for futureproffing
-		memcpy(&tx[6], checksum, 32);
+		memcpy(&tx[2], checksum, 32);
 		return (candle.sendGenericFDCanFrame(id, 64, tx, rx, 200) && (strncmp(rx, "OK", 2) == 0));
 	}
 }  // namespace canUpdater
