@@ -15,8 +15,8 @@ using namespace mab;
 constexpr u16 PDS_CAN_ID = 100;
 
 constexpr socketIndex_E POWER_STAGE_SOCKET_INDEX        = socketIndex_E::SOCKET_3;
-constexpr socketIndex_E BRAKE_RESISTOR_SOCKET_INDEX     = socketIndex_E::SOCKET_1;
-constexpr socketIndex_E ISOLATED_CONVERTER_SOCKET_INDEX = socketIndex_E::SOCKET_5;
+constexpr socketIndex_E BRAKE_RESISTOR_SOCKET_INDEX     = socketIndex_E::SOCKET_4;
+constexpr socketIndex_E ISOLATED_CONVERTER_SOCKET_INDEX = socketIndex_E::SOCKET_1;
 
 int main()
 {
@@ -51,6 +51,7 @@ int main()
     isolatedConverter->setOcdLevel(4000);           // 4 A OCD level
 
     powerStage->enable();
+    usleep(2000000);  // Wait 2 seconds until power stage is enabled
 
     PowerStage::status_S powerStageStatus = {};
     float                temperature      = 0.0f;
@@ -68,6 +69,13 @@ int main()
     _log.info("Voltage :: [ %.2f ]", static_cast<float>(outputVoltage / 1000.0f));
     _log.info("Temperature :: [ %.2f ]", temperature);
     _log.info("Current :: [ %.2f ]", static_cast<float>(outputCurrent / 1000.0f));
+
+    while (1)
+    {
+        powerStage->getOutputVoltage(outputVoltage);
+        _log.info("Voltage :: [ %.2f ]", static_cast<float>(outputVoltage / 1000.0f));
+        usleep(500000);  // Wait 2 seconds until power stage is enabled
+    }
 
     return EXIT_SUCCESS;
 }
