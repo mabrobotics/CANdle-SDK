@@ -29,13 +29,18 @@ namespace mab
 
     TransmitterPipe::transmitterPipeError_E TransmitterPipe::enqueue(std::vector<u8> data)
     {
-        if (!m_pipeFuture.valid() ||
-            m_pipeFuture.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready)
+        if (isThreadDead())
             return TransmitterPipe::transmitterPipeError_E::THREAD_FAILED;
 
         m_tsQueue->push(std::move(data));
 
         return TransmitterPipe::transmitterPipeError_E::OK;
+    }
+
+    bool TransmitterPipe::isThreadDead()
+    {
+        return !m_pipeFuture.valid() ||
+               m_pipeFuture.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready;
     }
 
 }  // namespace mab
