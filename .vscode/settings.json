@@ -78,6 +78,7 @@
         "variant": "cpp",
         "format": "cpp",
         "valarray": "cpp",
+        "charconv": "cpp"
     },
     "cSpell.words": [
         "Devcontainers",

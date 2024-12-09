@@ -335,7 +335,7 @@ namespace mab
 
         for (uint16_t canId = 10; canId < 2075; canId++)
         {
-            if (sendGenericFDCanFrame(canId, sizeof(txBuffer), txBuffer, rxBuffer, 1))
+            if (sendGenericFDCanFrame(canId, sizeof(txBuffer), txBuffer, rxBuffer, nullptr, 1))
                 log.debug("Pinging ID [ %u ] OK", canId);
         }
 
@@ -348,8 +348,13 @@ namespace mab
     {
         return ping(m_canBaudrate);
     }
-    bool Candle::sendGenericFDCanFrame(
-        uint16_t canId, int msgLen, const char* txBuffer, char* rxBuffer, int timeoutMs)
+
+    bool Candle::sendGenericFDCanFrame(uint16_t    canId,
+                                       int         msgLen,
+                                       const char* p_txBuffer,
+                                       char*       p_rxBuffer,
+                                       size_t*     p_rxLength,
+                                       int         timeoutMs)
     {
         GenericMd80Frame64 frame;
 
@@ -357,7 +362,7 @@ namespace mab
         frame.driveCanId = canId;
         frame.canMsgLen  = msgLen;
         frame.timeoutMs  = timeoutMs < 3 ? 3 : timeoutMs - 3;
-        memcpy(frame.canMsg, txBuffer, msgLen);
+        memcpy(frame.canMsg, p_txBuffer, msgLen);
         char tx[96];
         int  len = sizeof(frame) - sizeof(frame.canMsg) + msgLen;
         memcpy(tx, &frame, len);
@@ -367,10 +372,17 @@ namespace mab
                 *bus->getRxBuffer(1) == true &&
                 bus->getBytesReceived() <= 64 + 2)  // response can ID matches
             {
-                memcpy(rxBuffer, bus->getRxBuffer(2), bus->getBytesReceived() - 2);
+                size_t rxLength = bus->getBytesReceived() - 2;
+                memcpy(p_rxBuffer, bus->getRxBuffer(2), rxLength);
+                if (p_rxLength != nullptr)
+                    *p_rxLength = rxLength;
+
                 return true;
             }
+            log.error("BAD RESPONSE");
+            return false;
         }
+        log.error("TIMEOUT");
         return false;
     }
 
@@ -473,7 +485,7 @@ namespace mab
     bool Candle::configMd80TorqueBandwidth(uint16_t canId, uint16_t torqueBandwidth)
     {
         if (inUpdateMode() || !md80Register->write(canId,
-                                                   Md80Reg_E::motorTorgueBandwidth,
+                                                   Md80Reg_E::motorTorqueBandwidth,
                                                    torqueBandwidth,
                                                    Md80Reg_E::runCalibratePiGains,
                                                    true))
@@ -712,7 +724,7 @@ namespace mab
                                 regR.RO.bridgeType,
                                 Md80Reg_E::canWatchdog,
                                 regR.RW.canWatchdog,
-                                Md80Reg_E::motorTorgueBandwidth,
+                                Md80Reg_E::motorTorqueBandwidth,
                                 regR.RW.torqueBandwidth,
                                 Md80Reg_E::canBaudrate,
                                 regR.RW.canBaudrate,

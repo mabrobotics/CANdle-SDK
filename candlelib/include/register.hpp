@@ -22,38 +22,36 @@ namespace mab
     /* READ ONLY PARAMS */
     typedef struct
     {
-        uint32_t            firmwareVersion;
-        uint8_t             legacyHardwareVersion;
-        mab::hardwareType_S hardwareType;
-        uint32_t            buildDate;
-        char                commitHash[8];
-        uint8_t             bridgeType;
-        float               resistance;
-        float               inductance;
-        uint16_t            quickStatus;
-        float               mosfetTemperature;
-        float               motorTemperature;
-        float               mainEncoderVelocity;
-        float               mainEncoderPosition;
-        float               motorTorque;
-        float               outputEncoderVelocity;
-        float               outputEncoderPosition;
-        float               calOutputEncoderStdDev;
-        float               calOutputEncoderMinE;
-        float               calOutputEncoderMaxE;
-        float               calMainEncoderStdDev;
-        float               calMainEncoderMinE;
-        float               calMainEncoderMaxE;
-        uint32_t            mainEncoderErrors;
-        uint32_t            outputEncoderErrors;
-        uint32_t            calibrationErrors;
-        uint32_t            bridgeErrors;
-        uint32_t            hardwareErrors;
-        uint32_t            communicationErrors;
-        uint32_t            homingErrors;
-        uint32_t            motionErrors;
-        u32                 miscStatus;
-        float               shuntResistance;
+        uint32_t firmwareVersion;
+        uint8_t  hardwareVersion;
+        uint32_t buildDate;
+        char     commitHash[8];
+        uint8_t  bridgeType;
+        float    resistance;
+        float    inductance;
+        uint16_t quickStatus;
+        float    mosfetTemperature;
+        float    motorTemperature;
+        float    mainEncoderVelocity;
+        float    mainEncoderPosition;
+        float    motorTorque;
+        float    outputEncoderVelocity;
+        float    outputEncoderPosition;
+        float    calOutputEncoderStdDev;
+        float    calOutputEncoderMinE;
+        float    calOutputEncoderMaxE;
+        float    calMainEncoderStdDev;
+        float    calMainEncoderMinE;
+        float    calMainEncoderMaxE;
+        uint32_t mainEncoderErrors;
+        uint32_t outputEncoderErrors;
+        uint32_t calibrationErrors;
+        uint32_t bridgeErrors;
+        uint32_t hardwareErrors;
+        uint32_t communicationErrors;
+        uint32_t homingErrors;
+        uint32_t motionErrors;
+        float    shuntResistance;
     } regRO_st;
 
     /* READ WRITE PARAMS */
@@ -137,7 +135,7 @@ namespace mab
         motorKt_c            = 0x015,
         motorIMax            = 0x016,
         motorGearRatio       = 0x017,
-        motorTorgueBandwidth = 0x018,
+        motorTorqueBandwidth = 0x018,
         motorFriction        = 0x019,
         motorStiction        = 0x01A,
         motorResistance      = 0x01B,
@@ -227,25 +225,23 @@ namespace mab
 
         shuntResistance = 0x700,
 
-        hardwareType          = 0x7FF,
-        buildDate             = 0x800,
-        commitHash            = 0x801,
-        firmwareVersion       = 0x802,
-        legacyHardwareVersion = 0x803,
-        bridgeType            = 0x804,
-        quickStatus           = 0x805,
-        mosfetTemperature     = 0x806,
-        motorTemperature      = 0x807,
-        motorShutdownTemp     = 0x808,
-        mainEncoderErrors     = 0x809,
-        outputEncoderErrors   = 0x80A,
-        calibrationErrors     = 0x80B,
-        bridgeErrors          = 0x80C,
-        hardwareErrors        = 0x80D,
-        communicationErrors   = 0x80E,
-        homingErrors          = 0x80F,
-        motionErrors          = 0x810,
-        miscStatus            = 0x812
+        buildDate           = 0x800,
+        commitHash          = 0x801,
+        firmwareVersion     = 0x802,
+        hardwareVersion     = 0x803,
+        bridgeType          = 0x804,
+        quickStatus         = 0x805,
+        mosfetTemperature   = 0x806,
+        motorTemperature    = 0x807,
+        motorShutdownTemp   = 0x808,
+        mainEncoderErrors   = 0x809,
+        outputEncoderErrors = 0x80A,
+        calibrationErrors   = 0x80B,
+        bridgeErrors        = 0x80C,
+        hardwareErrors      = 0x80D,
+        communicationErrors = 0x80E,
+        homingErrors        = 0x80F,
+        motionErrors        = 0x810,
 
     } Md80Reg_E;
     class Register

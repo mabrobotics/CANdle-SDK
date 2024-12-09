@@ -1,0 +1,146 @@
+#pragma once
+
+#include <stdint.h>
+#include "logger.hpp"
+
+#include "pds_types.hpp"
+#include "pds_protocol.hpp"
+#include "candle.hpp"
+
+#include <memory>
+
+namespace mab
+{
+
+    /**
+     * @brief Power distribution system pluggable module abstract class
+     *
+     */
+    class PdsModule
+    {
+      public:
+        enum class error_E : int8_t
+        {
+
+            OK                  = 0,
+            UNKNOWN_ERROR       = 1,
+            PROTOCOL_ERROR      = 2,
+            COMMUNICATION_ERROR = 3,
+
+        };
+
+        PdsModule() = delete;
+
+        socketIndex_E getSocketIndex();
+
+        /**
+         * @brief This enum represents common status bits position in status word for all modules
+         * @note Assuming that only first 8 ( LSBits ) are reserved for common status. Other bits
+         * are for modules specific status information
+         * TODO: Move to the CANdleSDK shared resources!
+         */
+        enum class status_E : uint32_t
+        {
+            ENABLED                = (1 << 0x00),
+            OVER_TEMPERATURE_EVENT = (1 << 0x01),
+            OVER_CURRENT_EVENT     = (1 << 0x02),
+        };
+
+        // static std::string moduleType2String(moduleType_E type);
+
+      protected:
+        /**
+         * @brief Construct a new Pds Module object
+         *
+         * @param socket Physical socket index
+         * @param type module type
+         * @param sp_Candle shared pointer to Candle device the parent PDS device is connected with
+         * @param canId CAN id of the parent PDS device
+         *
+         * @note Constructor is protected because even if this class has no pure virtual methods, it
+            still should not be instantiated.
+         */
+        PdsModule(socketIndex_E socket, moduleType_E type, Candle& candle, u16 canId);
+
+        Logger m_log;
+
+        // Represents physical socket index number that the particular module is connected to.
+        const socketIndex_E m_socketIndex;
+
+        /* Type of the module */
+        const moduleType_E m_type;
+
+        /* Pointer to the candle object. Assumed to be passed in a constructor from parent PDS
+         * object. It will be used for independent communication from each module perspective */
+        Candle& m_candle;
+
+        /* CAN ID of the parent PDS device. Assumed to be passed in a constructor from parent PDS
+         * object */
+        const u16 m_canId;
+
+        template <typename propertyT, typename dataValueT>
+        [[nodiscard]] PdsModule::error_E readModuleProperty(propertyT   property,
+                                                            dataValueT& dataValue)
+        {
+            PdsMessage::error_E result = PdsMessage::error_E::OK;
+            PropertyGetMessage  message(m_type, m_socketIndex);
+
+            u8     responseBuffer[64] = {0};
+            size_t responseLength     = 0;
+            u32    rawData            = 0;
+
+            message.addProperty(property);
+
+            std::vector<u8> serializedMessage = message.serialize();
+            if (!m_candle.sendGenericFDCanFrame(
+                    m_canId,
+                    serializedMessage.size(),
+                    reinterpret_cast<const char*>(serializedMessage.data()),
+                    reinterpret_cast<char*>(responseBuffer),
+                    &responseLength))
+                return error_E::COMMUNICATION_ERROR;
+
+            result = message.parseResponse(responseBuffer, responseLength);
+            if (result != PdsMessage::error_E::OK)
+                return error_E::PROTOCOL_ERROR;
+
+            result = message.getProperty(property, &rawData);
+            if (result != PdsMessage::error_E::OK)
+                return error_E::PROTOCOL_ERROR;
+
+            dataValue = *reinterpret_cast<dataValueT*>(&rawData);
+
+            return error_E::OK;
+        }
+
+        template <typename propertyT, typename dataValueT>
+        [[nodiscard]] PdsModule::error_E writeModuleProperty(propertyT  property,
+                                                             dataValueT dataValue)
+        {
+            PdsMessage::error_E result = PdsMessage::error_E::OK;
+            PropertySetMessage  message(m_type, m_socketIndex);
+            u8                  responseBuffer[64] = {0};
+            size_t              responseLength     = 0;
+
+            message.addProperty(property, dataValue);
+            std::vector<u8> serializedMessage = message.serialize();
+
+            if (!(m_candle.sendGenericFDCanFrame(
+                    m_canId,
+                    serializedMessage.size(),
+                    reinterpret_cast<const char*>(serializedMessage.data()),
+                    reinterpret_cast<char*>(responseBuffer),
+                    &responseLength)))
+            {
+                return error_E::COMMUNICATION_ERROR;
+            }
+
+            result = message.parseResponse(responseBuffer, responseLength);
+            if (result != PdsMessage::error_E::OK)
+                return error_E::PROTOCOL_ERROR;
+
+            return error_E::OK;
+        }
+    };
+
+}  // namespace mab
