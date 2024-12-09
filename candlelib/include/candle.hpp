@@ -143,20 +143,14 @@ namespace mab
         responses from MD80;
         @param canId FDCAN ID of the device
         @param msgLen length of FDCAN message
-        @param p_txBuffer pointer to data buffer to be transmited
-        @param p_rxBuffer pointer to data buffer for storing a response. Buffer should be 64 bytes
+        @param txBuffer pointer to data buffer to be transmited
+        @param rxBuffer pointer to data buffer for storing a response. Buffer should be 64 bytes
         long.
-        @param p_rxLength pinter to the size variable where the length of received data will be
-        stored
         @param timeoutMs timeout for receiving in milliseconds
         @return true if received response, false otherwise
         */
-        bool sendGenericFDCanFrame(uint16_t    canId,
-                                   int         msgLen,
-                                   const char* p_txBuffer,
-                                   char*       p_rxBuffer,
-                                   size_t*     p_rxLength = nullptr,
-                                   int         timeoutMs  = 100);
+        bool sendGenericFDCanFrame(
+            uint16_t canId, int msgLen, const char* txBuffer, char* rxBuffer, int timeoutMs = 100);
 
         /**
         @brief Adds MD80 to auto update vector.

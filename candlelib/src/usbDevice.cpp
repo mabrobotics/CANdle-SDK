@@ -67,25 +67,31 @@ UsbDevice::UsbDevice(u16 vid, u16 pid, const std::vector<u32>& idsToIgnore, cons
         {
             if (libusb_kernel_driver_active(devh, if_num))
                 libusb_detach_kernel_driver(devh, if_num);
-
-            rc = libusb_claim_interface(devh, if_num);
-            if (rc < 0)
+            serialDeviceId = hashedId;
+            for (int if_num = 0; if_num < 2; if_num++)
             {
-                m_log.error("Failed to claim interface !");
-                throw "Failed to claim libusb interface!";
+                if (libusb_kernel_driver_active(devh, if_num))
+                    libusb_detach_kernel_driver(devh, if_num);
+
+                rc = libusb_claim_interface(devh, if_num);
+                if (rc < 0)
+                {
+                    m_log.error("Failed to claim interface !");
+                    throw "Failed to claim libusb interface!";
+                }
             }
+            break;
         }
-        break;
-    }
-    libusb_free_device_list(devs, 1);
-    if (devh == nullptr)
-    {
-        m_log.error("CANdle not found on USB bus!");
-        return;
-    }
-    else
-    {
-        m_isConnected = true;
+        libusb_free_device_list(devs, 1);
+        if (devh == nullptr)
+        {
+            m_log.error("CANdle not found on USB bus!");
+            return;
+        }
+        else
+        {
+            m_isConnected = true;
+        }
     }
 }
 
@@ -235,7 +241,21 @@ u32 searchMultipleDevicesOnUSB(u16 pid, u16 vid)
     for (u32 i = 0; i < allDevices; i++)
     {
         struct libusb_device_descriptor desc;
+        u32                             nDevices = 0;
+        libusb_init(nullptr);
+        u32 allDevices = libusb_get_device_list(nullptr, &devs);
+        for (u32 i = 0; i < allDevices; i++)
+        {
+            struct libusb_device_descriptor desc;
 
+            s32 ret = libusb_get_device_descriptor(devs[i], &desc);
+            if (ret < 0)
+                continue;
+            if (desc.idProduct == pid && desc.idVendor == vid)
+                nDevices++;
+        }
+        libusb_exit(nullptr);
+        return nDevices;
         s32 ret = libusb_get_device_descriptor(devs[i], &desc);
         if (ret < 0)
             continue;
