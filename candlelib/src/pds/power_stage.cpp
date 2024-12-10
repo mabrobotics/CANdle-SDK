@@ -17,12 +17,12 @@ namespace mab
 
     PdsModule::error_E PowerStage::enable()
     {
-        return writeModuleProperty(properties_E::ENABLED, true);
+        return writeModuleProperty(propertyId_E::ENABLE, true);
     }
 
     PdsModule::error_E PowerStage::disable()
     {
-        return writeModuleProperty(properties_E::ENABLED, false);
+        return writeModuleProperty(propertyId_E::ENABLE, false);
     }
 
     PdsModule::error_E PowerStage::getStatus(status_S& status)
@@ -30,7 +30,7 @@ namespace mab
         error_E result     = error_E::UNKNOWN_ERROR;
         u32     statusWord = 0;
 
-        result = readModuleProperty(properties_E::STATUS, statusWord);
+        result = readModuleProperty(propertyId_E::STATUS_WORD, statusWord);
 
         status.ENABLED   = (statusWord & static_cast<u32>(status_E::ENABLED));
         status.OCD_EVENT = (statusWord & static_cast<u32>(status_E::OVER_CURRENT_EVENT));
@@ -52,82 +52,82 @@ namespace mab
         if (status.OVT_EVENT)
             statusClearWord |= static_cast<u32>(status_E::OVER_TEMPERATURE_EVENT);
 
-        return writeModuleProperty(properties_E::STATUS_CLEAR, statusClearWord);
+        return writeModuleProperty(propertyId_E::STATUS_CLEAR, statusClearWord);
     }
 
     PdsModule::error_E PowerStage::getEnabled(bool& enabled)
     {
-        return readModuleProperty(properties_E::ENABLED, enabled);
+        return readModuleProperty(propertyId_E::ENABLE, enabled);
     }
 
     PdsModule::error_E PowerStage::bindBrakeResistor(socketIndex_E brakeResistorSocketIndex)
     {
-        return writeModuleProperty(properties_E::BR_SOCKET_INDEX, brakeResistorSocketIndex);
+        return writeModuleProperty(propertyId_E::BR_SOCKET_INDEX, brakeResistorSocketIndex);
     }
 
     PdsModule::error_E PowerStage::setBrakeResistorTriggerVoltage(uint32_t brTriggerVoltage)
     {
-        return writeModuleProperty(properties_E::BR_TRIGGER_VOLTAGE, brTriggerVoltage);
+        return writeModuleProperty(propertyId_E::BR_TRIGGER_VOLTAGE, brTriggerVoltage);
     }
 
     PdsModule::error_E PowerStage::getBrakeResistorTriggerVoltage(u32& brTriggerVoltage)
     {
-        return readModuleProperty(properties_E::BR_TRIGGER_VOLTAGE, brTriggerVoltage);
+        return readModuleProperty(propertyId_E::BR_TRIGGER_VOLTAGE, brTriggerVoltage);
     }
 
     PdsModule::error_E PowerStage::getOutputVoltage(u32& outputVoltage)
     {
-        return readModuleProperty(properties_E::BUS_VOLTAGE, outputVoltage);
+        return readModuleProperty(propertyId_E::BUS_VOLTAGE, outputVoltage);
     }
 
     PdsModule::error_E PowerStage::getLoadCurrent(s32& loadCurrent)
     {
-        return readModuleProperty(properties_E::LOAD_CURRENT, loadCurrent);
+        return readModuleProperty(propertyId_E::LOAD_CURRENT, loadCurrent);
     }
 
     PdsModule::error_E PowerStage::getPower(s32& power)
     {
-        return readModuleProperty(properties_E::LOAD_POWER, power);
+        return readModuleProperty(propertyId_E::LOAD_POWER, power);
     }
 
     PdsModule::error_E PowerStage::getEnergy(s32& energy)
     {
-        return readModuleProperty(properties_E::TOTAL_ENERGY, energy);
+        return readModuleProperty(propertyId_E::TOTAL_ENERGY, energy);
     }
 
     PdsModule::error_E PowerStage::getTemperature(f32& temperature)
     {
-        return readModuleProperty(properties_E::TEMPERATURE, temperature);
+        return readModuleProperty(propertyId_E::TEMPERATURE, temperature);
     }
 
     PdsModule::error_E PowerStage::setOcdLevel(u32 ocdLevel)
     {
-        return writeModuleProperty(properties_E::OCD_LEVEL, ocdLevel);
+        return writeModuleProperty(propertyId_E::OCD_LEVEL, ocdLevel);
     }
 
     PdsModule::error_E PowerStage::getOcdLevel(u32& ocdLevel)
     {
-        return readModuleProperty(properties_E::OCD_LEVEL, ocdLevel);
+        return readModuleProperty(propertyId_E::OCD_LEVEL, ocdLevel);
     }
 
     PdsModule::error_E PowerStage::setOcdDelay(u32 ocdDelay)
     {
-        return writeModuleProperty(properties_E::OCD_DELAY, ocdDelay);
+        return writeModuleProperty(propertyId_E::OCD_DELAY, ocdDelay);
     }
 
     PdsModule::error_E PowerStage::getOcdDelay(u32& ocdDelay)
     {
-        return readModuleProperty(properties_E::OCD_DELAY, ocdDelay);
+        return readModuleProperty(propertyId_E::OCD_DELAY, ocdDelay);
     }
 
     PdsModule::error_E PowerStage::setTemperatureLimit(f32 temperatureLimit)
     {
-        return writeModuleProperty(properties_E::TEMPERATURE_LIMIT, temperatureLimit);
+        return writeModuleProperty(propertyId_E::TEMPERATURE_LIMIT, temperatureLimit);
     }
 
     PdsModule::error_E PowerStage::getTemperatureLimit(f32& temperatureLimit)
     {
-        return readModuleProperty(properties_E::TEMPERATURE_LIMIT, temperatureLimit);
+        return readModuleProperty(propertyId_E::TEMPERATURE_LIMIT, temperatureLimit);
     }
 
 }  // namespace mab

@@ -33,7 +33,7 @@ namespace mab
         SOCKET_INDEX_MAX = 0x06,
     };
 
-    enum class propertyAccessRights_E
+    enum class accessRights_E
     {
         READ_ONLY  = 0x00,
         READ_WRITE = 0x01,
@@ -51,9 +51,10 @@ namespace mab
 
         STATUS_WORD        = 0x00,
         STATUS_CLEAR       = 0x01,
-        TEMPERATURE        = 0x02,
-        TEMPERATURE_LIMIT  = 0x03,
-        BUS_VOLTAGE        = 0x04,
+        ENABLE             = 0x02,
+        TEMPERATURE        = 0x03,
+        TEMPERATURE_LIMIT  = 0x04,
+        BUS_VOLTAGE        = 0x05,
         LOAD_CURRENT       = 0x10,
         LOAD_POWER         = 0x11,
         TOTAL_ENERGY       = 0x12,
