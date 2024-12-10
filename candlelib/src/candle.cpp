@@ -311,7 +311,7 @@ namespace mab
 					 firmwareVersion.s.minor > md80CompatibleVersion.s.minor)
 			{
 				log.warn("MD80 firmware (ID: %d) is a future version. Update your CANdle library.",
-						  canId);
+						 canId);
 			}
 			log.success("Added MD80 (ID: %d)", canId);
 			md80s.push_back(Md80(canId));
@@ -377,10 +377,13 @@ namespace mab
 		char tx[96];
 		int	 len = sizeof(frame) - sizeof(frame.canMsg) + msgLen;
 		memcpy(tx, &frame, len);
-		if (bus->transmit(tx, len, true, timeoutMs, 66, false))	 // Got some response
+
+		bool shouldGetResponse = (rxBuffer != nullptr);
+		if (bus->transmit(tx, len, shouldGetResponse, timeoutMs, 66, false))  // Got some response
 		{
-			if (*bus->getRxBuffer(0) == tx[0] &&  // USB Frame ID matches
-				*bus->getRxBuffer(1) == true &&
+            if (!shouldGetResponse)
+                return true;
+			if (*bus->getRxBuffer(0) == tx[0] && *bus->getRxBuffer(1) == true && // USB FRAME OK
 				bus->getBytesReceived() <= 64 + 2)	// response can ID matches
 			{
 				memcpy(rxBuffer, bus->getRxBuffer(2), bus->getBytesReceived() - 2);
@@ -563,7 +566,7 @@ namespace mab
 			msgsSent			  = 0;
 			msgsReceived		  = 0;
 
-            log.info("Starting transfer thread...");
+			log.info("Starting transfer thread...");
 			transmitterThread = std::thread(&Candle::transfer, this);
 
 			return true;

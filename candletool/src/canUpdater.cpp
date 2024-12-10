@@ -69,7 +69,7 @@ namespace canUpdater
 			log.debug("ERASE @ %x, %d bytes.", *(u32*)&tx[1], *(u32*)&tx[5]);
 
 			if (!(candle.sendGenericFDCanFrame(id, 9, tx, rx, 250) && strncmp(rx, "OK", 2) == 0))
-                return false;
+				return false;
 			memset(rx, 0, 2);
 			*(u32*)&tx[1] += bytesToErase;
 			remainingBytesToErase -= bytesToErase;
@@ -133,9 +133,12 @@ namespace canUpdater
 	bool sendMeta(mab::Candle& candle, u16 id, u8* checksum)
 	{
 		char tx[64] = {}, rx[64] = {};
-		tx[0]		  = (u8)0xb6;
-		tx[1]		  = (u8) true;
+		tx[0] = (u8)0xb6;
+		tx[1] = (u8) true;
 		memcpy(&tx[2], checksum, 32);
-		return (candle.sendGenericFDCanFrame(id, 64, tx, rx, 200) && (strncmp(rx, "OK", 2) == 0));
+		candle.sendGenericFDCanFrame(id, 64, tx, nullptr, 10);
+        usleep(300000);
+		candle.sendGenericFDCanFrame(id, 0, tx, rx, 250);
+		return (strncmp(rx, "OK", 2) == 0);
 	}
 }  // namespace canUpdater
