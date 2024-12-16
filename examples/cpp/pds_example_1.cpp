@@ -23,6 +23,10 @@ int main()
 
     Pds::modulesSet_S pdsModules = pds.getModules();
 
+    u32 pdsBusVoltage = 0;
+    pds.getBusVoltage(pdsBusVoltage);
+    // PdsModule::error_E result        = pds.getBusVoltage(pdsBusVoltage);
+
     _log.info("PDS have the following numbers of connected modules:");
     _log.info("\t1\t:: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket1));
     _log.info("\t2\t:: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket2));
@@ -30,6 +34,8 @@ int main()
     _log.info("\t4\t:: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket4));
     _log.info("\t5\t:: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket5));
     _log.info("\t6\t:: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket6));
+
+    _log.info("Bus voltage: %u", pdsBusVoltage);
 
     return EXIT_SUCCESS;
 }

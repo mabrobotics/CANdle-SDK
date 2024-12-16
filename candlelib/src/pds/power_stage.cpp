@@ -92,7 +92,7 @@ namespace mab
 
     PdsModule::error_E PowerStage::getEnergy(s32& energy)
     {
-        return readModuleProperty(propertyId_E::TOTAL_ENERGY, energy);
+        return readModuleProperty(propertyId_E::TOTAL_DELIVERED_ENERGY, energy);
     }
 
     PdsModule::error_E PowerStage::getTemperature(f32& temperature)

@@ -63,12 +63,12 @@ namespace mab
         size_t responseLength     = 0;
         u32    rawData            = 0;
 
-        message.addProperty(properties_E::SOCKET_1_MODULE);
-        message.addProperty(properties_E::SOCKET_2_MODULE);
-        message.addProperty(properties_E::SOCKET_3_MODULE);
-        message.addProperty(properties_E::SOCKET_4_MODULE);
-        message.addProperty(properties_E::SOCKET_5_MODULE);
-        message.addProperty(properties_E::SOCKET_6_MODULE);
+        message.addProperty(propertyId_E::SOCKET_1_MODULE);
+        message.addProperty(propertyId_E::SOCKET_2_MODULE);
+        message.addProperty(propertyId_E::SOCKET_3_MODULE);
+        message.addProperty(propertyId_E::SOCKET_4_MODULE);
+        message.addProperty(propertyId_E::SOCKET_5_MODULE);
+        message.addProperty(propertyId_E::SOCKET_6_MODULE);
 
         std::vector<u8> serializedMessage = message.serialize();
 
@@ -84,37 +84,37 @@ namespace mab
         if (result != PdsMessage::error_E::OK)
             return PdsModule::error_E ::COMMUNICATION_ERROR;
 
-        result = message.getProperty(properties_E::SOCKET_1_MODULE, &rawData);
+        result = message.getProperty(propertyId_E::SOCKET_1_MODULE, &rawData);
         if (result != PdsMessage::error_E::OK)
             return PdsModule::error_E ::COMMUNICATION_ERROR;
         m_modulesSet.moduleTypeSocket1 = decodeModuleType(rawData);
         createModule(m_modulesSet.moduleTypeSocket1, socketIndex_E::SOCKET_1);
 
-        result = message.getProperty(properties_E::SOCKET_2_MODULE, &rawData);
+        result = message.getProperty(propertyId_E::SOCKET_2_MODULE, &rawData);
         if (result != PdsMessage::error_E::OK)
             return PdsModule::error_E ::COMMUNICATION_ERROR;
         m_modulesSet.moduleTypeSocket2 = decodeModuleType(rawData);
         createModule(m_modulesSet.moduleTypeSocket2, socketIndex_E::SOCKET_2);
 
-        result = message.getProperty(properties_E::SOCKET_3_MODULE, &rawData);
+        result = message.getProperty(propertyId_E::SOCKET_3_MODULE, &rawData);
         if (result != PdsMessage::error_E::OK)
             return PdsModule::error_E ::COMMUNICATION_ERROR;
         m_modulesSet.moduleTypeSocket3 = decodeModuleType(rawData);
         createModule(m_modulesSet.moduleTypeSocket3, socketIndex_E::SOCKET_3);
 
-        result = message.getProperty(properties_E::SOCKET_4_MODULE, &rawData);
+        result = message.getProperty(propertyId_E::SOCKET_4_MODULE, &rawData);
         if (result != PdsMessage::error_E::OK)
             return PdsModule::error_E ::COMMUNICATION_ERROR;
         m_modulesSet.moduleTypeSocket4 = decodeModuleType(rawData);
         createModule(m_modulesSet.moduleTypeSocket4, socketIndex_E::SOCKET_4);
 
-        result = message.getProperty(properties_E::SOCKET_5_MODULE, &rawData);
+        result = message.getProperty(propertyId_E::SOCKET_5_MODULE, &rawData);
         if (result != PdsMessage::error_E::OK)
             return PdsModule::error_E ::COMMUNICATION_ERROR;
         m_modulesSet.moduleTypeSocket5 = decodeModuleType(rawData);
         createModule(m_modulesSet.moduleTypeSocket5, socketIndex_E::SOCKET_5);
 
-        result = message.getProperty(properties_E::SOCKET_6_MODULE, &rawData);
+        result = message.getProperty(propertyId_E::SOCKET_6_MODULE, &rawData);
         if (result != PdsMessage::error_E::OK)
             return PdsModule::error_E ::COMMUNICATION_ERROR;
         m_modulesSet.moduleTypeSocket6 = decodeModuleType(rawData);
@@ -209,12 +209,12 @@ namespace mab
 
     PdsModule::error_E Pds::getBusVoltage(u32& busVoltage)
     {
-        return readModuleProperty(properties_E::BUS_VOLTAGE, busVoltage);
+        return readModuleProperty(propertyId_E::BUS_VOLTAGE, busVoltage);
     }
 
     PdsModule::error_E Pds::getTemperature(f32& temperature)
     {
-        return readModuleProperty(properties_E::TEMPERATURE, temperature);
+        return readModuleProperty(propertyId_E::TEMPERATURE, temperature);
     }
 
     moduleType_E Pds::decodeModuleType(uint8_t moduleTypeCode)
