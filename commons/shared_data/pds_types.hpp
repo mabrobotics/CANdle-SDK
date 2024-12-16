@@ -5,7 +5,6 @@
 namespace mab
 {
 
-    // TODO: full names of board types
     enum class moduleType_E : u8
     {
         UNDEFINED = 0x00,
@@ -46,7 +45,7 @@ namespace mab
         and avoid situation whet the same property will have different IDs
         in different modules.
     */
-    enum class propertyId_E
+    enum class propertyId_E : u8
     {
 
         STATUS_WORD              = 0x00,
@@ -71,6 +70,14 @@ namespace mab
         OCD_LEVEL                = 0x40,
         OCD_DELAY                = 0x41,
 
+    };
+
+    enum class canBaudrate_E : u8
+    {
+        BAUD_1M = 0x00,
+        BAUD_2M = 0x01,
+        BAUD_5M = 0x02,
+        BAUD_8M = 0x03
     };
 
 }  // namespace mab

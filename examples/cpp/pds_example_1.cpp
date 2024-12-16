@@ -3,7 +3,8 @@
 
     Power Distribution System Example 1
 
-    Reading the submodules connected to the PDS Device
+    Reading data from PDS Control board:
+        * Connected submodules list
 
 */
 #include "candle.hpp"
@@ -35,7 +36,7 @@ int main()
     _log.info("\t5\t:: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket5));
     _log.info("\t6\t:: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket6));
 
-    _log.info("Bus voltage: %u", pdsBusVoltage);
+    _log.info("Bus voltage: %0.2f", pdsBusVoltage / 1000.0f);
 
     return EXIT_SUCCESS;
 }
