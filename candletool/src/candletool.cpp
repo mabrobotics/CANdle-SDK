@@ -802,7 +802,7 @@ void CandleTool::updateMd(u16 id, const std::string& path)
 		return;
 
 	candle->setupMd80PerformReset(id);
-	usleep(300000);
+	usleep(50000);
 
 	if (!canUpdater::sendHostInit(*candle, log, id, mab.fwStartAddress, mab.fwSize))
 		return log.error("HOST INIT failed!");

@@ -48,7 +48,7 @@ namespace canUpdater
 			*(u32*)&tx[1] = fwStartAdr;
 			*(u32*)&tx[5] = fwSize;
 			success =
-				(candle.sendGenericFDCanFrame(id, 9, tx, rx, 250) && strncmp(rx, "OK", 2) == 0);
+				(candle.sendGenericFDCanFrame(id, 9, tx, rx, 100) && strncmp(rx, "OK", 2) == 0);
 		} while (!success && retries-- > 0);
 		return success;
 	}
