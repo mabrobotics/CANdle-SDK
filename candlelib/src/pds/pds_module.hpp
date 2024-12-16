@@ -6,7 +6,7 @@
 #include "pds_types.hpp"
 #include "pds_protocol.hpp"
 #include "candle.hpp"
-
+#include <cstring>
 #include <memory>
 
 namespace mab
@@ -109,7 +109,7 @@ namespace mab
             if (result != PdsMessage::error_E::OK)
                 return error_E::PROTOCOL_ERROR;
 
-            dataValue = *reinterpret_cast<dataValueT*>(&rawData);
+            std::memcpy(&dataValue, &rawData, sizeof(dataValue));
 
             return error_E::OK;
         }
