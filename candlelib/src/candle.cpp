@@ -335,7 +335,7 @@ namespace mab
 
         for (uint16_t canId = 10; canId < 2075; canId++)
         {
-            if (sendGenericFDCanFrame(canId, sizeof(txBuffer), txBuffer, rxBuffer, 1))
+            if (sendGenericFDCanFrame(canId, sizeof(txBuffer), txBuffer, rxBuffer, nullptr, 1))
                 log.debug("Pinging ID [ %u ] OK", canId);
         }
 
@@ -348,10 +348,16 @@ namespace mab
     {
         return ping(m_canBaudrate);
     }
-    bool Candle::sendGenericFDCanFrame(
-        uint16_t canId, int msgLen, const char* txBuffer, char* rxBuffer, int timeoutMs)
+    bool Candle::sendGenericFDCanFrame(uint16_t    canId,
+                                       int         msgLen,
+                                       const char* txBuffer,
+                                       char*       rxBuffer,
+                                       size_t*     pRxLength,
+                                       int         timeoutMs)
     {
         GenericMd80Frame64 frame;
+
+        size_t rxLength = 0;
 
         frame.frameId    = mab::BusFrameId_t::BUS_FRAME_MD80_GENERIC_FRAME;
         frame.driveCanId = canId;
@@ -363,11 +369,13 @@ namespace mab
         memcpy(tx, &frame, len);
         if (bus->transmit(tx, len, true, timeoutMs, 66, false))  // Got some response
         {
-            if (*bus->getRxBuffer(0) == tx[0] &&  // USB Frame ID matches
-                *bus->getRxBuffer(1) == true &&
-                bus->getBytesReceived() <= 64 + 2)  // response can ID matches
+            rxLength = bus->getBytesReceived();
+            if (*bus->getRxBuffer(0) == tx[0] &&                     // USB Frame ID matches
+                *bus->getRxBuffer(1) == true && rxLength <= 64 + 2)  // response can ID matches
             {
-                memcpy(rxBuffer, bus->getRxBuffer(2), bus->getBytesReceived() - 2);
+                memcpy(rxBuffer, bus->getRxBuffer(2), rxLength - 2);
+                if (pRxLength != nullptr)
+                    *pRxLength = rxLength;
                 return true;
             }
         }

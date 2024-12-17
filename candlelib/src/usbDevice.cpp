@@ -184,8 +184,20 @@ bool UsbDevice::transmit(
         m_log.error("Failed to transmit! [ libusb error %d ]", ret);
         return false;
     }
+
     if (waitForResponse)
-        receive(responseLen, timeout);
+    {
+        if (receive(responseLen, timeout))
+        {
+            return true;
+        }
+        else
+        {
+            m_log.error("USB Receive timeout");
+            return false;
+        }
+    }
+
     return true;
 }
 
