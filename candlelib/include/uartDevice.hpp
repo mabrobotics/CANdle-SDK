@@ -18,25 +18,35 @@
 
 class UartDevice : public mab::Bus
 {
-   public:
-	UartDevice(const std::string device = "/dev/ttyAMA0");
-	~UartDevice();
-	bool transmit(char* buffer, int len, bool waitForResponse = false, int timeout = 100, int responseLen = 0, bool faultVerbose = true) override;
-	bool receive(int responseLen, int timeoutMs = 100, bool checkCrc = true, bool faultVerbose = true) override;
-	unsigned long getId() override;
-	std::string getDeviceName() override;
-	void flushReceiveBuffer() override;
+  public:
+    UartDevice(const std::string device = "/dev/ttyAMA0");
+    ~UartDevice();
 
-   private:
-	Crc crc;
+    bool transmit(char* buffer,
+                  int   len,
+                  bool  waitForResponse = false,
+                  int   timeout         = 100,
+                  int   responseLen     = 0,
+                  bool  faultVerbose    = true) override;
+    bool receive(int  responseLen,
+                 int  timeoutMs    = 100,
+                 bool checkCrc     = true,
+                 bool faultVerbose = true) override;
 
-	/* UART settings */
-	std::string device;
-	const uint32_t uartSpeed = B1000000;
+    unsigned long getId() override;
+    std::string   getDeviceName() override;
+    void          flushReceiveBuffer() override;
 
-	int fd;
-	struct termios tty;
-	std::mutex rxLock;
+  private:
+    Crc crc;
 
-	void displayDebugMsg(char* buffer, int bytesReceived);
+    /* UART settings */
+    std::string    device;
+    const uint32_t uartSpeed = B1000000;
+
+    int            fd;
+    struct termios tty;
+    std::mutex     rxLock;
+
+    void displayDebugMsg(char* buffer, int bytesReceived);
 };

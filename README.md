@@ -29,6 +29,9 @@ Building for Linux system:
 ./launch/buildForLinux.sh
 ```
 ### Using Docker
+
+(See: [Installing docker on Linux(ubuntu)](https://docs.docker.com/engine/install/ubuntu/) )
+
 First build docker container:
 ```
 docker build launch/dockerForLinux/ -t candle-sdk-linux:v1
@@ -40,8 +43,17 @@ and run
 ```
 ./launch/runDockerForLinux.sh
 OR
-./lauch/runDockerForWindows.sh
+./launch/runDockerForWindows.sh
 ```
+
+### VS Code in devcontainer
+
+1. Install "ms-vscode-remote.remote-containers" extension (from workspace recommendations)
+2. Run "Reopen in container" Command in VS Code ( Press **F1** and type "**Dev Containers: reopen in container**")
+
+Devcontainers extension will Build a docker image using [**Dockerfile**](launch/LinuxDocker/Dockerfile) for Linux, create a container and install VSCode server in the container alongside with necessary extensions.
+See [**.devcontainer.json**](.devcontainer/devcontainer.json) for more details
+
 ### Cross-compile for Windows
 ```
 sudo apt install  g++-mingw-w64-x86-64-posix
