@@ -11,17 +11,17 @@ namespace mab
 
     PdsModule::error_E BrakeResistor::enable()
     {
-        return writeModuleProperty(properties_E::ENABLED, true);
+        return writeModuleProperty(propertyId_E::ENABLE, true);
     }
 
     PdsModule::error_E BrakeResistor::disable()
     {
-        return writeModuleProperty(properties_E::ENABLED, false);
+        return writeModuleProperty(propertyId_E::ENABLE, false);
     }
 
     PdsModule::error_E BrakeResistor::getEnabled(bool& enabled)
     {
-        return readModuleProperty(properties_E::ENABLED, enabled);
+        return readModuleProperty(propertyId_E::ENABLE, enabled);
     }
 
     PdsModule::error_E BrakeResistor::getStatus(status_S& status)
@@ -29,7 +29,7 @@ namespace mab
         error_E result     = error_E::UNKNOWN_ERROR;
         u32     statusWord = 0;
 
-        result = readModuleProperty(properties_E::STATUS, statusWord);
+        result = readModuleProperty(propertyId_E::STATUS_WORD, statusWord);
 
         status.ENABLED   = (statusWord & static_cast<u32>(status_E::ENABLED));
         status.OVT_EVENT = (statusWord & static_cast<u32>(status_E::OVER_TEMPERATURE_EVENT));
@@ -47,22 +47,22 @@ namespace mab
         if (status.OVT_EVENT)
             statusClearWord |= static_cast<u32>(status_E::OVER_TEMPERATURE_EVENT);
 
-        return writeModuleProperty(properties_E::STATUS_CLEAR, statusClearWord);
+        return writeModuleProperty(propertyId_E::STATUS_CLEAR, statusClearWord);
     }
 
     PdsModule::error_E BrakeResistor::getTemperature(f32& temperature)
     {
-        return readModuleProperty(properties_E::TEMPERATURE, temperature);
+        return readModuleProperty(propertyId_E::TEMPERATURE, temperature);
     }
 
     PdsModule::error_E BrakeResistor::setTemperatureLimit(f32 temperatureLimit)
     {
-        return writeModuleProperty(properties_E::TEMPERATURE_LIMIT, temperatureLimit);
+        return writeModuleProperty(propertyId_E::TEMPERATURE_LIMIT, temperatureLimit);
     }
 
     PdsModule::error_E BrakeResistor::getTemperatureLimit(f32& temperatureLimit)
     {
-        return readModuleProperty(properties_E::TEMPERATURE_LIMIT, temperatureLimit);
+        return readModuleProperty(propertyId_E::TEMPERATURE_LIMIT, temperatureLimit);
     }
 
 }  // namespace mab
