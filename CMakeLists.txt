@@ -4,7 +4,6 @@ include(git_func.cmake)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-
 if(NOT DEFINED PLATFORM)
   set(PLATFORM "native")
   message("Compiling for native system")

@@ -93,7 +93,7 @@ int main(int argc, char** argv)
     setupMotor->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
     setupMotor->add_option(
         "<.cfg FILENAME>",
-        cmd.cfgPath,
+        cmd.path,
         "Filename of motor config. Default config files are in:`/etc/candletool/config/motors/`.");
     setupMotor->add_flag("-f", cmd.force, "Force uploading config file, without verification.");
     setupReadCfg->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
@@ -129,19 +129,49 @@ int main(int argc, char** argv)
     // UPDATE
     auto* updateMD = update->add_subcommand("MD", "Update MD20/80 via FDCAN.");
     // TODO:
-    // auto* updatePDS = test->add_subcommand("PDS", "Update PDS via FDCAN.");
-    // auto* updateCANdle = test->add_subcommand("CANdle" "Update CANdle via USB.");
     updateMD->add_option("<CAN ID>", cmd.id, "CAN ID of device to interact with.")->required();
     updateMD->add_option("-f", cmd.path, "Path to .mab file with firmware.")
         ->check(CLI::ExistingFile);
     // TODO: updateMD->add_flag("-v", cmd.variant, "Version string, eg. `-v 3.0.0` or `-v latest`");
+    // auto* updatePDS = test->add_subcommand("PDS", "Update PDS via FDCAN.");
+    // auto* updateCANdle = test->add_subcommand("CANdle" "Update CANdle via USB.");
 
+
+    // EMKA auto* candleUpdate = update->add_subcommand("candle", "Update firmware on Candle device.");
+    // EMKA auto* pdsUpdate    = update->add_subcommand("pds", "Update firmware on PDS device.");
+    
     CLI11_PARSE(app, argc, argv);
 
-    auto* candleUpdate = update->add_subcommand("candle", "Update firmware on Candle device.");
-    auto* mdUpdate     = update->add_subcommand("md", "Update firmware on MD device.");
-    auto* pdsUpdate    = update->add_subcommand("pds", "Update firmware on PDS device.");
+    CandleTool candleTool;
+    // Verbosity
+    uint32_t verbosityMode = 0;
+    bool     silentMode{false};
+    app.add_flag("-v{1},--verbosity{1}", verbosityMode, "Verbose modes (1,2,3)")
+        ->default_val(0)
+        ->expected(0, 1);
+    app.add_flag("-s,--silent", silentMode, "Silent mode")->default_val(0);
 
+    std::string logPath = "";
+    app.add_flag("--log", logPath, "Redirect output to file")->default_val("")->expected(1);
+
+    // set global verbosity for loggers
+    if (silentMode)
+        Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
+    else if (verbosityMode < static_cast<uint32_t>(Logger::Verbosity_E::SILENT))
+        Logger::g_m_verbosity = static_cast<Logger::Verbosity_E>(verbosityMode);
+    else
+        throw std::runtime_error("Verbosity outside of range");
+
+    // redirect logger if asked for
+    if (logPath != "")
+    {
+        if (!Logger::setStream(logPath.c_str()))
+            throw std::runtime_error("Could not create log file!");
+    }
+
+    if (app.count_all() == 1)
+        std::cerr << app.help() << std::endl;
+    
     if (blink->parsed())
         candleTool.blink(cmd.id);
     if (bus->parsed())
@@ -209,136 +239,6 @@ int main(int argc, char** argv)
     {
         if (updateMD->parsed())
             candleTool.updateMd(cmd.id, cmd.path);
-    }
-
-    // Verbosity
-    uint32_t verbosityMode = 0;
-    bool     silentMode{false};
-    app.add_flag("-v{1},--verbosity{1}", verbosityMode, "Verbose modes (1,2,3)")
-        ->default_val(0)
-        ->expected(0, 1);
-    app.add_flag("-s,--silent", silentMode, "Silent mode")->default_val(0);
-
-    std::string logPath = "";
-    app.add_flag("--log", logPath, "Redirect output to file")->default_val("")->expected(1);
-
-    CLI11_PARSE(app, argc, argv);
-
-    // set global verbosity for loggers
-    if (silentMode)
-        Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
-    else if (verbosityMode < static_cast<uint32_t>(Logger::Verbosity_E::SILENT))
-        Logger::g_m_verbosity = static_cast<Logger::Verbosity_E>(verbosityMode);
-    else
-        throw std::runtime_error("Verbosity outside of range");
-
-    // redirect logger if asked for
-    if (logPath != "")
-    {
-        if (!Logger::setStream(logPath.c_str()))
-            throw std::runtime_error("Could not create log file!");
-    }
-
-    CandleTool candleTool;
-    if (app.count_all() == 1)
-        std::cerr << app.help() << std::endl;
-
-    if (blink->parsed())
-        candleTool.blink(cmd.id);
-    if (bus->parsed())
-        candleTool.bus(cmd.bus, cmd.variant);
-    if (clear->parsed())
-        candleTool.clearErrors(cmd.id, cmd.variant);
-    if (config->parsed())
-    {
-        if (configBand->parsed())
-            candleTool.configBandwidth(cmd.id, cmd.bandwidth);
-        if (configCan->parsed())
-            candleTool.configCan(cmd.id, cmd.newId, cmd.baud, cmd.canWatchdog);
-        if (configClear->parsed())
-            candleTool.configClear(cmd.id);
-        if (configCurrent->parsed())
-            candleTool.configCurrent(cmd.id, cmd.current);
-        if (configSave->parsed())
-            candleTool.configSave(cmd.id);
-        if (configZero->parsed())
-            candleTool.configZero(cmd.id);
-    }
-    if (encoder->parsed())
-        candleTool.encoder(cmd.id);
-    if (ping->parsed())
-        candleTool.ping(cmd.variant);
-    if (registr->parsed())
-    {
-        u16 reg = strtoul(cmd.reg.c_str(), nullptr, 16);
-        if (regRead->parsed())
-            candleTool.registerRead(cmd.id, reg);
-        if (regWrite->parsed())
-            candleTool.registerWrite(cmd.id, reg, cmd.value);
-    }
-    if (reset->parsed())
-        candleTool.reset(cmd.id);
-    if (setup->parsed())
-    {
-        if (setupCalib->parsed())
-            candleTool.setupCalibration(cmd.id);
-        if (setupCalibOut->parsed())
-            candleTool.setupCalibrationOutput(cmd.id);
-        if (setupHoming->parsed())
-            candleTool.setupHoming(cmd.id);
-        if (setupInfo->parsed())
-            candleTool.setupInfo(cmd.id, (setupInfoAllFlag->count() > 0 ? true : false));
-        if (setupMotor->parsed())
-            candleTool.setupMotor(cmd.id, cmd.cfgPath, cmd.force);
-        if (setupReadCfg->parsed())
-            candleTool.setupReadConfig(cmd.id, cmd.value);
-    }
-    if (test->parsed())
-    {
-        if (testEncoderMain->parsed())
-            candleTool.testEncoderMain(cmd.id);
-        if (testEncoderOut->parsed())
-            candleTool.testEncoderOutput(cmd.id);
-        if (testLatency->parsed())
-            candleTool.testLatency(cmd.baud);
-        if (testMoveAbs->parsed())
-            candleTool.testMoveAbsolute(cmd.id, cmd.pos, cmd.vel, cmd.acc, cmd.dcc);
-        if (testMoveRel->parsed())
-            candleTool.testMove(cmd.id, cmd.pos);
-    }
-
-    if (update->parsed())
-    {
-        if (cmd.firmwareFileName == "no_file")
-        {
-            std::cout << "No filename given!" << std::endl;
-            // Place holder for future feature :: Automatically detect hw version and download
-            // firmware from our release pages...
-            std::cout << "Fetching most recent firmware online [ Not implemented yet ... ]"
-                      << std::endl;
-        }
-        else
-        {
-            // std::cout << "using mab file [ " << cmd.firmwareFileName << " ]" << std::endl;
-        }
-
-        if (candleUpdate->parsed())
-        {
-            candleTool.updateCandle(cmd.firmwareFileName, cmd.noReset);
-            return EXIT_SUCCESS;
-        }
-
-        if (mdUpdate->parsed())
-        {
-            candleTool.updateMd(cmd.firmwareFileName, cmd.id, cmd.noReset);
-            return EXIT_SUCCESS;
-        }
-
-        if (pdsUpdate->parsed())
-        {
-            candleTool.updatePds(cmd.firmwareFileName, cmd.id, cmd.noReset);
-            return EXIT_SUCCESS;
-        }
     }
 
     return EXIT_SUCCESS;

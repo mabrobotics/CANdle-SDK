@@ -13,14 +13,13 @@ struct UserCommand
     u32         canWatchdog = 100;
     f32         current     = 1.f;
     f32         bandwidth   = 100.f;
-    std::string cfgPath     = "";
+    std::string path     = "";
     f32         pos = 0.f, vel = 10.f, acc = 5.f, dcc = 5.f;
     bool        infoAll          = false;
     std::string bus              = "USB";
     std::string reg              = "0x0000";
     std::string value            = "";
     bool        force            = false;
-    std::string firmwareFileName = "";
     bool        noReset          = false;
 };
 class CandleTool
@@ -68,7 +67,7 @@ class CandleTool
      * @param firmwareFile path to firmware file (.mab)
      * @param canId CAN ID of the motor driver to be updated
      */
-    void updateMd(const std::string& mabFilePath, uint16_t canId, bool noReset = false);
+    void updateMd(u16 id, const std::string& mabFilePath);
 
     /**
      * @brief Update firmware on PDS

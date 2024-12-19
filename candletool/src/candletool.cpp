@@ -9,9 +9,6 @@
 #include "checksum.hpp"
 #include "canUpdater.hpp"
 
-#include "uploader.hpp"
-#include "mabFileParser.hpp"
-
 f32 lerp(f32 start, f32 end, f32 t)
 {
     return (start * (1.f - t)) + (end * t);
@@ -799,7 +796,6 @@ void CandleTool::testEncoderMain(u16 id)
 
 void CandleTool::updateMd(u16 id, const std::string& path)
 {
-    log.level = logger::LogLevel_E::DEBUG;
     canUpdater::mabData mab;
     if (!canUpdater::parseMabFile(path.c_str(), "md", mab))
         log.error("Could not parse provided .mab file, at: %s", path.c_str());
@@ -825,7 +821,7 @@ void CandleTool::updateMd(u16 id, const std::string& path)
     log.debug("ERASE OK");
     if (!canUpdater::sendProgStart(*candle, id, true, mab.iv))
         return log.error("PROG failed!");
-    log.debug("PROG OK");
+    log.warn("PROG OK");
     if (!canUpdater::sendSendFirmware(*candle, log, id, mab.fwSize, mab.fwData))
         return log.error("UPDATE failed!");
     log.debug("Update OK");
@@ -937,23 +933,16 @@ void CandleTool::registerRead(u16 id, u16 reg)
 void CandleTool::updateCandle(const std::string& mabFilePath, bool noReset)
 {
     log.info("Performing Candle firmware update.");
-    MabFileParser         mabFile(mabFilePath);
-    mab::FirmwareUploader firmwareUploader(*candle, mabFile);
-    firmwareUploader.flashDevice(noReset);
-}
-
-void CandleTool::updateMd(const std::string& mabFilePath, uint16_t canId, bool noReset)
-{
-    MabFileParser         mabFile(mabFilePath);
-    mab::FirmwareUploader firmwareUploader(*candle, mabFile, canId);
-    firmwareUploader.flashDevice(noReset);
+    // MabFileParser         mabFile(mabFilePath);
+    // mab::FirmwareUploader firmwareUploader(*candle, mabFile);
+    // firmwareUploader.flashDevice(noReset);
 }
 
 void CandleTool::updatePds(const std::string& mabFilePath, uint16_t canId, bool noReset)
 {
-    MabFileParser         mabFile(mabFilePath);
-    mab::FirmwareUploader firmwareUploader(*candle, mabFile, canId);
-    firmwareUploader.flashDevice(noReset);
+    // MabFileParser         mabFile(mabFilePath);
+    // mab::FirmwareUploader firmwareUploader(*candle, mabFile, canId);
+    // firmwareUploader.flashDevice(noReset);
 }
 
 void CandleTool::blink(u16 id)

@@ -14,11 +14,11 @@ namespace canUpdater
 		u8	 fwData[256 * 1024] = {};
 	};
 	bool parseMabFile(const char* pathToMabFile, const char* tag, mabData& mabData);
-	bool sendHostInit(mab::Candle& candle, logger& log, u16 id, u32 fwStartAdr, u32 fwSize);
-	bool sendErase(mab::Candle& candle, logger& log, u16 id, u32 eraseStart, u32 eraseSize);
+	bool sendHostInit(mab::Candle& candle, Logger& log, u16 id, u32 fwStartAdr, u32 fwSize);
+	bool sendErase(mab::Candle& candle, Logger& log, u16 id, u32 eraseStart, u32 eraseSize);
 	bool sendProgStart(mab::Candle& candle, u16 id, bool cipher, u8* iv);
 	bool sendWrite(mab::Candle& candle, u16 id, u8* pagePtr, u32 dataSize);
-	bool sendSendFirmware(mab::Candle& candle, logger& log, u16 id, u32 fwSize, u8* fwBuffer);
+	bool sendSendFirmware(mab::Candle& candle, Logger& log, u16 id, u32 fwSize, u8* fwBuffer);
 	bool sendBoot(mab::Candle& candle, u16 id, u32 fwStart);
 	bool sendMeta(mab::Candle& candle, u16 id, u8* checksum);
 }  // namespace canUpdater
