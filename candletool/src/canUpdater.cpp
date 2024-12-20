@@ -1,5 +1,5 @@
 #include "canUpdater.hpp"
-#include "checksum.hpp"
+#include "mab_crc.hpp"
 
 #include "mini/ini.h"
 #include <string>
@@ -39,7 +39,8 @@ namespace canUpdater
     }
     bool sendHostInit(mab::Candle& candle, Logger& log, u16 id, u32 fwStartAdr, u32 fwSize)
     {
-        s32  retries = 500;
+        s32  retries = 0;
+        s32  retriesMax = 50;
         bool success = false;
         do
         {
@@ -49,7 +50,9 @@ namespace canUpdater
             *(u32*)&tx[5] = fwSize;
             success =
                 (candle.sendGenericFDCanFrame(id, 9, tx, rx, 100) && strncmp(rx, "OK", 2) == 0); 
-        } while (!success && retries-- > 0);
+            if (!success && retries % 10 == 0)
+                log.warn("Could not connect to bootloader. Retry %d/%d", retries, retriesMax);
+        } while (!success && retries++ < retriesMax);
         return success;
     }
     bool sendErase(mab::Candle& candle, Logger& log, u16 id, u32 eraseStart, u32 eraseSize)
@@ -66,7 +69,7 @@ namespace canUpdater
             if (remainingBytesToErase < maxEraseSize)
                 bytesToErase = remainingBytesToErase;
             *(u32*)&tx[5] = bytesToErase;
-            log.warn("ERASE @ %x, %d bytes.", *(u32*)&tx[1], *(u32*)&tx[5]);
+            log.debug("ERASE @ %x, %d bytes.", *(u32*)&tx[1], *(u32*)&tx[5]);
 
             if (!(candle.sendGenericFDCanFrame(id, 9, tx, rx, 250) && strncmp(rx, "OK", 2) == 0))
                 return false;
@@ -88,7 +91,7 @@ namespace canUpdater
     {
         char tx[64] = {}, rx[64] = {};
         tx[0]         = (u8)0xb4;  // Send Write
-        *(u32*)&tx[1] = Checksum::crc32(pagePtr, dataSize);
+        *(u32*)&tx[1] = mab::CalcCRC(pagePtr, dataSize);
         return (candle.sendGenericFDCanFrame(id, 5, tx, rx, 200) && (strncmp(rx, "OK", 2) == 0));
     }
     bool sendSendFirmware(mab::Candle& candle, Logger& log, u16 id, u32 fwSize, u8* fwBuffer)
@@ -98,7 +101,7 @@ namespace canUpdater
         u32  bytesWritten = 0;
         while (bytesWritten < fwSize)
         {
-            log.warn("Sending Page %d", page);
+            log.debug("Sending Page %d", page);
             for (int i = 0; i < 32; i++)
             {
                 memcpy(tx, &fwBuffer[page * 2048 + i * 64], 64);
@@ -109,14 +112,14 @@ namespace canUpdater
                     log.error("Page %d at %d failed!", page, i * 64);
                     return false;
                 }
-                log.warn("WRITE %d/32 OK", i);
+                log.debug("WRITE %d/32 OK", i+1);
             }
             if (!sendWrite(candle, id, &fwBuffer[page * 2048], 2048))
                 return false;
-            log.warn("WRITE OK");
+            log.debug("WRITE OK");
             bytesWritten += 2048;
             page++;
-            log.progress((float)bytesWritten / (fwSize + 1));
+            log.progress(std::clamp((float)bytesWritten  / fwSize, 0.f, 1.f));
         }
         return true;
     }
@@ -134,7 +137,9 @@ namespace canUpdater
         tx[1] = (u8) true;
         memcpy(&tx[2], checksum, 32);
         candle.sendGenericFDCanFrame(id, 64, tx, nullptr, 10);
-        usleep(300000);
+        usleep(300000); 
+        // erase and save takes about 350ms, and this is done
+        // due to a bug in candle fw allowing max of 255 ms timeout
         candle.sendGenericFDCanFrame(id, 0, tx, rx, 250);
         return (strncmp(rx, "OK", 2) == 0);
     }

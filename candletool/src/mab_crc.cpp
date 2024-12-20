@@ -54,4 +54,12 @@ namespace mab
         }
         return Checksum;
     }
+    uint32_t crc32(const uint8_t* data, uint32_t len)
+    {
+	    uint32_t crc = 0xffffffff;
+    	for (uint32_t i = 0; i < len; i++)
+		    crc = (crc << 8) ^ crc_table[((crc >> 24) ^ *data++) & 0xff];
+
+	    return crc;
+    }
 }  // namespace mab
