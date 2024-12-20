@@ -805,34 +805,34 @@ void CandleTool::updateMd(u16 id, const std::string& path)
              mab.fwVersion,
              mab.fwSize,
              mab.fwStartAddress);
+
     log.warn("Continue? [y/n]");
     char confirm = getchar();
     if (confirm != 'y')
         return;
 
     candle->setupMd80PerformReset(id);
-    usleep(50000);
-
+    usleep(150000);
     if (!canUpdater::sendHostInit(*candle, log, id, mab.fwStartAddress, mab.fwSize))
-        return log.error("HOST INIT failed!");
+        return log.error("UPDATE FAILED at: HOST INIT!");
     log.debug("HOST OK");
     if (!canUpdater::sendErase(*candle, log, id, mab.fwStartAddress, mab.fwSize))
-        return log.error("ERASE failed!");
+        return log.error("UPDATE FAILED at: ERASE!");
     log.debug("ERASE OK");
     if (!canUpdater::sendProgStart(*candle, id, true, mab.iv))
-        return log.error("PROG failed!");
-    log.warn("PROG OK");
+        return log.error("UPDATE FAILED at: PROG START!");
+    log.debug("PROG OK");
     if (!canUpdater::sendSendFirmware(*candle, log, id, mab.fwSize, mab.fwData))
-        return log.error("UPDATE failed!");
+        return log.error("UPDATE FAILED at: FWCHUNK WRITE!");
     log.debug("Update OK");
     if (!canUpdater::sendHostInit(*candle, log, id, mab.fwStartAddress, mab.fwSize))
-        return log.error("HOST INIT failed!");
+        return log.error("UPDATE FAILED at: HOST INIT !");
     log.debug("HOST OK");
     if (!canUpdater::sendMeta(*candle, id, mab.checksum))
-        return log.error("META failed!");
+        return log.error("UPDATE FAILED at: META!");
     log.debug("META OK");
     if (!canUpdater::sendBoot(*candle, id, mab.fwStartAddress))
-        return log.error("BOOT failed!");
+        return log.error("UPDATE FAILED at: BOOT!");
     log.debug("BOOT OK");
     log.success("MD@%d update succesfull!", id);
 }

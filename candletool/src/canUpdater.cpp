@@ -91,7 +91,7 @@ namespace canUpdater
     {
         char tx[64] = {}, rx[64] = {};
         tx[0]         = (u8)0xb4;  // Send Write
-        *(u32*)&tx[1] = mab::CalcCRC(pagePtr, dataSize);
+        *(u32*)&tx[1] = mab::crc32(pagePtr, dataSize);
         return (candle.sendGenericFDCanFrame(id, 5, tx, rx, 200) && (strncmp(rx, "OK", 2) == 0));
     }
     bool sendSendFirmware(mab::Candle& candle, Logger& log, u16 id, u32 fwSize, u8* fwBuffer)
