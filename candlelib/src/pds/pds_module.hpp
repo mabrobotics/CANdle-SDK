@@ -79,9 +79,9 @@ namespace mab
         const u16 m_canId;
 
         // TODO: Now propertyID is single for all modules so it dont has to be templated
-        template <typename propertyT, typename dataValueT>
-        [[nodiscard]] PdsModule::error_E readModuleProperty(propertyT   property,
-                                                            dataValueT& dataValue)
+        template <typename dataValueT>
+        [[nodiscard]] PdsModule::error_E readModuleProperty(propertyId_E property,
+                                                            dataValueT&  dataValue)
         {
             PdsMessage::error_E result = PdsMessage::error_E::OK;
             PropertyGetMessage  message(m_type, m_socketIndex);

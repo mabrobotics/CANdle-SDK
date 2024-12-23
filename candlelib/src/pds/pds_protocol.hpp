@@ -85,17 +85,15 @@ namespace mab
         PropertyGetMessage(moduleType_E moduleType, socketIndex_E socket);
         ~PropertyGetMessage() = default;
 
-        template <typename propertyT>
-        void addProperty(propertyT propertyType)
+        void addProperty(propertyId_E propertyId)
         {
-            u8 castedPropertyType = static_cast<u8>(propertyType);
+            u8 castedPropertyType = static_cast<u8>(propertyId);
             m_properties.push_back(castedPropertyType);
         }
 
-        template <typename propertyT>
-        error_E getProperty(propertyT propertyType, u32* p_propertyValue)
+        error_E getProperty(propertyId_E propertyId, u32* p_propertyValue)
         {
-            u8 castedPropertyType = static_cast<u8>(propertyType);
+            u8 castedPropertyType = static_cast<u8>(propertyId);
             for (auto& property : m_receivedProperties)
             {
                 if (property.first == castedPropertyType)

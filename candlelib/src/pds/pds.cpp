@@ -258,4 +258,9 @@ namespace mab
         }
     }
 
+    PdsModule::error_E Pds::setCanBaudrate(canBaudrate_E canBaudrate)
+    {
+        return writeModuleProperty(propertyId_E::CAN_BAUDRATE, canBaudrate);
+    }
+
 }  // namespace mab
