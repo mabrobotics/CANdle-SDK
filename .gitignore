@@ -4,6 +4,8 @@ log
 bin
 dist
 wheelhouse
+*.cache*
+*compile_commands.json
 
 # Prerequisites
 *.d

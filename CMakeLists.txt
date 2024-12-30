@@ -55,5 +55,6 @@ add_subdirectory(candlelib)
 if(PYTHON_BUILD)
     add_subdirectory(pycandle)
 endif()
-add_subdirectory(examples)
 add_subdirectory(candletool)
+# add_subdirectory(examples)
+
