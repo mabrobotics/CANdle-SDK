@@ -18,13 +18,15 @@ class CanLoader : public I_Loader
     Error_E sendBootCommand() override;
 
   private:
-    enum BootloaderFrameId_E : uint8_t
+    enum BootloaderFrameId_E : u8
     {
         CMD_TARGET_RESET = 0x13,
-        CMD_HOST_INIT    = 0xA1,
-        CMD_PAGE_PROG    = 0xA2,
-        CMD_BOOT         = 0xA3,
-        CMD_WRITE        = 0xA4,
+        CMD_HOST_INIT    = 0xB1,
+        CMD_ERASE        = 0xB2,
+        CMD_PROG         = 0xB3,
+        CMD_WRITE        = 0xB4,
+        CMD_BOOT         = 0xB5,
+        CMD_META         = 0xB6,
     };
 
     mab::Candle& m_candle;
@@ -37,10 +39,12 @@ class CanLoader : public I_Loader
 
     void sendResetCmd();
     bool sendInitCmd();
-    bool sendPageProgCmd();
-    bool sendWriteCmd(uint8_t* pPageBuffer, int bufferSize);
-    bool sendPage();
+    bool sendEraseCommand();
+    bool sendProgStartCommand();
+    bool sendPage(u8* data);
+    bool sendWriteCommand(u8* data);
     bool sendBootCmd();
+    bool sendMetaCmd();
 };
 
 #endif /* CANLOADER_HPP */

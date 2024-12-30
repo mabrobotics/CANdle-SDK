@@ -25,7 +25,7 @@ namespace mab
     {
         std::unique_ptr<I_Loader> pLoader = nullptr;
 
-        switch (m_mabFile.m_firmwareEntry1.targetDevice)
+        switch (m_mabFile.m_fwEntry.targetDevice)
         {
             case MabFileParser::TargetDevice_E::MD:
             case MabFileParser::TargetDevice_E::PDS:

@@ -42,7 +42,6 @@ class I_Loader
     static constexpr size_t   M_PAGE_SIZE      = 2048U;
     static constexpr size_t   M_CAN_CHUNK_SIZE = 64U;
     static constexpr size_t   M_USB_CHUNK_SIZE = 2044;
-    static constexpr uint32_t M_BOOT_ADDRESS   = 0x08005000;
 
     MabFileParser m_mabFile;
 };

@@ -6,8 +6,6 @@ CanLoader::CanLoader(mab::Candle& candle, MabFileParser& mabFile, uint32_t canId
 {
     m_log.m_tag   = "CanLoader";
     m_log.m_layer = Logger::ProgramLayer_E::LAYER_2;
-
-    m_currentPage = 0;
 }
 
 CanLoader::Error_E CanLoader::resetDevice()
@@ -21,24 +19,33 @@ CanLoader::Error_E CanLoader::enterBootloader()
     if (!sendInitCmd())
         return Error_E::ERROR_UNKNOWN;
 
-    if (!sendPageProgCmd())
-        return Error_E::ERROR_UNKNOWN;
-
     return Error_E::OK;
 }
 
 CanLoader::Error_E CanLoader::uploadFirmware()
 {
-    /* write data page per page */
-    while (m_currentPage < m_pagesToUpload)
+    if (!sendEraseCommand())
+        return Error_E::ERROR_UNKNOWN;
+    if (!sendProgStartCommand())
+        return Error_E::ERROR_UNKNOWN;
+
+    u32 bytesToSend = m_mabFile.m_fwEntry.size;
+    u32 bytesSent   = 0;
+
+    while (bytesSent < bytesToSend)
     {
-        if (!sendPage())
-        {
-            std::cout << std::endl;
+        m_log.debug("Sending page %d", bytesSent / M_PAGE_SIZE); 
+        u8* dataChunk = &m_mabFile.m_fwEntry.data[bytesSent];
+        if (sendPage(dataChunk) && sendWriteCommand(dataChunk))
+            bytesSent += M_PAGE_SIZE;
+        else
             return Error_E::ERROR_UNKNOWN;
-        }
-        m_log.progress((double)m_currentPage / m_pagesToUpload);
+        m_log.progress(std::clamp((f32)bytesSent / bytesToSend, 0.f, 1.f));
     }
+    if (!sendInitCmd())
+        return Error_E::ERROR_UNKNOWN;
+    if (!sendMetaCmd())
+        return Error_E::ERROR_UNKNOWN;
     m_log.success("Firmware upload complete!");
 
     return Error_E::OK;
@@ -55,7 +62,7 @@ void CanLoader::sendResetCmd()
     uint8_t txBuff[64] = {0};
     char    rxBuff[64] = {0};
 
-    txBuff[0] = CMD_TARGET_RESET;
+    txBuff[0] = (u8)CMD_TARGET_RESET;
     txBuff[1] = 0x00;
 
     m_log.info("Entering bootloader mode...");
@@ -66,8 +73,7 @@ void CanLoader::sendResetCmd()
             "Error while sendind bootloader enter command! Checking if not already in "
             "bootloader mode...");
     }
-
-    usleep(500000);
+    usleep(150000);
 }
 
 bool CanLoader::sendInitCmd()
@@ -75,112 +81,118 @@ bool CanLoader::sendInitCmd()
     uint8_t txBuff[64] = {0};
     char    rxBuff[64] = {0};
 
-    txBuff[0]              = CMD_HOST_INIT;
-    *(uint32_t*)&txBuff[1] = M_BOOT_ADDRESS;
+    txBuff[0]         = (u8)CMD_HOST_INIT;
+    *(u32*)&txBuff[1] = m_mabFile.m_fwEntry.bootAddress;
+    *(u32*)&txBuff[5] = m_mabFile.m_fwEntry.size;
 
-    m_log.info("Detecting bootloader mode...");
-
-    m_candle.sendGenericFDCanFrame(m_canId, 5, (const char*)txBuff, (char*)rxBuff, nullptr, 50);
-
-    if (strcmp("OK", (char*)rxBuff) == 0)
-        m_log.success("Bootloader detected!");
-    else
+    s32 retries = 10;
+    while (retries-- > 0)
     {
-        m_log.error("Bootloader mode could not be entered!");
-        return false;
+        m_candle.sendGenericFDCanFrame(
+            m_canId, 9, (const char*)txBuff, (char*)rxBuff, nullptr, 100);
+        if (strcmp("OK", (char*)rxBuff) == 0)
+            return true;
+    }
+    return false;
+}
+bool CanLoader::sendEraseCommand()
+{
+    uint8_t txBuff[64]            = {0};
+    char    rxBuff[64]            = {0};
+    u32     maxEraseSize          = 8 * 2048;
+    u32     remainingBytesToErase = m_mabFile.m_fwEntry.size;
+
+    txBuff[0]         = (u8)CMD_ERASE;
+    *(u32*)&txBuff[1] = m_mabFile.m_fwEntry.bootAddress;
+
+    while (remainingBytesToErase > 0)
+    {
+        u32 bytesToErase = maxEraseSize;
+        if (remainingBytesToErase < maxEraseSize)
+            bytesToErase = remainingBytesToErase;
+        *(u32*)&txBuff[5] = bytesToErase;
+        m_log.debug("ERASE @ %x, %d bytes.", *(u32*)&txBuff[1], *(u32*)&txBuff[5]);
+        m_candle.sendGenericFDCanFrame(
+            m_canId, 9, (const char*)txBuff, (char*)rxBuff, nullptr, 250);
+        if (strncmp(rxBuff, "OK", 2) != 0)
+            return false;
+        memset(rxBuff, 0, 2);
+        *(u32*)&txBuff[1] += bytesToErase;
+        remainingBytesToErase -= bytesToErase;
     }
     return true;
 }
 
-bool CanLoader::sendPageProgCmd()
+bool CanLoader::sendProgStartCommand()
 {
     m_log.debug("Sending enter page programming mode command... ");
 
     uint8_t txBuff[64] = {0};
     char    rxBuff[64] = {0};
+    bool    useCipher  = strlen((const char*)m_mabFile.m_fwEntry.aes_iv) > 0;
 
-    txBuff[0] = CMD_PAGE_PROG;
-    txBuff[1] = 0x00;
+    txBuff[0] = (u8)CMD_PROG;
+    txBuff[1] = useCipher;
+    if (useCipher)
+        memcpy(&txBuff[2], m_mabFile.m_fwEntry.aes_iv, 16);
 
-    m_candle.sendGenericFDCanFrame(m_canId, 5, (const char*)txBuff, rxBuff, nullptr, 500);
+    m_candle.sendGenericFDCanFrame(m_canId, 18, (const char*)txBuff, rxBuff, nullptr, 100);
     if (strcmp("OK", (char*)rxBuff) == 0)
         return true;
-
-    m_log.error("Sending page program command FAILED!");
+    m_log.error("Sending prog start command FAILED!");
     return false;
 }
 
-bool CanLoader::sendPage()
+bool CanLoader::sendPage(u8* data)
 {
-    m_log.debug("Sending page [ %u ]", m_currentPage);
+    char txBuff[64] = {0};
+    char rxBuff[64] = {0};
 
-    int     framesPerPage           = M_PAGE_SIZE / M_CAN_CHUNK_SIZE;
-    uint8_t pageBuffer[M_PAGE_SIZE] = {0};
-    int     pageBufferReadSize      = M_PAGE_SIZE;
-
-    size_t binaryLength = m_mabFile.m_firmwareEntry1.size;
-
-    if (binaryLength - ((m_currentPage)*M_PAGE_SIZE) < M_PAGE_SIZE)
-        pageBufferReadSize = binaryLength - ((m_currentPage)*M_PAGE_SIZE);
-
-    memcpy(pageBuffer,
-           &m_mabFile.m_firmwareEntry1.binary[m_currentPage * M_PAGE_SIZE],
-           pageBufferReadSize);
-
-    for (int i = 0; i < framesPerPage; i++)
+    for (int i = 0; i < 32; i++)
     {
-        uint8_t txBuff[M_CAN_CHUNK_SIZE];
-        char    rxBuff[M_CAN_CHUNK_SIZE];
-        memset(txBuff, 0, M_CAN_CHUNK_SIZE);
-        memset(rxBuff, 0, M_CAN_CHUNK_SIZE);
-        memcpy(txBuff, &pageBuffer[i * M_CAN_CHUNK_SIZE], M_CAN_CHUNK_SIZE);
-
-        m_candle.sendGenericFDCanFrame(
-            m_canId, M_CAN_CHUNK_SIZE, (const char*)txBuff, rxBuff, nullptr, 500);
-        if (strcmp("OK", rxBuff) != 0)
-        {
-            m_log.error("Sending Page %u FAIL", m_currentPage);
-            return false;
-        }
+        memcpy(txBuff, &data[i * M_CAN_CHUNK_SIZE], M_CAN_CHUNK_SIZE);
+        if (m_candle.sendGenericFDCanFrame(m_canId, M_CAN_CHUNK_SIZE, txBuff, rxBuff, nullptr, 100))
+            if (strncmp(rxBuff, "OK", 2) == 0)
+                continue;
+        return false;
     }
-    m_currentPage++;
-    bool result = sendWriteCmd(pageBuffer, M_PAGE_SIZE);
-    return result;
+    return true;
 }
 
-bool CanLoader::sendWriteCmd(uint8_t* pPageBuffer, int bufferSize)
+bool CanLoader::sendWriteCommand(u8* data)
 {
-    m_log.debug("Sending write command");
+    char tx[64] = {}, rx[64] = {};
 
-    uint8_t txBuff[64] = {0};
-    char    rxBuff[64] = {0};
-
-    txBuff[0]              = CMD_WRITE;
-    *(uint32_t*)&txBuff[1] = mab::CalcCRC(pPageBuffer, (uint32_t)bufferSize);
-
-    m_candle.sendGenericFDCanFrame(m_canId, 5, (const char*)txBuff, rxBuff, nullptr, 500);
-    usleep(50);
-    if (strcmp("OK", (char*)rxBuff) == 0)
-        return true;
-
-    m_log.error("CRC fail!");
+    tx[0]         = (u8)CMD_WRITE;
+    *(u32*)&tx[1] = mab::crc32(data, M_PAGE_SIZE);
+    if (m_candle.sendGenericFDCanFrame(m_canId, 5, tx, rx, nullptr, 200))
+        return strncmp(rx, "OK", 2) == 0;
     return false;
 }
 
 bool CanLoader::sendBootCmd()
 {
-    m_log.debug("Sending boot command...");
+    char tx[64] = {}, rx[64] = {};
 
-    uint8_t txBuff[64];
-    char    rxBuff[64];
+    tx[0]         = (u8)CMD_BOOT;
+    *(u32*)&tx[1] = m_mabFile.m_fwEntry.bootAddress;
+    if (m_candle.sendGenericFDCanFrame(m_canId, 5, tx, rx, nullptr, 200))
+        return strncmp(rx, "OK", 2) == 0;
+    return false;
+}
+bool CanLoader::sendMetaCmd()
+{
+    char tx[64] = {}, rx[64] = {};
+    bool shouldSaveMeta = true;
 
-    txBuff[0] = CMD_BOOT;
-    txBuff[1] = 0x00;
-
-    m_candle.sendGenericFDCanFrame(m_canId, 5, (const char*)txBuff, rxBuff, nullptr, 500);
-    if (strcmp("OK", rxBuff) == 0)
-        return true;
-
-    m_log.error("Error while sending boot command!");
+    tx[0] = (u8)CMD_META;
+    tx[1] = shouldSaveMeta;
+    memcpy(&tx[2], m_mabFile.m_fwEntry.checksum, 32);
+    m_candle.sendGenericFDCanFrame(m_canId, 64, tx, nullptr, nullptr, 10);
+    usleep(300000);
+    // erase and save takes about 350ms, and this is done
+    // due to a bug in candle fw allowing max of 255 ms timeout
+    if (m_candle.sendGenericFDCanFrame(m_canId, 0, tx, rx, nullptr, 250))
+        return (strncmp(rx, "OK", 2) == 0);
     return false;
 }
