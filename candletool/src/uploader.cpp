@@ -47,7 +47,25 @@ namespace mab
 
         /* upload firmware */
         m_log.debug("Starting firmware upload");
-        if (I_Loader::Error_E::OK != pLoader->uploadFirmware())
+        I_Loader::Error_E result = pLoader->uploadFirmware();
+        switch (result)
+        {
+            case I_Loader::Error_E::OK:
+                break;
+            case I_Loader::Error_E::ERROR_ERASE:
+                m_log.error("Failed to erase memory");
+                break;
+            case I_Loader::Error_E::ERROR_PROG:
+            case I_Loader::Error_E::ERROR_PAGE:
+                m_log.error("Failed to program FLASH page");
+                break;
+            case I_Loader::Error_E::ERROR_WRITE:
+                m_log.error("Failed to validate page CRC.");
+                break;
+            default:
+                m_log.error("Unexpected error happend. Error code: %d", result);
+        }
+        if (result != I_Loader::Error_E::OK)
         {
             m_log.error("Failed to upload firmware!");
             return false;
