@@ -4,8 +4,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
-#include <vector>
-#include <unistd.h>
 
 #include "candle_protocol.hpp"
 #include "register.hpp"
@@ -45,10 +43,7 @@ namespace mab
         reset();
         usleep(5000);
         if (sem_init(&received, 0, 0) == -1)
-        {
-            printf("Oh dear, something went wrong with sem_init()! %s\n", strerror(errno));
             throw std::runtime_error("Failed to set up receive semaphore");
-        }
         for (u32 i = 0; i < 10; i++)
         {
             if (!sendBusFrame(BUS_FRAME_END, 100))

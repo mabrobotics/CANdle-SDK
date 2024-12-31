@@ -1,15 +1,6 @@
 #pragma once
 
 #include <cstdint>
-
-// #ifdef WIN32
-// #include "synchapi.h"
-// void usleep(uint32_t delayUs)
-// {
-//     Sleep(delayUs / 1000);
-// }
-// #endif
-
 typedef uint64_t u64;
 typedef uint32_t u32;
 typedef int32_t  s32;
@@ -18,3 +9,4 @@ typedef int16_t  s16;
 typedef uint8_t  u8;
 typedef int8_t   s8;
 typedef float    f32;
+
