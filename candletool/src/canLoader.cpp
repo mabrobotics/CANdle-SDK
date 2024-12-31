@@ -4,7 +4,7 @@
 CanLoader::CanLoader(mab::Candle& candle, MabFileParser& mabFile, uint32_t canId)
     : I_Loader(mabFile), m_candle(candle), m_canId(canId)
 {
-    m_log.m_tag   = "CanLoader";
+    m_log.m_tag   = "CAN LOADER";
     m_log.m_layer = Logger::ProgramLayer_E::LAYER_2;
 }
 
@@ -46,7 +46,6 @@ CanLoader::Error_E CanLoader::uploadFirmware()
         return Error_E::ERROR_UNKNOWN;
     if (!sendMetaCmd())
         return Error_E::ERROR_UNKNOWN;
-    m_log.success("Firmware upload complete!");
 
     return Error_E::OK;
 }
@@ -65,11 +64,10 @@ void CanLoader::sendResetCmd()
     txBuff[0] = (u8)CMD_TARGET_RESET;
     txBuff[1] = 0x00;
 
-    m_log.info("Entering bootloader mode...");
-
+    m_log.debug("Entering bootloader mode...");
     if (!m_candle.sendGenericFDCanFrame(m_canId, 2, (const char*)txBuff, rxBuff, nullptr, 1000))
     {
-        m_log.error(
+        m_log.warn(
             "Error while sendind bootloader enter command! Checking if not already in "
             "bootloader mode...");
     }

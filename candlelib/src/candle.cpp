@@ -367,8 +367,11 @@ namespace mab
         char tx[96];
         int  len = sizeof(frame) - sizeof(frame.canMsg) + msgLen;
         memcpy(tx, &frame, len);
-        if (bus->transmit(tx, len, true, timeoutMs, 66, false))  // Got some response
+        bool waitForResponse = rxBuffer != nullptr;
+        if (bus->transmit(tx, len, waitForResponse, timeoutMs, 66, false))  // Got some response
         {
+            if (!waitForResponse)
+                return true;
             rxLength = bus->getBytesReceived();
             if (*bus->getRxBuffer(0) == tx[0] &&                     // USB Frame ID matches
                 *bus->getRxBuffer(1) == true && rxLength <= 64 + 2)  // response can ID matches

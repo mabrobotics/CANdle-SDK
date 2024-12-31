@@ -10,7 +10,7 @@ namespace mab
     FirmwareUploader::FirmwareUploader(Candle& _candle, MabFileParser& mabFile, int mdId)
         : m_candle(_candle), m_mabFile(mabFile), m_canId(mdId)
     {
-        m_log.m_tag   = "FW Uploader";
+        m_log.m_tag   = "FW LOADER";
         m_log.m_layer = Logger::ProgramLayer_E::LAYER_2;
     }
 
@@ -38,6 +38,7 @@ namespace mab
         if (directly == false)
             pLoader->resetDevice();
 
+        m_log.debug("Entering bootloader");
         if (I_Loader::Error_E::OK != pLoader->enterBootloader())
         {
             m_log.error("Failed to enter bootloader mode!");
@@ -45,19 +46,21 @@ namespace mab
         }
 
         /* upload firmware */
+        m_log.debug("Starting firmware upload");
         if (I_Loader::Error_E::OK != pLoader->uploadFirmware())
         {
             m_log.error("Failed to upload firmware!");
             return ERROR_E::ERROR_UNKNOWN;
         }
+        m_log.debug("Firmware update complete");
 
         /* send boot command */
+        m_log.debug("Sending boot command");
         if (I_Loader::Error_E::OK != pLoader->sendBootCommand())
         {
             m_log.error("Failed to send boot command!");
             return ERROR_E::ERROR_UNKNOWN;
         }
-
         return ERROR_E::OK;
     }
 

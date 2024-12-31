@@ -899,7 +899,8 @@ void CandleTool::updateMd(const std::string& mabFilePath, uint16_t canId, bool n
 {
     MabFileParser         mabFile(mabFilePath, MabFileParser::TargetDevice_E::MD);
     mab::FirmwareUploader firmwareUploader(*candle, mabFile, canId);
-    firmwareUploader.flashDevice(noReset);
+    if (firmwareUploader.flashDevice(noReset) == mab::FirmwareUploader::ERROR_E::OK)
+        log.success("Update complete for MD @ %d", canId);
 }
 
 void CandleTool::updatePds(const std::string& mabFilePath, uint16_t canId, bool noReset)
