@@ -21,7 +21,7 @@ class CanLoader : public I_Loader
     enum BootloaderFrameId_E : u8
     {
         CMD_TARGET_RESET = 0x13,
-        CMD_HOST_INIT    = 0xB1,
+        CMD_SETUP        = 0xB1,
         CMD_ERASE        = 0xB2,
         CMD_PROG         = 0xB3,
         CMD_WRITE        = 0xB4,
@@ -38,11 +38,11 @@ class CanLoader : public I_Loader
     uint32_t     m_currentPage;
 
     void sendResetCmd();
-    bool sendInitCmd();
-    bool sendEraseCommand();
-    bool sendProgStartCommand();
+    bool sendSetupCmd();
+    bool sendEraseCmd();
+    bool sendProgStartCmd();
     bool sendPage(u8* data);
-    bool sendWriteCommand(u8* data);
+    bool sendWriteCmd(u8* data);
     bool sendBootCmd();
     bool sendMetaCmd();
 };

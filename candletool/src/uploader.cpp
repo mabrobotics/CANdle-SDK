@@ -14,7 +14,7 @@ namespace mab
         m_log.m_layer = Logger::ProgramLayer_E::LAYER_2;
     }
 
-    FirmwareUploader::ERROR_E FirmwareUploader::flashDevice(bool directly)
+    bool FirmwareUploader::flashDevice(bool directly)
     {
         std::unique_ptr<I_Loader> pLoader = nullptr;
 
@@ -31,7 +31,7 @@ namespace mab
 
             default:
                 m_log.error("Unsupported target device!");
-                return ERROR_E::ERROR_UNKNOWN;
+                return false;
         }
 
         /* send reset command to the md80 firmware */
@@ -42,7 +42,7 @@ namespace mab
         if (I_Loader::Error_E::OK != pLoader->enterBootloader())
         {
             m_log.error("Failed to enter bootloader mode!");
-            return ERROR_E::ERROR_UNKNOWN;
+            return false;
         }
 
         /* upload firmware */
@@ -50,7 +50,7 @@ namespace mab
         if (I_Loader::Error_E::OK != pLoader->uploadFirmware())
         {
             m_log.error("Failed to upload firmware!");
-            return ERROR_E::ERROR_UNKNOWN;
+            return false;
         }
         m_log.debug("Firmware update complete");
 
@@ -59,9 +59,9 @@ namespace mab
         if (I_Loader::Error_E::OK != pLoader->sendBootCommand())
         {
             m_log.error("Failed to send boot command!");
-            return ERROR_E::ERROR_UNKNOWN;
+            return false;
         }
-        return ERROR_E::OK;
+        return true;
     }
 
 }  // namespace mab

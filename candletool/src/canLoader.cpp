@@ -16,44 +16,46 @@ CanLoader::Error_E CanLoader::resetDevice()
 
 CanLoader::Error_E CanLoader::enterBootloader()
 {
-    if (!sendInitCmd())
-        return Error_E::ERROR_UNKNOWN;
+    if (!sendSetupCmd())
+        return Error_E::ERROR_SETUP;
 
     return Error_E::OK;
 }
 
 CanLoader::Error_E CanLoader::uploadFirmware()
 {
-    if (!sendEraseCommand())
-        return Error_E::ERROR_UNKNOWN;
-    if (!sendProgStartCommand())
-        return Error_E::ERROR_UNKNOWN;
+    if (!sendEraseCmd())
+        return Error_E::ERROR_ERASE;
+    if (!sendProgStartCmd())
+        return Error_E::ERROR_PROG;
 
     u32 bytesToSend = m_mabFile.m_fwEntry.size;
     u32 bytesSent   = 0;
 
     while (bytesSent < bytesToSend)
     {
-        m_log.debug("Sending page %d", bytesSent / M_PAGE_SIZE); 
+        m_log.debug("Sending page %d", bytesSent / M_PAGE_SIZE);
         u8* dataChunk = &m_mabFile.m_fwEntry.data[bytesSent];
-        if (sendPage(dataChunk) && sendWriteCommand(dataChunk))
-            bytesSent += M_PAGE_SIZE;
-        else
-            return Error_E::ERROR_UNKNOWN;
+        if (!sendPage(dataChunk))
+            return Error_E::ERROR_PAGE;
+        if (!sendWriteCmd(dataChunk))
+            return Error_E::ERROR_WRITE;
+        bytesSent += M_PAGE_SIZE;
         m_log.progress(std::clamp((f32)bytesSent / bytesToSend, 0.f, 1.f));
     }
-    if (!sendInitCmd())
+    if (!sendSetupCmd()) // to exit from PROG mode
         return Error_E::ERROR_UNKNOWN;
     if (!sendMetaCmd())
-        return Error_E::ERROR_UNKNOWN;
+        return Error_E::ERROR_META;
 
     return Error_E::OK;
 }
 
 CanLoader::Error_E CanLoader::sendBootCommand()
 {
-    sendBootCmd();
-    return Error_E::OK;
+    if (sendBootCmd())
+        return Error_E::OK;
+    return Error_E::ERROR_BOOT;
 }
 
 void CanLoader::sendResetCmd()
@@ -70,16 +72,17 @@ void CanLoader::sendResetCmd()
         m_log.warn(
             "Error while sendind bootloader enter command! Checking if not already in "
             "bootloader mode...");
+        return;
     }
     usleep(150000);
 }
 
-bool CanLoader::sendInitCmd()
+bool CanLoader::sendSetupCmd()
 {
     uint8_t txBuff[64] = {0};
     char    rxBuff[64] = {0};
 
-    txBuff[0]         = (u8)CMD_HOST_INIT;
+    txBuff[0]         = (u8)CMD_SETUP;
     *(u32*)&txBuff[1] = m_mabFile.m_fwEntry.bootAddress;
     *(u32*)&txBuff[5] = m_mabFile.m_fwEntry.size;
 
@@ -93,7 +96,7 @@ bool CanLoader::sendInitCmd()
     }
     return false;
 }
-bool CanLoader::sendEraseCommand()
+bool CanLoader::sendEraseCmd()
 {
     uint8_t txBuff[64]            = {0};
     char    rxBuff[64]            = {0};
@@ -121,7 +124,7 @@ bool CanLoader::sendEraseCommand()
     return true;
 }
 
-bool CanLoader::sendProgStartCommand()
+bool CanLoader::sendProgStartCmd()
 {
     m_log.debug("Sending enter page programming mode command... ");
 
@@ -157,7 +160,7 @@ bool CanLoader::sendPage(u8* data)
     return true;
 }
 
-bool CanLoader::sendWriteCommand(u8* data)
+bool CanLoader::sendWriteCmd(u8* data)
 {
     char tx[64] = {}, rx[64] = {};
 

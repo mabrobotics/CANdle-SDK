@@ -9,6 +9,13 @@ class I_Loader
     enum class Error_E : uint8_t
     {
         OK = 0,
+        ERROR_SETUP,
+        ERROR_ERASE,
+        ERROR_PROG,
+        ERROR_PAGE,
+        ERROR_WRITE,
+        ERROR_META,
+        ERROR_BOOT,
         ERROR_UNKNOWN,
     };
     I_Loader() = delete;
