@@ -1,6 +1,5 @@
 #include "canLoader.hpp"
 #include "mab_crc.hpp"
-#include <unistd.h>
 
 CanLoader::CanLoader(mab::Candle& candle, MabFileParser& mabFile, uint32_t canId)
     : I_Loader(mabFile), m_candle(candle), m_canId(canId)
