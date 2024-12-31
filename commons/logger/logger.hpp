@@ -28,13 +28,13 @@
 
 #else
 
-#define RED
-#define GREEN
-#define BLUE
-#define YELLOW
-#define ORANGE
-#define GREY
-#define RESETCLR
+#define RED      ""
+#define GREEN    ""
+#define BLUE     ""
+#define YELLOW   ""
+#define ORANGE   ""
+#define GREY     ""
+#define RESETCLR ""
 #define NEW_LINE "\r\n"
 
 #endif

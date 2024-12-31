@@ -27,7 +27,7 @@ namespace mab
             ERROR_WRITE,
             ERROR_BOOT,
             ERROR_RESET,
-            ERROR_TIMEOUT,
+            ERROR_TIME_OUT,
             ERROR_UNKNOWN,
         };
 

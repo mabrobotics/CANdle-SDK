@@ -15,8 +15,8 @@ echo Build files will be stored in %0\..\..\build
 mkdir %0\..\..\build
 set currentdir="%cd%"
 cd %0\..\..\build
-cmake -G"MinGW Makefiles" ..
-make package -j
+cmake -G"MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release ..
+make package -j4
 cd %currentdir%
 exit /b 0
 

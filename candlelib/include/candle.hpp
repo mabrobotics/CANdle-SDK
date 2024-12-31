@@ -9,6 +9,7 @@
 #include <type_traits>
 #include <vector>
 #include <atomic>
+#include <unistd.h>
 
 #include "logger.hpp"
 #include "bus.hpp"
