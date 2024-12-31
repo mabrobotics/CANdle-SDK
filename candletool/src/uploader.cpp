@@ -1,15 +1,8 @@
 #include "uploader.hpp"
-#include "md80.hpp"
 
-#include <iostream>
-#include <fstream>
 #include <cstring>
-#include "unistd.h"
-#include "mini/ini.h"
-#include "logger.hpp"
 #include "canLoader.hpp"
 #include "usbLoader.hpp"
-// #include <memory>
 
 namespace mab
 {
