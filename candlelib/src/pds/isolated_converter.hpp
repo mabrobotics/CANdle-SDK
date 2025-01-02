@@ -21,7 +21,7 @@ namespace mab
         };
 
         IsolatedConv12() = delete;
-        IsolatedConv12(socketIndex_E socket, Candle& candle, u16 canId);
+        IsolatedConv12(socketIndex_E socket, Candle& candle, u16& canId);
         ~IsolatedConv12() = default;
 
         error_E enable();

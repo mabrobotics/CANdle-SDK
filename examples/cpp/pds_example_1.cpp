@@ -5,28 +5,27 @@
 
     Reading data from PDS Control board:
         * Connected submodules list
-
+        * DC Bus voltage
 */
 #include "candle.hpp"
 #include "pds.hpp"
 
 using namespace mab;
 
-constexpr u16 PDS_CAN_ID = 100;
+constexpr u16 PDS_CAN_ID = 103;
 
 int main()
 {
     Logger _log;
     _log.m_tag = "PDS Example 1";
 
-    Candle candle(mab::CAN_BAUD_1M, true);
+    Candle candle(mab::CAN_BAUD_5M, true);
     Pds    pds(PDS_CAN_ID, candle);
 
     Pds::modulesSet_S pdsModules = pds.getModules();
 
     u32 pdsBusVoltage = 0;
     pds.getBusVoltage(pdsBusVoltage);
-    // PdsModule::error_E result        = pds.getBusVoltage(pdsBusVoltage);
 
     _log.info("PDS have the following numbers of connected modules:");
     _log.info("\t1\t:: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket1));

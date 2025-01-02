@@ -21,7 +21,7 @@ namespace mab
         };
 
         PowerStage() = delete;
-        PowerStage(socketIndex_E socket, Candle& candle, u16 canId);
+        PowerStage(socketIndex_E socket, Candle& candle, u16& canId);
         ~PowerStage();
 
         error_E enable();
