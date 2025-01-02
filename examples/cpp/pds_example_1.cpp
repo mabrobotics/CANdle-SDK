@@ -19,7 +19,7 @@ int main()
     Logger _log;
     _log.m_tag = "PDS Example 1";
 
-    Candle candle(mab::CAN_BAUD_2M, true);
+    Candle candle(mab::CAN_BAUD_1M, true);
     Pds    pds(PDS_CAN_ID, candle);
 
     Pds::modulesSet_S pdsModules = pds.getModules();
