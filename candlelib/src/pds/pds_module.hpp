@@ -60,7 +60,7 @@ namespace mab
          * @note Constructor is protected because even if this class has no pure virtual methods, it
             still should not be instantiated.
          */
-        PdsModule(socketIndex_E socket, moduleType_E type, Candle& candle, u16 canId);
+        PdsModule(socketIndex_E socket, moduleType_E type, Candle& candle, u16& canId);
 
         Logger m_log;
 
@@ -76,7 +76,7 @@ namespace mab
 
         /* CAN ID of the parent PDS device. Assumed to be passed in a constructor from parent PDS
          * object */
-        const u16 m_canId;
+        u16& m_canId;
 
         // TODO: Now propertyID is single for all modules so it dont has to be templated
         template <typename dataValueT>

@@ -3,7 +3,7 @@
 namespace mab
 {
 
-    IsolatedConv12::IsolatedConv12(socketIndex_E socket, Candle& candle, u16 canId)
+    IsolatedConv12::IsolatedConv12(socketIndex_E socket, Candle& candle, u16& canId)
         : PdsModule(socket, moduleType_E::ISOLATED_CONVERTER, candle, canId)
     {
         m_log.m_tag = "IC12:: " + std::to_string(static_cast<int>(socket) + 1);

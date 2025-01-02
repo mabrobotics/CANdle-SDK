@@ -17,9 +17,9 @@ namespace mab
 {
 
     Pds::Pds(uint16_t canId, Candle& candle)
-        : PdsModule(socketIndex_E::UNASSIGNED, moduleType_E::CONTROL_BOARD, candle, canId),
+        : PdsModule(socketIndex_E::UNASSIGNED, moduleType_E::CONTROL_BOARD, candle, m_rootCanId),
           m_candle(candle),
-          m_canId(canId)
+          m_rootCanId(canId)
     {
         PdsModule::error_E result;
         m_log.m_tag   = "PDS";
@@ -36,16 +36,17 @@ namespace mab
         {
             case moduleType_E::BRAKE_RESISTOR:
                 m_brakeResistors.push_back(
-                    std::make_unique<BrakeResistor>(socket, m_candle, m_canId));
+                    std::make_unique<BrakeResistor>(socket, m_candle, m_rootCanId));
                 return PdsModule::error_E::OK;
 
             case moduleType_E::ISOLATED_CONVERTER:
                 m_IsolatedConv12s.push_back(
-                    std::make_unique<IsolatedConv12>(socket, m_candle, m_canId));
+                    std::make_unique<IsolatedConv12>(socket, m_candle, m_rootCanId));
                 return PdsModule::error_E::OK;
 
             case moduleType_E::POWER_STAGE:
-                m_powerStages.push_back(std::make_unique<PowerStage>(socket, m_candle, m_canId));
+                m_powerStages.push_back(
+                    std::make_unique<PowerStage>(socket, m_candle, m_rootCanId));
                 return PdsModule::error_E::OK;
 
             case moduleType_E::UNDEFINED:
@@ -256,6 +257,16 @@ namespace mab
             default:
                 return "UNKNOWN_MODULE_TYPE";
         }
+    }
+
+    PdsModule::error_E Pds::setCanId(u16 canId)
+    {
+        PdsModule::error_E result = PdsModule::error_E::UNKNOWN_ERROR;
+        result                    = writeModuleProperty(propertyId_E::CAN_ID, canId);
+        if (PdsModule::error_E::OK == result)
+            m_rootCanId = canId;
+
+        return result;
     }
 
     PdsModule::error_E Pds::setCanBaudrate(canBaudrate_E canBaudrate)

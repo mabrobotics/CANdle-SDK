@@ -66,6 +66,7 @@ namespace mab
         error_E getStatus(status_S& status);
         error_E clearStatus(status_S status);
 
+        u16     getCanId();
         error_E setCanId(u16 canId);
         error_E setCanBaudrate(canBaudrate_E canBaudrate);
 
@@ -82,7 +83,7 @@ namespace mab
         Candle& m_candle;
 
         Logger   m_log;
-        uint16_t m_canId = 0;
+        uint16_t m_rootCanId = 0;
 
         modulesSet_S m_modulesSet = {moduleType_E::UNDEFINED};
 
