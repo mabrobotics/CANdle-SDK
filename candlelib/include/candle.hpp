@@ -2,13 +2,11 @@
 
 #include <semaphore.h>
 
-#include <iostream>
 #include <memory>
 #include <string>
 #include <thread>
-#include <type_traits>
-#include <vector>
 #include <atomic>
+#include <unistd.h>
 
 #include "logger.hpp"
 #include "bus.hpp"

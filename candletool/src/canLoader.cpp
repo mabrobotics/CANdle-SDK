@@ -197,3 +197,4 @@ bool CanLoader::sendMetaCmd()
         return (strncmp(rx, "OK", 2) == 0);
     return false;
 }
+

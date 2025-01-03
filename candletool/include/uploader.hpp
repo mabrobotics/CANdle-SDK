@@ -14,6 +14,19 @@ namespace mab
     class FirmwareUploader
     {
       public:
+        enum class ERROR_E : uint8_t
+        {
+            OK = 0,
+            ERROR_FILE,
+            ERROR_CHECKSUM,
+            ERROR_INIT,
+            ERROR_PAGE_PROG,
+            ERROR_WRITE,
+            ERROR_BOOT,
+            ERROR_RESET,
+            ERROR_TIME_OUT,
+            ERROR_UNKNOWN,
+        };
         /**
          * @brief Construct a new Firmware Uploader object
          *

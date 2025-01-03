@@ -6,7 +6,7 @@ namespace mab
 
     constexpr Logger::ProgramLayer_E DEFAULT_PDS_MODULE_LOG_LAYER = Logger::ProgramLayer_E::LAYER_2;
 
-    PdsModule::PdsModule(socketIndex_E socket, moduleType_E type, Candle& candle, u16 canId)
+    PdsModule::PdsModule(socketIndex_E socket, moduleType_E type, Candle& candle, u16& canId)
         : m_socketIndex(socket), m_type(type), m_candle(candle), m_canId(canId)
     {
         m_log.m_layer = DEFAULT_PDS_MODULE_LOG_LAYER;

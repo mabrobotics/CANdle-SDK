@@ -4,18 +4,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
-#include <vector>
 
 #include "candle_protocol.hpp"
 #include "register.hpp"
-
-#ifdef WIN32
-void usleep(u32 us)
-{
-    u32 ms = us / 1000;
-    Sleep(ms == 0 ? 1 : ms);
-}
-#endif
 
 namespace mab
 {
@@ -51,10 +42,8 @@ namespace mab
     {
         reset();
         usleep(5000);
-        if (sem_init(&received, true, 0) == -1)
-        {
+        if (sem_init(&received, 0, 0) == -1)
             throw std::runtime_error("Failed to set up receive semaphore");
-        }
         for (u32 i = 0; i < 10; i++)
         {
             if (!sendBusFrame(BUS_FRAME_END, 100))

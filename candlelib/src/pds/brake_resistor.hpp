@@ -20,7 +20,7 @@ namespace mab
         };
 
         BrakeResistor() = delete;
-        BrakeResistor(socketIndex_E socket, Candle& candle, u16 canId);
+        BrakeResistor(socketIndex_E socket, Candle& candle, u16& canId);
         ~BrakeResistor() = default;
 
         error_E enable();
