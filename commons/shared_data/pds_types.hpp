@@ -81,4 +81,10 @@ namespace mab
         BAUD_8M = 0x03
     };
 
+    struct pdsConfig_S
+    {
+        u16           canId;
+        canBaudrate_E canBaudrate;
+    };
+
 }  // namespace mab
