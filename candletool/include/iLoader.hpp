@@ -9,13 +9,13 @@ class I_Loader
     enum class Error_E : uint8_t
     {
         OK = 0,
-        ERROR_SETUP,
-        ERROR_ERASE,
-        ERROR_PROG,
-        ERROR_PAGE,
-        ERROR_WRITE,
-        ERROR_META,
-        ERROR_BOOT,
+        ERROR_SETUP,    // Could not enter setup mode
+        ERROR_ERASE,    // Problem during erasing flash
+        ERROR_PROG,     // Could not init frimware transfer
+        ERROR_PAGE,     // Error during bulk data transfer
+        ERROR_WRITE,    // Error during saving data in FLASH (possible CRC error of whole page)
+        ERROR_META,     // Error of checksum or saving configuration in FLASH
+        ERROR_BOOT,     // Error in transfer of boot command 
         ERROR_UNKNOWN,
     };
     I_Loader() = delete;

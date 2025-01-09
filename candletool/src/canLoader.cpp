@@ -26,7 +26,7 @@ CanLoader::Error_E CanLoader::uploadFirmware()
 {
     if (!sendEraseCmd())
         return Error_E::ERROR_ERASE;
-    if (!sendProgStartCmd())
+    if (!sendProgTransferStartCmd())
         return Error_E::ERROR_PROG;
 
     u32 bytesToSend = m_mabFile.m_fwEntry.size;
@@ -43,7 +43,7 @@ CanLoader::Error_E CanLoader::uploadFirmware()
         bytesSent += M_PAGE_SIZE;
         m_log.progress(std::clamp((f32)bytesSent / bytesToSend, 0.f, 1.f));
     }
-    if (!sendSetupCmd()) // to exit from PROG mode
+    if (!sendSetupCmd())  // to exit from PROG mode
         return Error_E::ERROR_UNKNOWN;
     if (!sendMetaCmd())
         return Error_E::ERROR_META;
@@ -60,8 +60,8 @@ CanLoader::Error_E CanLoader::sendBootCommand()
 
 void CanLoader::sendResetCmd()
 {
-    uint8_t txBuff[64] = {0};
-    char    rxBuff[64] = {0};
+    uint8_t txBuff[M_CAN_CHUNK_SIZE] = {0};
+    char    rxBuff[M_CAN_CHUNK_SIZE] = {0};
 
     txBuff[0] = (u8)CMD_TARGET_RESET;
     txBuff[1] = 0x00;
@@ -79,8 +79,8 @@ void CanLoader::sendResetCmd()
 
 bool CanLoader::sendSetupCmd()
 {
-    uint8_t txBuff[64] = {0};
-    char    rxBuff[64] = {0};
+    uint8_t txBuff[M_CAN_CHUNK_SIZE] = {0};
+    char    rxBuff[M_CAN_CHUNK_SIZE] = {0};
 
     txBuff[0]         = (u8)CMD_SETUP;
     *(u32*)&txBuff[1] = m_mabFile.m_fwEntry.bootAddress;
@@ -98,18 +98,21 @@ bool CanLoader::sendSetupCmd()
 }
 bool CanLoader::sendEraseCmd()
 {
-    uint8_t txBuff[64]            = {0};
-    char    rxBuff[64]            = {0};
-    u32     maxEraseSize          = 8 * 2048;
-    u32     remainingBytesToErase = m_mabFile.m_fwEntry.size;
+    uint8_t   txBuff[M_CAN_CHUNK_SIZE] = {0};
+    char      rxBuff[M_CAN_CHUNK_SIZE] = {0};
+    const u32 MAX_ERASE_SIZE           = 8 * M_PAGE_SIZE;
+    // Workaround for CANdle firmware max timeout of 255ms.
+    // Erasing 8 pages takes ~235ms, thus this is a max erase size we can do without modding CANdle
+    // firmware, and remaining backwards compatibile.
+    u32 remainingBytesToErase = m_mabFile.m_fwEntry.size;
 
     txBuff[0]         = (u8)CMD_ERASE;
     *(u32*)&txBuff[1] = m_mabFile.m_fwEntry.bootAddress;
 
     while (remainingBytesToErase > 0)
     {
-        u32 bytesToErase = maxEraseSize;
-        if (remainingBytesToErase < maxEraseSize)
+        u32 bytesToErase = MAX_ERASE_SIZE;
+        if (remainingBytesToErase < MAX_ERASE_SIZE)
             bytesToErase = remainingBytesToErase;
         *(u32*)&txBuff[5] = bytesToErase;
         m_log.debug("ERASE @ %x, %d bytes.", *(u32*)&txBuff[1], *(u32*)&txBuff[5]);
@@ -124,13 +127,13 @@ bool CanLoader::sendEraseCmd()
     return true;
 }
 
-bool CanLoader::sendProgStartCmd()
+bool CanLoader::sendProgTransferStartCmd()
 {
     m_log.debug("Sending enter page programming mode command... ");
 
-    uint8_t txBuff[64] = {0};
-    char    rxBuff[64] = {0};
-    bool    useCipher  = strlen((const char*)m_mabFile.m_fwEntry.aes_iv) > 0;
+    uint8_t txBuff[M_CAN_CHUNK_SIZE] = {0};
+    char    rxBuff[M_CAN_CHUNK_SIZE] = {0};
+    bool    useCipher                = strlen((const char*)m_mabFile.m_fwEntry.aes_iv) > 0;
 
     txBuff[0] = (u8)CMD_PROG;
     txBuff[1] = useCipher;
@@ -146,8 +149,8 @@ bool CanLoader::sendProgStartCmd()
 
 bool CanLoader::sendPage(u8* data)
 {
-    char txBuff[64] = {0};
-    char rxBuff[64] = {0};
+    char txBuff[M_CAN_CHUNK_SIZE] = {0};
+    char rxBuff[M_CAN_CHUNK_SIZE] = {0};
 
     for (int i = 0; i < 32; i++)
     {
@@ -162,7 +165,8 @@ bool CanLoader::sendPage(u8* data)
 
 bool CanLoader::sendWriteCmd(u8* data)
 {
-    char tx[64] = {}, rx[64] = {};
+    char tx[M_CAN_CHUNK_SIZE] = {};
+    char rx[M_CAN_CHUNK_SIZE] = {};
 
     tx[0]         = (u8)CMD_WRITE;
     *(u32*)&tx[1] = mab::crc32(data, M_PAGE_SIZE);
@@ -173,7 +177,8 @@ bool CanLoader::sendWriteCmd(u8* data)
 
 bool CanLoader::sendBootCmd()
 {
-    char tx[64] = {}, rx[64] = {};
+    char tx[M_CAN_CHUNK_SIZE] = {};
+    char rx[M_CAN_CHUNK_SIZE] = {};
 
     tx[0]         = (u8)CMD_BOOT;
     *(u32*)&tx[1] = m_mabFile.m_fwEntry.bootAddress;
@@ -183,18 +188,18 @@ bool CanLoader::sendBootCmd()
 }
 bool CanLoader::sendMetaCmd()
 {
-    char tx[64] = {}, rx[64] = {};
-    bool shouldSaveMeta = true;
+    char tx[M_CAN_CHUNK_SIZE] = {};
+    char rx[M_CAN_CHUNK_SIZE] = {};
+    bool shouldSaveMeta       = true;
 
     tx[0] = (u8)CMD_META;
     tx[1] = shouldSaveMeta;
     memcpy(&tx[2], m_mabFile.m_fwEntry.checksum, 32);
-    m_candle.sendGenericFDCanFrame(m_canId, 64, tx, nullptr, nullptr, 10);
+    m_candle.sendGenericFDCanFrame(m_canId, M_CAN_CHUNK_SIZE, tx, nullptr, nullptr, 10);
     usleep(300000);
-    // erase and save takes about 350ms, and this is done
-    // due to a bug in candle fw allowing max of 255 ms timeout
+    // Again this is workaround for CANdle firmware limitation allowing only for 255ms timout.
+    // Checksum validation & config saving takes ~350ms, thus this hack is required.
     if (m_candle.sendGenericFDCanFrame(m_canId, 0, tx, rx, nullptr, 250))
         return (strncmp(rx, "OK", 2) == 0);
     return false;
 }
-

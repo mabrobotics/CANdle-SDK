@@ -21,12 +21,12 @@ class CanLoader : public I_Loader
     enum BootloaderFrameId_E : u8
     {
         CMD_TARGET_RESET = 0x13,
-        CMD_SETUP        = 0xB1,
-        CMD_ERASE        = 0xB2,
-        CMD_PROG         = 0xB3,
-        CMD_WRITE        = 0xB4,
-        CMD_BOOT         = 0xB5,
-        CMD_META         = 0xB6,
+        CMD_SETUP        = 0xB1,    // Set Bootloder into SETUP state
+        CMD_ERASE        = 0xB2,    // Erase FLASH memory
+        CMD_PROG         = 0xB3,    // Init Firmware Data transfer
+        CMD_WRITE        = 0xB4,    // Write Page to FLASH
+        CMD_BOOT         = 0xB5,    // Boot to app
+        CMD_META         = 0xB6,    // Set metadata, checksum etc. and save config in FLASH
     };
 
     mab::Candle& m_candle;
@@ -40,7 +40,7 @@ class CanLoader : public I_Loader
     void sendResetCmd();
     bool sendSetupCmd();
     bool sendEraseCmd();
-    bool sendProgStartCmd();
+    bool sendProgTransferStartCmd();
     bool sendPage(u8* data);
     bool sendWriteCmd(u8* data);
     bool sendBootCmd();
