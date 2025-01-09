@@ -1,9 +1,6 @@
 #include "candle.hpp"
 #include "mabFileParser.hpp"
 
-#include <string>
-#include <vector>
-
 namespace mab
 {
 
@@ -30,7 +27,6 @@ namespace mab
             ERROR_TIME_OUT,
             ERROR_UNKNOWN,
         };
-
         /**
          * @brief Construct a new Firmware Uploader object
          *
@@ -51,11 +47,11 @@ namespace mab
          * @param directly If true, connect to bootloader directly. If false, connect to bootloader
          *
          * via the application.
-         * @return true
-         * @return false
+         * @return true if flashing succeded
+         * @return false if flashing failed
          */
-        ERROR_E flashDevice(bool directly);
-        void    setVerbosity(bool verbosity);
+        bool flashDevice(bool directly);
+        void setVerbosity(bool verbosity);
 
       private:
         mab::Candle& m_candle;

@@ -188,12 +188,10 @@ bool UsbDevice::transmit(
     if (waitForResponse)
     {
         if (receive(responseLen, timeout))
-        {
             return true;
-        }
         else
         {
-            m_log.error("USB Receive timeout");
+            m_log.warn("USB Receive timeout");
             return false;
         }
     }
@@ -208,10 +206,7 @@ bool UsbDevice::receive(int responseLen, int timeoutMs, bool checkCrc, bool faul
     s32 ret = libusb_bulk_transfer(
         devh, inEndpointAdr, (u8*)rxBuffer, responseLen, &bytesReceived, timeoutMs);
     if (ret < 0)
-    {
-        // cout << "[USB] Failed to receive!" << endl;
         return false;
-    }
     return true;
 }
 

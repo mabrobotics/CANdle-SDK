@@ -1,15 +1,8 @@
 #include "uploader.hpp"
-#include "md80.hpp"
 
-#include <iostream>
-#include <fstream>
 #include <cstring>
-#include "unistd.h"
-#include "mini/ini.h"
-#include "logger.hpp"
 #include "canLoader.hpp"
 #include "usbLoader.hpp"
-// #include <memory>
 
 namespace mab
 {
@@ -17,15 +10,15 @@ namespace mab
     FirmwareUploader::FirmwareUploader(Candle& _candle, MabFileParser& mabFile, int mdId)
         : m_candle(_candle), m_mabFile(mabFile), m_canId(mdId)
     {
-        m_log.m_tag   = "FW Uploader";
+        m_log.m_tag   = "FW LOADER";
         m_log.m_layer = Logger::ProgramLayer_E::LAYER_2;
     }
 
-    FirmwareUploader::ERROR_E FirmwareUploader::flashDevice(bool directly)
+    bool FirmwareUploader::flashDevice(bool directly)
     {
         std::unique_ptr<I_Loader> pLoader = nullptr;
 
-        switch (m_mabFile.m_firmwareEntry1.targetDevice)
+        switch (m_mabFile.m_fwEntry.targetDevice)
         {
             case MabFileParser::TargetDevice_E::MD:
             case MabFileParser::TargetDevice_E::PDS:
@@ -38,34 +31,55 @@ namespace mab
 
             default:
                 m_log.error("Unsupported target device!");
-                return ERROR_E::ERROR_UNKNOWN;
+                return false;
         }
 
         /* send reset command to the md80 firmware */
         if (directly == false)
             pLoader->resetDevice();
 
+        m_log.debug("Entering bootloader");
         if (I_Loader::Error_E::OK != pLoader->enterBootloader())
         {
             m_log.error("Failed to enter bootloader mode!");
-            return ERROR_E::ERROR_UNKNOWN;
+            return false;
         }
 
         /* upload firmware */
-        if (I_Loader::Error_E::OK != pLoader->uploadFirmware())
+        m_log.debug("Starting firmware upload");
+        I_Loader::Error_E result = pLoader->uploadFirmware();
+        switch (result)
+        {
+            case I_Loader::Error_E::OK:
+                break;
+            case I_Loader::Error_E::ERROR_ERASE:
+                m_log.error("Failed to erase memory");
+                break;
+            case I_Loader::Error_E::ERROR_PROG:
+            case I_Loader::Error_E::ERROR_PAGE:
+                m_log.error("Failed to program FLASH page");
+                break;
+            case I_Loader::Error_E::ERROR_WRITE:
+                m_log.error("Failed to validate page CRC.");
+                break;
+            default:
+                m_log.error("Unexpected error happend. Error code: %d", result);
+        }
+        if (result != I_Loader::Error_E::OK)
         {
             m_log.error("Failed to upload firmware!");
-            return ERROR_E::ERROR_UNKNOWN;
+            return false;
         }
+        m_log.debug("Firmware update complete");
 
         /* send boot command */
+        m_log.debug("Sending boot command");
         if (I_Loader::Error_E::OK != pLoader->sendBootCommand())
         {
             m_log.error("Failed to send boot command!");
-            return ERROR_E::ERROR_UNKNOWN;
+            return false;
         }
-
-        return ERROR_E::OK;
+        return true;
     }
 
 }  // namespace mab

@@ -1,141 +1,96 @@
 #include "mabFileParser.hpp"
+#include "mini/ini.h"
+#include <cstring>
 
-MabFileParser::MabFileParser(std::string filePath)
+bool                          hexStringToBytes(u8 buffer[], u32 bufferLen, const std::string& str);
+MabFileParser::TargetDevice_E parseTargetDevice(std::string tag);
+std::string                   tagFromTargetDevice(MabFileParser::TargetDevice_E type);
+
+MabFileParser::MabFileParser(std::string filePath, TargetDevice_E target)
 {
     log.m_tag   = "MAB FILE";
     log.m_layer = Logger::ProgramLayer_E::LAYER_2;
-    if (Status_E::OK != processFile(filePath))
+
+    MabFileParser::log.info("Processing file: %s", filePath.c_str());
+
+    mINI::INIFile      file(filePath);
+    mINI::INIStructure ini;
+    if (!file.read(ini))
     {
         log.error("Error processing file\n\r[ %s ]\n\rCheck file path and format.",
                   filePath.c_str());
         throw std::runtime_error("Error processing file");
     }
-}
 
-MabFileParser::Status_E MabFileParser::processFile(std::string filePath)
-{
-    MabFileParser::log.info("Processing file: %s", filePath.c_str());
+    // parse
+    m_fwEntry.targetDevice = parseTargetDevice(ini.get("firmware").get("tag"));
+    m_fwEntry.size         = atoi(ini.get("firmware").get("size").c_str());
+    hexStringToBytes(
+        m_fwEntry.checksum, sizeof(m_fwEntry.checksum), ini.get("firmware").get("checksum"));
+    m_fwEntry.bootAddress = strtol(ini.get("firmware").get("start").c_str(), nullptr, 16);
+    strcpy((char*)m_fwEntry.version, ini.get("firmware").get("version").c_str());
+    hexStringToBytes(m_fwEntry.aes_iv, sizeof(m_fwEntry.aes_iv), ini.get("firmware").get("iv"));
+    hexStringToBytes(m_fwEntry.data, m_fwEntry.size, ini.get("firmware").get("binary"));
 
-    mINI::INIFile      file(filePath);
-    mINI::INIStructure ini;
-
-    if (!file.read(ini))
-        return Status_E::ERROR_FILE;
-
-    m_firmwareEntry1 = parseFirmwareEntry(ini, std::string("header1"));
-
-    if (m_firmwareEntry1.status == Status_E::ERROR_CHECKSUM ||
-        m_firmwareEntry2.status == Status_E::ERROR_CHECKSUM)
+    // validate
+    if (target != m_fwEntry.targetDevice || m_fwEntry.targetDevice == TargetDevice_E::INVALID)
     {
-        log.error("Checksum validation failed");
-        return Status_E::ERROR_CHECKSUM;
+        log.error("Error processing .mab file!");
+        log.error("Device target mismatch. Expected: [%s], Read: [%s].",
+                  tagFromTargetDevice(target).c_str(),
+                  tagFromTargetDevice(m_fwEntry.targetDevice).c_str());
+        throw std::runtime_error("Error processing file");
     }
-
-    log.success("File processed successfully");
-    log.info("Target device: [ %s ]", fileType2String(m_firmwareEntry1.targetDevice).c_str());
-    log.info("Primary firmware size: [ %d bytes ]", m_firmwareEntry1.size);
-
-    if ((m_firmwareEntry1.targetDevice == TargetDevice_E::BOOT) && (ini.has("header2")))
+    if (m_fwEntry.bootAddress < 0x8000000 || m_fwEntry.size == 0 ||
+        m_fwEntry.size > sizeof(m_fwEntry.data))
     {
-        m_firmwareEntry2 = parseFirmwareEntry(ini, std::string("header2"));
-        log.info("Secondary firmware size: [ %d bytes ]", m_firmwareEntry2.size);
+        log.error("Error processing .mab file!");
+        log.error("Boot address [0x%x] or size of firmware [%d bytes] invalid!",
+                  m_fwEntry.bootAddress,
+                  m_fwEntry.size);
+        throw std::runtime_error("Error processing file");
     }
+    // TODO: Validate checksum here
 
-    return Status_E::OK;
+    log.success(".mab file OK");
 }
 
-MabFileParser::TargetDevice_E MabFileParser::parseTargetDevice(std::string tag)
+
+bool hexStringToBytes(u8 buffer[], u32 bufferLen, const std::string& str)
 {
-    if (tag == "md")
-        return TargetDevice_E::MD;
-
-    else if (tag == "candle")
-        return TargetDevice_E::CANDLE;
-
-    else if (tag == "boot")
-        return TargetDevice_E::BOOT;
-
-    else if (tag == "pds")
-        return TargetDevice_E::PDS;
-    else
-        return TargetDevice_E::INVALID;
-}
-
-MabFileParser::FirmwareEntry MabFileParser::parseFirmwareEntry(mINI::INIStructure& ini,
-                                                               std::string&&       header)
-{
-    FirmwareEntry temp{};
-    temp.targetDevice = parseTargetDevice(ini.get(header).get("tag"));
-    temp.size         = stoi(ini.get(header).get("size"));
-    temp.checksum     = ini.get(header).get("checksum");
-
-    temp.binary = hexStringToBytes(ini.get(header).get("binary"));
-
-    // if (!validateChecksum(temp.binary, temp.checksum))
-    // 	temp.status = Status::ERROR_CHECKSUM;
-
-    return temp;
-}
-
-// static bool validateChecksum(std::vector<uint8_t>& data, std::string& expectedChecksum)
-// {
-// 	constexpr size_t sha256DigestLength = 32;
-// 	EVP_MD_CTX*		 mdctx				= EVP_MD_CTX_new();
-
-// 	if (mdctx == NULL)
-// 		return false;
-
-// 	EVP_DigestInit(mdctx, EVP_sha256());
-// 	EVP_DigestUpdate(mdctx, data.data(), data.size());
-// 	uint32_t calculateChecksumLength;
-// 	uint8_t	 calculateChecksum[sha256DigestLength];
-// 	if (EVP_DigestFinal(mdctx, calculateChecksum, &calculateChecksumLength) != 1)
-// 	{
-// 		EVP_MD_CTX_free(mdctx);
-// 		return false;
-// 	}
-
-// 	auto expectedChecksumBytes = hexStringToBytes(expectedChecksum);
-
-// 	for (size_t i = 0; i < sha256DigestLength; i++)
-// 	{
-// 		if (expectedChecksumBytes[i] != calculateChecksum[i])
-// 			return false;
-// 	}
-
-// 	return true;
-// }
-
-std::vector<uint8_t> MabFileParser::hexStringToBytes(std::string str)
-{
-    std::vector<uint8_t> result;
-
-    for (size_t i = 0; i < str.length(); i += 2)
+    memset(buffer, 0, bufferLen);
+    if (bufferLen < (str.length() + 1) / 2 || str.length() % 2 == 1)
+        return false;
+    for (size_t i = 0; i < str.length() / 2; i++)
     {
-        std::string byteString = str.substr(i, 2);
-        result.push_back(std::stoi(byteString, nullptr, 16));
+        std::string byteString = str.substr(2 * i, 2);
+        buffer[i]              = std::stoi(byteString.c_str(), nullptr, 16);
     }
-
-    return result;
+    return true;
 }
-
-std::string MabFileParser::fileType2String(TargetDevice_E type)
+std::string tagFromTargetDevice(MabFileParser::TargetDevice_E type)
 {
     switch (type)
     {
-        case TargetDevice_E::MD:
-            return "MD";
-
-        case TargetDevice_E::PDS:
-            return "PDS";
-
-        case TargetDevice_E::CANDLE:
-            return "CANDLE";
-
-        case TargetDevice_E::BOOT:
-            return "BOOT";
-
+        case MabFileParser::TargetDevice_E::MD:
+            return "md";
+        case MabFileParser::TargetDevice_E::PDS:
+            return "pds";
+        case MabFileParser::TargetDevice_E::CANDLE:
+            return "candle";
         default:
             return "UNKNOWN";
     }
 }
+MabFileParser::TargetDevice_E parseTargetDevice(std::string tag)
+{
+    if (tag == "md")
+        return MabFileParser::TargetDevice_E::MD;
+    else if (tag == "candle")
+        return MabFileParser::TargetDevice_E::CANDLE;
+    else if (tag == "pds")
+        return MabFileParser::TargetDevice_E::PDS;
+    else
+        return MabFileParser::TargetDevice_E::INVALID;
+}
+

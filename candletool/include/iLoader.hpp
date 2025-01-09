@@ -9,6 +9,13 @@ class I_Loader
     enum class Error_E : uint8_t
     {
         OK = 0,
+        ERROR_SETUP,    // Could not enter setup mode
+        ERROR_ERASE,    // Problem during erasing flash
+        ERROR_PROG,     // Could not init frimware transfer
+        ERROR_PAGE,     // Error during bulk data transfer
+        ERROR_WRITE,    // Error during saving data in FLASH (possible CRC error of whole page)
+        ERROR_META,     // Error of checksum or saving configuration in FLASH
+        ERROR_BOOT,     // Error in transfer of boot command 
         ERROR_UNKNOWN,
     };
     I_Loader() = delete;
@@ -42,7 +49,6 @@ class I_Loader
     static constexpr size_t   M_PAGE_SIZE      = 2048U;
     static constexpr size_t   M_CAN_CHUNK_SIZE = 64U;
     static constexpr size_t   M_USB_CHUNK_SIZE = 2044;
-    static constexpr uint32_t M_BOOT_ADDRESS   = 0x08005000;
 
     MabFileParser m_mabFile;
 };

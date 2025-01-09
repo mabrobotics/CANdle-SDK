@@ -8,7 +8,7 @@ UsbLoader::UsbLoader(mab::Candle& candle, MabFileParser& mabFile)
     m_log.m_layer = Logger::ProgramLayer_E::LAYER_2;
 
     // TODO: This stuff might be moved to the iLoader interface
-    m_fileSize             = m_mabFile.m_firmwareEntry1.size;
+    m_fileSize             = m_mabFile.m_fwEntry.size;
     float flashPagesNeeded = ceilf((float)m_fileSize / (float)M_PAGE_SIZE);
     m_pagesToUpload        = (int)flashPagesNeeded;
     m_currentPage          = 0;
@@ -111,13 +111,13 @@ bool UsbLoader::sendPage()
     uint8_t  pageBuffer[M_PAGE_SIZE] = {0};
     int      pageBufferReadSize      = M_PAGE_SIZE;
 
-    size_t binaryLength = m_mabFile.m_firmwareEntry1.size;
+    size_t binaryLength = m_mabFile.m_fwEntry.size;
 
     if (binaryLength - ((m_currentPage)*M_PAGE_SIZE) < M_PAGE_SIZE)
         pageBufferReadSize = binaryLength - ((m_currentPage)*M_PAGE_SIZE);
 
     memcpy(pageBuffer,
-           &m_mabFile.m_firmwareEntry1.binary[m_currentPage * M_PAGE_SIZE],
+           &m_mabFile.m_fwEntry.data[m_currentPage * M_PAGE_SIZE],
            pageBufferReadSize);
 
     /* framesPerPage + 1 is for the rest of data that is not a whole chunk in size */
@@ -163,7 +163,7 @@ bool UsbLoader::sendPage()
 
 bool UsbLoader::sendWriteCmd(uint8_t* pPageBuffer, int bufferSize)
 {
-    uint32_t pageCrc = mab::CalcCRC(pPageBuffer, (uint32_t)bufferSize);
+    uint32_t pageCrc = mab::crc32(pPageBuffer, (uint32_t)bufferSize);
 
     if (!m_candle.sendBootloaderBusFrame(mab::BootloaderBusFrameId_E::BOOTLOADER_FRAME_WRITE_PAGE,
                                          100,

@@ -18,13 +18,15 @@ class CanLoader : public I_Loader
     Error_E sendBootCommand() override;
 
   private:
-    enum BootloaderFrameId_E : uint8_t
+    enum BootloaderFrameId_E : u8
     {
         CMD_TARGET_RESET = 0x13,
-        CMD_HOST_INIT    = 0xA1,
-        CMD_PAGE_PROG    = 0xA2,
-        CMD_BOOT         = 0xA3,
-        CMD_WRITE        = 0xA4,
+        CMD_SETUP        = 0xB1,    // Set Bootloder into SETUP state
+        CMD_ERASE        = 0xB2,    // Erase FLASH memory
+        CMD_PROG         = 0xB3,    // Init Firmware Data transfer
+        CMD_WRITE        = 0xB4,    // Write Page to FLASH
+        CMD_BOOT         = 0xB5,    // Boot to app
+        CMD_META         = 0xB6,    // Set metadata, checksum etc. and save config in FLASH
     };
 
     mab::Candle& m_candle;
@@ -36,11 +38,13 @@ class CanLoader : public I_Loader
     uint32_t     m_currentPage;
 
     void sendResetCmd();
-    bool sendInitCmd();
-    bool sendPageProgCmd();
-    bool sendWriteCmd(uint8_t* pPageBuffer, int bufferSize);
-    bool sendPage();
+    bool sendSetupCmd();
+    bool sendEraseCmd();
+    bool sendProgTransferStartCmd();
+    bool sendPage(u8* data);
+    bool sendWriteCmd(u8* data);
     bool sendBootCmd();
+    bool sendMetaCmd();
 };
 
 #endif /* CANLOADER_HPP */
