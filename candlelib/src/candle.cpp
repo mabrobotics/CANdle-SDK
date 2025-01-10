@@ -918,12 +918,29 @@ namespace mab
                                 const char* failMsg,
                                 const char* successMsg)
     {
-        if (inUpdateMode() || !md80Register->write(canId, reg, true))
+        if (inUpdateMode())
+        {
+            log.error("Cannot execute commands while CANdle is in UPDATE mode!");
+            return false;
+        }
+        bool commandInProgress;
+        md80Register->read(canId, reg, commandInProgress);
+        if (commandInProgress)
+            log.warn("Command in progress!");
+        else if (!md80Register->write(canId, reg, true))
         {
             log.error("%s %d", failMsg, canId);
             return false;
         }
         log.success("%s %d", successMsg, canId);
+        log.info("Waiting for command to finish", successMsg, canId);
+        do
+        {
+            usleep(500000);
+            md80Register->read(canId, reg, commandInProgress);
+            fprintf(stderr, ".");
+        } while (commandInProgress);
+        printf("\n");
         return true;
     }
 
