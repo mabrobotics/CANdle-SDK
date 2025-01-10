@@ -442,7 +442,8 @@ namespace mab
         bool executeCommand(uint16_t    canId,
                             Md80Reg_E   reg,
                             const char* failMsg,
-                            const char* successMsg);
+                            const char* successMsg,
+                            bool waitToFinish);
 
         /* virtual methods for testing purposes */
 #ifdef UNIX
