@@ -936,7 +936,7 @@ namespace mab
         log.success("%s %d", successMsg, canId);
         if (!waitToFinish)
             return true;
-        log.info("Waiting for command to finish", successMsg, canId);
+        log.info("Waiting for command to finish");
         do
         {
             usleep(500000);
