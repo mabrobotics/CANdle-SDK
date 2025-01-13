@@ -27,6 +27,7 @@ namespace mab
         mab::hardwareType_S hardwareType;
         uint32_t            buildDate;
         char                commitHash[8];
+        char                uniqueId[12];
         uint8_t             bridgeType;
         float               resistance;
         float               inductance;
@@ -245,7 +246,9 @@ namespace mab
         communicationErrors   = 0x80E,
         homingErrors          = 0x80F,
         motionErrors          = 0x810,
-        miscStatus            = 0x812
+        miscStatus            = 0x812,
+
+        uniqueID               = 0x830
 
     } Md80Reg_E;
     class Register

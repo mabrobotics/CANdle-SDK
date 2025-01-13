@@ -9,6 +9,17 @@
 #include "uploader.hpp"
 #include "mabFileParser.hpp"
 
+void u8toAsciiHex(const char* input, size_t length, std::string& output)
+{
+    const char* hexDigits = "0123456789ABCDEF";
+    output.reserve(length * 2 + 1);
+    for (size_t i = 0; i < length; ++i)
+    {
+        output.data()[i * 2]     = hexDigits[(input[i] >> 4) & 0xF];
+        output.data()[i * 2 + 1] = hexDigits[input[i] & 0xF];
+    }
+    output.data()[length * 2] = '\0';  // Null-terminate the string
+}
 f32 lerp(f32 start, f32 end, f32 t)
 {
     return (start * (1.f - t)) + (end * t);
@@ -793,7 +804,6 @@ void CandleTool::testEncoderMain(u16 id)
         return;
     candle->setupMd80TestMainEncoder(id);
 }
-
 void CandleTool::registerWrite(u16 id, u16 reg, const std::string& value)
 {
     if (!tryAddMD80(id))
@@ -877,7 +887,11 @@ void CandleTool::registerRead(u16 id, u16 reg)
         {
             char str[24]{};
             candle->readMd80Register(id, regId, str);
-            value = std::string(str);
+
+            // \0 (null) bytes are valid within UID, thus we
+            // change it to ascii hex string for displaying
+            if (regId == mab::Md80Reg_E::uniqueID)
+                u8toAsciiHex(str, 12, value);
             break;
         }
         case mab::Register::type::UNKNOWN:

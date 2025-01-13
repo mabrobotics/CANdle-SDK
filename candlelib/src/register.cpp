@@ -97,10 +97,21 @@ namespace mab
 
     uint16_t Register::getSize(uint16_t regId)
     {
+        switch(regId)
+        {
+            case Md80Reg_E::commitHash:
+                return 8;
+            case Md80Reg_E::motorName:
+                return 24;
+            case Md80Reg_E::uniqueID:
+                return 12;
+        }
         if (regId == Md80Reg_E::commitHash)
             return 8;
         if (regId == Md80Reg_E::motorName)
             return 24;
+        if (regId == Md80Reg_E::uniqueID)
+            return 12;
 
         switch (getType(regId))
         {
@@ -234,6 +245,7 @@ namespace mab
                 return type::F32;
             case Md80Reg_E::commitHash:
             case Md80Reg_E::motorName:
+            case Md80Reg_E::uniqueID:
                 return type::STR;
             default:
                 return type::UNKNOWN;
