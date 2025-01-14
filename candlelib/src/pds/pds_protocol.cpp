@@ -47,15 +47,39 @@ namespace mab
 
     PdsMessage::error_E PropertySetMessage::parseResponse(u8* p_response, size_t responseLength)
     {
+        size_t expectedResponseLength  = 2 + m_properties.size();  // 2 response header bytes
+        u8     nProperties             = 0;
+        bool   propertiesModifySuccess = true;
+        propertyError_E propertyResult = propertyError_E::OK;
+
         if (p_response == nullptr)
             return error_E::UNKNOWN_ERROR;
 
-        if (responseLength < 1)
+        if (responseLength <
+            expectedResponseLength)  // Might be greater (FD CAN) or equal but not less
             return error_E::INVALID_RESPONSE_LENGTH;
 
-        responseCode_E responseCode = static_cast<responseCode_E>(*p_response);
+        msgResponse_E responseCode = static_cast<msgResponse_E>(*p_response++);
 
-        if (responseCode != responseCode_E::OK)
+        if (responseCode != msgResponse_E::OK)
+            return error_E::RESPONSE_STATUS_ERROR;
+
+        nProperties = *p_response++;
+
+        if (nProperties != m_properties.size())
+            return error_E::INVALID_PROPERTIES_NUMBER;
+
+        for (u8 i = 0; i < nProperties; i++)
+        {
+            propertyResult = static_cast<propertyError_E>(*p_response++);
+            if (propertyResult != propertyError_E::OK)
+            {
+                propertiesModifySuccess = false;
+                m_log.warn("Setting property [ %u ] failed with error code [ %u ]", m_properties);
+            }
+        }
+
+        if (!propertiesModifySuccess)
             return error_E::RESPONSE_STATUS_ERROR;
 
         return error_E::OK;
@@ -93,14 +117,14 @@ namespace mab
 
     PdsMessage::error_E PropertyGetMessage::parseResponse(u8* p_response, size_t responseLength)
     {
-        responseCode_E responseStatusCode         = responseCode_E::OK;
-        size_t         numberOfReceivedProperties = 0;
+        msgResponse_E responseStatusCode         = msgResponse_E::OK;
+        size_t        numberOfReceivedProperties = 0;
 
         if (p_response == nullptr)
             return error_E::UNKNOWN_ERROR;
 
-        responseStatusCode = static_cast<responseCode_E>(*p_response++);
-        if (responseStatusCode != responseCode_E::OK)
+        responseStatusCode = static_cast<msgResponse_E>(*p_response++);
+        if (responseStatusCode != msgResponse_E::OK)
             return error_E::RESPONSE_STATUS_ERROR;
 
         // Remove all previously parsed properties. It allows to reuse previously defined message to
@@ -113,11 +137,11 @@ namespace mab
 
         for (uint8_t i = 0; i < numberOfReceivedProperties; i++)
         {
-            u8   type           = m_properties[i];
-            u32  rawValue       = 0;
-            bool propertyStatus = static_cast<bool>(*p_response++);
+            u8              type           = m_properties[i];
+            u32             rawValue       = 0;
+            propertyError_E propertyStatus = static_cast<propertyError_E>(*p_response++);
             memcpy(&rawValue, p_response, sizeof(u32));
-            if (propertyStatus)
+            if (propertyStatus == propertyError_E::OK)
                 m_receivedProperties.push_back(std::make_pair(type, rawValue));
             p_response += 4;
         }
