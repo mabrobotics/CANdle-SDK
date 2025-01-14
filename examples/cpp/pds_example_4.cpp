@@ -32,6 +32,7 @@ int main()
     _log.success("Initial temperature limit read OK [ %.2f ^C ]", temperatureLimit);
 
     _log.info("Changing temperature limit to 50.0 ^C...");
+
     result = pds.setTemperatureLimit(50.0f);
     if (result != PdsModule::error_E::OK)
     {
