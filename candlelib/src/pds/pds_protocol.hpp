@@ -4,6 +4,7 @@
 #include "pds_types.hpp"
 #include "logger.hpp"
 #include "mab_types.hpp"
+#include <string.h>
 #include <vector>
 
 namespace mab
@@ -34,17 +35,6 @@ namespace mab
             SET_MODULE_PROPERTY = 0x21
         };
 
-        enum class responseCode_E : u8
-        {
-            OK                          = 0x00,
-            UNKNOWN_ERROR               = 0x01,
-            INVALID_MSG_BODY            = 0x02,
-            INVALID_MODULE_TYPE         = 0x03,
-            NO_MODULE_TYPE_AT_SOCKET    = 0x04,
-            WRONG_MODULE_TYPE_AT_SOCKET = 0x05,
-            MODULE_PROPERTY_ERROR       = 0x06,
-        };
-
       protected:
         /* ModuleType / socket AKA who / where */
         PdsMessage(moduleType_E moduleType, socketIndex_E socket);
@@ -60,13 +50,12 @@ namespace mab
         PropertySetMessage(moduleType_E moduleType, socketIndex_E socket);
         ~PropertySetMessage() = default;
 
-        // TODO: change the value to not templated uint32_t and treat it as raw data buffer to be
-        // able to handle float and double values
         template <typename propertyT, typename valueT>
         void addProperty(propertyT propertyType, valueT value)
         {
             u8  castedPropertyType = static_cast<u8>(propertyType);
-            u32 castedValue        = static_cast<uint32_t>(value);
+            u32 castedValue        = 0;
+            memcpy(&castedValue, &value, sizeof(valueT));
 
             m_properties.push_back(std::make_pair(castedPropertyType, castedValue));
         }

@@ -274,4 +274,14 @@ namespace mab
         return writeModuleProperty(propertyId_E::CAN_BAUDRATE, canBaudrate);
     }
 
+    PdsModule::error_E Pds::getTemperatureLimit(f32& temperatureLimit)
+    {
+        return readModuleProperty(propertyId_E::TEMPERATURE_LIMIT, temperatureLimit);
+    }
+
+    PdsModule::error_E Pds::setTemperatureLimit(f32 temperatureLimit)
+    {
+        return writeModuleProperty(propertyId_E::TEMPERATURE_LIMIT, temperatureLimit);
+    }
+
 }  // namespace mab
