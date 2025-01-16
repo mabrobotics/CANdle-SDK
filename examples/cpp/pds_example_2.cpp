@@ -52,19 +52,19 @@ int main()
 
     powerStage->enable();
 
-    PowerStage::status_S powerStageStatus = {};
-    float                temperature      = 0.0f;
-    u32                  outputVoltage    = 0;
-    s32                  outputCurrent    = 0;
+    // PowerStage::status_S powerStageStatus = {};
+    float temperature   = 0.0f;
+    u32   outputVoltage = 0;
+    s32   outputCurrent = 0;
 
-    powerStage->getStatus(powerStageStatus);
+    // powerStage->getStatus(powerStageStatus);
     powerStage->getOutputVoltage(outputVoltage);
     powerStage->getLoadCurrent(outputCurrent);
 
     _log.info("Power stage");
-    _log.info("Enabled :: [ %s ]", powerStageStatus.ENABLED ? "ON" : "OFF");
-    _log.info("Over current event :: [ %s ]", powerStageStatus.OCD_EVENT ? "YES" : "NO");
-    _log.info("Over temperature event :: [ %s ]", powerStageStatus.OVT_EVENT ? "YES" : "NO");
+    // _log.info("Enabled :: [ %s ]", powerStageStatus.ENABLED ? "ON" : "OFF");
+    // _log.info("Over current event :: [ %s ]", powerStageStatus.OCD_EVENT ? "YES" : "NO");
+    // _log.info("Over temperature event :: [ %s ]", powerStageStatus.OVT_EVENT ? "YES" : "NO");
     _log.info("Voltage :: [ %.2f ]", static_cast<float>(outputVoltage / 1000.0f));
     _log.info("Temperature :: [ %.2f ]", temperature);
     _log.info("Current :: [ %.2f ]", static_cast<float>(outputCurrent / 1000.0f));
