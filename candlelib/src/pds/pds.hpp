@@ -66,7 +66,9 @@ namespace mab
 
         error_E getTemperatureLimit(f32& temperatureLimit);
         error_E setTemperatureLimit(f32 temperatureLimit);
-        error_E setTurnOffTime(u32 turnOffTime);  // Set PDS turn off time ( in mS )
+
+        error_E getTurnOffTime(u32& turnOffTime);
+        error_E setTurnOffTime(u32 turnOffTime);
 
         static const char* moduleTypeToString(moduleType_E type);
 

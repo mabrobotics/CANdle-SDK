@@ -216,19 +216,20 @@ namespace mab
         if (result != PdsModule::error_E::OK)
             return result;
 
-        status.ENABLED           = statusWord & (u32)statusBits_E::ENABLED;
-        status.OVER_TEMPERATURE  = statusWord & (u32)statusBits_E::OVER_TEMPERATURE;
-        status.OVER_CURRENT      = statusWord & (u32)statusBits_E::OVER_CURRENT;
-        status.STO_1             = statusWord & (u32)statusBits_E::STO_1;
-        status.STO_2             = statusWord & (u32)statusBits_E::STO_2;
-        status.FDCAN_TIMEOUT     = statusWord & (u32)statusBits_E::FDCAN_TIMEOUT;
-        status.SUBMODULE_1_ERROR = statusWord & (u32)statusBits_E::SUBMODULE_1_ERROR;
-        status.SUBMODULE_2_ERROR = statusWord & (u32)statusBits_E::SUBMODULE_2_ERROR;
-        status.SUBMODULE_3_ERROR = statusWord & (u32)statusBits_E::SUBMODULE_3_ERROR;
-        status.SUBMODULE_4_ERROR = statusWord & (u32)statusBits_E::SUBMODULE_4_ERROR;
-        status.SUBMODULE_5_ERROR = statusWord & (u32)statusBits_E::SUBMODULE_5_ERROR;
-        status.SUBMODULE_6_ERROR = statusWord & (u32)statusBits_E::SUBMODULE_6_ERROR;
-        status.CHARGER_DETECTED  = statusWord & (u32)statusBits_E::CHARGER_DETECTED;
+        status.ENABLED            = statusWord & (u32)statusBits_E::ENABLED;
+        status.OVER_TEMPERATURE   = statusWord & (u32)statusBits_E::OVER_TEMPERATURE;
+        status.OVER_CURRENT       = statusWord & (u32)statusBits_E::OVER_CURRENT;
+        status.STO_1              = statusWord & (u32)statusBits_E::STO_1;
+        status.STO_2              = statusWord & (u32)statusBits_E::STO_2;
+        status.FDCAN_TIMEOUT      = statusWord & (u32)statusBits_E::FDCAN_TIMEOUT;
+        status.SUBMODULE_1_ERROR  = statusWord & (u32)statusBits_E::SUBMODULE_1_ERROR;
+        status.SUBMODULE_2_ERROR  = statusWord & (u32)statusBits_E::SUBMODULE_2_ERROR;
+        status.SUBMODULE_3_ERROR  = statusWord & (u32)statusBits_E::SUBMODULE_3_ERROR;
+        status.SUBMODULE_4_ERROR  = statusWord & (u32)statusBits_E::SUBMODULE_4_ERROR;
+        status.SUBMODULE_5_ERROR  = statusWord & (u32)statusBits_E::SUBMODULE_5_ERROR;
+        status.SUBMODULE_6_ERROR  = statusWord & (u32)statusBits_E::SUBMODULE_6_ERROR;
+        status.CHARGER_DETECTED   = statusWord & (u32)statusBits_E::CHARGER_DETECTED;
+        status.TURN_OFF_SCHEDULED = statusWord & (u32)statusBits_E::TURN_OFF_SCHEDULED;
 
         return result;
     }
@@ -328,6 +329,16 @@ namespace mab
     PdsModule::error_E Pds::setTemperatureLimit(f32 temperatureLimit)
     {
         return writeModuleProperty(propertyId_E::TEMPERATURE_LIMIT, temperatureLimit);
+    }
+
+    PdsModule::error_E Pds::getTurnOffTime(u32& turnOffTime)
+    {
+        return readModuleProperty(propertyId_E::TURN_OFF_TIME, turnOffTime);
+    }
+
+    PdsModule::error_E Pds::setTurnOffTime(u32 turnOffTime)
+    {
+        return writeModuleProperty(propertyId_E::TURN_OFF_TIME, turnOffTime);
     }
 
 }  // namespace mab

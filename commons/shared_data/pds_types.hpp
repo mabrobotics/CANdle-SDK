@@ -62,7 +62,7 @@ namespace mab
     };
 
     /*
-        List of property IDs that could be referenced in protocol.
+        List of each property ID that could be referenced in protocol.
         The list is global and not per-module to simplify unique indexing
         and avoid situation whet the same property will have different IDs
         in different modules.
@@ -88,6 +88,9 @@ namespace mab
         SOCKET_4_MODULE          = 0x25,
         SOCKET_5_MODULE          = 0x26,
         SOCKET_6_MODULE          = 0x27,
+        TURN_OFF_TIME            = 0x28,
+        BATTERY_VOLTAGE_L1       = 0x29,
+        BATTERY_VOLTAGE_L2       = 0x2A,
         BR_SOCKET_INDEX          = 0x30,
         BR_TRIGGER_VOLTAGE       = 0x31,
         OCD_LEVEL                = 0x40,
@@ -103,16 +106,17 @@ namespace mab
 
         /*...*/
 
-        STO_1             = (1 << 10),
-        STO_2             = (1 << 11),
-        FDCAN_TIMEOUT     = (1 << 12),
-        SUBMODULE_1_ERROR = (1 << 13),
-        SUBMODULE_2_ERROR = (1 << 14),
-        SUBMODULE_3_ERROR = (1 << 15),
-        SUBMODULE_4_ERROR = (1 << 16),
-        SUBMODULE_5_ERROR = (1 << 17),
-        SUBMODULE_6_ERROR = (1 << 18),
-        CHARGER_DETECTED  = (1 << 19),
+        STO_1              = (1 << 10),
+        STO_2              = (1 << 11),
+        FDCAN_TIMEOUT      = (1 << 12),
+        SUBMODULE_1_ERROR  = (1 << 13),
+        SUBMODULE_2_ERROR  = (1 << 14),
+        SUBMODULE_3_ERROR  = (1 << 15),
+        SUBMODULE_4_ERROR  = (1 << 16),
+        SUBMODULE_5_ERROR  = (1 << 17),
+        SUBMODULE_6_ERROR  = (1 << 18),
+        CHARGER_DETECTED   = (1 << 19),
+        TURN_OFF_SCHEDULED = (1 << 20),
 
         /*...*/
 
@@ -135,6 +139,7 @@ namespace mab
         bool SUBMODULE_5_ERROR;
         bool SUBMODULE_6_ERROR;
         bool CHARGER_DETECTED;
+        bool TURN_OFF_SCHEDULED;
         /*...*/
     };
 
