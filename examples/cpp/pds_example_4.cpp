@@ -3,7 +3,7 @@
 
     Power Distribution System Example 4
 
-    Writes Control board properties
+    PDS manual turn off procedure
 */
 #include "candle.hpp"
 #include "pds.hpp"
@@ -12,44 +12,49 @@ using namespace mab;
 
 constexpr u16 PDS_CAN_ID = 100;
 
+constexpr u32 DESIRED_SHUTDOWN_TIME_mS = 3000u;
+
 int main()
 {
     Logger _log;
     _log.m_tag = "PDS Example 4";
 
-    Candle             candle(mab::CAN_BAUD_1M, true);
-    Pds                pds(PDS_CAN_ID, candle);
-    f32                temperatureLimit = 12.0f;
-    PdsModule::error_E result           = PdsModule::error_E::OK;
+    Candle   candle(mab::CAN_BAUD_1M, true);
+    Pds      pds(PDS_CAN_ID, candle);
+    status_S pdsStatus = {0};
 
-    result = pds.getTemperatureLimit(temperatureLimit);
+    PdsModule::error_E result = PdsModule::error_E::OK;
+
+    _log.info("Setting PDS turnoff time to [ %u ] mS...", DESIRED_SHUTDOWN_TIME_mS);
+
+    result = pds.setTurnOffTime(DESIRED_SHUTDOWN_TIME_mS);
     if (result != PdsModule::error_E::OK)
     {
-        _log.error("Unable to get initial temperature limit");
+        _log.error("Unable to set new turnoff time");
         return EXIT_FAILURE;
     }
 
-    _log.success("Initial temperature limit read OK [ %.2f ^C ]", temperatureLimit);
+    _log.success("turnoff time change OK");
 
-    _log.info("Changing temperature limit to 50.0 ^C...");
+    _log.info("Waiting for the user tu turn off the PDS device by holding the power button...");
 
-    result = pds.setTemperatureLimit(50.0f);
-    if (result != PdsModule::error_E::OK)
+    while (1)
     {
-        _log.error("Unable to set new temperature limit");
-        return EXIT_FAILURE;
+        usleep(100000);
+        result = pds.getStatus(pdsStatus);
+        if (result != PdsModule::error_E::OK)
+        {
+            _log.error("Unable to read PDS status property");
+            return EXIT_FAILURE;
+        }
+
+        if (pdsStatus.SHUTDOWN_SCHEDULED)
+        {
+            _log.success("PDS turn off procedure started. Disabling the HOST device");
+            // << YOUR CALL TO TURN OFF HOST DEVICE >>
+            return EXIT_SUCCESS;
+        }
     }
-
-    _log.success("Temperature limit change OK");
-
-    result = pds.getTemperatureLimit(temperatureLimit);
-    if (result != PdsModule::error_E::OK)
-    {
-        _log.error("Unable to get temperature limit after change...");
-        return EXIT_FAILURE;
-    }
-
-    _log.success("Temperature limit read after change OK [ %.2f ^C ]", temperatureLimit);
 
     return EXIT_SUCCESS;
 }
