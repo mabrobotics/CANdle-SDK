@@ -13,22 +13,12 @@ namespace mab
     class PowerStage : public PdsModule
     {
       public:
-        struct status_S
-        {
-            bool ENABLED;
-            bool OCD_EVENT;  // Over-current detection event
-            bool OVT_EVENT;  // Over-temperature event
-        };
-
         PowerStage() = delete;
         PowerStage(socketIndex_E socket, Candle& candle, u16& canId);
         ~PowerStage();
 
         error_E enable();
         error_E disable();
-
-        error_E getStatus(status_S& status);
-        error_E clearStatus(status_S status);
 
         error_E getEnabled(bool& enabled);
 

@@ -62,7 +62,7 @@ namespace mab
     };
 
     /*
-        List of whole properties IDs that could be referenced in protocol.
+        List of property IDs that could be referenced in protocol.
         The list is global and not per-module to simplify unique indexing
         and avoid situation whet the same property will have different IDs
         in different modules.
@@ -95,6 +95,51 @@ namespace mab
 
     };
 
+    enum class statusBits_E : u32
+    {
+        ENABLED          = (1 << 0),
+        OVER_TEMPERATURE = (1 << 1),
+        OVER_CURRENT     = (1 << 2),
+
+        /*...*/
+
+        STO_1             = (1 << 10),
+        STO_2             = (1 << 11),
+        FDCAN_TIMEOUT     = (1 << 12),
+        SUBMODULE_1_ERROR = (1 << 13),
+        SUBMODULE_2_ERROR = (1 << 14),
+        SUBMODULE_3_ERROR = (1 << 15),
+        SUBMODULE_4_ERROR = (1 << 16),
+        SUBMODULE_5_ERROR = (1 << 17),
+        SUBMODULE_6_ERROR = (1 << 18),
+        CHARGER_DETECTED  = (1 << 19),
+
+        /*...*/
+
+    };
+
+    struct status_S
+    {
+        bool ENABLED;
+        bool OVER_TEMPERATURE;
+        bool OVER_CURRENT;
+        /*...*/
+        bool STO_1;
+        bool STO_2;
+        bool FDCAN_TIMEOUT;
+
+        bool SUBMODULE_1_ERROR;
+        bool SUBMODULE_2_ERROR;
+        bool SUBMODULE_3_ERROR;
+        bool SUBMODULE_4_ERROR;
+        bool SUBMODULE_5_ERROR;
+        bool SUBMODULE_6_ERROR;
+        bool CHARGER_DETECTED;
+        /*...*/
+    };
+
+    // TODO: This enum should be replaced with a single one for all MAB Codebase ( The one that is
+    // used in CANdle )
     enum class canBaudrate_E : u8
     {
         BAUD_1M = 0x00,

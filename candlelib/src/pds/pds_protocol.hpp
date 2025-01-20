@@ -50,8 +50,8 @@ namespace mab
         PropertySetMessage(moduleType_E moduleType, socketIndex_E socket);
         ~PropertySetMessage() = default;
 
-        template <typename propertyT, typename valueT>
-        void addProperty(propertyT propertyType, valueT value)
+        template <typename valueT>
+        void addProperty(propertyId_E propertyType, valueT value)
         {
             u8  castedPropertyType = static_cast<u8>(propertyType);
             u32 castedValue        = 0;

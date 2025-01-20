@@ -208,6 +208,52 @@ namespace mab
         return nullptr;
     }
 
+    PdsModule::error_E Pds::getStatus(status_S& status)
+    {
+        u32                statusWord = 0;
+        PdsModule::error_E result     = readModuleProperty(propertyId_E::STATUS_WORD, statusWord);
+
+        if (result != PdsModule::error_E::OK)
+            return result;
+
+        status.ENABLED           = statusWord & (u32)statusBits_E::ENABLED;
+        status.OVER_TEMPERATURE  = statusWord & (u32)statusBits_E::OVER_TEMPERATURE;
+        status.OVER_CURRENT      = statusWord & (u32)statusBits_E::OVER_CURRENT;
+        status.STO_1             = statusWord & (u32)statusBits_E::STO_1;
+        status.STO_2             = statusWord & (u32)statusBits_E::STO_2;
+        status.FDCAN_TIMEOUT     = statusWord & (u32)statusBits_E::FDCAN_TIMEOUT;
+        status.SUBMODULE_1_ERROR = statusWord & (u32)statusBits_E::SUBMODULE_1_ERROR;
+        status.SUBMODULE_2_ERROR = statusWord & (u32)statusBits_E::SUBMODULE_2_ERROR;
+        status.SUBMODULE_3_ERROR = statusWord & (u32)statusBits_E::SUBMODULE_3_ERROR;
+        status.SUBMODULE_4_ERROR = statusWord & (u32)statusBits_E::SUBMODULE_4_ERROR;
+        status.SUBMODULE_5_ERROR = statusWord & (u32)statusBits_E::SUBMODULE_5_ERROR;
+        status.SUBMODULE_6_ERROR = statusWord & (u32)statusBits_E::SUBMODULE_6_ERROR;
+        status.CHARGER_DETECTED  = statusWord & (u32)statusBits_E::CHARGER_DETECTED;
+
+        return result;
+    }
+
+    PdsModule::error_E Pds::clearStatus(status_S status)
+    {
+        u32 statusClearWord = 0;
+
+        statusClearWord |= status.ENABLED ? (u32)statusBits_E::ENABLED : 0;
+        statusClearWord |= status.OVER_TEMPERATURE ? (u32)statusBits_E::OVER_TEMPERATURE : 0;
+        statusClearWord |= status.OVER_CURRENT ? (u32)statusBits_E::OVER_CURRENT : 0;
+        statusClearWord |= status.STO_1 ? (u32)statusBits_E::STO_1 : 0;
+        statusClearWord |= status.STO_2 ? (u32)statusBits_E::STO_2 : 0;
+        statusClearWord |= status.FDCAN_TIMEOUT ? (u32)statusBits_E::FDCAN_TIMEOUT : 0;
+        statusClearWord |= status.SUBMODULE_1_ERROR ? (u32)statusBits_E::SUBMODULE_1_ERROR : 0;
+        statusClearWord |= status.SUBMODULE_2_ERROR ? (u32)statusBits_E::SUBMODULE_2_ERROR : 0;
+        statusClearWord |= status.SUBMODULE_3_ERROR ? (u32)statusBits_E::SUBMODULE_3_ERROR : 0;
+        statusClearWord |= status.SUBMODULE_4_ERROR ? (u32)statusBits_E::SUBMODULE_4_ERROR : 0;
+        statusClearWord |= status.SUBMODULE_5_ERROR ? (u32)statusBits_E::SUBMODULE_5_ERROR : 0;
+        statusClearWord |= status.SUBMODULE_6_ERROR ? (u32)statusBits_E::SUBMODULE_6_ERROR : 0;
+        statusClearWord |= status.CHARGER_DETECTED ? (u32)statusBits_E::CHARGER_DETECTED : 0;
+
+        return writeModuleProperty(propertyId_E::STATUS_CLEAR, statusClearWord);
+    }
+
     PdsModule::error_E Pds::getBusVoltage(u32& busVoltage)
     {
         return readModuleProperty(propertyId_E::BUS_VOLTAGE, busVoltage);
@@ -244,7 +290,7 @@ namespace mab
         switch (type)
         {
             case moduleType_E::UNDEFINED:
-                return "UNDEFINED";
+                return "NO MODULE CONNECTED";
             case moduleType_E::CONTROL_BOARD:
                 return "CONTROL_BOARD";
             case moduleType_E::BRAKE_RESISTOR:

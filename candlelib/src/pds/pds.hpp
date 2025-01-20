@@ -35,15 +35,6 @@ namespace mab
             moduleType_E moduleTypeSocket6;
         };
 
-        struct status_S
-        {
-            bool ENABLED;
-            bool OVT_EVENT;  // Over-temperature event
-            bool STO1_EVENT;
-            bool STO2_EVENT;
-            bool FDCAN_TIMEOUT_EVENT;
-        };
-
         Pds() = delete;
 
         /**

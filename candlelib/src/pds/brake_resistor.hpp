@@ -12,13 +12,6 @@ namespace mab
     class BrakeResistor : public PdsModule
     {
       public:
-        struct status_S
-        {
-            bool ENABLED;
-            bool OCD_EVENT;  // Over-current detection event
-            bool OVT_EVENT;  // Over-temperature event
-        };
-
         BrakeResistor() = delete;
         BrakeResistor(socketIndex_E socket, Candle& candle, u16& canId);
         ~BrakeResistor() = default;
@@ -27,9 +20,6 @@ namespace mab
         error_E disable();
 
         error_E getEnabled(bool& enabled);
-
-        error_E getStatus(status_S& status);
-        error_E clearStatus(status_S status);
 
         /**
          * @brief Get the Temperature of the module

@@ -25,36 +25,6 @@ namespace mab
         return writeModuleProperty(propertyId_E::ENABLE, false);
     }
 
-    PdsModule::error_E PowerStage::getStatus(status_S& status)
-    {
-        error_E result     = error_E::UNKNOWN_ERROR;
-        u32     statusWord = 0;
-
-        result = readModuleProperty(propertyId_E::STATUS_WORD, statusWord);
-
-        status.ENABLED   = (statusWord & static_cast<u32>(status_E::ENABLED));
-        status.OCD_EVENT = (statusWord & static_cast<u32>(status_E::OVER_CURRENT_EVENT));
-        status.OVT_EVENT = (statusWord & static_cast<u32>(status_E::OVER_TEMPERATURE_EVENT));
-
-        return result;
-    }
-
-    PdsModule::error_E PowerStage::clearStatus(status_S status)
-    {
-        u32 statusClearWord = 0;
-
-        if (status.ENABLED)
-            statusClearWord |= static_cast<u32>(status_E::ENABLED);
-
-        if (status.OCD_EVENT)
-            statusClearWord |= static_cast<u32>(status_E::OVER_CURRENT_EVENT);
-
-        if (status.OVT_EVENT)
-            statusClearWord |= static_cast<u32>(status_E::OVER_TEMPERATURE_EVENT);
-
-        return writeModuleProperty(propertyId_E::STATUS_CLEAR, statusClearWord);
-    }
-
     PdsModule::error_E PowerStage::getEnabled(bool& enabled)
     {
         return readModuleProperty(propertyId_E::ENABLE, enabled);

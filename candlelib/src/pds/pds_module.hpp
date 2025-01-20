@@ -114,9 +114,9 @@ namespace mab
             return error_E::OK;
         }
 
-        template <typename propertyT, typename dataValueT>
-        [[nodiscard]] PdsModule::error_E writeModuleProperty(propertyT  property,
-                                                             dataValueT dataValue)
+        template <typename dataValueT>
+        [[nodiscard]] PdsModule::error_E writeModuleProperty(propertyId_E property,
+                                                             dataValueT   dataValue)
         {
             PdsMessage::error_E result = PdsMessage::error_E::OK;
             PropertySetMessage  message(m_type, m_socketIndex);
