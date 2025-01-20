@@ -67,8 +67,11 @@ namespace mab
         error_E getTemperatureLimit(f32& temperatureLimit);
         error_E setTemperatureLimit(f32 temperatureLimit);
 
-        error_E getTurnOffTime(u32& turnOffTime);
-        error_E setTurnOffTime(u32 turnOffTime);
+        error_E getShutdownTime(u32& shutdownTime);
+        error_E setShutdownTime(u32 shutdownTime);
+
+        error_E getBatteryVoltageLevels(u32& batteryLvl1, u32& batteryLvl2);
+        error_E setBatteryVoltageLevels(u32 batteryLvl1, u32 batteryLvl2);
 
         static const char* moduleTypeToString(moduleType_E type);
 

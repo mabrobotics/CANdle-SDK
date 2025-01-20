@@ -332,14 +332,90 @@ namespace mab
         return writeModuleProperty(propertyId_E::TEMPERATURE_LIMIT, temperatureLimit);
     }
 
-    PdsModule::error_E Pds::getTurnOffTime(u32& turnOffTime)
+    PdsModule::error_E Pds::getShutdownTime(u32& shutdownTime)
     {
-        return readModuleProperty(propertyId_E::SHUTDOWN_TIME, turnOffTime);
+        return readModuleProperty(propertyId_E::SHUTDOWN_TIME, shutdownTime);
     }
 
-    PdsModule::error_E Pds::setTurnOffTime(u32 turnOffTime)
+    PdsModule::error_E Pds::setShutdownTime(u32 shutdownTime)
     {
-        return writeModuleProperty(propertyId_E::SHUTDOWN_TIME, turnOffTime);
+        return writeModuleProperty(propertyId_E::SHUTDOWN_TIME, shutdownTime);
+    }
+
+    PdsModule::error_E Pds::getBatteryVoltageLevels(u32& batteryLvl1, u32& batteryLvl2)
+    {
+        PdsMessage::error_E result = PdsMessage::error_E::OK;
+        PropertyGetMessage  message(m_type, m_socketIndex);
+
+        u8     responseBuffer[64] = {0};
+        size_t responseLength     = 0;
+        u32    rawData            = 0;
+
+        message.addProperty(propertyId_E::BATTERY_VOLTAGE_L1);
+        message.addProperty(propertyId_E::BATTERY_VOLTAGE_L2);
+
+        std::vector<u8> serializedMessage = message.serialize();
+        if (!m_candle.sendGenericFDCanFrame(m_canId,
+                                            serializedMessage.size(),
+                                            reinterpret_cast<const char*>(serializedMessage.data()),
+                                            reinterpret_cast<char*>(responseBuffer),
+                                            &responseLength))
+            return error_E::COMMUNICATION_ERROR;
+
+        result = message.parseResponse(responseBuffer, responseLength);
+        if (result != PdsMessage::error_E::OK)
+            return error_E::PROTOCOL_ERROR;
+
+        result = message.getProperty(propertyId_E::BATTERY_VOLTAGE_L1, &rawData);
+        if (result != PdsMessage::error_E::OK)
+        {
+            m_log.error("Unable to read Battery voltage level 1");
+            return error_E::PROTOCOL_ERROR;
+        }
+
+        std::memcpy(&batteryLvl1, &rawData, sizeof(u32));
+
+        result = message.getProperty(propertyId_E::BATTERY_VOLTAGE_L2, &rawData);
+        if (result != PdsMessage::error_E::OK)
+            if (result != PdsMessage::error_E::OK)
+            {
+                m_log.error("Unable to read Battery voltage level 2");
+                return error_E::PROTOCOL_ERROR;
+            }
+
+        std::memcpy(&batteryLvl2, &rawData, sizeof(u32));
+
+        return error_E::OK;
+    }
+
+    PdsModule::error_E Pds::setBatteryVoltageLevels(u32 batteryLvl1, u32 batteryLvl2)
+    {
+        PdsMessage::error_E result = PdsMessage::error_E::OK;
+        PropertySetMessage  message(m_type, m_socketIndex);
+        u8                  responseBuffer[64] = {0};
+        size_t              responseLength     = 0;
+
+        message.addProperty(propertyId_E::BATTERY_VOLTAGE_L1, batteryLvl1);
+        message.addProperty(propertyId_E::BATTERY_VOLTAGE_L2, batteryLvl2);
+
+        std::vector<u8> serializedMessage = message.serialize();
+
+        if (!(m_candle.sendGenericFDCanFrame(
+                m_canId,
+                serializedMessage.size(),
+                reinterpret_cast<const char*>(serializedMessage.data()),
+                reinterpret_cast<char*>(responseBuffer),
+                &responseLength)))
+        {
+            return error_E::COMMUNICATION_ERROR;
+        }
+
+        result = message.parseResponse(responseBuffer, responseLength);
+
+        if (result != PdsMessage::error_E::OK)
+            return error_E::PROTOCOL_ERROR;
+
+        return error_E::OK;
     }
 
 }  // namespace mab

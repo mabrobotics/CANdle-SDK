@@ -27,7 +27,7 @@ int main()
 
     _log.info("Setting PDS turnoff time to [ %u ] mS...", DESIRED_SHUTDOWN_TIME_mS);
 
-    result = pds.setTurnOffTime(DESIRED_SHUTDOWN_TIME_mS);
+    result = pds.setShutdownTime(DESIRED_SHUTDOWN_TIME_mS);
     if (result != PdsModule::error_E::OK)
     {
         _log.error("Unable to set new turnoff time");

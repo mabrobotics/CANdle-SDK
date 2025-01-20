@@ -5,6 +5,7 @@
 
     Reading data from PDS Control board:
         * Connected submodules list
+        * Control board status word
         * DC Bus voltage
 */
 #include "candle.hpp"
