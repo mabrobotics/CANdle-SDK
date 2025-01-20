@@ -88,7 +88,7 @@ namespace mab
         SOCKET_4_MODULE          = 0x25,
         SOCKET_5_MODULE          = 0x26,
         SOCKET_6_MODULE          = 0x27,
-        TURN_OFF_TIME            = 0x28,
+        SHUTDOWN_TIME            = 0x28,
         BATTERY_VOLTAGE_L1       = 0x29,
         BATTERY_VOLTAGE_L2       = 0x2A,
         BR_SOCKET_INDEX          = 0x30,
@@ -116,7 +116,7 @@ namespace mab
         SUBMODULE_5_ERROR  = (1 << 17),
         SUBMODULE_6_ERROR  = (1 << 18),
         CHARGER_DETECTED   = (1 << 19),
-        TURN_OFF_SCHEDULED = (1 << 20),
+        SHUTDOWN_SCHEDULED = (1 << 20),
 
         /*...*/
 
@@ -139,7 +139,7 @@ namespace mab
         bool SUBMODULE_5_ERROR;
         bool SUBMODULE_6_ERROR;
         bool CHARGER_DETECTED;
-        bool TURN_OFF_SCHEDULED;
+        bool SHUTDOWN_SCHEDULED;
         /*...*/
     };
 

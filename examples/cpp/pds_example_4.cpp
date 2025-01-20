@@ -12,7 +12,7 @@ using namespace mab;
 
 constexpr u16 PDS_CAN_ID = 100;
 
-constexpr u32 DESIRED_TURN_OFF_TIME_mS = 3000u;
+constexpr u32 DESIRED_SHUTDOWN_TIME_mS = 3000u;
 
 int main()
 {
@@ -25,9 +25,9 @@ int main()
 
     PdsModule::error_E result = PdsModule::error_E::OK;
 
-    _log.info("Setting PDS turnoff time to [ %u ] mS...", DESIRED_TURN_OFF_TIME_mS);
+    _log.info("Setting PDS turnoff time to [ %u ] mS...", DESIRED_SHUTDOWN_TIME_mS);
 
-    result = pds.setTurnOffTime(DESIRED_TURN_OFF_TIME_mS);
+    result = pds.setTurnOffTime(DESIRED_SHUTDOWN_TIME_mS);
     if (result != PdsModule::error_E::OK)
     {
         _log.error("Unable to set new turnoff time");
@@ -48,7 +48,7 @@ int main()
             return EXIT_FAILURE;
         }
 
-        if (pdsStatus.TURN_OFF_SCHEDULED)
+        if (pdsStatus.SHUTDOWN_SCHEDULED)
         {
             _log.success("PDS turn off procedure started. Disabling the HOST device");
             // << YOUR CALL TO TURN OFF HOST DEVICE >>
