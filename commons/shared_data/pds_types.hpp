@@ -139,7 +139,9 @@ namespace mab
         bool ENABLED;
         bool OVER_TEMPERATURE;
         bool OVER_CURRENT;
+
         /*...*/
+
         bool STO_1;
         bool STO_2;
         bool FDCAN_TIMEOUT;
@@ -152,6 +154,7 @@ namespace mab
         bool SUBMODULE_6_ERROR;
         bool CHARGER_DETECTED;
         bool SHUTDOWN_SCHEDULED;
+
         /*...*/
     };
 

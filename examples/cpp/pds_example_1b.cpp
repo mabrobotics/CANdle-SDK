@@ -36,12 +36,25 @@ int main()
         return EXIT_FAILURE;
     }
 
+    _log.success("Battery levels set OK");
+
     result = pds.setShutdownTime(SHUTDOWN_TIME);
     if (result != PdsModule::error_E::OK)
     {
         _log.error("Unable to set Shutdown time!");
         return EXIT_FAILURE;
     }
+
+    _log.success("shutdown time set OK");
+
+    result = pds.saveConfig();
+    if (result != PdsModule::error_E::OK)
+    {
+        _log.error("Unable to save current configuration on target!");
+        return EXIT_FAILURE;
+    }
+
+    _log.success("configuration save OK");
 
     return EXIT_SUCCESS;
 }
