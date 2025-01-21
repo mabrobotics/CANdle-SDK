@@ -73,6 +73,9 @@ namespace mab
         error_E getBatteryVoltageLevels(u32& batteryLvl1, u32& batteryLvl2);
         error_E setBatteryVoltageLevels(u32 batteryLvl1, u32 batteryLvl2);
 
+        error_E shutdown(void);
+        error_E saveConfig(void);
+
         static const char* moduleTypeToString(moduleType_E type);
 
       private:

@@ -17,6 +17,8 @@ constexpr u16 PDS_CAN_ID = 100;
 constexpr u32 BATTERY_LVL_1 = 20000;  // 20V
 constexpr u32 BATTERY_LVL_2 = 24000;  // 24V
 
+constexpr u32 SHUTDOWN_TIME = 5000;  // 5s
+
 int main()
 {
     Logger _log;
@@ -31,6 +33,13 @@ int main()
     if (result != PdsModule::error_E::OK)
     {
         _log.error("Unable to set battery voltage levels");
+        return EXIT_FAILURE;
+    }
+
+    result = pds.setShutdownTime(SHUTDOWN_TIME);
+    if (result != PdsModule::error_E::OK)
+    {
+        _log.error("Unable to set Shutdown time!");
         return EXIT_FAILURE;
     }
 

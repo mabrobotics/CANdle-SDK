@@ -395,8 +395,8 @@ namespace mab
         u8                  responseBuffer[64] = {0};
         size_t              responseLength     = 0;
 
-        message.addProperty(propertyId_E::BATTERY_VOLTAGE_L1, batteryLvl1);
         message.addProperty(propertyId_E::BATTERY_VOLTAGE_L2, batteryLvl2);
+        message.addProperty(propertyId_E::BATTERY_VOLTAGE_L1, batteryLvl1);
 
         std::vector<u8> serializedMessage = message.serialize();
 
@@ -416,6 +416,16 @@ namespace mab
             return error_E::PROTOCOL_ERROR;
 
         return error_E::OK;
+    }
+
+    PdsModule::error_E Pds::shutdown(void)
+    {
+        return writeModuleProperty(propertyId_E::COMMAND, commands_E::SHUTDOWN);
+    }
+
+    PdsModule::error_E Pds::saveConfig(void)
+    {
+        return writeModuleProperty(propertyId_E::COMMAND, commands_E::SAVE_CONFIG);
     }
 
 }  // namespace mab
