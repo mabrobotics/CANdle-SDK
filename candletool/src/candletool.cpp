@@ -9,6 +9,8 @@
 #include "uploader.hpp"
 #include "mabFileParser.hpp"
 
+#include "pds.hpp"
+
 f32 lerp(f32 start, f32 end, f32 t)
 {
     return (start * (1.f - t)) + (end * t);
@@ -163,6 +165,7 @@ void CandleTool::setupCalibrationOutput(u16 id)
     candle->setupMd80CalibrationOutput(id);
 }
 
+// TODO: Variant of this method for PDS device
 std::string CandleTool::validateAndGetFinalConfigPath(const std::string& cfgPath)
 {
     std::string finalConfigPath        = cfgPath;
@@ -178,6 +181,7 @@ std::string CandleTool::validateAndGetFinalConfigPath(const std::string& cfgPath
         }
         finalConfigPath = pathRelToDefaultConfig;
     }
+
     if (!isConfigValid(finalConfigPath))
     {
         log.error("\"%s\" in not a valid motor .cfg file.", finalConfigPath.c_str());
@@ -885,6 +889,99 @@ void CandleTool::registerRead(u16 id, u16 reg)
             break;
     }
     log.success("Register value: %s", value.c_str());
+}
+
+void CandleTool::pdsSetupInfo(u16 id)
+{
+    mab::Pds pds(id, *candle);
+
+    mab::Pds::modulesSet_S pdsModules = pds.getModules();
+
+    u32           shutdownTime  = 0;
+    u32           batteryLvl1   = 0;
+    u32           batteryLvl2   = 0;
+    u32           pdsBusVoltage = 0;
+    mab::status_S pdsStatus     = {0};
+
+    pds.getStatus(pdsStatus);
+    pds.getBusVoltage(pdsBusVoltage);
+    pds.getShutdownTime(shutdownTime);
+    pds.getBatteryVoltageLevels(batteryLvl1, batteryLvl2);
+
+    log.info("PDS have the following set of connected modules:");
+    log.info("\t1\t:: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket1));
+    log.info("\t2\t:: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket2));
+    log.info("\t3\t:: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket3));
+    log.info("\t4\t:: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket4));
+    log.info("\t5\t:: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket5));
+    log.info("\t6\t:: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket6));
+
+    log.info("PDS Status:");
+
+    log.info("\t * ENABLED           [ %s ]", pdsStatus.ENABLED ? "YES" : "NO");
+    log.info("\t * OVER_TEMPERATURE  [ %s ]", pdsStatus.OVER_TEMPERATURE ? "YES" : "NO");
+    log.info("\t * OVER_CURRENT      [ %s ]", pdsStatus.OVER_CURRENT ? "YES" : "NO");
+    log.info("\t * STO_1             [ %s ]", pdsStatus.STO_1 ? "YES" : "NO");
+    log.info("\t * STO_2             [ %s ]", pdsStatus.STO_2 ? "YES" : "NO");
+    log.info("\t * FDCAN_TIMEOUT     [ %s ]", pdsStatus.FDCAN_TIMEOUT ? "YES" : "NO");
+    log.info("\t * SUBMODULE_1_ERROR [ %s ]", pdsStatus.SUBMODULE_1_ERROR ? "YES" : "NO");
+    log.info("\t * SUBMODULE_2_ERROR [ %s ]", pdsStatus.SUBMODULE_2_ERROR ? "YES" : "NO");
+    log.info("\t * SUBMODULE_3_ERROR [ %s ]", pdsStatus.SUBMODULE_3_ERROR ? "YES" : "NO");
+    log.info("\t * SUBMODULE_4_ERROR [ %s ]", pdsStatus.SUBMODULE_4_ERROR ? "YES" : "NO");
+    log.info("\t * SUBMODULE_5_ERROR [ %s ]", pdsStatus.SUBMODULE_5_ERROR ? "YES" : "NO");
+    log.info("\t * SUBMODULE_6_ERROR [ %s ]", pdsStatus.SUBMODULE_6_ERROR ? "YES" : "NO");
+    log.info("\t * CHARGER_DETECTED  [ %s ]", pdsStatus.CHARGER_DETECTED ? "YES" : "NO");
+
+    log.info("---------------------------------");
+
+    log.info("Config data:");
+    log.info("shutdown time: [ %u mS ] ", shutdownTime);
+    log.info("Battery level 1: %0.2f", batteryLvl1 / 1000.0f);
+    log.info("Battery level 2: %0.2f", batteryLvl2 / 1000.0f);
+
+    log.info("---------------------------------");
+
+    log.info("Metrology data:");
+    log.info("Bus voltage: %0.2f", pdsBusVoltage / 1000.0f);
+}
+
+void CandleTool::pdsSetupConfig(u16 id, const std::string& cfgPath)
+{
+    using err_E = mab::PdsModule::error_E;
+
+    mab::Pds pds(id, *candle);
+
+    mINI::INIFile      pdsCfgFile(cfgPath);
+    mINI::INIStructure pdsCfg;
+    pdsCfgFile.read(pdsCfg);
+
+    u32 shutdownTime = atoi(pdsCfg["Control board"]["shutdown time"].c_str());
+    u32 battLvl1     = atoi(pdsCfg["Control board"]["battery level 1"].c_str());
+    u32 battLvl2     = atoi(pdsCfg["Control board"]["battery level 2"].c_str());
+
+    err_E result = pds.setShutdownTime(shutdownTime);
+    if (result != err_E::OK)
+        log.error("PDS Config error [ %u ] [ %s:%u ]", result, __FILE__, __LINE__);
+
+    result = pds.setBatteryVoltageLevels(battLvl1, battLvl2);
+    if (result != err_E::OK)
+        log.error("PDS Config error [ %u ] [ %s:%u ]", result, __FILE__, __LINE__);
+}
+
+void CandleTool::pdsReadConfig(u16 id, const std::string& cfgPath)
+{
+}
+
+void CandleTool::pdsStoreConfig(u16 id)
+{
+    using err_E = mab::PdsModule::error_E;
+
+    mab::Pds pds(id, *candle);
+
+    err_E result = pds.saveConfig();
+
+    if (result != err_E::OK)
+        log.error("PDS Configuration save error [ %u ] [ %s:%u ]", result, __FILE__, __LINE__);
 }
 
 void CandleTool::updateCandle(const std::string& mabFilePath, bool noReset)

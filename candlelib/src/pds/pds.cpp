@@ -332,14 +332,66 @@ namespace mab
         return writeModuleProperty(propertyId_E::TEMPERATURE_LIMIT, temperatureLimit);
     }
 
-    PdsModule::error_E Pds::getTurnOffTime(u32& turnOffTime)
+    PdsModule::error_E Pds::getShutdownTime(u32& shutdownTime)
     {
-        return readModuleProperty(propertyId_E::SHUTDOWN_TIME, turnOffTime);
+        return readModuleProperty(propertyId_E::SHUTDOWN_TIME, shutdownTime);
     }
 
-    PdsModule::error_E Pds::setTurnOffTime(u32 turnOffTime)
+    PdsModule::error_E Pds::setShutdownTime(u32 shutdownTime)
     {
-        return writeModuleProperty(propertyId_E::SHUTDOWN_TIME, turnOffTime);
+        return writeModuleProperty(propertyId_E::SHUTDOWN_TIME, shutdownTime);
+    }
+
+    PdsModule::error_E Pds::getBatteryVoltageLevels(u32& batteryLvl1, u32& batteryLvl2)
+    {
+        PdsModule::error_E result = PdsModule::error_E::OK;
+
+        result = readModuleProperty(propertyId_E::BATTERY_VOLTAGE_L1, batteryLvl1);
+        if (result != PdsModule::error_E::OK)
+        {
+            m_log.error("Reading battery voltage level 1 failed! [ %u ]", result);
+            return error_E::PROTOCOL_ERROR;
+        }
+
+        result = readModuleProperty(propertyId_E::BATTERY_VOLTAGE_L2, batteryLvl2);
+        if (result != PdsModule::error_E::OK)
+        {
+            m_log.error("Reading battery voltage level 2 failed! [ %u ]", result);
+            return error_E::PROTOCOL_ERROR;
+        }
+
+        return error_E::OK;
+    }
+
+    PdsModule::error_E Pds::setBatteryVoltageLevels(u32 batteryLvl1, u32 batteryLvl2)
+    {
+        PdsModule::error_E result = PdsModule::error_E::OK;
+
+        result = writeModuleProperty(propertyId_E::BATTERY_VOLTAGE_L1, batteryLvl1);
+        if (result != PdsModule::error_E::OK)
+        {
+            m_log.error("Writing battery voltage level 1 failed! [ %u ]", result);
+            return error_E::PROTOCOL_ERROR;
+        }
+
+        result = writeModuleProperty(propertyId_E::BATTERY_VOLTAGE_L2, batteryLvl2);
+        if (result != PdsModule::error_E::OK)
+        {
+            m_log.error("Writing battery voltage level 2 failed! [ %u ]", result);
+            return error_E::PROTOCOL_ERROR;
+        }
+
+        return error_E::OK;
+    }
+
+    PdsModule::error_E Pds::shutdown(void)
+    {
+        return writeModuleProperty(propertyId_E::COMMAND, commands_E::SHUTDOWN);
+    }
+
+    PdsModule::error_E Pds::saveConfig(void)
+    {
+        return writeModuleProperty(propertyId_E::COMMAND, commands_E::SAVE_CONFIG);
     }
 
 }  // namespace mab

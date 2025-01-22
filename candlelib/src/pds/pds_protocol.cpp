@@ -75,7 +75,9 @@ namespace mab
             if (propertyResult != propertyError_E::OK)
             {
                 propertiesModifySuccess = false;
-                m_log.warn("Setting property [ %u ] failed with error code [ %u ]", m_properties);
+                m_log.warn("Setting property [ %u ] failed with error code [ %u ]",
+                           m_properties[i].first,
+                           propertyResult);
             }
         }
 

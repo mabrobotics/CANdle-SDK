@@ -3,7 +3,7 @@
 
     Power Distribution System Example 4
 
-    PDS manual turn off procedure
+    PDS manual shutdown procedure
 */
 #include "candle.hpp"
 #include "pds.hpp"
@@ -25,16 +25,16 @@ int main()
 
     PdsModule::error_E result = PdsModule::error_E::OK;
 
-    _log.info("Setting PDS turnoff time to [ %u ] mS...", DESIRED_SHUTDOWN_TIME_mS);
+    _log.info("Setting PDS shutdown time to [ %u ] mS...", DESIRED_SHUTDOWN_TIME_mS);
 
-    result = pds.setTurnOffTime(DESIRED_SHUTDOWN_TIME_mS);
+    result = pds.setShutdownTime(DESIRED_SHUTDOWN_TIME_mS);
     if (result != PdsModule::error_E::OK)
     {
-        _log.error("Unable to set new turnoff time");
+        _log.error("Unable to set new shutdown time");
         return EXIT_FAILURE;
     }
 
-    _log.success("turnoff time change OK");
+    _log.success("shutdown time change OK");
 
     _log.info("Waiting for the user tu turn off the PDS device by holding the power button...");
 

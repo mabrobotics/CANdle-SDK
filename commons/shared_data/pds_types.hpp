@@ -51,7 +51,6 @@ namespace mab
         SOCKET_5 = 0x05,
         SOCKET_6 = 0x06,
 
-        SOCKET_INDEX_MAX = 0x06,
     };
 
     enum class accessRights_E
@@ -64,7 +63,7 @@ namespace mab
     /*
         List of each property ID that could be referenced in protocol.
         The list is global and not per-module to simplify unique indexing
-        and avoid situation whet the same property will have different IDs
+        and avoid situation when the same property will have different IDs
         in different modules.
     */
     enum class propertyId_E : u8
@@ -95,6 +94,19 @@ namespace mab
         BR_TRIGGER_VOLTAGE       = 0x31,
         OCD_LEVEL                = 0x40,
         OCD_DELAY                = 0x41,
+
+        /* ... */
+
+        COMMAND = 0xFF,  // Used for sending various commands to PDS Device
+
+    };
+
+    enum class commands_E : u8
+    {
+        NULL_CMD    = 0x00,
+        SHUTDOWN    = 0x01,
+        REBOOT      = 0x02,
+        SAVE_CONFIG = 0x03,
 
     };
 
@@ -127,7 +139,9 @@ namespace mab
         bool ENABLED;
         bool OVER_TEMPERATURE;
         bool OVER_CURRENT;
+
         /*...*/
+
         bool STO_1;
         bool STO_2;
         bool FDCAN_TIMEOUT;
@@ -140,6 +154,7 @@ namespace mab
         bool SUBMODULE_6_ERROR;
         bool CHARGER_DETECTED;
         bool SHUTDOWN_SCHEDULED;
+
         /*...*/
     };
 
@@ -157,6 +172,9 @@ namespace mab
     {
         u16           canId;
         canBaudrate_E canBaudrate;
+        u32           shutdownTime;
+        u32           batteryLevel1;
+        u32           batteryLevel2;
     };
 
 }  // namespace mab

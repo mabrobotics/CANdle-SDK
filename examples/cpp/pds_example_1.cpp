@@ -5,6 +5,7 @@
 
     Reading data from PDS Control board:
         * Connected submodules list
+        * Control board status word
         * DC Bus voltage
 */
 #include "candle.hpp"
@@ -24,11 +25,16 @@ int main()
 
     Pds::modulesSet_S pdsModules = pds.getModules();
 
+    u32      shutdownTime  = 0;
+    u32      batteryLvl1   = 0;
+    u32      batteryLvl2   = 0;
     u32      pdsBusVoltage = 0;
     status_S pdsStatus     = {0};
 
     pds.getStatus(pdsStatus);
     pds.getBusVoltage(pdsBusVoltage);
+    pds.getShutdownTime(shutdownTime);
+    pds.getBatteryVoltageLevels(batteryLvl1, batteryLvl2);
 
     _log.info("PDS have the following set of connected modules:");
     _log.info("\t1\t:: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket1));
@@ -54,6 +60,16 @@ int main()
     _log.info("\t * SUBMODULE_6_ERROR [ %s ]", pdsStatus.SUBMODULE_6_ERROR ? "YES" : "NO");
     _log.info("\t * CHARGER_DETECTED  [ %s ]", pdsStatus.CHARGER_DETECTED ? "YES" : "NO");
 
+    _log.info("---------------------------------");
+
+    _log.info("Config data:");
+    _log.info("shutdown time: [ %u mS ] ", shutdownTime);
+    _log.info("Battery level 1: %0.2f", batteryLvl1 / 1000.0f);
+    _log.info("Battery level 2: %0.2f", batteryLvl2 / 1000.0f);
+
+    _log.info("---------------------------------");
+
+    _log.info("Metrology data:");
     _log.info("Bus voltage: %0.2f", pdsBusVoltage / 1000.0f);
 
     return EXIT_SUCCESS;

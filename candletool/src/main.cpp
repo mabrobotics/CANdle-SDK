@@ -22,6 +22,9 @@ int main(int argc, char** argv)
     auto* test    = app.add_subcommand("test", "Basic MD drive testing routines.");
     auto* update  = app.add_subcommand("update", "Firmware update.");
 
+    CLI::App* pds = app.add_subcommand("pds", "Tweak the PDS device");
+    pds->add_option("<CAN ID>", cmd.id, "MAB FD-CAN protocol :: Target device ID")->required();
+
     // BLINK
     blink->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 
@@ -127,7 +130,6 @@ int main(int argc, char** argv)
     testMoveRel->add_option("<REL POS>", cmd.pos, "Relative position to reach. <-10, 10>[rad]");
 
     // Update
-
     auto* candleUpdate = update->add_subcommand("candle", "Update firmware on Candle device.");
     auto* mdUpdate     = update->add_subcommand("md", "Update firmware on MD device.");
     auto* pdsUpdate    = update->add_subcommand("pds", "Update firmware on PDS device.");
@@ -137,12 +139,23 @@ int main(int argc, char** argv)
     update->add_flag("-r", cmd.noReset, "Do not reset the device before updating firmware.");
     update->add_option("-f,--file", cmd.firmwareFileName, "Path to the .mab file");
 
+    CLI::App* pdsInfo  = pds->add_subcommand("info", "Display debug info about PDS device");
+    CLI::App* pdsSetup = pds->add_subcommand("setup", "Configure PDS device with the .cfg file");
+    pdsSetup
+        ->add_option("<.cfg FILENAME>",
+                     cmd.cfgPath,
+                     "PDS configuration .cfg file. ( see template at /usr/share/dupa/cycki.cfg )")
+        ->required();
+
+    CLI::App* pdsSave = pds->add_subcommand("save", "Store current configuration in device memory");
+
     // Verbosity
     uint32_t verbosityMode = 0;
     bool     silentMode{false};
     app.add_flag("-v{1},--verbosity{1}", verbosityMode, "Verbose modes (1,2,3)")
         ->default_val(0)
         ->expected(0, 1);
+
     app.add_flag("-s,--silent", silentMode, "Silent mode")->default_val(0);
 
     std::string logPath = "";
@@ -264,6 +277,24 @@ int main(int argc, char** argv)
         {
             candleTool.updatePds(cmd.firmwareFileName, cmd.id, cmd.noReset);
             return EXIT_SUCCESS;
+        }
+    }
+
+    if (pds->parsed())
+    {
+        if (pdsInfo->parsed())
+        {
+            candleTool.pdsSetupInfo(cmd.id);
+        }
+
+        if (pdsSetup->parsed())
+        {
+            candleTool.pdsSetupConfig(cmd.id, cmd.cfgPath);
+        }
+
+        if (pdsSave->parsed())
+        {
+            candleTool.pdsStoreConfig(cmd.id);
         }
     }
 
