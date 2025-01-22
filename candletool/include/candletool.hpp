@@ -57,6 +57,7 @@ class CandleTool
 
     void pdsSetupInfo(u16 id);
     void pdsSetupConfig(u16 id, const std::string& cfgPath);
+    void pdsStoreConfig(u16 id);
     void pdsReadConfig(u16 id, const std::string& cfgPath);
 
     /**

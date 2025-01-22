@@ -972,6 +972,18 @@ void CandleTool::pdsReadConfig(u16 id, const std::string& cfgPath)
 {
 }
 
+void CandleTool::pdsStoreConfig(u16 id)
+{
+    using err_E = mab::PdsModule::error_E;
+
+    mab::Pds pds(id, *candle);
+
+    err_E result = pds.saveConfig();
+
+    if (result != err_E::OK)
+        log.error("PDS Configuration save error [ %u ] [ %s:%u ]", result, __FILE__, __LINE__);
+}
+
 void CandleTool::updateCandle(const std::string& mabFilePath, bool noReset)
 {
     log.info("Performing Candle firmware update.");

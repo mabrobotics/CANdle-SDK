@@ -147,6 +147,8 @@ int main(int argc, char** argv)
                      "PDS configuration .cfg file. ( see template at /usr/share/dupa/cycki.cfg )")
         ->required();
 
+    CLI::App* pdsSave = pds->add_subcommand("save", "Store current configuration in device memory");
+
     // Verbosity
     uint32_t verbosityMode = 0;
     bool     silentMode{false};
@@ -288,6 +290,11 @@ int main(int argc, char** argv)
         if (pdsSetup->parsed())
         {
             candleTool.pdsSetupConfig(cmd.id, cmd.cfgPath);
+        }
+
+        if (pdsSave->parsed())
+        {
+            candleTool.pdsStoreConfig(cmd.id);
         }
     }
 
