@@ -35,6 +35,9 @@ target_compile_definitions(
   COMMAND ${DEB_GENERATOR_SCRIPT} ${PROJECT_NAME} ${DEB_CTRL_FILE} $<TARGET_FILE:${PROJECT_NAME}>
   )
 
+add_subdirectory(3rd_party/CLI11)
+target_link_libraries(candletool CLI11)
+
 if(MAKE_TESTS_CANDLETOOL)
   add_subdirectory(test)
 endif()
