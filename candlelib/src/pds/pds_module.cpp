@@ -17,4 +17,9 @@ namespace mab
         return m_socketIndex;
     }
 
+    PdsModule::error_E PdsModule::getBoardVersion(moduleVersion_E& version)
+    {
+        return readModuleProperty(propertyId_E::HW_VERSION, version);
+    }
+
 }  // namespace mab

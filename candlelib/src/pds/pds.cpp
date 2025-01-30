@@ -40,8 +40,8 @@ namespace mab
                 return PdsModule::error_E::OK;
 
             case moduleType_E::ISOLATED_CONVERTER:
-                m_IsolatedConv12s.push_back(
-                    std::make_unique<IsolatedConv12>(socket, m_candle, m_rootCanId));
+                m_IsolatedConvs.push_back(
+                    std::make_unique<IsolatedConv>(socket, m_candle, m_rootCanId));
                 return PdsModule::error_E::OK;
 
             case moduleType_E::POWER_STAGE:
@@ -168,11 +168,11 @@ namespace mab
         return nullptr;
     }
 
-    std::unique_ptr<IsolatedConv12> Pds::attachIsolatedConverter12(const socketIndex_E socket)
+    std::unique_ptr<IsolatedConv> Pds::attachIsolatedConverter(const socketIndex_E socket)
     {
-        if (!m_IsolatedConv12s.empty())
+        if (!m_IsolatedConvs.empty())
         {
-            for (auto& module : m_IsolatedConv12s)
+            for (auto& module : m_IsolatedConvs)
             {
                 if (module->getSocketIndex() == socket)
                     return std::move(module);
@@ -185,26 +185,6 @@ namespace mab
         }
 
         m_log.error("No Isolated Converter 12V modules connected to PDS device!");
-        return nullptr;
-    }
-
-    std::unique_ptr<IsolatedConv5> Pds::attachIsolatedConverter5(const socketIndex_E socket)
-    {
-        if (!m_IsolatedConv5s.empty())
-        {
-            for (auto& module : m_IsolatedConv5s)
-            {
-                if (module->getSocketIndex() == socket)
-                    return std::move(module);
-            }
-
-            m_log.error("No Isolated Converter 5V module connected to socket [ %u ]!",
-                        static_cast<uint8_t>(socket));
-
-            return nullptr;
-        }
-
-        m_log.error("No Isolated Converter 5V modules connected to PDS device!");
         return nullptr;
     }
 

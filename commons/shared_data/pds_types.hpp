@@ -24,7 +24,8 @@ namespace mab
         OK                     = 0x00,
         PROPERTY_NOT_AVAILABLE = 0x01,
         INVALID_ACCESS         = 0x02,
-        INVALID_DATA           = 0x03
+        INVALID_DATA           = 0x03,
+        WTF                    = 0x09,
     };
 
     enum class moduleType_E : u8
