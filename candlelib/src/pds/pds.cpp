@@ -208,6 +208,11 @@ namespace mab
         return nullptr;
     }
 
+    PdsModule::error_E Pds::getFwVersion(version_ut& version)
+    {
+        return readModuleProperty(propertyId_E::FW_VERSION, version);
+    }
+
     PdsModule::error_E Pds::getStatus(status_S& status)
     {
         u32                statusWord = 0;
