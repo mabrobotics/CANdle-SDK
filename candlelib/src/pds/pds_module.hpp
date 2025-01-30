@@ -33,6 +33,8 @@ namespace mab
 
         socketIndex_E getSocketIndex();
 
+        error_E getBoardVersion(moduleVersion_E& version);
+
         /**
          * @brief This enum represents common status bits position in status word for all modules
          * @note Assuming that only first 8 ( LSBits ) are reserved for common status. Other bits

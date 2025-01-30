@@ -15,14 +15,19 @@ using namespace mab;
 
 constexpr u16 PDS_CAN_ID = 100;
 
+void printModuleInfo(moduleType_E type, socketIndex_E socket);
+void printPowerStageInfo(PowerStage& powerStage);
+void printBrakeResistorInfo(BrakeResistor& brakeResistor);
+void printIsolatedConverterInfo(IsolatedConv& isolatedConverter);
+
+Logger _log;
+
+Candle candle(mab::CAN_BAUD_1M, true);
+Pds    pds(PDS_CAN_ID, candle);
+
 int main()
 {
-    Logger _log;
-    _log.m_tag = "PDS Example 1";
-
-    Candle candle(mab::CAN_BAUD_1M, true);
-    Pds    pds(PDS_CAN_ID, candle);
-
+    _log.m_tag                   = "PDS Example 1";
     Pds::modulesSet_S pdsModules = pds.getModules();
 
     u32      shutdownTime  = 0;
@@ -46,11 +51,22 @@ int main()
 
     _log.info("Submodules:");
     _log.info("\t1 :: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket1));
+    printModuleInfo(pdsModules.moduleTypeSocket1, socketIndex_E::SOCKET_1);
+
     _log.info("\t2 :: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket2));
+    printModuleInfo(pdsModules.moduleTypeSocket2, socketIndex_E::SOCKET_2);
+
     _log.info("\t3 :: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket3));
+    printModuleInfo(pdsModules.moduleTypeSocket3, socketIndex_E::SOCKET_3);
+
     _log.info("\t4 :: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket4));
+    printModuleInfo(pdsModules.moduleTypeSocket4, socketIndex_E::SOCKET_4);
+
     _log.info("\t5 :: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket5));
+    printModuleInfo(pdsModules.moduleTypeSocket5, socketIndex_E::SOCKET_5);
+
     _log.info("\t6 :: %s", Pds::moduleTypeToString(pdsModules.moduleTypeSocket6));
+    printModuleInfo(pdsModules.moduleTypeSocket6, socketIndex_E::SOCKET_6);
 
     _log.info("PDS Status:");
 
@@ -81,4 +97,61 @@ int main()
     _log.info("\t* Bus voltage: %0.2f", pdsBusVoltage / 1000.0f);
 
     return EXIT_SUCCESS;
+}
+
+void printModuleInfo(moduleType_E type, socketIndex_E socket)
+{
+    switch (type)
+    {
+        case moduleType_E::OUT_OF_RANGE:
+        case moduleType_E::CONTROL_BOARD:
+        case moduleType_E::UNDEFINED:
+        default:
+            return;
+
+        case moduleType_E::POWER_STAGE:
+        {
+            auto powerStage = pds.attachPowerStage(socket);
+            printPowerStageInfo(*powerStage);
+            break;
+        }
+
+        case moduleType_E::ISOLATED_CONVERTER:
+        {
+            auto isolatedConverter = pds.attachIsolatedConverter(socket);
+            printIsolatedConverterInfo(*isolatedConverter);
+            break;
+        }
+
+        case moduleType_E::BRAKE_RESISTOR:
+        {
+            auto brakeResistor = pds.attachBrakeResistor(socket);
+            printBrakeResistorInfo(*brakeResistor);
+            break;
+        }
+    }
+}
+
+void printPowerStageInfo(PowerStage& powerStage)
+{
+    moduleVersion_E boardVersion;
+    socketIndex_E   bindedBrSocket;
+    u32             brTriggerVoltage;
+
+    powerStage.getBoardVersion(boardVersion);
+    powerStage.getBindBrakeResistor(bindedBrSocket);
+    powerStage.getBrakeResistorTriggerVoltage(brTriggerVoltage);
+    _log.info("\t\t* HW Version %u", boardVersion);
+    _log.info("\t\t* Binded BR Socket [ %u ] ( 0 == BR not binded )", (u8)bindedBrSocket);
+    _log.info("\t\t* BR Trigger Voltage %u [ mV ]", brTriggerVoltage);
+}
+
+void printBrakeResistorInfo(BrakeResistor& brakeResistor)
+{
+    _log.info("Brake resistor module info:");
+}
+
+void printIsolatedConverterInfo(IsolatedConv& isolatedConverter)
+{
+    _log.info("Isolated Converter module info:");
 }

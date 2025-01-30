@@ -31,6 +31,14 @@ namespace mab
         error_E bindBrakeResistor(socketIndex_E brakeResistorSocketIndex);
 
         /**
+         * @brief Reads the socket of binded BR. ( Undefined socket if not binded )
+         *
+         * @param brakeResistorSocketIndex
+         * @return error_E
+         */
+        error_E getBindBrakeResistor(socketIndex_E& brakeResistorSocketIndex);
+
+        /**
          * @brief Set the Brake Resistor Trigger Voltage. When the bus voltage will exceed this
          * value, the binded brake resistor will trigger. If there is no Brake resistor binded this
          * method has no effect
