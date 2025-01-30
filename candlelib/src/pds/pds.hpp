@@ -54,6 +54,8 @@ namespace mab
         std::unique_ptr<IsolatedConv12> attachIsolatedConverter12(socketIndex_E socket);
         std::unique_ptr<IsolatedConv5>  attachIsolatedConverter5(socketIndex_E socket);
 
+        error_E getFwVersion(version_ut& version);
+
         error_E getStatus(status_S& status);
         error_E clearStatus(status_S status);
 

@@ -200,7 +200,7 @@ std::string CandleTool::validateAndGetFinalConfigPath(const std::string& cfgPath
     {
         log.m_layer = Logger::ProgramLayer_E::TOP;
         log.error("\"%s\" is incomplete.", finalConfigPath.c_str());
-        log.info("Generate updated file with all required fileds? [y/n]");
+        log.info("Generate updated file with all required fields? [y/n]");
         if (!getConfirmation())
             exit(0);
         finalConfigPath = generateUpdatedConfigFile(finalConfigPath);
@@ -219,7 +219,7 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
         finalConfigPath = validateAndGetFinalConfigPath(cfgPath);
     else
     {
-        log.warn("Ommiting config validation on user request!");
+        log.warn("Omitting config validation on user request!");
         if (!fileExists(finalConfigPath))
         {
             finalConfigPath = getMotorsConfigPath() + cfgPath;
@@ -444,7 +444,7 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
 
     if (candle->configMd80Save(id))
     {
-        log.success("Config save sucessfully!");
+        log.success("Config save successfully!");
         log.info("Rebooting md80...");
     }
     /* wait for a full reboot */
@@ -468,7 +468,7 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
     {
         if (!candle->readMd80Register(id, mab::Md80Reg_E::motorName, motorNameChar))
         {
-            log.error("Failed to read motor conifg %d!", id);
+            log.error("Failed to read motor config %d!", id);
             snprintf(motorNameChar, 24, "UNKNOWN_MD");
         }
         configName = std::string(motorNameChar) + "_" + std::to_string(id) + "_read.cfg";
@@ -908,29 +908,29 @@ void CandleTool::pdsSetupInfo(u16 id)
     pds.getShutdownTime(shutdownTime);
     pds.getBatteryVoltageLevels(batteryLvl1, batteryLvl2);
 
-    log.info("PDS have the following set of connected modules:");
-    log.info("\t1\t:: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket1));
-    log.info("\t2\t:: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket2));
-    log.info("\t3\t:: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket3));
-    log.info("\t4\t:: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket4));
-    log.info("\t5\t:: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket5));
-    log.info("\t6\t:: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket6));
+    log.info("Submodules:");
+    log.info("\t1 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket1));
+    log.info("\t2 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket2));
+    log.info("\t3 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket3));
+    log.info("\t4 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket4));
+    log.info("\t5 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket5));
+    log.info("\t6 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket6));
 
     log.info("PDS Status:");
 
-    log.info("\t * ENABLED           [ %s ]", pdsStatus.ENABLED ? "YES" : "NO");
-    log.info("\t * OVER_TEMPERATURE  [ %s ]", pdsStatus.OVER_TEMPERATURE ? "YES" : "NO");
-    log.info("\t * OVER_CURRENT      [ %s ]", pdsStatus.OVER_CURRENT ? "YES" : "NO");
-    log.info("\t * STO_1             [ %s ]", pdsStatus.STO_1 ? "YES" : "NO");
-    log.info("\t * STO_2             [ %s ]", pdsStatus.STO_2 ? "YES" : "NO");
-    log.info("\t * FDCAN_TIMEOUT     [ %s ]", pdsStatus.FDCAN_TIMEOUT ? "YES" : "NO");
-    log.info("\t * SUBMODULE_1_ERROR [ %s ]", pdsStatus.SUBMODULE_1_ERROR ? "YES" : "NO");
-    log.info("\t * SUBMODULE_2_ERROR [ %s ]", pdsStatus.SUBMODULE_2_ERROR ? "YES" : "NO");
-    log.info("\t * SUBMODULE_3_ERROR [ %s ]", pdsStatus.SUBMODULE_3_ERROR ? "YES" : "NO");
-    log.info("\t * SUBMODULE_4_ERROR [ %s ]", pdsStatus.SUBMODULE_4_ERROR ? "YES" : "NO");
-    log.info("\t * SUBMODULE_5_ERROR [ %s ]", pdsStatus.SUBMODULE_5_ERROR ? "YES" : "NO");
-    log.info("\t * SUBMODULE_6_ERROR [ %s ]", pdsStatus.SUBMODULE_6_ERROR ? "YES" : "NO");
-    log.info("\t * CHARGER_DETECTED  [ %s ]", pdsStatus.CHARGER_DETECTED ? "YES" : "NO");
+    log.info("\t* ENABLED           [ %s ]", pdsStatus.ENABLED ? "YES" : "NO");
+    log.info("\t* OVER_TEMPERATURE  [ %s ]", pdsStatus.OVER_TEMPERATURE ? "YES" : "NO");
+    log.info("\t* OVER_CURRENT      [ %s ]", pdsStatus.OVER_CURRENT ? "YES" : "NO");
+    log.info("\t* STO_1             [ %s ]", pdsStatus.STO_1 ? "YES" : "NO");
+    log.info("\t* STO_2             [ %s ]", pdsStatus.STO_2 ? "YES" : "NO");
+    log.info("\t* FDCAN_TIMEOUT     [ %s ]", pdsStatus.FDCAN_TIMEOUT ? "YES" : "NO");
+    log.info("\t* SUBMODULE_1_ERROR [ %s ]", pdsStatus.SUBMODULE_1_ERROR ? "YES" : "NO");
+    log.info("\t* SUBMODULE_2_ERROR [ %s ]", pdsStatus.SUBMODULE_2_ERROR ? "YES" : "NO");
+    log.info("\t* SUBMODULE_3_ERROR [ %s ]", pdsStatus.SUBMODULE_3_ERROR ? "YES" : "NO");
+    log.info("\t* SUBMODULE_4_ERROR [ %s ]", pdsStatus.SUBMODULE_4_ERROR ? "YES" : "NO");
+    log.info("\t* SUBMODULE_5_ERROR [ %s ]", pdsStatus.SUBMODULE_5_ERROR ? "YES" : "NO");
+    log.info("\t* SUBMODULE_6_ERROR [ %s ]", pdsStatus.SUBMODULE_6_ERROR ? "YES" : "NO");
+    log.info("\t* CHARGER_DETECTED  [ %s ]", pdsStatus.CHARGER_DETECTED ? "YES" : "NO");
 
     log.info("---------------------------------");
 
@@ -970,6 +970,13 @@ void CandleTool::pdsSetupConfig(u16 id, const std::string& cfgPath)
 
 void CandleTool::pdsReadConfig(u16 id, const std::string& cfgPath)
 {
+    mINI::INIStructure readIni; /**< mINI structure for read data */
+
+    readIni["Control board"]["CAN ID"]          = "";
+    readIni["Control board"]["CAN BAUD"]        = "";
+    readIni["Control board"]["shutdown time"]   = "";
+    readIni["Control board"]["battery level 1"] = "";
+    readIni["Control board"]["battery level 2"] = "";
 }
 
 void CandleTool::pdsStoreConfig(u16 id)

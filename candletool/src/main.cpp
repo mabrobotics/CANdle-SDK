@@ -2,6 +2,7 @@
 #include "logger.hpp"
 #include "ui.hpp"
 #include "CLI/CLI.hpp"
+#include "pds_cli.hpp"
 
 int main(int argc, char** argv)
 {
@@ -22,8 +23,7 @@ int main(int argc, char** argv)
     auto* test    = app.add_subcommand("test", "Basic MD drive testing routines.");
     auto* update  = app.add_subcommand("update", "Firmware update.");
 
-    CLI::App* pds = app.add_subcommand("pds", "Tweak the PDS device");
-    pds->add_option("<CAN_ID>", cmd.id, "MAB FD-CAN protocol :: Target device ID")->required();
+    // CLI::App* pds = app.add_subcommand("pds", "Tweak the PDS device");
 
     // BLINK
     blink->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
@@ -139,16 +139,6 @@ int main(int argc, char** argv)
     update->add_flag("-r", cmd.noReset, "Do not reset the device before updating firmware.");
     update->add_option("-f,--file", cmd.firmwareFileName, "Path to the .mab file");
 
-    CLI::App* pdsInfo  = pds->add_subcommand("info", "Display debug info about PDS device");
-    CLI::App* pdsSetup = pds->add_subcommand("setup", "Configure PDS device with the .cfg file");
-    pdsSetup
-        ->add_option("<.cfg_FILENAME>",
-                     cmd.cfgPath,
-                     "PDS configuration .cfg file. ( see template at /usr/share/dupa/cycki.cfg )")
-        ->required();
-
-    CLI::App* pdsSave = pds->add_subcommand("save", "Store current configuration in device memory");
-
     // Verbosity
     uint32_t verbosityMode = 0;
     bool     silentMode{false};
@@ -160,6 +150,9 @@ int main(int argc, char** argv)
 
     std::string logPath = "";
     app.add_flag("--log", logPath, "Redirect output to file")->default_val("")->expected(1);
+
+    CandleTool candleTool;
+    PdsCli     pdsCli(app, candleTool);
 
     CLI11_PARSE(app, argc, argv);
 
@@ -178,7 +171,6 @@ int main(int argc, char** argv)
             throw std::runtime_error("Could not create log file!");
     }
 
-    CandleTool candleTool;
     if (app.count_all() == 1)
         std::cerr << app.help() << std::endl;
 
@@ -280,23 +272,7 @@ int main(int argc, char** argv)
         }
     }
 
-    if (pds->parsed())
-    {
-        if (pdsInfo->parsed())
-        {
-            candleTool.pdsSetupInfo(cmd.id);
-        }
-
-        if (pdsSetup->parsed())
-        {
-            candleTool.pdsSetupConfig(cmd.id, cmd.cfgPath);
-        }
-
-        if (pdsSave->parsed())
-        {
-            candleTool.pdsStoreConfig(cmd.id);
-        }
-    }
+    pdsCli.parse();
 
     return EXIT_SUCCESS;
 }
