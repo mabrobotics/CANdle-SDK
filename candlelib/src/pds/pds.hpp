@@ -49,10 +49,11 @@ namespace mab
 
         modulesSet_S getModules(void);
 
-        std::unique_ptr<BrakeResistor>  attachBrakeResistor(socketIndex_E socket);
-        std::unique_ptr<PowerStage>     attachPowerStage(socketIndex_E socket);
-        std::unique_ptr<IsolatedConv12> attachIsolatedConverter12(socketIndex_E socket);
-        std::unique_ptr<IsolatedConv5>  attachIsolatedConverter5(socketIndex_E socket);
+        std::unique_ptr<BrakeResistor> attachBrakeResistor(socketIndex_E socket);
+        std::unique_ptr<PowerStage>    attachPowerStage(socketIndex_E socket);
+        std::unique_ptr<IsolatedConv>  attachIsolatedConverter(socketIndex_E socket);
+
+        error_E getFwVersion(version_ut& version);
 
         error_E getStatus(status_S& status);
         error_E clearStatus(status_S status);
@@ -90,10 +91,9 @@ namespace mab
 
         modulesSet_S m_modulesSet = {moduleType_E::UNDEFINED};
 
-        std::vector<std::unique_ptr<BrakeResistor>>  m_brakeResistors;
-        std::vector<std::unique_ptr<PowerStage>>     m_powerStages;
-        std::vector<std::unique_ptr<IsolatedConv12>> m_IsolatedConv12s;
-        std::vector<std::unique_ptr<IsolatedConv5>>  m_IsolatedConv5s;
+        std::vector<std::unique_ptr<BrakeResistor>> m_brakeResistors;
+        std::vector<std::unique_ptr<PowerStage>>    m_powerStages;
+        std::vector<std::unique_ptr<IsolatedConv>>  m_IsolatedConvs;
 
         error_E createModule(moduleType_E type, socketIndex_E socket);
 

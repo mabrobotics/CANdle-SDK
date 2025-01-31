@@ -1,7 +1,8 @@
 #include "candletool.hpp"
 #include "logger.hpp"
 #include "ui.hpp"
-#include "CLI11.hpp"
+#include "CLI/CLI.hpp"
+#include "pds_cli.hpp"
 
 int main(int argc, char** argv)
 {
@@ -22,18 +23,17 @@ int main(int argc, char** argv)
     auto* test    = app.add_subcommand("test", "Basic MD drive testing routines.");
     auto* update  = app.add_subcommand("update", "Firmware update.");
 
-    CLI::App* pds = app.add_subcommand("pds", "Tweak the PDS device");
-    pds->add_option("<CAN ID>", cmd.id, "MAB FD-CAN protocol :: Target device ID")->required();
+    // CLI::App* pds = app.add_subcommand("pds", "Tweak the PDS device");
 
     // BLINK
-    blink->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    blink->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 
     // BUS
     bus->add_option("<BUS>", cmd.bus, "Can be USB/SPI/UART. Only for CANdleHAT.")->required();
     bus->add_option("<DEVICE>", cmd.variant, "SPI/UART device to use, ie: /dev/spidev1.1.");
 
     // CLEAR
-    clear->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    clear->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
     clear->add_option("<LEVEL>", cmd.variant, "Can be: warning, error, all")->required();
 
     // CONFIG
@@ -46,38 +46,38 @@ int main(int argc, char** argv)
     auto* configSave = config->add_subcommand("save", "Save current config to MD flash memory.");
     auto* configZero = config->add_subcommand("zero", "Set MD zero position at current position.");
 
-    configBand->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    configBand->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
     configBand->add_option("<HZ>", cmd.bandwidth, "Desired torque bandwidth.")->required();
-    configCan->add_option("<CAN ID>", cmd.id, "Current CAN ID.")->required();
-    configCan->add_option("<NEW CAN ID>", cmd.newId, "New CAN ID to set.")->required();
-    configCan->add_option("<CAN BAUD>", cmd.baud, "New CAN baudrate to set: 1M, 2M, 5M or 8M")
+    configCan->add_option("<CAN_ID>", cmd.id, "Current CAN ID.")->required();
+    configCan->add_option("<NEW_CAN_ID>", cmd.newId, "New CAN ID to set.")->required();
+    configCan->add_option("<CAN_BAUD>", cmd.baud, "New CAN baudrate to set: 1M, 2M, 5M or 8M")
         ->required();
-    configCan->add_option("<CAN WDG>", cmd.canWatchdog, "New CAN watchdog timeout (in ms) to set.")
+    configCan->add_option("<CAN_WDG>", cmd.canWatchdog, "New CAN watchdog timeout (in ms) to set.")
         ->required();
-    configClear->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
-    configCurrent->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    configClear->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    configCurrent->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
     configCurrent->add_option("<AMPS>", cmd.current, "Max current in Amps.")->required();
-    configSave->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
-    configZero->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    configSave->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    configZero->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 
     // ENCODER
-    encoder->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    encoder->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 
     // PING
-    ping->add_option("<CAN BAUD>", cmd.variant, "Can be one of: 1M, 2M, 5M, 8M, all. Default: all");
+    ping->add_option("<CAN_BAUD>", cmd.variant, "Can be one of: 1M, 2M, 5M, 8M, all. Default: all");
 
     // REGISTER
     auto* regRead  = registr->add_subcommand("read", "Read MD register.");
     auto* regWrite = registr->add_subcommand("write", "Write MD register.");
 
-    regRead->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
-    regRead->add_option("<REG ID>", cmd.reg, "Register ID (offset) to read data from.")->required();
-    regWrite->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
-    regWrite->add_option("<REG ID>", cmd.reg, "Register ID (offset) to write data to.")->required();
+    regRead->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    regRead->add_option("<REG_ID>", cmd.reg, "Register ID (offset) to read data from.")->required();
+    regWrite->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    regWrite->add_option("<REG_ID>", cmd.reg, "Register ID (offset) to write data to.")->required();
     regWrite->add_option("<VALUE>", cmd.value, "Value to write")->required();
 
     // RESET
-    reset->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    reset->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 
     // SETUP
     auto* setupCalib    = setup->add_subcommand("calibration", "Calibrate main MD encoder.");
@@ -89,17 +89,17 @@ int main(int argc, char** argv)
         setup->add_subcommand("read_config", "Download actuator config from MD to .cfg file.");
     auto* setupInfoAllFlag = setupInfo->add_flag("-a", "Print ALL available info.");
 
-    setupCalib->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
-    setupCalibOut->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
-    setupHoming->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
-    setupInfo->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
-    setupMotor->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    setupCalib->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    setupCalibOut->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    setupHoming->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    setupInfo->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    setupMotor->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
     setupMotor->add_option(
-        "<.cfg FILENAME>",
+        "<.cfg_FILENAME>",
         cmd.cfgPath,
         "Filename of motor config. Default config files are in:`/etc/candletool/config/motors/`.");
     setupMotor->add_flag("-f", cmd.force, "Force uploading config file, without verification.");
-    setupReadCfg->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    setupReadCfg->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
     setupReadCfg->add_option("<FILE>", cmd.value, "File to save config to.");
 
     // TEST
@@ -115,39 +115,29 @@ int main(int argc, char** argv)
     auto* testMoveAbs = testMove->add_subcommand("absolute", "Move motor to absolute position.");
     auto* testMoveRel = testMove->add_subcommand("relative", "Move motor to relative position.");
 
-    testEncoderMain->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")
+    testEncoderMain->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")
         ->required();
-    testEncoderOut->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")
+    testEncoderOut->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")
         ->required();
-    testLatency->add_option("<CAN BAUD>", cmd.baud, "New CAN baudrate to set: 1M, 2M, 5M or 8M")
+    testLatency->add_option("<CAN_BAUD>", cmd.baud, "New CAN baudrate to set: 1M, 2M, 5M or 8M")
         ->required();
-    testMoveAbs->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
-    testMoveAbs->add_option("<ABS POS>", cmd.pos, "Absolute position to reach [rad].")->required();
-    testMoveAbs->add_option("<MAX VEL>", cmd.vel, "Profile max velocity [rad/s].");
-    testMoveAbs->add_option("<MAX ACC>", cmd.acc, "Profile max acceleration [rad/s^2].");
-    testMoveAbs->add_option("<MAX DCC>", cmd.dcc, "Profile max deceleration [rad/s^2].");
-    testMoveRel->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
-    testMoveRel->add_option("<REL POS>", cmd.pos, "Relative position to reach. <-10, 10>[rad]");
+    testMoveAbs->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    testMoveAbs->add_option("<ABS_POS>", cmd.pos, "Absolute position to reach [rad].")->required();
+    testMoveAbs->add_option("<MAX_VEL>", cmd.vel, "Profile max velocity [rad/s].");
+    testMoveAbs->add_option("<MAX_ACC>", cmd.acc, "Profile max acceleration [rad/s^2].");
+    testMoveAbs->add_option("<MAX_DCC>", cmd.dcc, "Profile max deceleration [rad/s^2].");
+    testMoveRel->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    testMoveRel->add_option("<REL_POS>", cmd.pos, "Relative position to reach. <-10, 10>[rad]");
 
     // Update
     auto* candleUpdate = update->add_subcommand("candle", "Update firmware on Candle device.");
     auto* mdUpdate     = update->add_subcommand("md", "Update firmware on MD device.");
     auto* pdsUpdate    = update->add_subcommand("pds", "Update firmware on PDS device.");
 
-    mdUpdate->add_option("<CAN ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
-    pdsUpdate->add_option("<CAN ID>", cmd.id, "CAN ID of the PDS to interact with.")->required();
+    mdUpdate->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    pdsUpdate->add_option("<CAN_ID>", cmd.id, "CAN ID of the PDS to interact with.")->required();
     update->add_flag("-r", cmd.noReset, "Do not reset the device before updating firmware.");
     update->add_option("-f,--file", cmd.firmwareFileName, "Path to the .mab file");
-
-    CLI::App* pdsInfo  = pds->add_subcommand("info", "Display debug info about PDS device");
-    CLI::App* pdsSetup = pds->add_subcommand("setup", "Configure PDS device with the .cfg file");
-    pdsSetup
-        ->add_option("<.cfg FILENAME>",
-                     cmd.cfgPath,
-                     "PDS configuration .cfg file. ( see template at /usr/share/dupa/cycki.cfg )")
-        ->required();
-
-    CLI::App* pdsSave = pds->add_subcommand("save", "Store current configuration in device memory");
 
     // Verbosity
     uint32_t verbosityMode = 0;
@@ -160,6 +150,9 @@ int main(int argc, char** argv)
 
     std::string logPath = "";
     app.add_flag("--log", logPath, "Redirect output to file")->default_val("")->expected(1);
+
+    CandleTool candleTool;
+    PdsCli     pdsCli(app, candleTool);
 
     CLI11_PARSE(app, argc, argv);
 
@@ -178,7 +171,6 @@ int main(int argc, char** argv)
             throw std::runtime_error("Could not create log file!");
     }
 
-    CandleTool candleTool;
     if (app.count_all() == 1)
         std::cerr << app.help() << std::endl;
 
@@ -280,23 +272,7 @@ int main(int argc, char** argv)
         }
     }
 
-    if (pds->parsed())
-    {
-        if (pdsInfo->parsed())
-        {
-            candleTool.pdsSetupInfo(cmd.id);
-        }
-
-        if (pdsSetup->parsed())
-        {
-            candleTool.pdsSetupConfig(cmd.id, cmd.cfgPath);
-        }
-
-        if (pdsSave->parsed())
-        {
-            candleTool.pdsStoreConfig(cmd.id);
-        }
-    }
+    pdsCli.parse();
 
     return EXIT_SUCCESS;
 }

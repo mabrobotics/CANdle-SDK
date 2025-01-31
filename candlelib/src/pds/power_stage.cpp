@@ -35,6 +35,11 @@ namespace mab
         return writeModuleProperty(propertyId_E::BR_SOCKET_INDEX, brakeResistorSocketIndex);
     }
 
+    PdsModule::error_E PowerStage::getBindBrakeResistor(socketIndex_E& brakeResistorSocketIndex)
+    {
+        return readModuleProperty(propertyId_E::BR_SOCKET_INDEX, brakeResistorSocketIndex);
+    }
+
     PdsModule::error_E PowerStage::setBrakeResistorTriggerVoltage(uint32_t brTriggerVoltage)
     {
         return writeModuleProperty(propertyId_E::BR_TRIGGER_VOLTAGE, brTriggerVoltage);
