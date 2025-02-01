@@ -4,7 +4,6 @@ include(git_func.cmake)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-
 if(NOT DEFINED PLATFORM)
   set(PLATFORM "native")
   message("Compiling for native system")
@@ -56,5 +55,6 @@ if(PYTHON_BUILD)
     add_subdirectory(pycandle)
 endif()
 add_subdirectory(candletool)
+add_subdirectory(candlegui)
 add_subdirectory(examples)
 
