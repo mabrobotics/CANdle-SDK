@@ -13,7 +13,6 @@
 
 namespace mab
 {
-
     class CandleV2 : I_CommunicationDevice
     {
       private:
@@ -45,9 +44,15 @@ namespace mab
 
       public:
         CandleV2() = delete;
-        explicit CandleV2(CANdleBaudrate_E canBaudrate, std::unique_ptr<mab::Bus>&& bus);
-        explicit CandleV2(CANdleBaudrate_E canBaudrate, mab::Bus&& bus);
+        explicit CandleV2(const CANdleBaudrate_E canBaudrate, std::unique_ptr<mab::Bus>&& bus);
 
-        std::pair<std::vector<u8>, Error_t> transferData(std::vector<u8> dataToSend) override;
+        const std::pair<std::vector<u8>, Error_t> transferData(
+            const std::vector<u8> dataToSend) override;
     };
+
+    inline std::shared_ptr<mab::CandleV2> attachCandle(const CANdleBaudrate_E      baudrate,
+                                                       std::unique_ptr<mab::Bus>&& bus)
+    {
+        return std::make_shared<mab::CandleV2>(baudrate, std::move(bus));
+    }
 }  // namespace mab

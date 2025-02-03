@@ -2,14 +2,9 @@
 
 namespace mab
 {
-    CandleV2::CandleV2(CANdleBaudrate_E canBaudrate, std::unique_ptr<mab::Bus>&& bus)
+    CandleV2::CandleV2(const CANdleBaudrate_E canBaudrate, std::unique_ptr<mab::Bus>&& bus)
         : m_canBaudrate(canBaudrate), m_bus(std::move(bus))
     {
-    }
-    CandleV2::CandleV2(CANdleBaudrate_E canBaudrate, mab::Bus&& bus)
-    {
-        auto busPtr = std::unique_ptr<mab::Bus>(&bus);
-        CandleV2(canBaudrate, std::move(busPtr));
     }
 
     CandleV2::Error_t CandleV2::init()
@@ -42,12 +37,15 @@ namespace mab
         return CandleV2::Error_t::UNKNOWN_ERROR;
     }
 
-    std::pair<std::vector<u8>, I_CommunicationDevice::Error_t> CandleV2::transferData(
-        std::vector<u8> dataToSend)
+    const std::pair<std::vector<u8>, I_CommunicationDevice::Error_t> CandleV2::transferData(
+        const std::vector<u8> dataToSend)
     {
+        if (!isInitialized)
+            init();
+        // else
+        //     checkConnection();
         // TODO: placeholder
-        const std::vector<u8> vec = {};
-        const Error_t         err = Error_t::OK;
-        return std::pair<std::vector<u8>, Error_t>(vec, err);
+        const Error_t err = Error_t::OK;
+        return std::pair<std::vector<u8>, Error_t>(dataToSend, err);
     }
 }  // namespace mab

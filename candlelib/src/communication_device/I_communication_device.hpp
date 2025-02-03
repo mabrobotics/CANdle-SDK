@@ -21,6 +21,7 @@ namespace mab
             UNKNOWN_ERROR
         };
 
-        virtual std::pair<std::vector<u8>, Error_t> transferData(std::vector<u8> dataToSend) = 0;
+        virtual const std::pair<std::vector<u8>, Error_t> transferData(
+            const std::vector<u8> dataToSend) = 0;
     };
 }  // namespace mab

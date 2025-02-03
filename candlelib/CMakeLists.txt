@@ -106,4 +106,4 @@ target_include_directories(candle_v2_test PRIVATE
   include
   src/communication_device
 )
-target_link_libraries(candle_v2_test PRIVATE logger shared_data)
+target_link_libraries(candle_v2_test PRIVATE logger shared_data candle)
