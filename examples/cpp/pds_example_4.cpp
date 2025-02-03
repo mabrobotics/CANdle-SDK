@@ -19,9 +19,9 @@ int main()
     Logger _log;
     _log.m_tag = "PDS Example 4";
 
-    Candle   candle(mab::CAN_BAUD_1M, true);
-    Pds      pds(PDS_CAN_ID, candle);
-    status_S pdsStatus = {0};
+    Candle               candle(mab::CAN_BAUD_1M, true);
+    Pds                  pds(PDS_CAN_ID, candle);
+    controlBoardStatus_S pdsStatus = {0};
 
     PdsModule::error_E result = PdsModule::error_E::OK;
 

@@ -20,6 +20,14 @@ namespace mab
         error_E enable();
         error_E disable();
 
+        error_E getStatus(powerStageStatus_S& status);
+
+        /**
+         * @brief Check if the module is enabled or not
+         *
+         * @param enabled the flag that will be updated
+         * @return error_E
+         */
         error_E getEnabled(bool& enabled);
 
         /**

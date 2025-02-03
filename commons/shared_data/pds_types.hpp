@@ -146,7 +146,7 @@ namespace mab
 
     };
 
-    struct status_S
+    struct controlBoardStatus_S
     {
         bool ENABLED;
         bool OVER_TEMPERATURE;
@@ -168,6 +168,27 @@ namespace mab
         bool SHUTDOWN_SCHEDULED;
 
         /*...*/
+    };
+
+    struct powerStageStatus_S
+    {
+        bool ENABLED;
+        bool OVER_TEMPERATURE;
+        bool OVER_CURRENT;
+    };
+
+    struct brakeResistorStatus_S
+    {
+        bool ENABLED;
+        bool OVER_TEMPERATURE;
+        bool OVER_CURRENT;
+    };
+
+    struct isolatedConverterStatus_S
+    {
+        bool ENABLED;
+        bool OVER_TEMPERATURE;
+        bool OVER_CURRENT;
     };
 
     // TODO: This enum should be replaced with a single one for all MAB Codebase ( The one that is

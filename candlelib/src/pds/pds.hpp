@@ -55,8 +55,8 @@ namespace mab
 
         error_E getFwVersion(version_ut& version);
 
-        error_E getStatus(status_S& status);
-        error_E clearStatus(status_S status);
+        error_E getStatus(controlBoardStatus_S& status);
+        error_E clearStatus(controlBoardStatus_S status);
 
         u16     getCanId();
         error_E setCanId(u16 canId);

@@ -25,9 +25,9 @@ int main()
 
     Pds::modulesSet_S pdsModules = pds.getModules();
 
-    u32      pdsBusVoltage = 0;
-    status_S pdsStatus     = {0};
-    status_S statusClear   = {0};
+    u32                  pdsBusVoltage = 0;
+    controlBoardStatus_S pdsStatus     = {0};
+    controlBoardStatus_S statusClear   = {0};
 
     result = pds.getStatus(pdsStatus);
     if (result != PdsModule::error_E::OK)
