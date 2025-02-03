@@ -43,6 +43,7 @@ target_sources(candle PRIVATE
   src/bus.cpp
   src/crc.cpp
   src/md80.cpp
+  src/communication_device/candle_v2.cpp
   src/pds/pds.cpp
   src/pds/pds_module.cpp
   src/pds/pds_protocol.cpp
@@ -59,6 +60,7 @@ endif()
 target_include_directories(candle PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/include
   ${CMAKE_CURRENT_SOURCE_DIR}/src/pds
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_device
   ${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger
   )
 target_include_directories(candle SYSTEM PRIVATE ${LIBUSB_INCLUDE_DIR})
@@ -96,3 +98,12 @@ target_include_directories(pds_protocol_test PRIVATE
   src/pds
 )
 target_link_libraries(pds_protocol_test PRIVATE logger shared_data)
+
+
+add_unit_test_executable(candle_v2_test src/communication_device/candle_v2_test.cpp)
+target_sources(candle_v2_test PRIVATE src/communication_device/candle_v2.cpp)
+target_include_directories(candle_v2_test PRIVATE
+  include
+  src/communication_device
+)
+target_link_libraries(candle_v2_test PRIVATE logger shared_data)
