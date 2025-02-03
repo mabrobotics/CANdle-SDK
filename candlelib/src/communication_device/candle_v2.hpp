@@ -10,7 +10,6 @@
 #include "bus.hpp"
 #include "I_communication_device.hpp"
 #include "mab_types.hpp"
-#include "candle_types.hpp"
 
 namespace mab
 {
@@ -18,7 +17,7 @@ namespace mab
     class CandleV2 : I_CommunicationDevice
     {
       private:
-        enum CandleCommands_t : uint8_t
+        enum CandleCommands_t : u8
         {
             NONE                       = 0,
             PING_START                 = 1,
@@ -33,9 +32,9 @@ namespace mab
             USB_FRAME_ENTER_BOOTLOADER = 10,
         };
 
-        Logger                    m_log = Logger(Logger::ProgramLayer_E::TOP, "CANDLE");
+        CANdleBaudrate_E          m_canBaudrate = CANdleBaudrate_E::CAN_BAUD_1M;
+        Logger                    m_log         = Logger(Logger::ProgramLayer_E::TOP, "CANDLE");
         std::unique_ptr<mab::Bus> m_bus;
-        CANdleBaudrate_E          m_canBaudrate;
 
         bool isInitialized = false;
 

@@ -5,7 +5,6 @@
 #include <functional>
 
 #include "mab_types.hpp"
-#include "candle_types.hpp"
 #include "register.hpp"
 namespace mab
 {
