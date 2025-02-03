@@ -897,11 +897,11 @@ void CandleTool::pdsSetupInfo(u16 id)
 
     mab::Pds::modulesSet_S pdsModules = pds.getModules();
 
-    u32           shutdownTime  = 0;
-    u32           batteryLvl1   = 0;
-    u32           batteryLvl2   = 0;
-    u32           pdsBusVoltage = 0;
-    mab::status_S pdsStatus     = {0};
+    u32                       shutdownTime  = 0;
+    u32                       batteryLvl1   = 0;
+    u32                       batteryLvl2   = 0;
+    u32                       pdsBusVoltage = 0;
+    mab::controlBoardStatus_S pdsStatus     = {0};
 
     pds.getStatus(pdsStatus);
     pds.getBusVoltage(pdsBusVoltage);

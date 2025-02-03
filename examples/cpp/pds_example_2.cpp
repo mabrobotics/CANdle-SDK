@@ -52,7 +52,7 @@ int main()
 
     powerStage->enable();
 
-    // PowerStage::status_S powerStageStatus = {};
+    // PowerStage::controlBoardStatus_S powerStageStatus = {};
     float temperature   = 0.0f;
     u32   outputVoltage = 0;
     s32   outputCurrent = 0;

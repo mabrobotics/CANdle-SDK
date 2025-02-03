@@ -193,7 +193,7 @@ namespace mab
         return readModuleProperty(propertyId_E::FW_VERSION, version);
     }
 
-    PdsModule::error_E Pds::getStatus(status_S& status)
+    PdsModule::error_E Pds::getStatus(controlBoardStatus_S& status)
     {
         u32                statusWord = 0;
         PdsModule::error_E result     = readModuleProperty(propertyId_E::STATUS_WORD, statusWord);
@@ -219,7 +219,7 @@ namespace mab
         return result;
     }
 
-    PdsModule::error_E Pds::clearStatus(status_S status)
+    PdsModule::error_E Pds::clearStatus(controlBoardStatus_S status)
     {
         u32 statusClearWord = 0;
 

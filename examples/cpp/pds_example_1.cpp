@@ -30,11 +30,11 @@ int main()
     _log.m_tag                   = "PDS Example 1";
     Pds::modulesSet_S pdsModules = pds.getModules();
 
-    u32      shutdownTime  = 0;
-    u32      batteryLvl1   = 0;
-    u32      batteryLvl2   = 0;
-    u32      pdsBusVoltage = 0;
-    status_S pdsStatus     = {0};
+    u32                  shutdownTime  = 0;
+    u32                  batteryLvl1   = 0;
+    u32                  batteryLvl2   = 0;
+    u32                  pdsBusVoltage = 0;
+    controlBoardStatus_S pdsStatus     = {0};
 
     version_ut pdsFwVersion = {0};
 
@@ -134,21 +134,53 @@ void printModuleInfo(moduleType_E type, socketIndex_E socket)
 
 void printPowerStageInfo(PowerStage& powerStage)
 {
-    moduleVersion_E boardVersion;
-    socketIndex_E   bindedBrSocket;
-    u32             brTriggerVoltage;
+    powerStageStatus_S status;
+    moduleVersion_E    boardVersion;
+    socketIndex_E      bindedBrSocket;
+    u32                brTriggerVoltage;
 
+    float temperature = 0.0f;
+    s32   current     = 0;
+    u32   voltage     = 0;
+
+    powerStage.getStatus(status);
     powerStage.getBoardVersion(boardVersion);
     powerStage.getBindBrakeResistor(bindedBrSocket);
     powerStage.getBrakeResistorTriggerVoltage(brTriggerVoltage);
-    _log.info("\t\t* HW Version %u", boardVersion);
-    _log.info("\t\t* Binded BR Socket [ %u ] ( 0 == BR not binded )", (u8)bindedBrSocket);
-    _log.info("\t\t* BR Trigger Voltage %u [ mV ]", brTriggerVoltage);
+    powerStage.getTemperature(temperature);
+    powerStage.getLoadCurrent(current);
+    powerStage.getOutputVoltage(voltage);
+
+    _log.info("\t\t* HW Version [ %u ]", boardVersion);
+    _log.info("\t\t* Status:");
+    _log.info("\t\t\t* Enabled\t[ %s ]", status.ENABLED ? "YES" : "NO");
+    _log.info("\t\t\t* OVT\t\t[ %s ]", status.OVER_TEMPERATURE ? "YES" : "NO");
+    _log.info("\t\t\t* OVC\t\t[ %s ]", status.OVER_CURRENT ? "YES" : "NO");
+    _log.info("\t\t* BR Socket [ %u ] ( 0 == BR not binded )", (u8)bindedBrSocket);
+    _log.info("\t\t* BR Trig. V. [ %.2f ][ V ]", (float)brTriggerVoltage / 1000.0f);
+    _log.info("\t\t* Measurements:");
+    _log.info("\t\t\t* Temperature\t[ %.2f ][ ^C ]", temperature);
+    _log.info("\t\t\t* Current\t[ %.2f ][ A ]", (float)current / 1000.0f);
+    _log.info("\t\t\t* Voltage\t[ %.2f ][ V ]", (float)voltage / 1000.0f);
 }
 
 void printBrakeResistorInfo(BrakeResistor& brakeResistor)
 {
-    _log.info("Brake resistor module info:");
+    brakeResistorStatus_S status       = {0};
+    moduleVersion_E       boardVersion = moduleVersion_E::UNKNOWN;
+    float                 temperature  = 0.0f;
+    ;
+    brakeResistor.getStatus(status);
+    brakeResistor.getBoardVersion(boardVersion);
+    brakeResistor.getTemperature(temperature);
+
+    _log.info("\t\t* HW Version [ %u ]", boardVersion);
+    _log.info("\t\t* Status:");
+    _log.info("\t\t\t* Enabled\t[ %s ]", status.ENABLED ? "YES" : "NO");
+    _log.info("\t\t\t* OVT\t\t[ %s ]", status.OVER_TEMPERATURE ? "YES" : "NO");
+    _log.info("\t\t\t* OVC\t\t[ %s ]", status.OVER_CURRENT ? "YES" : "NO");
+    _log.info("\t\t* Measurements:");
+    _log.info("\t\t\t* Temperature [ %.2f ][ ^C ]", temperature);
 }
 
 void printIsolatedConverterInfo(IsolatedConv& isolatedConverter)
