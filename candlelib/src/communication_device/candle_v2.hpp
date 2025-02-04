@@ -15,7 +15,7 @@ namespace mab
 {
     class CandleV2 : I_CommunicationDevice
     {
-      private:
+      public:
         enum CandleCommands_t : u8
         {
             NONE                       = 0,
@@ -31,16 +31,24 @@ namespace mab
             USB_FRAME_ENTER_BOOTLOADER = 10,
         };
 
+      private:
+        static constexpr u32 DEFAULT_TIMEOUT = 50;
+
         CANdleBaudrate_E          m_canBaudrate = CANdleBaudrate_E::CAN_BAUD_1M;
         Logger                    m_log         = Logger(Logger::ProgramLayer_E::TOP, "CANDLE");
         std::unique_ptr<mab::Bus> m_bus;
 
-        bool isInitialized = false;
+        bool m_isInitialized = false;
 
         Error_t init();
+        Error_t reinit();
 
-        // this method is temporary until bus rework
-        Error_t legacyBusTransfer(std::vector<u8>* data, u32 timeout_ms);
+        // TODO: this method is temporary until bus rework
+        Error_t legacyBusTransfer(std::shared_ptr<std::vector<u8>> data, u32 timeout_ms);
+
+        // TODO: this method is temporary and must be changed, must have some way for bus to check
+        // functional connection
+        Error_t legacyCheckConnection();
 
       public:
         CandleV2() = delete;

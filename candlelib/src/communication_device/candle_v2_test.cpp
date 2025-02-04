@@ -2,8 +2,12 @@
 #include <gmock/gmock.h>
 #include <bus.hpp>
 #include <candle_v2.hpp>
+#include <mab_types.hpp>
 
 #include <memory>
+
+using ::testing::_;
+using ::testing::Return;
 
 class MockBusLegacy : public mab::Bus
 {
@@ -30,14 +34,47 @@ class MockBusLegacy : public mab::Bus
 class CandleV2Test : public ::testing::Test
 {
   protected:
+    std::unique_ptr<MockBusLegacy> mockBus;
+
     void SetUp() override
     {
+        Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
+        mockBus               = std::make_unique<MockBusLegacy>();
     }
 };
 
-TEST_F(CandleV2Test, constructorTest)
+TEST_F(CandleV2Test, failAttach)
 {
-    auto bus = std::make_unique<MockBusLegacy>();
+    EXPECT_CALL(*mockBus, transmit(_, _, true, _, _, _)).Times(1).WillOnce(Return(false));
+    EXPECT_THROW(mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus)), std::runtime_error);
+}
 
-    auto candle = mab::attachCandle(mab::CAN_BAUD_1M, std::move(bus));
+TEST_F(CandleV2Test, passAttach)
+{
+    EXPECT_CALL(*mockBus, transmit(_, _, true, _, _, _)).Times(1).WillOnce(Return(true));
+    EXPECT_NO_THROW(mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus)));
+}
+
+TEST_F(CandleV2Test, failAfterInit)
+{
+    EXPECT_CALL(*mockBus, transmit(_, _, true, _, _, _))
+        .Times(2)
+        .WillOnce(Return(true))
+        .WillOnce(Return(false));
+    auto            candle   = mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus));
+    std::vector<u8> mockData = {mab::CandleV2::CandleCommands_t::PING_START, 0x0};
+    auto            result   = candle->transferData(mockData);
+    ASSERT_NE(result.second, mab::I_CommunicationDevice::Error_t::OK);
+}
+
+TEST_F(CandleV2Test, sucessAfterInit)
+{
+    EXPECT_CALL(*mockBus, transmit(_, _, true, _, _, _))
+        .Times(2)
+        .WillOnce(Return(true))
+        .WillOnce(Return(true));
+    auto            candle   = mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus));
+    std::vector<u8> mockData = {mab::CandleV2::CandleCommands_t::PING_START, 0x0};
+    auto            result   = candle->transferData(mockData);
+    ASSERT_EQ(result.second, mab::I_CommunicationDevice::Error_t::OK);
 }
