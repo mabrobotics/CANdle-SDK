@@ -32,7 +32,10 @@ namespace mab
         };
 
       private:
-        static constexpr u32 DEFAULT_TIMEOUT = 50;
+        static constexpr u32 DEFAULT_CONFIGURATION_TIMEOUT = 10;
+        static constexpr u32 DEFAULT_CAN_TIMEOUT           = 50;
+
+        const std::array<u8, 2> CAN_FRAME_CANDLE_COMMAND = {MD_GENERIC_FRAME, 0x0};
 
         CANdleBaudrate_E          m_canBaudrate = CANdleBaudrate_E::CAN_BAUD_1M;
         Logger                    m_log         = Logger(Logger::ProgramLayer_E::TOP, "CANDLE");
@@ -44,7 +47,7 @@ namespace mab
         Error_t reinit();
 
         // TODO: this method is temporary until bus rework
-        Error_t legacyBusTransfer(std::shared_ptr<std::vector<u8>> data, u32 timeout_ms);
+        Error_t legacyBusTransfer(std::shared_ptr<std::vector<u8>> datas);
 
         // TODO: this method is temporary and must be changed, must have some way for bus to check
         // functional connection

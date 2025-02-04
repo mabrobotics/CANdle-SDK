@@ -1,5 +1,9 @@
 #pragma once
 
+#include <vector>
+#include <array>
+#include <bit>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -7,6 +11,7 @@
 
 namespace mab
 {
+
     class I_CommunicationDevice
     {
       public:

@@ -36,8 +36,7 @@ namespace mab
         return init();
     }
 
-    CandleV2::Error_t CandleV2::legacyBusTransfer(std::shared_ptr<std::vector<u8>> data,
-                                                  u32 timeout_ms = CandleV2::DEFAULT_TIMEOUT)
+    CandleV2::Error_t CandleV2::legacyBusTransfer(std::shared_ptr<std::vector<u8>> data)
     {
         if (data == nullptr)
         {
@@ -55,9 +54,15 @@ namespace mab
             return CandleV2::Error_t::DATA_TOO_LONG;
         }
 
+        // temporary buffer operations
+
         // char* rx = m_bus->getRxBuffer(0);
 
-        if (m_bus->transmit((char*)data->data(), data->size(), true, timeout_ms, data->size()))
+        if (m_bus->transmit((char*)data->data(),
+                            data->size(),
+                            true,
+                            CandleV2::DEFAULT_CONFIGURATION_TIMEOUT,
+                            data->size()))
             return CandleV2::Error_t::OK;
 
         m_log.error("Transmission failed!");
@@ -75,6 +80,9 @@ namespace mab
             return std::pair<std::vector<u8>, Error_t>(dataToSend, communicationStatus);
 
         auto buffer = std::make_shared<std::vector<u8>>(dataToSend);
+
+        buffer->insert(
+            buffer->begin(), CAN_FRAME_CANDLE_COMMAND.begin(), CAN_FRAME_CANDLE_COMMAND.end());
 
         communicationStatus = legacyBusTransfer(buffer);
 
