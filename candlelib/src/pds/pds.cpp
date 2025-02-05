@@ -3,6 +3,7 @@
 #include "pds_protocol.hpp"
 #include <string>
 #include <bit>
+#include <iterator>
 
 enum moduleVersion_E : uint8_t
 {
@@ -133,10 +134,19 @@ namespace mab
     {
         if (!m_brakeResistors.empty())
         {
-            for (auto& module : m_brakeResistors)
+            for (auto module = m_brakeResistors.begin(); module != m_brakeResistors.end(); module++)
             {
-                if (module->getSocketIndex() == socket)
-                    return std::move(module);
+                if (*module == nullptr)
+                {
+                    m_log.error("Isolated converter has some dangling pointers and will fail!");
+                    return nullptr;
+                }
+                if ((*module)->getSocketIndex() == socket)
+                {
+                    auto moduleBuffer = std::move(*module);
+                    m_brakeResistors.erase(module);
+                    return moduleBuffer;
+                }
             }
             m_log.error("No brake resistor module connected to socket [ %u ]!",
                         static_cast<uint8_t>(socket));
@@ -152,10 +162,19 @@ namespace mab
     {
         if (!m_powerStages.empty())
         {
-            for (auto& module : m_powerStages)
+            for (auto module = m_powerStages.begin(); module != m_powerStages.end(); module++)
             {
-                if (module->getSocketIndex() == socket)
-                    return std::move(module);
+                if (*module == nullptr)
+                {
+                    m_log.error("Isolated converter has some dangling pointers and will fail!");
+                    return nullptr;
+                }
+                if ((*module)->getSocketIndex() == socket)
+                {
+                    auto moduleBuffer = std::move(*module);
+                    m_powerStages.erase(module);
+                    return moduleBuffer;
+                }
             }
 
             m_log.error("No power stage module connected to socket [ %u ]!",
@@ -172,10 +191,19 @@ namespace mab
     {
         if (!m_IsolatedConvs.empty())
         {
-            for (auto& module : m_IsolatedConvs)
+            for (auto module = m_IsolatedConvs.begin(); module != m_IsolatedConvs.end(); module++)
             {
-                if (module->getSocketIndex() == socket)
-                    return std::move(module);
+                if (*module == nullptr)
+                {
+                    m_log.error("Isolated converter has some dangling pointers and will fail!");
+                    return nullptr;
+                }
+                if ((*module)->getSocketIndex() == socket)
+                {
+                    auto moduleBuffer = std::move(*module);
+                    m_IsolatedConvs.erase(module);
+                    return moduleBuffer;
+                }
             }
 
             m_log.error("No Isolated Converter 12V module connected to socket [ %u ]!",
