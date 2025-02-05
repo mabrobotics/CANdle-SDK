@@ -30,15 +30,15 @@ PdsCli::PdsCli(CLI::App& rootCli, CandleTool& candletool)
         ->add_option("<socket_index>", m_submoduleSocketNumber, "Submodule socket number")
         ->required();
 
-    // m_brakeResistorCmd = m_pds->add_subcommand("ps", "Manage the Brake Resistor submodule");
-    // m_brakeResistorCmd
-    //     ->add_option("<socket_index>", m_submoduleSocketNumber, "Submodule socket number")
-    //     ->required();
-    //
-    // m_isolatedConverterCmd = m_pds->add_subcommand("ps", "Manage the Isolated Converter submodule");
-    // m_isolatedConverterCmd
-    //     ->add_option("<socket_index>", m_submoduleSocketNumber, "Submodule socket number")
-    //     ->required();
+    m_brakeResistorCmd = m_pds->add_subcommand("br", "Manage the Brake Resistor submodule");
+    m_brakeResistorCmd
+        ->add_option("<socket_index>", m_submoduleSocketNumber, "Submodule socket number")
+        ->required();
+
+    m_isolatedConverterCmd = m_pds->add_subcommand("ic", "Manage the Isolated Converter submodule");
+    m_isolatedConverterCmd
+        ->add_option("<socket_index>", m_submoduleSocketNumber, "Submodule socket number")
+        ->required();
 }
 
 void PdsCli::parse(void)

@@ -22,4 +22,26 @@ namespace mab
         return readModuleProperty(propertyId_E::HW_VERSION, version);
     }
 
+    std::string PdsModule::moduleType2String(moduleType_E type)
+    {
+        switch (type)
+        {
+            case moduleType_E::UNDEFINED:
+                return "UNDEFINED";
+            case moduleType_E::CONTROL_BOARD:
+                return "CONTROL_BOARD";
+            case moduleType_E::BRAKE_RESISTOR:
+                return "BRAKE_RESISTOR";
+            case moduleType_E::ISOLATED_CONVERTER:
+                return "ISOLATED_CONVERTER";
+            case moduleType_E::POWER_STAGE:
+                return "POWER_STAGE";
+
+                /* NEW MODULE TYPES HERE */
+
+            default:
+                return "UNKNOWN";
+        }
+    }
+
 }  // namespace mab
