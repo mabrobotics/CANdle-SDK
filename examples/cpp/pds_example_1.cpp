@@ -103,7 +103,6 @@ void printModuleInfo(moduleType_E type, socketIndex_E socket)
 {
     switch (type)
     {
-        case moduleType_E::OUT_OF_RANGE:
         case moduleType_E::CONTROL_BOARD:
         case moduleType_E::UNDEFINED:
         default:
@@ -139,15 +138,21 @@ void printPowerStageInfo(PowerStage& powerStage)
     socketIndex_E      bindedBrSocket;
     u32                brTriggerVoltage;
 
-    float temperature = 0.0f;
-    s32   current     = 0;
-    u32   voltage     = 0;
+    float temperature      = 0.0f;
+    float temperatureLimit = 0.0f;
+    s32   current          = 0;
+    u32   ocdLevel         = 0;
+    u32   ocdDelay         = 0;
+    u32   voltage          = 0;
 
     powerStage.getStatus(status);
     powerStage.getBoardVersion(boardVersion);
     powerStage.getBindBrakeResistor(bindedBrSocket);
     powerStage.getBrakeResistorTriggerVoltage(brTriggerVoltage);
     powerStage.getTemperature(temperature);
+    powerStage.getTemperatureLimit(temperatureLimit);
+    powerStage.getOcdLevel(ocdLevel);
+    powerStage.getOcdDelay(ocdDelay);
     powerStage.getLoadCurrent(current);
     powerStage.getOutputVoltage(voltage);
 
@@ -158,6 +163,7 @@ void printPowerStageInfo(PowerStage& powerStage)
     _log.info("\t\t\t* OVC\t\t[ %s ]", status.OVER_CURRENT ? "YES" : "NO");
     _log.info("\t\t* BR Socket [ %u ] ( 0 == BR not binded )", (u8)bindedBrSocket);
     _log.info("\t\t* BR Trig. V. [ %.2f ][ V ]", (float)brTriggerVoltage / 1000.0f);
+    _log.info("\t\t* Temperature limit[ %.2f ][ V ]", temperatureLimit);
     _log.info("\t\t* Measurements:");
     _log.info("\t\t\t* Temperature\t[ %.2f ][ ^C ]", temperature);
     _log.info("\t\t\t* Current\t[ %.2f ][ A ]", (float)current / 1000.0f);

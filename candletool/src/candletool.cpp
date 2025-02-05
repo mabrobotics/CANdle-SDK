@@ -2,6 +2,7 @@
 
 #include <numeric>
 #include <unistd.h>
+#include <string>
 
 #include "ui.hpp"
 #include "configHelpers.hpp"
@@ -10,6 +11,8 @@
 #include "mabFileParser.hpp"
 
 #include "pds.hpp"
+
+using namespace mab;
 
 f32 lerp(f32 start, f32 end, f32 t)
 {
@@ -968,15 +971,94 @@ void CandleTool::pdsSetupConfig(u16 id, const std::string& cfgPath)
         log.error("PDS Config error [ %u ] [ %s:%u ]", result, __FILE__, __LINE__);
 }
 
+static void powerStageSubmoduleIniStructFulfill(PowerStage&         ps,
+                                                mINI::INIStructure& rIni,
+                                                std::string         sectionName)
+{
+    socketIndex_E brSocket         = socketIndex_E::UNASSIGNED;
+    u32           brTriggerVoltage = 0;
+    u32           ocdLevel         = 0;
+    u32           ocdDelay         = 0;
+
+    ps.getBindBrakeResistor(brSocket);
+    ps.getBrakeResistorTriggerVoltage(brTriggerVoltage);
+    ps.getOcdLevel(ocdLevel);
+    ps.getOcdDelay(ocdDelay);
+
+    rIni[sectionName]["type"]      = PdsModule::moduleType2String(moduleType_E::POWER_STAGE);
+    rIni[sectionName]["BR Socket"] = floatToString((uint8_t)brSocket);
+    rIni[sectionName]["BR Trigger voltage"] = floatToString(brTriggerVoltage);
+    rIni[sectionName]["OCD level"]          = floatToString(ocdLevel);
+    rIni[sectionName]["OCD delay"]          = floatToString(ocdDelay);
+}
+
+static void fillSubmoduleIniStruct(Pds&                pds,
+                                   moduleType_E        moduleType,
+                                   mINI::INIStructure& rIni,
+                                   socketIndex_E       socketIndex)
+{
+    std::string sectionName = "Submodule " + std::to_string((int)socketIndex);
+
+    switch (moduleType)
+    {
+        case moduleType_E::UNDEFINED:
+            rIni[sectionName]["type"] = "NO MODULE";
+            break;
+
+        case moduleType_E::CONTROL_BOARD:
+
+            break;
+
+        case moduleType_E::BRAKE_RESISTOR:
+            break;
+
+        case moduleType_E::ISOLATED_CONVERTER:
+            break;
+
+        case moduleType_E::POWER_STAGE:
+        {
+            auto ps = pds.attachPowerStage(socketIndex);
+            powerStageSubmoduleIniStructFulfill(*ps, rIni, sectionName);
+            break;
+        }
+
+            /* NEW MODULE TYPES HERE */
+
+        default:
+            break;
+    }
+}
+
 void CandleTool::pdsReadConfig(u16 id, const std::string& cfgPath)
 {
     mINI::INIStructure readIni; /**< mINI structure for read data */
+    Pds                pds(id, *candle);
+    u32                shutDownTime = 0;
+    u32                batLvl1      = 0;
+    u32                batLvl2      = 0;
+    Pds::modulesSet_S  pdsModules   = pds.getModules();
 
-    readIni["Control board"]["CAN ID"]          = "";
+    std::string configName = cfgPath;
+    if (std::filesystem::path(configName).extension() == "")
+        configName += ".cfg";
+
+    pds.getShutdownTime(shutDownTime);
+    pds.getBatteryVoltageLevels(batLvl1, batLvl2);
+
+    readIni["Control board"]["CAN ID"]          = floatToString(id);
     readIni["Control board"]["CAN BAUD"]        = "";
-    readIni["Control board"]["shutdown time"]   = "";
-    readIni["Control board"]["battery level 1"] = "";
-    readIni["Control board"]["battery level 2"] = "";
+    readIni["Control board"]["shutdown time"]   = floatToString(shutDownTime);
+    readIni["Control board"]["battery level 1"] = floatToString(batLvl1);
+    readIni["Control board"]["battery level 2"] = floatToString(batLvl2);
+    fillSubmoduleIniStruct(pds, pdsModules.moduleTypeSocket1, readIni, socketIndex_E::SOCKET_1);
+    fillSubmoduleIniStruct(pds, pdsModules.moduleTypeSocket2, readIni, socketIndex_E::SOCKET_2);
+    fillSubmoduleIniStruct(pds, pdsModules.moduleTypeSocket3, readIni, socketIndex_E::SOCKET_3);
+    fillSubmoduleIniStruct(pds, pdsModules.moduleTypeSocket4, readIni, socketIndex_E::SOCKET_4);
+    fillSubmoduleIniStruct(pds, pdsModules.moduleTypeSocket5, readIni, socketIndex_E::SOCKET_5);
+    fillSubmoduleIniStruct(pds, pdsModules.moduleTypeSocket6, readIni, socketIndex_E::SOCKET_6);
+
+    mINI::INIFile configFile(configName);
+    configFile.write(readIni);
 }
 
 void CandleTool::pdsStoreConfig(u16 id)

@@ -37,7 +37,6 @@ namespace mab
         POWER_STAGE,
 
         /* NEW MODULE TYPES HERE */
-        OUT_OF_RANGE,
     };
 
     enum class moduleVersion_E : uint8_t
