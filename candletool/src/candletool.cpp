@@ -1011,7 +1011,8 @@ void CandleTool::updatePds(const std::string& mabFilePath, uint16_t canId, bool 
 {
     MabFileParser         mabFile(mabFilePath, MabFileParser::TargetDevice_E::PDS);
     mab::FirmwareUploader firmwareUploader(*candle, mabFile, canId);
-    firmwareUploader.flashDevice(noReset);
+    if (firmwareUploader.flashDevice(noReset))
+        log.success("Update complete for PDS @ %d", canId);
 }
 
 void CandleTool::blink(u16 id)
