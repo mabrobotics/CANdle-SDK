@@ -971,19 +971,20 @@ void CandleTool::pdsSetupConfig(u16 id, const std::string& cfgPath)
         log.error("PDS Config error [ %u ] [ %s:%u ]", result, __FILE__, __LINE__);
 }
 
-static void powerStageSubmoduleIniStructFulfill(PowerStage&         ps,
-                                                mINI::INIStructure& rIni,
-                                                std::string         sectionName)
+// Fill Power stage Ini structure
+static void fillPsIni(PowerStage& ps, mINI::INIStructure& rIni, std::string sectionName)
 {
     socketIndex_E brSocket         = socketIndex_E::UNASSIGNED;
     u32           brTriggerVoltage = 0;
     u32           ocdLevel         = 0;
     u32           ocdDelay         = 0;
+    f32           temperatureLimit = 0.0f;
 
     ps.getBindBrakeResistor(brSocket);
     ps.getBrakeResistorTriggerVoltage(brTriggerVoltage);
     ps.getOcdLevel(ocdLevel);
     ps.getOcdDelay(ocdDelay);
+    ps.getTemperatureLimit(temperatureLimit);
 
     rIni[sectionName]["type"]      = PdsModule::moduleType2String(moduleType_E::POWER_STAGE);
     rIni[sectionName]["BR Socket"] = floatToString((uint8_t)brSocket);
@@ -992,10 +993,30 @@ static void powerStageSubmoduleIniStructFulfill(PowerStage&         ps,
     rIni[sectionName]["OCD delay"]          = floatToString(ocdDelay);
 }
 
-static void fillSubmoduleIniStruct(Pds&                pds,
-                                   moduleType_E        moduleType,
-                                   mINI::INIStructure& rIni,
-                                   socketIndex_E       socketIndex)
+// Fill Brake resistor Ini structure
+static void fillBrIni(BrakeResistor& br, mINI::INIStructure& rIni, std::string sectionName)
+{
+    f32 temperatureLimit = 0.0f;
+
+    br.getTemperatureLimit(temperatureLimit);
+
+    rIni[sectionName]["type"] = PdsModule::moduleType2String(moduleType_E::BRAKE_RESISTOR);
+}
+
+// Fill Brake resistor Ini structure
+static void fillIcIni(IsolatedConv& ic, mINI::INIStructure& rIni, std::string sectionName)
+{
+    f32 temperatureLimit = 0.0f;
+
+    ic.getTemperatureLimit(temperatureLimit);
+
+    rIni[sectionName]["type"] = PdsModule::moduleType2String(moduleType_E::ISOLATED_CONVERTER);
+}
+
+static void fullModuleIni(Pds&                pds,
+                          moduleType_E        moduleType,
+                          mINI::INIStructure& rIni,
+                          socketIndex_E       socketIndex)
 {
     std::string sectionName = "Submodule " + std::to_string((int)socketIndex);
 
@@ -1006,19 +1027,26 @@ static void fillSubmoduleIniStruct(Pds&                pds,
             break;
 
         case moduleType_E::CONTROL_BOARD:
-
             break;
 
         case moduleType_E::BRAKE_RESISTOR:
+        {
+            auto br = pds.attachBrakeResistor(socketIndex);
+            fillBrIni(*br, rIni, sectionName);
             break;
+        }
 
         case moduleType_E::ISOLATED_CONVERTER:
+        {
+            auto ic = pds.attachIsolatedConverter(socketIndex);
+            fillIcIni(*ic, rIni, sectionName);
             break;
+        }
 
         case moduleType_E::POWER_STAGE:
         {
             auto ps = pds.attachPowerStage(socketIndex);
-            powerStageSubmoduleIniStructFulfill(*ps, rIni, sectionName);
+            fillPsIni(*ps, rIni, sectionName);
             break;
         }
 
@@ -1050,12 +1078,12 @@ void CandleTool::pdsReadConfig(u16 id, const std::string& cfgPath)
     readIni["Control board"]["shutdown time"]   = floatToString(shutDownTime);
     readIni["Control board"]["battery level 1"] = floatToString(batLvl1);
     readIni["Control board"]["battery level 2"] = floatToString(batLvl2);
-    fillSubmoduleIniStruct(pds, pdsModules.moduleTypeSocket1, readIni, socketIndex_E::SOCKET_1);
-    fillSubmoduleIniStruct(pds, pdsModules.moduleTypeSocket2, readIni, socketIndex_E::SOCKET_2);
-    fillSubmoduleIniStruct(pds, pdsModules.moduleTypeSocket3, readIni, socketIndex_E::SOCKET_3);
-    fillSubmoduleIniStruct(pds, pdsModules.moduleTypeSocket4, readIni, socketIndex_E::SOCKET_4);
-    fillSubmoduleIniStruct(pds, pdsModules.moduleTypeSocket5, readIni, socketIndex_E::SOCKET_5);
-    fillSubmoduleIniStruct(pds, pdsModules.moduleTypeSocket6, readIni, socketIndex_E::SOCKET_6);
+    fullModuleIni(pds, pdsModules.moduleTypeSocket1, readIni, socketIndex_E::SOCKET_1);
+    fullModuleIni(pds, pdsModules.moduleTypeSocket2, readIni, socketIndex_E::SOCKET_2);
+    fullModuleIni(pds, pdsModules.moduleTypeSocket3, readIni, socketIndex_E::SOCKET_3);
+    fullModuleIni(pds, pdsModules.moduleTypeSocket4, readIni, socketIndex_E::SOCKET_4);
+    fullModuleIni(pds, pdsModules.moduleTypeSocket5, readIni, socketIndex_E::SOCKET_5);
+    fullModuleIni(pds, pdsModules.moduleTypeSocket6, readIni, socketIndex_E::SOCKET_6);
 
     mINI::INIFile configFile(configName);
     configFile.write(readIni);

@@ -1,4 +1,3 @@
-
 #include "pds_cli.hpp"
 
 PdsCli::PdsCli(CLI::App& rootCli, CandleTool& candletool)
