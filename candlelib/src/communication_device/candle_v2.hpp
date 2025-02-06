@@ -21,9 +21,9 @@ namespace mab
             NONE                       = 0,
             PING_START                 = 1,
             CANDLE_CONFIG_BAUDRATE     = 2,
-            MD_ADD                     = 3,
-            MD_GENERIC_FRAME           = 4,
-            MD_CONFIG_CAN              = 5,
+            ADD_DEVICE                 = 3,
+            GENERIC_CAN_FRAME          = 4,
+            CONFIG_CAN                 = 5,
             BEGIN                      = 6,
             END                        = 7,
             UPDATE                     = 8,
@@ -31,11 +31,12 @@ namespace mab
             USB_FRAME_ENTER_BOOTLOADER = 10,
         };
 
+        static constexpr u32 CANDLE_VID = 0x69;
+        static constexpr u32 CANDLE_PID = 0x1000;
+
       private:
         static constexpr u32 DEFAULT_CONFIGURATION_TIMEOUT = 10;
         static constexpr u32 DEFAULT_CAN_TIMEOUT           = 50;
-
-        const std::array<u8, 2> CAN_FRAME_CANDLE_COMMAND = {MD_GENERIC_FRAME, 0x0};
 
         CANdleBaudrate_E          m_canBaudrate = CANdleBaudrate_E::CAN_BAUD_1M;
         Logger                    m_log         = Logger(Logger::ProgramLayer_E::TOP, "CANDLE");
@@ -47,20 +48,49 @@ namespace mab
         Error_t reinit();
 
         // TODO: this method is temporary until bus rework
-        Error_t legacyBusTransfer(std::shared_ptr<std::vector<u8>> datas);
+        Error_t legacyBusTransfer(std::shared_ptr<std::vector<u8>> data, size_t responseLength = 0);
+
+        Error_t legacyBusTransfer(const std::vector<u8>&& data);
 
         // TODO: this method is temporary and must be changed, must have some way for bus to check
         // functional connection
         Error_t legacyCheckConnection();
 
+        static constexpr std::array<u8, 2> pingCommandFrame()
+        {
+            return std::array<u8, 2>({PING_START, 0x0});
+        }
+
+        static constexpr std::array<u8, 2> resetCommandFrame()
+        {
+            return std::array<u8, 2>({RESET, 0x0});
+        }
+
+        static inline std::vector<u8> baudrateCommandFrame(const CANdleBaudrate_E baudrate)
+        {
+            return std::vector<u8>({CANDLE_CONFIG_BAUDRATE, baudrate});
+        }
+
+        static inline std::vector<u8> addCanDevice(const u16&& id)
+        {
+            return std::vector<u8>({ADD_DEVICE, (u8)id, (u8)(id >> 8)});
+        }
+
+        static inline std::vector<u8> sendCanFrameHeader(const u8&& length)
+        {
+            return std::vector<u8>(
+                {GENERIC_CAN_FRAME, u8(length - 2 /*id + DLC*/), DEFAULT_CAN_TIMEOUT});
+        }
+
       public:
         CandleV2() = delete;
         explicit CandleV2(const CANdleBaudrate_E canBaudrate, std::unique_ptr<mab::Bus>&& bus);
 
-        const std::pair<std::vector<u8>, Error_t> transferData(
-            const std::vector<u8> dataToSend) override;
+        const std::pair<std::vector<u8>, Error_t> transferCANFrame(
+            const std::vector<u8> dataToSend, const size_t responseSize = 0) override;
     };
 
+    // TODO: make baudrate as template so it can be constexpred in helper methods
     inline std::shared_ptr<mab::CandleV2> attachCandle(const CANdleBaudrate_E      baudrate,
                                                        std::unique_ptr<mab::Bus>&& bus)
     {

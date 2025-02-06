@@ -415,7 +415,8 @@ namespace mab
         return executeCommand(canId,
                               Md80Reg_E::runSaveCmd,
                               "Saving in flash failed at ID: ",
-                              "Saving in flash successful at ID: ", false);
+                              "Saving in flash successful at ID: ",
+                              false);
     }
 
     bool Candle::configMd80Blink(uint16_t canId)
@@ -429,7 +430,8 @@ namespace mab
         return executeCommand(canId,
                               Md80Reg_E::runZero,
                               "Setting new zero position failed at ID: ",
-                              "Setting new zero position successful at ID: ", false);
+                              "Setting new zero position successful at ID: ",
+                              false);
     }
 
     bool Candle::configMd80SetCurrentLimit(uint16_t canId, float currentLimit)
@@ -626,7 +628,8 @@ namespace mab
         return executeCommand(canId,
                               Md80Reg_E::runCalibrateCmd,
                               "Starting calibration failed at ID: ",
-                              "Starting calibration at ID: ", true);
+                              "Starting calibration at ID: ",
+                              true);
     }
 
     bool Candle::setupMd80CalibrationOutput(uint16_t canId)
@@ -634,7 +637,8 @@ namespace mab
         return executeCommand(canId,
                               Md80Reg_E::runCalibrateOutpuEncoderCmd,
                               "Starting output encoder calibration failed at ID: ",
-                              "Starting output encoder calibration at ID: ", true);
+                              "Starting output encoder calibration at ID: ",
+                              true);
     }
 
     bool Candle::setupMd80TestOutputEncoder(uint16_t canId)
@@ -642,7 +646,8 @@ namespace mab
         return executeCommand(canId,
                               Md80Reg_E::runTestOutputEncoderCmd,
                               "Output encoder test failed at ID: ",
-                              "Output encoder test in progress at ID: ", true);
+                              "Output encoder test in progress at ID: ",
+                              true);
     }
 
     bool Candle::setupMd80TestMainEncoder(uint16_t canId)
@@ -650,7 +655,8 @@ namespace mab
         return executeCommand(canId,
                               Md80Reg_E::runTestMainEncoderCmd,
                               "Main encoder test failed at ID: ",
-                              "Main encoder test in progress at ID: ", true);
+                              "Main encoder test in progress at ID: ",
+                              true);
     }
 
     bool Candle::setupMd80PerformHoming(uint16_t canId)
@@ -658,7 +664,8 @@ namespace mab
         return executeCommand(canId,
                               Md80Reg_E::runHoming,
                               "Homing test failed at ID: ",
-                              "Homing test in progress at ID: ", true);
+                              "Homing test in progress at ID: ",
+                              true);
     }
 
     bool Candle::setupMd80PerformReset(uint16_t canId)

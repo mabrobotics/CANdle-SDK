@@ -26,7 +26,7 @@ namespace mab
             UNKNOWN_ERROR
         };
 
-        virtual const std::pair<std::vector<u8>, Error_t> transferData(
-            const std::vector<u8> dataToSend) = 0;
+        virtual const std::pair<std::vector<u8>, Error_t> transferCANFrame(
+            const std::vector<u8> dataToSend, const size_t responseSize = 0) = 0;
     };
 }  // namespace mab

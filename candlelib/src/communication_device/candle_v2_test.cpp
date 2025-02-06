@@ -73,7 +73,7 @@ TEST_F(CandleV2Test, failAfterInit)
         .WillOnce(Return(false));
     auto            candle   = mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus));
     std::vector<u8> mockData = {mab::CandleV2::CandleCommands_t::PING_START, 0x0};
-    auto            result   = candle->transferData(mockData);
+    auto            result   = candle->transferCANFrame(mockData);
     ASSERT_NE(result.second, mab::I_CommunicationDevice::Error_t::OK);
 }
 
@@ -85,7 +85,7 @@ TEST_F(CandleV2Test, successAfterInit)
         .WillOnce(Return(true));
     auto            candle   = mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus));
     std::vector<u8> mockData = {mab::CandleV2::CandleCommands_t::PING_START, 0x0};
-    auto            result   = candle->transferData(mockData);
+    auto            result   = candle->transferCANFrame(mockData);
     ASSERT_EQ(result.second, mab::I_CommunicationDevice::Error_t::OK);
 }
 
@@ -93,16 +93,44 @@ TEST_F(CandleV2Test, transferCanData)
 {
     exampleFrame_t canFrame = exampleFrame_t();
 
+    size_t candleCanFrameHeaderSize =
+        3;  // size of the header to let candle know to pass the rest of the frame
+
     std::vector<u8> canFrameBuffer;
     canFrameBuffer.reserve(sizeof(canFrameBuffer));
     canFrameBuffer.insert(
         canFrameBuffer.end(), (u8*)(&canFrame), (u8*)(&canFrame) + sizeof(canFrame));
 
     EXPECT_CALL(*mockBus, transmit(_, 2, true, _, _, _)).Times(1).WillOnce(Return(true));
-    EXPECT_CALL(*mockBus, transmit(_, sizeof(canFrame) + 2, true, _, _, _))
+    EXPECT_CALL(*mockBus, transmit(_, sizeof(canFrame) + candleCanFrameHeaderSize, true, _, _, _))
         .Times(1)
         .WillOnce(Return(true));
     auto candle = mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus));
 
-    candle->transferData(canFrameBuffer);
+    candle->transferCANFrame(canFrameBuffer);
+}
+
+TEST_F(CandleV2Test, deinitializeOnFail)
+{
+    exampleFrame_t canFrame = exampleFrame_t();
+
+    size_t candleCanFrameHeaderSize =
+        3;  // size of the header to let candle know to pass the rest of the frame
+
+    std::vector<u8> canFrameBuffer;
+    canFrameBuffer.reserve(sizeof(canFrameBuffer));
+    canFrameBuffer.insert(
+        canFrameBuffer.end(), (u8*)(&canFrame), (u8*)(&canFrame) + sizeof(canFrame));
+
+    EXPECT_CALL(*mockBus, transmit(_, 2, true, _, _, _)).Times(2).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mockBus, transmit(_, sizeof(canFrame) + candleCanFrameHeaderSize, true, _, _, _))
+        .Times(2)
+        .WillOnce(Return(false))
+        .WillRepeatedly(Return(true));
+    auto candle = mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus));
+
+    auto result = candle->transferCANFrame(canFrameBuffer);
+    ASSERT_NE(result.second, mab::I_CommunicationDevice::OK);
+    result = candle->transferCANFrame(canFrameBuffer);
+    ASSERT_EQ(result.second, mab::I_CommunicationDevice::OK);
 }
