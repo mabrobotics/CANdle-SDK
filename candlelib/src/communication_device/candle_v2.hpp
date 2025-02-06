@@ -16,6 +16,7 @@ namespace mab
     class CandleV2 : I_CommunicationDevice
     {
       public:
+        /// @brief Command IDs to control Candle device behavior
         enum CandleCommands_t : u8
         {
             NONE                       = 0,
@@ -34,9 +35,24 @@ namespace mab
         static constexpr u32 CANDLE_VID = 0x69;
         static constexpr u32 CANDLE_PID = 0x1000;
 
+        CandleV2() = delete;
+
+        /// @brief Create an instance of candle
+        /// @param canBaudrate Candle datarate to communicate via the CAN-FD
+        /// @param bus Interface to communicate with the Candle
+        explicit CandleV2(const CANdleBaudrate_E canBaudrate, std::unique_ptr<mab::Bus>&& bus);
+
+        /// @brief Exchange frames on the CAN-FD bus
+        /// @param dataToSend Data to be sent to can bus
+        /// @param responseSize Length of the expected response CAN frame
+        /// @return Pair of response frame and Candle device errors. If error is not OK the data is
+        /// undefined.
+        const std::pair<std::vector<u8>, Error_t> transferCANFrame(
+            const std::vector<u8> dataToSend, const size_t responseSize = 0) override;
+
       private:
         static constexpr u32 DEFAULT_CONFIGURATION_TIMEOUT = 10;
-        static constexpr u32 DEFAULT_CAN_TIMEOUT           = 50;
+        static constexpr u32 DEFAULT_CAN_TIMEOUT           = 5;
 
         CANdleBaudrate_E          m_canBaudrate = CANdleBaudrate_E::CAN_BAUD_1M;
         Logger                    m_log         = Logger(Logger::ProgramLayer_E::TOP, "CANDLE");
@@ -81,13 +97,6 @@ namespace mab
             return std::vector<u8>(
                 {GENERIC_CAN_FRAME, u8(length - 2 /*id + DLC*/), DEFAULT_CAN_TIMEOUT});
         }
-
-      public:
-        CandleV2() = delete;
-        explicit CandleV2(const CANdleBaudrate_E canBaudrate, std::unique_ptr<mab::Bus>&& bus);
-
-        const std::pair<std::vector<u8>, Error_t> transferCANFrame(
-            const std::vector<u8> dataToSend, const size_t responseSize = 0) override;
     };
 
     // TODO: make baudrate as template so it can be constexpred in helper methods

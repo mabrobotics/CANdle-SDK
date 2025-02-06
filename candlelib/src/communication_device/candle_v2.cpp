@@ -56,11 +56,6 @@ namespace mab
             m_log.error("Data empty!");
             return CandleV2::Error_t::DATA_EMPTY;
         }
-        if (data->size() > 63)
-        {
-            m_log.error("Data too long!");
-            return CandleV2::Error_t::DATA_TOO_LONG;
-        }
 
         // temporary buffer operations
 
@@ -104,6 +99,12 @@ namespace mab
 
         if (communicationStatus != Error_t::OK)
             return std::pair<std::vector<u8>, Error_t>(dataToSend, communicationStatus);
+
+        if (dataToSend.size() > 64)
+        {
+            m_log.error("CAN frame too long!");
+            return std::pair<std::vector<u8>, Error_t>(dataToSend, Error_t::DATA_TOO_LONG);
+        }
 
         auto buffer = std::make_shared<std::vector<u8>>(dataToSend);
 

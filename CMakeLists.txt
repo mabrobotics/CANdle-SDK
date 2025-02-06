@@ -56,5 +56,5 @@ if(PYTHON_BUILD)
     add_subdirectory(pycandle)
 endif()
 add_subdirectory(candletool)
-# add_subdirectory(examples) TODO: disabled for API change
+add_subdirectory(examples) 
 
