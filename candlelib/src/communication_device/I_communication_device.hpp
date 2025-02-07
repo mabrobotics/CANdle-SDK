@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vector>
 #include <array>
 #include <bit>
 #include <type_traits>
@@ -27,6 +26,6 @@ namespace mab
         };
 
         virtual const std::pair<std::vector<u8>, Error_t> transferCANFrame(
-            const std::vector<u8> dataToSend, const size_t responseSize = 0) = 0;
+            const std::vector<u8> dataToSend, const size_t responseSize) = 0;
     };
 }  // namespace mab

@@ -48,7 +48,7 @@ namespace mab
         /// @return Pair of response frame and Candle device errors. If error is not OK the data is
         /// undefined.
         const std::pair<std::vector<u8>, Error_t> transferCANFrame(
-            const std::vector<u8> dataToSend, const size_t responseSize = 0) override;
+            const std::vector<u8> dataToSend, const size_t responseSize) override;
 
       private:
         static constexpr u32 DEFAULT_CONFIGURATION_TIMEOUT = 10;

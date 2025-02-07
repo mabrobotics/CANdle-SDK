@@ -44,6 +44,8 @@ target_sources(candle PRIVATE
   src/crc.cpp
   src/md80.cpp
   src/communication_device/candle_v2.cpp
+  src/communication_interface/SPI_v2.cpp
+  src/communication_interface/USB_v2.cpp
   src/pds/pds.cpp
   src/pds/pds_module.cpp
   src/pds/pds_protocol.cpp
@@ -61,7 +63,9 @@ target_include_directories(candle PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/include
   ${CMAKE_CURRENT_SOURCE_DIR}/src/pds
   ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_device
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_interface
   ${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger
+  ${LIBUSB_INCLUDE_DIR}
   )
 target_include_directories(candle SYSTEM PRIVATE ${LIBUSB_INCLUDE_DIR})
 if(UNIX)
@@ -107,3 +111,20 @@ target_include_directories(candle_v2_test PRIVATE
   src/communication_device
 )
 target_link_libraries(candle_v2_test PRIVATE logger shared_data candle)
+
+
+add_unit_test_executable(usb_v2_test src/communication_interface/SPI_v2_test.cpp)
+target_sources(usb_v2_test PRIVATE src/communication_interface/USB_v2.cpp)
+target_include_directories(usb_v2_test PRIVATE
+  include
+  src/communication_interface/
+)
+target_link_libraries(usb_v2_test PRIVATE logger shared_data candle)
+
+add_unit_test_executable(spi_v2_test src/communication_interface/SPI_v2_test.cpp)
+target_sources(spi_v2_test PRIVATE PRIVATE src/communication_interface/SPI_v2.cpp)
+target_include_directories(spi_v2_test PRIVATE
+  include
+  src/communication_interface/
+)
+target_link_libraries(spi_v2_test PRIVATE logger shared_data candle)
