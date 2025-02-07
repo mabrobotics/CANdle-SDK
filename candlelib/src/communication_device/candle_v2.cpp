@@ -33,16 +33,6 @@ namespace mab
         return initStatus;
     }
 
-    CandleV2::Error_t CandleV2::reinit()
-    {
-        m_log.warn("Reinitialization for candle triggered");
-        auto resetFrame = resetCommandFrame();
-        legacyBusTransfer(std::vector<u8>(resetFrame.begin(), resetFrame.end()));
-        sleep(0.5);
-        m_isInitialized = false;
-        return init();
-    }
-
     CandleV2::Error_t CandleV2::legacyBusTransfer(std::shared_ptr<std::vector<u8>> data,
                                                   size_t                           responseLength)
     {

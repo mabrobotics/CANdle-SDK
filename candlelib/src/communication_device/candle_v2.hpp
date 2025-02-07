@@ -61,7 +61,6 @@ namespace mab
         bool m_isInitialized = false;
 
         Error_t init();
-        Error_t reinit();
 
         // TODO: this method is temporary until bus rework
         Error_t legacyBusTransfer(std::shared_ptr<std::vector<u8>> data, size_t responseLength = 0);
@@ -103,6 +102,8 @@ namespace mab
     inline std::shared_ptr<mab::CandleV2> attachCandle(const CANdleBaudrate_E      baudrate,
                                                        std::unique_ptr<mab::Bus>&& bus)
     {
+        if (bus == nullptr)
+            throw std::runtime_error("Could not create CANdle from an undefined bus!");
         return std::make_shared<mab::CandleV2>(baudrate, std::move(bus));
     }
 }  // namespace mab
