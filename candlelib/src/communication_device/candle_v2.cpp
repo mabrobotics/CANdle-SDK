@@ -7,18 +7,10 @@ namespace mab
     CandleV2::CandleV2(const CANdleBaudrate_E canBaudrate, std::unique_ptr<mab::Bus>&& bus)
         : m_canBaudrate(canBaudrate), m_bus(std::move(bus))
     {
-        if (init() != CandleV2::Error_t::OK)
-        {
-            m_log.error("Could not connect to candle!");
-            throw std::runtime_error("Could not connect to candle!");
-        }
     }
 
     CandleV2::Error_t CandleV2::init()
     {
-        if (m_isInitialized)
-            return CandleV2::Error_t::OK;
-
         Error_t initStatus = legacyCheckConnection();
         if (initStatus == OK)
         {
@@ -26,7 +18,7 @@ namespace mab
         }
         else
         {
-            m_log.error("Failed to initialize communication with Candle device of id: %d",
+            m_log.error("Failed to initialize communication with CANdle device of id: %d",
                         m_bus->getId());
             m_isInitialized = false;
         }
@@ -57,7 +49,7 @@ namespace mab
                 responseLength > 0 ? true : false,
                 CandleV2::DEFAULT_CONFIGURATION_TIMEOUT,
                 (responseLength < 66 ? 66 : responseLength
-                 /*TODO: if len is less than 66 USB does not respond, find out why and fix it*/)))
+                 /*if len is less than 66 USB does not respond, this due to libusb using faster comms when data > 66 TODO: implement assert for that in bus*/)))
         {
             if (responseLength > 0)
             {
@@ -85,8 +77,7 @@ namespace mab
     {
         Error_t communicationStatus = Error_t::OK;
         if (!m_isInitialized)
-            communicationStatus = init();
-
+            return std::pair<std::vector<u8>, Error_t>(dataToSend, Error_t::UNINITIALIZED);
         if (communicationStatus != Error_t::OK)
             return std::pair<std::vector<u8>, Error_t>(dataToSend, communicationStatus);
 

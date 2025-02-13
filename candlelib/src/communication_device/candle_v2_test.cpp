@@ -70,7 +70,7 @@ TEST_F(CandleV2Test, failAfterInit)
     EXPECT_CALL(*mockBus, transmit(_, _, false, _, _, _)).Times(1).WillOnce(Return(true));
     EXPECT_CALL(*mockBus, transmit(_, _, true, _, _, _)).Times(1).WillOnce(Return(false));
     auto            candle   = mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus));
-    std::vector<u8> mockData = {mab::CandleV2::CandleCommands_t::PING_START, 0x0};
+    std::vector<u8> mockData = {mab::CandleV2::CandleCommands_t::RESET, 0x0};
     auto            result   = candle->transferCANFrame(mockData);
     ASSERT_NE(result.second, mab::I_CommunicationDevice::Error_t::OK);
 }
@@ -80,7 +80,7 @@ TEST_F(CandleV2Test, successAfterInit)
     EXPECT_CALL(*mockBus, transmit(_, _, false, _, _, _)).Times(1).WillOnce(Return(true));
     EXPECT_CALL(*mockBus, transmit(_, _, true, _, _, _)).Times(1).WillOnce(Return(true));
     auto            candle   = mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus));
-    std::vector<u8> mockData = {mab::CandleV2::CandleCommands_t::PING_START, 0x0};
+    std::vector<u8> mockData = {mab::CandleV2::CandleCommands_t::RESET, 0x0};
     auto            result   = candle->transferCANFrame(mockData);
     ASSERT_EQ(result.second, mab::I_CommunicationDevice::Error_t::OK);
 }
@@ -127,6 +127,7 @@ TEST_F(CandleV2Test, deinitializeOnFail)
 
     auto result = candle->transferCANFrame(canFrameBuffer);
     ASSERT_NE(result.second, mab::I_CommunicationDevice::OK);
+    candle->init();
     result = candle->transferCANFrame(canFrameBuffer);
     ASSERT_EQ(result.second, mab::I_CommunicationDevice::OK);
 }

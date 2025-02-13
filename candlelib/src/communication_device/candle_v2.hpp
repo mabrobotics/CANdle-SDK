@@ -20,14 +20,8 @@ namespace mab
         enum CandleCommands_t : u8
         {
             NONE                       = 0,
-            PING_START                 = 1,
             CANDLE_CONFIG_BAUDRATE     = 2,
-            ADD_DEVICE                 = 3,
             GENERIC_CAN_FRAME          = 4,
-            CONFIG_CAN                 = 5,
-            BEGIN                      = 6,
-            END                        = 7,
-            UPDATE                     = 8,
             RESET                      = 9,
             USB_FRAME_ENTER_BOOTLOADER = 10,
         };
@@ -50,6 +44,8 @@ namespace mab
         const std::pair<std::vector<u8>, Error_t> transferCANFrame(
             const std::vector<u8> dataToSend, const size_t responseSize = 0) override;
 
+        Error_t init() override;
+
       private:
         static constexpr u32 DEFAULT_CONFIGURATION_TIMEOUT = 10;
         static constexpr u32 DEFAULT_CAN_TIMEOUT           = 5;
@@ -60,8 +56,6 @@ namespace mab
 
         bool m_isInitialized = false;
 
-        Error_t init();
-
         // TODO: this method is temporary until bus rework
         Error_t legacyBusTransfer(std::shared_ptr<std::vector<u8>> data, size_t responseLength = 0);
 
@@ -71,11 +65,6 @@ namespace mab
         // functional connection
         Error_t legacyCheckConnection();
 
-        static constexpr std::array<u8, 2> pingCommandFrame()
-        {
-            return std::array<u8, 2>({PING_START, 0x0});
-        }
-
         static constexpr std::array<u8, 2> resetCommandFrame()
         {
             return std::array<u8, 2>({RESET, 0x0});
@@ -84,11 +73,6 @@ namespace mab
         static inline std::vector<u8> baudrateCommandFrame(const CANdleBaudrate_E baudrate)
         {
             return std::vector<u8>({CANDLE_CONFIG_BAUDRATE, baudrate});
-        }
-
-        static inline std::vector<u8> addCanDevice(const u16&& id)
-        {
-            return std::vector<u8>({ADD_DEVICE, (u8)id, (u8)(id >> 8)});
         }
 
         static inline std::vector<u8> sendCanFrameHeader(const u8&& length)
@@ -104,6 +88,12 @@ namespace mab
     {
         if (bus == nullptr)
             throw std::runtime_error("Could not create CANdle from an undefined bus!");
-        return std::make_shared<mab::CandleV2>(baudrate, std::move(bus));
+
+        auto candle = std::make_shared<mab::CandleV2>(baudrate, std::move(bus));
+        if (candle->init() != I_CommunicationDevice::Error_t::OK)
+        {
+            throw std::runtime_error("Could not initialize CANdle device!");
+        }
+        return candle;
     }
 }  // namespace mab
