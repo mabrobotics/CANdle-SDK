@@ -2,59 +2,39 @@
 
 #include <string>
 #include <exception>
+#include <vector>
+#include <utility>
 
 #include <mab_types.hpp>
 #include <logger.hpp>
 #include <I_communication_interface.hpp>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+// /usr/include/libusb-1.0/libusb.h:52:33: error: ISO C++ forbids zero-size array
+// ‘dev_capability_data’ [-Werror=pedantic]
+//   52 | #define ZERO_SIZED_ARRAY        0       /* [0] - non-standard, but usually working code */
 #include <libusb.h>
+#pragma GCC diagnostic pop
 
 namespace mab
 {
     class LibusbDevice
     {
-        libusb_device*           m_dev;
-        libusb_device_handle**   m_devHandle;
-        libusb_device_descriptor m_desc;
-        Logger                   m_Log = Logger(Logger::ProgramLayer_E::BOTTOM, "LIBUSB");
+        libusb_device*            m_dev;
+        libusb_device_handle**    m_devHandle;
+        libusb_device_descriptor  m_desc;
+        Logger                    m_log = Logger(Logger::ProgramLayer_E::BOTTOM, "USB_DEV");
+        libusb_config_descriptor* m_config;
+
+        s32 m_inEndpointAddress, m_outEndpointAddress;
 
       public:
-        LibusbDevice(libusb_device* device) : m_dev(device)
-        {
-            if (device == nullptr)
-            {
-                std::string message = "Empty libusb device provided to handler!";
-                m_Log.error(message.c_str());
-                throw std::runtime_error(message);
-            }
-            if (libusb_get_device_descriptor(m_dev, &m_desc))
-            {
-                m_Log.error("Error while getting USB descriptor from the device!");
-            }
-            libusb_error usbOpenError = libusb_open(m_dev, m_devHandle);
-            if (usbOpenError)
-            {
-                std::string message;
-                switch (usbOpenError)
-                {
-                    case LIBUSB_ERROR_NO_MEM:
-                        message = "Could not allocate memory to USB device!";
-                        m_Log.error(message.c_str());
-                        break;
-
-                    case LIBUSB_ERROR_ACCESS:
-                        message = "Invalid permissions to access the USB device!";
-                        m_Log.error(message.c_str());
-                        break;
-
-                    case LIBUSB_ERROR_NO_DEVICE:
-                        message = "USB device not connected!";
-                        m_Log.error(message.c_str());
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
+        LibusbDevice() = delete;
+        LibusbDevice(libusb_device* device, s32 inEndpointAddress, s32 outEndpointAddress);
+        ~LibusbDevice();
+        libusb_error transmit(u8* data, size_t length, u32 timeout);
+        libusb_error receive(u8* data, size_t length, u32 timeout);
     };
 
     static constexpr int inEndpointAdr  = 0x81;  ///< CANdle USB input endpoint address.
@@ -64,10 +44,13 @@ namespace mab
       private:
         Logger m_Log = Logger(Logger::ProgramLayer_E::BOTTOM, "USB");
 
-        struct libusb_device_handle* devh = nullptr;
+        LibusbDevice m_libusbDevice;
+
+        u16         m_vid, m_pid;
+        std::string m_serialNo;
 
       public:
-        explicit USBv2(const u16 vid, const u16 pid, const std::string requestID);
+        explicit USBv2(const u16 vid, const u16 pid, const std::string serialNo = "");
         ~USBv2();
 
         Error_t connect() override;
