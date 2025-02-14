@@ -9,6 +9,7 @@
 
 #include "bus.hpp"
 #include "I_communication_device.hpp"
+#include "I_communication_interface.hpp"
 #include "mab_types.hpp"
 
 namespace mab
@@ -34,7 +35,8 @@ namespace mab
         /// @brief Create an instance of candle
         /// @param canBaudrate Candle datarate to communicate via the CAN-FD
         /// @param bus Interface to communicate with the Candle
-        explicit CandleV2(const CANdleBaudrate_E canBaudrate, std::unique_ptr<mab::Bus>&& bus);
+        explicit CandleV2(const CANdleBaudrate_E                           canBaudrate,
+                          std::unique_ptr<mab::I_CommunicationInterface>&& bus);
 
         /// @brief Exchange frames on the CAN-FD bus
         /// @param dataToSend Data to be sent to can bus
@@ -50,9 +52,9 @@ namespace mab
         static constexpr u32 DEFAULT_CONFIGURATION_TIMEOUT = 10;
         static constexpr u32 DEFAULT_CAN_TIMEOUT           = 5;
 
-        CANdleBaudrate_E          m_canBaudrate = CANdleBaudrate_E::CAN_BAUD_1M;
-        Logger                    m_log         = Logger(Logger::ProgramLayer_E::TOP, "CANDLE");
-        std::unique_ptr<mab::Bus> m_bus;
+        CANdleBaudrate_E m_canBaudrate = CANdleBaudrate_E::CAN_BAUD_1M;
+        Logger           m_log         = Logger(Logger::ProgramLayer_E::TOP, "CANDLE");
+        std::unique_ptr<mab::I_CommunicationInterface> m_bus;
 
         bool m_isInitialized = false;
 
@@ -83,8 +85,8 @@ namespace mab
     };
 
     // TODO: make baudrate as template so it can be constexpred in helper methods
-    inline std::shared_ptr<mab::CandleV2> attachCandle(const CANdleBaudrate_E      baudrate,
-                                                       std::unique_ptr<mab::Bus>&& bus)
+    inline std::shared_ptr<mab::CandleV2> attachCandle(
+        const CANdleBaudrate_E baudrate, std::unique_ptr<I_CommunicationInterface>&& bus)
     {
         if (bus == nullptr)
             throw std::runtime_error("Could not create CANdle from an undefined bus!");

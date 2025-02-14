@@ -4,13 +4,22 @@
 
 namespace mab
 {
-    CandleV2::CandleV2(const CANdleBaudrate_E canBaudrate, std::unique_ptr<mab::Bus>&& bus)
+    CandleV2::CandleV2(const CANdleBaudrate_E                           canBaudrate,
+                       std::unique_ptr<mab::I_CommunicationInterface>&& bus)
         : m_canBaudrate(canBaudrate), m_bus(std::move(bus))
     {
     }
 
     CandleV2::Error_t CandleV2::init()
     {
+        m_bus->disconnect();
+        I_CommunicationInterface::Error_t connectStatus = m_bus->connect();
+        if (connectStatus != I_CommunicationInterface::Error_t::OK)
+        {
+            m_isInitialized = false;
+            return Error_t::INITIALIZATION_ERROR;
+        }
+
         Error_t initStatus = legacyCheckConnection();
         if (initStatus == OK)
         {
@@ -19,7 +28,7 @@ namespace mab
         else
         {
             m_log.error("Failed to initialize communication with CANdle device of id: %d",
-                        m_bus->getId());
+                        0 /*TODO: placeholder for serial id*/);
             m_isInitialized = false;
         }
         return initStatus;
@@ -41,29 +50,26 @@ namespace mab
 
         // temporary buffer operations
 
-        char* rx = m_bus->getRxBuffer(0);
+        // char* rx = m_bus->getRxBuffer(0);
 
-        if (m_bus->transmit(
-                (char*)data->data(),
-                data->size(),
-                responseLength > 0 ? true : false,
-                CandleV2::DEFAULT_CONFIGURATION_TIMEOUT,
-                (responseLength < 66 ? 66 : responseLength
-                 /*if len is less than 66 USB does not respond, this due to libusb using faster comms when data > 66 TODO: implement assert for that in bus*/)))
+        if (responseLength > 0)
         {
-            if (responseLength > 0)
-            {
-                data->clear();
-                int actualResponseLen = m_bus->getBytesReceived();
-                data->reserve(actualResponseLen);
-                data->insert(data->end(), rx, rx + responseLength);
-            }
-            return CandleV2::Error_t::OK;
+            I_CommunicationInterface::Error_t comError =
+                m_bus->transfer(*data, DEFAULT_CAN_TIMEOUT);
+            if (comError)
+                return Error_t::UNKNOWN_ERROR;
         }
+        else
+        {
+            std::pair<std::vector<u8>, I_CommunicationInterface::Error_t> result =
+                m_bus->transfer(*data, DEFAULT_CAN_TIMEOUT, responseLength);
 
-        m_isInitialized = false;
-        m_log.error("Transmission failed!");
-        return CandleV2::Error_t::UNKNOWN_ERROR;
+            *data = result.first;
+
+            if (result.second)
+                return Error_t::UNKNOWN_ERROR;
+        }
+        return Error_t::OK;
     }
 
     CandleV2::Error_t CandleV2::legacyBusTransfer(const std::vector<u8>&& data)
