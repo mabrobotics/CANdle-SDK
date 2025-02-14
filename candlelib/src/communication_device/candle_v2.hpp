@@ -59,9 +59,9 @@ namespace mab
         bool m_isInitialized = false;
 
         // TODO: this method is temporary until bus rework
-        Error_t legacyBusTransfer(std::shared_ptr<std::vector<u8>> data, size_t responseLength = 0);
+        Error_t busTransfer(std::shared_ptr<std::vector<u8>> data, size_t responseLength = 0);
 
-        Error_t legacyBusTransfer(const std::vector<u8>&& data);
+        Error_t busTransfer(const std::vector<u8>&& data);
 
         // TODO: this method is temporary and must be changed, must have some way for bus to check
         // functional connection

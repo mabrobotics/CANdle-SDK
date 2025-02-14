@@ -34,8 +34,8 @@ namespace mab
         return initStatus;
     }
 
-    CandleV2::Error_t CandleV2::legacyBusTransfer(std::shared_ptr<std::vector<u8>> data,
-                                                  size_t                           responseLength)
+    CandleV2::Error_t CandleV2::busTransfer(std::shared_ptr<std::vector<u8>> data,
+                                            size_t                           responseLength)
     {
         if (data == nullptr)
         {
@@ -72,10 +72,10 @@ namespace mab
         return Error_t::OK;
     }
 
-    CandleV2::Error_t CandleV2::legacyBusTransfer(const std::vector<u8>&& data)
+    CandleV2::Error_t CandleV2::busTransfer(const std::vector<u8>&& data)
     {
         auto sharedData = std::make_shared<std::vector<u8>>(data);
-        return legacyBusTransfer(sharedData);
+        return busTransfer(sharedData);
     }
 
     const std::pair<std::vector<u8>, I_CommunicationDevice::Error_t> CandleV2::transferCANFrame(
@@ -99,7 +99,7 @@ namespace mab
 
         buffer->insert(buffer->begin(), candleCommandCANframe.begin(), candleCommandCANframe.end());
 
-        communicationStatus = legacyBusTransfer(buffer, responseSize + 3);
+        communicationStatus = busTransfer(buffer, responseSize + 3);
 
         if (buffer->size() > 3)
             buffer->erase(buffer->begin(), buffer->begin() + 2 /*response header size*/);
@@ -117,7 +117,7 @@ namespace mab
         auto testConnectionFrame = std::make_shared<std::vector<u8>>(
             std::vector<u8>(baudrateFrame.begin(), baudrateFrame.end()));
 
-        const Error_t connectionStatus = legacyBusTransfer(testConnectionFrame);
+        const Error_t connectionStatus = busTransfer(testConnectionFrame);
         if (connectionStatus != Error_t::OK)
             return connectionStatus;
         return Error_t::OK;

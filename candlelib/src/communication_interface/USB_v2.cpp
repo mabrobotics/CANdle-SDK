@@ -173,7 +173,7 @@ namespace mab
             m_Log.error("No USB devices detected!");
         else if (deviceListLen < 0)
             m_Log.error("Libusb error while detecting devices!");
-        // TODO: add multiple device handling
+
         m_Log.debug("Found %d USB devices", deviceListLen);
 
         for (s32 deviceIndex = 0; deviceIndex < deviceListLen; deviceIndex++)
