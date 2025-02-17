@@ -103,7 +103,7 @@ class CandleTool
                   T&                  value);
 
     template <typename T>
-    bool readRegisterToString(u16 id, mab::Md80Reg_E regId, std::string& str)
+    bool readRegisterToString(u16 id, mab::mdRegister_E regId, std::string& str)
     {
         T    value  = 0;
         bool status = candle->readMd80Register(id, regId, value);

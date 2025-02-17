@@ -194,19 +194,19 @@ namespace mab
         Md80::State state{};
 
         md80Register->read(drive.getId(),
-                           Md80Reg_E::mainEncoderPosition,
+                           mdRegister_E::mainEncoderPosition,
                            state.position,
-                           Md80Reg_E::mainEncoderVelocity,
+                           mdRegister_E::mainEncoderVelocity,
                            state.velocity,
-                           Md80Reg_E::motorTorque,
+                           mdRegister_E::motorTorque,
                            state.torque,
-                           Md80Reg_E::outputEncoderPosition,
+                           mdRegister_E::outputEncoderPosition,
                            state.outputEncoderPosition,
-                           Md80Reg_E::outputEncoderVelocity,
+                           mdRegister_E::outputEncoderVelocity,
                            state.outputEncoderVelocity,
-                           Md80Reg_E::motorTemperature,
+                           mdRegister_E::motorTemperature,
                            state.temperature,
-                           Md80Reg_E::quickStatus,
+                           mdRegister_E::quickStatus,
                            state.quickStatus);
 
         drive.__updateResponseData(state);
@@ -239,7 +239,7 @@ namespace mab
         {
             version_ut firmwareVersion = {{0, 0, 0, 0}};
 
-            if (!md80Register->read(canId, Md80Reg_E::firmwareVersion, firmwareVersion.i))
+            if (!md80Register->read(canId, mdRegister_E::firmwareVersion, firmwareVersion.i))
             {
                 log.error(
                     "Unable to read MD80's firmware version! Please check the ID, or update "
@@ -387,15 +387,15 @@ namespace mab
         }
 
         if (!md80Register->write(canId,
-                                 Md80Reg_E::canId,
+                                 mdRegister_E::canId,
                                  (uint32_t)newId,
-                                 Md80Reg_E::canBaudrate,
+                                 mdRegister_E::canBaudrate,
                                  newBaudrateMbps * 1000000,
-                                 Md80Reg_E::canWatchdog,
+                                 mdRegister_E::canWatchdog,
                                  newTimeout,
-                                 Md80Reg_E::canTermination,
+                                 mdRegister_E::canTermination,
                                  (uint8_t)canTermination,
-                                 Md80Reg_E::runCanReinit,
+                                 mdRegister_E::runCanReinit,
                                  true))
         {
             log.error("CAN config change failed!");
@@ -413,7 +413,7 @@ namespace mab
     bool Candle::configMd80Save(uint16_t canId)
     {
         return executeCommand(canId,
-                              Md80Reg_E::runSaveCmd,
+                              mdRegister_E::runSaveCmd,
                               "Saving in flash failed at ID: ",
                               "Saving in flash successful at ID: ", false);
     }
@@ -421,20 +421,20 @@ namespace mab
     bool Candle::configMd80Blink(uint16_t canId)
     {
         return executeCommand(
-            canId, Md80Reg_E::runBlink, "Blinking failed at ID: ", "LEDs blining at ID:", false);
+            canId, mdRegister_E::runBlink, "Blinking failed at ID: ", "LEDs blining at ID:", false);
     }
 
     bool Candle::controlMd80SetEncoderZero(uint16_t canId)
     {
         return executeCommand(canId,
-                              Md80Reg_E::runZero,
+                              mdRegister_E::runZero,
                               "Setting new zero position failed at ID: ",
                               "Setting new zero position successful at ID: ", false);
     }
 
     bool Candle::configMd80SetCurrentLimit(uint16_t canId, float currentLimit)
     {
-        if (inUpdateMode() || !md80Register->write(canId, Md80Reg_E::motorIMax, currentLimit))
+        if (inUpdateMode() || !md80Register->write(canId, mdRegister_E::motorMaxCurrent, currentLimit))
         {
             log.error("Setting new current limit failed (ID: %d)", canId);
             return false;
@@ -473,9 +473,9 @@ namespace mab
     bool Candle::configMd80TorqueBandwidth(uint16_t canId, uint16_t torqueBandwidth)
     {
         if (inUpdateMode() || !md80Register->write(canId,
-                                                   Md80Reg_E::motorTorgueBandwidth,
+                                                   mdRegister_E::motorTorqueBandwidth,
                                                    torqueBandwidth,
-                                                   Md80Reg_E::runCalibratePiGains,
+                                                   mdRegister_E::runCalibratePiGains,
                                                    true))
         {
             log.error("Bandwidth change failed (ID: %d)", canId);
@@ -509,7 +509,7 @@ namespace mab
         Md80& drive = getMd80FromList(canId);
 
         if (inUpdateMode() ||
-            !md80Register->write(canId, Md80Reg_E::motionModeCommand, static_cast<uint8_t>(mode)))
+            !md80Register->write(canId, mdRegister_E::motionModeCommand, static_cast<uint8_t>(mode)))
         {
             log.error("Setting control mode failed (ID: %d)", canId);
             return false;
@@ -521,7 +521,7 @@ namespace mab
     bool Candle::controlMd80Enable(uint16_t canId, bool enable)
     {
         uint16_t controlword = enable ? 39 : 64;
-        if (inUpdateMode() || !md80Register->write(canId, Md80Reg_E::state, controlword))
+        if (inUpdateMode() || !md80Register->write(canId, mdRegister_E::state, controlword))
         {
             log.error("%s failed (ID: %d)", (enable ? "Enabling" : "Disabling"), canId);
             return false;
@@ -530,7 +530,7 @@ namespace mab
         if (enable)
         {
             mab::Md80Mode_E mode{mab::Md80Mode_E::POSITION_PID};
-            if (!md80Register->read(canId, Md80Reg_E::motionModeStatus, mode))
+            if (!md80Register->read(canId, mdRegister_E::motionModeStatus, mode))
                 throw std::runtime_error("Could not read motion mode from the driver");
             if (mode == mab::Md80Mode_E::IDLE)
             {
@@ -624,7 +624,7 @@ namespace mab
     bool Candle::setupMd80Calibration(uint16_t canId)
     {
         return executeCommand(canId,
-                              Md80Reg_E::runCalibrateCmd,
+                              mdRegister_E::runCalibrateCmd,
                               "Starting calibration failed at ID: ",
                               "Starting calibration at ID: ", true);
     }
@@ -632,7 +632,7 @@ namespace mab
     bool Candle::setupMd80CalibrationOutput(uint16_t canId)
     {
         return executeCommand(canId,
-                              Md80Reg_E::runCalibrateOutpuEncoderCmd,
+                              mdRegister_E::runCalibrateAuxEncoderCmd,
                               "Starting output encoder calibration failed at ID: ",
                               "Starting output encoder calibration at ID: ", true);
     }
@@ -640,7 +640,7 @@ namespace mab
     bool Candle::setupMd80TestOutputEncoder(uint16_t canId)
     {
         return executeCommand(canId,
-                              Md80Reg_E::runTestOutputEncoderCmd,
+                              mdRegister_E::runtestAuxEncoderCmd,
                               "Output encoder test failed at ID: ",
                               "Output encoder test in progress at ID: ", true);
     }
@@ -648,7 +648,7 @@ namespace mab
     bool Candle::setupMd80TestMainEncoder(uint16_t canId)
     {
         return executeCommand(canId,
-                              Md80Reg_E::runTestMainEncoderCmd,
+                              mdRegister_E::runTestMainEncoderCmd,
                               "Main encoder test failed at ID: ",
                               "Main encoder test in progress at ID: ", true);
     }
@@ -656,7 +656,7 @@ namespace mab
     bool Candle::setupMd80PerformHoming(uint16_t canId)
     {
         return executeCommand(canId,
-                              Md80Reg_E::runHoming,
+                              mdRegister_E::runHoming,
                               "Homing test failed at ID: ",
                               "Homing test in progress at ID: ", true);
     }
@@ -664,17 +664,17 @@ namespace mab
     bool Candle::setupMd80PerformReset(uint16_t canId)
     {
         return executeCommand(
-            canId, Md80Reg_E::runReset, "Reset failed at ID: ", "Reset in progress at ID: ", false);
+            canId, mdRegister_E::runReset, "Reset failed at ID: ", "Reset in progress at ID: ", false);
     }
 
     bool Candle::setupMd80ClearErrors(uint16_t canId)
     {
-        return !inUpdateMode() && md80Register->write(canId, Md80Reg_E::runClearErrors, true);
+        return !inUpdateMode() && md80Register->write(canId, mdRegister_E::runClearErrors, true);
     }
 
     bool Candle::setupMd80ClearWarnings(uint16_t canId)
     {
-        return !inUpdateMode() && md80Register->write(canId, Md80Reg_E::runClearWarnings, true);
+        return !inUpdateMode() && md80Register->write(canId, mdRegister_E::runClearWarnings, true);
     }
 
     bool Candle::setupMd80DiagnosticExtended(uint16_t canId)
@@ -682,17 +682,17 @@ namespace mab
         regRead_st& regR = getMd80FromList(canId).getReadReg();
 
         if (inUpdateMode() || !md80Register->read(canId,
-                                                  Md80Reg_E::motorName,
+                                                  mdRegister_E::motorName,
                                                   regR.RW.motorName,
-                                                  Md80Reg_E::buildDate,
+                                                  mdRegister_E::buildDate,
                                                   regR.RO.buildDate,
-                                                  Md80Reg_E::commitHash,
+                                                  mdRegister_E::commitHash,
                                                   regR.RO.commitHash,
-                                                  Md80Reg_E::firmwareVersion,
+                                                  mdRegister_E::firmwareVersion,
                                                   regR.RO.firmwareVersion,
-                                                  Md80Reg_E::motorResistance,
+                                                  mdRegister_E::motorResistance,
                                                   regR.RO.resistance,
-                                                  Md80Reg_E::motorInductance,
+                                                  mdRegister_E::motorInductance,
                                                   regR.RO.inductance))
         {
             log.error("Extended diagnostic failed (ID: %d)", canId);
@@ -700,31 +700,31 @@ namespace mab
         }
 
         if (!md80Register->read(canId,
-                                Md80Reg_E::motorIMax,
+                                mdRegister_E::motorMaxCurrent,
                                 regR.RW.iMax,
-                                Md80Reg_E::motorPolePairs,
+                                mdRegister_E::motorPolePairs,
                                 regR.RW.polePairs,
-                                Md80Reg_E::motorKt,
+                                mdRegister_E::motorKt,
                                 regR.RW.motorKt,
-                                Md80Reg_E::motorGearRatio,
+                                mdRegister_E::motorGearRatio,
                                 regR.RW.gearRatio,
-                                Md80Reg_E::bridgeType,
+                                mdRegister_E::bridgeType,
                                 regR.RO.bridgeType,
-                                Md80Reg_E::canWatchdog,
+                                mdRegister_E::canWatchdog,
                                 regR.RW.canWatchdog,
-                                Md80Reg_E::motorTorgueBandwidth,
+                                mdRegister_E::motorTorqueBandwidth,
                                 regR.RW.torqueBandwidth,
-                                Md80Reg_E::canBaudrate,
+                                mdRegister_E::canBaudrate,
                                 regR.RW.canBaudrate,
-                                Md80Reg_E::quickStatus,
+                                mdRegister_E::quickStatus,
                                 regR.RO.quickStatus,
-                                Md80Reg_E::mosfetTemperature,
+                                mdRegister_E::mosfetTemperature,
                                 regR.RO.mosfetTemperature,
-                                Md80Reg_E::motorKV,
+                                mdRegister_E::motorKV,
                                 regR.RW.motorKV,
-                                Md80Reg_E::legacyHardwareVersion,
+                                mdRegister_E::legacyHardwareVersion,
                                 regR.RO.legacyHardwareVersion,
-                                Md80Reg_E::hardwareType,
+                                mdRegister_E::hardwareType,
                                 regR.RO.hardwareType))
         {
             log.error("Extended diagnostic failed (ID: %d)", canId);
@@ -732,25 +732,25 @@ namespace mab
         }
 
         if (!md80Register->read(canId,
-                                Md80Reg_E::motorStiction,
+                                mdRegister_E::motorStriction,
                                 regR.RW.stiction,
-                                Md80Reg_E::motorFriction,
+                                mdRegister_E::motorFriction,
                                 regR.RW.friction,
-                                Md80Reg_E::outputEncoder,
+                                mdRegister_E::outputEncoder,
                                 regR.RW.outputEncoder,
-                                Md80Reg_E::outputEncoderDir,
+                                mdRegister_E::outputEncoderDir,
                                 regR.RW.outputEncoderDir,
-                                Md80Reg_E::outputEncoderDefaultBaud,
+                                mdRegister_E::outputEncoderDefaultBaud,
                                 regR.RW.outputEncoderDefaultBaud,
-                                Md80Reg_E::motorTemperature,
+                                mdRegister_E::motorTemperature,
                                 regR.RO.motorTemperature,
-                                Md80Reg_E::motorShutdownTemp,
+                                mdRegister_E::motorShutdownTemp,
                                 regR.RW.motorShutdownTemp,
-                                Md80Reg_E::canTermination,
+                                mdRegister_E::canTermination,
                                 regR.RW.canTermination,
-                                Md80Reg_E::outputEncoderPosition,
+                                mdRegister_E::outputEncoderPosition,
                                 regR.RO.outputEncoderPosition,
-                                Md80Reg_E::outputEncoderVelocity,
+                                mdRegister_E::outputEncoderVelocity,
                                 regR.RO.outputEncoderVelocity))
         {
             log.error("Extended diagnostic failed (ID: %d)", canId);
@@ -758,19 +758,19 @@ namespace mab
         }
 
         if (!md80Register->read(canId,
-                                Md80Reg_E::outputEncoderMode,
+                                mdRegister_E::outputEncoderMode,
                                 regR.RW.outputEncoderMode,
-                                Md80Reg_E::calOutputEncoderStdDev,
+                                mdRegister_E::calOutputEncoderStdDev,
                                 regR.RO.calOutputEncoderStdDev,
-                                Md80Reg_E::calOutputEncoderMinE,
+                                mdRegister_E::calOutputEncoderMinE,
                                 regR.RO.calOutputEncoderMinE,
-                                Md80Reg_E::calOutputEncoderMaxE,
+                                mdRegister_E::calOutputEncoderMaxE,
                                 regR.RO.calOutputEncoderMaxE,
-                                Md80Reg_E::calMainEncoderStdDev,
+                                mdRegister_E::calMainEncoderStdDev,
                                 regR.RO.calMainEncoderStdDev,
-                                Md80Reg_E::calMainEncoderMinE,
+                                mdRegister_E::calMainEncoderMinE,
                                 regR.RO.calMainEncoderMinE,
-                                Md80Reg_E::calMainEncoderMaxE,
+                                mdRegister_E::calMainEncoderMaxE,
                                 regR.RO.calMainEncoderMaxE))
         {
             log.error("Extended diagnostic failed (ID: %d)", canId);
@@ -778,40 +778,40 @@ namespace mab
         }
 
         if (!md80Register->read(canId,
-                                Md80Reg_E::mainEncoderErrors,
+                                mdRegister_E::mainEncoderStatus,
                                 regR.RO.mainEncoderErrors,
-                                Md80Reg_E::outputEncoderErrors,
+                                mdRegister_E::auxEncoderStatus,
                                 regR.RO.outputEncoderErrors,
-                                Md80Reg_E::calibrationErrors,
+                                mdRegister_E::calibrationStatus,
                                 regR.RO.calibrationErrors,
-                                Md80Reg_E::bridgeErrors,
+                                mdRegister_E::bridgeStatus,
                                 regR.RO.bridgeErrors,
-                                Md80Reg_E::hardwareErrors,
+                                mdRegister_E::hardwareStatus,
                                 regR.RO.hardwareErrors,
-                                Md80Reg_E::communicationErrors,
+                                mdRegister_E::communicationStatus,
                                 regR.RO.communicationErrors,
-                                Md80Reg_E::motionErrors,
+                                mdRegister_E::motionStatus,
                                 regR.RO.motionErrors))
         {
             log.error("Extended diagnostic failed (ID: %d)", canId);
             return false;
         }
         if (!md80Register->read(canId,
-                                Md80Reg_E::mainEncoderErrors,
+                                mdRegister_E::mainEncoderStatus,
                                 regR.RO.mainEncoderErrors,
-                                Md80Reg_E::outputEncoderErrors,
+                                mdRegister_E::auxEncoderStatus,
                                 regR.RO.outputEncoderErrors,
-                                Md80Reg_E::calibrationErrors,
+                                mdRegister_E::calibrationStatus,
                                 regR.RO.calibrationErrors,
-                                Md80Reg_E::bridgeErrors,
+                                mdRegister_E::bridgeStatus,
                                 regR.RO.bridgeErrors,
-                                Md80Reg_E::hardwareErrors,
+                                mdRegister_E::hardwareStatus,
                                 regR.RO.hardwareErrors,
-                                Md80Reg_E::communicationErrors,
+                                mdRegister_E::communicationStatus,
                                 regR.RO.communicationErrors,
-                                Md80Reg_E::motionErrors,
+                                mdRegister_E::motionStatus,
                                 regR.RO.motionErrors,
-                                Md80Reg_E::miscStatus,
+                                mdRegister_E::miscStatus,
                                 regR.RO.miscStatus))
         {
             log.error("Extended diagnostic failed (ID: %d)", canId);
@@ -819,34 +819,34 @@ namespace mab
         }
 
         if (!md80Register->read(canId,
-                                Md80Reg_E::outputEncoderCalibrationMode,
+                                mdRegister_E::outputEncoderCalibrationMode,
                                 regR.RW.outputEncoderCalibrationMode))
         {
             log.error("Extended diagnostic failed (ID: %d)", canId);
             return false;
         }
         if (!md80Register->read(
-                canId, Md80Reg_E::motorCalibrationMode, regR.RW.motorCalibrationMode))
+                canId, mdRegister_E::motorCalibrationMode, regR.RW.motorCalibrationMode))
         {
             log.error("Extended diagnostic failed (ID: %d)", canId);
             return false;
         }
-        if (!md80Register->read(canId, Md80Reg_E::shuntResistance, regR.RO.shuntResistance))
+        if (!md80Register->read(canId, mdRegister_E::shuntResistance, regR.RO.shuntResistance))
         {
             log.error("Extended diagnostic failed (ID: %d)", canId);
             return false;
         }
 
         if (!md80Register->read(canId,
-                                Md80Reg_E::homingMode,
+                                mdRegister_E::homingMode,
                                 regR.RW.homingMode,
-                                Md80Reg_E::homingMaxTravel,
+                                mdRegister_E::homingMaxTravel,
                                 regR.RW.homingMaxTravel,
-                                Md80Reg_E::homingTorque,
+                                mdRegister_E::homingTorque,
                                 regR.RW.homingTorque,
-                                Md80Reg_E::homingVelocity,
+                                mdRegister_E::homingVelocity,
                                 regR.RW.homingVelocity,
-                                Md80Reg_E::homingErrors,
+                                mdRegister_E::homingStatus,
                                 regR.RO.homingErrors))
         {
             log.error("Extended diagnostic failed (ID: %d)", canId);
@@ -854,9 +854,9 @@ namespace mab
         }
 
         if (!md80Register->read(canId,
-                                Md80Reg_E::positionLimitMin,
+                                mdRegister_E::positionLimitMin,
                                 regR.RW.positionLimitMin,
-                                Md80Reg_E::positionLimitMax,
+                                mdRegister_E::positionLimitMax,
                                 regR.RW.positionLimitMax))
         {
             log.error("Extended diagnostic failed (ID: %d)", canId);
@@ -864,13 +864,13 @@ namespace mab
         }
 
         if (!md80Register->read(canId,
-                                Md80Reg_E::maxAcceleration,
+                                mdRegister_E::maxAcceleration,
                                 regR.RW.maxAcceleration,
-                                Md80Reg_E::maxDeceleration,
+                                mdRegister_E::maxDeceleration,
                                 regR.RW.maxDeceleration,
-                                Md80Reg_E::maxTorque,
+                                mdRegister_E::maxTorque,
                                 regR.RW.maxTorque,
-                                Md80Reg_E::maxVelocity,
+                                mdRegister_E::maxVelocity,
                                 regR.RW.maxVelocity))
         {
             log.error("Extended diagnostic failed (ID: %d)", canId);
@@ -878,13 +878,13 @@ namespace mab
         }
 
         if (!md80Register->read(canId,
-                                Md80Reg_E::profileAcceleration,
+                                mdRegister_E::profileAcceleration,
                                 regR.RW.profileAcceleration,
-                                Md80Reg_E::profileDeceleration,
+                                mdRegister_E::profileDeceleration,
                                 regR.RW.profileDeceleration,
-                                Md80Reg_E::quickStopDeceleration,
+                                mdRegister_E::quickStopDeceleration,
                                 regR.RW.quickStopDeceleration,
-                                Md80Reg_E::profileVelocity,
+                                mdRegister_E::profileVelocity,
                                 regR.RW.profileVelocity))
         {
             log.error("Extended diagnostic failed (ID: %d)", canId);
@@ -900,7 +900,7 @@ namespace mab
     bool Candle::checkMd80ForBaudrate(uint16_t canId)
     {
         uint16_t status;
-        return md80Register->read(canId, Md80Reg_E::quickStatus, status);
+        return md80Register->read(canId, mdRegister_E::quickStatus, status);
     }
 
     std::string getVersionString(const version_ut& ver)
@@ -914,7 +914,7 @@ namespace mab
     }
 
     bool Candle::executeCommand(uint16_t    canId,
-                                Md80Reg_E   reg,
+                                mdRegister_E   reg,
                                 const char* failMsg,
                                 const char* successMsg,
                                 bool        waitToFinish)

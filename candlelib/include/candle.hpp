@@ -362,7 +362,7 @@ namespace mab
         @return true if register was read
         */
         template <typename T2, typename... Ts>
-        bool readMd80Register(uint16_t canId, Md80Reg_E regId, const T2& regValue, const Ts&... vs)
+        bool readMd80Register(uint16_t canId, mdRegister_E regId, const T2& regValue, const Ts&... vs)
         {
             return md80Register->read(canId, regId, regValue, vs...);
         }
@@ -375,7 +375,7 @@ namespace mab
         @return true if register was written
         */
         template <typename T2, typename... Ts>
-        bool writeMd80Register(uint16_t canId, Md80Reg_E regId, const T2& regValue, const Ts&... vs)
+        bool writeMd80Register(uint16_t canId, mdRegister_E regId, const T2& regValue, const Ts&... vs)
         {
             return md80Register->write(canId, regId, regValue, vs...);
         }
@@ -440,7 +440,7 @@ namespace mab
         std::shared_ptr<Bus> makeBus(mab::BusType_E busType, std::string device);
 
         bool executeCommand(uint16_t    canId,
-                            Md80Reg_E   reg,
+                            mdRegister_E   reg,
                             const char* failMsg,
                             const char* successMsg,
                             bool waitToFinish);
