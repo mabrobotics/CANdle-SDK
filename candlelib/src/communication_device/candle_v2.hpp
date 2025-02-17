@@ -8,15 +8,25 @@
 #include "logger.hpp"
 
 #include "bus.hpp"
-#include "I_communication_device.hpp"
 #include "I_communication_interface.hpp"
 #include "mab_types.hpp"
 
 namespace mab
 {
-    class CandleV2 : I_CommunicationDevice
+    class CandleV2
     {
       public:
+        enum Error_t
+        {
+            OK,
+            DEVICE_NOT_CONNECTED,
+            INITIALIZATION_ERROR,
+            UNINITIALIZED,
+            DATA_TOO_LONG,
+            DATA_EMPTY,
+            RESPONSE_TIMEOUT,
+            UNKNOWN_ERROR
+        };
         /// @brief Command IDs to control Candle device behavior
         enum CandleCommands_t : u8
         {
@@ -44,9 +54,11 @@ namespace mab
         /// @return Pair of response frame and Candle device errors. If error is not OK the data is
         /// undefined.
         const std::pair<std::vector<u8>, Error_t> transferCANFrame(
-            const std::vector<u8> dataToSend, const size_t responseSize) override;
+            const std::vector<u8> dataToSend,
+            const size_t          responseSize,
+            const u32             timeoutMs = DEFAULT_CAN_TIMEOUT);
 
-        Error_t init() override;
+        Error_t init();
 
       private:
         static constexpr u32 DEFAULT_CONFIGURATION_TIMEOUT = 10;
@@ -59,7 +71,9 @@ namespace mab
         bool m_isInitialized = false;
 
         // TODO: this method is temporary until bus rework
-        Error_t busTransfer(std::shared_ptr<std::vector<u8>> data, size_t responseLength = 0);
+        Error_t busTransfer(std::shared_ptr<std::vector<u8>> data,
+                            size_t                           responseLength = 0,
+                            const u32                        timeoutMs      = DEFAULT_CAN_TIMEOUT);
 
         Error_t busTransfer(const std::vector<u8>&& data);
 
@@ -92,7 +106,7 @@ namespace mab
             throw std::runtime_error("Could not create CANdle from an undefined bus!");
 
         auto candle = std::make_shared<mab::CandleV2>(baudrate, std::move(bus));
-        if (candle->init() != I_CommunicationDevice::Error_t::OK)
+        if (candle->init() != CandleV2::Error_t::OK)
         {
             throw std::runtime_error("Could not initialize CANdle device!");
         }

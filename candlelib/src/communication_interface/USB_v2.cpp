@@ -71,6 +71,7 @@ namespace mab
         {
             std::string message;
             message = translateLibusbError(usbOpenError);
+            message.insert(0, "On open: ");
             m_log.error(message.c_str());
         }
 
@@ -87,6 +88,7 @@ namespace mab
             {
                 std::string message;
                 message = translateLibusbError(usbClaimError);
+                message.insert(0, "On claim: ");
                 m_log.error(message.c_str());
             }
         }
@@ -145,8 +147,10 @@ namespace mab
         libusb_error       err = static_cast<libusb_error>(libusb_get_string_descriptor_ascii(
             *m_devHandle, m_desc.iSerialNumber, serialNo.begin(), serialNo.size()));
 
-        if (err)
-            m_log.warn(translateLibusbError(err).c_str());
+        if (err < 0)
+        {
+            m_log.warn(("On getting serial no.: " + translateLibusbError(err)).c_str());
+        }
 
         return std::string(serialNo.begin(), serialNo.end());
     }

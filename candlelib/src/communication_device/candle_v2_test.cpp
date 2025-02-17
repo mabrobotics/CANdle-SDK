@@ -82,7 +82,7 @@ TEST_F(CandleV2Test, failAfterInit)
         .WillOnce(Return(mab::I_CommunicationInterface::Error_t::UNKNOWN_ERROR));
     auto candle = mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus));
     auto result = candle->transferCANFrame(mockData, 0);
-    ASSERT_NE(result.second, mab::I_CommunicationDevice::Error_t::OK);
+    ASSERT_NE(result.second, mab::CandleV2::Error_t::OK);
 }
 
 TEST_F(CandleV2Test, successAfterInit)
@@ -95,5 +95,5 @@ TEST_F(CandleV2Test, successAfterInit)
         .WillOnce(Return(std::pair(mockData, mab::I_CommunicationInterface::Error_t::OK)));
     auto candle = mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus));
     auto result = candle->transferCANFrame(mockData, 0);
-    ASSERT_EQ(result.second, mab::I_CommunicationDevice::Error_t::OK);
+    ASSERT_EQ(result.second, mab::CandleV2::Error_t::OK);
 }

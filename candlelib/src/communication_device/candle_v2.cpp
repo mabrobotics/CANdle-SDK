@@ -27,15 +27,15 @@ namespace mab
         }
         else
         {
-            m_log.error("Failed to initialize communication with CANdle device of id: %d",
-                        0 /*TODO: placeholder for serial id*/);
+            m_log.error("Failed to initialize communication with CANdle device");
             m_isInitialized = false;
         }
         return initStatus;
     }
 
     CandleV2::Error_t CandleV2::busTransfer(std::shared_ptr<std::vector<u8>> data,
-                                            size_t                           responseLength)
+                                            size_t                           responseLength,
+                                            const u32                        timeoutMs)
     {
         if (data == nullptr)
         {
@@ -48,21 +48,16 @@ namespace mab
             return CandleV2::Error_t::DATA_EMPTY;
         }
 
-        // temporary buffer operations
-
-        // char* rx = m_bus->getRxBuffer(0);
-
         if (responseLength > 0)
         {
-            I_CommunicationInterface::Error_t comError =
-                m_bus->transfer(*data, DEFAULT_CAN_TIMEOUT);
+            I_CommunicationInterface::Error_t comError = m_bus->transfer(*data, timeoutMs);
             if (comError)
                 return Error_t::UNKNOWN_ERROR;
         }
         else
         {
             std::pair<std::vector<u8>, I_CommunicationInterface::Error_t> result =
-                m_bus->transfer(*data, DEFAULT_CAN_TIMEOUT, responseLength);
+                m_bus->transfer(*data, timeoutMs, responseLength);
 
             *data = result.first;
 
@@ -78,8 +73,8 @@ namespace mab
         return busTransfer(sharedData);
     }
 
-    const std::pair<std::vector<u8>, I_CommunicationDevice::Error_t> CandleV2::transferCANFrame(
-        const std::vector<u8> dataToSend, const size_t responseSize)
+    const std::pair<std::vector<u8>, CandleV2::Error_t> CandleV2::transferCANFrame(
+        const std::vector<u8> dataToSend, const size_t responseSize, const u32 timeoutMs)
     {
         Error_t communicationStatus = Error_t::OK;
         if (!m_isInitialized)

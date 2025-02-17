@@ -46,6 +46,7 @@ target_sources(candle PRIVATE
   src/communication_device/candle_v2.cpp
   src/communication_interface/SPI_v2.cpp
   src/communication_interface/USB_v2.cpp
+  src/MD/MD.cpp
   src/pds/pds.cpp
   src/pds/pds_module.cpp
   src/pds/pds_protocol.cpp
@@ -61,6 +62,7 @@ if(UNIX)
 endif()
 target_include_directories(candle PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/MD
   ${CMAKE_CURRENT_SOURCE_DIR}/src/pds
   ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_device
   ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_interface
