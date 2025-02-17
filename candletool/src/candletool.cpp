@@ -887,8 +887,9 @@ void CandleTool::registerWrite(u16 id, u16 reg, const std::string& value)
             char txData[64] = {};
             char rxData[64] = {};
             txData[0]       = (char)mab::FRAME_WRITE_REGISTER;
-            u32 msgLen      = 2 + correctlyParsedRegisters * sizeof(registers[0]);
-            memcpy(&txData[2], registers, correctlyParsedRegisters * sizeof(registers[0]));
+            *(u16*)&txData[2] = (u16)regId;
+            u32 msgLen      = 4 + correctlyParsedRegisters * sizeof(registers[0]);
+            memcpy(&txData[4], registers, correctlyParsedRegisters * sizeof(registers[0]));
             success = candle->sendGenericFDCanFrame(id, msgLen, txData, rxData);
             break;
         }
