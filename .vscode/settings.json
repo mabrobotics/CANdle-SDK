@@ -83,8 +83,9 @@
         "hash_map": "cpp"
     },
     "cSpell.words": [
-        "Devcontainers",
-        "Bootloader"
+        "Bootloader",
+        "Candletool",
+        "Devcontainers"
     ],
     "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
 }

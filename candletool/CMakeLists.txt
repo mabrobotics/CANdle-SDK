@@ -2,12 +2,25 @@ cmake_minimum_required(VERSION 3.5)
 
 project(candletool VERSION ${CANDLESDK_VERSION_1}.${CANDLESDK_VERSION_2}.${CANDLESDK_VERSION_3})
 
-file(GLOB SRC "src/*.cpp")
+# file(GLOB SRC "src/*.cpp")
+set(CANDLETOOL_SOURCES
+
+  src/candletool.cpp
+  src/canLoader.cpp
+  src/mab_crc.cpp
+  src/mabFileParser.cpp
+  src/main.cpp
+  src/pds_cli.cpp
+  src/ui.cpp
+  src/uploader.cpp
+  src/usbLoader.cpp
+
+)
 # enable_testing()
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-add_executable(${PROJECT_NAME} ${SRC})
+add_executable(${PROJECT_NAME} ${CANDLETOOL_SOURCES})
 target_link_libraries(${PROJECT_NAME} candle logger)
 target_include_directories(
   ${PROJECT_NAME}

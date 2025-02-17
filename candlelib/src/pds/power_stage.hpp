@@ -20,6 +20,14 @@ namespace mab
         error_E enable();
         error_E disable();
 
+        error_E getStatus(powerStageStatus_S& status);
+
+        /**
+         * @brief Check if the module is enabled or not
+         *
+         * @param enabled the flag that will be updated
+         * @return error_E
+         */
         error_E getEnabled(bool& enabled);
 
         /**
@@ -29,6 +37,14 @@ namespace mab
          * @return error_E
          */
         error_E bindBrakeResistor(socketIndex_E brakeResistorSocketIndex);
+
+        /**
+         * @brief Reads the socket of binded BR. ( Undefined socket if not binded )
+         *
+         * @param brakeResistorSocketIndex
+         * @return error_E
+         */
+        error_E getBindBrakeResistor(socketIndex_E& brakeResistorSocketIndex);
 
         /**
          * @brief Set the Brake Resistor Trigger Voltage. When the bus voltage will exceed this

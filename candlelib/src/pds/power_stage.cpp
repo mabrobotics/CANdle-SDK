@@ -25,6 +25,21 @@ namespace mab
         return writeModuleProperty(propertyId_E::ENABLE, false);
     }
 
+    PdsModule::error_E PowerStage::getStatus(powerStageStatus_S& status)
+    {
+        u32                statusWord = 0;
+        PdsModule::error_E result     = readModuleProperty(propertyId_E::STATUS_WORD, statusWord);
+
+        if (result != PdsModule::error_E::OK)
+            return result;
+
+        status.ENABLED          = statusWord & (u32)statusBits_E::ENABLED;
+        status.OVER_TEMPERATURE = statusWord & (u32)statusBits_E::OVER_TEMPERATURE;
+        status.OVER_CURRENT     = statusWord & (u32)statusBits_E::OVER_CURRENT;
+
+        return result;
+    }
+
     PdsModule::error_E PowerStage::getEnabled(bool& enabled)
     {
         return readModuleProperty(propertyId_E::ENABLE, enabled);
@@ -33,6 +48,11 @@ namespace mab
     PdsModule::error_E PowerStage::bindBrakeResistor(socketIndex_E brakeResistorSocketIndex)
     {
         return writeModuleProperty(propertyId_E::BR_SOCKET_INDEX, brakeResistorSocketIndex);
+    }
+
+    PdsModule::error_E PowerStage::getBindBrakeResistor(socketIndex_E& brakeResistorSocketIndex)
+    {
+        return readModuleProperty(propertyId_E::BR_SOCKET_INDEX, brakeResistorSocketIndex);
     }
 
     PdsModule::error_E PowerStage::setBrakeResistorTriggerVoltage(uint32_t brTriggerVoltage)

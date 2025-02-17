@@ -24,7 +24,8 @@ namespace mab
         OK                     = 0x00,
         PROPERTY_NOT_AVAILABLE = 0x01,
         INVALID_ACCESS         = 0x02,
-        INVALID_DATA           = 0x03
+        INVALID_DATA           = 0x03,
+        WTF                    = 0x09,
     };
 
     enum class moduleType_E : u8
@@ -36,7 +37,15 @@ namespace mab
         POWER_STAGE,
 
         /* NEW MODULE TYPES HERE */
-        OUT_OF_RANGE,
+    };
+
+    enum class moduleVersion_E : uint8_t
+    {
+        UNKNOWN = 0x00,
+        V0_1,  // 0.1
+        V0_2,  // 0.2
+        V0_3,  // 0.3
+        /* NEW MODULE VERSIONS HERE */
     };
 
     enum class socketIndex_E : u8
@@ -97,7 +106,9 @@ namespace mab
 
         /* ... */
 
-        COMMAND = 0xFF,  // Used for sending various commands to PDS Device
+        HW_VERSION = 0xFD,
+        FW_VERSION = 0xFE,
+        COMMAND    = 0xFF,  // Used for sending various commands to PDS Device
 
     };
 
@@ -134,7 +145,7 @@ namespace mab
 
     };
 
-    struct status_S
+    struct controlBoardStatus_S
     {
         bool ENABLED;
         bool OVER_TEMPERATURE;
@@ -156,6 +167,27 @@ namespace mab
         bool SHUTDOWN_SCHEDULED;
 
         /*...*/
+    };
+
+    struct powerStageStatus_S
+    {
+        bool ENABLED;
+        bool OVER_TEMPERATURE;
+        bool OVER_CURRENT;
+    };
+
+    struct brakeResistorStatus_S
+    {
+        bool ENABLED;
+        bool OVER_TEMPERATURE;
+        bool OVER_CURRENT;
+    };
+
+    struct isolatedConverterStatus_S
+    {
+        bool ENABLED;
+        bool OVER_TEMPERATURE;
+        bool OVER_CURRENT;
     };
 
     // TODO: This enum should be replaced with a single one for all MAB Codebase ( The one that is
