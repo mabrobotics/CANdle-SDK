@@ -114,6 +114,7 @@ namespace mab
 
     enum class commands_E : u8
     {
+
         NULL_CMD    = 0x00,
         SHUTDOWN    = 0x01,
         REBOOT      = 0x02,
@@ -123,6 +124,7 @@ namespace mab
 
     enum class statusBits_E : u32
     {
+
         ENABLED          = (1 << 0),
         OVER_TEMPERATURE = (1 << 1),
         OVER_CURRENT     = (1 << 2),
@@ -180,7 +182,6 @@ namespace mab
     {
         bool ENABLED;
         bool OVER_TEMPERATURE;
-        bool OVER_CURRENT;
     };
 
     struct isolatedConverterStatus_S

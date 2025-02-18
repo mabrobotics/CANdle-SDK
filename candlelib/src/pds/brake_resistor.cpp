@@ -29,7 +29,6 @@ namespace mab
 
         status.ENABLED          = statusWord & (u32)statusBits_E::ENABLED;
         status.OVER_TEMPERATURE = statusWord & (u32)statusBits_E::OVER_TEMPERATURE;
-        status.OVER_CURRENT     = statusWord & (u32)statusBits_E::OVER_CURRENT;
 
         return result;
     }
