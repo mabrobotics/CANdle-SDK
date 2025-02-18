@@ -5,54 +5,35 @@
 #include "candle_v2.hpp"
 #include "logger.hpp"
 
+#include <cstring>
+
 #include <array>
+#include <queue>
 #include <utility>
 #include <functional>
 #include <tuple>
-#include <variant>
+#include <vector>
 
 namespace mab
 {
     class MD
     {
-        template <typename... Entries>
-        class MDReadFrameSerializer
+        enum class FrameType_E
         {
-            std::vector<u8> m_frame;
-
-          public:
-            MDReadFrameSerializer(u32 MDId)
-            {
-                m_frame.reserve(3);
-                m_frame.push_back(MDId);
-                m_frame.push_back((u8)(MDId >> 8));
-                m_frame.push_back(0x0);
-            }
-            template <typename T, RegisterAccessLevel_E L, u16 address>
-            void addRegister(RegisterEntry_S<T, L, address> reg)
-            {
-                m_frame.reserve(sizeof(address));
-
-                m_frame.push_back(static_cast<u8>(reg.regAddress));
-                m_frame.push_back(static_cast<u8>(reg.regAddress >> 8));
-
-                for (size_t byte = 0; byte < reg.getSize(); byte++)
-                {
-                    // payload is always zeroed when reading data
-                    m_frame.push_back(static_cast<u8>(0x0 >> (8 * byte)));
-                }
-            }
-
-            void
+            READ,
+            WRITE,
+            DEFAULT
         };
 
         const u32 m_canId;
 
         const std::function<std::pair<std::vector<u8>, CandleV2::Error_t>(
-            const CandleV2&, const std::vector<u8>, const size_t, const u32)>
+            const CandleV2&, const u32, const std::vector<u8>, const size_t, const u32)>
             m_transferCAN;
 
       public:
+        MDRegisters_S mdRegisters;
+
         enum Error_t
         {
             OK,
@@ -60,11 +41,38 @@ namespace mab
             TRANSFER_FAILED
         };
 
-        MD(u32                                                                   canId,
+        MD(u32 canId,
            std::function<std::pair<std::vector<u8>, CandleV2::Error_t>(
-               const CandleV2&, const std::vector<u8>, const size_t, const u32)> transferCANFrame)
+               const CandleV2&, const u32, const std::vector<u8>, const size_t, const u32)>
+               transferCANFrame)
             : m_canId(canId), m_transferCAN(transferCANFrame)
         {
+        }
+
+        void blink();
+
+        template <class... T>
+        static inline std::vector<u8> serializeMDRegisters(std::tuple<T...>& regs)
+        {
+            std::vector<u8> serialized;
+
+            std::apply(
+                [&](auto&&... args)
+                {
+                    ((serialized.insert(serialized.end(),
+                                        args.getSerializedRegister()->begin(),
+                                        args.getSerializedRegister()->end())),
+                     ...);
+                },
+                regs);
+            return serialized;
+        }
+
+        template <class... T>
+        static inline void deserializeMDRegisters(std::vector<u8>& input, std::tuple<T...>& regs)
+        {
+            std::apply([&](auto&&... args) { (args.setSerializedRegister(input), ...); }, regs);
+            return;
         }
     };
 }  // namespace mab

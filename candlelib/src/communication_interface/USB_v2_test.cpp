@@ -3,7 +3,7 @@
 
 #include <USB_v2.hpp>
 
-class USBv2 : public ::testing::Test
+class USBv2_test : public ::testing::Test
 {
   protected:
     void SetUp() override

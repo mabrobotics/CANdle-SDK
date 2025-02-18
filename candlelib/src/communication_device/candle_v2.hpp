@@ -42,18 +42,11 @@ namespace mab
 
         CandleV2() = delete;
 
-        /// @brief Create an instance of candle
-        /// @param canBaudrate Candle datarate to communicate via the CAN-FD
-        /// @param bus Interface to communicate with the Candle
         explicit CandleV2(const CANdleBaudrate_E                           canBaudrate,
                           std::unique_ptr<mab::I_CommunicationInterface>&& bus);
 
-        /// @brief Exchange frames on the CAN-FD bus
-        /// @param dataToSend Data to be sent to can bus
-        /// @param responseSize Length of the expected response CAN frame
-        /// @return Pair of response frame and Candle device errors. If error is not OK the data is
-        /// undefined.
         const std::pair<std::vector<u8>, Error_t> transferCANFrame(
+            const u32             canId,
             const std::vector<u8> dataToSend,
             const size_t          responseSize,
             const u32             timeoutMs = DEFAULT_CAN_TIMEOUT);
@@ -91,10 +84,13 @@ namespace mab
             return std::vector<u8>({CANDLE_CONFIG_BAUDRATE, baudrate});
         }
 
-        static inline std::vector<u8> sendCanFrameHeader(const u8&& length)
+        static inline std::vector<u8> sendCanFrameHeader(const u8&& length, const u16&& id)
         {
-            return std::vector<u8>(
-                {GENERIC_CAN_FRAME, u8(length - 2 /*id + DLC*/), DEFAULT_CAN_TIMEOUT});
+            return std::vector<u8>({GENERIC_CAN_FRAME,
+                                    u8(length /*id + DLC*/),
+                                    DEFAULT_CAN_TIMEOUT,
+                                    u8(id),
+                                    u8(id >> 8)});
         }
     };
 

@@ -32,6 +32,7 @@ class CandleV2Test : public ::testing::Test
   protected:
     std::unique_ptr<MockBus> mockBus;
     std::vector<u8>          mockData;
+    u32                      mockId = 100;
 
     struct __attribute__((packed)) exampleFrame_t
     {
@@ -81,7 +82,7 @@ TEST_F(CandleV2Test, failAfterInit)
     EXPECT_CALL(*mockBus, transfer(_, _))
         .WillOnce(Return(mab::I_CommunicationInterface::Error_t::UNKNOWN_ERROR));
     auto candle = mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus));
-    auto result = candle->transferCANFrame(mockData, 0);
+    auto result = candle->transferCANFrame(mockId, mockData, 0);
     ASSERT_NE(result.second, mab::CandleV2::Error_t::OK);
 }
 
@@ -94,6 +95,6 @@ TEST_F(CandleV2Test, successAfterInit)
         .Times(1)
         .WillOnce(Return(std::pair(mockData, mab::I_CommunicationInterface::Error_t::OK)));
     auto candle = mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus));
-    auto result = candle->transferCANFrame(mockData, 0);
+    auto result = candle->transferCANFrame(mockId, mockData, 0);
     ASSERT_EQ(result.second, mab::CandleV2::Error_t::OK);
 }

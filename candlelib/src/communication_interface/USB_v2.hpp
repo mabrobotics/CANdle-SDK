@@ -54,8 +54,8 @@ namespace mab
 
         std::unique_ptr<LibusbDevice> m_libusbDevice = nullptr;
 
-        u16                        m_vid, m_pid;
-        std::optional<std::string> m_serialNo;
+        u16         m_vid, m_pid;
+        std::string m_serialNo = "";
 
         static constexpr size_t USB_MAX_BUFF_LEN = 16'000'000;  // bytes
         static constexpr size_t DEFAULT_TIMEOUT  = 100;         // ms

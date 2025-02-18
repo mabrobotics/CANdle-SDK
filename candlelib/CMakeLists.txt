@@ -124,9 +124,18 @@ target_include_directories(usb_v2_test PRIVATE
 target_link_libraries(usb_v2_test PRIVATE logger shared_data candle)
 
 add_unit_test_executable(spi_v2_test src/communication_interface/SPI_v2_test.cpp)
-target_sources(spi_v2_test PRIVATE PRIVATE src/communication_interface/SPI_v2.cpp)
+target_sources(spi_v2_test PRIVATE  src/communication_interface/SPI_v2.cpp)
 target_include_directories(spi_v2_test PRIVATE
   include
   src/communication_interface/
 )
 target_link_libraries(spi_v2_test PRIVATE logger shared_data candle)
+
+
+add_unit_test_executable(md_v2_test src/MD/MD_test.cpp)
+target_sources(md_v2_test PRIVATE  src/MD/MD.cpp)
+target_include_directories(md_v2_test PRIVATE
+  include
+  src/MD/
+)
+target_link_libraries(md_v2_test PRIVATE logger shared_data candle)

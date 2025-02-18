@@ -201,7 +201,7 @@ namespace mab
                     std::make_unique<LibusbDevice>(checkedDevice, IN_ENDPOINT, OUT_ENDPOINT);
                 std::string serialNo = m_libusbDevice->getSerialNo();
                 m_Log.info("Device with serial %s found", serialNo.c_str());
-                if (!serialNo.compare(m_serialNo.value_or(serialNo)))
+                if (!m_serialNo.compare("") && !serialNo.compare(m_serialNo))
                 {
                     m_libusbDevice = nullptr;
                     continue;

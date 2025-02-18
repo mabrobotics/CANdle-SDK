@@ -74,7 +74,10 @@ namespace mab
     }
 
     const std::pair<std::vector<u8>, CandleV2::Error_t> CandleV2::transferCANFrame(
-        const std::vector<u8> dataToSend, const size_t responseSize, const u32 timeoutMs)
+        const u32             canId,
+        const std::vector<u8> dataToSend,
+        const size_t          responseSize,
+        const u32             timeoutMs)
     {
         Error_t communicationStatus = Error_t::OK;
         if (!m_isInitialized)
@@ -90,14 +93,14 @@ namespace mab
 
         auto buffer = std::make_shared<std::vector<u8>>(dataToSend);
 
-        const auto candleCommandCANframe = sendCanFrameHeader(dataToSend.size());
+        const auto candleCommandCANframe = sendCanFrameHeader(dataToSend.size(), u16(canId));
 
         buffer->insert(buffer->begin(), candleCommandCANframe.begin(), candleCommandCANframe.end());
 
         communicationStatus = busTransfer(buffer, responseSize + 3);
 
         if (buffer->size() > 3)
-            buffer->erase(buffer->begin(), buffer->begin() + 2 /*response header size*/);
+            buffer->erase(buffer->begin(), buffer->begin() + 5 /*response header size*/);
 
         auto response = *buffer;
 
