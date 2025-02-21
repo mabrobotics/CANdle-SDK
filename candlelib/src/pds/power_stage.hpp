@@ -17,6 +17,8 @@ namespace mab
         PowerStage(socketIndex_E socket, Candle& candle, u16& canId);
         ~PowerStage();
 
+        void printModuleInfo(void) override;
+
         error_E enable();
         error_E disable();
 

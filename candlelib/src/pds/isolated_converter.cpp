@@ -10,6 +10,37 @@ namespace mab
         m_log.debug("Object created");
     }
 
+    void IsolatedConv::printModuleInfo(void)
+    {
+        isolatedConverterStatus_S status;
+        moduleVersion_E           hwVersion;
+        float                     temperature      = 0.0f;
+        float                     temperatureLimit = 0.0f;
+        s32                       current          = 0;
+        u32                       voltage          = 0;
+        u32                       ocdLevel         = 0;
+        u32                       ocdDelay         = 0;
+
+        getBoardVersion(hwVersion);
+        getStatus(status);
+        getTemperature(temperature);
+        getTemperatureLimit(temperatureLimit);
+        getLoadCurrent(current);
+        getOutputVoltage(voltage);
+        getOcdLevel(ocdLevel);
+        getOcdDelay(ocdDelay);
+
+        m_log.info("Module type: %s", moduleType2String(m_type).c_str());
+        m_log.info("Module version: %u", (u8)hwVersion);
+        m_log.info("Module status: %s", status.ENABLED ? "ENABLED" : "DISABLED");
+        m_log.info("Module temperature: %.2f", temperature);
+        m_log.info("Module temperature limit: %.2f", temperatureLimit);
+        m_log.info("Module load current: %d", current);
+        m_log.info("Module output voltage: %u", voltage);
+        m_log.info("Module OCD level: %u", ocdLevel);
+        m_log.info("Module OCD delay: %u", ocdDelay);
+    }
+
     PdsModule::error_E IsolatedConv::enable()
     {
         return writeModuleProperty(propertyId_E::ENABLE, true);

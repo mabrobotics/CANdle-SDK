@@ -47,6 +47,8 @@ namespace mab
          */
         Pds(uint16_t canId, Candle& candle);
 
+        void printModuleInfo(void);
+
         void init(void);
 
         modulesSet_S getModules(void);

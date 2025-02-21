@@ -11,6 +11,11 @@ namespace mab
         m_log.m_layer = Logger::ProgramLayer_E::LAYER_2;
     }
 
+    void Pds::printModuleInfo(void)
+    {
+        // TODO
+    }
+
     void Pds::init(void)
     {
         PdsModule::error_E result = readModules();
@@ -364,17 +369,17 @@ namespace mab
     {
         PdsModule::error_E result = PdsModule::error_E::OK;
 
-        result = writeModuleProperty(propertyId_E::BATTERY_VOLTAGE_L1, batteryLvl1);
-        if (result != PdsModule::error_E::OK)
-        {
-            m_log.error("Writing battery voltage level 1 failed! [ %u ]", result);
-            return error_E::PROTOCOL_ERROR;
-        }
-
         result = writeModuleProperty(propertyId_E::BATTERY_VOLTAGE_L2, batteryLvl2);
         if (result != PdsModule::error_E::OK)
         {
             m_log.error("Writing battery voltage level 2 failed! [ %u ]", result);
+            return error_E::PROTOCOL_ERROR;
+        }
+
+        result = writeModuleProperty(propertyId_E::BATTERY_VOLTAGE_L1, batteryLvl1);
+        if (result != PdsModule::error_E::OK)
+        {
+            m_log.error("Writing battery voltage level 1 failed! [ %u ]", result);
             return error_E::PROTOCOL_ERROR;
         }
 
