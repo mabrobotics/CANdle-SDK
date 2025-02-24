@@ -35,6 +35,8 @@ namespace mab
 
         error_E getBoardVersion(moduleVersion_E& version);
 
+        virtual void printModuleInfo(void) = 0;
+
         static std::string moduleType2String(moduleType_E type);
 
       protected:

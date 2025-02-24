@@ -22,6 +22,8 @@ int main()
     Candle candle(mab::CAN_BAUD_1M, true);
     Pds    pds(PDS_CAN_ID, candle);
 
+    pds.init();
+
     PdsModule::error_E result = PdsModule::error_E::OK;
 
     _log.info("Setting PDS shutdown time to [ %u ] mS...", DESIRED_SHUTDOWN_TIME_mS);

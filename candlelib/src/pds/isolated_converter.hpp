@@ -17,6 +17,8 @@ namespace mab
         IsolatedConv(socketIndex_E socket, Candle& candle, u16& canId);
         ~IsolatedConv() = default;
 
+        virtual void printModuleInfo(void) override;
+
         error_E enable();
         error_E disable();
 

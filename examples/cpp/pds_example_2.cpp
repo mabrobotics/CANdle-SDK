@@ -52,6 +52,8 @@ int main()
 
     powerStage->enable();
 
+    sleep(3);
+
     // PowerStage::controlBoardStatus_S powerStageStatus = {};
     float temperature   = 0.0f;
     u32   outputVoltage = 0;
@@ -61,6 +63,7 @@ int main()
     powerStage->getOutputVoltage(outputVoltage);
     powerStage->getLoadCurrent(outputCurrent);
 
+    powerStage->disable();
     _log.info("Power stage");
     // _log.info("Enabled :: [ %s ]", powerStageStatus.ENABLED ? "ON" : "OFF");
     // _log.info("Over current event :: [ %s ]", powerStageStatus.OCD_EVENT ? "YES" : "NO");

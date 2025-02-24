@@ -15,19 +15,20 @@ using namespace mab;
 constexpr u16 PDS_CAN_ID = 100;
 
 constexpr u32 BATTERY_LVL_1 = 20000;  // 20V
-constexpr u32 BATTERY_LVL_2 = 24000;  // 24V
+constexpr u32 BATTERY_LVL_2 = 28000;  // 24V
 
 constexpr u32 SHUTDOWN_TIME = 5000;  // 5s
 
 int main()
 {
-    Logger _log;
-    _log.m_tag = "PDS Example 1b";
+    Logger             _log;
+    PdsModule::error_E result = PdsModule::error_E::OK;
+    _log.m_tag                = "PDS Example 1b";
 
     Candle candle(mab::CAN_BAUD_1M, true);
     Pds    pds(PDS_CAN_ID, candle);
 
-    PdsModule::error_E result = PdsModule::error_E::OK;
+    pds.init();
 
     result = pds.setBatteryVoltageLevels(BATTERY_LVL_1, BATTERY_LVL_2);
     if (result != PdsModule::error_E::OK)
