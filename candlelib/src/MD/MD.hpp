@@ -18,18 +18,13 @@ namespace mab
 {
     class MD
     {
-        enum class FrameType_E
-        {
-            READ,
-            WRITE,
-            DEFAULT
-        };
+        static constexpr size_t DEFAULT_RESPONSE_SIZE = 23;
 
         const u32 m_canId;
 
-        const std::function<std::pair<std::vector<u8>, CandleV2::Error_t>(
-            const CandleV2&, const u32, const std::vector<u8>, const size_t, const u32)>
-            m_transferCAN;
+        const std::shared_ptr<CandleV2> m_CANdle;
+
+        Logger m_log;
 
       public:
         MDRegisters_S mdRegisters;
@@ -41,12 +36,80 @@ namespace mab
             TRANSFER_FAILED
         };
 
-        MD(u32 canId,
-           std::function<std::pair<std::vector<u8>, CandleV2::Error_t>(
-               const CandleV2&, const u32, const std::vector<u8>, const size_t, const u32)>
-               transferCANFrame)
-            : m_canId(canId), m_transferCAN(transferCANFrame)
+        MD(u32 canId, std::shared_ptr<CandleV2> Candle) : m_canId(canId), m_CANdle(Candle)
         {
+            m_log.m_layer = Logger::ProgramLayer_E::TOP;
+            std::stringstream tag;
+            tag << "MD" << std::setfill('0') << std::setw(4) << m_canId;
+            m_log.m_tag = tag.str();
+        }
+
+        template <class... T>
+        inline std::pair<std::tuple<T...>, Error_t> readRegisters(std::tuple<T...>& regs)
+        {
+            m_log.debug("Reading register...");
+            std::vector<u8> frame;
+            frame.push_back((u8)MdFrameId_E::FRAME_READ_REGISTER);
+            frame.push_back((u8)0x0);
+            auto payload = serializeMDRegisters(regs);
+            frame.insert(frame.end(), payload.begin(), payload.end());
+            auto readRegResult = m_CANdle->transferCANFrame(
+                m_canId, frame, frame.size(), CandleV2::DEFAULT_CAN_TIMEOUT);
+            if (readRegResult.second != CandleV2::Error_t::OK)
+            {
+                m_log.error("Error while reading registers!");
+                return std::pair(regs, Error_t::TRANSFER_FAILED);
+            }
+
+            std::tuple<T...>& outputRegs;
+
+            if (readRegResult.first.at(0) == 0x41)
+            {
+                readRegResult.first.erase(
+                    readRegResult.first.begin(),
+                    readRegResult.first.begin() + 2);  // delete response header
+            }
+            else
+            {
+                m_log.error("Error while parsing response!");
+                return std::pair(outputRegs, Error_t::TRANSFER_FAILED);
+            }
+            bool deserializeFailed = deserializeMDRegisters(readRegResult.first, outputRegs);
+            if (deserializeFailed)
+            {
+                m_log.error("Error while parsing response!");
+                return std::pair(outputRegs, Error_t::TRANSFER_FAILED);
+            }
+
+            return std::pair(outputRegs, Error_t::OK);
+        }
+
+        template <class... T>
+        inline Error_t writeRegisters(std::tuple<T...>& regs)
+        {
+            m_log.debug("Writing register...");
+            std::vector<u8> frame;
+            frame.push_back((u8)MdFrameId_E::FRAME_WRITE_REGISTER);
+            frame.push_back((u8)0x0);
+            auto payload = serializeMDRegisters(regs);
+            frame.insert(frame.end(), payload.begin(), payload.end());
+            auto readRegResult = m_CANdle->transferCANFrame(
+                m_canId, frame, DEFAULT_RESPONSE_SIZE, CandleV2::DEFAULT_CAN_TIMEOUT);
+            if (readRegResult.second != CandleV2::Error_t::OK)
+            {
+                m_log.error("Error while writing registers!");
+                return Error_t::TRANSFER_FAILED;
+            }
+
+            if (readRegResult.first.at(0) == 0xA0)
+            {
+                return Error_t::OK;
+            }
+            else
+            {
+                m_log.error("Error in the register write response!");
+                return Error_t::OK;
+            }
         }
 
         void blink();
@@ -57,11 +120,11 @@ namespace mab
             std::vector<u8> serialized;
 
             std::apply(
-                [&](auto&&... args)
+                [&](auto&&... reg)
                 {
                     ((serialized.insert(serialized.end(),
-                                        args.getSerializedRegister()->begin(),
-                                        args.getSerializedRegister()->end())),
+                                        reg.getSerializedRegister()->begin(),
+                                        reg.getSerializedRegister()->end())),
                      ...);
                 },
                 regs);
@@ -69,10 +132,15 @@ namespace mab
         }
 
         template <class... T>
-        static inline void deserializeMDRegisters(std::vector<u8>& input, std::tuple<T...>& regs)
+        static inline bool deserializeMDRegisters(std::vector<u8>& output, std::tuple<T...>& regs)
         {
-            std::apply([&](auto&&... args) { (args.setSerializedRegister(input), ...); }, regs);
-            return;
+            bool failure            = false;
+            auto performForEachElem = [&](auto& reg)  // Capture by reference to modify `failure`
+            { failure |= !(reg.setSerializedRegister(output)); };
+
+            std::apply([&](auto&... reg) { (performForEachElem(reg), ...); }, regs);
+
+            return failure;
         }
     };
 }  // namespace mab

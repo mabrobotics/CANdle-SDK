@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-
-#include <MD.hpp>
-#include <md_types.hpp>
 #include <functional>
+
+#include "MD.hpp"
+#include "md_types.hpp"
 
 class MD_test : public ::testing::Test
 {

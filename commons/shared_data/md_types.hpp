@@ -68,15 +68,17 @@ namespace mab
             return &serializedBuffer;
         }
 
-        void setSerializedRegister(std::vector<u8>& data)
+        bool setSerializedRegister(std::vector<u8>& data)
         {
             u16 addressFromSerial = 0;
             std::memcpy(&addressFromSerial, data.data(), sizeof(m_regAddress));
             if (addressFromSerial == m_regAddress)
             {
                 std::memcpy(&value, data.data() + sizeof(m_regAddress), sizeof(value));
+                data.erase(data.begin(), data.begin() + sizeof(m_regAddress) + sizeof(value));
+                return true;
             }
-            data.erase(data.begin(), data.begin() + sizeof(m_regAddress) + sizeof(value));
+            return false;
         }
     };
     template <typename T, size_t N>
@@ -122,15 +124,17 @@ namespace mab
             return &serializedBuffer;
         }
 
-        void setSerializedRegister(std::vector<u8>& data)
+        bool setSerializedRegister(std::vector<u8>& data)
         {
             u16 addressFromSerial = 0;
             std::memcpy(&addressFromSerial, data.data(), sizeof(m_regAddress));
             if (addressFromSerial == m_regAddress)
             {
                 std::memcpy(value, data.data() + sizeof(m_regAddress), sizeof(value));
+                data.erase(data.begin(), data.begin() + sizeof(m_regAddress) + sizeof(value));
+                return true;
             }
-            data.erase(data.begin(), data.begin() + sizeof(m_regAddress) + sizeof(value));
+            return false;
         }
     };
 

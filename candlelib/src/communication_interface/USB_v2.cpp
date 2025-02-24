@@ -1,4 +1,5 @@
 #include <USB_v2.hpp>
+#include <cstring>
 #include <string>
 
 namespace mab
@@ -117,6 +118,11 @@ namespace mab
 
     libusb_error LibusbDevice::transmit(u8* data, const size_t length, const u32 timeout)
     {
+        // TODO: needs another solution
+        // clear junk data
+        // u8 dummyBuffer[66];
+        // libusb_bulk_transfer(
+        //     *m_devHandle, m_inEndpointAddress, dummyBuffer, sizeof(dummyBuffer), NULL, 1);
         if (data == nullptr)
         {
             std::string message = "Data does not exist!";
@@ -136,7 +142,7 @@ namespace mab
         }
         if (length == 0)
             m_log.warn("Requesting emtpy receive!");
-
+        std::memset(data, 0, length);
         return static_cast<libusb_error>(
             libusb_bulk_transfer(*m_devHandle, m_inEndpointAddress, data, length, NULL, timeout));
     }

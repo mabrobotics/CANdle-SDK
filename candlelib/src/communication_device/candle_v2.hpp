@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <utility>
+#include <iomanip>
 
 #include "logger.hpp"
 
@@ -16,6 +17,7 @@ namespace mab
     class CandleV2
     {
       public:
+        static constexpr u32 DEFAULT_CAN_TIMEOUT = 5;
         enum Error_t
         {
             OK,
@@ -25,6 +27,7 @@ namespace mab
             DATA_TOO_LONG,
             DATA_EMPTY,
             RESPONSE_TIMEOUT,
+            CAN_DEVICE_NOT_RESPONDING,
             UNKNOWN_ERROR
         };
         /// @brief Command IDs to control Candle device behavior
@@ -55,7 +58,6 @@ namespace mab
 
       private:
         static constexpr u32 DEFAULT_CONFIGURATION_TIMEOUT = 10;
-        static constexpr u32 DEFAULT_CAN_TIMEOUT           = 5;
 
         CANdleBaudrate_E m_canBaudrate = CANdleBaudrate_E::CAN_BAUD_1M;
         Logger           m_log         = Logger(Logger::ProgramLayer_E::TOP, "CANDLE");
@@ -91,6 +93,17 @@ namespace mab
                                     DEFAULT_CAN_TIMEOUT,
                                     u8(id),
                                     u8(id >> 8)});
+        }
+
+        inline void frameDump(std::vector<u8> frame) const
+        {
+            m_log.debug("FRAME DUMP");
+            for (const auto byte : frame)
+            {
+                std::stringstream ss;
+                ss << " 0x" << std::hex << std::setfill('0') << std::setw(2) << (int)byte << " ";
+                m_log.debug(ss.str().c_str());
+            }
         }
     };
 

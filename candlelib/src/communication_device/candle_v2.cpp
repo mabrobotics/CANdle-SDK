@@ -12,13 +12,13 @@ namespace mab
 
     CandleV2::Error_t CandleV2::init()
     {
-        m_bus->disconnect();
-        I_CommunicationInterface::Error_t connectStatus = m_bus->connect();
-        if (connectStatus != I_CommunicationInterface::Error_t::OK)
-        {
-            m_isInitialized = false;
-            return Error_t::INITIALIZATION_ERROR;
-        }
+        // m_bus->disconnect();
+        // I_CommunicationInterface::Error_t connectStatus = m_bus->connect();
+        // if (connectStatus != I_CommunicationInterface::Error_t::OK)
+        // {
+        //     m_isInitialized = false;
+        //     return Error_t::INITIALIZATION_ERROR;
+        // }
 
         Error_t initStatus = legacyCheckConnection();
         if (initStatus == OK)
@@ -48,7 +48,7 @@ namespace mab
             return CandleV2::Error_t::DATA_EMPTY;
         }
 
-        if (responseLength > 0)
+        if (responseLength == 0)
         {
             I_CommunicationInterface::Error_t comError = m_bus->transfer(*data, timeoutMs);
             if (comError)
@@ -85,6 +85,9 @@ namespace mab
         if (communicationStatus != Error_t::OK)
             return std::pair<std::vector<u8>, Error_t>(dataToSend, communicationStatus);
 
+        m_log.debug("SEND");
+        frameDump(dataToSend);
+
         if (dataToSend.size() > 64)
         {
             m_log.error("CAN frame too long!");
@@ -97,12 +100,32 @@ namespace mab
 
         buffer->insert(buffer->begin(), candleCommandCANframe.begin(), candleCommandCANframe.end());
 
-        communicationStatus = busTransfer(buffer, responseSize + 3);
+        communicationStatus = busTransfer(buffer, responseSize + 2 /*response header size*/);
+
+        // retransmission if wrong ID in the response, see Candle Commands v1 description in
+        // documentation
+        if (buffer->at(1) != 0x01)
+        {
+            buffer->clear();
+            *buffer             = dataToSend;
+            communicationStatus = busTransfer(buffer, responseSize + 2 /*response header size*/);
+            if (buffer->at(1) != 0x01 || buffer->at(0) != GENERIC_CAN_FRAME)
+            {
+                m_log.debug("Retransmitting can message to ID: %d", canId);
+                m_log.error("CAN frame did not reach target device with id: %d!", canId);
+                return std::pair<std::vector<u8>, Error_t>(dataToSend,
+                                                           Error_t::CAN_DEVICE_NOT_RESPONDING);
+            }
+        }
 
         if (buffer->size() > 3)
-            buffer->erase(buffer->begin(), buffer->begin() + 5 /*response header size*/);
+            buffer->erase(buffer->begin(), buffer->begin() + 2 /*response header size*/);
 
         auto response = *buffer;
+
+        m_log.debug("Expected received len: %d", responseSize);
+        m_log.debug("RECEIVE");
+        frameDump(response);
 
         return std::pair<std::vector<u8>, Error_t>(response, communicationStatus);
     }
@@ -115,7 +138,7 @@ namespace mab
         auto testConnectionFrame = std::make_shared<std::vector<u8>>(
             std::vector<u8>(baudrateFrame.begin(), baudrateFrame.end()));
 
-        const Error_t connectionStatus = busTransfer(testConnectionFrame);
+        const Error_t connectionStatus = busTransfer(testConnectionFrame, 5);
         if (connectionStatus != Error_t::OK)
             return connectionStatus;
         return Error_t::OK;
