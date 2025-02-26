@@ -20,6 +20,8 @@
 
 namespace mab
 {
+    /// @brief RAII implementation of libusb devices. m_dev dereferenced on destruction so it
+    /// becomes invalid.
     class LibusbDevice
     {
         libusb_device*            m_dev;
@@ -61,6 +63,11 @@ namespace mab
         static constexpr size_t DEFAULT_TIMEOUT  = 100;         // ms
 
       public:
+        /// @brief Initialize USB interface
+        /// @param vid vid of the target device
+        /// @param pid pid of the target device
+        /// @param serialNo serial number of the target device. If empty than first device from the
+        /// list becomes active device.
         explicit USBv2(const u16 vid, const u16 pid, const std::string serialNo = "");
         ~USBv2();
 

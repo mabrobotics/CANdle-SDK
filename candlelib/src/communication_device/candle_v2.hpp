@@ -5,19 +5,24 @@
 #include <vector>
 #include <utility>
 #include <iomanip>
+#include <map>
 
 #include "logger.hpp"
 
 #include "bus.hpp"
 #include "I_communication_interface.hpp"
 #include "mab_types.hpp"
+#include "MD.fwd.hpp"
 
 namespace mab
 {
     class CandleV2
     {
       public:
+        using canId_t = u16;
+
         static constexpr u32 DEFAULT_CAN_TIMEOUT = 5;
+
         enum Error_t
         {
             OK,
@@ -28,9 +33,11 @@ namespace mab
             DATA_EMPTY,
             RESPONSE_TIMEOUT,
             CAN_DEVICE_NOT_RESPONDING,
+            INVALID_ID,
             UNKNOWN_ERROR
         };
-        /// @brief Command IDs to control Candle device behavior
+        /// @brief Command IDs to control Candle device behavior. With APIv1 it was prepended at the
+        /// begining of the frame.
         enum CandleCommands_t : u8
         {
             NONE                       = 0,
@@ -45,27 +52,46 @@ namespace mab
 
         CandleV2() = delete;
 
+        /// @brief Create CANdle device object based on provided communication interface
+        /// @param canBaudrate CAN network datarate
+        /// @param bus Initialized communication interface
         explicit CandleV2(const CANdleBaudrate_E                           canBaudrate,
                           std::unique_ptr<mab::I_CommunicationInterface>&& bus);
 
+        /// @brief Method for transfering CAN packets via CANdle device
+        /// @param canId Target CAN node ID
+        /// @param dataToSend Data to be transferred via CAN bus
+        /// @param responseSize Size of the expected device response (0 for not expecting a
+        /// response)
+        /// @param timeoutMs Time after which candle will stop waiting for node response in
+        /// miliseconds
+        /// @return
         const std::pair<std::vector<u8>, Error_t> transferCANFrame(
-            const u32             canId,
+            const canId_t         canId,
             const std::vector<u8> dataToSend,
             const size_t          responseSize,
             const u32             timeoutMs = DEFAULT_CAN_TIMEOUT);
 
-        Error_t init();
+        /// @brief Initialize candle
+        Error_t init(std::shared_ptr<CandleV2>* thisSharedRef);
+
+        /// @brief This method clears currently known devices and discovers any MAB device that is
+        /// on the CAN network
+        Error_t discoverDevices();
 
       private:
         static constexpr u32 DEFAULT_CONFIGURATION_TIMEOUT = 10;
 
         CANdleBaudrate_E m_canBaudrate = CANdleBaudrate_E::CAN_BAUD_1M;
         Logger           m_log         = Logger(Logger::ProgramLayer_E::TOP, "CANDLE");
+
+        std::shared_ptr<CandleV2>* m_thisSharedReference;
+
         std::unique_ptr<mab::I_CommunicationInterface> m_bus;
+        std::map<canId_t, std::shared_ptr<MD>>         m_mdMap;
 
         bool m_isInitialized = false;
 
-        // TODO: this method is temporary until bus rework
         Error_t busTransfer(std::shared_ptr<std::vector<u8>> data,
                             size_t                           responseLength = 0,
                             const u32                        timeoutMs      = DEFAULT_CAN_TIMEOUT);
@@ -107,7 +133,10 @@ namespace mab
         }
     };
 
-    // TODO: make baudrate as template so it can be constexpred in helper methods
+    /// @brief Initialize CANdle device
+    /// @param baudrate CAN network datarate
+    /// @param bus Initialized communication interface
+    /// @return Initialized CANdle instance object
     inline std::shared_ptr<mab::CandleV2> attachCandle(
         const CANdleBaudrate_E baudrate, std::unique_ptr<I_CommunicationInterface>&& bus)
     {
@@ -115,7 +144,7 @@ namespace mab
             throw std::runtime_error("Could not create CANdle from an undefined bus!");
 
         auto candle = std::make_shared<mab::CandleV2>(baudrate, std::move(bus));
-        if (candle->init() != CandleV2::Error_t::OK)
+        if (candle->init(&candle) != CandleV2::Error_t::OK)
         {
             throw std::runtime_error("Could not initialize CANdle device!");
         }

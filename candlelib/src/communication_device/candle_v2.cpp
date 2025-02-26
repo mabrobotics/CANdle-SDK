@@ -1,6 +1,7 @@
 #include "candle_v2.hpp"
 
 #include <exception>
+#include <MD.hpp>
 
 namespace mab
 {
@@ -10,15 +11,16 @@ namespace mab
     {
     }
 
-    CandleV2::Error_t CandleV2::init()
+    CandleV2::Error_t CandleV2::init(std::shared_ptr<CandleV2>* thisSharedRef)
     {
-        // m_bus->disconnect();
-        // I_CommunicationInterface::Error_t connectStatus = m_bus->connect();
-        // if (connectStatus != I_CommunicationInterface::Error_t::OK)
-        // {
-        //     m_isInitialized = false;
-        //     return Error_t::INITIALIZATION_ERROR;
-        // }
+        m_thisSharedReference = thisSharedRef;
+        m_bus->disconnect();
+        I_CommunicationInterface::Error_t connectStatus = m_bus->connect();
+        if (connectStatus != I_CommunicationInterface::Error_t::OK)
+        {
+            m_isInitialized = false;
+            return Error_t::INITIALIZATION_ERROR;
+        }
 
         Error_t initStatus = legacyCheckConnection();
         if (initStatus == OK)
@@ -31,6 +33,28 @@ namespace mab
             m_isInitialized = false;
         }
         return initStatus;
+    }
+
+    CandleV2::Error_t CandleV2::discoverDevices()
+    {
+        m_mdMap.clear();
+        constexpr canId_t minValidId = 10;     // ids less than that are reserved for special uses
+        constexpr canId_t maxValidId = 0x7FF;  // 11-bit value (standard can ID max)
+
+        for (canId_t id = minValidId; id < maxValidId; id++)
+        {
+            m_log.debug("Trying to bind MD with id %d", id);
+            auto md         = std::make_shared<MD>(id, *m_thisSharedReference);
+            auto initStatus = md->init();
+            if (initStatus != MD::Error_t::OK)
+                continue;
+            m_log.info("Discovered MD device with ID: %d", id);
+            m_mdMap[id] = md;
+        }
+        if (m_mdMap.size() > 0)
+            return Error_t::OK;
+        m_log.warn("Have not found any MD devices on the CAN bus!");
+        return Error_t::CAN_DEVICE_NOT_RESPONDING;
     }
 
     CandleV2::Error_t CandleV2::busTransfer(std::shared_ptr<std::vector<u8>> data,
@@ -74,7 +98,7 @@ namespace mab
     }
 
     const std::pair<std::vector<u8>, CandleV2::Error_t> CandleV2::transferCANFrame(
-        const u32             canId,
+        const canId_t         canId,
         const std::vector<u8> dataToSend,
         const size_t          responseSize,
         const u32             timeoutMs)

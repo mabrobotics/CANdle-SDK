@@ -1,9 +1,11 @@
 #pragma once
 
+#include "MD.fwd.hpp"
 #include "mab_types.hpp"
 #include "md_types.hpp"
 #include "candle_v2.hpp"
 #include "logger.hpp"
+#include "manufacturer_data.hpp"
 
 #include <cstring>
 
@@ -20,29 +22,35 @@ namespace mab
     {
         static constexpr size_t DEFAULT_RESPONSE_SIZE = 23;
 
-        const u32 m_canId;
+        const CandleV2::canId_t m_canId;
 
         const std::shared_ptr<CandleV2> m_CANdle;
 
         Logger m_log;
 
+        manufacturerData_S m_mfData;
+
       public:
-        MDRegisters_S mdRegisters;
+        MDRegisters_S m_mdRegisters;
 
         enum Error_t
         {
             OK,
             REQUEST_INVALID,
-            TRANSFER_FAILED
+            TRANSFER_FAILED,
+            NOT_CONNECTED
         };
 
-        MD(u32 canId, std::shared_ptr<CandleV2> Candle) : m_canId(canId), m_CANdle(Candle)
+        MD(CandleV2::canId_t canId, std::shared_ptr<CandleV2> Candle)
+            : m_canId(canId), m_CANdle(Candle)
         {
             m_log.m_layer = Logger::ProgramLayer_E::TOP;
             std::stringstream tag;
             tag << "MD" << std::setfill('0') << std::setw(4) << m_canId;
             m_log.m_tag = tag.str();
         }
+
+        Error_t init();
 
         template <class... T>
         inline std::pair<std::tuple<T...>, Error_t> readRegisters(std::tuple<T...>& regs)
@@ -61,8 +69,6 @@ namespace mab
                 return std::pair(regs, Error_t::TRANSFER_FAILED);
             }
 
-            std::tuple<T...>& outputRegs;
-
             if (readRegResult.first.at(0) == 0x41)
             {
                 readRegResult.first.erase(
@@ -72,16 +78,16 @@ namespace mab
             else
             {
                 m_log.error("Error while parsing response!");
-                return std::pair(outputRegs, Error_t::TRANSFER_FAILED);
+                return std::pair(regs, Error_t::TRANSFER_FAILED);
             }
-            bool deserializeFailed = deserializeMDRegisters(readRegResult.first, outputRegs);
+            bool deserializeFailed = deserializeMDRegisters(readRegResult.first, regs);
             if (deserializeFailed)
             {
                 m_log.error("Error while parsing response!");
-                return std::pair(outputRegs, Error_t::TRANSFER_FAILED);
+                return std::pair(regs, Error_t::TRANSFER_FAILED);
             }
 
-            return std::pair(outputRegs, Error_t::OK);
+            return std::pair(regs, Error_t::OK);
         }
 
         template <class... T>
