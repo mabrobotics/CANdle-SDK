@@ -66,7 +66,7 @@ jobs:
   test-candleSDK-linux:
     runs-on: ubuntu-22.04
     container:
-      image: mabroboticsofficial/mab_build_environment    
+      image: mabroboticsofficial/mab_build_environment,    
     steps:
       - name: Checkout
         uses: actions/checkout@v4

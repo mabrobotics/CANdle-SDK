@@ -73,8 +73,6 @@ void PdsCli::parse(void)
 
 socketIndex_E PdsCli::decodeSocketIndex(u8 numericSocketIndex)
 {
-    // m_log.debug("Checking if given socket index [ %u ] is Valid")
-    // TODO:
     return socketIndex_E::UNASSIGNED;
 }
 
