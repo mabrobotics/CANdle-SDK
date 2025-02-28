@@ -7,35 +7,19 @@
 #include <iomanip>
 #include <map>
 
+#include "candle_types.hpp"
+#include "MD.hpp"
 #include "logger.hpp"
-
 #include "bus.hpp"
 #include "I_communication_interface.hpp"
 #include "mab_types.hpp"
-#include "MD.fwd.hpp"
 
 namespace mab
 {
     class CandleV2
     {
       public:
-        using canId_t = u16;
-
         static constexpr u32 DEFAULT_CAN_TIMEOUT = 5;
-
-        enum Error_t
-        {
-            OK,
-            DEVICE_NOT_CONNECTED,
-            INITIALIZATION_ERROR,
-            UNINITIALIZED,
-            DATA_TOO_LONG,
-            DATA_EMPTY,
-            RESPONSE_TIMEOUT,
-            CAN_DEVICE_NOT_RESPONDING,
-            INVALID_ID,
-            UNKNOWN_ERROR
-        };
         /// @brief Command IDs to control Candle device behavior. With APIv1 it was prepended at the
         /// begining of the frame.
         enum CandleCommands_t : u8
@@ -66,18 +50,21 @@ namespace mab
         /// @param timeoutMs Time after which candle will stop waiting for node response in
         /// miliseconds
         /// @return
-        const std::pair<std::vector<u8>, Error_t> transferCANFrame(
-            const canId_t         canId,
-            const std::vector<u8> dataToSend,
-            const size_t          responseSize,
-            const u32             timeoutMs = DEFAULT_CAN_TIMEOUT);
+        static const std::pair<std::vector<u8>, candleTypes::Error_t> transferCANFrame(
+            std::shared_ptr<CandleV2> candle,
+            const canId_t             canId,
+            const std::vector<u8>     dataToSend,
+            const size_t              responseSize,
+            const u32                 timeoutMs = DEFAULT_CAN_TIMEOUT);
 
         /// @brief Initialize candle
-        Error_t init(std::shared_ptr<CandleV2>* thisSharedRef);
+        candleTypes::Error_t init(std::weak_ptr<CandleV2> thisSharedRef);
 
         /// @brief This method clears currently known devices and discovers any MAB device that is
         /// on the CAN network
-        Error_t discoverDevices();
+        candleTypes::Error_t discoverDevices();
+
+        std::map<canId_t, std::shared_ptr<MD>> getMDMap();
 
       private:
         static constexpr u32 DEFAULT_CONFIGURATION_TIMEOUT = 10;
@@ -85,22 +72,20 @@ namespace mab
         CANdleBaudrate_E m_canBaudrate = CANdleBaudrate_E::CAN_BAUD_1M;
         Logger           m_log         = Logger(Logger::ProgramLayer_E::TOP, "CANDLE");
 
-        std::shared_ptr<CandleV2>* m_thisSharedReference;
+        std::weak_ptr<CandleV2> m_thisSharedReference;
 
         std::unique_ptr<mab::I_CommunicationInterface> m_bus;
         std::map<canId_t, std::shared_ptr<MD>>         m_mdMap;
 
         bool m_isInitialized = false;
 
-        Error_t busTransfer(std::shared_ptr<std::vector<u8>> data,
-                            size_t                           responseLength = 0,
-                            const u32                        timeoutMs      = DEFAULT_CAN_TIMEOUT);
-
-        Error_t busTransfer(const std::vector<u8>&& data);
+        candleTypes::Error_t busTransfer(std::vector<u8>* data,
+                                         size_t           responseLength = 0,
+                                         const u32        timeoutMs      = DEFAULT_CAN_TIMEOUT);
 
         // TODO: this method is temporary and must be changed, must have some way for bus to check
         // functional connection
-        Error_t legacyCheckConnection();
+        candleTypes::Error_t legacyCheckConnection();
 
         static constexpr std::array<u8, 2> resetCommandFrame()
         {
@@ -144,7 +129,7 @@ namespace mab
             throw std::runtime_error("Could not create CANdle from an undefined bus!");
 
         auto candle = std::make_shared<mab::CandleV2>(baudrate, std::move(bus));
-        if (candle->init(&candle) != CandleV2::Error_t::OK)
+        if (candle->init(candle) != candleTypes::Error_t::OK)
         {
             throw std::runtime_error("Could not initialize CANdle device!");
         }

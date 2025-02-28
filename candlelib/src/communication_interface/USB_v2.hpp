@@ -25,7 +25,7 @@ namespace mab
     class LibusbDevice
     {
         libusb_device*            m_dev;
-        libusb_device_handle**    m_devHandle;
+        libusb_device_handle*     m_devHandle;
         libusb_device_descriptor  m_desc;
         Logger                    m_log = Logger(Logger::ProgramLayer_E::BOTTOM, "USB_DEV");
         libusb_config_descriptor* m_config;
@@ -74,8 +74,8 @@ namespace mab
         Error_t connect() override;
         Error_t disconnect() override;
 
-        virtual Error_t transfer(std::vector<u8> data, const u32 timeoutMs) override;
-        virtual std::pair<std::vector<u8>, Error_t> transfer(
+        Error_t transfer(std::vector<u8> data, const u32 timeoutMs) override;
+        std::pair<std::vector<u8>, Error_t> transfer(
             std::vector<u8> data,
             const u32       timeoutMs,
             const size_t    expectedReceivedDataSize) override;

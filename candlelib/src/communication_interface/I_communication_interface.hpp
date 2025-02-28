@@ -24,6 +24,8 @@ namespace mab
             DATA_EMPTY
         };
 
+        virtual ~I_CommunicationInterface(){};
+
         /// @brief Method to claim communication interface and enable communication
         /// @return Error on failure, OK on success
         virtual Error_t connect() = 0;

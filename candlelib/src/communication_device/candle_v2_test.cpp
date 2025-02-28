@@ -82,8 +82,8 @@ TEST_F(CandleV2Test, failAfterInit)
     EXPECT_CALL(*mockBus, transfer(_, _))
         .WillOnce(Return(mab::I_CommunicationInterface::Error_t::UNKNOWN_ERROR));
     auto candle = mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus));
-    auto result = candle->transferCANFrame(mockId, mockData, 0);
-    ASSERT_NE(result.second, mab::CandleV2::Error_t::OK);
+    auto result = candle->transferCANFrame(candle, mockId, mockData, 0);
+    ASSERT_NE(result.second, mab::candleTypes::Error_t::OK);
 }
 
 TEST_F(CandleV2Test, successAfterInit)
@@ -95,6 +95,6 @@ TEST_F(CandleV2Test, successAfterInit)
         .Times(1)
         .WillOnce(Return(std::pair(mockData, mab::I_CommunicationInterface::Error_t::OK)));
     auto candle = mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus));
-    auto result = candle->transferCANFrame(mockId, mockData, 0);
-    ASSERT_EQ(result.second, mab::CandleV2::Error_t::OK);
+    auto result = candle->transferCANFrame(candle, mockId, mockData, 0);
+    ASSERT_EQ(result.second, mab::candleTypes::Error_t::OK);
 }

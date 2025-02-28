@@ -67,7 +67,7 @@ namespace mab
         m_log.debug("Connected device has %d interfaces", m_config->bNumInterfaces);
 
         m_log.debug("Opening communication...");
-        libusb_error usbOpenError = static_cast<libusb_error>(libusb_open(m_dev, m_devHandle));
+        libusb_error usbOpenError = static_cast<libusb_error>(libusb_open(m_dev, &m_devHandle));
         if (usbOpenError)
         {
             std::string message;
@@ -75,16 +75,20 @@ namespace mab
             message.insert(0, "On open: ");
             m_log.error(message.c_str());
         }
+        if (m_devHandle == nullptr)
+        {
+            m_log.error("Did not receive a handle from libusb device!");
+        }
 
         for (u32 interfaceNo = 0; interfaceNo < m_config->bNumInterfaces; interfaceNo++)
         {
             m_log.debug("Detaching kernel drivers from interface no.: %d", interfaceNo);
-            if (libusb_kernel_driver_active(*m_devHandle, interfaceNo))
-                libusb_detach_kernel_driver(*m_devHandle, interfaceNo);
+            if (libusb_kernel_driver_active(m_devHandle, interfaceNo))
+                libusb_detach_kernel_driver(m_devHandle, interfaceNo);
 
             m_log.debug("Claiming interface no.: %d", interfaceNo);
             libusb_error usbClaimError =
-                static_cast<libusb_error>(libusb_claim_interface(*m_devHandle, interfaceNo));
+                static_cast<libusb_error>(libusb_claim_interface(m_devHandle, interfaceNo));
             if (usbClaimError)
             {
                 std::string message;
@@ -102,27 +106,27 @@ namespace mab
         for (u32 interfaceNo = 0; interfaceNo < m_config->bNumInterfaces; interfaceNo++)
         {
             libusb_error usbReleaseError =
-                static_cast<libusb_error>(libusb_release_interface(*m_devHandle, interfaceNo));
+                static_cast<libusb_error>(libusb_release_interface(m_devHandle, interfaceNo));
             if (usbReleaseError)
             {
                 std::string message;
                 message = translateLibusbError(usbReleaseError);
                 m_log.error(message.c_str());
             }
-            libusb_attach_kernel_driver(*m_devHandle, interfaceNo);
+            libusb_attach_kernel_driver(m_devHandle, interfaceNo);
         }
-        libusb_close(*m_devHandle);
+        libusb_close(m_devHandle);
         m_log.info(
             "Disconnected USB device: vid - %d, pid - %d", m_desc.idVendor, m_desc.idProduct);
     }
 
     libusb_error LibusbDevice::transmit(u8* data, const size_t length, const u32 timeout)
     {
-        // TODO: needs another solution
+        // TODO: needs another solution, adds too much delay
         // clear junk data
         // u8 dummyBuffer[66];
         // libusb_bulk_transfer(
-        //     *m_devHandle, m_inEndpointAddress, dummyBuffer, sizeof(dummyBuffer), NULL, 1);
+        //     m_devHandle, m_inEndpointAddress, dummyBuffer, sizeof(dummyBuffer), NULL, 1);
         if (data == nullptr)
         {
             std::string message = "Data does not exist!";
@@ -130,7 +134,7 @@ namespace mab
             throw std::runtime_error(message);
         }
         return static_cast<libusb_error>(
-            libusb_bulk_transfer(*m_devHandle, m_outEndpointAddress, data, length, NULL, timeout));
+            libusb_bulk_transfer(m_devHandle, m_outEndpointAddress, data, length, NULL, timeout));
     }
     libusb_error LibusbDevice::receive(u8* data, const size_t length, const u32 timeout)
     {
@@ -144,14 +148,14 @@ namespace mab
             m_log.warn("Requesting emtpy receive!");
         std::memset(data, 0, length);
         return static_cast<libusb_error>(
-            libusb_bulk_transfer(*m_devHandle, m_inEndpointAddress, data, length, NULL, timeout));
+            libusb_bulk_transfer(m_devHandle, m_inEndpointAddress, data, length, NULL, timeout));
     }
 
     std::string LibusbDevice::getSerialNo()
     {
         std::array<u8, 13> serialNo{0};
         libusb_error       err = static_cast<libusb_error>(libusb_get_string_descriptor_ascii(
-            *m_devHandle, m_desc.iSerialNumber, serialNo.begin(), serialNo.size()));
+            m_devHandle, m_desc.iSerialNumber, serialNo.begin(), serialNo.size()));
 
         if (err < 0)
         {
@@ -166,17 +170,19 @@ namespace mab
     {
         if (!serialNo.empty())
             m_serialNo = serialNo;
+        if (libusb_init(NULL))
+            m_Log.error("Could not init libusb!");
+        // libusb_set_option(NULL, libusb_option::LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL_DEBUG);
     }
     USBv2::~USBv2()
     {
         disconnect();
+        libusb_exit(NULL);
     }
 
     USBv2::Error_t USBv2::connect()
     {
-        if (libusb_init(NULL))
-            m_Log.error("Could not init libusb!");
-
+        m_libusbDevice                = nullptr;
         libusb_device** deviceList    = nullptr;
         s32             deviceListLen = libusb_get_device_list(NULL, &deviceList);
         if (deviceListLen == 0)
@@ -212,6 +218,11 @@ namespace mab
                     m_libusbDevice = nullptr;
                     continue;
                 }
+                // without reasigning libusb device libusb library looses handle for some reason
+                m_libusbDevice = nullptr;
+                m_libusbDevice =
+                    std::make_unique<LibusbDevice>(checkedDevice, IN_ENDPOINT, OUT_ENDPOINT);
+
                 break;
             }
         }
@@ -269,7 +280,7 @@ namespace mab
         {
             std::vector<u8> recievedData;
             recievedData.resize(expectedReceivedDataSize);
-            m_libusbDevice->receive(recievedData.data(), data.size(), timeoutMs);
+            m_libusbDevice->receive(recievedData.data(), recievedData.size(), timeoutMs);
             return std::pair(recievedData, Error_t::OK);
         }
         return std::pair(data, Error_t::OK);

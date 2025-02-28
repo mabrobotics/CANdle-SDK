@@ -11,6 +11,8 @@ typedef int8_t   s8;
 typedef float    f32;
 namespace mab
 {
+    using canId_t = u16;
+
     /// @brief CAN bus baudrates
     enum CANdleBaudrate_E : uint8_t
     {

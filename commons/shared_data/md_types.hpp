@@ -10,7 +10,6 @@
 
 namespace mab
 {
-
     enum class MdFrameId_E : u8
     {
         FRAME_WRITE_REGISTER = 0x40,

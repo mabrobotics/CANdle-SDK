@@ -1,11 +1,10 @@
 #pragma once
 
-#include "MD.fwd.hpp"
 #include "mab_types.hpp"
 #include "md_types.hpp"
-#include "candle_v2.hpp"
 #include "logger.hpp"
 #include "manufacturer_data.hpp"
+#include "candle_types.hpp"
 
 #include <cstring>
 
@@ -15,6 +14,7 @@
 #include <functional>
 #include <tuple>
 #include <vector>
+#include <iomanip>
 
 namespace mab
 {
@@ -22,13 +22,13 @@ namespace mab
     {
         static constexpr size_t DEFAULT_RESPONSE_SIZE = 23;
 
-        const CandleV2::canId_t m_canId;
-
-        const std::shared_ptr<CandleV2> m_CANdle;
+        const canId_t m_canId;
 
         Logger m_log;
 
         manufacturerData_S m_mfData;
+
+        std::function<canTransmitFrame_t> m_transferCANFrame;
 
       public:
         MDRegisters_S m_mdRegisters;
@@ -41,8 +41,8 @@ namespace mab
             NOT_CONNECTED
         };
 
-        MD(CandleV2::canId_t canId, std::shared_ptr<CandleV2> Candle)
-            : m_canId(canId), m_CANdle(Candle)
+        MD(canId_t canId, std::function<canTransmitFrame_t> transferCANFrame)
+            : m_canId(canId), m_transferCANFrame(transferCANFrame)
         {
             m_log.m_layer = Logger::ProgramLayer_E::TOP;
             std::stringstream tag;
@@ -61,9 +61,9 @@ namespace mab
             frame.push_back((u8)0x0);
             auto payload = serializeMDRegisters(regs);
             frame.insert(frame.end(), payload.begin(), payload.end());
-            auto readRegResult = m_CANdle->transferCANFrame(
-                m_canId, frame, frame.size(), CandleV2::DEFAULT_CAN_TIMEOUT);
-            if (readRegResult.second != CandleV2::Error_t::OK)
+            auto readRegResult =
+                m_transferCANFrame(m_canId, frame, frame.size(), DEFAULT_CAN_TIMEOUT);
+            if (readRegResult.second != candleTypes::Error_t::OK)
             {
                 m_log.error("Error while reading registers!");
                 return std::pair(regs, Error_t::TRANSFER_FAILED);
@@ -99,9 +99,9 @@ namespace mab
             frame.push_back((u8)0x0);
             auto payload = serializeMDRegisters(regs);
             frame.insert(frame.end(), payload.begin(), payload.end());
-            auto readRegResult = m_CANdle->transferCANFrame(
-                m_canId, frame, DEFAULT_RESPONSE_SIZE, CandleV2::DEFAULT_CAN_TIMEOUT);
-            if (readRegResult.second != CandleV2::Error_t::OK)
+            auto readRegResult =
+                m_transferCANFrame(m_canId, frame, DEFAULT_RESPONSE_SIZE, DEFAULT_CAN_TIMEOUT);
+            if (readRegResult.second != candleTypes::Error_t::OK)
             {
                 m_log.error("Error while writing registers!");
                 return Error_t::TRANSFER_FAILED;
