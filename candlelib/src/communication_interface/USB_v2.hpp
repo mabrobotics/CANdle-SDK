@@ -34,6 +34,8 @@ namespace mab
 
         bool m_connected = false;
 
+        std::array<u8, 512> m_rxBuffer = {0};
+
       public:
         LibusbDevice(libusb_device* device,
                      const s32      inEndpointAddress,
@@ -42,6 +44,9 @@ namespace mab
 
         libusb_error transmit(u8* data, const size_t length, const u32 timeout);
         libusb_error receive(u8* data, const size_t length, const u32 timeout);
+
+        libusb_error unclogInput();
+        libusb_error unclogOutput();
 
         std::string getSerialNo();
     };

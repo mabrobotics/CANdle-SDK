@@ -147,8 +147,34 @@ namespace mab
         if (length == 0)
             m_log.warn("Requesting emtpy receive!");
         std::memset(data, 0, length);
-        return static_cast<libusb_error>(
-            libusb_bulk_transfer(m_devHandle, m_inEndpointAddress, data, length, NULL, timeout));
+
+        int actualLen = 0;
+
+        // rx buffer is bigger to protect from overflow condition
+        // https://libusb.sourceforge.io/api-1.0/libusb_packetoverflow.html
+        libusb_error err = static_cast<libusb_error>(libusb_bulk_transfer(m_devHandle,
+                                                                          m_inEndpointAddress,
+                                                                          m_rxBuffer.data(),
+                                                                          m_rxBuffer.size(),
+                                                                          &actualLen,
+                                                                          timeout));
+
+        if (actualLen != (int)length && actualLen != 66/*some kind of libusb hack with that frame length, jmatyszczak know more about it*/)
+            m_log.warn("Received length of %d does not match expected length of %d bytes",
+                       actualLen,
+                       length);
+        std::memcpy(data, m_rxBuffer.data(), length);
+
+        return err;
+    }
+
+    libusb_error LibusbDevice::unclogInput()
+    {
+        return (libusb_error)libusb_clear_halt(m_devHandle, m_inEndpointAddress);
+    }
+    libusb_error LibusbDevice::unclogOutput()
+    {
+        return (libusb_error)libusb_clear_halt(m_devHandle, m_outEndpointAddress);
     }
 
     std::string LibusbDevice::getSerialNo()
@@ -275,12 +301,36 @@ namespace mab
             data.resize(66);
         }
 
-        m_libusbDevice->transmit(data.data(), data.size(), timeoutMs);
+        libusb_error transmitError = m_libusbDevice->transmit(data.data(), data.size(), timeoutMs);
+
+        if (transmitError != libusb_error::LIBUSB_SUCCESS)
+        {
+            std::string err = translateLibusbError(transmitError);
+            m_Log.error(err.c_str());
+            if (transmitError == libusb_error::LIBUSB_ERROR_PIPE)  // pipe clogged and needs a reset
+            {
+                m_libusbDevice->unclogInput();
+            }
+            return std::pair(data, Error_t::TRANSMITTER_ERROR);
+        }
+
         if (expectedReceivedDataSize != 0)
         {
             std::vector<u8> recievedData;
             recievedData.resize(expectedReceivedDataSize);
-            m_libusbDevice->receive(recievedData.data(), recievedData.size(), timeoutMs);
+            libusb_error receiveError =
+                m_libusbDevice->receive(recievedData.data(), recievedData.size(), timeoutMs);
+            if (receiveError != libusb_error::LIBUSB_SUCCESS)
+            {
+                std::string err = translateLibusbError(receiveError);
+                m_Log.error(err.c_str());
+                if (receiveError ==
+                    libusb_error::LIBUSB_ERROR_PIPE)  // pipe clogged and needs a reset
+                {
+                    m_libusbDevice->unclogOutput();
+                }
+                return std::pair(data, Error_t::RECEIVER_ERROR);
+            }
             return std::pair(recievedData, Error_t::OK);
         }
         return std::pair(data, Error_t::OK);

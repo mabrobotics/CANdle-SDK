@@ -18,7 +18,8 @@ namespace mab
             NOT_CONNECTED,
             INITIALIZATION_ERROR,
             COULD_NOT_ACQUIRE_INTEFACE,
-            RESPONSE_TIMEOUT,
+            TRANSMITTER_ERROR,
+            RECEIVER_ERROR,
             UNKNOWN_ERROR,
             DATA_TOO_LONG,
             DATA_EMPTY

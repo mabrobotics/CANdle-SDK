@@ -19,7 +19,7 @@ namespace mab
     class CandleV2
     {
       public:
-        static constexpr u32 DEFAULT_CAN_TIMEOUT = 5;
+        static constexpr u32 DEFAULT_CAN_TIMEOUT = 1;
         /// @brief Command IDs to control Candle device behavior. With APIv1 it was prepended at the
         /// begining of the frame.
         enum CandleCommands_t : u8
@@ -36,6 +36,8 @@ namespace mab
 
         CandleV2() = delete;
 
+        ~CandleV2();
+
         /// @brief Create CANdle device object based on provided communication interface
         /// @param canBaudrate CAN network datarate
         /// @param bus Initialized communication interface
@@ -51,11 +53,11 @@ namespace mab
         /// miliseconds
         /// @return
         static const std::pair<std::vector<u8>, candleTypes::Error_t> transferCANFrame(
-            std::shared_ptr<CandleV2> candle,
-            const canId_t             canId,
-            const std::vector<u8>     dataToSend,
-            const size_t              responseSize,
-            const u32                 timeoutMs = DEFAULT_CAN_TIMEOUT);
+            std::weak_ptr<CandleV2> candle,
+            const canId_t           canId,
+            const std::vector<u8>   dataToSend,
+            const size_t            responseSize,
+            const u32               timeoutMs = DEFAULT_CAN_TIMEOUT);
 
         /// @brief Initialize candle
         candleTypes::Error_t init(std::weak_ptr<CandleV2> thisSharedRef);
@@ -64,7 +66,7 @@ namespace mab
         /// on the CAN network
         candleTypes::Error_t discoverDevices();
 
-        std::map<canId_t, std::shared_ptr<MD>> getMDMap();
+        std::shared_ptr<std::map<canId_t, MD>> getMDmapHandle();
 
       private:
         static constexpr u32 DEFAULT_CONFIGURATION_TIMEOUT = 10;
@@ -75,13 +77,13 @@ namespace mab
         std::weak_ptr<CandleV2> m_thisSharedReference;
 
         std::unique_ptr<mab::I_CommunicationInterface> m_bus;
-        std::map<canId_t, std::shared_ptr<MD>>         m_mdMap;
+        std::shared_ptr<std::map<canId_t, MD>>         m_mdMap;
 
         bool m_isInitialized = false;
 
         candleTypes::Error_t busTransfer(std::vector<u8>* data,
                                          size_t           responseLength = 0,
-                                         const u32        timeoutMs      = DEFAULT_CAN_TIMEOUT);
+                                         const u32        timeoutMs      = DEFAULT_CAN_TIMEOUT + 1);
 
         // TODO: this method is temporary and must be changed, must have some way for bus to check
         // functional connection

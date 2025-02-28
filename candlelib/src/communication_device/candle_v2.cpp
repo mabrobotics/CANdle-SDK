@@ -5,10 +5,19 @@
 
 namespace mab
 {
+    CandleV2::~CandleV2()
+    {
+        std::cout << "Deconstructing Candle, do not reuse any handles provided by it!\n";
+        m_mdMap->clear();
+        m_bus->disconnect();
+        m_bus = nullptr;
+    }
+
     CandleV2::CandleV2(const CANdleBaudrate_E                           canBaudrate,
                        std::unique_ptr<mab::I_CommunicationInterface>&& bus)
         : m_canBaudrate(canBaudrate), m_bus(std::move(bus))
     {
+        m_mdMap = std::make_shared<std::map<canId_t, MD>>();
     }
 
     candleTypes::Error_t CandleV2::init(std::weak_ptr<CandleV2> thisSharedRef)
@@ -38,11 +47,11 @@ namespace mab
     candleTypes::Error_t CandleV2::discoverDevices()
     {
         using namespace std::placeholders;
-        m_mdMap.clear();
+        m_mdMap->clear();
 
         // TODO: change those to real values
-        constexpr canId_t minValidId = 97;   // ids less than that are reserved for special uses
-        constexpr canId_t maxValidId = 102;  // 11-bit value (standard can ID max)
+        constexpr canId_t minValidId = 97;
+        constexpr canId_t maxValidId = 102;
         // constexpr canId_t minValidId = 10;     // ids less than that are reserved for special
         // uses constexpr canId_t maxValidId = 0x7FF;  // 11-bit value (standard can ID max)
 
@@ -50,23 +59,22 @@ namespace mab
         {
             m_log.debug("Trying to bind MD with id %d", id);
             std::function<canTransmitFrame_t> transmitCanFrameMethod =
-                std::bind(CandleV2::transferCANFrame, m_thisSharedReference.lock(), _1, _2, _3, _4);
-
-            auto md         = std::make_shared<MD>(id, transmitCanFrameMethod);
-            auto initStatus = md->init();
-            if (initStatus != MD::Error_t::OK)
-                continue;
-            m_log.info("Discovered MD device with ID: %d", id);
-            m_mdMap[id] = md;
+                std::bind(CandleV2::transferCANFrame, m_thisSharedReference, _1, _2, _3, _4);
+            m_mdMap->emplace(id, MD(id, transmitCanFrameMethod));
+            auto initStatus = m_mdMap->at(id).init();
+            if (initStatus == MD::Error_t::OK)
+                m_log.info("Discovered MD device with ID: %d", id);
+            else
+                m_mdMap->erase(id);
         }
-        if (m_mdMap.size() > 0)
+        if (m_mdMap->size() > 0)
             return candleTypes::Error_t::OK;
         m_log.warn("Have not found any MD devices on the CAN bus!");
         // TODO: add pds discovery
         return candleTypes::Error_t::CAN_DEVICE_NOT_RESPONDING;
     }
 
-    std::map<canId_t, std::shared_ptr<MD>> CandleV2::getMDMap()
+    std::shared_ptr<std::map<canId_t, MD>> CandleV2::getMDmapHandle()
     {
         return m_mdMap;
     }
@@ -108,26 +116,30 @@ namespace mab
     }
 
     const std::pair<std::vector<u8>, candleTypes::Error_t> CandleV2::transferCANFrame(
-        std::shared_ptr<CandleV2> candle,
-        const canId_t             canId,
-        const std::vector<u8>     dataToSend,
-        const size_t              responseSize,
-        const u32                 timeoutMs)
+        std::weak_ptr<CandleV2> candle,
+        const canId_t           canId,
+        const std::vector<u8>   dataToSend,
+        const size_t            responseSize,
+        const u32               timeoutMs)
     {
         candleTypes::Error_t communicationStatus = candleTypes::Error_t::OK;
-        if (!candle->m_isInitialized)
+        auto                 candleSp            = candle.lock();
+        if (!candleSp)
+            throw std::runtime_error("Candle is empty");
+
+        if (!candleSp->m_isInitialized)
             return std::pair<std::vector<u8>, candleTypes::Error_t>(
                 dataToSend, candleTypes::Error_t::UNINITIALIZED);
         if (communicationStatus != candleTypes::Error_t::OK)
             return std::pair<std::vector<u8>, candleTypes::Error_t>(dataToSend,
                                                                     communicationStatus);
 
-        candle->m_log.debug("SEND");
-        candle->frameDump(dataToSend);
+        candleSp->m_log.debug("SEND");
+        candleSp->frameDump(dataToSend);
 
         if (dataToSend.size() > 64)
         {
-            candle->m_log.error("CAN frame too long!");
+            candleSp->m_log.error("CAN frame too long!");
             return std::pair<std::vector<u8>, candleTypes::Error_t>(
                 dataToSend, candleTypes::Error_t::DATA_TOO_LONG);
         }
@@ -139,23 +151,13 @@ namespace mab
         buffer.insert(buffer.begin(), candleCommandCANframe.begin(), candleCommandCANframe.end());
 
         communicationStatus =
-            candle->busTransfer(&buffer, responseSize + 2 /*response header size*/);
+            candleSp->busTransfer(&buffer, responseSize + 2 /*response header size*/);
 
-        // retransmission if wrong ID in the response, see Candle Commands v1 description in
-        // documentation
         if (buffer.at(1) != 0x01)
         {
-            buffer.clear();
-            buffer = dataToSend;
-            communicationStatus =
-                candle->busTransfer(&buffer, responseSize + 2 /*response header size*/);
-            if (buffer.at(1) != 0x01 || buffer.at(0) != GENERIC_CAN_FRAME)
-            {
-                candle->m_log.debug("Retransmitting can message to ID: %d", canId);
-                candle->m_log.error("CAN frame did not reach target device with id: %d!", canId);
-                return std::pair<std::vector<u8>, candleTypes::Error_t>(
-                    dataToSend, candleTypes::Error_t::CAN_DEVICE_NOT_RESPONDING);
-            }
+            candleSp->m_log.error("CAN frame did not reach target device with id: %d!", canId);
+            return std::pair<std::vector<u8>, candleTypes::Error_t>(
+                dataToSend, candleTypes::Error_t::CAN_DEVICE_NOT_RESPONDING);
         }
 
         if (buffer.size() > 3)
@@ -163,9 +165,9 @@ namespace mab
 
         auto response = buffer;
 
-        candle->m_log.debug("Expected received len: %d", responseSize);
-        candle->m_log.debug("RECEIVE");
-        candle->frameDump(response);
+        candleSp->m_log.debug("Expected received len: %d", responseSize);
+        candleSp->m_log.debug("RECEIVE");
+        candleSp->frameDump(response);
 
         return std::pair<std::vector<u8>, candleTypes::Error_t>(response, communicationStatus);
     }
@@ -173,13 +175,13 @@ namespace mab
     // TODO: this must be changed to something less invasive
     candleTypes::Error_t CandleV2::legacyCheckConnection()
     {
-        // auto baudrateFrame = baudrateCommandFrame(m_canBaudrate);
+        auto baudrateFrame = baudrateCommandFrame(m_canBaudrate);
 
-        // auto testConnectionFrame = std::vector<u8>(baudrateFrame.begin(), baudrateFrame.end());
+        auto testConnectionFrame = std::vector<u8>(baudrateFrame.begin(), baudrateFrame.end());
 
-        // const candleTypes::Error_t connectionStatus = busTransfer(&testConnectionFrame, 5);
-        // if (connectionStatus != candleTypes::Error_t::OK)
-        //     return connectionStatus;
+        const candleTypes::Error_t connectionStatus = busTransfer(&testConnectionFrame, 5);
+        if (connectionStatus != candleTypes::Error_t::OK)
+            return connectionStatus;
         return candleTypes::Error_t::OK;
     }
 }  // namespace mab

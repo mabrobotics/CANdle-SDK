@@ -42,6 +42,12 @@ namespace mab
         {
         }
 
+        RegisterEntry_S(const RegisterEntry_S& otherReg)
+            : m_accessLevel(otherReg.m_accessLevel), m_regAddress(otherReg.m_regAddress)
+        {
+            value = otherReg.value;
+        }
+
         RegisterEntry_S& operator=(T otherValue)
         {
             value = otherValue;
@@ -51,7 +57,7 @@ namespace mab
 
         T operator=(RegisterEntry_S& reg)
         {
-            return value;
+            return reg.value;
         }
 
         constexpr size_t getSize()
@@ -79,6 +85,11 @@ namespace mab
             }
             return false;
         }
+
+        void clear()
+        {
+            memset(&value, 0, sizeof(value));
+        }
     };
     template <typename T, size_t N>
     struct RegisterEntry_S<T[N]>
@@ -95,6 +106,12 @@ namespace mab
         RegisterEntry_S(RegisterAccessLevel_E accessLevel, u16 regAddress)
             : m_accessLevel(accessLevel), m_regAddress(regAddress)
         {
+        }
+        RegisterEntry_S(const RegisterEntry_S& otherReg)
+            : m_accessLevel(otherReg.m_accessLevel), m_regAddress(otherReg.m_regAddress)
+        {
+            static_assert(std::is_same_v<decltype(otherReg.value), decltype(value)>);
+            std::memcpy(&value, &otherReg.value, sizeof(value));
         }
 
         // This is kinda unsafe due to c-array not passing size, use with caution
@@ -134,6 +151,10 @@ namespace mab
                 return true;
             }
             return false;
+        }
+        void clear()
+        {
+            value = {0};
         }
     };
 

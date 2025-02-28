@@ -52,10 +52,20 @@ namespace mab
 
         Error_t init();
 
+        template <typename T>
+        inline std::pair<RegisterEntry_S<T>, Error_t> readRegister(RegisterEntry_S<T>& reg)
+        {
+            auto regTuple   = std::make_tuple(reg);
+            auto resultPair = readRegisters(regTuple);
+            reg.value       = std::get<0>(regTuple).value;
+            return std::pair(reg, resultPair.second);
+        }
+
         template <class... T>
         inline std::pair<std::tuple<T...>, Error_t> readRegisters(std::tuple<T...>& regs)
         {
             m_log.debug("Reading register...");
+            std::apply([&](auto&&... reg) { ((reg.clear()), ...); }, regs);
             std::vector<u8> frame;
             frame.push_back((u8)MdFrameId_E::FRAME_READ_REGISTER);
             frame.push_back((u8)0x0);
@@ -68,18 +78,20 @@ namespace mab
                 m_log.error("Error while reading registers!");
                 return std::pair(regs, Error_t::TRANSFER_FAILED);
             }
-
-            if (readRegResult.first.at(0) == 0x41)
-            {
-                readRegResult.first.erase(
-                    readRegResult.first.begin(),
-                    readRegResult.first.begin() + 2);  // delete response header
-            }
-            else
-            {
-                m_log.error("Error while parsing response!");
-                return std::pair(regs, Error_t::TRANSFER_FAILED);
-            }
+            // TODO: for some reason MD sends first byte as 0x0, investigate
+            //  if (readRegResult.first.at(0) == 0x41)
+            //  {
+            //      readRegResult.first.erase(
+            //          readRegResult.first.begin(),
+            //          readRegResult.first.begin() + 2);  // delete response header
+            //  }
+            //  else
+            //  {
+            //      m_log.error("Error while parsing response!");
+            //      return std::pair(regs, Error_t::TRANSFER_FAILED);
+            //  }
+            readRegResult.first.erase(readRegResult.first.begin(),
+                                      readRegResult.first.begin() + 2);  // delete response header
             bool deserializeFailed = deserializeMDRegisters(readRegResult.first, regs);
             if (deserializeFailed)
             {
@@ -141,7 +153,7 @@ namespace mab
         static inline bool deserializeMDRegisters(std::vector<u8>& output, std::tuple<T...>& regs)
         {
             bool failure            = false;
-            auto performForEachElem = [&](auto& reg)  // Capture by reference to modify `failure`
+            auto performForEachElem = [&](auto& reg)  // Capture by reference to modify 'failure'
             { failure |= !(reg.setSerializedRegister(output)); };
 
             std::apply([&](auto&... reg) { (performForEachElem(reg), ...); }, regs);
