@@ -1,8 +1,0 @@
-Package: candletool
-Version: 1.0.1
-Section: base
-Priority: optional
-Architecture: all
-Depends: libusb-1.0-0
-Maintainer: MAB Robotics <contact@mabrobotics.pl>
-Description: MAB ecosystem support tool

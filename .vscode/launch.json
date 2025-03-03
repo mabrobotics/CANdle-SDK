@@ -101,6 +101,18 @@
             "MIMode": "gdb",
         },
         {
+            "name": "candletool naked",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/../build/CANdleSDK/candletool/candletool",
+            "args": [],
+            "stopAtEntry": true,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+        },
+        {
             "name": "PDS Example",
             "type": "cppdbg",
             "request": "launch",

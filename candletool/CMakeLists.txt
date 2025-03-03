@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.5)
 
+include(GNUInstallDirs)
+
+message(CMAKE_INSTALL_SYSCONFDIR: ${CMAKE_INSTALL_SYSCONFDIR})
+
 set(CANDLETOOL_VERSION_MAJOR 2)
 set(CANDLETOOL_VERSION_MINOR 3)
 set(CANDLETOOL_VERSION_PATCH 5)
@@ -71,6 +75,7 @@ set(CPACK_PACKAGE_VENDOR "MAB Robotics")
 set(CPACK_PACKAGE_DESCRIPTION "Console tool for MAB devices ecosystem configuration")
 
 if(WIN32)
+
   set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL "ON")
   set(CPACK_NSIS_MODIFY_PATH ON)
   target_link_libraries(
@@ -88,12 +93,12 @@ elseif(UNIX)
           RUNTIME
           COMPONENT candletool)
 
-  install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/motors"
-          DESTINATION "bin/config"
+  install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/motors
+          DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
           COMPONENT _configs)
 
-  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini"
-          DESTINATION "bin/config/"
+  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini
+          DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
           PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ WORLD_WRITE
           COMPONENT _configs)
     
@@ -108,15 +113,11 @@ elseif(UNIX)
     
   endif()
 
-  set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${PROJECT_SOURCE_DIR}/template_package/postinst")
-  
-  install(TARGETS candletool
-          DESTINATION /usr/local/bin
-          EXCLUDE_FROM_ALL)
+  set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/template_package/postinst")
+ 
 
-  install(DIRECTORY "${PROJECT_SOURCE_DIR}/template_package/etc"
-          DESTINATION /
-          EXCLUDE_FROM_ALL)
+  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/udev/rules.d/99-candletool.rules
+          DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/")
 
   install(FILES "${PROJECT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini"
           DESTINATION "/etc/candletool/"
