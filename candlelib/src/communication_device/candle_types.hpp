@@ -3,7 +3,7 @@
 #include "mab_types.hpp"
 namespace mab
 {
-    struct candleTypes
+    namespace candleTypes
     {
         enum Error_t
         {
@@ -18,7 +18,13 @@ namespace mab
             INVALID_ID,
             UNKNOWN_ERROR
         };
-    };
+
+        enum busTypes_t
+        {
+            USB,
+            SPI
+        };
+    };                                      // namespace candleTypes
     constexpr u32 DEFAULT_CAN_TIMEOUT = 5;  // ms
 
     // dataOut, errorsDuringTransmissions (canID, dataIn, expectedDataOut, timeoutMs)

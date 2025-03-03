@@ -12,6 +12,7 @@
 #include "logger.hpp"
 #include "bus.hpp"
 #include "I_communication_interface.hpp"
+#include "USB_v2.hpp"
 #include "mab_types.hpp"
 
 namespace mab
@@ -65,6 +66,9 @@ namespace mab
         /// @brief This method clears currently known devices and discovers any MAB device that is
         /// on the CAN network
         candleTypes::Error_t discoverDevices();
+
+        candleTypes::Error_t addMD(canId_t id);
+        candleTypes::Error_t removeMD(canId_t id);
 
         std::shared_ptr<std::map<canId_t, MD>> getMDmapHandle();
 
@@ -136,5 +140,23 @@ namespace mab
             throw std::runtime_error("Could not initialize CANdle device!");
         }
         return candle;
+    }
+
+    inline std::shared_ptr<mab::CandleV2> attachCandle(const CANdleBaudrate_E  baudrate,
+                                                       candleTypes::busTypes_t busType)
+    {
+        std::unique_ptr<mab::I_CommunicationInterface> bus;
+        switch (busType)
+        {
+            case candleTypes::busTypes_t::USB:
+                bus = std::make_unique<mab::USBv2>(mab::CandleV2::CANDLE_VID,
+                                                   mab::CandleV2::CANDLE_PID);
+                if (bus->connect() != mab::I_CommunicationInterface::Error_t::OK)
+                    throw std::runtime_error("Could not connect USB device!");
+                return attachCandle(baudrate, std::move(bus));
+            default:
+                throw std::runtime_error("Wrong communication interface provided!");
+                return nullptr;
+        }
     }
 }  // namespace mab

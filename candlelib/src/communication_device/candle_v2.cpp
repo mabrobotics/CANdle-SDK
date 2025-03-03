@@ -46,7 +46,6 @@ namespace mab
 
     candleTypes::Error_t CandleV2::discoverDevices()
     {
-        using namespace std::placeholders;
         m_mdMap->clear();
 
         constexpr canId_t minValidId = 10;     // ids less than that are reserved for special
@@ -61,15 +60,7 @@ namespace mab
             Logger::Verbosity_E prevVerbosity =
                 Logger::g_m_verbosity.value_or(Logger::Verbosity_E::VERBOSITY_1);
             Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
-            std::function<canTransmitFrame_t> transmitCanFrameMethod =
-                std::bind(CandleV2::transferCANFrame, m_thisSharedReference, _1, _2, _3, _4);
-            m_mdMap->emplace(id, MD(id, transmitCanFrameMethod));
-            auto initStatus = m_mdMap->at(id).init();
-            if (initStatus == MD::Error_t::OK)
-            {
-                Logger::g_m_verbosity = prevVerbosity;
-            }
-            else
+            if (addMD(id) != candleTypes::OK)
                 m_mdMap->erase(id);
 
             Logger::g_m_verbosity = prevVerbosity;
@@ -84,6 +75,29 @@ namespace mab
         m_log.warn("Have not found any MD devices on the CAN bus!");
         // TODO: add pds discovery
         return candleTypes::Error_t::CAN_DEVICE_NOT_RESPONDING;
+    }
+
+    candleTypes::Error_t CandleV2::addMD(canId_t id)
+    {
+        using namespace std::placeholders;
+        std::function<canTransmitFrame_t> transmitCanFrameMethod =
+            std::bind(CandleV2::transferCANFrame, m_thisSharedReference, _1, _2, _3, _4);
+        m_mdMap->emplace(id, MD(id, transmitCanFrameMethod));
+        auto initStatus = m_mdMap->at(id).init();
+        if (initStatus == MD::Error_t::OK)
+        {
+            return candleTypes::OK;
+        }
+        else
+            m_mdMap->erase(id);
+
+        return candleTypes::CAN_DEVICE_NOT_RESPONDING;
+    }
+
+    candleTypes::Error_t CandleV2::removeMD(canId_t id)
+    {
+        m_mdMap->erase(id);
+        return candleTypes::Error_t::OK;
     }
 
     std::shared_ptr<std::map<canId_t, MD>> CandleV2::getMDmapHandle()
