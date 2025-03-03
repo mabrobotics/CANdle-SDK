@@ -25,7 +25,7 @@ namespace mab
             SPI
         };
     };                                      // namespace candleTypes
-    constexpr u32 DEFAULT_CAN_TIMEOUT = 5;  // ms
+    constexpr u32 DEFAULT_CAN_TIMEOUT = 1;  // ms
 
     // dataOut, errorsDuringTransmissions (canID, dataIn, expectedDataOut, timeoutMs)
     using canTransmitFrame_t = std::pair<std::vector<u8>, candleTypes::Error_t>(

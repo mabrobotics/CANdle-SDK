@@ -17,6 +17,8 @@
 
 namespace mab
 {
+    /// @brief Backbone object for CANdle ecosystem, contains all the peripheral handles. When it is
+    /// destroyed all the handles become invalid so manage its lifetime carefully.
     class CandleV2
     {
       public:
@@ -67,9 +69,19 @@ namespace mab
         /// on the CAN network
         candleTypes::Error_t discoverDevices();
 
+        /// @brief Add and initialize MD from the network
+        /// @param id MD can node id
+        /// @return OK on success, CAN_DEVICE_NOT_RESPONDING on not found
         candleTypes::Error_t addMD(canId_t id);
+
+        /// @brief Remove MD from the m_mdMap and deinitialize it
+        /// @param id MD can node id
+        /// @return OK always
         candleTypes::Error_t removeMD(canId_t id);
 
+        /// @brief Returns safe handle for interactions with MD, access to objects through this
+        /// method is preferred
+        /// @return shared pointer to internal MD map
         std::shared_ptr<std::map<canId_t, MD>> getMDmapHandle();
 
       private:
@@ -127,21 +139,29 @@ namespace mab
     /// @brief Initialize CANdle device
     /// @param baudrate CAN network datarate
     /// @param bus Initialized communication interface
-    /// @return Initialized CANdle instance object
+    /// @return Initialized CANdle instance object or nullptr of object could not be initialized
     inline std::shared_ptr<mab::CandleV2> attachCandle(
         const CANdleBaudrate_E baudrate, std::unique_ptr<I_CommunicationInterface>&& bus)
     {
         if (bus == nullptr)
+        {
             throw std::runtime_error("Could not create CANdle from an undefined bus!");
+            return nullptr;
+        }
 
         auto candle = std::make_shared<mab::CandleV2>(baudrate, std::move(bus));
         if (candle->init(candle) != candleTypes::Error_t::OK)
         {
             throw std::runtime_error("Could not initialize CANdle device!");
+            return nullptr;
         }
         return candle;
     }
 
+    /// @brief Initialize CANdle device
+    /// @param baudrate CAN network datarate
+    /// @param busType Type of interface to initialize (without explicit serial number)
+    /// @return Initialized CANdle instance object or nullptr of object could not be initialized
     inline std::shared_ptr<mab::CandleV2> attachCandle(const CANdleBaudrate_E  baudrate,
                                                        candleTypes::busTypes_t busType)
     {

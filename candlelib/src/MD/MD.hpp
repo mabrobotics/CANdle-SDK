@@ -18,6 +18,7 @@
 
 namespace mab
 {
+    /// @brief Software representation of MD device on the can network
     class MD
     {
         static constexpr size_t DEFAULT_RESPONSE_SIZE = 23;
@@ -41,6 +42,9 @@ namespace mab
             NOT_CONNECTED
         };
 
+        /// @brief Create MD object instance
+        /// @param canId can node id of MD
+        /// @param transferCANFrame
         MD(canId_t canId, std::function<canTransmitFrame_t> transferCANFrame)
             : m_canId(canId), m_transferCANFrame(transferCANFrame)
         {
@@ -50,8 +54,26 @@ namespace mab
             m_log.m_tag = tag.str();
         }
 
+        /// @brief Initialize communication with MD device
+        /// @return
         Error_t init();
 
+        /// @brief Blink the built-in LEDs
+        void blink();
+
+        /// @brief Enable PWM output of the drive
+        /// @return
+        Error_t enable();
+
+        /// @brief Disable PWM output of the drive
+        /// @return
+        Error_t disable();
+
+        /// @brief Read registers from the memory of the MD
+        /// @tparam T Register entry underlying type (should be deducible)
+        /// @param reg Register entries references to be read from memory (references are
+        /// overwritten by received data)
+        /// @return
         template <class T>
         inline std::pair<RegisterEntry_S<T>, Error_t> readRegister(RegisterEntry_S<T>& reg)
         {
@@ -146,10 +168,6 @@ namespace mab
                 return Error_t::OK;
             }
         }
-
-        void    blink();
-        Error_t enable();
-        Error_t disable();
 
         template <class... T>
         static inline std::vector<u8> serializeMDRegisters(std::tuple<RegisterEntry_S<T>&...>& regs)

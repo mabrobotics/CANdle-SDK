@@ -5,8 +5,9 @@ namespace mab
 
     MD::Error_t MD::init()
     {
-        // m_mdRegisters.hardwareType.value.deviceType = deviceType_E::UNKNOWN_DEVICE;
-        // auto mfDataResult                           = readRegister(m_mdRegisters.hardwareType);
+        // TODO: add new hw struct support
+        //  m_mdRegisters.hardwareType.value.deviceType = deviceType_E::UNKNOWN_DEVICE;
+        //  auto mfDataResult                           = readRegister(m_mdRegisters.hardwareType);
 
         // if (mfDataResult.second == Error_t::OK)
         // {

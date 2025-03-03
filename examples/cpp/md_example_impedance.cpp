@@ -3,9 +3,6 @@
 #include "candle_v2.hpp"
 #include "USB_v2.hpp"
 #include "I_communication_interface.hpp"
-#include <thread>
-
-// initialize USB interface
 
 int main()
 {
@@ -70,7 +67,7 @@ int main()
     constexpr float stepSize        = 0.05f;
     md.m_mdRegisters.targetPosition = 0.0f;
 
-    for (u16 i = 0; i < 1000; i++)
+    for (u16 i = 0; i < 100; i++)
     {
         md.m_mdRegisters.targetPosition.value += stepSize;
         md.writeRegisters(md.m_mdRegisters.targetPosition);
