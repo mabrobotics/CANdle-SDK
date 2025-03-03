@@ -154,7 +154,7 @@ namespace mab
         }
         void clear()
         {
-            value = {0};
+            memset(&value, 0, sizeof(value));
         }
     };
 

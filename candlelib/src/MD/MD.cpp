@@ -31,12 +31,42 @@ namespace mab
     void MD::blink()
     {
         m_mdRegisters.runBlink = 1;
-        auto regTuple          = std::make_tuple(m_mdRegisters.runBlink);
 
-        auto result = writeRegisters(regTuple);
+        auto result = writeRegisters(m_mdRegisters.runBlink);
         if (result != Error_t::OK)
         {
             m_log.error("Blink failed!");
         }
+    }
+    MD::Error_t MD::enable()
+    {
+        m_mdRegisters.state = 39;
+        if (writeRegisters(m_mdRegisters.state) != MD::Error_t::OK)
+        {
+            m_log.error("Enabling failed");
+            return MD::Error_t::TRANSFER_FAILED;
+        }
+        m_log.info("Driver enabled");
+        m_mdRegisters.motionModeStatus = 0;
+        if (readRegisters(m_mdRegisters.motionModeStatus).second != MD::Error_t::OK)
+        {
+            m_log.error("Motion status check failed");
+            return MD::Error_t::TRANSFER_FAILED;
+        }
+        if (m_mdRegisters.motionModeStatus.value == mab::Md80Mode_E::IDLE)
+            m_log.warn("Motion mode not set");
+
+        return MD::Error_t::OK;
+    }
+    MD::Error_t MD::disable()
+    {
+        m_mdRegisters.state = 64;
+        if (writeRegisters(m_mdRegisters.state) != MD::Error_t::OK)
+        {
+            m_log.error("Disabling failed");
+            return MD::Error_t::TRANSFER_FAILED;
+        }
+        m_log.info("Driver disabled");
+        return MD::Error_t::OK;
     }
 }  // namespace mab

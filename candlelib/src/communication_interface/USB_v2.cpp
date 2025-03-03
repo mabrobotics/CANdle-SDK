@@ -300,9 +300,7 @@ namespace mab
         {
             data.resize(66);
         }
-
         libusb_error transmitError = m_libusbDevice->transmit(data.data(), data.size(), timeoutMs);
-
         if (transmitError != libusb_error::LIBUSB_SUCCESS)
         {
             std::string err = translateLibusbError(transmitError);

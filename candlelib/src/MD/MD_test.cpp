@@ -23,8 +23,9 @@ TEST_F(MD_test, serializeDeserializeRegisters)
     registerStruct.motorName.value[3] = 'd';
     registerStruct.dcBusVoltage       = 24000;
 
-    auto registersOut = std::make_tuple(
-        registerStruct.canBaudrate, registerStruct.motorName, registerStruct.dcBusVoltage);
+    auto registersOut = std::make_tuple(std::reference_wrapper(registerStruct.canBaudrate),
+                                        std::reference_wrapper(registerStruct.motorName),
+                                        std::reference_wrapper(registerStruct.dcBusVoltage));
 
     auto serialized = mab::MD::serializeMDRegisters(registersOut);
 
@@ -38,8 +39,9 @@ TEST_F(MD_test, serializeDeserializeRegisters)
     registerStruct.motorName.value[2] = 'd';
     registerStruct.motorName.value[3] = 'a';
     registerStruct.dcBusVoltage       = 48000;
-    auto registersIn                  = std::make_tuple(
-        registerStruct.canBaudrate, registerStruct.motorName, registerStruct.dcBusVoltage);
+    auto registersIn = std::make_tuple(std::reference_wrapper(registerStruct.canBaudrate),
+                                       std::reference_wrapper(registerStruct.motorName),
+                                       std::reference_wrapper(registerStruct.dcBusVoltage));
 
     mab::MD::deserializeMDRegisters(serialized, registersIn);
     ASSERT_EQ(std::get<0>(registersOut).value, std::get<0>(registersIn).value);

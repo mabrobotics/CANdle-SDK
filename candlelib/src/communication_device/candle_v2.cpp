@@ -7,7 +7,7 @@ namespace mab
 {
     CandleV2::~CandleV2()
     {
-        std::cout << "Deconstructing Candle, do not reuse any handles provided by it!\n";
+        m_log.debug("Deconstructing Candle, do not reuse any handles provided by it!\n");
         m_mdMap->clear();
         m_bus->disconnect();
         m_bus = nullptr;
@@ -23,13 +23,13 @@ namespace mab
     candleTypes::Error_t CandleV2::init(std::weak_ptr<CandleV2> thisSharedRef)
     {
         m_thisSharedReference = thisSharedRef;
-        // m_bus->disconnect();
-        // I_CommunicationInterface::Error_t connectStatus = m_bus->connect();
-        // if (connectStatus != I_CommunicationInterface::Error_t::OK)
-        // {
-        //     m_isInitialized = false;
-        //     return candleTypes::Error_t::INITIALIZATION_ERROR;
-        // }
+        m_bus->disconnect();
+        I_CommunicationInterface::Error_t connectStatus = m_bus->connect();
+        if (connectStatus != I_CommunicationInterface::Error_t::OK)
+        {
+            m_isInitialized = false;
+            return candleTypes::Error_t::INITIALIZATION_ERROR;
+        }
 
         candleTypes::Error_t initStatus = legacyCheckConnection();
         if (initStatus == candleTypes::Error_t::OK)
@@ -49,26 +49,38 @@ namespace mab
         using namespace std::placeholders;
         m_mdMap->clear();
 
-        // TODO: change those to real values
-        constexpr canId_t minValidId = 97;
-        constexpr canId_t maxValidId = 102;
-        // constexpr canId_t minValidId = 10;     // ids less than that are reserved for special
-        // uses constexpr canId_t maxValidId = 0x7FF;  // 11-bit value (standard can ID max)
+        constexpr canId_t minValidId = 10;     // ids less than that are reserved for special
+        constexpr canId_t maxValidId = 0x7FF;  // 11-bit value (standard can ID max)
+        m_log.info("Looking for MDs");
 
         for (canId_t id = minValidId; id < maxValidId; id++)
         {
             m_log.debug("Trying to bind MD with id %d", id);
+            m_log.progress(float(id) / float(maxValidId));
+            // workaround for ping error spam
+            Logger::Verbosity_E prevVerbosity =
+                Logger::g_m_verbosity.value_or(Logger::Verbosity_E::VERBOSITY_1);
+            Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
             std::function<canTransmitFrame_t> transmitCanFrameMethod =
                 std::bind(CandleV2::transferCANFrame, m_thisSharedReference, _1, _2, _3, _4);
             m_mdMap->emplace(id, MD(id, transmitCanFrameMethod));
             auto initStatus = m_mdMap->at(id).init();
             if (initStatus == MD::Error_t::OK)
-                m_log.info("Discovered MD device with ID: %d", id);
+            {
+                Logger::g_m_verbosity = prevVerbosity;
+            }
             else
                 m_mdMap->erase(id);
+
+            Logger::g_m_verbosity = prevVerbosity;
+        }
+        for (const auto& mdPair : *m_mdMap)
+        {
+            m_log.info("Discovered MD device with ID: %d", mdPair.first);
         }
         if (m_mdMap->size() > 0)
             return candleTypes::Error_t::OK;
+
         m_log.warn("Have not found any MD devices on the CAN bus!");
         // TODO: add pds discovery
         return candleTypes::Error_t::CAN_DEVICE_NOT_RESPONDING;

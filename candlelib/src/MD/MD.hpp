@@ -52,17 +52,27 @@ namespace mab
 
         Error_t init();
 
-        template <typename T>
+        template <class T>
         inline std::pair<RegisterEntry_S<T>, Error_t> readRegister(RegisterEntry_S<T>& reg)
         {
-            auto regTuple   = std::make_tuple(reg);
+            auto regTuple   = std::make_tuple(std::reference_wrapper(reg));
             auto resultPair = readRegisters(regTuple);
             reg.value       = std::get<0>(regTuple).value;
             return std::pair(reg, resultPair.second);
         }
 
         template <class... T>
-        inline std::pair<std::tuple<T...>, Error_t> readRegisters(std::tuple<T...>& regs)
+        inline std::pair<std::tuple<RegisterEntry_S<T>...>, Error_t> readRegisters(
+            RegisterEntry_S<T>&... regs)
+        {
+            auto regTuple   = std::tuple<RegisterEntry_S<T>&...>(regs...);
+            auto resultPair = readRegisters(regTuple);
+            return resultPair;
+        }
+
+        template <class... T>
+        inline std::pair<std::tuple<RegisterEntry_S<T>...>, Error_t> readRegisters(
+            std::tuple<RegisterEntry_S<T>&...>& regs)
         {
             m_log.debug("Reading register...");
             std::apply([&](auto&&... reg) { ((reg.clear()), ...); }, regs);
@@ -103,7 +113,14 @@ namespace mab
         }
 
         template <class... T>
-        inline Error_t writeRegisters(std::tuple<T...>& regs)
+        inline Error_t writeRegisters(RegisterEntry_S<T>&... regs)
+        {
+            auto tuple = std::tuple<RegisterEntry_S<T>&...>(regs...);
+            return writeRegisters(tuple);
+        }
+
+        template <class... T>
+        inline Error_t writeRegisters(std::tuple<RegisterEntry_S<T>&...>& regs)
         {
             m_log.debug("Writing register...");
             std::vector<u8> frame;
@@ -130,10 +147,12 @@ namespace mab
             }
         }
 
-        void blink();
+        void    blink();
+        Error_t enable();
+        Error_t disable();
 
         template <class... T>
-        static inline std::vector<u8> serializeMDRegisters(std::tuple<T...>& regs)
+        static inline std::vector<u8> serializeMDRegisters(std::tuple<RegisterEntry_S<T>&...>& regs)
         {
             std::vector<u8> serialized;
 
@@ -150,7 +169,8 @@ namespace mab
         }
 
         template <class... T>
-        static inline bool deserializeMDRegisters(std::vector<u8>& output, std::tuple<T...>& regs)
+        static inline bool deserializeMDRegisters(std::vector<u8>&                    output,
+                                                  std::tuple<RegisterEntry_S<T>&...>& regs)
         {
             bool failure            = false;
             auto performForEachElem = [&](auto& reg)  // Capture by reference to modify 'failure'
