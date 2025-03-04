@@ -23,7 +23,8 @@ namespace mab
     {
       public:
         //   Maximum pds modules number
-        static constexpr size_t MAX_MODULES = 6u;
+        static constexpr size_t MAX_MODULES   = 6u;
+        static constexpr u16    DEFAULT_CANID = 100u;
 
         struct modulesSet_S
         {
@@ -50,6 +51,7 @@ namespace mab
         void printModuleInfo(void);
 
         void init(void);
+        void init(u16 canId);
 
         modulesSet_S getModules(void);
 

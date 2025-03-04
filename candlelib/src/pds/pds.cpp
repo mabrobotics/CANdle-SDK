@@ -25,7 +25,11 @@ namespace mab
             exit(EXIT_FAILURE);
         }
     }
-
+    void Pds::init(u16 canId)
+    {
+        m_canId = canId;
+        init();
+        }
     PdsModule::error_E Pds::createModule(moduleType_E type, socketIndex_E socket)
     {
         switch (type)
