@@ -3,13 +3,14 @@
 #include "CLI/CLI.hpp"
 #include "pds_types.hpp"
 #include "candletool.hpp"
+#include "pds.hpp"
 
 using namespace mab;
 class PdsCli
 {
   public:
     PdsCli() = delete;
-    PdsCli(CLI::App& rootCli, CandleTool& candletool);
+    PdsCli(CLI::App& rootCli, mab::Candle& candle);
     ~PdsCli() = default;
 
     void parse(void);
@@ -18,7 +19,7 @@ class PdsCli
     Logger    m_log;
     CLI::App& m_rootCli;
 
-    CLI::App* m_pds = nullptr;
+    CLI::App* m_pdsCmd = nullptr;
 
     CLI::App* m_infoCmd        = nullptr;
     CLI::App* m_configSetupCmd = nullptr;
@@ -47,11 +48,17 @@ class PdsCli
     std::string m_cfgFilePath           = "";
     u8          m_submoduleSocketNumber = 0;
 
-    CandleTool& m_candleTool;
+    Candle& m_candle;
+    Pds     m_pds();
 
     socketIndex_E decodeSocketIndex(u8 numericSocketIndex);
 
     void powerStageCmdParse(void);
     void brakeResistorCmdParse(void);
     void isolatedConverterCmdParse(void);
+
+    void pdsSetupInfo(u16 id);
+    void pdsSetupConfig(u16 id, const std::string& cfgPath);
+    void pdsStoreConfig(u16 id);
+    void pdsReadConfig(u16 id, const std::string& cfgPath);
 };

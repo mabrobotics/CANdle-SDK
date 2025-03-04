@@ -112,3 +112,32 @@ inline bool getConfirmation()
         return true;
     return false;
 }
+
+inline std::string floatToString(f32 value, bool noDecimals = false)
+{
+    std::stringstream ss;
+    ss << std::fixed;
+
+    if (noDecimals)
+    {
+        ss << std::setprecision(0);
+        ss << value;
+        return ss.str();
+    }
+    else
+    {
+        if (static_cast<int>(value) == value)
+        {
+            ss << std::setprecision(1);
+            ss << value;
+            return ss.str();
+        }
+        else
+        {
+            ss << std::setprecision(7);
+            ss << value;
+            std::string str = ss.str();
+            return str.substr(0, str.find_last_not_of('0') + 1);
+        }
+    }
+}
