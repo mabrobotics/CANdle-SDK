@@ -49,7 +49,7 @@ class PdsCli
     u8          m_submoduleSocketNumber = 0;
 
     Candle& m_candle;
-    Pds     m_pds();
+    Pds     m_pds{m_canId, m_candle};
 
     socketIndex_E decodeSocketIndex(u8 numericSocketIndex);
 

@@ -13,6 +13,7 @@ inline std::string getDefaultConfigDir()
     return std::string("/etc/candletool/config/");
 #endif
 }
+
 inline std::string getMotorsConfigPath()
 {
 #ifdef WIN32
@@ -21,19 +22,23 @@ inline std::string getMotorsConfigPath()
     return getDefaultConfigDir() + "motors/";
 #endif
 }
+
 inline std::string getDefaultConfigPath()
 {
     return getMotorsConfigPath() + "default.cfg";
 }
+
 inline std::string getCandletoolConfigPath()
 {
     return getDefaultConfigDir() + "candletool.ini";
 }
+
 inline bool fileExists(const std::string& filepath)
 {
     std::ifstream fileStream(filepath);
     return fileStream.good();
 }
+
 inline bool isConfigValid(const std::string& pathToConfig)
 {
     std::string fileExtension = std::filesystem::path(pathToConfig).extension().string();
@@ -46,6 +51,7 @@ inline bool isConfigValid(const std::string& pathToConfig)
         return false;
     return true;
 }
+
 inline bool isConfigComplete(const std::string& pathToConfig)
 {
     mINI::INIFile      defaultFile(getDefaultConfigPath());
@@ -70,6 +76,7 @@ inline bool isConfigComplete(const std::string& pathToConfig)
     }
     return true;
 }
+
 inline std::string generateUpdatedConfigFile(const std::string& pathToConfig)
 {
     mINI::INIFile      defaultFile(getDefaultConfigPath());
@@ -104,6 +111,7 @@ inline std::string generateUpdatedConfigFile(const std::string& pathToConfig)
     updatedFile.write(updatedIni, true);
     return updatedUserConfigPath;
 }
+
 inline bool getConfirmation()
 {
     char x;

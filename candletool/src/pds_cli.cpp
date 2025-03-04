@@ -77,6 +77,8 @@ void PdsCli::parse(void)
 {
     if (m_pdsCmd->parsed())
     {
+        m_pds.init();
+
         if (m_infoCmd->parsed())
         {
             pdsSetupInfo(m_canId);
