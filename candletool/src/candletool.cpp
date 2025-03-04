@@ -60,87 +60,57 @@ mab::CANdleBaudrate_E str2baud(const std::string& baud)
     return mab::CANdleBaudrate_E::CAN_BAUD_1M;
 }
 
-CandleTool::CandleTool()
+CandleTool::CandleTool(mab::Candle& candle) : m_candle(candle)
 {
     log.m_tag   = "CANDLETOOL";
     log.m_layer = Logger::ProgramLayer_E::TOP;
     log << "CandleSDK Version: " << mab::Candle::getVersion() << std::endl;
-
-    mab::BusType_E        busType = mab::BusType_E::USB;
-    mab::CANdleBaudrate_E baud    = mab::CANdleBaudrate_E::CAN_BAUD_1M;
-
-    mINI::INIFile      file(getCandletoolConfigPath());
-    mINI::INIStructure ini;
-    file.read(ini);
-
-    busString = ini["communication"]["bus"];
-    if (busString == "SPI")
-        busType = mab::BusType_E::SPI;
-    else if (busString == "UART")
-        busType = mab::BusType_E::UART;
-    else if (busString == "USB")
-        busType = mab::BusType_E::USB;
-    std::string& device = ini["communication"]["device"];
-    try
-    {
-        if (device != "" && busType != mab::BusType_E::USB)
-            candle = std::make_unique<mab::Candle>(baud, printVerbose, busType, device);
-        else
-            candle = std::make_unique<mab::Candle>(baud, printVerbose, busType);
-    }
-
-    catch (const char* e)
-    {
-        return;
-    }
-
-    return;
 }
 
 void CandleTool::ping(const std::string& variant)
 {
     if (variant == "all")
     {
-        candle->ping(mab::CANdleBaudrate_E::CAN_BAUD_1M);
-        candle->ping(mab::CANdleBaudrate_E::CAN_BAUD_2M);
-        candle->ping(mab::CANdleBaudrate_E::CAN_BAUD_5M);
-        candle->ping(mab::CANdleBaudrate_E::CAN_BAUD_8M);
+        m_candle.ping(mab::CANdleBaudrate_E::CAN_BAUD_1M);
+        m_candle.ping(mab::CANdleBaudrate_E::CAN_BAUD_2M);
+        m_candle.ping(mab::CANdleBaudrate_E::CAN_BAUD_5M);
+        m_candle.ping(mab::CANdleBaudrate_E::CAN_BAUD_8M);
         return;
     }
-    candle->ping(str2baud(variant));
+    m_candle.ping(str2baud(variant));
 }
 
 void CandleTool::configCan(
     u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination)
 {
     checkSpeedForId(id);
-    candle->configMd80Can(id, newId, str2baud(baud), timeout, termination);
+    m_candle.configMd80Can(id, newId, str2baud(baud), timeout, termination);
 }
 void CandleTool::configSave(u16 id)
 {
-    candle->configMd80Save(id);
+    m_candle.configMd80Save(id);
 }
 
 void CandleTool::configZero(u16 id)
 {
-    candle->controlMd80SetEncoderZero(id);
+    m_candle.controlMd80SetEncoderZero(id);
 }
 
 void CandleTool::configCurrent(u16 id, f32 current)
 {
-    candle->configMd80SetCurrentLimit(id, current);
+    m_candle.configMd80SetCurrentLimit(id, current);
 }
 
 void CandleTool::configBandwidth(u16 id, f32 bandwidth)
 {
-    candle->configMd80TorqueBandwidth(id, bandwidth);
+    m_candle.configMd80TorqueBandwidth(id, bandwidth);
 }
 
 void CandleTool::configClear(u16 id)
 {
     if (!tryAddMD80(id))
         return;
-    if (candle->writeMd80Register(id, mab::Md80Reg_E::runRestoreFactoryConfig, true))
+    if (m_candle.writeMd80Register(id, mab::Md80Reg_E::runRestoreFactoryConfig, true))
         log.success("Config reverted to factory state!");
     else
         log.error("Error reverting config to factory state!");
@@ -151,7 +121,7 @@ void CandleTool::setupCalibration(u16 id)
     if (!ui::getCalibrationConfirmation() || checkSetupError(id))
         return;
 
-    candle->setupMd80Calibration(id);
+    m_candle.setupMd80Calibration(id);
 }
 
 void CandleTool::setupCalibrationOutput(u16 id)
@@ -159,13 +129,13 @@ void CandleTool::setupCalibrationOutput(u16 id)
     if (!ui::getCalibrationOutputConfirmation() || checkSetupError(id))
         return;
     u16 outputEncoder = 0;
-    candle->readMd80Register(id, mab::Md80Reg_E::outputEncoder, outputEncoder);
+    m_candle.readMd80Register(id, mab::Md80Reg_E::outputEncoder, outputEncoder);
     if (!outputEncoder)
     {
         log.error("No output encoder is configured!");
         return;
     }
-    candle->setupMd80CalibrationOutput(id);
+    m_candle.setupMd80CalibrationOutput(id);
 }
 
 // TODO: Variant of this method for PDS device
@@ -246,8 +216,8 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
 
     if (!tryAddMD80(id))
         return;
-    mab::regWrite_st& regW = candle->getMd80FromList(id).getWriteReg();
-    mab::regRead_st&  regR = candle->getMd80FromList(id).getReadReg();
+    mab::regWrite_st& regW = m_candle.getMd80FromList(id).getWriteReg();
+    mab::regRead_st&  regR = m_candle.getMd80FromList(id).getReadReg();
 
     /* add a field here only if you want to test it against limits form the candletool.ini file */
     memcpy(
@@ -292,7 +262,7 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
         if (!getField(cfg, ini, category, field, fieldVar))
             return false;
 
-        if (!candle->writeMd80Register(id, reg, fieldVar))
+        if (!m_candle.writeMd80Register(id, reg, fieldVar))
         {
             log.error("Failed to setup motor! Error writing: 0x%x register.", (u16)reg);
             return false;
@@ -330,129 +300,129 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
     { return atof(cfg[category][field].c_str()); };
 
     /* motor base config */
-    if (!candle->writeMd80Register(id,
-                                   mab::Md80Reg_E::motorName,
-                                   regW.RW.motorName,
-                                   mab::Md80Reg_E::motorPolePairs,
-                                   regW.RW.polePairs,
-                                   mab::Md80Reg_E::motorKt,
-                                   regW.RW.motorKt,
-                                   mab::Md80Reg_E::motorKV,
-                                   regW.RW.motorKV,
-                                   mab::Md80Reg_E::motorGearRatio,
-                                   regW.RW.gearRatio,
-                                   mab::Md80Reg_E::motorIMax,
-                                   regW.RW.iMax,
-                                   mab::Md80Reg_E::motorTorgueBandwidth,
-                                   regW.RW.torqueBandwidth))
+    if (!m_candle.writeMd80Register(id,
+                                    mab::Md80Reg_E::motorName,
+                                    regW.RW.motorName,
+                                    mab::Md80Reg_E::motorPolePairs,
+                                    regW.RW.polePairs,
+                                    mab::Md80Reg_E::motorKt,
+                                    regW.RW.motorKt,
+                                    mab::Md80Reg_E::motorKV,
+                                    regW.RW.motorKV,
+                                    mab::Md80Reg_E::motorGearRatio,
+                                    regW.RW.gearRatio,
+                                    mab::Md80Reg_E::motorIMax,
+                                    regW.RW.iMax,
+                                    mab::Md80Reg_E::motorTorgueBandwidth,
+                                    regW.RW.torqueBandwidth))
         log.error("Failed to setup motor!");
 
     /* motor advanced config */
-    if (!candle->writeMd80Register(id,
-                                   mab::Md80Reg_E::motorFriction,
-                                   regW.RW.friction,
-                                   mab::Md80Reg_E::motorStiction,
-                                   regW.RW.stiction,
-                                   mab::Md80Reg_E::motorKt_a,
-                                   regW.RW.motorKt_a,
-                                   mab::Md80Reg_E::motorKt_b,
-                                   regW.RW.motorKt_b,
-                                   mab::Md80Reg_E::motorKt_c,
-                                   regW.RW.motorKt_c,
-                                   mab::Md80Reg_E::outputEncoder,
-                                   regW.RW.outputEncoder,
-                                   mab::Md80Reg_E::outputEncoderMode,
-                                   regW.RW.outputEncoderMode,
-                                   mab::Md80Reg_E::outputEncoderDefaultBaud,
-                                   regW.RW.outputEncoderDefaultBaud))
+    if (!m_candle.writeMd80Register(id,
+                                    mab::Md80Reg_E::motorFriction,
+                                    regW.RW.friction,
+                                    mab::Md80Reg_E::motorStiction,
+                                    regW.RW.stiction,
+                                    mab::Md80Reg_E::motorKt_a,
+                                    regW.RW.motorKt_a,
+                                    mab::Md80Reg_E::motorKt_b,
+                                    regW.RW.motorKt_b,
+                                    mab::Md80Reg_E::motorKt_c,
+                                    regW.RW.motorKt_c,
+                                    mab::Md80Reg_E::outputEncoder,
+                                    regW.RW.outputEncoder,
+                                    mab::Md80Reg_E::outputEncoderMode,
+                                    regW.RW.outputEncoderMode,
+                                    mab::Md80Reg_E::outputEncoderDefaultBaud,
+                                    regW.RW.outputEncoderDefaultBaud))
         log.error("Failed to setup motor!");
 
     /* motor motion config - Position and velocity PID*/
-    if (!candle->writeMd80Register(id,
-                                   mab::Md80Reg_E::motorPosPidKp,
-                                   f32FromField("position PID", "kp"),
-                                   mab::Md80Reg_E::motorPosPidKi,
-                                   f32FromField("position PID", "ki"),
-                                   mab::Md80Reg_E::motorPosPidKd,
-                                   f32FromField("position PID", "kd"),
-                                   mab::Md80Reg_E::motorPosPidWindup,
-                                   f32FromField("position PID", "windup"),
-                                   mab::Md80Reg_E::motorVelPidKp,
-                                   f32FromField("velocity PID", "kp"),
-                                   mab::Md80Reg_E::motorVelPidKi,
-                                   f32FromField("velocity PID", "ki"),
-                                   mab::Md80Reg_E::motorVelPidKd,
-                                   f32FromField("velocity PID", "kd"),
-                                   mab::Md80Reg_E::motorVelPidWindup,
-                                   f32FromField("velocity PID", "windup")))
+    if (!m_candle.writeMd80Register(id,
+                                    mab::Md80Reg_E::motorPosPidKp,
+                                    f32FromField("position PID", "kp"),
+                                    mab::Md80Reg_E::motorPosPidKi,
+                                    f32FromField("position PID", "ki"),
+                                    mab::Md80Reg_E::motorPosPidKd,
+                                    f32FromField("position PID", "kd"),
+                                    mab::Md80Reg_E::motorPosPidWindup,
+                                    f32FromField("position PID", "windup"),
+                                    mab::Md80Reg_E::motorVelPidKp,
+                                    f32FromField("velocity PID", "kp"),
+                                    mab::Md80Reg_E::motorVelPidKi,
+                                    f32FromField("velocity PID", "ki"),
+                                    mab::Md80Reg_E::motorVelPidKd,
+                                    f32FromField("velocity PID", "kd"),
+                                    mab::Md80Reg_E::motorVelPidWindup,
+                                    f32FromField("velocity PID", "windup")))
         log.error("Failed to setup motor!");
 
     /* motor motion config - Impedance PD*/
-    if (!candle->writeMd80Register(id,
-                                   mab::Md80Reg_E::motorImpPidKp,
-                                   f32FromField("impedance PD", "kp"),
-                                   mab::Md80Reg_E::motorImpPidKd,
-                                   f32FromField("impedance PD", "kd"),
-                                   mab::Md80Reg_E::motorShutdownTemp,
-                                   regW.RW.motorShutdownTemp))
+    if (!m_candle.writeMd80Register(id,
+                                    mab::Md80Reg_E::motorImpPidKp,
+                                    f32FromField("impedance PD", "kp"),
+                                    mab::Md80Reg_E::motorImpPidKd,
+                                    f32FromField("impedance PD", "kd"),
+                                    mab::Md80Reg_E::motorShutdownTemp,
+                                    regW.RW.motorShutdownTemp))
         log.error("Failed to setup motor!");
 
-    if (!candle->writeMd80Register(
+    if (!m_candle.writeMd80Register(
             id, mab::Md80Reg_E::outputEncoderCalibrationMode, regW.RW.outputEncoderCalibrationMode))
         log.error("Failed to setup motor!");
 
-    if (!candle->writeMd80Register(
+    if (!m_candle.writeMd80Register(
             id, mab::Md80Reg_E::motorCalibrationMode, regW.RW.motorCalibrationMode))
         log.error("Failed to setup motor!");
 
-    if (!candle->writeMd80Register(id,
-                                   mab::Md80Reg_E::homingMode,
-                                   regW.RW.homingMode,
-                                   mab::Md80Reg_E::homingMaxTravel,
-                                   f32FromField("homing", "max travel"),
-                                   mab::Md80Reg_E::homingTorque,
-                                   f32FromField("homing", "max torque"),
-                                   mab::Md80Reg_E::homingVelocity,
-                                   f32FromField("homing", "max velocity")))
+    if (!m_candle.writeMd80Register(id,
+                                    mab::Md80Reg_E::homingMode,
+                                    regW.RW.homingMode,
+                                    mab::Md80Reg_E::homingMaxTravel,
+                                    f32FromField("homing", "max travel"),
+                                    mab::Md80Reg_E::homingTorque,
+                                    f32FromField("homing", "max torque"),
+                                    mab::Md80Reg_E::homingVelocity,
+                                    f32FromField("homing", "max velocity")))
         log.error("Failed to setup motor!");
 
-    if (!candle->writeMd80Register(id,
-                                   mab::Md80Reg_E::maxTorque,
-                                   f32FromField("limits", "max torque"),
-                                   mab::Md80Reg_E::maxAcceleration,
-                                   regW.RW.maxAcceleration,
-                                   mab::Md80Reg_E::maxDeceleration,
-                                   regW.RW.maxDeceleration,
-                                   mab::Md80Reg_E::maxVelocity,
-                                   regW.RW.maxVelocity,
-                                   mab::Md80Reg_E::positionLimitMin,
-                                   f32FromField("limits", "min position"),
-                                   mab::Md80Reg_E::positionLimitMax,
-                                   f32FromField("limits", "max position")))
+    if (!m_candle.writeMd80Register(id,
+                                    mab::Md80Reg_E::maxTorque,
+                                    f32FromField("limits", "max torque"),
+                                    mab::Md80Reg_E::maxAcceleration,
+                                    regW.RW.maxAcceleration,
+                                    mab::Md80Reg_E::maxDeceleration,
+                                    regW.RW.maxDeceleration,
+                                    mab::Md80Reg_E::maxVelocity,
+                                    regW.RW.maxVelocity,
+                                    mab::Md80Reg_E::positionLimitMin,
+                                    f32FromField("limits", "min position"),
+                                    mab::Md80Reg_E::positionLimitMax,
+                                    f32FromField("limits", "max position")))
         log.error("Failed to setup motor!");
 
-    if (!candle->writeMd80Register(id,
-                                   mab::Md80Reg_E::profileAcceleration,
-                                   f32FromField("profile", "acceleration"),
-                                   mab::Md80Reg_E::profileDeceleration,
-                                   f32FromField("profile", "deceleration"),
-                                   mab::Md80Reg_E::quickStopDeceleration,
-                                   f32FromField("profile", "quick stop deceleration"),
-                                   mab::Md80Reg_E::profileVelocity,
-                                   f32FromField("profile", "velocity")))
+    if (!m_candle.writeMd80Register(id,
+                                    mab::Md80Reg_E::profileAcceleration,
+                                    f32FromField("profile", "acceleration"),
+                                    mab::Md80Reg_E::profileDeceleration,
+                                    f32FromField("profile", "deceleration"),
+                                    mab::Md80Reg_E::quickStopDeceleration,
+                                    f32FromField("profile", "quick stop deceleration"),
+                                    mab::Md80Reg_E::profileVelocity,
+                                    f32FromField("profile", "velocity")))
         log.error("Failed to setup motor!");
 
-    if (!candle->writeMd80Register(id, mab::Md80Reg_E::brakeMode, regW.RW.brakeMode))
+    if (!m_candle.writeMd80Register(id, mab::Md80Reg_E::brakeMode, regW.RW.brakeMode))
         log.error("Failed to setup motor!");
 
-    if (candle->configMd80Save(id))
+    if (m_candle.configMd80Save(id))
     {
         log.success("Config save successfully!");
         log.info("Rebooting md80...");
     }
     /* wait for a full reboot */
     sleep(3);
-    if (candle->controlMd80Enable(id, false))
+    if (m_candle.controlMd80Enable(id, false))
         log.success("Ready!");
     else
         log.warn("Failed to reboot (ID: %d)!", id);
@@ -463,13 +433,13 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
         return;
 
     mINI::INIStructure readIni; /**< mINI structure for read data */
-    mab::regRead_st&   regR = candle->getMd80FromList(id).getReadReg(); /**< read register */
+    mab::regRead_st&   regR = m_candle.getMd80FromList(id).getReadReg(); /**< read register */
     char               motorNameChar[24];
 
     std::string configName = cfgName;
     if (cfgName == "")
     {
-        if (!candle->readMd80Register(id, mab::Md80Reg_E::motorName, motorNameChar))
+        if (!m_candle.readMd80Register(id, mab::Md80Reg_E::motorName, motorNameChar))
         {
             log.error("Failed to read motor config %d!", id);
             snprintf(motorNameChar, 24, "UNKNOWN_MD");
@@ -483,19 +453,19 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
     bool saveConfig = ui::getSaveMotorConfigConfirmation(configName);
 
     /* Motor config - motor section */
-    if (!candle->readMd80Register(id,
-                                  mab::Md80Reg_E::motorPolePairs,
-                                  regR.RW.polePairs,
-                                  mab::Md80Reg_E::motorKt,
-                                  regR.RW.motorKt,
-                                  mab::Md80Reg_E::motorIMax,
-                                  regR.RW.iMax,
-                                  mab::Md80Reg_E::motorGearRatio,
-                                  regR.RW.gearRatio,
-                                  mab::Md80Reg_E::motorTorgueBandwidth,
-                                  regR.RW.torqueBandwidth,
-                                  mab::Md80Reg_E::motorKV,
-                                  regR.RW.motorKV))
+    if (!m_candle.readMd80Register(id,
+                                   mab::Md80Reg_E::motorPolePairs,
+                                   regR.RW.polePairs,
+                                   mab::Md80Reg_E::motorKt,
+                                   regR.RW.motorKt,
+                                   mab::Md80Reg_E::motorIMax,
+                                   regR.RW.iMax,
+                                   mab::Md80Reg_E::motorGearRatio,
+                                   regR.RW.gearRatio,
+                                   mab::Md80Reg_E::motorTorgueBandwidth,
+                                   regR.RW.torqueBandwidth,
+                                   mab::Md80Reg_E::motorKV,
+                                   regR.RW.motorKV))
         log.warn("Failed to read motor config!");
 
     readIni["motor"]["name"]             = std::string(motorNameChar);
@@ -506,25 +476,26 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
     readIni["motor"]["max current"]      = floatToString(regR.RW.iMax);
     readIni["motor"]["torque bandwidth"] = floatToString(regR.RW.torqueBandwidth);
 
-    if (!candle->readMd80Register(id, mab::Md80Reg_E::motorShutdownTemp, regR.RW.motorShutdownTemp))
+    if (!m_candle.readMd80Register(
+            id, mab::Md80Reg_E::motorShutdownTemp, regR.RW.motorShutdownTemp))
         log.warn("Failed to read motor config!");
 
     readIni["motor"]["shutdown temp"] = floatToString(regR.RW.motorShutdownTemp);
 
     /* Motor config - limits section */
-    if (!candle->readMd80Register(id,
-                                  mab::Md80Reg_E::positionLimitMax,
-                                  regR.RW.positionLimitMax,
-                                  mab::Md80Reg_E::positionLimitMin,
-                                  regR.RW.positionLimitMin,
-                                  mab::Md80Reg_E::maxTorque,
-                                  regR.RW.maxTorque,
-                                  mab::Md80Reg_E::maxVelocity,
-                                  regR.RW.maxVelocity,
-                                  mab::Md80Reg_E::maxAcceleration,
-                                  regR.RW.maxAcceleration,
-                                  mab::Md80Reg_E::maxDeceleration,
-                                  regR.RW.maxDeceleration))
+    if (!m_candle.readMd80Register(id,
+                                   mab::Md80Reg_E::positionLimitMax,
+                                   regR.RW.positionLimitMax,
+                                   mab::Md80Reg_E::positionLimitMin,
+                                   regR.RW.positionLimitMin,
+                                   mab::Md80Reg_E::maxTorque,
+                                   regR.RW.maxTorque,
+                                   mab::Md80Reg_E::maxVelocity,
+                                   regR.RW.maxVelocity,
+                                   mab::Md80Reg_E::maxAcceleration,
+                                   regR.RW.maxAcceleration,
+                                   mab::Md80Reg_E::maxDeceleration,
+                                   regR.RW.maxDeceleration))
         log.warn("Failed to read motor config!");
 
     readIni["limits"]["max torque"]       = floatToString(regR.RW.maxTorque);
@@ -535,13 +506,13 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
     readIni["limits"]["max deceleration"] = floatToString(regR.RW.maxDeceleration);
 
     /* Motor config - profile section */
-    if (!candle->readMd80Register(id,
-                                  mab::Md80Reg_E::profileVelocity,
-                                  regR.RW.profileVelocity,
-                                  mab::Md80Reg_E::profileAcceleration,
-                                  regR.RW.profileAcceleration,
-                                  mab::Md80Reg_E::profileDeceleration,
-                                  regR.RW.profileDeceleration))
+    if (!m_candle.readMd80Register(id,
+                                   mab::Md80Reg_E::profileVelocity,
+                                   regR.RW.profileVelocity,
+                                   mab::Md80Reg_E::profileAcceleration,
+                                   regR.RW.profileAcceleration,
+                                   mab::Md80Reg_E::profileDeceleration,
+                                   regR.RW.profileDeceleration))
         log.warn("Failed to read motor config!");
 
     readIni["profile"]["acceleration"] = floatToString(regR.RW.profileAcceleration);
@@ -549,11 +520,11 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
     readIni["profile"]["velocity"]     = floatToString(regR.RW.profileVelocity);
 
     /* Motor config - output encoder section */
-    if (!candle->readMd80Register(id,
-                                  mab::Md80Reg_E::outputEncoder,
-                                  regR.RW.outputEncoder,
-                                  mab::Md80Reg_E::outputEncoderMode,
-                                  regR.RW.outputEncoderMode))
+    if (!m_candle.readMd80Register(id,
+                                   mab::Md80Reg_E::outputEncoder,
+                                   regR.RW.outputEncoder,
+                                   mab::Md80Reg_E::outputEncoderMode,
+                                   regR.RW.outputEncoderMode))
         log.warn("Failed to read motor config!");
 
     if (regR.RW.outputEncoder == 0.f)
@@ -568,15 +539,15 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
             ui::encoderModes[regR.RW.outputEncoderMode];
 
     /* Motor config - position PID section */
-    if (!candle->readMd80Register(id,
-                                  mab::Md80Reg_E::motorPosPidKp,
-                                  regR.RW.positionPidGains.kp,
-                                  mab::Md80Reg_E::motorPosPidKi,
-                                  regR.RW.positionPidGains.ki,
-                                  mab::Md80Reg_E::motorPosPidKd,
-                                  regR.RW.positionPidGains.kd,
-                                  mab::Md80Reg_E::motorPosPidWindup,
-                                  regR.RW.positionPidGains.intWindup))
+    if (!m_candle.readMd80Register(id,
+                                   mab::Md80Reg_E::motorPosPidKp,
+                                   regR.RW.positionPidGains.kp,
+                                   mab::Md80Reg_E::motorPosPidKi,
+                                   regR.RW.positionPidGains.ki,
+                                   mab::Md80Reg_E::motorPosPidKd,
+                                   regR.RW.positionPidGains.kd,
+                                   mab::Md80Reg_E::motorPosPidWindup,
+                                   regR.RW.positionPidGains.intWindup))
         log.warn("Failed to read motor config!");
 
     readIni["position PID"]["kp"]     = floatToString(regR.RW.positionPidGains.kp);
@@ -585,15 +556,15 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
     readIni["position PID"]["windup"] = floatToString(regR.RW.positionPidGains.intWindup);
 
     /* Motor config - velocity PID section */
-    if (!candle->readMd80Register(id,
-                                  mab::Md80Reg_E::motorVelPidKp,
-                                  regR.RW.velocityPidGains.kp,
-                                  mab::Md80Reg_E::motorVelPidKi,
-                                  regR.RW.velocityPidGains.ki,
-                                  mab::Md80Reg_E::motorVelPidKd,
-                                  regR.RW.velocityPidGains.kd,
-                                  mab::Md80Reg_E::motorVelPidWindup,
-                                  regR.RW.velocityPidGains.intWindup))
+    if (!m_candle.readMd80Register(id,
+                                   mab::Md80Reg_E::motorVelPidKp,
+                                   regR.RW.velocityPidGains.kp,
+                                   mab::Md80Reg_E::motorVelPidKi,
+                                   regR.RW.velocityPidGains.ki,
+                                   mab::Md80Reg_E::motorVelPidKd,
+                                   regR.RW.velocityPidGains.kd,
+                                   mab::Md80Reg_E::motorVelPidWindup,
+                                   regR.RW.velocityPidGains.intWindup))
         log.warn("Failed to read motor config!");
 
     readIni["velocity PID"]["kp"]     = floatToString(regR.RW.velocityPidGains.kp);
@@ -602,26 +573,26 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
     readIni["velocity PID"]["windup"] = floatToString(regR.RW.velocityPidGains.intWindup);
 
     /* Motor config - impedance PD section */
-    if (!candle->readMd80Register(id,
-                                  mab::Md80Reg_E::motorImpPidKp,
-                                  regR.RW.impedancePdGains.kp,
-                                  mab::Md80Reg_E::motorImpPidKd,
-                                  regR.RW.impedancePdGains.kd))
+    if (!m_candle.readMd80Register(id,
+                                   mab::Md80Reg_E::motorImpPidKp,
+                                   regR.RW.impedancePdGains.kp,
+                                   mab::Md80Reg_E::motorImpPidKd,
+                                   regR.RW.impedancePdGains.kd))
         log.warn("Failed to read motor config!");
 
     readIni["impedance PD"]["kp"] = floatToString(regR.RW.impedancePdGains.kp);
     readIni["impedance PD"]["kd"] = floatToString(regR.RW.impedancePdGains.kd);
 
     /* Motor config - homing section */
-    if (!candle->readMd80Register(id,
-                                  mab::Md80Reg_E::homingMode,
-                                  regR.RW.homingMode,
-                                  mab::Md80Reg_E::homingMaxTravel,
-                                  regR.RW.homingMaxTravel,
-                                  mab::Md80Reg_E::homingVelocity,
-                                  regR.RW.homingVelocity,
-                                  mab::Md80Reg_E::homingTorque,
-                                  regR.RW.homingTorque))
+    if (!m_candle.readMd80Register(id,
+                                   mab::Md80Reg_E::homingMode,
+                                   regR.RW.homingMode,
+                                   mab::Md80Reg_E::homingMaxTravel,
+                                   regR.RW.homingMaxTravel,
+                                   mab::Md80Reg_E::homingVelocity,
+                                   regR.RW.homingVelocity,
+                                   mab::Md80Reg_E::homingTorque,
+                                   regR.RW.homingTorque))
         log.warn("Failed to read motor config!");
 
     readIni["homing"]["mode"]         = ui::homingModes[regR.RW.homingMode];
@@ -667,15 +638,15 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
 void CandleTool::setupInfo(u16 id, bool printAll)
 {
     checkSpeedForId(id);
-    if (!candle->addMd80(id))
+    if (!m_candle.addMd80(id))
         return;
-    candle->setupMd80DiagnosticExtended(id);
-    ui::printDriveInfoExtended(candle->getMd80FromList(id), printAll);
+    m_candle.setupMd80DiagnosticExtended(id);
+    ui::printDriveInfoExtended(m_candle.getMd80FromList(id), printAll);
 }
 
 void CandleTool::setupHoming(u16 id)
 {
-    candle->setupMd80PerformHoming(id);
+    m_candle.setupMd80PerformHoming(id);
 }
 
 void CandleTool::testMove(u16 id, f32 targetPosition)
@@ -689,14 +660,14 @@ void CandleTool::testMove(u16 id, f32 targetPosition)
     if (hasError(id))
         return;
 
-    mab::Md80& md = candle->md80s[0];
-    candle->controlMd80Mode(id, mab::Md80Mode_E::IMPEDANCE);
+    mab::Md80& md = m_candle.md80s[0];
+    m_candle.controlMd80Mode(id, mab::Md80Mode_E::IMPEDANCE);
     f32 pos = md.getPosition();
     md.setTargetPosition(pos);
     targetPosition += pos;
 
-    candle->controlMd80Enable(id, true);
-    candle->begin();
+    m_candle.controlMd80Enable(id, true);
+    m_candle.begin();
     for (f32 t = 0.f; t < 1.f; t += 0.01f)
     {
         f32 target  = lerp(pos, targetPosition, t);
@@ -705,7 +676,7 @@ void CandleTool::testMove(u16 id, f32 targetPosition)
         log.info("[%4d] Position: %4.2f, Velocity: %4.1f", id, md.getPosition(), md.getVelocity());
         usleep(30000);
     }
-    candle->end();
+    m_candle.end();
 }
 
 void CandleTool::testMoveAbsolute(u16 id, f32 targetPos, f32 velLimit, f32 accLimit, f32 dccLimit)
@@ -716,23 +687,23 @@ void CandleTool::testMoveAbsolute(u16 id, f32 targetPos, f32 velLimit, f32 accLi
     if (hasError(id))
         return;
     if (velLimit > 0)
-        candle->writeMd80Register(id, mab::Md80Reg_E::profileVelocity, velLimit);
+        m_candle.writeMd80Register(id, mab::Md80Reg_E::profileVelocity, velLimit);
     if (accLimit > 0)
-        candle->writeMd80Register(id, mab::Md80Reg_E::profileAcceleration, accLimit);
+        m_candle.writeMd80Register(id, mab::Md80Reg_E::profileAcceleration, accLimit);
     if (dccLimit > 0)
-        candle->writeMd80Register(id, mab::Md80Reg_E::profileDeceleration, dccLimit);
+        m_candle.writeMd80Register(id, mab::Md80Reg_E::profileDeceleration, dccLimit);
 
-    candle->controlMd80Mode(id, mab::Md80Mode_E::POSITION_PROFILE);
-    candle->controlMd80Enable(id, true);
-    candle->begin();
-    candle->md80s[0].setTargetPosition(targetPos);
-    while (!candle->md80s[0].isTargetPositionReached())
+    m_candle.controlMd80Mode(id, mab::Md80Mode_E::POSITION_PROFILE);
+    m_candle.controlMd80Enable(id, true);
+    m_candle.begin();
+    m_candle.md80s[0].setTargetPosition(targetPos);
+    while (!m_candle.md80s[0].isTargetPositionReached())
         sleep(1);
     log.info("TARGET REACHED!");
-    candle->end();
+    m_candle.end();
 }
 
-void CandleTool::testLatency(const std::string& canBaudrate)
+void CandleTool::testLatency(const std::string& canBaudrate, std::string busString)
 {
 #ifdef UNIX
     struct sched_param sp;
@@ -743,25 +714,25 @@ void CandleTool::testLatency(const std::string& canBaudrate)
 #ifdef WIN32
     SetPriorityClass(GetCurrentProcess(), REALTIME_PRIORITY_CLASS);
 #endif
-    auto ids = candle->ping(str2baud(canBaudrate));
+    auto ids = m_candle.ping(str2baud(canBaudrate));
     if (ids.size() == 0)
         return;
     checkSpeedForId(ids[0]);
 
     for (auto& id : ids)
     {
-        candle->addMd80(id);
-        candle->controlMd80Mode(id, mab::Md80Mode_E::IMPEDANCE);
+        m_candle.addMd80(id);
+        m_candle.controlMd80Mode(id, mab::Md80Mode_E::IMPEDANCE);
     }
 
-    candle->begin();
+    m_candle.begin();
     std::vector<u32> samples;
     const u32        timelen = 10;
     sleep(1);
     for (u32 i = 0; i < timelen; i++)
     {
         sleep(1);
-        samples.push_back(candle->getActualCommunicationFrequency());
+        samples.push_back(m_candle.getActualCommunicationFrequency());
         log.info("Current average communication speed: %d Hz", samples[i]);
     }
 
@@ -776,7 +747,7 @@ void CandleTool::testLatency(const std::string& canBaudrate)
 
     ui::printLatencyTestResult(ids.size(), m, stdev, busString);
 
-    candle->end();
+    m_candle.end();
 }
 
 void CandleTool::testEncoderOutput(u16 id)
@@ -785,20 +756,20 @@ void CandleTool::testEncoderOutput(u16 id)
         return;
 
     u16 outputEncoder = 0;
-    candle->readMd80Register(id, mab::Md80Reg_E::outputEncoder, outputEncoder);
+    m_candle.readMd80Register(id, mab::Md80Reg_E::outputEncoder, outputEncoder);
     if (!outputEncoder)
     {
         log.warn("No output encoder on ID: %d! Not testing.", id);
         return;
     }
-    candle->setupMd80TestOutputEncoder(id);
+    m_candle.setupMd80TestOutputEncoder(id);
 }
 
 void CandleTool::testEncoderMain(u16 id)
 {
     if (!tryAddMD80(id) && hasError(id))
         return;
-    candle->setupMd80TestMainEncoder(id);
+    m_candle.setupMd80TestMainEncoder(id);
 }
 
 void CandleTool::registerWrite(u16 id, u16 reg, const std::string& value)
@@ -814,31 +785,31 @@ void CandleTool::registerWrite(u16 id, u16 reg, const std::string& value)
     switch (mab::Register::getType(regId))
     {
         case mab::Register::type::U8:
-            success = candle->writeMd80Register(id, regId, (u8)regValue);
+            success = m_candle.writeMd80Register(id, regId, (u8)regValue);
             break;
         case mab::Register::type::I8:
-            success = candle->writeMd80Register(id, regId, (s8)regValue);
+            success = m_candle.writeMd80Register(id, regId, (s8)regValue);
             break;
         case mab::Register::type::U16:
-            success = candle->writeMd80Register(id, regId, (u16)regValue);
+            success = m_candle.writeMd80Register(id, regId, (u16)regValue);
             break;
         case mab::Register::type::I16:
-            success = candle->writeMd80Register(id, regId, (s16)regValue);
+            success = m_candle.writeMd80Register(id, regId, (s16)regValue);
             break;
         case mab::Register::type::U32:
-            success = candle->writeMd80Register(id, regId, (u32)regValue);
+            success = m_candle.writeMd80Register(id, regId, (u32)regValue);
             break;
         case mab::Register::type::I32:
-            success = candle->writeMd80Register(id, regId, (s32)regValue);
+            success = m_candle.writeMd80Register(id, regId, (s32)regValue);
             break;
         case mab::Register::type::F32:
-            success = candle->writeMd80Register(id, regId, (f32)std::atof(value.c_str()));
+            success = m_candle.writeMd80Register(id, regId, (f32)std::atof(value.c_str()));
             break;
         case mab::Register::type::STR:
         {
             char str[24] = {};
             memcpy(str, value.c_str(), sizeof(str));
-            success = candle->writeMd80Register(id, regId, str);
+            success = m_candle.writeMd80Register(id, regId, str);
             break;
         }
         case mab::Register::type::UNKNOWN:
@@ -883,7 +854,7 @@ void CandleTool::registerRead(u16 id, u16 reg)
         case mab::Register::type::STR:
         {
             char str[24]{};
-            candle->readMd80Register(id, regId, str);
+            m_candle.readMd80Register(id, regId, str);
             value = std::string(str);
             break;
         }
@@ -896,7 +867,9 @@ void CandleTool::registerRead(u16 id, u16 reg)
 
 void CandleTool::pdsSetupInfo(u16 id)
 {
-    mab::Pds pds(id, *candle);
+    mab::Pds pds(id, m_candle);
+
+    pds.init();
 
     mab::Pds::modulesSet_S pdsModules = pds.getModules();
 
@@ -952,7 +925,7 @@ void CandleTool::pdsSetupConfig(u16 id, const std::string& cfgPath)
 {
     using err_E = mab::PdsModule::error_E;
 
-    mab::Pds pds(id, *candle);
+    mab::Pds pds(id, m_candle);
 
     mINI::INIFile      pdsCfgFile(cfgPath);
     mINI::INIStructure pdsCfg;
@@ -1060,7 +1033,7 @@ static void fullModuleIni(Pds&                pds,
 void CandleTool::pdsReadConfig(u16 id, const std::string& cfgPath)
 {
     mINI::INIStructure readIni; /**< mINI structure for read data */
-    Pds                pds(id, *candle);
+    Pds                pds(id, m_candle);
     u32                shutDownTime = 0;
     u32                batLvl1      = 0;
     u32                batLvl2      = 0;
@@ -1093,7 +1066,7 @@ void CandleTool::pdsStoreConfig(u16 id)
 {
     using err_E = mab::PdsModule::error_E;
 
-    mab::Pds pds(id, *candle);
+    mab::Pds pds(id, m_candle);
 
     err_E result = pds.saveConfig();
 
@@ -1105,14 +1078,14 @@ void CandleTool::updateCandle(const std::string& mabFilePath, bool noReset)
 {
     log.info("Performing Candle firmware update.");
     MabFileParser         mabFile(mabFilePath, MabFileParser::TargetDevice_E::CANDLE);
-    mab::FirmwareUploader firmwareUploader(*candle, mabFile);
+    mab::FirmwareUploader firmwareUploader(m_candle, mabFile);
     firmwareUploader.flashDevice(noReset);
 }
 
 void CandleTool::updateMd(const std::string& mabFilePath, uint16_t canId, bool noReset)
 {
     MabFileParser         mabFile(mabFilePath, MabFileParser::TargetDevice_E::MD);
-    mab::FirmwareUploader firmwareUploader(*candle, mabFile, canId);
+    mab::FirmwareUploader firmwareUploader(m_candle, mabFile, canId);
     if (firmwareUploader.flashDevice(noReset))
         log.success("Update complete for MD @ %d", canId);
 }
@@ -1120,29 +1093,29 @@ void CandleTool::updateMd(const std::string& mabFilePath, uint16_t canId, bool n
 void CandleTool::updatePds(const std::string& mabFilePath, uint16_t canId, bool noReset)
 {
     MabFileParser         mabFile(mabFilePath, MabFileParser::TargetDevice_E::PDS);
-    mab::FirmwareUploader firmwareUploader(*candle, mabFile, canId);
+    mab::FirmwareUploader firmwareUploader(m_candle, mabFile, canId);
     if (firmwareUploader.flashDevice(noReset))
         log.success("Update complete for PDS @ %d", canId);
 }
 
 void CandleTool::blink(u16 id)
 {
-    candle->configMd80Blink(id);
+    m_candle.configMd80Blink(id);
 }
 void CandleTool::encoder(u16 id)
 {
     if (!tryAddMD80(id))
         return;
-    mab::Md80& md = candle->md80s[0];
-    candle->controlMd80Mode(id, mab::Md80Mode_E::IDLE);
-    candle->controlMd80Enable(id, true);
-    candle->begin();
+    mab::Md80& md = m_candle.md80s[0];
+    m_candle.controlMd80Mode(id, mab::Md80Mode_E::IDLE);
+    m_candle.controlMd80Enable(id, true);
+    m_candle.begin();
     while (1)
     {
         log.info("[%4d] Position: %6.2f, Velocity: %6.1f", id, md.getPosition(), md.getVelocity());
         usleep(100000);
     }
-    candle->end();
+    m_candle.end();
 }
 void CandleTool::bus(const std::string& bus, const std::string& device)
 {
@@ -1169,19 +1142,19 @@ void CandleTool::bus(const std::string& bus, const std::string& device)
 void CandleTool::clearErrors(u16 id, const std::string& level)
 {
     if (level == "error")
-        candle->setupMd80ClearErrors(id);
+        m_candle.setupMd80ClearErrors(id);
     if (level == "warning")
-        candle->setupMd80ClearWarnings(id);
+        m_candle.setupMd80ClearWarnings(id);
     else
     {
-        candle->setupMd80ClearErrors(id);
-        candle->setupMd80ClearWarnings(id);
+        m_candle.setupMd80ClearErrors(id);
+        m_candle.setupMd80ClearWarnings(id);
     }
 }
 
 void CandleTool::reset(u16 id)
 {
-    candle->setupMd80PerformReset(id);
+    m_candle.setupMd80PerformReset(id);
 }
 
 mab::CANdleBaudrate_E CandleTool::checkSpeedForId(u16 id)
@@ -1193,8 +1166,8 @@ mab::CANdleBaudrate_E CandleTool::checkSpeedForId(u16 id)
 
     for (auto& baud : bauds)
     {
-        candle->configCandleBaudrate(baud);
-        if (candle->checkMd80ForBaudrate(id))
+        m_candle.configCandleBaudrate(baud);
+        if (m_candle.checkMd80ForBaudrate(id))
             return baud;
     }
 
@@ -1215,18 +1188,18 @@ u8 CandleTool::getNumericParamFromList(std::string& param, const std::vector<std
 
 bool CandleTool::hasError(u16 canId)
 {
-    candle->setupMd80DiagnosticExtended(canId);
+    m_candle.setupMd80DiagnosticExtended(canId);
 
-    if (candle->getMd80FromList(canId).getReadReg().RO.mainEncoderErrors & 0x0000ffff ||
-        candle->getMd80FromList(canId).getReadReg().RO.outputEncoderErrors & 0x0000ffff ||
-        candle->getMd80FromList(canId).getReadReg().RO.calibrationErrors & 0x0000ffff ||
-        candle->getMd80FromList(canId).getReadReg().RO.hardwareErrors & 0x0000ffff ||
-        candle->getMd80FromList(canId).getReadReg().RO.bridgeErrors & 0x0000ffff ||
-        candle->getMd80FromList(canId).getReadReg().RO.communicationErrors & 0x0000ffff ||
-        candle->getMd80FromList(canId).getReadReg().RO.miscStatus & 0x0000ffff)
+    if (m_candle.getMd80FromList(canId).getReadReg().RO.mainEncoderErrors & 0x0000ffff ||
+        m_candle.getMd80FromList(canId).getReadReg().RO.outputEncoderErrors & 0x0000ffff ||
+        m_candle.getMd80FromList(canId).getReadReg().RO.calibrationErrors & 0x0000ffff ||
+        m_candle.getMd80FromList(canId).getReadReg().RO.hardwareErrors & 0x0000ffff ||
+        m_candle.getMd80FromList(canId).getReadReg().RO.bridgeErrors & 0x0000ffff ||
+        m_candle.getMd80FromList(canId).getReadReg().RO.communicationErrors & 0x0000ffff ||
+        m_candle.getMd80FromList(canId).getReadReg().RO.miscStatus & 0x0000ffff)
     {
         log.error("Cannot execute command. MD has error:");
-        ui::printAllErrors(candle->md80s[0]);
+        ui::printAllErrors(m_candle.md80s[0]);
         return true;
     }
 
@@ -1274,7 +1247,7 @@ bool CandleTool::getField(mINI::INIStructure& cfg,
 bool CandleTool::tryAddMD80(u16 id)
 {
     checkSpeedForId(id);
-    if (!candle->addMd80(id))
+    if (!m_candle.addMd80(id))
     {
         log.error("MD with ID: %d, not found on the bus.", id);
         return false;
@@ -1284,7 +1257,7 @@ bool CandleTool::tryAddMD80(u16 id)
 bool CandleTool::checkSetupError(u16 id)
 {
     u32 calibrationStatus = 0;
-    candle->readMd80Register(id, mab::Md80Reg_E::calibrationErrors, calibrationStatus);
+    m_candle.readMd80Register(id, mab::Md80Reg_E::calibrationErrors, calibrationStatus);
 
     if (calibrationStatus & (1 << ui::calibrationErrorList.at(std::string("ERROR_SETUP"))))
     {

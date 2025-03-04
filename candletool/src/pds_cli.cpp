@@ -29,12 +29,42 @@ PdsCli::PdsCli(CLI::App& rootCli, CandleTool& candletool)
         ->add_option("<socket_index>", m_submoduleSocketNumber, "Submodule socket number")
         ->required();
 
+    m_psSetOvcLevelCmd =
+        m_powerStageCmd->add_subcommand("set_ovc_level", "Set the Overcurrent Detection level");
+
+    m_psGetOvcLevelCmd =
+        m_powerStageCmd->add_subcommand("get_ovc_level", "Get the Overcurrent Detection level");
+
+    m_psSetOvcDelayCmd =
+        m_powerStageCmd->add_subcommand("set_ovc_delay", "Set the Overcurrent Detection delay");
+
+    m_psGetOvcDelayCmd =
+        m_powerStageCmd->add_subcommand("get_ovc_delay", "Get the Overcurrent Detection delay");
+
+    m_psSetTempLimitCmd =
+        m_powerStageCmd->add_subcommand("set_temp_limit", "Set the Temperature Limit");
+
+    m_psGetTempLimitCmd =
+        m_powerStageCmd->add_subcommand("get_temp_limit", "Get the Temperature Limit");
+
+    m_psSetBrCmd = m_powerStageCmd->add_subcommand("set_br", "Set the Brake Resistor Socket index");
+
+    m_psGetBrCmd = m_powerStageCmd->add_subcommand("get_br", "Get the Brake Resistor Socket index");
+
+    m_psSetBrTriggerCmd =
+        m_powerStageCmd->add_subcommand("set_br_trigger", "Set the Brake Resistor Trigger Voltage");
+
+    m_psGetBrTriggerCmd =
+        m_powerStageCmd->add_subcommand("get_br_trigger", "Get the Brake Resistor Trigger Voltage");
+
     m_brakeResistorCmd = m_pds->add_subcommand("br", "Manage the Brake Resistor submodule");
+
     m_brakeResistorCmd
         ->add_option("<socket_index>", m_submoduleSocketNumber, "Submodule socket number")
         ->required();
 
     m_isolatedConverterCmd = m_pds->add_subcommand("ic", "Manage the Isolated Converter submodule");
+
     m_isolatedConverterCmd
         ->add_option("<socket_index>", m_submoduleSocketNumber, "Submodule socket number")
         ->required();
@@ -66,7 +96,9 @@ void PdsCli::parse(void)
 
         if (m_powerStageCmd->parsed())
         {
-            // TODO: Separate power stage subcommands / options parsing method
+            if (m_psSetOvcLevelCmd->parsed())
+            {
+            }
         }
     }
 }

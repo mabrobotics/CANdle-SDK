@@ -29,6 +29,20 @@ class PdsCli
     CLI::App* m_brakeResistorCmd     = nullptr;
     CLI::App* m_isolatedConverterCmd = nullptr;
 
+    // Power stage commands
+    CLI::App* m_psSetOvcLevelCmd  = nullptr;
+    CLI::App* m_psGetOvcLevelCmd  = nullptr;
+    CLI::App* m_psSetOvcDelayCmd  = nullptr;
+    CLI::App* m_psGetOvcDelayCmd  = nullptr;
+    CLI::App* m_psSetTempLimitCmd = nullptr;
+    CLI::App* m_psGetTempLimitCmd = nullptr;
+    CLI::App* m_psSetBrCmd        = nullptr;
+    CLI::App* m_psGetBrCmd        = nullptr;
+    CLI::App* m_psSetBrTriggerCmd = nullptr;
+    CLI::App* m_psGetBrTriggerCmd = nullptr;
+
+    // Brake resistor commands
+
     u16         m_canId                 = 0;
     std::string m_cfgFilePath           = "";
     u8          m_submoduleSocketNumber = 0;
