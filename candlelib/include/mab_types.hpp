@@ -44,6 +44,7 @@ namespace mab
         float kp, ki, kd, i_windup;
     };
 
+    // TODO: change all of this to MD from MD80
     /**
      * @brief Md80 Control Mode
      * @note Position PID is a cascade controller, output of the Position PID (target velocity) is

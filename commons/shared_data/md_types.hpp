@@ -3,6 +3,8 @@
 #include <array>
 #include <cstddef>
 #include <cstring>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "mab_types.hpp"
