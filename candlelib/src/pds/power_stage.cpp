@@ -71,6 +71,17 @@ namespace mab
         return result;
     }
 
+    PdsModule::error_E PowerStage::clearStatus(powerStageStatus_S status)
+    {
+        u32 statusClearWord = 0;
+
+        // statusClearWord |= status.ENABLED ? (u32)statusBits_E::ENABLED : 0;
+        statusClearWord |= status.OVER_TEMPERATURE ? (u32)statusBits_E::OVER_TEMPERATURE : 0;
+        statusClearWord |= status.OVER_CURRENT ? (u32)statusBits_E::OVER_CURRENT : 0;
+
+        return writeModuleProperty(propertyId_E::STATUS_CLEAR, statusClearWord);
+    }
+
     PdsModule::error_E PowerStage::getEnabled(bool& enabled)
     {
         return readModuleProperty(propertyId_E::ENABLE, enabled);

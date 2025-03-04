@@ -24,6 +24,8 @@ namespace mab
 
         error_E getStatus(powerStageStatus_S& status);
 
+        error_E clearStatus(powerStageStatus_S status);
+
         /**
          * @brief Check if the module is enabled or not
          *
