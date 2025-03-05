@@ -44,10 +44,12 @@ namespace mab
 
     LibusbDevice::LibusbDevice(libusb_device* device,
                                const s32      inEndpointAddress,
-                               const s32      outEndpointAddress)
+                               const s32      outEndpointAddress,
+                               const bool     peek)
         : m_dev(device),
           m_inEndpointAddress(inEndpointAddress),
-          m_outEndpointAddress(outEndpointAddress)
+          m_outEndpointAddress(outEndpointAddress),
+          m_peek(peek)
     {
         if (m_dev == nullptr)
         {
@@ -79,6 +81,8 @@ namespace mab
         {
             m_log.error("Did not receive a handle from libusb device!");
         }
+        if (peek)
+            return;
         for (u32 interfaceNo = 1; interfaceNo < m_config->bNumInterfaces; interfaceNo++)
         {
             m_log.debug("Detaching kernel drivers from interface no.: %d", interfaceNo);
@@ -96,25 +100,31 @@ namespace mab
                 message.insert(0, "On claim: ");
                 m_log.error(message.c_str());
             }
-        }
-        m_connected = true;
 
-        m_log.info("Connected USB device: vid - %d, pid - %d", m_desc.idVendor, m_desc.idProduct);
+            m_connected = true;
+
+            m_log.info(
+                "Connected USB device: vid - %d, pid - %d", m_desc.idVendor, m_desc.idProduct);
+        }
     }
     LibusbDevice::~LibusbDevice()
     {
-        for (u32 interfaceNo = 1; interfaceNo < m_config->bNumInterfaces; interfaceNo++)
+        // if device was only used in discovery no interfaces are claimed
+        if (!m_peek)
         {
-            libusb_error usbReleaseError =
-                static_cast<libusb_error>(libusb_release_interface(m_devHandle, interfaceNo));
-            if (usbReleaseError)
+            for (u32 interfaceNo = 1; interfaceNo < m_config->bNumInterfaces; interfaceNo++)
             {
-                std::string message;
-                message = translateLibusbError(usbReleaseError);
-                m_log.error(message.c_str());
+                libusb_error usbReleaseError =
+                    static_cast<libusb_error>(libusb_release_interface(m_devHandle, interfaceNo));
+                if (usbReleaseError)
+                {
+                    std::string message;
+                    message = translateLibusbError(usbReleaseError);
+                    m_log.error(message.c_str());
+                }
+                if (!libusb_kernel_driver_active(m_devHandle, 0))
+                    libusb_attach_kernel_driver(m_devHandle, 0);
             }
-            if (!libusb_kernel_driver_active(m_devHandle, 0))
-                libusb_attach_kernel_driver(m_devHandle, 0);
         }
         libusb_close(m_devHandle);
         m_log.info(
@@ -192,14 +202,16 @@ namespace mab
     {
         if (!serialNo.empty())
             m_serialNo = serialNo;
-        if (libusb_init(NULL))
+
+        if (libusb_init(&m_ctx))
             m_Log.error("Could not init libusb!");
-        // libusb_set_option(NULL, libusb_option::LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL_DEBUG);
+        // libusb_set_option(&m_ctx, libusb_option::LIBUSB_OPTION_LOG_LEVEL,
+        // LIBUSB_LOG_LEVEL_DEBUG);
     }
     USBv2::~USBv2()
     {
         disconnect();
-        libusb_exit(NULL);
+        libusb_exit(m_ctx);
     }
 
     USBv2::Error_t USBv2::connect()
@@ -232,19 +244,25 @@ namespace mab
             {
                 m_Log.debug("Found the right device!");
                 m_libusbDevice =
-                    std::make_unique<LibusbDevice>(checkedDevice, IN_ENDPOINT, OUT_ENDPOINT);
+                    std::make_unique<LibusbDevice>(checkedDevice, IN_ENDPOINT, OUT_ENDPOINT, true);
                 std::string serialNo = m_libusbDevice->getSerialNo();
                 m_Log.info("Device with serial %s found", serialNo.c_str());
-                if (!m_serialNo.compare("") && !serialNo.compare(m_serialNo))
+
+                if (m_serialNo.compare("") &&
+                    m_serialNo.compare(serialNo.substr(0, m_serialNo.size())))
                 {
+                    m_Log.debug("This is not the device you are looking for");
+                    m_Log.debug("%s vs %s",
+                                m_serialNo.c_str(),
+                                serialNo.substr(0, m_serialNo.size()).c_str());
                     m_libusbDevice = nullptr;
                     continue;
                 }
-                // without reasigning libusb device libusb library looses handle for some reason
+                // without reasigning libusb device libusb library looses handle for some reason,
+                // and we use it to claim the interface after scanning
                 m_libusbDevice = nullptr;
                 m_libusbDevice =
                     std::make_unique<LibusbDevice>(checkedDevice, IN_ENDPOINT, OUT_ENDPOINT);
-
                 break;
             }
         }

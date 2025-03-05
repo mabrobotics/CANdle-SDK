@@ -30,7 +30,8 @@ namespace mab
         Logger                    m_log = Logger(Logger::ProgramLayer_E::BOTTOM, "USB_DEV");
         libusb_config_descriptor* m_config;
 
-        s32 m_inEndpointAddress, m_outEndpointAddress;
+        s32        m_inEndpointAddress, m_outEndpointAddress;
+        const bool m_peek;
 
         bool m_connected = false;
 
@@ -39,7 +40,8 @@ namespace mab
       public:
         LibusbDevice(libusb_device* device,
                      const s32      inEndpointAddress,
-                     const s32      outEndpointAddress);
+                     const s32      outEndpointAddress,
+                     const bool     peek = false);
         ~LibusbDevice();
 
         libusb_error transmit(u8* data, const size_t length, const u32 timeout);
@@ -67,12 +69,14 @@ namespace mab
         static constexpr size_t USB_MAX_BUFF_LEN = 16'000'000;  // bytes
         static constexpr size_t DEFAULT_TIMEOUT  = 100;         // ms
 
+        libusb_context* m_ctx;
+
       public:
         /// @brief Initialize USB interface
         /// @param vid vid of the target device
         /// @param pid pid of the target device
-        /// @param serialNo serial number of the target device. If empty than first device from the
-        /// list becomes active device.
+        /// @param serialNo serial number of the target device. If empty than first device from
+        /// the list becomes active device.
         explicit USBv2(const u16 vid, const u16 pid, const std::string serialNo = "");
         ~USBv2();
 
