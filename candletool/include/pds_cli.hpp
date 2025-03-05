@@ -57,8 +57,8 @@ class PdsCli
     void brakeResistorCmdParse(void);
     void isolatedConverterCmdParse(void);
 
-    void pdsSetupInfo(u16 id);
-    void pdsSetupConfig(u16 id, const std::string& cfgPath);
-    void pdsStoreConfig(u16 id);
-    void pdsReadConfig(u16 id, const std::string& cfgPath);
+    void pdsSetupInfo(void);
+    void pdsSetupConfig(const std::string& cfgPath);
+    void pdsStoreConfig(void);
+    void pdsReadConfig(const std::string& cfgPath);
 };

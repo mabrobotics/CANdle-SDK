@@ -77,44 +77,85 @@ void PdsCli::parse(void)
 {
     if (m_pdsCmd->parsed())
     {
-        m_pds.init();
+        m_pds.init(m_canId);
 
         if (m_infoCmd->parsed())
         {
-            pdsSetupInfo(m_canId);
+            pdsSetupInfo();
         }
 
         if (m_configSetupCmd->parsed())
         {
-            pdsSetupConfig(m_canId, m_cfgFilePath);
+            pdsSetupConfig(m_cfgFilePath);
         }
 
         if (m_configReadCmd->parsed())
         {
-            pdsReadConfig(m_canId, m_cfgFilePath);
+            pdsReadConfig(m_cfgFilePath);
         }
 
         if (m_configSaveCmd->parsed())
         {
-            pdsStoreConfig(m_canId);
+            pdsStoreConfig();
         }
 
         if (m_powerStageCmd->parsed())
         {
-            if (m_psSetOvcLevelCmd->parsed())
-            {
-            }
+            powerStageCmdParse();
         }
     }
 }
 
-void PdsCli::pdsSetupInfo(u16 id)
+void PdsCli::powerStageCmdParse(void)
 {
-    mab::Pds pds(id, m_candle);
+    if (!m_pds.verifyModuleSocket(moduleType_E::POWER_STAGE,
+                                  decodeSocketIndex(m_submoduleSocketNumber)))
+    {
+        m_log.error("Invalid socket number for Power Stage submodule");
+        return;
+    }
 
-    pds.init();
+    if (m_psSetOvcLevelCmd->parsed())
+        m_log.info("m_psSetOvcLevelCmd");
 
-    mab::Pds::modulesSet_S pdsModules = pds.getModules();
+    else if (m_psGetOvcLevelCmd->parsed())
+        m_log.info("m_psGetOvcLevelCmd");
+
+    else if (m_psSetOvcDelayCmd->parsed())
+        m_log.info("m_psSetOvcDelayCmd");
+
+    else if (m_psGetOvcDelayCmd->parsed())
+        m_log.info("m_psGetOvcDelayCmd");
+
+    else if (m_psSetTempLimitCmd->parsed())
+        m_log.info("m_psSetTempLimitCmd");
+
+    else if (m_psGetTempLimitCmd->parsed())
+        m_log.info("m_psGetTempLimitCmd");
+
+    else if (m_psSetBrCmd->parsed())
+        m_log.info("m_psSetBrCmd");
+
+    else if (m_psGetBrCmd->parsed())
+        m_log.info("m_psGetBrCmd");
+
+    else if (m_psSetBrTriggerCmd->parsed())
+        m_log.info("m_psSetBrTriggerCmd");
+
+    else if (m_psGetBrTriggerCmd->parsed())
+        m_log.info("m_psGetBrTriggerCmd");
+}
+
+void PdsCli::brakeResistorCmdParse(void)
+{
+}
+void PdsCli::isolatedConverterCmdParse(void)
+{
+}
+
+void PdsCli::pdsSetupInfo()
+{
+    mab::Pds::modulesSet_S pdsModules = m_pds.getModules();
 
     u32                       shutdownTime  = 0;
     u32                       batteryLvl1   = 0;
@@ -122,10 +163,10 @@ void PdsCli::pdsSetupInfo(u16 id)
     u32                       pdsBusVoltage = 0;
     mab::controlBoardStatus_S pdsStatus     = {0};
 
-    pds.getStatus(pdsStatus);
-    pds.getBusVoltage(pdsBusVoltage);
-    pds.getShutdownTime(shutdownTime);
-    pds.getBatteryVoltageLevels(batteryLvl1, batteryLvl2);
+    m_pds.getStatus(pdsStatus);
+    m_pds.getBusVoltage(pdsBusVoltage);
+    m_pds.getShutdownTime(shutdownTime);
+    m_pds.getBatteryVoltageLevels(batteryLvl1, batteryLvl2);
 
     m_log.info("Submodules:");
     m_log.info("\t1 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket1));
@@ -250,11 +291,9 @@ static void fullModuleIni(Pds&                pds,
     }
 }
 
-void PdsCli::pdsSetupConfig(u16 id, const std::string& cfgPath)
+void PdsCli::pdsSetupConfig(const std::string& cfgPath)
 {
     using err_E = mab::PdsModule::error_E;
-
-    mab::Pds pds(id, m_candle);
 
     mINI::INIFile      pdsCfgFile(cfgPath);
     mINI::INIStructure pdsCfg;
@@ -264,54 +303,51 @@ void PdsCli::pdsSetupConfig(u16 id, const std::string& cfgPath)
     u32 battLvl1     = atoi(pdsCfg["Control board"]["battery level 1"].c_str());
     u32 battLvl2     = atoi(pdsCfg["Control board"]["battery level 2"].c_str());
 
-    err_E result = pds.setShutdownTime(shutdownTime);
+    err_E result = m_pds.setShutdownTime(shutdownTime);
     if (result != err_E::OK)
         m_log.error("PDS Config error [ %u ] [ %s:%u ]", result, __FILE__, __LINE__);
 
-    result = pds.setBatteryVoltageLevels(battLvl1, battLvl2);
+    result = m_pds.setBatteryVoltageLevels(battLvl1, battLvl2);
     if (result != err_E::OK)
         m_log.error("PDS Config error [ %u ] [ %s:%u ]", result, __FILE__, __LINE__);
 }
 
-void PdsCli::pdsReadConfig(u16 id, const std::string& cfgPath)
+void PdsCli::pdsReadConfig(const std::string& cfgPath)
 {
     mINI::INIStructure readIni; /**< mINI structure for read data */
-    Pds                pds(id, m_candle);
     u32                shutDownTime = 0;
     u32                batLvl1      = 0;
     u32                batLvl2      = 0;
-    Pds::modulesSet_S  pdsModules   = pds.getModules();
+    Pds::modulesSet_S  pdsModules   = m_pds.getModules();
 
     std::string configName = cfgPath;
     if (std::filesystem::path(configName).extension() == "")
         configName += ".cfg";
 
-    pds.getShutdownTime(shutDownTime);
-    pds.getBatteryVoltageLevels(batLvl1, batLvl2);
+    m_pds.getShutdownTime(shutDownTime);
+    m_pds.getBatteryVoltageLevels(batLvl1, batLvl2);
 
-    readIni["Control board"]["CAN ID"]          = floatToString(id);
+    readIni["Control board"]["CAN ID"]          = floatToString(m_canId);
     readIni["Control board"]["CAN BAUD"]        = "";
     readIni["Control board"]["shutdown time"]   = floatToString(shutDownTime);
     readIni["Control board"]["battery level 1"] = floatToString(batLvl1);
     readIni["Control board"]["battery level 2"] = floatToString(batLvl2);
-    fullModuleIni(pds, pdsModules.moduleTypeSocket1, readIni, socketIndex_E::SOCKET_1);
-    fullModuleIni(pds, pdsModules.moduleTypeSocket2, readIni, socketIndex_E::SOCKET_2);
-    fullModuleIni(pds, pdsModules.moduleTypeSocket3, readIni, socketIndex_E::SOCKET_3);
-    fullModuleIni(pds, pdsModules.moduleTypeSocket4, readIni, socketIndex_E::SOCKET_4);
-    fullModuleIni(pds, pdsModules.moduleTypeSocket5, readIni, socketIndex_E::SOCKET_5);
-    fullModuleIni(pds, pdsModules.moduleTypeSocket6, readIni, socketIndex_E::SOCKET_6);
+    fullModuleIni(m_pds, pdsModules.moduleTypeSocket1, readIni, socketIndex_E::SOCKET_1);
+    fullModuleIni(m_pds, pdsModules.moduleTypeSocket2, readIni, socketIndex_E::SOCKET_2);
+    fullModuleIni(m_pds, pdsModules.moduleTypeSocket3, readIni, socketIndex_E::SOCKET_3);
+    fullModuleIni(m_pds, pdsModules.moduleTypeSocket4, readIni, socketIndex_E::SOCKET_4);
+    fullModuleIni(m_pds, pdsModules.moduleTypeSocket5, readIni, socketIndex_E::SOCKET_5);
+    fullModuleIni(m_pds, pdsModules.moduleTypeSocket6, readIni, socketIndex_E::SOCKET_6);
 
     mINI::INIFile configFile(configName);
     configFile.write(readIni);
 }
 
-void PdsCli::pdsStoreConfig(u16 id)
+void PdsCli::pdsStoreConfig(void)
 {
     using err_E = mab::PdsModule::error_E;
 
-    mab::Pds pds(id, m_candle);
-
-    err_E result = pds.saveConfig();
+    err_E result = m_pds.saveConfig();
 
     if (result != err_E::OK)
         m_log.error("PDS Configuration save error [ %u ] [ %s:%u ]", result, __FILE__, __LINE__);
@@ -319,15 +355,8 @@ void PdsCli::pdsStoreConfig(u16 id)
 
 socketIndex_E PdsCli::decodeSocketIndex(u8 numericSocketIndex)
 {
-    return socketIndex_E::UNASSIGNED;
-}
-
-void PdsCli::powerStageCmdParse(void)
-{
-}
-void PdsCli::brakeResistorCmdParse(void)
-{
-}
-void PdsCli::isolatedConverterCmdParse(void)
-{
+    if (numericSocketIndex < 7)
+        return static_cast<socketIndex_E>(numericSocketIndex);
+    else
+        return socketIndex_E::UNASSIGNED;
 }

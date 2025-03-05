@@ -54,6 +54,7 @@ namespace mab
         void init(u16 canId);
 
         modulesSet_S getModules(void);
+        bool         verifyModuleSocket(moduleType_E type, socketIndex_E socket);
 
         std::shared_ptr<BrakeResistor> attachBrakeResistor(socketIndex_E socket);
         std::shared_ptr<PowerStage>    attachPowerStage(socketIndex_E socket);

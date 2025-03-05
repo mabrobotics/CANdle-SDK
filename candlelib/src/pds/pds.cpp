@@ -29,7 +29,7 @@ namespace mab
     {
         m_canId = canId;
         init();
-        }
+    }
     PdsModule::error_E Pds::createModule(moduleType_E type, socketIndex_E socket)
     {
         switch (type)
@@ -127,6 +127,34 @@ namespace mab
     Pds::modulesSet_S Pds::getModules(void)
     {
         return m_modulesSet;
+    }
+
+    bool Pds::verifyModuleSocket(moduleType_E type, socketIndex_E socket)
+    {
+        // Check if module of type <type> is available on socket <socket>
+        switch (socket)
+        {
+            case socketIndex_E::SOCKET_1:
+                return m_modulesSet.moduleTypeSocket1 == type;
+
+            case socketIndex_E::SOCKET_2:
+                return m_modulesSet.moduleTypeSocket2 == type;
+
+            case socketIndex_E::SOCKET_3:
+                return m_modulesSet.moduleTypeSocket3 == type;
+
+            case socketIndex_E::SOCKET_4:
+                return m_modulesSet.moduleTypeSocket4 == type;
+
+            case socketIndex_E::SOCKET_5:
+                return m_modulesSet.moduleTypeSocket5 == type;
+
+            case socketIndex_E::SOCKET_6:
+                return m_modulesSet.moduleTypeSocket6 == type;
+
+            default:
+                return false;
+        }
     }
 
     std::shared_ptr<BrakeResistor> Pds::attachBrakeResistor(const socketIndex_E socket)
