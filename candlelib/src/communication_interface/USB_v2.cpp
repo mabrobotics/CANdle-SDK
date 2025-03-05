@@ -79,12 +79,12 @@ namespace mab
         {
             m_log.error("Did not receive a handle from libusb device!");
         }
-
-        for (u32 interfaceNo = 0; interfaceNo < m_config->bNumInterfaces; interfaceNo++)
+        for (u32 interfaceNo = 1; interfaceNo < m_config->bNumInterfaces; interfaceNo++)
         {
             m_log.debug("Detaching kernel drivers from interface no.: %d", interfaceNo);
-            if (libusb_kernel_driver_active(m_devHandle, interfaceNo))
-                libusb_detach_kernel_driver(m_devHandle, interfaceNo);
+            // dont detach any interface other than 0 as it causes errors
+            if (libusb_kernel_driver_active(m_devHandle, 0))
+                libusb_detach_kernel_driver(m_devHandle, 0);
 
             m_log.debug("Claiming interface no.: %d", interfaceNo);
             libusb_error usbClaimError =
@@ -103,7 +103,7 @@ namespace mab
     }
     LibusbDevice::~LibusbDevice()
     {
-        for (u32 interfaceNo = 0; interfaceNo < m_config->bNumInterfaces; interfaceNo++)
+        for (u32 interfaceNo = 1; interfaceNo < m_config->bNumInterfaces; interfaceNo++)
         {
             libusb_error usbReleaseError =
                 static_cast<libusb_error>(libusb_release_interface(m_devHandle, interfaceNo));
@@ -113,7 +113,8 @@ namespace mab
                 message = translateLibusbError(usbReleaseError);
                 m_log.error(message.c_str());
             }
-            libusb_attach_kernel_driver(m_devHandle, interfaceNo);
+            if (!libusb_kernel_driver_active(m_devHandle, 0))
+                libusb_attach_kernel_driver(m_devHandle, 0);
         }
         libusb_close(m_devHandle);
         m_log.info(
@@ -122,11 +123,6 @@ namespace mab
 
     libusb_error LibusbDevice::transmit(u8* data, const size_t length, const u32 timeout)
     {
-        // TODO: needs another solution, adds too much delay
-        // clear junk data
-        // u8 dummyBuffer[66];
-        // libusb_bulk_transfer(
-        //     m_devHandle, m_inEndpointAddress, dummyBuffer, sizeof(dummyBuffer), NULL, 1);
         if (data == nullptr)
         {
             std::string message = "Data does not exist!";

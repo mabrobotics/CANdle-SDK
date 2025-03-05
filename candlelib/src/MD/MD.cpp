@@ -18,8 +18,10 @@ namespace mab
         //     if (devType != deviceType_E::UNKNOWN_DEVICE)
         //         return Error_t::OK;
         // }
+        m_mdRegisters.legacyHardwareVersion = 0;
 
         auto mfLegacydataResult = readRegister(m_mdRegisters.legacyHardwareVersion);
+
         if (mfLegacydataResult.second != Error_t::OK)
             return Error_t::NOT_CONNECTED;
 
@@ -482,5 +484,43 @@ namespace mab
             return std::make_pair(0, result.second);
         }
         return std::make_pair(m_mdRegisters.motorTemperature.value, result.second);
+    }
+
+    /// @brief This test should be performed with 1M datarate on CAN network
+    void MD::testLatency()
+    {
+        u64 latencyTransmit = 0;  // us
+        // u64 latencyReceive  = 0;  // us
+
+        constexpr u64 transmitSamples = 1000;
+        // constexpr u64 receiveSamples  = 1000;
+
+        constexpr u64 transmissionFramesTime = 407;
+        // constexpr u64 receptionFramesTime    = 1;
+
+        m_mdRegisters.userGpioConfiguration = 0;
+        auto transmitParameter =
+            std::make_tuple(std::reference_wrapper(m_mdRegisters.userGpioConfiguration));
+        // auto receiveParameter =
+        //     std::make_tuple(std::reference_wrapper(m_mdRegisters.canTermination));
+
+        for (u32 i = 0; i < transmitSamples; i++)
+        {
+            auto start = std::chrono::high_resolution_clock::now();
+            writeRegisters(transmitParameter);
+            auto end = std::chrono::high_resolution_clock::now();
+            latencyTransmit +=
+                std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+        }
+        latencyTransmit /= transmitSamples;
+        m_log.info("Overall transmission time: %d us", latencyTransmit);
+        m_log.info("Overall transmission frequency: %.6f kHz",
+                   1.0f / (static_cast<float>(latencyTransmit) / 1'000.0f));
+        u64 latencyTransmitCropped = latencyTransmit - transmissionFramesTime;
+        m_log.info("Only USB transmission time: %d us", latencyTransmitCropped);
+        m_log.info("Can bus utilization %.2f%%",
+                   100.0f - (static_cast<float>(latencyTransmitCropped) /
+                             static_cast<float>(latencyTransmit)) *
+                                100.0f);
     }
 }  // namespace mab

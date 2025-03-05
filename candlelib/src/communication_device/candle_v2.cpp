@@ -105,6 +105,27 @@ namespace mab
         return m_mdMap;
     }
 
+    candleTypes::Error_t CandleV2::reset()
+    {
+        std::vector<u8> resetCmd;
+        for (auto byte : resetCommandFrame())
+        {
+            resetCmd.push_back(byte);
+        }
+        auto result = busTransfer(&resetCmd, 2);
+        if (result != candleTypes::Error_t::OK)
+        {
+            m_log.error("Reset failed!");
+            return result;
+        }
+        if (resetCmd.at(1) != 0x1)
+        {
+            m_log.error("Reset failed!");
+            return candleTypes::Error_t::UNKNOWN_ERROR;
+        }
+        return candleTypes::Error_t::OK;
+    }
+
     candleTypes::Error_t CandleV2::busTransfer(std::vector<u8>* data,
                                                size_t           responseLength,
                                                const u32        timeoutMs)
@@ -172,12 +193,13 @@ namespace mab
 
         auto buffer = std::vector<u8>(dataToSend);
 
-        const auto candleCommandCANframe = sendCanFrameHeader(dataToSend.size(), u16(canId));
+        const auto candleCommandCANframe =
+            sendCanFrameHeader(dataToSend.size(), u16(canId), timeoutMs);
 
         buffer.insert(buffer.begin(), candleCommandCANframe.begin(), candleCommandCANframe.end());
 
-        communicationStatus =
-            candleSp->busTransfer(&buffer, responseSize + 2 /*response header size*/);
+        communicationStatus = candleSp->busTransfer(
+            &buffer, responseSize + 2 /*response header size*/, timeoutMs + 1);
 
         if (buffer.at(1) != 0x01)
         {

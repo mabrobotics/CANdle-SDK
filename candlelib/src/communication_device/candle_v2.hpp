@@ -84,6 +84,8 @@ namespace mab
         /// @return shared pointer to internal MD map
         std::shared_ptr<std::map<canId_t, MD>> getMDmapHandle();
 
+        candleTypes::Error_t reset();
+
       private:
         static constexpr u32 DEFAULT_CONFIGURATION_TIMEOUT = 10;
 
@@ -115,13 +117,12 @@ namespace mab
             return std::vector<u8>({CANDLE_CONFIG_BAUDRATE, baudrate});
         }
 
-        static inline std::vector<u8> sendCanFrameHeader(const u8&& length, const u16&& id)
+        static inline std::vector<u8> sendCanFrameHeader(const u8&&  length,
+                                                         const u16&& id,
+                                                         const u8    timeout = DEFAULT_CAN_TIMEOUT)
         {
-            return std::vector<u8>({GENERIC_CAN_FRAME,
-                                    u8(length /*id + DLC*/),
-                                    DEFAULT_CAN_TIMEOUT,
-                                    u8(id),
-                                    u8(id >> 8)});
+            return std::vector<u8>(
+                {GENERIC_CAN_FRAME, u8(length /*id + DLC*/), timeout, u8(id), u8(id >> 8)});
         }
 
         inline void frameDump(std::vector<u8> frame) const
