@@ -69,6 +69,7 @@ namespace mab
 
         const std::array<u8, sizeof(value) + sizeof(m_regAddress)>* getSerializedRegister()
         {
+            // Frame layout <8bits per chunk> [LSB address, MSB address, Payload ...]
             std::memcpy(serializedBuffer.data(), &m_regAddress, sizeof(m_regAddress));
             std::memcpy(serializedBuffer.data() + sizeof(m_regAddress), &value, sizeof(value));
 
@@ -77,6 +78,7 @@ namespace mab
 
         bool setSerializedRegister(std::vector<u8>& data)
         {
+            // Frame layout <8bits per chunk> [LSB address, MSB address, Payload ...]
             u16 addressFromSerial = 0;
             std::memcpy(&addressFromSerial, data.data(), sizeof(m_regAddress));
             if (addressFromSerial == m_regAddress)
@@ -136,6 +138,7 @@ namespace mab
 
         const std::array<u8, sizeof(value) + sizeof(m_regAddress)>* getSerializedRegister()
         {
+            // Frame layout <8bits per chunk> [LSB address, MSB address, Payload ...]
             std::memcpy(serializedBuffer.data(), &m_regAddress, sizeof(m_regAddress));
             std::memcpy(serializedBuffer.data() + sizeof(m_regAddress), value, sizeof(value));
 
@@ -144,6 +147,7 @@ namespace mab
 
         bool setSerializedRegister(std::vector<u8>& data)
         {
+            // Frame layout <8bits per chunk> [LSB address, MSB address, Payload ...]
             u16 addressFromSerial = 0;
             std::memcpy(&addressFromSerial, data.data(), sizeof(m_regAddress));
             if (addressFromSerial == m_regAddress)
