@@ -44,7 +44,7 @@ class CandleV2Test : public ::testing::Test
 
     void SetUp() override
     {
-        mockData                       = {mab::CandleV2::CandleCommands_t::RESET, 0x0};
+        mockData                       = {mab::CandleV2::CandleCommands_t::RESET, 0x1};
         Logger::g_m_verbosity          = Logger::Verbosity_E::SILENT;
         mockBus                        = std::make_unique<MockBus>();
         ::testing::FLAGS_gmock_verbose = "error";
@@ -77,10 +77,10 @@ TEST_F(CandleV2Test, failAfterInit)
         .Times(1)
         .WillOnce(Return(mab::I_CommunicationInterface::Error_t::OK));
     EXPECT_CALL(*mockBus, transfer(_, _, _))
-        .Times(1)
-        .WillOnce(Return(std::pair(mockData, mab::I_CommunicationInterface::Error_t::OK)));
-    EXPECT_CALL(*mockBus, transfer(_, _))
-        .WillOnce(Return(mab::I_CommunicationInterface::Error_t::UNKNOWN_ERROR));
+        .Times(2)
+        .WillOnce(Return(std::pair(mockData, mab::I_CommunicationInterface::Error_t::OK)))
+        .WillOnce(
+            Return(std::pair(mockData, mab::I_CommunicationInterface::Error_t::UNKNOWN_ERROR)));
     auto candle = mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus));
     auto result = candle->transferCANFrame(candle, mockId, mockData, 0);
     ASSERT_NE(result.second, mab::candleTypes::Error_t::OK);
@@ -92,9 +92,10 @@ TEST_F(CandleV2Test, successAfterInit)
         .Times(1)
         .WillOnce(Return(mab::I_CommunicationInterface::Error_t::OK));
     EXPECT_CALL(*mockBus, transfer(_, _, _))
-        .Times(1)
+        .Times(2)
+        .WillOnce(Return(std::pair(mockData, mab::I_CommunicationInterface::Error_t::OK)))
         .WillOnce(Return(std::pair(mockData, mab::I_CommunicationInterface::Error_t::OK)));
     auto candle = mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus));
-    auto result = candle->transferCANFrame(candle, mockId, mockData, 0);
+    auto result = candle->transferCANFrame(candle, mockId, mockData, mockData.size());
     ASSERT_EQ(result.second, mab::candleTypes::Error_t::OK);
 }
