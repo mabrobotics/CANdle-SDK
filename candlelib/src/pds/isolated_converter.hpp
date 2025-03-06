@@ -10,15 +10,19 @@ namespace mab
      *       The idea is that PDS base class detects connected modules automatically and
      *
      */
-    class IsolatedConv12 : public PdsModule
+    class IsolatedConv : public PdsModule
     {
       public:
-        IsolatedConv12() = delete;
-        IsolatedConv12(socketIndex_E socket, Candle& candle, u16& canId);
-        ~IsolatedConv12() = default;
+        IsolatedConv() = delete;
+        IsolatedConv(socketIndex_E socket, Candle& candle, u16& canId);
+        ~IsolatedConv() = default;
+
+        virtual void printModuleInfo(void) override;
 
         error_E enable();
         error_E disable();
+
+        error_E getStatus(isolatedConverterStatus_S& status);
 
         error_E getEnabled(bool& enabled);
 
@@ -102,20 +106,6 @@ namespace mab
 
         error_E setTemperatureLimit(f32 temperatureLimit);
         error_E getTemperatureLimit(f32& temperatureLimit);
-    };
-
-    /**
-     * @brief 5V Isolated converter module class
-     * @note The instances of the PDS modules are not intended to be created by user manually!!!
-     *       The idea is that PDS base class detects connected modules automatically and
-     *
-     */
-    class IsolatedConv5 : public PdsModule
-    {
-      public:
-        IsolatedConv5() = delete;
-        IsolatedConv5(socketIndex_E socket, Candle& candle, u16 canId);
-        ~IsolatedConv5() = default;
     };
 
 }  // namespace mab

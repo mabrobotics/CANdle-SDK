@@ -33,20 +33,11 @@ namespace mab
 
         socketIndex_E getSocketIndex();
 
-        /**
-         * @brief This enum represents common status bits position in status word for all modules
-         * @note Assuming that only first 8 ( LSBits ) are reserved for common status. Other bits
-         * are for modules specific status information
-         * TODO: Move to the CANdleSDK shared resources!
-         */
-        enum class status_E : uint32_t
-        {
-            ENABLED                = (1 << 0x00),
-            OVER_TEMPERATURE_EVENT = (1 << 0x01),
-            OVER_CURRENT_EVENT     = (1 << 0x02),
-        };
+        error_E getBoardVersion(moduleVersion_E& version);
 
-        // static std::string moduleType2String(moduleType_E type);
+        virtual void printModuleInfo(void) = 0;
+
+        static std::string moduleType2String(moduleType_E type);
 
       protected:
         /**
