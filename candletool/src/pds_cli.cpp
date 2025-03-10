@@ -27,12 +27,15 @@ PdsCli::PdsCli(CLI::App& rootCli, mab::Candle& candle) : m_rootCli(rootCli), m_c
         m_pdsCmd->add_subcommand("save", "Store current configuration in device memory");
 
     m_powerStageCmd = m_pdsCmd->add_subcommand("ps", "Manage the Power Stage submodule");
+
     m_powerStageCmd
         ->add_option("<socket_index>", m_submoduleSocketNumber, "Submodule socket number")
         ->required();
 
     m_psSetOvcLevelCmd =
         m_powerStageCmd->add_subcommand("set_ovc_level", "Set the Overcurrent Detection level");
+    m_psSetOvcLevelCmd->add_option("<ovc_level>", m_ovcLevel, "Overcurrent Detection level")
+        ->required();
 
     m_psGetOvcLevelCmd =
         m_powerStageCmd->add_subcommand("get_ovc_level", "Get the Overcurrent Detection level");
@@ -108,12 +111,15 @@ void PdsCli::parse(void)
 
 void PdsCli::powerStageCmdParse(void)
 {
-    if (!m_pds.verifyModuleSocket(moduleType_E::POWER_STAGE,
-                                  decodeSocketIndex(m_submoduleSocketNumber)))
+    socketIndex_E socketIndex = decodeSocketIndex(m_submoduleSocketNumber);
+
+    if (!m_pds.verifyModuleSocket(moduleType_E::POWER_STAGE, socketIndex))
     {
         m_log.error("Invalid socket number for Power Stage submodule");
         return;
     }
+
+    auto ps = m_pds.attachPowerStage(socketIndex);
 
     if (m_psSetOvcLevelCmd->parsed())
         m_log.info("m_psSetOvcLevelCmd");
@@ -144,11 +150,15 @@ void PdsCli::powerStageCmdParse(void)
 
     else if (m_psGetBrTriggerCmd->parsed())
         m_log.info("m_psGetBrTriggerCmd");
+
+    else
+        m_log.error("PS subcommand is missing");
 }
 
 void PdsCli::brakeResistorCmdParse(void)
 {
 }
+
 void PdsCli::isolatedConverterCmdParse(void)
 {
 }
@@ -167,6 +177,8 @@ void PdsCli::pdsSetupInfo()
     m_pds.getBusVoltage(pdsBusVoltage);
     m_pds.getShutdownTime(shutdownTime);
     m_pds.getBatteryVoltageLevels(batteryLvl1, batteryLvl2);
+
+    m_log.info("Power Distribution Module");
 
     m_log.info("Submodules:");
     m_log.info("\t1 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket1));
@@ -237,7 +249,7 @@ static void fillBrIni(BrakeResistor& br, mINI::INIStructure& rIni, std::string s
     rIni[sectionName]["type"] = PdsModule::moduleType2String(moduleType_E::BRAKE_RESISTOR);
 }
 
-// Fill Brake resistor Ini structure
+// Fill Isolated Converter Ini structure
 static void fillIcIni(IsolatedConv& ic, mINI::INIStructure& rIni, std::string sectionName)
 {
     f32 temperatureLimit = 0.0f;

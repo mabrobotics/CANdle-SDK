@@ -42,6 +42,9 @@ class PdsCli
     CLI::App* m_psSetBrTriggerCmd = nullptr;
     CLI::App* m_psGetBrTriggerCmd = nullptr;
 
+    // Properties
+    u32 m_ovcLevel = 0.0f;
+
     // Brake resistor commands
 
     u16         m_canId                 = 0;
