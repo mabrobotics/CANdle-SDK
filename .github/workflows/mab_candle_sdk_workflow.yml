@@ -39,7 +39,7 @@ jobs:
   build-candleSDK-linux-arm64:
     runs-on: ubuntu-22.04
     container:
-      image: mabroboticsofficial/mab_build_environment
+      image: mabroboticsofficial/mab_build_environment_arm64_cross-compile
       options: --user root
 
     steps:
