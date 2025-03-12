@@ -35,7 +35,8 @@ int main()
     result = pds.setBatteryVoltageLevels(BATTERY_LEVEL_1, BATTERY_LEVEL_2);
     if (result != PdsModule::error_E::OK)
     {
-        _log.error("Error setting battery voltage levels [ %d ]", result);
+        _log.error("Setting battery voltage levels failed [ %s ]",
+                   PdsModule::error2String(result).c_str());
         return EXIT_FAILURE;
     }
 
@@ -43,7 +44,7 @@ int main()
     result = pds.setShutdownTime(SHUTDOWN_TIME);
     if (result != PdsModule::error_E::OK)
     {
-        _log.error("Error setting shutdown time [ %d ]", result);
+        _log.error("Setting shutdown time Failed [ %s ]", PdsModule::error2String(result).c_str());
         return EXIT_FAILURE;
     }
 
@@ -51,7 +52,7 @@ int main()
     result = pds.saveConfig();
     if (result != PdsModule::error_E::OK)
     {
-        _log.error("Error saving configuration [ %d ]", result);
+        _log.error("Saving configuration [ %s ]", PdsModule::error2String(result).c_str());
         return EXIT_FAILURE;
     }
 

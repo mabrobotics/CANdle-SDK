@@ -23,7 +23,7 @@ namespace mab
         {
 
             OK                  = 0,
-            UNKNOWN_ERROR       = 1,
+            INTERNAL_ERROR      = 1,
             PROTOCOL_ERROR      = 2,
             COMMUNICATION_ERROR = 3,
 
@@ -38,6 +38,7 @@ namespace mab
         virtual void printModuleInfo(void) = 0;
 
         static std::string moduleType2String(moduleType_E type);
+        static std::string error2String(error_E error);
 
       protected:
         /**

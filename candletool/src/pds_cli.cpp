@@ -11,8 +11,9 @@ PdsCli::PdsCli(CLI::App& rootCli, mab::Candle& candle) : m_rootCli(rootCli), m_c
     m_pdsCmd->add_option("<CAN_ID>", m_canId, "MAB FD-CAN protocol :: Target device ID")
         ->required();
 
-    m_infoCmd        = m_pdsCmd->add_subcommand("info", "Display debug info about PDS device");
-    m_configSetupCmd = m_pdsCmd->add_subcommand("setup", "Configure PDS device with the .cfg file");
+    m_infoCmd = m_pdsCmd->add_subcommand("info", "Display debug info about PDS device");
+    m_configSetupCmd =
+        m_pdsCmd->add_subcommand("setup_cfg", "Configure PDS device with the .cfg file");
 
     m_configSetupCmd->add_option("<config_file>", m_cfgFilePath, "PDS configuration .cfg file.")
         ->required();
@@ -26,11 +27,19 @@ PdsCli::PdsCli(CLI::App& rootCli, mab::Candle& candle) : m_rootCli(rootCli), m_c
     m_configSaveCmd =
         m_pdsCmd->add_subcommand("save", "Store current configuration in device memory");
 
+    // POWER STAGE commands set
     m_powerStageCmd = m_pdsCmd->add_subcommand("ps", "Manage the Power Stage submodule");
+
+    m_psInfoCmd = m_powerStageCmd->add_subcommand("info", "Display debug info about Power Stage");
 
     m_powerStageCmd
         ->add_option("<socket_index>", m_submoduleSocketNumber, "Submodule socket number")
         ->required();
+
+    m_psEnableCmd = m_powerStageCmd->add_subcommand("enable", "Enable the Power Stage submodule");
+
+    m_psDisableCmd =
+        m_powerStageCmd->add_subcommand("disable", "Disable the Power Stage submodule");
 
     m_psSetOvcLevelCmd =
         m_powerStageCmd->add_subcommand("set_ovc_level", "Set the Overcurrent Detection level");
@@ -42,6 +51,8 @@ PdsCli::PdsCli(CLI::App& rootCli, mab::Candle& candle) : m_rootCli(rootCli), m_c
 
     m_psSetOvcDelayCmd =
         m_powerStageCmd->add_subcommand("set_ovc_delay", "Set the Overcurrent Detection delay");
+    m_psSetOvcDelayCmd->add_option("<ovc_delay>", m_ovcDelay, "Overcurrent Detection delay")
+        ->required();
 
     m_psGetOvcDelayCmd =
         m_powerStageCmd->add_subcommand("get_ovc_delay", "Get the Overcurrent Detection delay");
@@ -49,10 +60,15 @@ PdsCli::PdsCli(CLI::App& rootCli, mab::Candle& candle) : m_rootCli(rootCli), m_c
     m_psSetTempLimitCmd =
         m_powerStageCmd->add_subcommand("set_temp_limit", "Set the Temperature Limit");
 
+    m_psSetTempLimitCmd->add_option("<temp_limit>", m_tempLimit, "Temperature Limit")->required();
+
     m_psGetTempLimitCmd =
         m_powerStageCmd->add_subcommand("get_temp_limit", "Get the Temperature Limit");
 
     m_psSetBrCmd = m_powerStageCmd->add_subcommand("set_br", "Set the Brake Resistor Socket index");
+
+    m_psSetBrCmd->add_option("<socket_index>", m_brSocket, "Brake Resistor Socket index")
+        ->required();
 
     m_psGetBrCmd = m_powerStageCmd->add_subcommand("get_br", "Get the Brake Resistor Socket index");
 
@@ -62,11 +78,26 @@ PdsCli::PdsCli(CLI::App& rootCli, mab::Candle& candle) : m_rootCli(rootCli), m_c
     m_psGetBrTriggerCmd =
         m_powerStageCmd->add_subcommand("get_br_trigger", "Get the Brake Resistor Trigger Voltage");
 
+    // BRAKE RESISTOR commands set
+
     m_brakeResistorCmd = m_pdsCmd->add_subcommand("br", "Manage the Brake Resistor submodule");
 
     m_brakeResistorCmd
         ->add_option("<socket_index>", m_submoduleSocketNumber, "Submodule socket number")
         ->required();
+
+    m_brInfoCmd =
+        m_brakeResistorCmd->add_subcommand("info", "Display debug info about Brake Resistor");
+
+    m_brSetTempLimitCmd =
+        m_brakeResistorCmd->add_subcommand("set_temp_limit", "Set the Temperature Limit");
+
+    m_brSetTempLimitCmd->add_option("<temp_limit>", m_tempLimit, "Temperature Limit")->required();
+
+    m_brGetTempLimitCmd =
+        m_brakeResistorCmd->add_subcommand("get_temp_limit", "Get the Temperature Limit");
+
+    // ISOLATED CONVERTER commands set
 
     m_isolatedConverterCmd =
         m_pdsCmd->add_subcommand("ic", "Manage the Isolated Converter submodule");
@@ -74,6 +105,41 @@ PdsCli::PdsCli(CLI::App& rootCli, mab::Candle& candle) : m_rootCli(rootCli), m_c
     m_isolatedConverterCmd
         ->add_option("<socket_index>", m_submoduleSocketNumber, "Submodule socket number")
         ->required();
+
+    m_icInfoCmd = m_isolatedConverterCmd->add_subcommand(
+        "info", "Display debug info about Isolated Converter");
+
+    m_icEnableCmd =
+        m_isolatedConverterCmd->add_subcommand("enable", "Enable the Isolated Converter submodule");
+
+    m_icDisableCmd = m_isolatedConverterCmd->add_subcommand(
+        "disable", "Disable the Isolated Converter submodule");
+
+    m_icSetOvcLevelCmd = m_isolatedConverterCmd->add_subcommand(
+        "set_ovc_level", "Set the Overcurrent Detection level");
+
+    m_icSetOvcLevelCmd->add_option("<ovc_level>", m_ovcLevel, "Overcurrent Detection level")
+        ->required();
+
+    m_icGetOvcLevelCmd = m_isolatedConverterCmd->add_subcommand(
+        "get_ovc_level", "Get the Overcurrent Detection level");
+
+    m_icSetOvcDelayCmd = m_isolatedConverterCmd->add_subcommand(
+        "set_ovc_delay", "Set the Overcurrent Detection delay");
+
+    m_icSetOvcDelayCmd->add_option("<ovc_delay>", m_ovcDelay, "Overcurrent Detection delay")
+        ->required();
+
+    m_icGetOvcDelayCmd = m_isolatedConverterCmd->add_subcommand(
+        "get_ovc_delay", "Get the Overcurrent Detection delay");
+
+    m_icSetTempLimitCmd =
+        m_isolatedConverterCmd->add_subcommand("set_temp_limit", "Set the Temperature Limit");
+
+    m_icSetTempLimitCmd->add_option("<temp_limit>", m_tempLimit, "Temperature Limit")->required();
+
+    m_icGetTempLimitCmd =
+        m_isolatedConverterCmd->add_subcommand("get_temp_limit", "Get the Temperature Limit");
 }
 
 void PdsCli::parse(void)
@@ -82,36 +148,51 @@ void PdsCli::parse(void)
     {
         m_pds.init(m_canId);
 
+        m_log.info("PDS - Power Distribution System :: CAN ID [ %u ]", m_canId);
+
         if (m_infoCmd->parsed())
         {
             pdsSetupInfo();
         }
 
-        if (m_configSetupCmd->parsed())
+        else if (m_configSetupCmd->parsed())
         {
             pdsSetupConfig(m_cfgFilePath);
         }
 
-        if (m_configReadCmd->parsed())
+        else if (m_configReadCmd->parsed())
         {
             pdsReadConfig(m_cfgFilePath);
         }
 
-        if (m_configSaveCmd->parsed())
+        else if (m_configSaveCmd->parsed())
         {
             pdsStoreConfig();
         }
 
-        if (m_powerStageCmd->parsed())
+        else if (m_powerStageCmd->parsed())
         {
             powerStageCmdParse();
         }
+
+        else if (m_brakeResistorCmd->parsed())
+        {
+            brakeResistorCmdParse();
+        }
+
+        else if (m_isolatedConverterCmd->parsed())
+        {
+            isolatedConverterCmdParse();
+        }
+        else
+            m_log.error("PDS subcommand is missing");
     }
 }
 
 void PdsCli::powerStageCmdParse(void)
 {
-    socketIndex_E socketIndex = decodeSocketIndex(m_submoduleSocketNumber);
+    socketIndex_E      socketIndex = decodeSocketIndex(m_submoduleSocketNumber);
+    PdsModule::error_E result      = PdsModule::error_E::OK;
 
     if (!m_pds.verifyModuleSocket(moduleType_E::POWER_STAGE, socketIndex))
     {
@@ -121,46 +202,507 @@ void PdsCli::powerStageCmdParse(void)
 
     auto ps = m_pds.attachPowerStage(socketIndex);
 
-    if (m_psSetOvcLevelCmd->parsed())
-        m_log.info("m_psSetOvcLevelCmd");
+    if (ps == nullptr)
+    {
+        m_log.error("Power Stage submodule is not available");
+        return;
+    }
+
+    m_log.info("Power Stage submodule :: Socket index [ %u ]", m_submoduleSocketNumber);
+
+    if (m_psInfoCmd->parsed())
+    {
+        powerStageStatus_S   psStatus         = {0};
+        u32                  busVoltage       = 0;
+        s32                  current          = 0;
+        u32                  ovcLevel         = 0;
+        u32                  ovcDelay         = 0;
+        f32                  temperature      = 0.0f;
+        f32                  temperatureLimit = 0.0f;
+        socketIndex_E        brSocket         = socketIndex_E::UNASSIGNED;
+        u32                  brTrigger        = 0;
+        mab::moduleVersion_E version          = mab::moduleVersion_E::UNKNOWN;
+
+        result = ps->getBoardVersion(version);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage get version failed [ %s ]", PdsModule::error2String(result));
+        else
+            m_log.info("Version [ %d ]", static_cast<u8>(version));
+
+        result = ps->getStatus(psStatus);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage get status failed [ %s ]", PdsModule::error2String(result));
+        else
+        {
+            m_log.info("Status:");
+            m_log.info("\t* ENABLED           [ %s ]", psStatus.ENABLED ? "YES" : "NO");
+            m_log.info("\t* OVER_TEMPERATURE  [ %s ]", psStatus.OVER_TEMPERATURE ? "YES" : "NO");
+            m_log.info("\t* OVER_CURRENT      [ %s ]", psStatus.OVER_CURRENT ? "YES" : "NO");
+        }
+
+        m_log.info("Measurements:");
+
+        result = ps->getOutputVoltage(busVoltage);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage get output voltage failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.info("\t* Output voltage [ %0.2f ]", busVoltage / 1000.0f);
+
+        result = ps->getLoadCurrent(current);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage get load current failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.info("\t* Load current [ %0.2f ]", current / 1000.0f);
+
+        result = ps->getTemperature(temperature);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage get temperature failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.info("\t* Temperature [ %0.2f ]", temperature);
+
+        m_log.info("Configuration:");
+
+        result = ps->getOcdLevel(ovcLevel);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage get OVC level failed [ %s ]", PdsModule::error2String(result));
+        else
+            m_log.info("\t* OVC level [ %u ]", ovcLevel);
+
+        result = ps->getOcdDelay(ovcDelay);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage get OVC delay failed [ %s ]", PdsModule::error2String(result));
+        else
+            m_log.info("\t* OVC delay [ %u ]", ovcDelay);
+
+        result = ps->getTemperatureLimit(temperatureLimit);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage get temperature limit failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.info("\t* Temperature limit [ %0.2f ]", temperatureLimit);
+
+        result = ps->getBindBrakeResistor(brSocket);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage get brake resistor failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+        {
+            if (brSocket == socketIndex_E::UNASSIGNED)
+                m_log.info("\t* Brake resistor is not set");
+            else
+                m_log.info("\t* Brake resistor socket [ %u ]", (u8)brSocket);
+        }
+
+        if (brSocket != socketIndex_E::UNASSIGNED)
+        {
+            result = ps->getBrakeResistorTriggerVoltage(brTrigger);
+            if (result != PdsModule::error_E::OK)
+                m_log.error("Power Stage get brake resistor trigger voltage failed [ %s ]",
+                            PdsModule::error2String(result));
+            else
+                m_log.info("\t* Brake resistor trigger voltage [ %u ]", brTrigger);
+        }
+    }
+
+    else if (m_psEnableCmd->parsed())
+    {
+        result = ps->enable();
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage enabling failed [ %s ]", PdsModule::error2String(result));
+        else
+            m_log.success("Module enabled");
+    }
+
+    else if (m_psDisableCmd->parsed())
+    {
+        result = ps->disable();
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage disabling failed [ %s ]", PdsModule::error2String(result));
+        else
+            m_log.success("Module disabled");
+    }
+
+    else if (m_psSetOvcLevelCmd->parsed())
+    {
+        result = ps->setOcdLevel(m_ovcLevel);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage set OVC level failed [ %s ]", PdsModule::error2String(result));
+        else
+            m_log.success("OVC level set [ %u ]", m_ovcLevel);
+    }
 
     else if (m_psGetOvcLevelCmd->parsed())
-        m_log.info("m_psGetOvcLevelCmd");
+    {
+        u32 ovcLevel = 0;
+        result       = ps->getOcdLevel(ovcLevel);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage get OVC level failed [ %s ]", PdsModule::error2String(result));
+        else
+            m_log.success("OVC level [ %u ]", ovcLevel);
+    }
 
     else if (m_psSetOvcDelayCmd->parsed())
-        m_log.info("m_psSetOvcDelayCmd");
+    {
+        result = ps->setOcdDelay(m_ovcDelay);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage set OVC delay failed [ %s ]", PdsModule::error2String(result));
+        else
+            m_log.success("OVC delay set [ %u ]", m_ovcDelay);
+    }
 
     else if (m_psGetOvcDelayCmd->parsed())
-        m_log.info("m_psGetOvcDelayCmd");
+    {
+        u32 ovcDelay = 0;
+        result       = ps->getOcdDelay(ovcDelay);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage get OVC delay failed [ %s ]", PdsModule::error2String(result));
+        else
+            m_log.success("OVC delay [ %u ]", ovcDelay);
+    }
 
     else if (m_psSetTempLimitCmd->parsed())
-        m_log.info("m_psSetTempLimitCmd");
+    {
+        result = ps->setTemperatureLimit(m_tempLimit);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage set temperature limit failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.success("New temperature limit set [ %0.2f ]", m_tempLimit);
+    }
 
     else if (m_psGetTempLimitCmd->parsed())
-        m_log.info("m_psGetTempLimitCmd");
+    {
+        f32 tempLimit = 0.0f;
+        result        = ps->getTemperatureLimit(tempLimit);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage get temperature limit failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.info("Temperature limit [ %0.2f ]", tempLimit);
+    }
 
     else if (m_psSetBrCmd->parsed())
-        m_log.info("m_psSetBrCmd");
+    {
+        result = ps->bindBrakeResistor(decodeSocketIndex(m_brSocket));
+
+        if (!m_pds.verifyModuleSocket(moduleType_E::BRAKE_RESISTOR, decodeSocketIndex(m_brSocket)))
+        {
+            m_log.error("Invalid socket number for Brake Resistor submodule");
+            return;
+        }
+
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage set brake resistor failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.success("Brake resistor set");
+    }
 
     else if (m_psGetBrCmd->parsed())
-        m_log.info("m_psGetBrCmd");
+    {
+        socketIndex_E brSocket = socketIndex_E::UNASSIGNED;
+        result                 = ps->getBindBrakeResistor(brSocket);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage get brake resistor failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.info("Brake resistor socket [ %u ]", (u8)brSocket);
+    }
 
     else if (m_psSetBrTriggerCmd->parsed())
-        m_log.info("m_psSetBrTriggerCmd");
+    {
+        result = ps->setBrakeResistorTriggerVoltage(m_brTrigger);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage set brake resistor trigger voltage failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.success("Brake resistor trigger voltage set");
+    }
 
     else if (m_psGetBrTriggerCmd->parsed())
-        m_log.info("m_psGetBrTriggerCmd");
-
+    {
+        u32 brTrigger = 0;
+        result        = ps->getBrakeResistorTriggerVoltage(brTrigger);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage get brake resistor trigger voltage failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.info("Brake resistor trigger voltage [ %u ]", brTrigger);
+    }
     else
         m_log.error("PS subcommand is missing");
 }
 
 void PdsCli::brakeResistorCmdParse(void)
 {
+    socketIndex_E      socketIndex = decodeSocketIndex(m_submoduleSocketNumber);
+    PdsModule::error_E result      = PdsModule::error_E::OK;
+
+    if (!m_pds.verifyModuleSocket(moduleType_E::BRAKE_RESISTOR, socketIndex))
+    {
+        m_log.error("Invalid socket number for Brake Resistor submodule");
+        return;
+    }
+
+    auto br = m_pds.attachBrakeResistor(socketIndex);
+
+    if (br == nullptr)
+    {
+        m_log.error("Brake Resistor submodule is not available");
+        return;
+    }
+
+    m_log.info("Brake Resistor submodule :: Socket index [ %u ]", m_submoduleSocketNumber);
+
+    if (m_brInfoCmd->parsed())
+    {
+        brakeResistorStatus_S brStatus         = {0};
+        f32                   temperature      = 0.0f;
+        f32                   temperatureLimit = 0.0f;
+        mab::moduleVersion_E  version          = mab::moduleVersion_E::UNKNOWN;
+
+        result = br->getBoardVersion(version);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Brake Resistor get version failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.info("Version [ %d ]", static_cast<u8>(version));
+
+        result = br->getStatus(brStatus);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Brake Resistor get status failed [ %s ]", PdsModule::error2String(result));
+        else
+        {
+            m_log.info("Status:");
+            m_log.info("\t* ENABLED           [ %s ]", brStatus.ENABLED ? "YES" : "NO");
+            m_log.info("\t* OVER_TEMPERATURE  [ %s ]", brStatus.OVER_TEMPERATURE ? "YES" : "NO");
+        }
+
+        m_log.info("Measurements:");
+        result = br->getTemperature(temperature);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Brake Resistor get temperature failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.info("\t* Temperature [ %0.2f ]", temperature);
+
+        m_log.info("Configuration:");
+        result = br->getTemperatureLimit(temperatureLimit);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Brake Resistor get temperature limit failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.info("\t* Temperature limit [ %0.2f ]", temperatureLimit);
+    }
+
+    else if (m_brSetTempLimitCmd->parsed())
+    {
+        result = br->setTemperatureLimit(m_tempLimit);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Brake Resistor set temperature limit failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.success("New temperature limit set [ %0.2f ]", m_tempLimit);
+    }
+
+    else if (m_brGetTempLimitCmd->parsed())
+    {
+        f32 tempLimit = 0.0f;
+        result        = br->getTemperatureLimit(tempLimit);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Brake Resistor get temperature limit failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.info("Temperature limit [ %0.2f ]", tempLimit);
+    }
+    else
+        m_log.error("BR subcommand is missing");
 }
 
 void PdsCli::isolatedConverterCmdParse(void)
 {
+    socketIndex_E      socketIndex = decodeSocketIndex(m_submoduleSocketNumber);
+    PdsModule::error_E result      = PdsModule::error_E::OK;
+
+    if (!m_pds.verifyModuleSocket(moduleType_E::ISOLATED_CONVERTER, socketIndex))
+    {
+        m_log.error("Invalid socket number for Isolated Converter submodule");
+        return;
+    }
+
+    auto ic = m_pds.attachIsolatedConverter(socketIndex);
+
+    if (ic == nullptr)
+    {
+        m_log.error("Isolated Converter submodule is not available");
+        return;
+    }
+
+    m_log.info("Isolated Converter submodule :: Socket index [ %u ]", m_submoduleSocketNumber);
+
+    if (m_icInfoCmd->parsed())
+    {
+        isolatedConverterStatus_S icStatus         = {0};
+        u32                       busVoltage       = 0;
+        s32                       current          = 0;
+        u32                       ovcLevel         = 0;
+        u32                       ovcDelay         = 0;
+        f32                       temperature      = 0.0f;
+        f32                       temperatureLimit = 0.0f;
+        mab::moduleVersion_E      version          = mab::moduleVersion_E::UNKNOWN;
+
+        result = ic->getBoardVersion(version);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Isolated Converter get version failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.info("Version [ %d ]", static_cast<u8>(version));
+
+        result = ic->getStatus(icStatus);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Isolated Converter get status failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+        {
+            m_log.info("Status:");
+            m_log.info("\t* ENABLED           [ %s ]", icStatus.ENABLED ? "YES" : "NO");
+            m_log.info("\t* OVER_TEMPERATURE  [ %s ]", icStatus.OVER_TEMPERATURE ? "YES" : "NO");
+        }
+
+        m_log.info("Measurements:");
+
+        result = ic->getOutputVoltage(busVoltage);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Isolated Converter get output voltage failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.info("\t* Output voltage [ %0.2f ]", busVoltage / 1000.0f);
+
+        result = ic->getLoadCurrent(current);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Isolated Converter get load current failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.info("\t* Load current [ %0.2f ]", current / 1000.0f);
+
+        result = ic->getTemperature(temperature);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Isolated Converter get temperature failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.info("\t* Temperature [ %0.2f ]", temperature);
+
+        m_log.info("Configuration:");
+
+        result = ic->getOcdLevel(ovcLevel);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Isolated Converter get OVC level failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.info("\t* OVC level [ %u ]", ovcLevel);
+
+        result = ic->getOcdDelay(ovcDelay);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Isolated Converter get OVC delay failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.info("\t* OVC delay [ %u ]", ovcDelay);
+
+        result = ic->getTemperatureLimit(temperatureLimit);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Isolated Converter get temperature limit failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.info("\t* Temperature limit [ %0.2f ]", temperatureLimit);
+    }
+
+    else if (m_icEnableCmd->parsed())
+    {
+        result = ic->enable();
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Isolated Converter enabling failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.success("Module enabled");
+    }
+
+    else if (m_icDisableCmd->parsed())
+    {
+        result = ic->disable();
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Isolated Converter disabling failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.success("Module disabled");
+    }
+
+    else if (m_icSetOvcLevelCmd->parsed())
+    {
+        result = ic->setOcdLevel(m_ovcLevel);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Isolated Converter set OVC level failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.success("OVC level set [ %u ]", m_ovcLevel);
+    }
+
+    else if (m_icGetOvcLevelCmd->parsed())
+    {
+        u32 ovcLevel = 0;
+        result       = ic->getOcdLevel(ovcLevel);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Isolated Converter get OVC level failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.success("OVC level [ %u ]", ovcLevel);
+    }
+
+    else if (m_icSetOvcDelayCmd->parsed())
+    {
+        result = ic->setOcdDelay(m_ovcDelay);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Isolated Converter set OVC delay failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.success("OVC delay set [ %u ]", m_ovcDelay);
+    }
+
+    else if (m_icGetOvcDelayCmd->parsed())
+    {
+        u32 ovcDelay = 0;
+        result       = ic->getOcdDelay(ovcDelay);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Isolated Converter get OVC delay failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.success("OVC delay [ %u ]", ovcDelay);
+    }
+
+    else if (m_icSetTempLimitCmd->parsed())
+    {
+        result = ic->setTemperatureLimit(m_tempLimit);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Isolated Converter set temperature limit failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.success("New temperature limit set [ %0.2f ]", m_tempLimit);
+    }
+
+    else if (m_icGetTempLimitCmd->parsed())
+    {
+        f32 tempLimit = 0.0f;
+        result        = ic->getTemperatureLimit(tempLimit);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Isolated Converter get temperature limit failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.info("Temperature limit [ %0.2f ]", tempLimit);
+    }
+    else
+        m_log.error("IC subcommand is missing");
 }
 
 void PdsCli::pdsSetupInfo()

@@ -31,6 +31,9 @@ class PdsCli
     CLI::App* m_isolatedConverterCmd = nullptr;
 
     // Power stage commands
+    CLI::App* m_psInfoCmd         = nullptr;
+    CLI::App* m_psEnableCmd       = nullptr;
+    CLI::App* m_psDisableCmd      = nullptr;
     CLI::App* m_psSetOvcLevelCmd  = nullptr;
     CLI::App* m_psGetOvcLevelCmd  = nullptr;
     CLI::App* m_psSetOvcDelayCmd  = nullptr;
@@ -42,8 +45,35 @@ class PdsCli
     CLI::App* m_psSetBrTriggerCmd = nullptr;
     CLI::App* m_psGetBrTriggerCmd = nullptr;
 
+    // Brake resistor commands
+    CLI::App* m_brInfoCmd         = nullptr;
+    CLI::App* m_brSetTempLimitCmd = nullptr;
+    CLI::App* m_brGetTempLimitCmd = nullptr;
+
+    // Isolated converter commands
+
+    // * Info
+    // * Enable / Disable
+    // * Set / Get OVC level
+    // * Set / Get OVC delay
+    // * Set / Get temperature limit
+
+    CLI::App* m_icInfoCmd         = nullptr;
+    CLI::App* m_icEnableCmd       = nullptr;
+    CLI::App* m_icDisableCmd      = nullptr;
+    CLI::App* m_icSetOvcLevelCmd  = nullptr;
+    CLI::App* m_icGetOvcLevelCmd  = nullptr;
+    CLI::App* m_icSetOvcDelayCmd  = nullptr;
+    CLI::App* m_icGetOvcDelayCmd  = nullptr;
+    CLI::App* m_icSetTempLimitCmd = nullptr;
+    CLI::App* m_icGetTempLimitCmd = nullptr;
+
     // Properties
-    u32 m_ovcLevel = 0.0f;
+    u32 m_ovcLevel  = 0u;    // Overcurrent detection level in mA
+    u32 m_ovcDelay  = 0u;    // Overcurrent detection delay in ms
+    f32 m_tempLimit = 0.0f;  // Temperature limit in degrees Celsius
+    u32 m_brSocket  = 0u;    // Brake resistor socket index
+    u32 m_brTrigger = 0u;    // Brake resistor trigger voltage in mV
 
     // Brake resistor commands
 

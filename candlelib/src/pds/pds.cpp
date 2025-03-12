@@ -30,6 +30,7 @@ namespace mab
         m_canId = canId;
         init();
     }
+
     PdsModule::error_E Pds::createModule(moduleType_E type, socketIndex_E socket)
     {
         switch (type)
@@ -51,7 +52,7 @@ namespace mab
 
             case moduleType_E::UNDEFINED:
             default:
-                return PdsModule::error_E::UNKNOWN_ERROR;
+                return PdsModule::error_E::INTERNAL_ERROR;
         }
     }
 
@@ -343,7 +344,7 @@ namespace mab
 
     PdsModule::error_E Pds::setCanId(u16 canId)
     {
-        PdsModule::error_E result = PdsModule::error_E::UNKNOWN_ERROR;
+        PdsModule::error_E result = PdsModule::error_E::OK;
         result                    = writeModuleProperty(propertyId_E::CAN_ID, canId);
         if (PdsModule::error_E::OK == result)
             m_rootCanId = canId;

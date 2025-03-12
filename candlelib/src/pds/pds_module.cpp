@@ -44,4 +44,20 @@ namespace mab
         }
     }
 
+    std::string PdsModule::error2String(error_E error)
+    {
+        switch (error)
+        {
+            case error_E::OK:
+                return "OK";
+            case error_E::INTERNAL_ERROR:
+                return "INTERNAL_ERROR";
+            case error_E::PROTOCOL_ERROR:
+                return "PROTOCOL_ERROR";
+            case error_E::COMMUNICATION_ERROR:
+                return "COMMUNICATION_ERROR";
+            default:
+                return "UNKNOWN_ERROR";
+        }
+    }
 }  // namespace mab
