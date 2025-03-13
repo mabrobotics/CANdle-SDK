@@ -99,6 +99,7 @@ UsbDevice::~UsbDevice()
 {
     if (m_isConnected)
     {
+        libusb_reset_device(devh);
         libusb_release_interface(devh, 0);
         libusb_close(devh);
         libusb_exit(nullptr);

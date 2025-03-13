@@ -11,6 +11,16 @@ typedef int8_t   s8;
 typedef float    f32;
 namespace mab
 {
+    using canId_t = u16;
+
+    /// @brief CAN bus baudrates
+    enum CANdleBaudrate_E : uint8_t
+    {
+        CAN_BAUD_1M = 1, /*!< FDCAN Baudrate of 1Mbps (1 000 000 bits per second) */
+        CAN_BAUD_2M = 2, /*!< FDCAN Baudrate of 2Mbps (2 000 000 bits per second) */
+        CAN_BAUD_5M = 5, /*!< FDCAN Baudrate of 5Mbps (5 000 000 bits per second) */
+        CAN_BAUD_8M = 8, /*!< FDCAN Baudrate of 8Mbps (8 000 000 bits per second) */
+    };
     /**
      * @brief Impedance controller parameters
      *
@@ -34,6 +44,7 @@ namespace mab
         float kp, ki, kd, i_windup;
     };
 
+    // TODO: change all of this to MD from MD80 - CS 35
     /**
      * @brief Md80 Control Mode
      * @note Position PID is a cascade controller, output of the Position PID (target velocity) is

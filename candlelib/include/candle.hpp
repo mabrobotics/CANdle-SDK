@@ -29,18 +29,6 @@ namespace mab
         UPDATE
     };
 
-    /**
-     * @enum CANdleBaudrate_E
-     * @brief Enum with coded FDCAN baudrates
-     */
-    enum CANdleBaudrate_E : uint8_t
-    {
-        CAN_BAUD_1M = 1, /*!< FDCAN Baudrate of 1Mbps (1 000 000 bits per second) */
-        CAN_BAUD_2M = 2, /*!< FDCAN Baudrate of 2Mbps (2 000 000 bits per second) */
-        CAN_BAUD_5M = 5, /*!< FDCAN Baudrate of 5Mbps (5 000 000 bits per second) */
-        CAN_BAUD_8M = 8, /*!< FDCAN Baudrate of 8Mbps (8 000 000 bits per second) */
-    };
-
     /*! \class Candle
         \brief Class for communicating with CANdle (USB-CAN converter) and MD80 drives.
 
@@ -443,7 +431,7 @@ namespace mab
                             Md80Reg_E   reg,
                             const char* failMsg,
                             const char* successMsg,
-                            bool waitToFinish);
+                            bool        waitToFinish);
 
         /* virtual methods for testing purposes */
 #ifdef UNIX
