@@ -5,7 +5,7 @@ namespace mab
 
     MD::Error_t MD::init()
     {
-        // TODO: add new hw struct support
+        // TODO: add new hw struct support CS-36
         //  m_mdRegisters.hardwareType.value.deviceType = deviceType_E::UNKNOWN_DEVICE;
         //  auto mfDataResult                           = readRegister(m_mdRegisters.hardwareType);
 
@@ -43,6 +43,7 @@ namespace mab
         }
         return MD::Error_t::OK;
     }
+
     MD::Error_t MD::enable()
     {
         m_mdRegisters.state = 39;
