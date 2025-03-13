@@ -27,6 +27,20 @@ PdsCli::PdsCli(CLI::App& rootCli, mab::Candle& candle) : m_rootCli(rootCli), m_c
     m_configSaveCmd =
         m_pdsCmd->add_subcommand("save", "Store current configuration in device memory");
 
+    m_setBatteryLevelCmd =
+        m_pdsCmd->add_subcommand("set_battery_level", "Set the battery voltage levels");
+
+    m_setBatteryLevelCmd->add_option("<level1>", m_batteryLevel1, "Battery voltage level 1")
+        ->required();
+    m_setBatteryLevelCmd->add_option("<level2>", m_batteryLevel2, "Battery voltage level 2")
+        ->required();
+
+    m_setShutdownTimeCmd = m_pdsCmd->add_subcommand("set_shutdown_time", "Set the shutdown time");
+
+    m_setShutdownTimeCmd->add_option("<time>", m_shutdownTime, "Shutdown time in ms")->required();
+
+    m_disableCmd = m_pdsCmd->add_subcommand("disable", "Disable the PDS device");
+
     // POWER STAGE commands set
     m_powerStageCmd = m_pdsCmd->add_subcommand("ps", "Manage the Power Stage submodule");
 
@@ -144,6 +158,8 @@ PdsCli::PdsCli(CLI::App& rootCli, mab::Candle& candle) : m_rootCli(rootCli), m_c
 
 void PdsCli::parse(void)
 {
+    PdsModule::error_E result = PdsModule::error_E::OK;
+
     if (m_pdsCmd->parsed())
     {
         m_pds.init(m_canId);
@@ -183,6 +199,31 @@ void PdsCli::parse(void)
         else if (m_isolatedConverterCmd->parsed())
         {
             isolatedConverterCmdParse();
+        }
+
+        else if (m_setBatteryLevelCmd->parsed())
+        {
+            result = m_pds.setBatteryVoltageLevels(m_batteryLevel1, m_batteryLevel2);
+            if (result != PdsModule::error_E::OK)
+                m_log.error("Battery levels setting failed [ %s ]",
+                            PdsModule::error2String(result));
+            else
+                m_log.success("Battery levels set [ %u, %u ]", m_batteryLevel1, m_batteryLevel2);
+        }
+
+        else if (m_setShutdownTimeCmd->parsed())
+        {
+            result = m_pds.setShutdownTime(m_shutdownTime);
+            if (result != PdsModule::error_E::OK)
+                m_log.error("Shutdown time setting failed [ %s ]", PdsModule::error2String(result));
+            else
+                m_log.success("Shutdown time set [ %u ]", m_shutdownTime);
+        }
+
+        else if (m_disableCmd->parsed())
+        {
+            m_pds.shutdown();
+            m_log.success("PDS disabled");
         }
         else
             m_log.error("PDS subcommand is missing");
@@ -858,12 +899,17 @@ void PdsCli::pdsSetupConfig(const std::string& cfgPath)
     u32 battLvl2     = atoi(pdsCfg["Control board"]["battery level 2"].c_str());
 
     err_E result = m_pds.setShutdownTime(shutdownTime);
-    if (result != err_E::OK)
-        m_log.error("PDS Config error [ %u ] [ %s:%u ]", result, __FILE__, __LINE__);
+
+    if (result != PdsModule::error_E::OK)
+        m_log.error("Shutdown time setting failed [ %s ]", PdsModule::error2String(result));
+    else
+        m_log.success("Shutdown time set [ %u ]", shutdownTime);
 
     result = m_pds.setBatteryVoltageLevels(battLvl1, battLvl2);
     if (result != err_E::OK)
-        m_log.error("PDS Config error [ %u ] [ %s:%u ]", result, __FILE__, __LINE__);
+        m_log.error("Battery levels setting failed [ %s ]", PdsModule::error2String(result));
+    else
+        m_log.success("Battery levels set [ %u, %u ]", battLvl1, battLvl2);
 }
 
 void PdsCli::pdsReadConfig(const std::string& cfgPath)
@@ -905,6 +951,8 @@ void PdsCli::pdsStoreConfig(void)
 
     if (result != err_E::OK)
         m_log.error("PDS Configuration save error [ %u ] [ %s:%u ]", result, __FILE__, __LINE__);
+    else
+        m_log.success("PDS Configuration saved");
 }
 
 socketIndex_E PdsCli::decodeSocketIndex(u8 numericSocketIndex)

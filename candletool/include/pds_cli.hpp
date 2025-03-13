@@ -21,10 +21,15 @@ class PdsCli
 
     CLI::App* m_pdsCmd = nullptr;
 
-    CLI::App* m_infoCmd        = nullptr;
+    CLI::App* m_infoCmd            = nullptr;
+    CLI::App* m_setBatteryLevelCmd = nullptr;
+    CLI::App* m_setShutdownTimeCmd = nullptr;
+
     CLI::App* m_configSetupCmd = nullptr;
     CLI::App* m_configReadCmd  = nullptr;
     CLI::App* m_configSaveCmd  = nullptr;
+
+    CLI::App* m_disableCmd = nullptr;
 
     CLI::App* m_powerStageCmd        = nullptr;
     CLI::App* m_brakeResistorCmd     = nullptr;
@@ -51,13 +56,6 @@ class PdsCli
     CLI::App* m_brGetTempLimitCmd = nullptr;
 
     // Isolated converter commands
-
-    // * Info
-    // * Enable / Disable
-    // * Set / Get OVC level
-    // * Set / Get OVC delay
-    // * Set / Get temperature limit
-
     CLI::App* m_icInfoCmd         = nullptr;
     CLI::App* m_icEnableCmd       = nullptr;
     CLI::App* m_icDisableCmd      = nullptr;
@@ -69,11 +67,14 @@ class PdsCli
     CLI::App* m_icGetTempLimitCmd = nullptr;
 
     // Properties
-    u32 m_ovcLevel  = 0u;    // Overcurrent detection level in mA
-    u32 m_ovcDelay  = 0u;    // Overcurrent detection delay in ms
-    f32 m_tempLimit = 0.0f;  // Temperature limit in degrees Celsius
-    u32 m_brSocket  = 0u;    // Brake resistor socket index
-    u32 m_brTrigger = 0u;    // Brake resistor trigger voltage in mV
+    u32 m_batteryLevel1 = 0u;    // Battery level in mV
+    u32 m_batteryLevel2 = 0u;    // Battery level in mV
+    u32 m_shutdownTime  = 0u;    // Shutdown time in ms
+    u32 m_ovcLevel      = 0u;    // Overcurrent detection level in mA
+    u32 m_ovcDelay      = 0u;    // Overcurrent detection delay in ms
+    f32 m_tempLimit     = 0.0f;  // Temperature limit in degrees Celsius
+    u32 m_brSocket      = 0u;    // Brake resistor socket index
+    u32 m_brTrigger     = 0u;    // Brake resistor trigger voltage in mV
 
     // Brake resistor commands
 
