@@ -44,6 +44,7 @@ target_sources(candle PRIVATE
   src/crc.cpp
   src/md80.cpp
   src/communication_device/candle_v2.cpp
+  src/communication_device/candle_bootloader.cpp
   src/communication_interface/SPI_v2.cpp
   src/communication_interface/USB_v2.cpp
   src/MD/MD.cpp
@@ -114,6 +115,14 @@ target_include_directories(candle_v2_test PRIVATE
 )
 target_link_libraries(candle_v2_test PRIVATE logger shared_data candle)
 
+add_unit_test_executable(candle_bootloader_test src/communication_device/candle_bootloader_test.cpp)
+target_sources(candle_bootloader_test PRIVATE src/communication_device/candle_bootloader_test.cpp)
+target_include_directories(candle_bootloader_test PRIVATE
+  include
+  src/communication_device
+)
+target_link_libraries(candle_bootloader_test PRIVATE logger shared_data candle)
+
 
 add_unit_test_executable(usb_v2_test src/communication_interface/SPI_v2_test.cpp)
 target_sources(usb_v2_test PRIVATE src/communication_interface/USB_v2.cpp)
@@ -139,3 +148,4 @@ target_include_directories(md_v2_test PRIVATE
   src/MD/
 )
 target_link_libraries(md_v2_test PRIVATE logger shared_data candle)
+
