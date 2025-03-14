@@ -34,7 +34,7 @@ class CandleBootloaderTest : public ::testing::Test
     }
 };
 
-TEST_F(CandleBootloaderTest, build)
+TEST_F(CandleBootloaderTest, buildAndInit)
 {
-    mab::CandleBootloader bt = mab::CandleBootloader();
+    mab::CandleBootloader bt = mab::attachCandleBootloader(std::move(mockBus));
 }

@@ -2,6 +2,7 @@
 #include "I_communication_interface_mock.hpp"
 #include "logger.hpp"
 #include "mab_types.hpp"
+#include "candle_types.hpp"
 
 namespace mab
 {
@@ -29,5 +30,20 @@ namespace mab
             : m_usb(std::move(bus))
         {
         }
+        candleTypes::Error_t init();
     };
+
+    inline mab::CandleBootloader attachCandleBootloader(
+        std::unique_ptr<mab::I_CommunicationInterface>&& bus)
+    {
+        CandleBootloader cb;
+        if (bus != nullptr)
+            cb = CandleBootloader(std::move(bus));
+        else
+            throw std::runtime_error("No bus provided to bootloader!");
+
+        if (cb.init() != candleTypes::Error_t::OK)
+            throw std::runtime_error("Attaching candle failed!");
+        return cb;
+    }
 }  // namespace mab
