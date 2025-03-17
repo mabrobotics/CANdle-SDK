@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "I_communication_interface.hpp"
 #include "USB_v2.hpp"
@@ -22,23 +23,22 @@ namespace mab
         };
 
         std::unique_ptr<mab::I_CommunicationInterface> m_usb;
+        Logger m_log = Logger(Logger::ProgramLayer_E::TOP, "USB_BOOTLOADER");
+
+        candleTypes::Error_t sendCmd(const BootloaderCommand_E cmd,
+                                     const std::vector<u8>     payload) const;
 
       public:
         static constexpr u32 BOOTLOADER_VID = 0x69;
         static constexpr u32 BOOTLOADER_PID = 0x2000;
-        CandleBootloader()
-        {
-        }
         explicit CandleBootloader(std::unique_ptr<mab::I_CommunicationInterface> bus)
             : m_usb(std::move(bus))
         {
         }
+        ~CandleBootloader();
         candleTypes::Error_t init();
 
-        candleTypes::Error_t enterBootloaderFromApp(
-            std::unique_ptr<mab::I_CommunicationInterface> bus);
-        candleTypes::Error_t enterAppFromBootloader(
-            std::unique_ptr<mab::I_CommunicationInterface> bus);
+        candleTypes::Error_t enterAppFromBootloader();
     };
 
     inline std::optional<std::unique_ptr<CandleBootloader>> attachCandleBootloader()
