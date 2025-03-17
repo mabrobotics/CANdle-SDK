@@ -27,11 +27,11 @@ namespace mab
         /// begining of the frame.
         enum CandleCommands_t : u8
         {
-            NONE                       = 0,
-            CANDLE_CONFIG_BAUDRATE     = 2,
-            GENERIC_CAN_FRAME          = 4,
-            RESET                      = 9,
-            USB_FRAME_ENTER_BOOTLOADER = 10,
+            NONE                   = 0,
+            CANDLE_CONFIG_BAUDRATE = 2,
+            GENERIC_CAN_FRAME      = 4,
+            RESET                  = 9,
+            ENTER_BOOTLOADER       = 10,
         };
 
         static constexpr u32 CANDLE_VID = 0x69;
@@ -86,6 +86,9 @@ namespace mab
 
         candleTypes::Error_t reset();
 
+        static candleTypes::Error_t enterBootloader(
+            std::unique_ptr<mab::I_CommunicationInterface>&& usb);
+
       private:
         static constexpr u32 DEFAULT_CONFIGURATION_TIMEOUT = 10;
 
@@ -110,6 +113,10 @@ namespace mab
         static constexpr std::array<u8, 2> resetCommandFrame()
         {
             return std::array<u8, 2>({RESET, 0x0});
+        }
+        static constexpr std::array<u8, 2> enterBootloaderFrame()
+        {
+            return std::array<u8, 2>({ENTER_BOOTLOADER, 0x0});
         }
 
         static inline std::vector<u8> baudrateCommandFrame(const CANdleBaudrate_E baudrate)

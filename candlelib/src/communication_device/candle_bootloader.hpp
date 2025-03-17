@@ -1,9 +1,13 @@
 #pragma once
-#include "I_communication_interface_mock.hpp"
+#include <memory>
+#include <utility>
+
+#include "I_communication_interface.hpp"
+#include "USB_v2.hpp"
 #include "logger.hpp"
 #include "mab_types.hpp"
 #include "candle_types.hpp"
-
+#include "candle_v2.hpp"
 namespace mab
 {
     class CandleBootloader
@@ -22,7 +26,6 @@ namespace mab
       public:
         static constexpr u32 BOOTLOADER_VID = 0x69;
         static constexpr u32 BOOTLOADER_PID = 0x2000;
-
         CandleBootloader()
         {
         }
@@ -31,19 +34,26 @@ namespace mab
         {
         }
         candleTypes::Error_t init();
+
+        candleTypes::Error_t enterBootloaderFromApp(
+            std::unique_ptr<mab::I_CommunicationInterface> bus);
+        candleTypes::Error_t enterAppFromBootloader(
+            std::unique_ptr<mab::I_CommunicationInterface> bus);
     };
 
-    inline mab::CandleBootloader attachCandleBootloader(
-        std::unique_ptr<mab::I_CommunicationInterface>&& bus)
+    inline std::optional<std::unique_ptr<CandleBootloader>> attachCandleBootloader()
     {
-        CandleBootloader cb;
-        if (bus != nullptr)
-            cb = CandleBootloader(std::move(bus));
-        else
-            throw std::runtime_error("No bus provided to bootloader!");
+        auto busApp = std::make_unique<USBv2>(CandleV2::CANDLE_VID, CandleV2::CANDLE_PID);
+        if (busApp->connect() != I_CommunicationInterface::Error_t::OK)
+            return {};
+        if (CandleV2::enterBootloader(std::move(busApp)) != candleTypes::Error_t::OK)
+            return {};
+        sleep(2);  // wait for reboot
+        auto busBoot = std::make_unique<USBv2>(CandleBootloader::BOOTLOADER_VID,
+                                               CandleBootloader::BOOTLOADER_PID);
+        if (busBoot->connect() == I_CommunicationInterface::Error_t::OK)
+            return std::make_unique<CandleBootloader>(std::move(busBoot));
 
-        if (cb.init() != candleTypes::Error_t::OK)
-            throw std::runtime_error("Attaching candle failed!");
-        return cb;
+        return {};
     }
 }  // namespace mab

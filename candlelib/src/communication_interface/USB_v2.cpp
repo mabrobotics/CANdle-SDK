@@ -226,6 +226,8 @@ namespace mab
 
         m_Log.debug("Found %d USB devices", deviceListLen);
 
+        m_Log.debug("Looking for VID: %d, PID: %d, Serial: %c", m_vid, m_pid, m_serialNo.c_str());
+
         for (s32 deviceIndex = 0; deviceIndex < deviceListLen; deviceIndex++)
         {
             libusb_device*           checkedDevice = deviceList[deviceIndex];
