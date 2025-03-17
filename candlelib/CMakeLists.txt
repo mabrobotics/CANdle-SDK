@@ -112,6 +112,7 @@ target_sources(candle_v2_test PRIVATE src/communication_device/candle_v2.cpp)
 target_include_directories(candle_v2_test PRIVATE
   include
   src/communication_device
+  src/communication_interface
 )
 target_link_libraries(candle_v2_test PRIVATE logger shared_data candle)
 
@@ -120,6 +121,7 @@ target_sources(candle_bootloader_test PRIVATE src/communication_device/candle_bo
 target_include_directories(candle_bootloader_test PRIVATE
   include
   src/communication_device
+  src/communication_interface
 )
 target_link_libraries(candle_bootloader_test PRIVATE logger shared_data candle)
 
