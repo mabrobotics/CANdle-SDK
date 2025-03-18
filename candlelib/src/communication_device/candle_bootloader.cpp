@@ -6,6 +6,7 @@ namespace mab
     {
         enterAppFromBootloader();
         m_usb->disconnect();
+        m_log.debug("Destroyed");
     }
     candleTypes::Error_t CandleBootloader::sendCmd(const BootloaderCommand_E cmd,
                                                    const std::vector<u8>     payload = {}) const
@@ -44,11 +45,54 @@ namespace mab
 
     candleTypes::Error_t CandleBootloader::init()
     {
+        m_log.debug("init");
+        m_usb->connect();
         return candleTypes::Error_t::OK;
     }
 
     candleTypes::Error_t CandleBootloader::enterAppFromBootloader()
     {
         return sendCmd(BootloaderCommand_E::BOOTLOADER_FRAME_BOOT_TO_APP);
+    }
+
+    candleTypes::Error_t CandleBootloader::writePage(const std::array<u8, PAGE_SIZE_STM32G474> page,
+                                                     const u32 crc32)
+    {
+        m_log.debug("Writing page...");
+        constexpr size_t MAX_TRANSFER_SIZE = CANDLE_BOOTLOADER_BUFFER_SIZE - PROTOCOL_HEADER_SIZE;
+
+        constexpr u32 NUMBER_OF_TRANSFERS =
+            1 + ((PAGE_SIZE_STM32G474 - 1) / MAX_TRANSFER_SIZE);  // overflow-proof ceiling division
+
+        std::vector<u8> pageV;
+        pageV.insert(pageV.end(), page.begin(), page.end());
+
+        for (u32 i = 0; i < NUMBER_OF_TRANSFERS; i++)
+        {
+            m_log.debug("Transfer %d", i + 1);
+            // Transfer either max size that can be transferred because of buffer size inside
+            // candle or data left to send size
+            size_t transferSize =
+                pageV.size() > MAX_TRANSFER_SIZE ? MAX_TRANSFER_SIZE : pageV.size();
+
+            candleTypes::Error_t err =
+                sendCmd(BootloaderCommand_E::BOOTLOADER_FRAME_SEND_PAGE,
+                        std::vector<u8>(pageV.begin(), pageV.begin() + transferSize));
+
+            if (err != candleTypes::Error_t::OK)
+            {
+                m_log.error("Failed to send page to the device");
+                return err;
+            };
+            pageV.erase(pageV.begin(), pageV.begin() + transferSize);
+        }
+
+        std::vector<u8> serializedCrc32 = {static_cast<u8>(crc32 & 0xFF),
+                                           static_cast<u8>((crc32 >> 8) & 0xFF),
+                                           static_cast<u8>((crc32 >> 16) & 0xFF),
+                                           static_cast<u8>((crc32 >> 24) & 0xFF)};
+
+        m_log.debug("Sending CRC confirmation");
+        return sendCmd(BootloaderCommand_E::BOOTLOADER_FRAME_WRITE_PAGE, serializedCrc32);
     }
 }  // namespace mab
