@@ -15,10 +15,7 @@
 #include "md80.hpp"
 #include "usbDevice.hpp"
 
-#ifndef WIN32
-#include "spiDevice.hpp"
-#include "uartDevice.hpp"
-#else
+#ifdef WIN32
 #include <windows.h>
 #endif
 namespace mab
@@ -443,7 +440,7 @@ namespace mab
                             Md80Reg_E   reg,
                             const char* failMsg,
                             const char* successMsg,
-                            bool waitToFinish);
+                            bool        waitToFinish);
 
         /* virtual methods for testing purposes */
 #ifdef UNIX

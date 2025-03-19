@@ -1,3 +1,4 @@
+#include "ui.hpp"
 #include "pds_cli.hpp"
 #include "configHelpers.hpp"
 
@@ -915,14 +916,19 @@ void PdsCli::pdsSetupConfig(const std::string& cfgPath)
 void PdsCli::pdsReadConfig(const std::string& cfgPath)
 {
     mINI::INIStructure readIni; /**< mINI structure for read data */
-    u32                shutDownTime = 0;
-    u32                batLvl1      = 0;
-    u32                batLvl2      = 0;
-    Pds::modulesSet_S  pdsModules   = m_pds.getModules();
+    // Control Board properties
+    u32               shutDownTime = 0;
+    u32               batLvl1      = 0;
+    u32               batLvl2      = 0;
+    Pds::modulesSet_S pdsModules   = m_pds.getModules();
 
     std::string configName = cfgPath;
-    if (std::filesystem::path(configName).extension() == "")
+    if (configName == "")
+        configName = "pds_config.cfg";
+    else if (std::filesystem::path(configName).extension() == "")
         configName += ".cfg";
+
+    bool saveConfig = ui::getSaveConfigConfirmation(configName);
 
     m_pds.getShutdownTime(shutDownTime);
     m_pds.getBatteryVoltageLevels(batLvl1, batLvl2);
@@ -939,8 +945,11 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
     fullModuleIni(m_pds, pdsModules.moduleTypeSocket5, readIni, socketIndex_E::SOCKET_5);
     fullModuleIni(m_pds, pdsModules.moduleTypeSocket6, readIni, socketIndex_E::SOCKET_6);
 
-    mINI::INIFile configFile(configName);
-    configFile.write(readIni);
+    if (saveConfig)
+    {
+        mINI::INIFile configFile(configName);
+        configFile.write(readIni);
+    }
 }
 
 void PdsCli::pdsStoreConfig(void)

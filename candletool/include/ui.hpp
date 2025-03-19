@@ -45,7 +45,7 @@ namespace ui
     bool getDifferentConfigsConfirmation(std::string configName);
     bool getUpdateConfigConfirmation(std::string configName);
 
-    bool        getSaveMotorConfigConfirmation(std::string configName);
+    bool        getSaveConfigConfirmation(std::string configName);
     bool        getOverwriteMotorConfigConfirmation(std::string configName);
     std::string getNewMotorConfigName(std::string configName);
 

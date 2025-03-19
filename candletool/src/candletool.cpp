@@ -10,8 +10,6 @@
 #include "uploader.hpp"
 #include "mabFileParser.hpp"
 
-#include "pds.hpp"
-
 using namespace mab;
 
 f32 lerp(f32 start, f32 end, f32 t)
@@ -422,7 +420,7 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
         configName += ".cfg";
 
     /* Ask user if the motor config should be saved */
-    bool saveConfig = ui::getSaveMotorConfigConfirmation(configName);
+    bool saveConfig = ui::getSaveConfigConfirmation(configName);
 
     /* Motor config - motor section */
     if (!m_candle.readMd80Register(id,
