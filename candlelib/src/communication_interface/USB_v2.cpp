@@ -312,10 +312,11 @@ namespace mab
             return std::pair(data, Error_t::DATA_EMPTY);
         }
         // This part forces libusb to perform at lesser latency due to usage of microframes
-        if (data.size() < 66)
-        {
-            data.resize(66);
-        }
+        // TODO: This needs a rework because of the bootloader
+        // if (data.size() < 66)
+        // {
+        //     data.resize(66);
+        // }
         libusb_error transmitError = m_libusbDevice->transmit(data.data(), data.size(), timeoutMs);
         if (transmitError != libusb_error::LIBUSB_SUCCESS)
         {

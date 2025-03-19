@@ -1,4 +1,5 @@
 #include "candle_bootloader.hpp"
+#include <algorithm>
 
 namespace mab
 {
@@ -11,23 +12,22 @@ namespace mab
     candleTypes::Error_t CandleBootloader::sendCmd(const BootloaderCommand_E cmd,
                                                    const std::vector<u8>     payload = {}) const
     {
+        m_log.debug("Sending command: %d", cmd);
+        m_log.debug("With payload of size: %d", payload.size());
         constexpr u8  preamble  = 0xAA;
-        constexpr u32 timeoutMs = 2;
+        constexpr u32 timeoutMs = 50;
 
-        I_CommunicationInterface::Error_t err =
-            I_CommunicationInterface::Error_t::INITIALIZATION_ERROR;
+        const std::vector<u8> expectedResponse = {cmd, static_cast<u8>('O'), static_cast<u8>('K')};
 
         std::vector<u8> outBuffer = {cmd, preamble, preamble};
-        if (payload.size() == 0)
-            err = m_usb->transfer(outBuffer, timeoutMs);
-        else
-        {
+        if (payload.size() != 0)
             outBuffer.insert(outBuffer.end(), payload.begin(), payload.end());
-            err = m_usb->transfer(outBuffer, timeoutMs);
-        }
-        if (err != I_CommunicationInterface::Error_t::OK)
+
+        std::pair<std::vector<u8>, I_CommunicationInterface::Error_t> dataIn =
+            m_usb->transfer(outBuffer, timeoutMs, expectedResponse.size());
+        if (dataIn.second != I_CommunicationInterface::Error_t::OK)
         {
-            switch (err)
+            switch (dataIn.second)
             {
                 case I_CommunicationInterface::Error_t::TRANSMITTER_ERROR:
                     m_log.error("Error while transfering data to USB bootloader");
@@ -40,6 +40,12 @@ namespace mab
                     return candleTypes::Error_t::UNKNOWN_ERROR;
             }
         }
+        if (!std::equal(expectedResponse.begin(), expectedResponse.end(), dataIn.first.begin()))
+        {
+            m_log.error("Response corrupted!");
+            return candleTypes::Error_t::UNINITIALIZED;
+        }
+
         return candleTypes::Error_t::OK;
     }
 
@@ -47,7 +53,12 @@ namespace mab
     {
         m_log.debug("init");
         m_usb->connect();
-        return candleTypes::Error_t::OK;
+        if (sendCmd(BootloaderCommand_E::BOOTLOADER_FRAME_CHECK_ENTERED) ==
+            candleTypes::Error_t::OK)
+            return candleTypes::Error_t::OK;
+        else
+            m_log.error("Failed init!");
+        return candleTypes::Error_t::DEVICE_NOT_CONNECTED;
     }
 
     candleTypes::Error_t CandleBootloader::enterAppFromBootloader()
@@ -73,7 +84,7 @@ namespace mab
             // Transfer either max size that can be transferred because of buffer size inside
             // candle or data left to send size
             size_t transferSize =
-                pageV.size() > MAX_TRANSFER_SIZE ? MAX_TRANSFER_SIZE : pageV.size();
+                pageV.size() > MAX_TRANSFER_SIZE ? MAX_TRANSFER_SIZE - 1 : pageV.size();
 
             candleTypes::Error_t err =
                 sendCmd(BootloaderCommand_E::BOOTLOADER_FRAME_SEND_PAGE,
