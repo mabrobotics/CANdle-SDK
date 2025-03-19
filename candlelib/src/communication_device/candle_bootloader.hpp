@@ -51,19 +51,35 @@ namespace mab
                                        const u32                                 crc32);
     };
 
-    inline std::optional<std::unique_ptr<CandleBootloader>> attachCandleBootloader()
+    inline std::unique_ptr<CandleBootloader> attachCandleBootloader()
     {
+        Logger log(Logger::ProgramLayer_E::TOP, "BOOTLOADER_PRELOADER");
+        log.info("Looking for CANdle...");
         auto busApp = std::make_unique<USBv2>(CandleV2::CANDLE_VID, CandleV2::CANDLE_PID);
-        if (busApp->connect() != I_CommunicationInterface::Error_t::OK)
-            return {};
-        if (CandleV2::enterBootloader(std::move(busApp)) != candleTypes::Error_t::OK)
-            return {};
-        std::cout << "REBOOTING\n";
-        sleep(2);  // wait for reboot
+        if (busApp->connect() == I_CommunicationInterface::Error_t::OK)
+        {
+            log.info("Found! Rebooting to bootloader...");
+            if (CandleV2::enterBootloader(std::move(busApp)) != candleTypes::Error_t::OK)
+            {
+                log.error("Failed to communicate with candle");
+                return {};
+            }
+            usleep(1000000);  // wait for reboot
+        }
+        else
+        {
+            log.warn("Candle may not have an app");
+        }
+        log.info("Looking for bootloader...");
+
         auto busBoot = std::make_unique<USBv2>(CandleBootloader::BOOTLOADER_VID,
                                                CandleBootloader::BOOTLOADER_PID);
         if (busBoot->connect() == I_CommunicationInterface::Error_t::OK)
+        {
+            log.info("Found!");
             return std::make_unique<CandleBootloader>(std::move(busBoot));
+        }
+        log.error("Bootloader not found!");
 
         return {};
     }

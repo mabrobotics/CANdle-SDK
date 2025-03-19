@@ -51,7 +51,7 @@ namespace mab
 
     candleTypes::Error_t CandleBootloader::init()
     {
-        m_log.debug("init");
+        m_log.debug("Init");
         m_usb->connect();
         if (sendCmd(BootloaderCommand_E::BOOTLOADER_FRAME_CHECK_ENTERED) ==
             candleTypes::Error_t::OK)

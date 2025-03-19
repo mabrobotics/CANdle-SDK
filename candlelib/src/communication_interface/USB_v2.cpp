@@ -205,11 +205,13 @@ namespace mab
 
         if (libusb_init(&m_ctx))
             m_Log.error("Could not init libusb!");
+        m_Log.debug("Init libusb for context %d: ", (size_t)m_ctx);
         // libusb_set_option(&m_ctx, libusb_option::LIBUSB_OPTION_LOG_LEVEL,
         // LIBUSB_LOG_LEVEL_DEBUG);
     }
     USBv2::~USBv2()
     {
+        m_Log.debug("Deinit libusb for context %d: ", (size_t)m_ctx);
         disconnect();
         libusb_exit(m_ctx);
     }
