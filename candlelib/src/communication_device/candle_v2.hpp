@@ -88,7 +88,7 @@ namespace mab
         /// @return Error on failure
         candleTypes::Error_t reset();
 
-        /// @brief Command the application to reboot into a bootloader and await commands. No candle
+        /// @brief Command the application to reboot into a bootloader and await commands.
         /// @param usb initialized usb interface (bootloader only works via USB)
         /// @return Error on failure
         static candleTypes::Error_t enterBootloader(
