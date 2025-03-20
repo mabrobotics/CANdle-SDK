@@ -164,4 +164,18 @@ namespace mab
             return connectionStatus;
         return candleTypes::Error_t::OK;
     }
+
+    candleTypes::Error_t CandleV2::enterBootloader(
+        std::unique_ptr<mab::I_CommunicationInterface>&& usb)
+    {
+        CandleV2 candleApp = CandleV2(CANdleBaudrate_E::CAN_BAUD_1M, std::move(usb));
+
+        std::vector<u8> enterBootloaderCmd;
+        for (auto byte : CandleV2::enterBootloaderFrame())
+        {
+            enterBootloaderCmd.push_back(byte);
+        }
+        auto result = candleApp.busTransfer(&enterBootloaderCmd);
+        return result;
+    }
 }  // namespace mab

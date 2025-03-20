@@ -1,5 +1,5 @@
 
-#include <I_communication_interface.hpp>
+#include <I_communication_interface_mock.hpp>
 #include <candle_v2.hpp>
 #include <mab_types.hpp>
 
@@ -11,21 +11,6 @@
 
 using ::testing::_;
 using ::testing::Return;
-
-class MockBus : public mab::I_CommunicationInterface
-{
-  public:
-    MOCK_METHOD(I_CommunicationInterface::Error_t, connect, (), (override));
-    MOCK_METHOD(I_CommunicationInterface::Error_t, disconnect, (), (override));
-    MOCK_METHOD(I_CommunicationInterface::Error_t,
-                transfer,
-                (std::vector<u8> data, const u32 timeoutMs),
-                (override));
-    MOCK_METHOD((std::pair<std::vector<u8>, I_CommunicationInterface::Error_t>),
-                transfer,
-                (std::vector<u8> data, const u32 timeoutMs, const size_t expectedReceivedDataSize),
-                (override));
-};
 
 class CandleV2Test : public ::testing::Test
 {
