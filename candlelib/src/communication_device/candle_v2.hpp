@@ -84,8 +84,13 @@ namespace mab
         /// @return shared pointer to internal MD map
         std::shared_ptr<std::map<canId_t, MD>> getMDmapHandle();
 
+        /// @brief Reset candle device
+        /// @return Error on failure
         candleTypes::Error_t reset();
 
+        /// @brief Command the application to reboot into a bootloader and await commands. No candle
+        /// @param usb initialized usb interface (bootloader only works via USB)
+        /// @return Error on failure
         static candleTypes::Error_t enterBootloader(
             std::unique_ptr<mab::I_CommunicationInterface>&& usb);
 

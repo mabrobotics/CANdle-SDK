@@ -17,14 +17,18 @@ namespace mab
         constexpr u8  preamble  = 0xAA;
         constexpr u32 timeoutMs = 50;
 
+        // Standard response for candle bootloader protocol
         const std::vector<u8> expectedResponse = {cmd, static_cast<u8>('O'), static_cast<u8>('K')};
 
+        // Standard header for candle protocol
         std::vector<u8> outBuffer = {cmd, preamble, preamble};
+
         if (payload.size() != 0)
             outBuffer.insert(outBuffer.end(), payload.begin(), payload.end());
 
         std::pair<std::vector<u8>, I_CommunicationInterface::Error_t> dataIn =
             m_usb->transfer(outBuffer, timeoutMs, expectedResponse.size());
+
         if (dataIn.second != I_CommunicationInterface::Error_t::OK)
         {
             switch (dataIn.second)
@@ -40,6 +44,7 @@ namespace mab
                     return candleTypes::Error_t::UNKNOWN_ERROR;
             }
         }
+
         if (!std::equal(expectedResponse.begin(), expectedResponse.end(), dataIn.first.begin()))
         {
             m_log.error("Response corrupted!");
@@ -51,10 +56,10 @@ namespace mab
 
     candleTypes::Error_t CandleBootloader::init()
     {
-        m_log.debug("Init");
-        m_usb->connect();
-        if (sendCmd(BootloaderCommand_E::BOOTLOADER_FRAME_CHECK_ENTERED) ==
-            candleTypes::Error_t::OK)
+        auto err = m_usb->connect();
+        if (err == I_CommunicationInterface::Error_t::OK &&
+            sendCmd(BootloaderCommand_E::BOOTLOADER_FRAME_CHECK_ENTERED) ==
+                candleTypes::Error_t::OK)
             return candleTypes::Error_t::OK;
         else
             m_log.error("Failed init!");
