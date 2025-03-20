@@ -45,7 +45,8 @@ namespace mab
             }
         }
 
-        if (!std::equal(expectedResponse.begin(), expectedResponse.end(), dataIn.first.begin()))
+        if (dataIn.first.size() < expectedResponse.size() ||
+            !std::equal(expectedResponse.begin(), expectedResponse.end(), dataIn.first.begin()))
         {
             m_log.error("Response corrupted!");
             return candleTypes::Error_t::UNINITIALIZED;
