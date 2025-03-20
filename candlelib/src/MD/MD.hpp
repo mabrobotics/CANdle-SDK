@@ -6,6 +6,7 @@
 #include "manufacturer_data.hpp"
 #include "candle_types.hpp"
 #include "MDStatus.hpp"
+#include "candle_v2.hpp"
 
 #include <cstring>
 
@@ -56,8 +57,7 @@ namespace mab
         /// @brief Create MD object instance
         /// @param canId can node id of MD
         /// @param transferCANFrame
-        MD(canId_t canId, std::function<canTransmitFrame_t> transferCANFrame)
-            : m_canId(canId), m_transferCANFrame(transferCANFrame)
+        MD(canId_t canId, CandleV2* candle) : m_canId(canId), m_candle(candle)
         {
             m_log.m_layer = Logger::ProgramLayer_E::TOP;
             std::stringstream tag;
@@ -276,7 +276,7 @@ namespace mab
             // Add serialized register data to be read [LSB addr, MSB addr, payload-bytes...]
             auto payload = serializeMDRegisters(regs);
             frame.insert(frame.end(), payload.begin(), payload.end());
-            auto readRegResult = m_transferCANFrame(
+            auto readRegResult = getCandle()->transferCANFrame(
                 m_canId, frame, frame.size(), m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
             if (readRegResult.second != candleTypes::Error_t::OK)
             {
@@ -331,7 +331,7 @@ namespace mab
             frame.push_back((u8)0x0);
             auto payload = serializeMDRegisters(regs);
             frame.insert(frame.end(), payload.begin(), payload.end());
-            auto readRegResult = m_transferCANFrame(
+            auto readRegResult = getCandle()->transferCANFrame(
                 m_canId, frame, DEFAULT_RESPONSE_SIZE, m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
             if (readRegResult.second != candleTypes::Error_t::OK)
             {
@@ -353,8 +353,20 @@ namespace mab
         /// @brief Debugging method to test communication efficiency
         void testLatency();
 
+        static std::vector<canId_t> discoverMDs(CandleV2* candle);
+
       private:
-        std::function<canTransmitFrame_t> m_transferCANFrame;
+        const CandleV2* m_candle;
+
+        inline const CandleV2* getCandle()
+        {
+            if (m_candle != nullptr)
+            {
+                return m_candle;
+            }
+            m_log.error("Candle device empty!");
+            return nullptr;
+        }
 
         template <class... T>
         static inline std::vector<u8> serializeMDRegisters(std::tuple<RegisterEntry_S<T>&...>& regs)

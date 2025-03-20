@@ -1,4 +1,5 @@
 #include "candle_v2.hpp"
+#include "MD.hpp"
 
 int main()
 {
@@ -6,21 +7,12 @@ int main()
         mab::attachCandle(mab::CANdleBaudrate_E::CAN_BAUD_1M, mab::candleTypes::busTypes_t::USB);
 
     constexpr mab::canId_t mdId = 100;
-    candle->addMD(mdId);
 
-    auto mdMap = candle->getMDmapHandle();
-
-    if (mdMap->size() == 0)
+    mab::MD md(100, candle);
+    if (md.init() != mab::MD::Error_t::OK)
     {
-        std::cout << "MD failed to be added!\n";
-        return EXIT_FAILURE;
+        std::cout << "MD not initialized\n";
     }
-
-    // Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
-    std::cout << "Statring diagnostics\n"
-              << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
-
-    auto& md     = (*mdMap).at(mdId);
     md.m_timeout = 2 /*ms*/;
     mab::MDRegisters_S registerBuffer;
 
@@ -41,6 +33,8 @@ int main()
               << "CAN baudrate: " << canBaudrateString
               << "Motor gear ratio: " << registerBuffer.motorGearRatio.value << "\n"
               << "Motor max current: " << registerBuffer.motorIMax.value;
+
+    mab::detachCandle(candle);
 
     return EXIT_SUCCESS;
 }

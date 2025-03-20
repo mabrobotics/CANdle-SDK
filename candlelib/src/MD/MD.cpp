@@ -524,4 +524,45 @@ namespace mab
                              static_cast<float>(latencyTransmit)) *
                                 100.0f);
     }
+
+    std::vector<canId_t> MD::discoverMDs(CandleV2* candle)
+    {
+        constexpr canId_t minValidId = 10;     // ids less than that are reserved for special
+        constexpr canId_t maxValidId = 0x7FF;  // 11-bit value (standard can ID max)
+
+        Logger               log(Logger::ProgramLayer_E::TOP, "MD_DISCOVERY");
+        std::vector<canId_t> ids;
+
+        if (candle == nullptr)
+        {
+            log.error("Candle is empty!");
+            return std::vector<canId_t>();
+        }
+
+        log.info("Looking for MDs");
+
+        for (canId_t id = minValidId; id < maxValidId; id++)
+        {
+            log.debug("Trying to bind MD with id %d", id);
+            log.progress(float(id) / float(maxValidId));
+            // workaround for ping error spam
+            Logger::Verbosity_E prevVerbosity =
+                Logger::g_m_verbosity.value_or(Logger::Verbosity_E::VERBOSITY_1);
+            Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
+            MD md(id, candle);
+            if (md.init() == MD::Error_t::OK)
+                ids.push_back(id);
+
+            Logger::g_m_verbosity = prevVerbosity;
+        }
+        for (canId_t id : ids)
+        {
+            log.info("Discovered MD device with ID: %d", id);
+        }
+        if (ids.size() > 0)
+            return ids;
+
+        log.warn("Have not found any MD devices on the CAN bus!");
+        return ids;
+    }
 }  // namespace mab

@@ -1,24 +1,23 @@
 #include "candle_v2.hpp"
+#include "MD.hpp"
 
 int main()
 {
-    auto candle =
+    mab::CandleV2* candle =
         mab::attachCandle(mab::CANdleBaudrate_E::CAN_BAUD_1M, mab::candleTypes::busTypes_t::USB);
 
     constexpr mab::canId_t mdId = 100;
-    candle->addMD(mdId);
+    mab::MD                md(mdId, candle);
 
-    auto mdMap = candle->getMDmapHandle();
-
-    if (mdMap->size() == 0)
+    if (md.init() != mab::MD::Error_t::OK)
     {
         std::cout << "MD failed to be added!\n";
         return EXIT_FAILURE;
     }
 
-    auto& md = (*mdMap).at(mdId);
-
     md.testLatency();
+
+    mab::detachCandle(candle);
 
     return EXIT_SUCCESS;
 }

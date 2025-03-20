@@ -8,7 +8,6 @@
 #include <map>
 
 #include "candle_types.hpp"
-#include "MD.hpp"
 #include "logger.hpp"
 #include "bus.hpp"
 #include "I_communication_interface.hpp"
@@ -39,6 +38,8 @@ namespace mab
 
         CandleV2() = delete;
 
+        CandleV2(const CandleV2&) = delete;
+
         ~CandleV2();
 
         /// @brief Create CANdle device object based on provided communication interface
@@ -55,34 +56,14 @@ namespace mab
         /// @param timeoutMs Time after which candle will stop waiting for node response in
         /// miliseconds
         /// @return
-        static const std::pair<std::vector<u8>, candleTypes::Error_t> transferCANFrame(
-            std::weak_ptr<CandleV2> candle,
-            const canId_t           canId,
-            const std::vector<u8>   dataToSend,
-            const size_t            responseSize,
-            const u32               timeoutMs = DEFAULT_CAN_TIMEOUT);
+        const std::pair<std::vector<u8>, candleTypes::Error_t> transferCANFrame(
+            const canId_t         canId,
+            const std::vector<u8> dataToSend,
+            const size_t          responseSize,
+            const u32             timeoutMs = DEFAULT_CAN_TIMEOUT) const;
 
         /// @brief Initialize candle
-        candleTypes::Error_t init(std::weak_ptr<CandleV2> thisSharedRef);
-
-        /// @brief This method clears currently known devices and discovers any MAB device that is
-        /// on the CAN network
-        candleTypes::Error_t discoverDevices();
-
-        /// @brief Add and initialize MD from the network
-        /// @param id MD can node id
-        /// @return OK on success, CAN_DEVICE_NOT_RESPONDING on not found
-        candleTypes::Error_t addMD(canId_t id);
-
-        /// @brief Remove MD from the m_mdMap and deinitialize it
-        /// @param id MD can node id
-        /// @return OK always
-        candleTypes::Error_t removeMD(canId_t id);
-
-        /// @brief Returns safe handle for interactions with MD, access to objects through this
-        /// method is preferred
-        /// @return shared pointer to internal MD map
-        std::shared_ptr<std::map<canId_t, MD>> getMDmapHandle();
+        candleTypes::Error_t init();
 
         candleTypes::Error_t reset();
 
@@ -92,16 +73,13 @@ namespace mab
         CANdleBaudrate_E m_canBaudrate = CANdleBaudrate_E::CAN_BAUD_1M;
         Logger           m_log         = Logger(Logger::ProgramLayer_E::TOP, "CANDLE");
 
-        std::weak_ptr<CandleV2> m_thisSharedReference;
-
         std::unique_ptr<mab::I_CommunicationInterface> m_bus;
-        std::shared_ptr<std::map<canId_t, MD>>         m_mdMap;
 
         bool m_isInitialized = false;
 
         candleTypes::Error_t busTransfer(std::vector<u8>* data,
                                          size_t           responseLength = 0,
-                                         const u32        timeoutMs      = DEFAULT_CAN_TIMEOUT + 1);
+                                         const u32 timeoutMs = DEFAULT_CAN_TIMEOUT + 1) const;
 
         // TODO: this method is temporary and must be changed, must have some way for bus to check
         // functional connection
@@ -137,34 +115,35 @@ namespace mab
         }
     };
 
-    /// @brief Initialize CANdle device
-    /// @param baudrate CAN network datarate
-    /// @param bus Initialized communication interface
-    /// @return Initialized CANdle instance object or nullptr of object could not be initialized
-    inline std::shared_ptr<mab::CandleV2> attachCandle(
-        const CANdleBaudrate_E baudrate, std::unique_ptr<I_CommunicationInterface>&& bus)
+    /// @brief Create CANdle device instance
+    /// @param baudrate Target data-rate of the CAN bus
+    /// @param bus Initialized CANdle communication interface
+    /// @return Configured candle object or nullptr
+    inline mab::CandleV2* attachCandle(const CANdleBaudrate_E                      baudrate,
+                                       std::unique_ptr<I_CommunicationInterface>&& bus)
     {
+        Logger log(Logger::ProgramLayer_E::TOP, "CANDLE_BUILDER");
         if (bus == nullptr)
         {
-            throw std::runtime_error("Could not create CANdle from an undefined bus!");
-            return nullptr;
+            log.error("Could not create CANdle from an undefined bus!");
+            return {};
         }
 
-        auto candle = std::make_shared<mab::CandleV2>(baudrate, std::move(bus));
-        if (candle->init(candle) != candleTypes::Error_t::OK)
+        mab::CandleV2* candle = new mab::CandleV2(baudrate, std::move(bus));
+        if (candle == nullptr || candle->init() != candleTypes::Error_t::OK)
         {
-            throw std::runtime_error("Could not initialize CANdle device!");
-            return nullptr;
+            log.error("Could not initialize CANdle device!");
+            return {};
         }
         return candle;
     }
 
-    /// @brief Initialize CANdle device
-    /// @param baudrate CAN network datarate
-    /// @param busType Type of interface to initialize (without explicit serial number)
-    /// @return Initialized CANdle instance object or nullptr of object could not be initialized
-    inline std::shared_ptr<mab::CandleV2> attachCandle(const CANdleBaudrate_E  baudrate,
-                                                       candleTypes::busTypes_t busType)
+    /// @brief Create CANdle device instance
+    /// @param baudrate Target data-rate of the CAN bus
+    /// @param bus Initialized CANdle communication interface
+    /// @return Configured candle object or nullptr
+    inline mab::CandleV2* attachCandle(const CANdleBaudrate_E  baudrate,
+                                       candleTypes::busTypes_t busType)
     {
         std::unique_ptr<mab::I_CommunicationInterface> bus;
         switch (busType)
@@ -177,7 +156,15 @@ namespace mab
                 return attachCandle(baudrate, std::move(bus));
             default:
                 throw std::runtime_error("Wrong communication interface provided!");
-                return nullptr;
+                return {};
         }
+    }
+
+    /// @brief Destroy candle object. Must be called after each initialization of CANdle
+    /// @param candle Candle object to be destroyed
+    inline void detachCandle(CandleV2* candle)
+    {
+        if (candle != nullptr)
+            delete candle;
     }
 }  // namespace mab
