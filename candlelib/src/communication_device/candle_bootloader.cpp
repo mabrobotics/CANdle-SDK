@@ -26,12 +26,12 @@ namespace mab
         if (payload.size() != 0)
             outBuffer.insert(outBuffer.end(), payload.begin(), payload.end());
 
-        std::pair<std::vector<u8>, I_CommunicationInterface::Error_t> dataIn =
+        std::pair<std::vector<u8>, I_CommunicationInterface::Error_t> response =
             m_usb->transfer(outBuffer, timeoutMs, expectedResponse.size());
 
-        if (dataIn.second != I_CommunicationInterface::Error_t::OK)
+        if (response.second != I_CommunicationInterface::Error_t::OK)
         {
-            switch (dataIn.second)
+            switch (response.second)
             {
                 case I_CommunicationInterface::Error_t::TRANSMITTER_ERROR:
                     m_log.error("Error while transfering data to USB bootloader");
@@ -45,11 +45,11 @@ namespace mab
             }
         }
 
-        if (dataIn.first.size() < expectedResponse.size() ||
-            !std::equal(expectedResponse.begin(), expectedResponse.end(), dataIn.first.begin()))
+        if (response.first.size() < expectedResponse.size() ||
+            !std::equal(expectedResponse.begin(), expectedResponse.end(), response.first.begin()))
         {
             m_log.error("Response corrupted!");
-            return candleTypes::Error_t::UNINITIALIZED;
+            return candleTypes::Error_t::BAD_RESPONSE;
         }
 
         return candleTypes::Error_t::OK;
