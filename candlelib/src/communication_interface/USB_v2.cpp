@@ -205,11 +205,13 @@ namespace mab
 
         if (libusb_init(&m_ctx))
             m_Log.error("Could not init libusb!");
+        m_Log.debug("Init libusb for context %d: ", (size_t)m_ctx);
         // libusb_set_option(&m_ctx, libusb_option::LIBUSB_OPTION_LOG_LEVEL,
         // LIBUSB_LOG_LEVEL_DEBUG);
     }
     USBv2::~USBv2()
     {
+        m_Log.debug("Deinit libusb for context %d: ", (size_t)m_ctx);
         disconnect();
         libusb_exit(m_ctx);
     }
@@ -225,6 +227,8 @@ namespace mab
             m_Log.error("Libusb error while detecting devices!");
 
         m_Log.debug("Found %d USB devices", deviceListLen);
+
+        m_Log.debug("Looking for VID: %d, PID: %d, Serial: %c", m_vid, m_pid, m_serialNo.c_str());
 
         for (s32 deviceIndex = 0; deviceIndex < deviceListLen; deviceIndex++)
         {
@@ -310,10 +314,11 @@ namespace mab
             return std::pair(data, Error_t::DATA_EMPTY);
         }
         // This part forces libusb to perform at lesser latency due to usage of microframes
-        if (data.size() < 66)
-        {
-            data.resize(66);
-        }
+        // TODO: This needs a rework because of the bootloader
+        // if (data.size() < 66)
+        // {
+        //     data.resize(66);
+        // }
         libusb_error transmitError = m_libusbDevice->transmit(data.data(), data.size(), timeoutMs);
         if (transmitError != libusb_error::LIBUSB_SUCCESS)
         {

@@ -16,6 +16,7 @@ namespace mab
             RESPONSE_TIMEOUT,
             CAN_DEVICE_NOT_RESPONDING,
             INVALID_ID,
+            BAD_RESPONSE,
             UNKNOWN_ERROR
         };
 
