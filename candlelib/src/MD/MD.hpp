@@ -276,13 +276,8 @@ namespace mab
             // Add serialized register data to be read [LSB addr, MSB addr, payload-bytes...]
             auto payload = serializeMDRegisters(regs);
             frame.insert(frame.end(), payload.begin(), payload.end());
-            auto readRegResult = getCandle()->transferCANFrame(
-                m_canId, frame, frame.size(), m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
-            if (readRegResult.second != candleTypes::Error_t::OK)
-            {
-                m_log.error("Error while reading registers!");
-                return std::pair(regs, Error_t::TRANSFER_FAILED);
-            }
+            auto readRegResult =
+                transferCanFrame(frame, frame.size(), m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
             // TODO: for some reason MD sends first byte as 0x0, investigate
             //  if (readRegResult.first.at(0) == 0x41)
             //  {
@@ -331,13 +326,8 @@ namespace mab
             frame.push_back((u8)0x0);
             auto payload = serializeMDRegisters(regs);
             frame.insert(frame.end(), payload.begin(), payload.end());
-            auto readRegResult = getCandle()->transferCANFrame(
-                m_canId, frame, DEFAULT_RESPONSE_SIZE, m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
-            if (readRegResult.second != candleTypes::Error_t::OK)
-            {
-                m_log.error("Error while writing registers!");
-                return Error_t::TRANSFER_FAILED;
-            }
+            auto readRegResult = transferCanFrame(
+                frame, DEFAULT_RESPONSE_SIZE, m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
 
             if (readRegResult.first.at(0) == 0xA0)
             {
@@ -358,7 +348,7 @@ namespace mab
       private:
         const CandleV2* m_candle;
 
-        inline const CandleV2* getCandle()
+        inline const CandleV2* getCandle() const
         {
             if (m_candle != nullptr)
             {
@@ -395,6 +385,26 @@ namespace mab
             std::apply([&](auto&... reg) { (performForEachElem(reg), ...); }, regs);
 
             return failure;
+        }
+
+        std::pair<std::vector<u8>, mab::candleTypes::Error_t> transferCanFrame(
+            std::vector<u8> frameToSend, size_t responseSize, u32 timeoutMs = 1U) const
+        {
+            if (m_candle == nullptr)
+            {
+                m_log.error("Candle empty!");
+                return {{}, candleTypes::Error_t::DEVICE_NOT_CONNECTED};
+            }
+            auto result = getCandle()->transferCANFrame(m_canId,
+                                                        frameToSend,
+                                                        DEFAULT_RESPONSE_SIZE,
+                                                        m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
+
+            if (result.second != candleTypes::Error_t::OK)
+            {
+                m_log.error("Error while transfering CAN frame!");
+            }
+            return result;
         }
     };
 
