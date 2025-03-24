@@ -1,5 +1,6 @@
 
 #include "candle_v2.hpp"
+#include "MD.hpp"
 
 int main()
 {
@@ -12,17 +13,24 @@ int main()
     // Attach Candle is an AIO method to get ready to use candle handle that corresponds to the real
     // CANdle USB-CAN converter. Its a main object so should have the longest lifetime of all
     // objects from the library.
-    auto candle =
+    mab::CandleV2* candle =
         mab::attachCandle(mab::CANdleBaudrate_E::CAN_BAUD_1M, mab::candleTypes::busTypes_t::USB);
 
     // Look for MAB devices present on the can network
-    candle->discoverDevices();
+    auto ids = mab::MD::discoverMDs(candle);
 
     // This method provides you with memory-safe map handle which you can assign MDs too manually
     // via addMD method or via discoverDevices
-    auto mdMap = candle->getMDmapHandle();
+    std::vector<mab::MD> mds;
 
-    if (mdMap->size() == 0)
+    for (auto id : ids)
+    {
+        mab::MD md(id, candle);
+        if (md.init() == mab::MD::Error_t::OK)
+            mds.push_back(md);
+    }
+
+    if (mds.size() == 0)
     {
         log.error("No MDs found!");
         return EXIT_FAILURE;
@@ -30,7 +38,7 @@ int main()
 
     // Get first md that was detected. This is not a memory safe handle so it should not be moved a
     // lot in this form.
-    mab::MD& md = mdMap->begin()->second;
+    mab::MD md = mds[0];
 
     // Zero out the position of the drive
     md.zero();
@@ -60,5 +68,6 @@ int main()
     }
 
     md.disable();
+    mab::detachCandle(candle);
     return EXIT_SUCCESS;
 }

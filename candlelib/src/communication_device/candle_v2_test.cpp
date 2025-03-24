@@ -42,7 +42,9 @@ TEST_F(CandleV2Test, failAttach)
         .Times(1)
         .WillOnce(Return(mab::I_CommunicationInterface::Error_t::NOT_CONNECTED));
     testing::Mock::AllowLeak(mockBus.get());
-    EXPECT_THROW(mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus)), std::runtime_error);
+    auto candle = mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus));
+    EXPECT_EQ(candle, nullptr);
+    mab::detachCandle(candle);
 }
 
 TEST_F(CandleV2Test, passAttach)
@@ -53,7 +55,9 @@ TEST_F(CandleV2Test, passAttach)
     EXPECT_CALL(*mockBus, transfer(_, _, _))
         .Times(1)
         .WillOnce(Return(std::pair(mockData, mab::I_CommunicationInterface::Error_t::OK)));
-    EXPECT_NO_THROW(mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus)));
+    auto candle = mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus));
+    EXPECT_NE(candle, nullptr);
+    mab::detachCandle(candle);
 }
 
 TEST_F(CandleV2Test, failAfterInit)
@@ -67,8 +71,9 @@ TEST_F(CandleV2Test, failAfterInit)
         .WillOnce(
             Return(std::pair(mockData, mab::I_CommunicationInterface::Error_t::UNKNOWN_ERROR)));
     auto candle = mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus));
-    auto result = candle->transferCANFrame(candle, mockId, mockData, 0);
+    auto result = candle->transferCANFrame(mockId, mockData, 0);
     ASSERT_NE(result.second, mab::candleTypes::Error_t::OK);
+    mab::detachCandle(candle);
 }
 
 TEST_F(CandleV2Test, successAfterInit)
@@ -81,6 +86,7 @@ TEST_F(CandleV2Test, successAfterInit)
         .WillOnce(Return(std::pair(mockData, mab::I_CommunicationInterface::Error_t::OK)))
         .WillOnce(Return(std::pair(mockData, mab::I_CommunicationInterface::Error_t::OK)));
     auto candle = mab::attachCandle(mab::CAN_BAUD_1M, std::move(mockBus));
-    auto result = candle->transferCANFrame(candle, mockId, mockData, mockData.size());
+    auto result = candle->transferCANFrame(mockId, mockData, mockData.size());
     ASSERT_EQ(result.second, mab::candleTypes::Error_t::OK);
+    mab::detachCandle(candle);
 }
