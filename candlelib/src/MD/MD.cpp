@@ -527,8 +527,8 @@ namespace mab
 
     std::vector<canId_t> MD::discoverMDs(CandleV2* candle)
     {
-        constexpr canId_t minValidId = 10;     // ids less than that are reserved for special
-        constexpr canId_t maxValidId = 0x7FF;  // 11-bit value (standard can ID max)
+        constexpr canId_t MIN_VAILID_ID = 10;     // ids less than that are reserved for special
+        constexpr canId_t MAX_VAILID_ID = 0x7FF;  // 11-bit value (standard can ID max)
 
         Logger               log(Logger::ProgramLayer_E::TOP, "MD_DISCOVERY");
         std::vector<canId_t> ids;
@@ -541,10 +541,10 @@ namespace mab
 
         log.info("Looking for MDs");
 
-        for (canId_t id = minValidId; id < maxValidId; id++)
+        for (canId_t id = MIN_VAILID_ID; id < MAX_VAILID_ID; id++)
         {
             log.debug("Trying to bind MD with id %d", id);
-            log.progress(float(id) / float(maxValidId));
+            log.progress(float(id) / float(MAX_VAILID_ID));
             // workaround for ping error spam
             Logger::Verbosity_E prevVerbosity =
                 Logger::g_m_verbosity.value_or(Logger::Verbosity_E::VERBOSITY_1);
