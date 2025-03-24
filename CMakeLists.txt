@@ -41,7 +41,7 @@ set(mINI_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/mINI/inc/)
 set(CANDLE_BUILD_STATIC TRUE)
 
 macro(add_unit_test_executable test_name)
-
+    message("Adding unit test executable ${test_name}")
     add_executable(${test_name} ${ARGN})
     target_link_libraries(${test_name} PRIVATE Unit_test)
     set_target_properties(${test_name} PROPERTIES

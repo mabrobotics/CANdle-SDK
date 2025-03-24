@@ -1,6 +1,27 @@
 #include "ui.hpp"
 #include "pds_cli.hpp"
+#include "mab_def.hpp"
 #include "configHelpers.hpp"
+
+/*
+    PDS Ini fields keywords
+    Using const char* instead of safer c++ features like std::string is because INI maps and logger
+    requires c-strings and it simplifies the code since it does not require calls to .data() or
+   c_str() methods and still beeing quite safe as we are giving strings in ""
+*/
+constexpr const char* CONTROL_BOARD_INI_SECTION = PdsModule::mType2Str(moduleType_E::CONTROL_BOARD);
+constexpr const char* CAN_ID_INI_KEY            = "CAN ID";
+constexpr const char* CAN_BAUD_INI_KEY          = "CAN BAUD";
+constexpr const char* SHUTDOWN_TIME_INI_KEY     = "SHUTDOWN_TIME";
+constexpr const char* BATT_LVL_1_INI_KEY        = "BATTERY LEVEL 1";
+constexpr const char* BATT_LVL_2_INI_KEY        = "BATTERY LEVEL 2";
+
+constexpr const char* TYPE_INI_KEY       = "TYPE";
+constexpr const char* TEMP_LIMIT_INI_KEY = "TEMPERATURE LIMIT";
+constexpr const char* OCD_LEVEL_INI_KEY  = "OCD LEVEL";
+constexpr const char* OCD_DELAY_INI_KEY  = "OCD DELAY";
+constexpr const char* BR_SOCKET_INI_KEY  = "BR SOCKET";
+constexpr const char* BR_TRIG_V_INI_KEY  = "BR TRIGGER VOLTAGE";
 
 PdsCli::PdsCli(CLI::App& rootCli, mab::Candle& candle) : m_rootCli(rootCli), m_candle(candle)
 {
@@ -28,6 +49,11 @@ PdsCli::PdsCli(CLI::App& rootCli, mab::Candle& candle) : m_rootCli(rootCli), m_c
     m_configSaveCmd =
         m_pdsCmd->add_subcommand("save", "Store current configuration in device memory");
 
+    m_setCanIdCmd =
+        m_pdsCmd->add_subcommand("set_can_id", "Assign new FD CAN ID to the PDS device");
+
+    m_setCanIdCmd->add_option("<NEW_CAN_ID>", m_newCanId, "New CAN ID")->required();
+
     m_setBatteryLevelCmd =
         m_pdsCmd->add_subcommand("set_battery_level", "Set the battery voltage levels");
 
@@ -45,11 +71,11 @@ PdsCli::PdsCli(CLI::App& rootCli, mab::Candle& candle) : m_rootCli(rootCli), m_c
     // POWER STAGE commands set
     m_powerStageCmd = m_pdsCmd->add_subcommand("ps", "Manage the Power Stage submodule");
 
-    m_psInfoCmd = m_powerStageCmd->add_subcommand("info", "Display debug info about Power Stage");
-
     m_powerStageCmd
         ->add_option("<socket_index>", m_submoduleSocketNumber, "Submodule socket number")
         ->required();
+
+    m_psInfoCmd = m_powerStageCmd->add_subcommand("info", "Display debug info about Power Stage");
 
     m_psEnableCmd = m_powerStageCmd->add_subcommand("enable", "Enable the Power Stage submodule");
 
@@ -157,6 +183,11 @@ PdsCli::PdsCli(CLI::App& rootCli, mab::Candle& candle) : m_rootCli(rootCli), m_c
         m_isolatedConverterCmd->add_subcommand("get_temp_limit", "Get the Temperature Limit");
 }
 
+static bool isCanIdValid(u16 canId)
+{
+    return ((canId >= CAN_MIN_ID) || (canId <= CAN_MAX_ID));
+}
+
 void PdsCli::parse(void)
 {
     PdsModule::error_E result = PdsModule::error_E::OK;
@@ -185,6 +216,23 @@ void PdsCli::parse(void)
         else if (m_configSaveCmd->parsed())
         {
             pdsStoreConfig();
+        }
+
+        else if (m_setCanIdCmd->parsed())
+        {
+            if (!isCanIdValid(m_newCanId))
+            {
+                m_log.error("Given CAN ID ( %u ) is invalid. Acceptable range is [ %u - %u]",
+                            m_newCanId,
+                            CAN_MIN_ID,
+                            CAN_MAX_ID);
+                return;
+            }
+            result = m_pds.setCanId(m_newCanId);
+            if (result != PdsModule::error_E::OK)
+                m_log.error("Setting CAN ID failed [ %s ]", PdsModule::error2String(result));
+            else
+                m_log.success("New CAN ID set [ %u ]", m_newCanId);
         }
 
         else if (m_powerStageCmd->parsed())
@@ -816,11 +864,12 @@ static void fillPsIni(PowerStage& ps, mINI::INIStructure& rIni, std::string sect
     ps.getOcdDelay(ocdDelay);
     ps.getTemperatureLimit(temperatureLimit);
 
-    rIni[sectionName]["type"]      = PdsModule::moduleType2String(moduleType_E::POWER_STAGE);
-    rIni[sectionName]["BR Socket"] = floatToString((uint8_t)brSocket);
-    rIni[sectionName]["BR Trigger voltage"] = floatToString(brTriggerVoltage);
-    rIni[sectionName]["OCD level"]          = floatToString(ocdLevel);
-    rIni[sectionName]["OCD delay"]          = floatToString(ocdDelay);
+    rIni[sectionName][TYPE_INI_KEY]       = PdsModule::mType2Str(moduleType_E::POWER_STAGE);
+    rIni[sectionName][TEMP_LIMIT_INI_KEY] = floatToString(temperatureLimit);
+    rIni[sectionName][OCD_LEVEL_INI_KEY]  = floatToString(ocdLevel);
+    rIni[sectionName][OCD_DELAY_INI_KEY]  = floatToString(ocdDelay);
+    rIni[sectionName][BR_SOCKET_INI_KEY]  = floatToString((uint8_t)brSocket);
+    rIni[sectionName][BR_TRIG_V_INI_KEY]  = floatToString(brTriggerVoltage);
 }
 
 // Fill Brake resistor Ini structure
@@ -830,17 +879,24 @@ static void fillBrIni(BrakeResistor& br, mINI::INIStructure& rIni, std::string s
 
     br.getTemperatureLimit(temperatureLimit);
 
-    rIni[sectionName]["type"] = PdsModule::moduleType2String(moduleType_E::BRAKE_RESISTOR);
+    rIni[sectionName][TYPE_INI_KEY]       = PdsModule::mType2Str(moduleType_E::BRAKE_RESISTOR);
+    rIni[sectionName][TEMP_LIMIT_INI_KEY] = temperatureLimit;
 }
 
 // Fill Isolated Converter Ini structure
 static void fillIcIni(IsolatedConv& ic, mINI::INIStructure& rIni, std::string sectionName)
 {
     f32 temperatureLimit = 0.0f;
+    u32 ocdLevel         = 0;
+    u32 ocdDelay         = 0;
 
     ic.getTemperatureLimit(temperatureLimit);
+    ic.getOcdLevel(ocdLevel);
+    ic.getOcdDelay(ocdDelay);
 
-    rIni[sectionName]["type"] = PdsModule::moduleType2String(moduleType_E::ISOLATED_CONVERTER);
+    rIni[sectionName][TYPE_INI_KEY]      = PdsModule::mType2Str(moduleType_E::ISOLATED_CONVERTER);
+    rIni[sectionName][OCD_LEVEL_INI_KEY] = floatToString(ocdLevel);
+    rIni[sectionName][OCD_DELAY_INI_KEY] = floatToString(ocdDelay);
 }
 
 static void fullModuleIni(Pds&                pds,
@@ -854,9 +910,6 @@ static void fullModuleIni(Pds&                pds,
     {
         case moduleType_E::UNDEFINED:
             rIni[sectionName]["type"] = "NO MODULE";
-            break;
-
-        case moduleType_E::CONTROL_BOARD:
             break;
 
         case moduleType_E::BRAKE_RESISTOR:
@@ -881,7 +934,7 @@ static void fullModuleIni(Pds&                pds,
         }
 
             /* NEW MODULE TYPES HERE */
-
+        case moduleType_E::CONTROL_BOARD:
         default:
             break;
     }
@@ -895,17 +948,29 @@ void PdsCli::pdsSetupConfig(const std::string& cfgPath)
     mINI::INIStructure pdsCfg;
     pdsCfgFile.read(pdsCfg);
 
-    u32 shutdownTime = atoi(pdsCfg["Control board"]["shutdown time"].c_str());
-    u32 battLvl1     = atoi(pdsCfg["Control board"]["battery level 1"].c_str());
-    u32 battLvl2     = atoi(pdsCfg["Control board"]["battery level 2"].c_str());
+    u16 canId        = atoi(pdsCfg[CONTROL_BOARD_INI_SECTION][CAN_BAUD_INI_KEY].c_str());
+    u32 shutdownTime = atoi(pdsCfg[CONTROL_BOARD_INI_SECTION][SHUTDOWN_TIME_INI_KEY].c_str());
+    u32 battLvl1     = atoi(pdsCfg[CONTROL_BOARD_INI_SECTION][BATT_LVL_1_INI_KEY].c_str());
+    u32 battLvl2     = atoi(pdsCfg[CONTROL_BOARD_INI_SECTION][BATT_LVL_2_INI_KEY].c_str());
 
-    err_E result = m_pds.setShutdownTime(shutdownTime);
+    // Validate data provided by ini file
+
+    // CAN Id
+    err_E result = m_pds.setCanId(canId);
+    if (result != PdsModule::error_E::OK)
+        m_log.error("CAN ID setting failed [ %s ]", PdsModule::error2String(result));
+    else
+        m_log.success("CAN ID set [ %u ]", canId);
+
+    // Shutdown time
+    result = m_pds.setShutdownTime(shutdownTime);
 
     if (result != PdsModule::error_E::OK)
         m_log.error("Shutdown time setting failed [ %s ]", PdsModule::error2String(result));
     else
         m_log.success("Shutdown time set [ %u ]", shutdownTime);
 
+    // Battery voltage levels
     result = m_pds.setBatteryVoltageLevels(battLvl1, battLvl2);
     if (result != err_E::OK)
         m_log.error("Battery levels setting failed [ %s ]", PdsModule::error2String(result));
@@ -933,11 +998,11 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
     m_pds.getShutdownTime(shutDownTime);
     m_pds.getBatteryVoltageLevels(batLvl1, batLvl2);
 
-    readIni["Control board"]["CAN ID"]          = floatToString(m_canId);
-    readIni["Control board"]["CAN BAUD"]        = "";
-    readIni["Control board"]["shutdown time"]   = floatToString(shutDownTime);
-    readIni["Control board"]["battery level 1"] = floatToString(batLvl1);
-    readIni["Control board"]["battery level 2"] = floatToString(batLvl2);
+    readIni[CONTROL_BOARD_INI_SECTION]["CAN ID"]          = floatToString(m_canId);
+    readIni[CONTROL_BOARD_INI_SECTION]["CAN BAUD"]        = "";
+    readIni[CONTROL_BOARD_INI_SECTION]["shutdown time"]   = floatToString(shutDownTime);
+    readIni[CONTROL_BOARD_INI_SECTION]["battery level 1"] = floatToString(batLvl1);
+    readIni[CONTROL_BOARD_INI_SECTION]["battery level 2"] = floatToString(batLvl2);
     fullModuleIni(m_pds, pdsModules.moduleTypeSocket1, readIni, socketIndex_E::SOCKET_1);
     fullModuleIni(m_pds, pdsModules.moduleTypeSocket2, readIni, socketIndex_E::SOCKET_2);
     fullModuleIni(m_pds, pdsModules.moduleTypeSocket3, readIni, socketIndex_E::SOCKET_3);

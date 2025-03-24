@@ -2,7 +2,7 @@
 
 #include "CLI/CLI.hpp"
 #include "pds_types.hpp"
-#include "candletool.hpp"
+/*#include "candletool.hpp"*/
 #include "pds.hpp"
 
 using namespace mab;
@@ -22,6 +22,7 @@ class PdsCli
     CLI::App* m_pdsCmd = nullptr;
 
     CLI::App* m_infoCmd            = nullptr;
+    CLI::App* m_setCanIdCmd        = nullptr;
     CLI::App* m_setBatteryLevelCmd = nullptr;
     CLI::App* m_setShutdownTimeCmd = nullptr;
 
@@ -67,6 +68,8 @@ class PdsCli
     CLI::App* m_icGetTempLimitCmd = nullptr;
 
     // Properties
+    u16 m_canId         = 0u;    // PDS CAN ID
+    u16 m_newCanId      = 0u;    // PDS CAN ID
     u32 m_batteryLevel1 = 0u;    // Battery level in mV
     u32 m_batteryLevel2 = 0u;    // Battery level in mV
     u32 m_shutdownTime  = 0u;    // Shutdown time in ms
@@ -78,7 +81,6 @@ class PdsCli
 
     // Brake resistor commands
 
-    u16         m_canId                 = 0;
     std::string m_cfgFilePath           = "";
     u8          m_submoduleSocketNumber = 0;
 

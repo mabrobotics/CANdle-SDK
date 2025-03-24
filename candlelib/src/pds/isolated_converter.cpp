@@ -30,9 +30,9 @@ namespace mab
         getOcdLevel(ocdLevel);
         getOcdDelay(ocdDelay);
 
-        m_log.info("Module type: %s", moduleType2String(m_type).c_str());
+        m_log.info("Module type: %s", mType2Str(m_type));
         m_log.info("Module version: %u", (u8)hwVersion);
-        m_log.info("Module status: %s", status.ENABLED ? "ENABLED" : "DISABLED");
+        m_log.info("Module status: %s", status.ENABLED ? "ENABLED   " : "DISABLED");
         m_log.info("Module temperature: %.2f", temperature);
         m_log.info("Module temperature limit: %.2f", temperatureLimit);
         m_log.info("Module load current: %d", current);

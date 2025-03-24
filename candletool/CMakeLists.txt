@@ -54,9 +54,10 @@ target_compile_definitions(candletool PRIVATE
 
 target_link_libraries(candletool CLI11)
 
-if(MAKE_TESTS_CANDLETOOL)
-  add_subdirectory(test)
-endif()
+# add_unit_test_executable(pds_cli_test tests/pds_cli_test.cpp)
+# target_include_directories(pds_cli_test PRIVATE include)
+# target_link_libraries(pds_cli_test PRIVATE CLI11 shared_data)
+# target_
 
 add_custom_command(TARGET candletool
   POST_BUILD

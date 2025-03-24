@@ -1,2 +1,4 @@
 CompileFlags:
-  CompilationDatabase: ./../build/CANdleSDK/
+  Add: [ ]
+  CompilationDatabase: ./build
+  Compiler: /usr/bin/c++

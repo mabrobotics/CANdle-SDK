@@ -22,42 +22,42 @@ namespace mab
         return readModuleProperty(propertyId_E::HW_VERSION, version);
     }
 
-    std::string PdsModule::moduleType2String(moduleType_E type)
-    {
-        switch (type)
-        {
-            case moduleType_E::UNDEFINED:
-                return "UNDEFINED";
-            case moduleType_E::CONTROL_BOARD:
-                return "CONTROL_BOARD";
-            case moduleType_E::BRAKE_RESISTOR:
-                return "BRAKE_RESISTOR";
-            case moduleType_E::ISOLATED_CONVERTER:
-                return "ISOLATED_CONVERTER";
-            case moduleType_E::POWER_STAGE:
-                return "POWER_STAGE";
+    // std::string PdsModule::mType2Str(moduleType_E type)
+    // {
+    //     switch (type)
+    //     {
+    //         case moduleType_E::UNDEFINED:
+    //             return "UNDEFINED";
+    //         case moduleType_E::CONTROL_BOARD:
+    //             return "CONTROL_BOARD";
+    //         case moduleType_E::BRAKE_RESISTOR:
+    //             return "BRAKE_RESISTOR";
+    //         case moduleType_E::ISOLATED_CONVERTER:
+    //             return "ISOLATED_CONVERTER";
+    //         case moduleType_E::POWER_STAGE:
+    //             return "POWER_STAGE";
 
-                /* NEW MODULE TYPES HERE */
+    //             /* NEW MODULE TYPES HERE */
 
-            default:
-                return "UNKNOWN";
-        }
-    }
+    //         default:
+    //             return "UNKNOWN";
+    //     }
+    // }
 
-    std::string PdsModule::error2String(error_E error)
-    {
-        switch (error)
-        {
-            case error_E::OK:
-                return "OK";
-            case error_E::INTERNAL_ERROR:
-                return "INTERNAL_ERROR";
-            case error_E::PROTOCOL_ERROR:
-                return "PROTOCOL_ERROR";
-            case error_E::COMMUNICATION_ERROR:
-                return "COMMUNICATION_ERROR";
-            default:
-                return "UNKNOWN_ERROR";
-        }
-    }
+    // std::string PdsModule::error2String(error_E error)
+    // {
+    //     switch (error)
+    //     {
+    //         case error_E::OK:
+    //             return "OK";
+    //         case error_E::INTERNAL_ERROR:
+    //             return "INTERNAL_ERROR";
+    //         case error_E::PROTOCOL_ERROR:
+    //             return "PROTOCOL_ERROR";
+    //         case error_E::COMMUNICATION_ERROR:
+    //             return "COMMUNICATION_ERROR";
+    //         default:
+    //             return "UNKNOWN_ERROR";
+    //     }
+    // }
 }  // namespace mab

@@ -1,9 +1,12 @@
 #pragma once
 
+#include <string>
 #include "bus.hpp"
 #include "candle.hpp"
+#include "mab_types.hpp"
 #include "mini/ini.h"
 #include "logger.hpp"
+
 struct UserCommand
 {
     std::string variant     = "";
@@ -23,6 +26,7 @@ struct UserCommand
     std::string firmwareFileName = "";
     bool        noReset          = false;
 };
+
 class CandleTool
 {
   public:

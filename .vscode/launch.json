@@ -86,6 +86,23 @@
             "MIMode": "gdb",
         },
         {
+            "name": "pds set can id",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/../build/CANdleSDK/candletool/candletool",
+            "args": [
+                "pds",
+                "100",
+                "set_can_id",
+                "105"
+            ],
+            "stopAtEntry": true,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+        },
+        {
             "name": "candletool ping all",
             "type": "cppdbg",
             "request": "launch",

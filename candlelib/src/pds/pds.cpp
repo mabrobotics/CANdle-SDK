@@ -21,7 +21,8 @@ namespace mab
         PdsModule::error_E result = readModules();
         if (result != PdsModule::error_E ::OK)
         {
-            throw std::runtime_error("Unable to read modules data from PDS");
+            m_log.error("Reading PDS submodules failed! [ %s ]", PdsModule::error2String(result));
+            // throw std::runtime_error("Unable to read modules data from PDS");
             exit(EXIT_FAILURE);
         }
     }
@@ -344,6 +345,7 @@ namespace mab
 
     PdsModule::error_E Pds::setCanId(u16 canId)
     {
+        // m_log.
         PdsModule::error_E result = PdsModule::error_E::OK;
         result                    = writeModuleProperty(propertyId_E::CAN_ID, canId);
         if (PdsModule::error_E::OK == result)

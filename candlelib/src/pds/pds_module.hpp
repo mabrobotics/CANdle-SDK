@@ -37,8 +37,44 @@ namespace mab
 
         virtual void printModuleInfo(void) = 0;
 
-        static std::string moduleType2String(moduleType_E type);
-        static std::string error2String(error_E error);
+        constexpr static const char* mType2Str(moduleType_E type)
+        {
+            switch (type)
+            {
+                case moduleType_E::UNDEFINED:
+                    return "UNDEFINED";
+                case moduleType_E::CONTROL_BOARD:
+                    return "CONTROL_BOARD";
+                case moduleType_E::BRAKE_RESISTOR:
+                    return "BRAKE_RESISTOR";
+                case moduleType_E::ISOLATED_CONVERTER:
+                    return "ISOLATED_CONVERTER";
+                case moduleType_E::POWER_STAGE:
+                    return "POWER_STAGE";
+
+                    /* NEW MODULE TYPES HERE */
+
+                default:
+                    return "UNKNOWN";
+            }
+        }
+
+        constexpr static const char* error2String(error_E error)
+        {
+            switch (error)
+            {
+                case error_E::OK:
+                    return "OK";
+                case error_E::INTERNAL_ERROR:
+                    return "INTERNAL_ERROR";
+                case error_E::PROTOCOL_ERROR:
+                    return "PROTOCOL_ERROR";
+                case error_E::COMMUNICATION_ERROR:
+                    return "COMMUNICATION_ERROR";
+                default:
+                    return "UNKNOWN_ERROR";
+            }
+        }
 
       protected:
         /**
