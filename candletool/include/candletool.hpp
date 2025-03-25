@@ -99,15 +99,6 @@ class CandleTool
                   std::string         field,
                   T&                  value);
 
-    template <typename T>
-    bool readRegisterToString(u16 id, mab::Md80Reg_E regId, std::string& str)
-    {
-        T    value  = 0;
-        bool status = m_candle.readMd80Register(id, regId, value);
-        str         = std::to_string(value);
-        return status;
-    }
-
     bool hasError(u16 id);
     bool tryAddMD80(u16 id);
     bool checkSetupError(u16 id);
