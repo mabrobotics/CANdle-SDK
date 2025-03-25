@@ -3,12 +3,15 @@
 #include <numeric>
 #include <unistd.h>
 #include <string>
+#include <array>
+#include <vector>
 
 #include "ui.hpp"
 #include "configHelpers.hpp"
 
-#include "uploader.hpp"
 #include "mabFileParser.hpp"
+#include "candle_bootloader.hpp"
+#include "mab_crc.hpp"
 
 using namespace mab;
 
@@ -843,22 +846,250 @@ void CandleTool::updateCandle(const std::string& mabFilePath, bool noReset)
     MabFileParser         mabFile(mabFilePath, MabFileParser::TargetDevice_E::CANDLE);
     mab::FirmwareUploader firmwareUploader(m_candle, mabFile);
     firmwareUploader.flashDevice(noReset);
+
+void CandleTool::pdsSetupInfo(u16 id)
+{
+    mab::Pds pds(id, *candle);
+
+    mab::Pds::modulesSet_S pdsModules = pds.getModules();
+
+    u32                       shutdownTime  = 0;
+    u32                       batteryLvl1   = 0;
+    u32                       batteryLvl2   = 0;
+    u32                       pdsBusVoltage = 0;
+    mab::controlBoardStatus_S pdsStatus     = {0};
+
+    pds.getStatus(pdsStatus);
+    pds.getBusVoltage(pdsBusVoltage);
+    pds.getShutdownTime(shutdownTime);
+    pds.getBatteryVoltageLevels(batteryLvl1, batteryLvl2);
+
+    log.info("Submodules:");
+    log.info("\t1 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket1));
+    log.info("\t2 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket2));
+    log.info("\t3 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket3));
+    log.info("\t4 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket4));
+    log.info("\t5 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket5));
+    log.info("\t6 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket6));
+
+    log.info("PDS Status:");
+
+    log.info("\t* ENABLED           [ %s ]", pdsStatus.ENABLED ? "YES" : "NO");
+    log.info("\t* OVER_TEMPERATURE  [ %s ]", pdsStatus.OVER_TEMPERATURE ? "YES" : "NO");
+    log.info("\t* OVER_CURRENT      [ %s ]", pdsStatus.OVER_CURRENT ? "YES" : "NO");
+    log.info("\t* STO_1             [ %s ]", pdsStatus.STO_1 ? "YES" : "NO");
+    log.info("\t* STO_2             [ %s ]", pdsStatus.STO_2 ? "YES" : "NO");
+    log.info("\t* FDCAN_TIMEOUT     [ %s ]", pdsStatus.FDCAN_TIMEOUT ? "YES" : "NO");
+    log.info("\t* SUBMODULE_1_ERROR [ %s ]", pdsStatus.SUBMODULE_1_ERROR ? "YES" : "NO");
+    log.info("\t* SUBMODULE_2_ERROR [ %s ]", pdsStatus.SUBMODULE_2_ERROR ? "YES" : "NO");
+    log.info("\t* SUBMODULE_3_ERROR [ %s ]", pdsStatus.SUBMODULE_3_ERROR ? "YES" : "NO");
+    log.info("\t* SUBMODULE_4_ERROR [ %s ]", pdsStatus.SUBMODULE_4_ERROR ? "YES" : "NO");
+    log.info("\t* SUBMODULE_5_ERROR [ %s ]", pdsStatus.SUBMODULE_5_ERROR ? "YES" : "NO");
+    log.info("\t* SUBMODULE_6_ERROR [ %s ]", pdsStatus.SUBMODULE_6_ERROR ? "YES" : "NO");
+    log.info("\t* CHARGER_DETECTED  [ %s ]", pdsStatus.CHARGER_DETECTED ? "YES" : "NO");
+
+    log.info("---------------------------------");
+
+    log.info("Config data:");
+    log.info("shutdown time: [ %u mS ] ", shutdownTime);
+    log.info("Battery level 1: %0.2f", batteryLvl1 / 1000.0f);
+    log.info("Battery level 2: %0.2f", batteryLvl2 / 1000.0f);
+
+    log.info("---------------------------------");
+
+    log.info("Metrology data:");
+    log.info("Bus voltage: %0.2f", pdsBusVoltage / 1000.0f);
+}
+
+void CandleTool::pdsSetupConfig(u16 id, const std::string& cfgPath)
+{
+    using err_E = mab::PdsModule::error_E;
+
+    mab::Pds pds(id, *candle);
+
+    mINI::INIFile      pdsCfgFile(cfgPath);
+    mINI::INIStructure pdsCfg;
+    pdsCfgFile.read(pdsCfg);
+
+    u32 shutdownTime = atoi(pdsCfg["Control board"]["shutdown time"].c_str());
+    u32 battLvl1     = atoi(pdsCfg["Control board"]["battery level 1"].c_str());
+    u32 battLvl2     = atoi(pdsCfg["Control board"]["battery level 2"].c_str());
+
+    err_E result = pds.setShutdownTime(shutdownTime);
+    if (result != err_E::OK)
+        log.error("PDS Config error [ %u ] [ %s:%u ]", result, __FILE__, __LINE__);
+
+    result = pds.setBatteryVoltageLevels(battLvl1, battLvl2);
+    if (result != err_E::OK)
+        log.error("PDS Config error [ %u ] [ %s:%u ]", result, __FILE__, __LINE__);
+}
+
+// Fill Power stage Ini structure
+static void fillPsIni(PowerStage& ps, mINI::INIStructure& rIni, std::string sectionName)
+{
+    socketIndex_E brSocket         = socketIndex_E::UNASSIGNED;
+    u32           brTriggerVoltage = 0;
+    u32           ocdLevel         = 0;
+    u32           ocdDelay         = 0;
+    f32           temperatureLimit = 0.0f;
+
+    ps.getBindBrakeResistor(brSocket);
+    ps.getBrakeResistorTriggerVoltage(brTriggerVoltage);
+    ps.getOcdLevel(ocdLevel);
+    ps.getOcdDelay(ocdDelay);
+    ps.getTemperatureLimit(temperatureLimit);
+
+    rIni[sectionName]["type"]      = PdsModule::moduleType2String(moduleType_E::POWER_STAGE);
+    rIni[sectionName]["BR Socket"] = floatToString((uint8_t)brSocket);
+    rIni[sectionName]["BR Trigger voltage"] = floatToString(brTriggerVoltage);
+    rIni[sectionName]["OCD level"]          = floatToString(ocdLevel);
+    rIni[sectionName]["OCD delay"]          = floatToString(ocdDelay);
+}
+
+// Fill Brake resistor Ini structure
+static void fillBrIni(BrakeResistor& br, mINI::INIStructure& rIni, std::string sectionName)
+{
+    f32 temperatureLimit = 0.0f;
+
+    br.getTemperatureLimit(temperatureLimit);
+
+    rIni[sectionName]["type"] = PdsModule::moduleType2String(moduleType_E::BRAKE_RESISTOR);
+}
+
+// Fill Brake resistor Ini structure
+static void fillIcIni(IsolatedConv& ic, mINI::INIStructure& rIni, std::string sectionName)
+{
+    f32 temperatureLimit = 0.0f;
+
+    ic.getTemperatureLimit(temperatureLimit);
+
+    rIni[sectionName]["type"] = PdsModule::moduleType2String(moduleType_E::ISOLATED_CONVERTER);
+}
+
+static void fullModuleIni(Pds&                pds,
+                          moduleType_E        moduleType,
+                          mINI::INIStructure& rIni,
+                          socketIndex_E       socketIndex)
+{
+    std::string sectionName = "Submodule " + std::to_string((int)socketIndex);
+
+    switch (moduleType)
+    {
+        case moduleType_E::UNDEFINED:
+            rIni[sectionName]["type"] = "NO MODULE";
+            break;
+
+        case moduleType_E::CONTROL_BOARD:
+            break;
+
+        case moduleType_E::BRAKE_RESISTOR:
+        {
+            auto br = pds.attachBrakeResistor(socketIndex);
+            fillBrIni(*br, rIni, sectionName);
+            break;
+        }
+
+        case moduleType_E::ISOLATED_CONVERTER:
+        {
+            auto ic = pds.attachIsolatedConverter(socketIndex);
+            fillIcIni(*ic, rIni, sectionName);
+            break;
+        }
+
+        case moduleType_E::POWER_STAGE:
+        {
+            auto ps = pds.attachPowerStage(socketIndex);
+            fillPsIni(*ps, rIni, sectionName);
+            break;
+        }
+
+            /* NEW MODULE TYPES HERE */
+
+        default:
+            break;
+    }
+}
+
+void CandleTool::pdsReadConfig(u16 id, const std::string& cfgPath)
+{
+    mINI::INIStructure readIni; /**< mINI structure for read data */
+    Pds                pds(id, *candle);
+    u32                shutDownTime = 0;
+    u32                batLvl1      = 0;
+    u32                batLvl2      = 0;
+    Pds::modulesSet_S  pdsModules   = pds.getModules();
+
+    std::string configName = cfgPath;
+    if (std::filesystem::path(configName).extension() == "")
+        configName += ".cfg";
+
+    pds.getShutdownTime(shutDownTime);
+    pds.getBatteryVoltageLevels(batLvl1, batLvl2);
+
+    readIni["Control board"]["CAN ID"]          = floatToString(id);
+    readIni["Control board"]["CAN BAUD"]        = "";
+    readIni["Control board"]["shutdown time"]   = floatToString(shutDownTime);
+    readIni["Control board"]["battery level 1"] = floatToString(batLvl1);
+    readIni["Control board"]["battery level 2"] = floatToString(batLvl2);
+    fullModuleIni(pds, pdsModules.moduleTypeSocket1, readIni, socketIndex_E::SOCKET_1);
+    fullModuleIni(pds, pdsModules.moduleTypeSocket2, readIni, socketIndex_E::SOCKET_2);
+    fullModuleIni(pds, pdsModules.moduleTypeSocket3, readIni, socketIndex_E::SOCKET_3);
+    fullModuleIni(pds, pdsModules.moduleTypeSocket4, readIni, socketIndex_E::SOCKET_4);
+    fullModuleIni(pds, pdsModules.moduleTypeSocket5, readIni, socketIndex_E::SOCKET_5);
+    fullModuleIni(pds, pdsModules.moduleTypeSocket6, readIni, socketIndex_E::SOCKET_6);
+
+    mINI::INIFile configFile(configName);
+    configFile.write(readIni);
+}
+
+void CandleTool::pdsStoreConfig(u16 id)
+{
+    using err_E = mab::PdsModule::error_E;
+
+    mab::Pds pds(id, *candle);
+
+    err_E result = pds.saveConfig();
+
+    if (result != err_E::OK)
+        log.error("PDS Configuration save error [ %u ] [ %s:%u ]", result, __FILE__, __LINE__);
+}
+
+void CandleTool::updateCandle(const std::string& mabFilePath)
+{
+    log.info("Performing Candle firmware update.");
+
+    MabFileParser candleFirmware(mabFilePath, MabFileParser::TargetDevice_E::CANDLE);
+
+    auto candle_bootloader = attachCandleBootloader();
+    for (size_t i = 0; i < candleFirmware.m_fwEntry.size;
+         i += CandleBootloader::PAGE_SIZE_STM32G474)
+    {
+        std::array<u8, CandleBootloader::PAGE_SIZE_STM32G474> page;
+        std::memcpy(page.data(), &candleFirmware.m_fwEntry.data[i], page.size());
+        u32 crc = crc32(page.data(), page.size());
+        if (candle_bootloader->writePage(page, crc) != candleTypes::Error_t::OK)
+        {
+            log.error("Candle flashing failed!");
+            break;
+        }
+    }
 }
 
 void CandleTool::updateMd(const std::string& mabFilePath, uint16_t canId, bool noReset)
 {
-    MabFileParser         mabFile(mabFilePath, MabFileParser::TargetDevice_E::MD);
-    mab::FirmwareUploader firmwareUploader(m_candle, mabFile, canId);
-    if (firmwareUploader.flashDevice(noReset))
-        log.success("Update complete for MD @ %d", canId);
+    MabFileParser mabFile(mabFilePath, MabFileParser::TargetDevice_E::MD);
+    // mab::FirmwareUploader firmwareUploader(*candle, mabFile, canId);
+    // if (firmwareUploader.flashDevice(noReset))
+    //     log.success("Update complete for MD @ %d", canId);
+    //TODO: implement this
 }
 
 void CandleTool::updatePds(const std::string& mabFilePath, uint16_t canId, bool noReset)
 {
-    MabFileParser         mabFile(mabFilePath, MabFileParser::TargetDevice_E::PDS);
-    mab::FirmwareUploader firmwareUploader(m_candle, mabFile, canId);
-    if (firmwareUploader.flashDevice(noReset))
-        log.success("Update complete for PDS @ %d", canId);
+    MabFileParser mabFile(mabFilePath, MabFileParser::TargetDevice_E::PDS);
+    // mab::FirmwareUploader firmwareUploader(*candle, mabFile, canId);
+    // if (firmwareUploader.flashDevice(noReset))
+    //     log.success("Update complete for PDS @ %d", canId);
 }
 
 void CandleTool::blink(u16 id)
