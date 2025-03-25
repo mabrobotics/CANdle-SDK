@@ -73,7 +73,7 @@ namespace mab
     }
 
     candleTypes::Error_t CandleBootloader::writePage(const std::array<u8, PAGE_SIZE_STM32G474> page,
-                                                     const u32 crc32)
+                                                     const u32 crc32) const
     {
         m_log.debug("Writing page...");
         constexpr size_t MAX_TRANSFER_SIZE = CANDLE_BOOTLOADER_BUFFER_SIZE - PROTOCOL_HEADER_SIZE;

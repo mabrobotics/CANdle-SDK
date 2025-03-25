@@ -9,21 +9,19 @@ set(CANDLETOOL_VERSION_MINOR 9)
 set(CANDLETOOL_VERSION_PATCH 2)
 set(CANDLETOOL_VERSION_TAG "beta")
 
-set(CANDLETOOL_VERSION_FULL "${CANDLETOOL_VERSION_MAJOR}.${CANDLETOOL_VERSION_MINOR}.${CANDLETOOL_VERSION_PATCH}-${CANDLETOOL_VERSION_TAG}") 
+set(CANDLETOOL_VERSION_FULL "${CANDLETOOL_VERSION_MAJOR}.${CANDLETOOL_VERSION_MINOR}.${CANDLETOOL_VERSION_PATCH}-${CANDLETOOL_VERSION_TAG}")
 
 add_subdirectory(3rd_party/CLI11)
 
 set(CANDLETOOL_SOURCES
 
-    src/candletool.cpp
-    src/canLoader.cpp
-    src/mab_crc.cpp
-    src/mabFileParser.cpp
-    src/main.cpp
-    src/pds_cli.cpp
-    src/ui.cpp
-    src/uploader.cpp
-    src/usbLoader.cpp
+  src/candletool.cpp
+  src/canLoader.cpp
+  src/mab_crc.cpp
+  src/mabFileParser.cpp
+  src/main.cpp
+  src/pds_cli.cpp
+  src/ui.cpp
 
 )
 
@@ -87,7 +85,7 @@ if(WIN32)
     -static-libgcc
     -static
     logger)
-    
+
 elseif(UNIX)
 
   install(TARGETS candletool
@@ -102,14 +100,14 @@ elseif(UNIX)
           DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
           PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ WORLD_WRITE
           COMPONENT _configs)
-    
+
   set(CPACK_GENERATOR "DEB")
   set(CPACK_DEBIAN_PACKAGE_MAINTAINER "MAB Robotics <contact@mabrobotics.pl>")
   set(CPACK_DEBIAN_PACKAGE_DEPENDS libusb-1.0-0)
   set(CPACK_DEBIAN_PACKAGE_VERSION)
 
   if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
-  
+
     set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "arm64")
 
   elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "armhf")
@@ -120,7 +118,7 @@ elseif(UNIX)
   message(CPACK_DEBIAN_PACKAGE_ARCHITECTURE = ${CPACK_DEBIAN_PACKAGE_ARCHITECTURE})
 
   set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/template_package/postinst")
- 
+
 
   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/udev/rules.d/99-candletool.rules
           DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/")
