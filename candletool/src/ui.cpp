@@ -132,65 +132,68 @@ namespace ui
         }
     }
 
-    void printDriveInfoExtended(mab::Md80& drive, bool printAll)
+    // TODO: this is a placeholder, iterable structure required
+    mab::MDRegisters_S registers;
+    void               printDriveInfoExtended(mab::MD& drive, bool printAll)
     {
-        auto getStringBuildDate = [](uint32_t date)
-        {
-            return std::to_string(date % 100) + '.' + std::to_string((date / 100) % 100) + '.' +
-                   "20" + std::to_string(date / 10000);
-        };
+        //    auto getStringBuildDate = [](uint32_t date)
+        //    {
+        //        return std::to_string(date % 100) + '.' + std::to_string((date / 100) % 100) + '.'
+        //        +
+        //               "20" + std::to_string(date / 10000);
+        //    };
 
-        auto getLegacyHardwareVersion = [](uint8_t version)
-        {
-            switch (version)
-            {
-                case 0:
-                    return "HV13";
-                case 1:
-                    return "HW11";
-                case 2:
-                    return "HW20";
-                case 3:
-                    return "HW21";
-                case 4:
-                    return "HW30";
-                default:
-                    return "UNKNOWN";
-            }
-        };
+        //    auto getLegacyHardwareVersion = [](uint8_t version)
+        //    {
+        //        switch (version)
+        //        {
+        //            case 0:
+        //                return "HV13";
+        //            case 1:
+        //                return "HW11";
+        //            case 2:
+        //                return "HW20";
+        //            case 3:
+        //                return "HW21";
+        //            case 4:
+        //                return "HW30";
+        //            default:
+        //                return "UNKNOWN";
+        //        }
+        //    };
 
-        auto getHardwareType = [](mab::hardwareType_S hwType_)
-        {
-            std::string deviceType = "UNKNOWN";
-            switch (hwType_.deviceType)
-            {
-                case mab::deviceType_E::CANDLE:
-                    deviceType = "CANDLE";
-                    break;
-                case mab::deviceType_E::CANDLE_HAT:
-                    deviceType = "CANDLE_HAT";
-                    break;
-                case mab::deviceType_E::MD20:
-                    deviceType = "MD20";
-                    break;
-                case mab::deviceType_E::MD80:
-                    deviceType = "MD80";
-                    break;
-                case mab::deviceType_E::MD80HV:
-                    deviceType = "MD80HV";
-                    break;
-                case mab::deviceType_E::PDS:
-                    deviceType = "PDS";
-                    break;
-                default:
-                    break;
-            }
-            deviceType += " v";
-            deviceType += std::to_string(hwType_.deviceRevision / 10);
-            deviceType += ".";
-            deviceType += std::to_string(hwType_.deviceRevision % 10);
-            return deviceType;
-        };
+        //    auto getHardwareType = [](mab::hardwareType_S hwType_)
+        //    {
+        //        std::string deviceType = "UNKNOWN";
+        //        switch (hwType_.deviceType)
+        //        {
+        //            case mab::deviceType_E::CANDLE:
+        //                deviceType = "CANDLE";
+        //                break;
+        //            case mab::deviceType_E::CANDLE_HAT:
+        //                deviceType = "CANDLE_HAT";
+        //                break;
+        //            case mab::deviceType_E::MD20:
+        //                deviceType = "MD20";
+        //                break;
+        //            case mab::deviceType_E::MD80:
+        //                deviceType = "MD80";
+        //                break;
+        //            case mab::deviceType_E::MD80HV:
+        //                deviceType = "MD80HV";
+        //                break;
+        //            case mab::deviceType_E::PDS:
+        //                deviceType = "PDS";
+        //                break;
+        //            default:
+        //                break;
+        //        }
+        //        deviceType += " v";
+        //        deviceType += std::to_string(hwType_.deviceRevision / 10);
+        //        deviceType += ".";
+        //        deviceType += std::to_string(hwType_.deviceRevision % 10);
+        //        return deviceType;
+        //    };
 
         auto getListElement = [](std::vector<std::string> vec, uint32_t idx)
         {
@@ -201,53 +204,50 @@ namespace ui
         };
 
         vout << std::fixed;
-        vout << "Drive " << drive.getId() << ":" << std::endl;
-        vout << "- actuator name: " << drive.getReadReg().RW.motorName << std::endl;
-        vout << "- CAN speed: " << drive.getReadReg().RW.canBaudrate / 1000000 << " M" << std::endl;
+        vout << "Drive " << drive.m_canId << ":" << std::endl;
+        vout << "- actuator name: " << registers.motorName.value << std::endl;
+        vout << "- CAN speed: " << registers.canBaudrate.value / 1000000 << " M" << std::endl;
         vout << "- CAN termination resistor: "
-             << ((drive.getReadReg().RW.canTermination == true) ? "enabled" : "disabled")
+             << ((registers.canTermination.value == true) ? "enabled" : "disabled") << std::endl;
+        vout << "- gear ratio: " << std::setprecision(5) << registers.motorGearRatio.value
              << std::endl;
-        vout << "- gear ratio: " << std::setprecision(5) << drive.getReadReg().RW.gearRatio
+        //    mab::version_ut firmwareVersion = {{0, 0, 0, 0}};
+        //    firmwareVersion.i               = registers.firmwareVersion.value;
+        vout << "- firmware version: v" << registers.firmwareVersion.value << std::endl;
+        vout << "- hardware version(legacy): " << registers.legacyHardwareVersion.value
              << std::endl;
-        mab::version_ut firmwareVersion = {{0, 0, 0, 0}};
-        firmwareVersion.i               = drive.getReadReg().RO.firmwareVersion;
-        vout << "- firmware version: v" << mab::getVersionString(firmwareVersion) << std::endl;
-        vout << "- hardware version(legacy): "
-             << getLegacyHardwareVersion(drive.getReadReg().RO.legacyHardwareVersion) << std::endl;
-        vout << "- hardware type: " << getHardwareType(drive.getReadReg().RO.hardwareType)
+        vout << "- hardware type: " << (u8)registers.hardwareType.value.deviceType << std::endl;
+        vout << "- build date: " << registers.buildDate.value << std::endl;
+        vout << "- commit hash: " << registers.commitHash.value[0]
+             << std::endl;  // TODO: printable format
+        vout << "- max current: " << std::setprecision(1) << registers.motorIMax.value << " A"
              << std::endl;
-        vout << "- build date: " << getStringBuildDate(drive.getReadReg().RO.buildDate)
-             << std::endl;
-        vout << "- commit hash: " << drive.getReadReg().RO.commitHash << std::endl;
-        vout << "- max current: " << std::setprecision(1) << drive.getReadReg().RW.iMax << " A"
-             << std::endl;
-        vout << "- bridge type: " << std::to_string(drive.getReadReg().RO.bridgeType) << std::endl;
-        vout << "- shunt resistance: " << std::setprecision(4)
-             << drive.getReadReg().RO.shuntResistance << " Ohm" << std::endl;
-        vout << "- pole pairs: " << std::to_string(drive.getReadReg().RW.polePairs) << std::endl;
-        vout << "- KV rating: " << std::to_string(drive.getReadReg().RW.motorKV) << " rpm/V"
-             << std::endl;
-        vout << "- motor shutdown temperature: "
-             << std::to_string(drive.getReadReg().RW.motorShutdownTemp) << " *C" << std::endl;
-        vout << "- motor calibration mode: "
-             << motorCalibrationModes[drive.getReadReg().RW.motorCalibrationMode] << std::endl;
-        vout << "- motor torque constant: " << std::setprecision(4) << drive.getReadReg().RW.motorKt
-             << " Nm/A" << std::endl;
-        vout << "- d-axis resistance: " << std::setprecision(3) << drive.getReadReg().RO.resistance
+        vout << "- bridge type: " << std::to_string(registers.bridgeType.value) << std::endl;
+        vout << "- shunt resistance: " << std::setprecision(4) << registers.shuntResistance.value
              << " Ohm" << std::endl;
-        vout << "- d-axis inductance: " << std::setprecision(6) << drive.getReadReg().RO.inductance
+        vout << "- pole pairs: " << std::to_string(registers.motorPolePairs.value) << std::endl;
+        vout << "- KV rating: " << std::to_string(registers.motorKV.value) << " rpm/V" << std::endl;
+        vout << "- motor shutdown temperature: "
+             << std::to_string(registers.motorShutdownTemp.value) << " *C" << std::endl;
+        vout << "- motor calibration mode: "
+             << motorCalibrationModes[registers.motorCalibrationMode.value] << std::endl;
+        vout << "- motor torque constant: " << std::setprecision(4) << registers.motorKt.value
+             << " Nm/A" << std::endl;
+        vout << "- d-axis resistance: " << std::setprecision(3) << registers.motorResistance.value
+             << " Ohm" << std::endl;
+        vout << "- d-axis inductance: " << std::setprecision(6) << registers.motorInductance.value
              << " H" << std::endl;
-        vout << "- torque bandwidth: " << drive.getReadReg().RW.torqueBandwidth << " Hz"
+        vout << "- torque bandwidth: " << registers.motorTorqueBandwidth.value << " Hz"
              << std::endl;
-        vout << "- CAN watchdog: " << drive.getReadReg().RW.canWatchdog << " ms" << std::endl;
-        vout << "- brake mode: " << getListElement(brakeModes, drive.getReadReg().RW.brakeMode)
+        vout << "- CAN watchdog: " << registers.canWatchdog.value << " ms" << std::endl;
+        vout << "- GPIO mode: " << getListElement(brakeModes, registers.userGpioConfiguration.value)
              << std::endl;
 
         if (printAll)
         {
-            float stddevE = drive.getReadReg().RO.calMainEncoderStdDev;
-            float minE    = drive.getReadReg().RO.calMainEncoderMinE;
-            float maxE    = drive.getReadReg().RO.calMainEncoderMaxE;
+            float stddevE = registers.calMainEncoderStdDev.value;
+            float minE    = registers.calMainEncoderMinE.value;
+            float maxE    = registers.calMainEncoderMaxE.value;
             vout << "- main encoder last check error standard deviation: "
                  << (stddevE < mainEncoderStdDevMax ? std::to_string(stddevE)
                                                     : YELLOW_(std::to_string(stddevE)))
@@ -263,30 +263,29 @@ namespace ui
         }
 
         vout << "- output encoder: "
-             << (drive.getReadReg().RW.outputEncoder
-                     ? getListElement(encoderTypes, drive.getReadReg().RW.outputEncoder)
+             << (registers.outputEncoder.value
+                     ? getListElement(encoderTypes, registers.outputEncoder.value)
                      : "no")
              << std::endl;
 
-        if (drive.getReadReg().RW.outputEncoder != 0)
+        if (registers.outputEncoder.value != 0)
         {
             vout << "   - output encoder mode: "
-                 << getListElement(encoderModes, drive.getReadReg().RW.outputEncoderMode)
-                 << std::endl;
+                 << getListElement(encoderModes, registers.outputEncoderMode.value) << std::endl;
             vout << "   - output encoder calibration mode: "
                  << getListElement(encoderCalibrationModes,
-                                   drive.getReadReg().RW.outputEncoderCalibrationMode)
+                                   registers.outputEncoderCalibrationMode.value)
                  << std::endl;
-            vout << "   - output encoder position: " << drive.getReadReg().RO.outputEncoderPosition
+            vout << "   - output encoder position: " << registers.outputEncoderPosition.value
                  << " rad" << std::endl;
-            vout << "   - output encoder velocity: " << drive.getReadReg().RO.outputEncoderVelocity
+            vout << "   - output encoder velocity: " << registers.outputEncoderVelocity.value
                  << " rad/s" << std::endl;
 
             if (printAll)
             {
-                float stddevE = drive.getReadReg().RO.calOutputEncoderStdDev;
-                float minE    = drive.getReadReg().RO.calOutputEncoderMinE;
-                float maxE    = drive.getReadReg().RO.calOutputEncoderMaxE;
+                float stddevE = registers.calOutputEncoderStdDev.value;
+                float minE    = registers.calOutputEncoderMinE.value;
+                float maxE    = registers.calOutputEncoderMaxE.value;
                 vout << "   - output encoder last check error stddev: "
                      << (stddevE < outputEncoderStdDevMax ? std::to_string(stddevE)
                                                           : YELLOW_(std::to_string(stddevE)))
@@ -303,86 +302,83 @@ namespace ui
         }
 
         vout << "- homing: "
-             << (drive.getReadReg().RW.homingMode
-                     ? getListElement(homingModes, drive.getReadReg().RW.homingMode)
+             << (registers.homingMode.value
+                     ? getListElement(homingModes, registers.homingMode.value)
                      : "off")
              << std::endl;
 
-        if (drive.getReadReg().RW.homingMode != 0)
+        if (registers.homingMode.value != 0)
         {
             vout << "   - homing max travel: " << std::setprecision(2)
-                 << drive.getReadReg().RW.homingMaxTravel << " rad" << std::endl;
+                 << registers.homingMaxTravel.value << " rad" << std::endl;
             vout << "   - homing max torque: " << std::setprecision(2)
-                 << drive.getReadReg().RW.homingTorque << " Nm" << std::endl;
+                 << registers.homingTorque.value << " Nm" << std::endl;
             vout << "   - homing max velocity: " << std::setprecision(2)
-                 << drive.getReadReg().RW.homingVelocity << " rad/s" << std::endl;
+                 << registers.homingVelocity.value << " rad/s" << std::endl;
         }
         vout << "- motion limits: " << std::endl;
-        vout << "   - max torque: " << std::setprecision(2) << drive.getReadReg().RW.maxTorque
-             << " Nm" << std::endl;
-        vout << "   - max acceleration: " << std::setprecision(2)
-             << drive.getReadReg().RW.maxAcceleration << " rad/s^2" << std::endl;
-        vout << "   - max deceleration: " << std::setprecision(2)
-             << drive.getReadReg().RW.maxDeceleration << " rad/s^2" << std::endl;
-        vout << "   - max velocity: " << std::setprecision(2) << drive.getReadReg().RW.maxVelocity
+        vout << "   - max torque: " << std::setprecision(2) << registers.maxTorque.value << " Nm"
+             << std::endl;
+        vout << "   - max acceleration: " << std::setprecision(2) << registers.maxAcceleration.value
+             << " rad/s^2" << std::endl;
+        vout << "   - max deceleration: " << std::setprecision(2) << registers.maxDeceleration.value
+             << " rad/s^2" << std::endl;
+        vout << "   - max velocity: " << std::setprecision(2) << registers.maxVelocity.value
              << " rad/s" << std::endl;
         vout << "   - position limit min: " << std::setprecision(2)
-             << drive.getReadReg().RW.positionLimitMin << " rad" << std::endl;
+             << registers.positionLimitMin.value << " rad" << std::endl;
         vout << "   - position limit max: " << std::setprecision(2)
-             << drive.getReadReg().RW.positionLimitMax << " rad" << std::endl;
+             << registers.positionLimitMax.value << " rad" << std::endl;
 
-        vout << "- position: " << std::setprecision(2) << drive.getPosition() << " rad"
+        vout << "- position: " << std::setprecision(2) << drive.getPosition().first << " rad"
              << std::endl;
-        vout << "- velocity: " << std::setprecision(2) << drive.getVelocity() << " rad/s"
+        vout << "- velocity: " << std::setprecision(2) << drive.getVelocity().first << " rad/s"
              << std::endl;
-        vout << "- torque: " << std::setprecision(2) << drive.getTorque() << " Nm" << std::endl;
+        vout << "- torque: " << std::setprecision(2) << drive.getTorque().first << " Nm"
+             << std::endl;
         vout << "- MOSFET temperature: " << std::setprecision(2)
-             << drive.getReadReg().RO.mosfetTemperature << " *C" << std::endl;
-        vout << "- motor temperature: " << std::setprecision(2)
-             << drive.getReadReg().RO.motorTemperature << " *C" << std::endl;
+             << registers.mosfetTemperature.value << " *C" << std::endl;
+        vout << "- motor temperature: " << std::setprecision(2) << registers.motorTemperature.value
+             << " *C" << std::endl;
         vout << std::endl;
 
         vout << "***** ERRORS *****" << std::endl;
         printAllErrors(drive);
     }
 
-    void printAllErrors(mab::Md80& drive)
+    void printAllErrors(mab::MD& drive)
     {
         vout << "- main encoder error: 	0x" << std::hex
-             << (unsigned short)drive.getReadReg().RO.mainEncoderErrors << std::dec;
-        printErrorDetails(drive.getReadReg().RO.mainEncoderErrors, encoderErrorList);
+             << (unsigned short)registers.mainEncoderErrors.value << std::dec;
+        printErrorDetails(registers.mainEncoderErrors.value, encoderErrorList);
 
-        if (drive.getReadReg().RW.outputEncoder != 0)
+        if (registers.outputEncoder.value != 0)
         {
             vout << "- output encoder status: 0x" << std::hex
-                 << (unsigned short)drive.getReadReg().RO.outputEncoderErrors << std::dec;
-            printErrorDetails(drive.getReadReg().RO.outputEncoderErrors, encoderErrorList);
+                 << (unsigned short)registers.outputEncoderErrors.value << std::dec;
+            printErrorDetails(registers.outputEncoderErrors.value, encoderErrorList);
         }
 
         vout << "- calibration status: 	0x" << std::hex
-             << (unsigned short)drive.getReadReg().RO.calibrationErrors << std::dec;
-        printErrorDetails(drive.getReadReg().RO.calibrationErrors, calibrationErrorList);
-        vout << "- bridge status: 	0x" << std::hex
-             << (unsigned short)drive.getReadReg().RO.bridgeErrors << std::dec;
-        printErrorDetails(drive.getReadReg().RO.bridgeErrors, bridgeErrorList);
+             << (unsigned short)registers.calibrationErrors.value << std::dec;
+        printErrorDetails(registers.calibrationErrors.value, calibrationErrorList);
+        vout << "- bridge status: 	0x" << std::hex << (unsigned short)registers.bridgeErrors.value
+             << std::dec;
+        printErrorDetails(registers.bridgeErrors.value, bridgeErrorList);
         vout << "- hardware status: 	0x" << std::hex
-             << (unsigned short)drive.getReadReg().RO.hardwareErrors << std::dec;
-        printErrorDetails(drive.getReadReg().RO.hardwareErrors, hardwareErrorList);
+             << (unsigned short)registers.hardwareErrors.value << std::dec;
+        printErrorDetails(registers.hardwareErrors.value, hardwareErrorList);
         vout << "- communication status: 0x" << std::hex
-             << (unsigned short)drive.getReadReg().RO.communicationErrors << std::dec;
-        printErrorDetails(drive.getReadReg().RO.communicationErrors, communicationErrorList);
-        vout << "- motion status: 	0x" << std::hex
-             << (unsigned short)drive.getReadReg().RO.motionErrors << std::dec;
-        printErrorDetails(drive.getReadReg().RO.motionErrors, motionErrorList);
-        vout << "- misc status: 	0x" << std::hex
-             << (unsigned short)drive.getReadReg().RO.miscStatus << std::dec;
-        printErrorDetails(drive.getReadReg().RO.miscStatus, miscErrorList);
+             << (unsigned short)registers.communicationErrors.value << std::dec;
+        printErrorDetails(registers.communicationErrors.value, communicationErrorList);
+        vout << "- motion status: 	0x" << std::hex << (unsigned short)registers.motionErrors.value
+             << std::dec;
 
-        if (drive.getReadReg().RW.homingMode != 0)
+        if (registers.homingMode.value != 0)
         {
             vout << "- homing status: 	0x" << std::hex
-                 << (unsigned short)drive.getReadReg().RO.homingErrors << std::dec;
-            printErrorDetails(drive.getReadReg().RO.homingErrors, homingErrorList);
+                 << (unsigned short)registers.homingErrors.value << std::dec;
+            printErrorDetails(registers.homingErrors.value, homingErrorList);
         }
     }
 

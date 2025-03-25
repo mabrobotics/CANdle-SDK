@@ -2,6 +2,7 @@
 #include "mab_crc.hpp"
 
 #include <cstring>
+#include <string>
 #include <algorithm>
 
 CanLoader::CanLoader(const mab::CandleV2& candle, MabFileParser& mabFile, u32 canId)
@@ -93,8 +94,10 @@ bool CanLoader::sendSetupCmd()
     {
         auto result =
             transferCanFrame(std::vector<u8>(txBuff, txBuff + sizeof(u8) + 2 * (sizeof(u32))), 100);
-        if (std::find(result.first.begin(), result.first.end(), STANDARD_RESPONSE) !=
-            result.first.end())
+        if (std::search(result.first.begin(),
+                        result.first.end(),
+                        STANDARD_RESPONSE.begin(),
+                        STANDARD_RESPONSE.end()) != result.first.end())
             return true;
     }
     return false;
@@ -120,8 +123,10 @@ bool CanLoader::sendEraseCmd()
         m_log.debug("ERASE @ %x, %d bytes.", *(u32*)&txBuff[1], *(u32*)&txBuff[5]);
         auto result =
             transferCanFrame(std::vector<u8>(txBuff, txBuff + sizeof(u8) + 2 * (sizeof(u32))), 250);
-        if (std::find(result.first.begin(), result.first.end(), STANDARD_RESPONSE) ==
-            result.first.end())
+        if (std::search(result.first.begin(),
+                        result.first.end(),
+                        STANDARD_RESPONSE.begin(),
+                        STANDARD_RESPONSE.end()) == result.first.end())
             return false;
         *(u32*)&txBuff[1] += bytesToErase;
         remainingBytesToErase -= bytesToErase;
@@ -145,8 +150,10 @@ bool CanLoader::sendProgTransferStartCmd()
         std::vector<u8>(txBuff, txBuff + 2 * sizeof(u8) + (sizeof(m_mabFile.m_fwEntry.aes_iv))),
         100);
 
-    if (std::find(result.first.begin(), result.first.end(), STANDARD_RESPONSE) !=
-        result.first.end())
+    if (std::search(result.first.begin(),
+                    result.first.end(),
+                    STANDARD_RESPONSE.begin(),
+                    STANDARD_RESPONSE.end()) != result.first.end())
         return true;
     m_log.error("Sending prog start command FAILED!");
     return false;
@@ -158,8 +165,10 @@ bool CanLoader::sendPage(u8* data)
     {
         auto result = transferCanFrame(
             std::vector<u8>(&data[i * M_CAN_CHUNK_SIZE], &data[(i + 1) * M_CAN_CHUNK_SIZE]), 100);
-        if (std::find(result.first.begin(), result.first.end(), STANDARD_RESPONSE) !=
-            result.first.end())
+        if (std::search(result.first.begin(),
+                        result.first.end(),
+                        STANDARD_RESPONSE.begin(),
+                        STANDARD_RESPONSE.end()) != result.first.end())
             continue;
         return false;
     }
@@ -173,8 +182,10 @@ bool CanLoader::sendWriteCmd(u8* data)
     tx[0]         = (u8)CMD_WRITE;
     *(u32*)&tx[1] = mab::crc32(data, M_PAGE_SIZE);
     auto result   = transferCanFrame(std::vector<u8>(tx, tx + sizeof(u8) + sizeof(u32)), 200);
-    if (std::find(result.first.begin(), result.first.end(), STANDARD_RESPONSE) !=
-        result.first.end())
+    if (std::search(result.first.begin(),
+                    result.first.end(),
+                    STANDARD_RESPONSE.begin(),
+                    STANDARD_RESPONSE.end()) != result.first.end())
         return true;
     return false;
 }
@@ -186,8 +197,10 @@ bool CanLoader::sendBootCmd()
     tx[0]         = (u8)CMD_BOOT;
     *(u32*)&tx[1] = m_mabFile.m_fwEntry.bootAddress;
     auto result   = transferCanFrame(std::vector<u8>(tx, tx + 2 * sizeof(u8) + sizeof(u32)), 200);
-    if (std::find(result.first.begin(), result.first.end(), STANDARD_RESPONSE) !=
-        result.first.end())
+    if (std::search(result.first.begin(),
+                    result.first.end(),
+                    STANDARD_RESPONSE.begin(),
+                    STANDARD_RESPONSE.end()) != result.first.end())
         return true;
     return false;
 }
@@ -205,8 +218,10 @@ bool CanLoader::sendMetaCmd()
     // Again this is workaround for CANdle firmware limitation allowing only for 255ms timout.
     // Checksum validation & config saving takes ~350ms, thus this hack is required.
     result = transferCanFrame(std::vector<u8>({}), 250);
-    if (std::find(result.first.begin(), result.first.end(), STANDARD_RESPONSE) !=
-        result.first.end())
+    if (std::search(result.first.begin(),
+                    result.first.end(),
+                    STANDARD_RESPONSE.begin(),
+                    STANDARD_RESPONSE.end()) != result.first.end())
         return true;
     return false;
 }
