@@ -1,9 +1,7 @@
 #pragma once
 
 #include <string>
-#include "bus.hpp"
-#include "candle.hpp"
-#include "mab_types.hpp"
+#include "candle_v2.hpp"
 #include "mini/ini.h"
 #include "logger.hpp"
 
@@ -64,7 +62,7 @@ class CandleTool
      *
      * @param firmwareFile path to firmware file (.mab)
      */
-    void updateCandle(const std::string& mabFilePath, bool noReset = false);
+    void updateCandle(const std::string& mabFilePath);
 
     /**
      * @brief Update firmware on Motor Driver
@@ -83,8 +81,8 @@ class CandleTool
     void updatePds(const std::string& mabFilePath, uint16_t canId, bool noReset = false);
 
   private:
-    Logger       log;
-    mab::Candle& m_candle;
+    Logger                         log;
+    std::unique_ptr<mab::CandleV2> m_candle;
 
     std::string           validateAndGetFinalConfigPath(const std::string& cfgPath);
     mab::CANdleBaudrate_E checkSpeedForId(u16 id);
