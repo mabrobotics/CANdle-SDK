@@ -255,7 +255,7 @@ int main(int argc, char** argv)
 
         if (candleUpdate->parsed())
         {
-            candleTool.updateCandle(cmd.firmwareFileName, cmd.noReset);
+            candleTool.updateCandle(cmd.firmwareFileName);
             return EXIT_SUCCESS;
         }
 

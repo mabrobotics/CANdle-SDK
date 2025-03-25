@@ -1,7 +1,6 @@
 #pragma once
 
-#include "bus.hpp"
-#include "candle.hpp"
+#include "candle_v2.hpp"
 #include "mini/ini.h"
 #include "logger.hpp"
 struct UserCommand
@@ -65,7 +64,7 @@ class CandleTool
      *
      * @param firmwareFile path to firmware file (.mab)
      */
-    void updateCandle(const std::string& mabFilePath, bool noReset = false);
+    void updateCandle(const std::string& mabFilePath);
 
     /**
      * @brief Update firmware on Motor Driver
@@ -84,8 +83,8 @@ class CandleTool
     void updatePds(const std::string& mabFilePath, uint16_t canId, bool noReset = false);
 
   private:
-    Logger                       log;
-    std::unique_ptr<mab::Candle> candle;
+    Logger                         log;
+    std::unique_ptr<mab::CandleV2> candle;
 
     std::string busString;
 
@@ -101,15 +100,6 @@ class CandleTool
                   std::string         category,
                   std::string         field,
                   T&                  value);
-
-    template <typename T>
-    bool readRegisterToString(u16 id, mab::Md80Reg_E regId, std::string& str)
-    {
-        T    value  = 0;
-        bool status = candle->readMd80Register(id, regId, value);
-        str         = std::to_string(value);
-        return status;
-    }
 
     bool hasError(u16 id);
     bool tryAddMD80(u16 id);

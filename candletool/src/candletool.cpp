@@ -3,12 +3,15 @@
 #include <numeric>
 #include <unistd.h>
 #include <string>
+#include <array>
+#include <vector>
 
 #include "ui.hpp"
 #include "configHelpers.hpp"
 
-#include "uploader.hpp"
 #include "mabFileParser.hpp"
+#include "candle_bootloader.hpp"
+#include "mab_crc.hpp"
 
 #include "pds.hpp"
 
@@ -1101,28 +1104,43 @@ void CandleTool::pdsStoreConfig(u16 id)
         log.error("PDS Configuration save error [ %u ] [ %s:%u ]", result, __FILE__, __LINE__);
 }
 
-void CandleTool::updateCandle(const std::string& mabFilePath, bool noReset)
+void CandleTool::updateCandle(const std::string& mabFilePath)
 {
     log.info("Performing Candle firmware update.");
-    MabFileParser         mabFile(mabFilePath, MabFileParser::TargetDevice_E::CANDLE);
-    mab::FirmwareUploader firmwareUploader(*candle, mabFile);
-    firmwareUploader.flashDevice(noReset);
+
+    MabFileParser candleFirmware(mabFilePath, MabFileParser::TargetDevice_E::CANDLE);
+
+    auto candle_bootloader = attachCandleBootloader();
+    for (size_t i = 0; i < candleFirmware.m_fwEntry.size;
+         i += CandleBootloader::PAGE_SIZE_STM32G474)
+    {
+        std::array<u8, CandleBootloader::PAGE_SIZE_STM32G474> page;
+        std::memcpy(page.data(), &candleFirmware.m_fwEntry.data[i], page.size());
+        u32 crc = crc32(page.data(), page.size());
+        if (candle_bootloader->writePage(page, crc) != candleTypes::Error_t::OK)
+        {
+            log.error("Candle flashing failed!");
+            break;
+        }
+    }
+    // mab::FirmwareUploader firmwareUploader(*candle, mabFile);
+    // firmwareUploader.flashDevice(noReset);
 }
 
 void CandleTool::updateMd(const std::string& mabFilePath, uint16_t canId, bool noReset)
 {
-    MabFileParser         mabFile(mabFilePath, MabFileParser::TargetDevice_E::MD);
-    mab::FirmwareUploader firmwareUploader(*candle, mabFile, canId);
-    if (firmwareUploader.flashDevice(noReset))
-        log.success("Update complete for MD @ %d", canId);
+    MabFileParser mabFile(mabFilePath, MabFileParser::TargetDevice_E::MD);
+    // mab::FirmwareUploader firmwareUploader(*candle, mabFile, canId);
+    // if (firmwareUploader.flashDevice(noReset))
+    //     log.success("Update complete for MD @ %d", canId);
 }
 
 void CandleTool::updatePds(const std::string& mabFilePath, uint16_t canId, bool noReset)
 {
-    MabFileParser         mabFile(mabFilePath, MabFileParser::TargetDevice_E::PDS);
-    mab::FirmwareUploader firmwareUploader(*candle, mabFile, canId);
-    if (firmwareUploader.flashDevice(noReset))
-        log.success("Update complete for PDS @ %d", canId);
+    MabFileParser mabFile(mabFilePath, MabFileParser::TargetDevice_E::PDS);
+    // mab::FirmwareUploader firmwareUploader(*candle, mabFile, canId);
+    // if (firmwareUploader.flashDevice(noReset))
+    //     log.success("Update complete for PDS @ %d", canId);
 }
 
 void CandleTool::blink(u16 id)

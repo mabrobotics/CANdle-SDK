@@ -12,8 +12,6 @@ set(CANDLETOOL_SOURCES
   src/main.cpp
   src/pds_cli.cpp
   src/ui.cpp
-  src/uploader.cpp
-  src/usbLoader.cpp
 
 )
 # enable_testing()

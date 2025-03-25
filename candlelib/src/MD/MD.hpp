@@ -276,8 +276,7 @@ namespace mab
             // Add serialized register data to be read [LSB addr, MSB addr, payload-bytes...]
             auto payload = serializeMDRegisters(regs);
             frame.insert(frame.end(), payload.begin(), payload.end());
-            auto readRegResult =
-                transferCanFrame(frame, frame.size(), m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
+            auto readRegResult = transferCanFrame(frame, frame.size());
             // TODO: for some reason MD sends first byte as 0x0, investigate
             //  if (readRegResult.first.at(0) == 0x41)
             //  {
@@ -326,8 +325,7 @@ namespace mab
             frame.push_back((u8)0x0);
             auto payload = serializeMDRegisters(regs);
             frame.insert(frame.end(), payload.begin(), payload.end());
-            auto readRegResult = transferCanFrame(
-                frame, DEFAULT_RESPONSE_SIZE, m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
+            auto readRegResult = transferCanFrame(frame, DEFAULT_RESPONSE_SIZE);
 
             if (readRegResult.first.at(0) == 0xA0)
             {
@@ -387,18 +385,16 @@ namespace mab
             return failure;
         }
 
-        std::pair<std::vector<u8>, mab::candleTypes::Error_t> transferCanFrame(
-            std::vector<u8> frameToSend, size_t responseSize, u32 timeoutMs = 1U) const
+        inline std::pair<std::vector<u8>, mab::candleTypes::Error_t> transferCanFrame(
+            std::vector<u8> frameToSend, size_t responseSize) const
         {
             if (m_candle == nullptr)
             {
                 m_log.error("Candle empty!");
                 return {{}, candleTypes::Error_t::DEVICE_NOT_CONNECTED};
             }
-            auto result = getCandle()->transferCANFrame(m_canId,
-                                                        frameToSend,
-                                                        DEFAULT_RESPONSE_SIZE,
-                                                        m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
+            auto result = getCandle()->transferCANFrame(
+                m_canId, frameToSend, responseSize, m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
 
             if (result.second != candleTypes::Error_t::OK)
             {
