@@ -87,9 +87,9 @@ CandleTool::CandleTool()
     try
     {
         if (device != "" && busType != mab::BusType_E::USB)
-            candle = std::make_unique<mab::Candle>(baud, printVerbose, busType, device);
+            candle = std::make_unique<mab::CandleV2>(baud, printVerbose, busType, device);
         else
-            candle = std::make_unique<mab::Candle>(baud, printVerbose, busType);
+            candle = std::make_unique<mab::CandleV2>(baud, printVerbose, busType);
     }
 
     catch (const char* e)
