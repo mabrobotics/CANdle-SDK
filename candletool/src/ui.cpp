@@ -136,30 +136,31 @@ namespace ui
 
     void printDriveInfoExtended(mab::MD& drive, const mab::MDRegisters_S& registers, bool printAll)
     {
-        auto getStringBuildDate = [](uint32_t date)
-        {
-            return std::to_string(date % 100) + '.' + std::to_string((date / 100) % 100) + '.' +
-                   "20" + std::to_string(date / 10000);
-        };
+        //    auto getStringBuildDate = [](uint32_t date)
+        //    {
+        //        return std::to_string(date % 100) + '.' + std::to_string((date / 100) % 100) + '.'
+        //        +
+        //               "20" + std::to_string(date / 10000);
+        //    };
 
-        auto getLegacyHardwareVersion = [](uint8_t version)
-        {
-            switch (version)
-            {
-                case 0:
-                    return "HV13";
-                case 1:
-                    return "HW11";
-                case 2:
-                    return "HW20";
-                case 3:
-                    return "HW21";
-                case 4:
-                    return "HW30";
-                default:
-                    return "UNKNOWN";
-            }
-        };
+        //    auto getLegacyHardwareVersion = [](uint8_t version)
+        //    {
+        //        switch (version)
+        //        {
+        //            case 0:
+        //                return "HV13";
+        //            case 1:
+        //                return "HW11";
+        //            case 2:
+        //                return "HW20";
+        //            case 3:
+        //                return "HW21";
+        //            case 4:
+        //                return "HW30";
+        //            default:
+        //                return "UNKNOWN";
+        //        }
+        //    };
 
         //    auto getHardwareType = [](mab::hardwareType_S hwType_)
         //    {
@@ -215,7 +216,8 @@ namespace ui
         vout << "- firmware version: v" << (int)firmwareVersion.s.major << "."
              << (int)firmwareVersion.s.minor << "." << (int)firmwareVersion.s.revision << "."
              << firmwareVersion.s.tag << std::endl;
-        vout << "- hardware version(legacy): " << "Not implemented yet" << std::endl;
+        vout << "- hardware version(legacy): "
+             << "Not implemented yet" << std::endl;
         vout << "- hardware type: "
              << getLegacyHardwareVersion(registers.legacyHardwareVersion.value) << std::endl;
         vout << "- build date: " << getStringBuildDate(registers.buildDate.value) << std::endl;
