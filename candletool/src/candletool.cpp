@@ -54,7 +54,10 @@ CandleTool::CandleTool(mab::Candle& candle) : m_candle(candle)
 
     if (busString == "SPI")
     {
-        bus = nullptr;  // TODO: placeholder
+        if (device != "" && busType != mab::BusType_E::USB)
+            candle = std::make_unique<mab::CandleV2>(baud, printVerbose, busType, device);
+        else
+            candle = std::make_unique<mab::CandleV2>(baud, printVerbose, busType);
     }
     else if (busString == "USB")
         bus = std::make_unique<USBv2>(CandleV2::CANDLE_VID, CandleV2::CANDLE_PID, device);
