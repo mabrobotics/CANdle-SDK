@@ -35,6 +35,7 @@ namespace mab
     {
         log.m_tag   = "Candle";
         log.m_layer = Logger::ProgramLayer_E::TOP;
+        // log.m_optionalLevel = Logger::LogLevel_E::DEBUG;
     }
 
     Candle::Candle(CANdleBaudrate_E canBaudrate, bool printVerbose, std::shared_ptr<Bus> bus)
@@ -348,6 +349,11 @@ namespace mab
 
         size_t rxLength = 0;
 
+        log.debug("Sending CAN frame ( ID [ %u ] :: [ %u ] bytes ] :: timeout [ %u ms ]",
+                  canId,
+                  msgLen,
+                  timeoutMs);
+
         frame.frameId     = mab::BusFrameId_t::BUS_FRAME_MD80_GENERIC_FRAME;
         frame.targetCanId = canId;
         frame.canMsgLen   = msgLen;
@@ -373,9 +379,10 @@ namespace mab
             }
             else
             {
-                log.error("USB Protocol error");
+                log.error("USB Protocol error :: bad response");
             }
         }
+        log.error("USB Protocol error");
         return false;
     }
 

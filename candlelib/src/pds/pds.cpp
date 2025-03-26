@@ -345,7 +345,7 @@ namespace mab
 
     PdsModule::error_E Pds::setCanId(u16 canId)
     {
-        // m_log.
+        m_log.debug("Setting new CAN ID [ %u ]", canId);
         PdsModule::error_E result = PdsModule::error_E::OK;
         result                    = writeModuleProperty(propertyId_E::CAN_ID, canId);
         if (PdsModule::error_E::OK == result)

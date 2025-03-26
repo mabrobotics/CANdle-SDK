@@ -31,9 +31,9 @@ namespace mab
 
         PdsModule() = delete;
 
-        socketIndex_E getSocketIndex();
+        socketIndex_E getSocketIndex() const;
 
-        error_E getBoardVersion(moduleVersion_E& version);
+        error_E getBoardVersion(moduleVersion_E& version) const;
 
         virtual void printModuleInfo(void) = 0;
 
@@ -109,7 +109,7 @@ namespace mab
         // TODO: Now propertyID is single for all modules so it dont has to be templated
         template <typename dataValueT>
         [[nodiscard]] PdsModule::error_E readModuleProperty(propertyId_E property,
-                                                            dataValueT&  dataValue)
+                                                            dataValueT&  dataValue) const
         {
             PdsMessage::error_E result = PdsMessage::error_E::OK;
             PropertyGetMessage  message(m_type, m_socketIndex);
@@ -151,6 +151,10 @@ namespace mab
             u8                  responseBuffer[64] = {0};
             size_t              responseLength     = 0;
 
+            m_log.debug("Attempt to write property [ %u ] with value [ 0x%08x ]",
+                        (uint8_t)property,
+                        dataValue);
+
             message.addProperty(property, dataValue);
             std::vector<u8> serializedMessage = message.serialize();
 
@@ -159,7 +163,8 @@ namespace mab
                     serializedMessage.size(),
                     reinterpret_cast<const char*>(serializedMessage.data()),
                     reinterpret_cast<char*>(responseBuffer),
-                    &responseLength)))
+                    &responseLength,
+                    1000)))
             {
                 return error_E::COMMUNICATION_ERROR;
             }
