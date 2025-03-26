@@ -25,7 +25,7 @@ constexpr const char* BR_TRIG_V_INI_KEY  = "BR TRIGGER VOLTAGE";
 
 PdsCli::PdsCli(CLI::App& rootCli, mab::Candle& candle) : m_rootCli(rootCli), m_candle(candle)
 {
-    m_log.m_tag   = "CANDLETOOL";
+    m_log.m_tag   = "PDS";
     m_log.m_layer = Logger::ProgramLayer_E::TOP;
 
     m_pdsCmd = m_rootCli.add_subcommand("pds", "Tweak the PDS device");
@@ -846,7 +846,7 @@ void PdsCli::pdsSetupInfo()
     m_log.info("---------------------------------");
 
     m_log.info("Metrology data:");
-    m_log.info("Bus voltage: %0.2f", pdsBusVoltage / 1000.0f);
+    m_log.info("Bus voltage: %0.2f V", pdsBusVoltage / 1000.0f);
 }
 
 // Fill Power stage Ini structure
@@ -864,12 +864,18 @@ static void fillPsIni(PowerStage& ps, mINI::INIStructure& rIni, std::string sect
     ps.getOcdDelay(ocdDelay);
     ps.getTemperatureLimit(temperatureLimit);
 
-    rIni[sectionName][TYPE_INI_KEY]       = PdsModule::mType2Str(moduleType_E::POWER_STAGE);
-    rIni[sectionName][TEMP_LIMIT_INI_KEY] = floatToString(temperatureLimit);
-    rIni[sectionName][OCD_LEVEL_INI_KEY]  = floatToString(ocdLevel);
-    rIni[sectionName][OCD_DELAY_INI_KEY]  = floatToString(ocdDelay);
-    rIni[sectionName][BR_SOCKET_INI_KEY]  = floatToString((uint8_t)brSocket);
-    rIni[sectionName][BR_TRIG_V_INI_KEY]  = floatToString(brTriggerVoltage);
+    rIni[sectionName][TYPE_INI_KEY] = PdsModule::mType2Str(moduleType_E::POWER_STAGE);
+    rIni[sectionName][TEMP_LIMIT_INI_KEY] =
+        floatToString(temperatureLimit) + "\t; Temperature limit [ ^C ]";
+    rIni[sectionName][OCD_LEVEL_INI_KEY] =
+        floatToString(ocdLevel, true) + "\t\t; Over-current detection level [ mA ]";
+    rIni[sectionName][OCD_DELAY_INI_KEY] =
+        floatToString(ocdDelay, true) + "\t\t; Over-current detection delay [ ms ]";
+    rIni[sectionName][BR_SOCKET_INI_KEY] =
+        floatToString((uint8_t)brSocket, true) +
+        "\t\t\t; Socket index where corresponding Brake Resistor is connected";
+    rIni[sectionName][BR_TRIG_V_INI_KEY] =
+        floatToString(brTriggerVoltage, true) + "\t; Brake resistor trigger voltage [ mV ]";
 }
 
 // Fill Brake resistor Ini structure
@@ -879,8 +885,9 @@ static void fillBrIni(BrakeResistor& br, mINI::INIStructure& rIni, std::string s
 
     br.getTemperatureLimit(temperatureLimit);
 
-    rIni[sectionName][TYPE_INI_KEY]       = PdsModule::mType2Str(moduleType_E::BRAKE_RESISTOR);
-    rIni[sectionName][TEMP_LIMIT_INI_KEY] = temperatureLimit;
+    rIni[sectionName][TYPE_INI_KEY] = PdsModule::mType2Str(moduleType_E::BRAKE_RESISTOR);
+    rIni[sectionName][TEMP_LIMIT_INI_KEY] =
+        floatToString(temperatureLimit) + "\t; Temperature limit [ ^C ]";
 }
 
 // Fill Isolated Converter Ini structure
@@ -894,9 +901,13 @@ static void fillIcIni(IsolatedConv& ic, mINI::INIStructure& rIni, std::string se
     ic.getOcdLevel(ocdLevel);
     ic.getOcdDelay(ocdDelay);
 
-    rIni[sectionName][TYPE_INI_KEY]      = PdsModule::mType2Str(moduleType_E::ISOLATED_CONVERTER);
-    rIni[sectionName][OCD_LEVEL_INI_KEY] = floatToString(ocdLevel);
-    rIni[sectionName][OCD_DELAY_INI_KEY] = floatToString(ocdDelay);
+    rIni[sectionName][TYPE_INI_KEY] = PdsModule::mType2Str(moduleType_E::ISOLATED_CONVERTER);
+    rIni[sectionName][TEMP_LIMIT_INI_KEY] =
+        floatToString(temperatureLimit) + "\t; Temperature limit [ ^C ]";
+    rIni[sectionName][OCD_LEVEL_INI_KEY] =
+        floatToString(ocdLevel, true) + "\t\t; Over-current detection level [ mA ]";
+    rIni[sectionName][OCD_DELAY_INI_KEY] =
+        floatToString(ocdDelay, true) + "\t\t; Over-current detection delay [ ms ]";
 }
 
 static void fullModuleIni(Pds&                pds,
@@ -904,7 +915,7 @@ static void fullModuleIni(Pds&                pds,
                           mINI::INIStructure& rIni,
                           socketIndex_E       socketIndex)
 {
-    std::string sectionName = "Submodule " + std::to_string((int)socketIndex);
+    std::string sectionName = "Socket " + std::to_string((int)socketIndex);
 
     switch (moduleType)
     {
@@ -998,11 +1009,14 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
     m_pds.getShutdownTime(shutDownTime);
     m_pds.getBatteryVoltageLevels(batLvl1, batLvl2);
 
-    readIni[CONTROL_BOARD_INI_SECTION]["CAN ID"]          = floatToString(m_canId);
-    readIni[CONTROL_BOARD_INI_SECTION]["CAN BAUD"]        = "";
-    readIni[CONTROL_BOARD_INI_SECTION]["shutdown time"]   = floatToString(shutDownTime);
-    readIni[CONTROL_BOARD_INI_SECTION]["battery level 1"] = floatToString(batLvl1);
-    readIni[CONTROL_BOARD_INI_SECTION]["battery level 2"] = floatToString(batLvl2);
+    readIni[CONTROL_BOARD_INI_SECTION]["CAN ID"]   = floatToString(m_canId, true);
+    readIni[CONTROL_BOARD_INI_SECTION]["CAN BAUD"] = "TODO";
+    readIni[CONTROL_BOARD_INI_SECTION]["shutdown time"] =
+        floatToString(shutDownTime, true) + "\t\t; Shutdown time [ ms ]";
+    readIni[CONTROL_BOARD_INI_SECTION]["battery level 1"] =
+        floatToString(batLvl1, true) + "\t\t; Battery monitor lvl 1 [ mV ]";
+    readIni[CONTROL_BOARD_INI_SECTION]["battery level 2"] =
+        floatToString(batLvl2, true) + "\t\t; Battery monitor lvl 2 [ mV ]";
     fullModuleIni(m_pds, pdsModules.moduleTypeSocket1, readIni, socketIndex_E::SOCKET_1);
     fullModuleIni(m_pds, pdsModules.moduleTypeSocket2, readIni, socketIndex_E::SOCKET_2);
     fullModuleIni(m_pds, pdsModules.moduleTypeSocket3, readIni, socketIndex_E::SOCKET_3);
@@ -1010,10 +1024,11 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
     fullModuleIni(m_pds, pdsModules.moduleTypeSocket5, readIni, socketIndex_E::SOCKET_5);
     fullModuleIni(m_pds, pdsModules.moduleTypeSocket6, readIni, socketIndex_E::SOCKET_6);
 
+    mINI::INIFile configFile(configName);
+    configFile.generate(readIni, true);
     if (saveConfig)
     {
-        mINI::INIFile configFile(configName);
-        configFile.write(readIni);
+        configFile.write(readIni, true);
     }
 }
 
