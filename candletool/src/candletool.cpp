@@ -11,6 +11,8 @@
 
 #include "mabFileParser.hpp"
 #include "candle_bootloader.hpp"
+#include "candle_v2.hpp"
+#include "I_communication_interface.hpp"
 #include "mab_crc.hpp"
 
 #include "pds.hpp"
@@ -69,33 +71,24 @@ CandleTool::CandleTool()
     log.m_layer = Logger::ProgramLayer_E::TOP;
     log << "CandleSDK Version: " << mab::Candle::getVersion() << std::endl;
 
-    mab::BusType_E        busType = mab::BusType_E::USB;
-    mab::CANdleBaudrate_E baud    = mab::CANdleBaudrate_E::CAN_BAUD_1M;
+    std::unique_ptr<I_CommunicationInterface> bus;
+    mab::CANdleBaudrate_E                     baud =
+        mab::CANdleBaudrate_E::CAN_BAUD_1M;  // TODO: this must be parsed as a flag
 
     mINI::INIFile      file(getCandletoolConfigPath());
     mINI::INIStructure ini;
     file.read(ini);
 
-    busString = ini["communication"]["bus"];
-    if (busString == "SPI")
-        busType = mab::BusType_E::SPI;
-    else if (busString == "UART")
-        busType = mab::BusType_E::UART;
-    else if (busString == "USB")
-        busType = mab::BusType_E::USB;
     std::string& device = ini["communication"]["device"];
-    try
-    {
-        if (device != "" && busType != mab::BusType_E::USB)
-            candle = std::make_unique<mab::CandleV2>(baud, printVerbose, busType, device);
-        else
-            candle = std::make_unique<mab::CandleV2>(baud, printVerbose, busType);
-    }
+    busString           = ini["communication"]["bus"];
 
-    catch (const char* e)
-    {
-        return;
-    }
+    if (busString == "SPI")
+        bus = nullptr;  // TODO: placeholder
+    else if (busString == "USB")
+        bus = std::make_unique<USBv2>(CandleV2::CANDLE_VID, CandleV2::CANDLE_PID, device);
+
+    candle = std::make_unique<CandleV2>(baud, std::move(bus));
+    candle->init();
 
     return;
 }
