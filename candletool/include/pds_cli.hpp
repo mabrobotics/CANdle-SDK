@@ -26,9 +26,10 @@ class PdsCli
     CLI::App* m_setBatteryLevelCmd = nullptr;
     CLI::App* m_setShutdownTimeCmd = nullptr;
 
-    CLI::App* m_configSetupCmd = nullptr;
-    CLI::App* m_configReadCmd  = nullptr;
-    CLI::App* m_configSaveCmd  = nullptr;
+    CLI::App* m_configSetupCmd      = nullptr;
+    CLI::App* m_interactiveSetupCmd = nullptr;
+    CLI::App* m_configReadCmd       = nullptr;
+    CLI::App* m_configSaveCmd       = nullptr;
 
     CLI::App* m_disableCmd = nullptr;
 
@@ -95,6 +96,13 @@ class PdsCli
 
     void pdsSetupInfo(void);
     void pdsSetupConfig(const std::string& cfgPath);
+    void setupCtrlConfig(mINI::INIStructure& setupIni);
+    void setupPsConfig(PowerStage& ps, mINI::INIStructure& setupIni, socketIndex_E socket);
+    void setupIcConfig(IsolatedConv& ps, mINI::INIStructure& setupIni, socketIndex_E socket);
+    void setupBrConfig(BrakeResistor& ps, mINI::INIStructure& setupIni, socketIndex_E socket);
     void pdsStoreConfig(void);
     void pdsReadConfig(const std::string& cfgPath);
+    void powerStageCmdParse(void);
+    void brakeResistorCmdParse(void);
+    void isolatedConverterCmdParse(void);
 };

@@ -205,7 +205,13 @@ void PdsCli::parse(void)
 
         else if (m_configSetupCmd->parsed())
         {
-            pdsSetupConfig(m_cfgFilePath);
+        }
+
+        else if (m_interactiveSetupCmd->parsed())
+        {
+            m_log.warn(
+                "This command is under development. For now please be patient and "
+                "https://pl.wikipedia.org/wiki/RTFM");
         }
 
         else if (m_configReadCmd->parsed())
@@ -951,20 +957,31 @@ static void fullModuleIni(Pds&                pds,
     }
 }
 
-void PdsCli::pdsSetupConfig(const std::string& cfgPath)
+static std::optional<canBaudrate_E> parseCanBaudIniString(std::string_view baudString)
+{
+    if (baudString == "1M")
+        return canBaudrate_E::BAUD_1M;
+    else if (baudString == "2M")
+        return canBaudrate_E::BAUD_2M;
+    else if (baudString == "5M")
+        return canBaudrate_E::BAUD_5M;
+    else if (baudString == "8M")
+        return canBaudrate_E::BAUD_8M;
+
+    return std::nullopt;
+}
+
+void PdsCli::setupCtrlConfig(mINI::INIStructure& setupIni)
 {
     using err_E = mab::PdsModule::error_E;
 
-    mINI::INIFile      pdsCfgFile(cfgPath);
-    mINI::INIStructure pdsCfg;
-    pdsCfgFile.read(pdsCfg);
+    u16              canId = atoi(setupIni[CONTROL_BOARD_INI_SECTION][CAN_ID_INI_KEY].c_str());
+    std::string_view canBaudString       = setupIni[CONTROL_BOARD_INI_SECTION][CAN_BAUD_INI_KEY];
+    std::optional<canBaudrate_E> canBaud = parseCanBaudIniString(canBaudString);
 
-    u16 canId        = atoi(pdsCfg[CONTROL_BOARD_INI_SECTION][CAN_BAUD_INI_KEY].c_str());
-    u32 shutdownTime = atoi(pdsCfg[CONTROL_BOARD_INI_SECTION][SHUTDOWN_TIME_INI_KEY].c_str());
-    u32 battLvl1     = atoi(pdsCfg[CONTROL_BOARD_INI_SECTION][BATT_LVL_1_INI_KEY].c_str());
-    u32 battLvl2     = atoi(pdsCfg[CONTROL_BOARD_INI_SECTION][BATT_LVL_2_INI_KEY].c_str());
-
-    // Validate data provided by ini file
+    u32 shutdownTime = atoi(setupIni[CONTROL_BOARD_INI_SECTION][SHUTDOWN_TIME_INI_KEY].c_str());
+    u32 battLvl1     = atoi(setupIni[CONTROL_BOARD_INI_SECTION][BATT_LVL_1_INI_KEY].c_str());
+    u32 battLvl2     = atoi(setupIni[CONTROL_BOARD_INI_SECTION][BATT_LVL_2_INI_KEY].c_str());
 
     // CAN Id
     err_E result = m_pds.setCanId(canId);
@@ -972,6 +989,20 @@ void PdsCli::pdsSetupConfig(const std::string& cfgPath)
         m_log.error("CAN ID setting failed [ %s ]", PdsModule::error2String(result));
     else
         m_log.success("CAN ID set [ %u ]", canId);
+
+    if (canBaud.has_value())
+    {
+        result = m_pds.setCanBaudrate(canBaud.value());
+        if (result != PdsModule::error_E::OK)
+            m_log.error("CAN BAUD setting failed [ %s ]", PdsModule::error2String(result));
+        else
+            m_log.success("CAN Baud set [ %s ]", canBaudString.data());
+    }
+    else
+    {
+        m_log.error("Given CAN Baud [ %s ] is INVALID! Acceptable values are: 1M, 2M, 5M, 8M");
+        m_log.warn("CAN Baudrate setting was omitted!");
+    }
 
     // Shutdown time
     result = m_pds.setShutdownTime(shutdownTime);
@@ -987,6 +1018,74 @@ void PdsCli::pdsSetupConfig(const std::string& cfgPath)
         m_log.error("Battery levels setting failed [ %s ]", PdsModule::error2String(result));
     else
         m_log.success("Battery levels set [ %u, %u ]", battLvl1, battLvl2);
+}
+
+void setupPsConfig(PowerStage& ps, mINI::INIStructure& setupIni, socketIndex_E socket)
+{
+}
+
+void setupIcConfig(IsolatedConv& ps, mINI::INIStructure& setupIni, socketIndex_E socket)
+{
+}
+
+void setupBrConfig(BrakeResistor& ps, mINI::INIStructure& setupIni, socketIndex_E socket)
+{
+}
+
+static std::optional<moduleType_E> parseSubmoduleTypeStrimg(std::string_view typeString)
+{
+    if (typeString == Pds::moduleTypeToString(moduleType_E::ISOLATED_CONVERTER))
+        return moduleType_E::ISOLATED_CONVERTER;
+
+    else if (typeString == Pds::moduleTypeToString(moduleType_E::POWER_STAGE))
+        return moduleType_E::POWER_STAGE;
+
+    else if (typeString == Pds::moduleTypeToString(moduleType_E::BRAKE_RESISTOR))
+        return moduleType_E::BRAKE_RESISTOR;
+
+    return std::nullopt;
+}
+void PdsCli::pdsSetupConfig(const std::string& cfgPath)
+{
+    mINI::INIFile      pdsCfgFile(cfgPath);
+    mINI::INIStructure pdsCfg;
+    pdsCfgFile.read(pdsCfg);
+
+    if (pdsCfg.has(CONTROL_BOARD_INI_SECTION))
+        setupCtrlConfig(pdsCfg);
+    else
+        m_log.warn("No \"control_board\" section in ,cfg file.");
+
+    for (u8 si = (u8)socketIndex_E::SOCKET_1; si <= (u8)socketIndex_E::SOCKET_6; si++)
+    {
+        m_log.debug("Checking \"Socket %u\" section", si);
+        std::string sectionName = "Socket " + std::to_string(si);
+        // Check if ini has Socket <si> section
+        if (pdsCfg.has(sectionName.c_str()))
+        {
+            // Check if there is a "type" field in this section
+            if (pdsCfg[sectionName.c_str()].has(TYPE_INI_KEY))
+            {
+                std::string_view moduleTypeString = pdsCfg[sectionName.c_str()][TYPE_INI_KEY];
+                m_log.debug("%s type field :: %s", sectionName.c_str(), moduleTypeString.data());
+
+                // Check if given type name is valid. If yes,set it up on physical device
+                std::optional<moduleType_E> moduleType = parseSubmoduleTypeStrimg(moduleTypeString);
+                if (moduleType.has_value())
+                {
+                }
+            }
+            else
+            {
+                m_log.warn("%s has no \"type\" field adn thus will be ignored...",
+                           sectionName.c_str());
+            }
+        }
+        else
+        {
+            m_log.warn("No \"%s\" section in .cfg file", sectionName.c_str());
+        }
+    }
 }
 
 void PdsCli::pdsReadConfig(const std::string& cfgPath)
@@ -1025,7 +1124,7 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
     fullModuleIni(m_pds, pdsModules.moduleTypeSocket6, readIni, socketIndex_E::SOCKET_6);
 
     mINI::INIFile configFile(configName);
-    configFile.generate(readIni, true);
+
     if (saveConfig)
     {
         configFile.write(readIni, true);
