@@ -12,7 +12,7 @@
 constexpr const char* CONTROL_BOARD_INI_SECTION = PdsModule::mType2Str(moduleType_E::CONTROL_BOARD);
 constexpr const char* CAN_ID_INI_KEY            = "CAN ID";
 constexpr const char* CAN_BAUD_INI_KEY          = "CAN BAUD";
-constexpr const char* SHUTDOWN_TIME_INI_KEY     = "SHUTDOWN_TIME";
+constexpr const char* SHUTDOWN_TIME_INI_KEY     = "SHUTDOWN TIME";
 constexpr const char* BATT_LVL_1_INI_KEY        = "BATTERY LEVEL 1";
 constexpr const char* BATT_LVL_2_INI_KEY        = "BATTERY LEVEL 2";
 
@@ -39,6 +39,8 @@ PdsCli::PdsCli(CLI::App& rootCli, mab::Candle& candle) : m_rootCli(rootCli), m_c
 
     m_configSetupCmd->add_option("<config_file>", m_cfgFilePath, "PDS configuration .cfg file.")
         ->required();
+
+    m_interactiveSetupCmd = m_pdsCmd->add_subcommand("setup_interactive", "Interactive setup");
 
     m_configReadCmd =
         m_pdsCmd->add_subcommand("read_cfg", "Read device configuration and save to file");
@@ -976,14 +978,6 @@ void PdsCli::setupCtrlConfig(mINI::INIMap<std::string>& iniMap)
 {
     using err_E  = mab::PdsModule::error_E;
     err_E result = err_E::OK;
-    // TODO: Add checks if the iniMap has the fields we are referencing here! ( .has() method )
-    // u16                          canId         = atoi(iniMap[CAN_ID_INI_KEY].c_str());
-    // std::string_view             canBaudString = iniMap[CAN_BAUD_INI_KEY];
-    // std::optional<canBaudrate_E> canBaud       = parseCanBaudIniString(canBaudString);
-
-    // u32 shutdownTime = atoi(iniMap[SHUTDOWN_TIME_INI_KEY].c_str());
-    // u32 battLvl1     = atoi(iniMap[BATT_LVL_1_INI_KEY].c_str());
-    // u32 battLvl2     = atoi(iniMap[BATT_LVL_2_INI_KEY].c_str());
 
     // CAN Id
     if (iniMap.has(CAN_ID_INI_KEY))
@@ -1106,17 +1100,11 @@ void PdsCli::setupPsCfg(PowerStage& ps, mINI::INIMap<std::string>& iniMap)
 {
     m_log.debug("Setting up config for Power Stage [ %u ] module", ps.getSocketIndex());
 
-    f32           temperatureLimit = 0.0f;
-    u32           ocdLevel         = 0u;
-    u32           ocdDelay         = 0u;
-    socketIndex_E brSocket         = socketIndex_E::UNASSIGNED;
-    u32           brTriggerVoltage = 0u;
-
     PdsModule::error_E result = PdsModule::error_E::OK;
 
     if (iniMap.has(TEMP_LIMIT_INI_KEY))
     {
-        temperatureLimit = atof(iniMap[TEMP_LIMIT_INI_KEY].c_str());
+        f32 temperatureLimit = atof(iniMap[TEMP_LIMIT_INI_KEY].c_str());
         m_log.debug("Temperature limit field found with value [ %.2f ]", temperatureLimit);
         result = ps.setTemperatureLimit(temperatureLimit);
         if (result != PdsModule::error_E::OK)
@@ -1132,7 +1120,7 @@ void PdsCli::setupPsCfg(PowerStage& ps, mINI::INIMap<std::string>& iniMap)
 
     if (iniMap.has(OCD_LEVEL_INI_KEY))
     {
-        ocdLevel = atoi(iniMap[OCD_LEVEL_INI_KEY].c_str());
+        u32 ocdLevel = atoi(iniMap[OCD_LEVEL_INI_KEY].c_str());
         m_log.debug("OCD level field found with value [ %u ]", ocdLevel);
         result = ps.setOcdLevel(ocdLevel);
         if (result != PdsModule::error_E::OK)
@@ -1147,7 +1135,7 @@ void PdsCli::setupPsCfg(PowerStage& ps, mINI::INIMap<std::string>& iniMap)
 
     if (iniMap.has(OCD_DELAY_INI_KEY))
     {
-        ocdDelay = atoi(iniMap[OCD_DELAY_INI_KEY].c_str());
+        u32 ocdDelay = atoi(iniMap[OCD_DELAY_INI_KEY].c_str());
         m_log.debug("OCD delay field found with value [ %u ]", ocdDelay);
         result = ps.setOcdDelay(ocdDelay);
         if (result != PdsModule::error_E::OK)
@@ -1162,8 +1150,8 @@ void PdsCli::setupPsCfg(PowerStage& ps, mINI::INIMap<std::string>& iniMap)
 
     if (iniMap.has(BR_SOCKET_INI_KEY))
     {
-        u8 socketIndexNumber = atoi(iniMap[BR_SOCKET_INI_KEY].c_str());
-        brSocket             = decodeSocketIndex(socketIndexNumber);
+        u8            socketIndexNumber = atoi(iniMap[BR_SOCKET_INI_KEY].c_str());
+        socketIndex_E brSocket          = decodeSocketIndex(socketIndexNumber);
         if (brSocket == socketIndex_E::UNASSIGNED)
         {
             m_log.warn("Brake resistor UNASSIGNED");
@@ -1186,7 +1174,7 @@ void PdsCli::setupPsCfg(PowerStage& ps, mINI::INIMap<std::string>& iniMap)
 
     if (iniMap.has(BR_TRIG_V_INI_KEY))
     {
-        brTriggerVoltage = atoi(iniMap[BR_TRIG_V_INI_KEY].c_str());
+        u32 brTriggerVoltage = atoi(iniMap[BR_TRIG_V_INI_KEY].c_str());
         m_log.debug("Brake resistor trigger voltage field found with value [ %u ]",
                     brTriggerVoltage);
         result = ps.setBrakeResistorTriggerVoltage(brTriggerVoltage);
@@ -1205,11 +1193,77 @@ void PdsCli::setupPsCfg(PowerStage& ps, mINI::INIMap<std::string>& iniMap)
 void PdsCli::setupIcCfg(IsolatedConv& ic, mINI::INIMap<std::string>& iniMap)
 {
     m_log.debug("Setting up config for Isolated Converter [ %u ] module", ic.getSocketIndex());
+    PdsModule::error_E result = PdsModule::error_E::OK;
+
+    if (iniMap.has(TEMP_LIMIT_INI_KEY))
+    {
+        f32 temperatureLimit = atof(iniMap[TEMP_LIMIT_INI_KEY].c_str());
+        m_log.debug("Temperature limit field found with value [ %.2f ]", temperatureLimit);
+        result = ic.setTemperatureLimit(temperatureLimit);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Isolated Converter set temperature limit failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.success("New temperature limit set [ %.2f ]", temperatureLimit);
+    }
+    else
+    {
+        m_log.debug("Temperature limit field missing so will be ignored");
+    }
+
+    if (iniMap.has(OCD_LEVEL_INI_KEY))
+    {
+        u32 ocdLevel = atoi(iniMap[OCD_LEVEL_INI_KEY].c_str());
+        m_log.debug("OCD level field found with value [ %u ]", ocdLevel);
+        result = ic.setOcdLevel(ocdLevel);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Isolated Converter set OCD level failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.success("OCD level set [ %u ]", ocdLevel);
+    }
+    else
+    {
+        m_log.debug("OCD level field missing so will be ignored");
+    }
+
+    if (iniMap.has(OCD_DELAY_INI_KEY))
+    {
+        u32 ocdDelay = atoi(iniMap[OCD_DELAY_INI_KEY].c_str());
+        m_log.debug("OCD delay field found with value [ %u ]", ocdDelay);
+        result = ic.setOcdDelay(ocdDelay);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Isolated Converter set OCD delay failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.success("OCD delay set [ %u ]", ocdDelay);
+    }
+    else
+    {
+        m_log.debug("OCD delay field missing so will be ignored");
+    }
 }
 
 void PdsCli::setupBrCfg(BrakeResistor& br, mINI::INIMap<std::string>& iniMap)
 {
     m_log.debug("Setting up config for Brake Resistor [ %u ] module", br.getSocketIndex());
+    PdsModule::error_E result = PdsModule::error_E::OK;
+
+    if (iniMap.has(TEMP_LIMIT_INI_KEY))
+    {
+        f32 temperatureLimit = atof(iniMap[TEMP_LIMIT_INI_KEY].c_str());
+        m_log.debug("Temperature limit field found with value [ %.2f ]", temperatureLimit);
+        result = br.setTemperatureLimit(temperatureLimit);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Brake Resistor set temperature limit failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.success("New temperature limit set [ %.2f ]", temperatureLimit);
+    }
+    else
+    {
+        m_log.debug("Temperature limit field missing so will be ignored");
+    }
 }
 
 static std::optional<moduleType_E> parseSubmoduleTypeStrimg(std::string_view typeString)
@@ -1297,13 +1351,13 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
     m_pds.getShutdownTime(shutDownTime);
     m_pds.getBatteryVoltageLevels(batLvl1, batLvl2);
 
-    readIni[CONTROL_BOARD_INI_SECTION]["CAN ID"]   = floatToString(m_canId, true);
-    readIni[CONTROL_BOARD_INI_SECTION]["CAN BAUD"] = "TODO";
-    readIni[CONTROL_BOARD_INI_SECTION]["shutdown time"] =
+    readIni[CONTROL_BOARD_INI_SECTION][CAN_ID_INI_KEY]   = floatToString(m_canId, true);
+    readIni[CONTROL_BOARD_INI_SECTION][CAN_BAUD_INI_KEY] = "TODO";
+    readIni[CONTROL_BOARD_INI_SECTION][SHUTDOWN_TIME_INI_KEY] =
         floatToString(shutDownTime, true) + "\t\t; Shutdown time [ ms ]";
-    readIni[CONTROL_BOARD_INI_SECTION]["battery level 1"] =
+    readIni[CONTROL_BOARD_INI_SECTION][BATT_LVL_1_INI_KEY] =
         floatToString(batLvl1, true) + "\t\t; Battery monitor lvl 1 [ mV ]";
-    readIni[CONTROL_BOARD_INI_SECTION]["battery level 2"] =
+    readIni[CONTROL_BOARD_INI_SECTION][BATT_LVL_2_INI_KEY] =
         floatToString(batLvl2, true) + "\t\t; Battery monitor lvl 2 [ mV ]";
     fullModuleIni(m_pds, pdsModules.moduleTypeSocket1, readIni, socketIndex_E::SOCKET_1);
     fullModuleIni(m_pds, pdsModules.moduleTypeSocket2, readIni, socketIndex_E::SOCKET_2);
