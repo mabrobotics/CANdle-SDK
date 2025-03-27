@@ -6,7 +6,7 @@ namespace mab
     IsolatedConv::IsolatedConv(socketIndex_E socket, Candle& candle, u16& canId)
         : PdsModule(socket, moduleType_E::ISOLATED_CONVERTER, candle, canId)
     {
-        m_log.m_tag = "IC12:: " + std::to_string(static_cast<int>(socket) + 1);
+        m_log.m_tag = "IC12:: " + std::to_string(static_cast<u8>(socket));
         m_log.debug("Object created");
     }
 

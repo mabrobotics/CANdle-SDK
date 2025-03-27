@@ -6,7 +6,7 @@ namespace mab
     PowerStage::PowerStage(socketIndex_E socket, Candle& candle, u16& canId)
         : PdsModule(socket, moduleType_E::POWER_STAGE, candle, canId)
     {
-        m_log.m_tag = "PS  :: " + std::to_string(static_cast<int>(socket) + 1);
+        m_log.m_tag = "PS  :: " + std::to_string(static_cast<u8>(socket));
         m_log.debug("Object created");
     }
 

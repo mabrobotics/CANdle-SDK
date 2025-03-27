@@ -205,6 +205,8 @@ void PdsCli::parse(void)
 
         else if (m_configSetupCmd->parsed())
         {
+            m_log.debug("setup config command parsed");
+            pdsSetupConfig(m_cfgFilePath);
         }
 
         else if (m_interactiveSetupCmd->parsed())
@@ -970,66 +972,244 @@ static std::optional<canBaudrate_E> parseCanBaudIniString(std::string_view baudS
 
     return std::nullopt;
 }
-
-void PdsCli::setupCtrlConfig(mINI::INIStructure& setupIni)
+void PdsCli::setupCtrlConfig(mINI::INIMap<std::string>& iniMap)
 {
-    using err_E = mab::PdsModule::error_E;
+    using err_E  = mab::PdsModule::error_E;
+    err_E result = err_E::OK;
+    // TODO: Add checks if the iniMap has the fields we are referencing here! ( .has() method )
+    // u16                          canId         = atoi(iniMap[CAN_ID_INI_KEY].c_str());
+    // std::string_view             canBaudString = iniMap[CAN_BAUD_INI_KEY];
+    // std::optional<canBaudrate_E> canBaud       = parseCanBaudIniString(canBaudString);
 
-    u16              canId = atoi(setupIni[CONTROL_BOARD_INI_SECTION][CAN_ID_INI_KEY].c_str());
-    std::string_view canBaudString       = setupIni[CONTROL_BOARD_INI_SECTION][CAN_BAUD_INI_KEY];
-    std::optional<canBaudrate_E> canBaud = parseCanBaudIniString(canBaudString);
-
-    u32 shutdownTime = atoi(setupIni[CONTROL_BOARD_INI_SECTION][SHUTDOWN_TIME_INI_KEY].c_str());
-    u32 battLvl1     = atoi(setupIni[CONTROL_BOARD_INI_SECTION][BATT_LVL_1_INI_KEY].c_str());
-    u32 battLvl2     = atoi(setupIni[CONTROL_BOARD_INI_SECTION][BATT_LVL_2_INI_KEY].c_str());
+    // u32 shutdownTime = atoi(iniMap[SHUTDOWN_TIME_INI_KEY].c_str());
+    // u32 battLvl1     = atoi(iniMap[BATT_LVL_1_INI_KEY].c_str());
+    // u32 battLvl2     = atoi(iniMap[BATT_LVL_2_INI_KEY].c_str());
 
     // CAN Id
-    err_E result = m_pds.setCanId(canId);
-    if (result != PdsModule::error_E::OK)
-        m_log.error("CAN ID setting failed [ %s ]", PdsModule::error2String(result));
-    else
-        m_log.success("CAN ID set [ %u ]", canId);
-
-    if (canBaud.has_value())
+    if (iniMap.has(CAN_ID_INI_KEY))
     {
-        result = m_pds.setCanBaudrate(canBaud.value());
+        u16 canId = atoi(iniMap[CAN_ID_INI_KEY].c_str());
+        m_log.debug("CAN ID field found with value [ %u ]", canId);
+        result = m_pds.setCanId(canId);
         if (result != PdsModule::error_E::OK)
-            m_log.error("CAN BAUD setting failed [ %s ]", PdsModule::error2String(result));
+            m_log.error("CAN ID setting failed [ %s ]", PdsModule::error2String(result));
         else
-            m_log.success("CAN Baud set [ %s ]", canBaudString.data());
+            m_log.success("CAN ID set [ %u ]", canId);
     }
     else
     {
-        m_log.error("Given CAN Baud [ %s ] is INVALID! Acceptable values are: 1M, 2M, 5M, 8M");
-        m_log.warn("CAN Baudrate setting was omitted!");
+        m_log.error("CAN ID field missing so will be ignored");
+    }
+
+    // CAN Baudrate
+    if (iniMap.has(CAN_BAUD_INI_KEY))
+    {
+        std::string_view             canBaudString = iniMap[CAN_BAUD_INI_KEY];
+        std::optional<canBaudrate_E> canBaud       = parseCanBaudIniString(canBaudString);
+        if (canBaud.has_value())
+        {
+            result = m_pds.setCanBaudrate(canBaud.value());
+            if (result != PdsModule::error_E::OK)
+                m_log.error("CAN BAUD setting failed [ %s ]", PdsModule::error2String(result));
+            else
+                m_log.success("CAN Baud set [ %s ]", canBaudString.data());
+        }
+        else
+        {
+            m_log.error("Given CAN Baud [ %s ] is INVALID! Acceptable values are: 1M, 2M, 5M, 8M");
+            m_log.warn("CAN Baudrate setting was omitted!");
+        }
+    }
+    else
+    {
+        m_log.error("CAN Baudrate field missing so will be ignored");
     }
 
     // Shutdown time
-    result = m_pds.setShutdownTime(shutdownTime);
-
-    if (result != PdsModule::error_E::OK)
-        m_log.error("Shutdown time setting failed [ %s ]", PdsModule::error2String(result));
+    if (iniMap.has(SHUTDOWN_TIME_INI_KEY))
+    {
+        u32 shutdownTime = atoi(iniMap[SHUTDOWN_TIME_INI_KEY].c_str());
+        m_log.debug("Shutdown time field found with value [ %u ]", shutdownTime);
+        result = m_pds.setShutdownTime(shutdownTime);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Shutdown time setting failed [ %s ]", PdsModule::error2String(result));
+        else
+            m_log.success("Shutdown time set [ %u ]", shutdownTime);
+    }
     else
-        m_log.success("Shutdown time set [ %u ]", shutdownTime);
+    {
+        m_log.error("Shutdown time field missing so will be ignored");
+    }
 
     // Battery voltage levels
-    result = m_pds.setBatteryVoltageLevels(battLvl1, battLvl2);
-    if (result != err_E::OK)
-        m_log.error("Battery levels setting failed [ %s ]", PdsModule::error2String(result));
+    if (iniMap.has(BATT_LVL_1_INI_KEY) && iniMap.has(BATT_LVL_2_INI_KEY))
+    {
+        u32 battLvl1 = atoi(iniMap[BATT_LVL_1_INI_KEY].c_str());
+        m_log.debug("Battery level 1 field found with value [ %u ]", battLvl1);
+        u32 battLvl2 = atoi(iniMap[BATT_LVL_2_INI_KEY].c_str());
+        m_log.debug("Battery level 2 field found with value [ %u ]", battLvl2);
+        result = m_pds.setBatteryVoltageLevels(battLvl1, battLvl2);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Battery levels setting failed [ %s ]", PdsModule::error2String(result));
+        else
+            m_log.success("Battery levels set [ %u, %u ]", battLvl1, battLvl2);
+    }
     else
-        m_log.success("Battery levels set [ %u, %u ]", battLvl1, battLvl2);
+    {
+        m_log.error("Battery levels field missing so will be ignored");
+    }
 }
 
-void setupPsConfig(PowerStage& ps, mINI::INIStructure& setupIni, socketIndex_E socket)
+void PdsCli::setupModuleCfg(moduleType_E type, socketIndex_E si, mINI::INIMap<std::string>& iniMap)
 {
+    if (type == moduleType_E::POWER_STAGE)
+    {
+        auto powerStage = m_pds.attachPowerStage(si);
+        if (powerStage == nullptr)
+        {
+            m_log.error("Attaching Power Stage module at socket [ %u ] failed...", (u8)si);
+        }
+        else
+        {
+            setupPsCfg(*powerStage, iniMap);
+        }
+    }
+
+    if (type == moduleType_E::ISOLATED_CONVERTER)
+    {
+        auto isolatedConverter = m_pds.attachIsolatedConverter(si);
+        if (isolatedConverter == nullptr)
+        {
+            m_log.error("Attaching Isolated converter module at socket [ %u ] failed...", (u8)si);
+        }
+        else
+        {
+            setupIcCfg(*isolatedConverter, iniMap);
+        }
+    }
+
+    if (type == moduleType_E::BRAKE_RESISTOR)
+    {
+        auto brakeResistor = m_pds.attachBrakeResistor(si);
+        if (brakeResistor == nullptr)
+        {
+            m_log.error("Attaching Brake resistor module at socket [ %u ] failed...", (u8)si);
+        }
+        else
+        {
+            setupBrCfg(*brakeResistor, iniMap);
+        }
+    }
 }
 
-void setupIcConfig(IsolatedConv& ps, mINI::INIStructure& setupIni, socketIndex_E socket)
+void PdsCli::setupPsCfg(PowerStage& ps, mINI::INIMap<std::string>& iniMap)
 {
+    m_log.debug("Setting up config for Power Stage [ %u ] module", ps.getSocketIndex());
+
+    f32           temperatureLimit = 0.0f;
+    u32           ocdLevel         = 0u;
+    u32           ocdDelay         = 0u;
+    socketIndex_E brSocket         = socketIndex_E::UNASSIGNED;
+    u32           brTriggerVoltage = 0u;
+
+    PdsModule::error_E result = PdsModule::error_E::OK;
+
+    if (iniMap.has(TEMP_LIMIT_INI_KEY))
+    {
+        temperatureLimit = atof(iniMap[TEMP_LIMIT_INI_KEY].c_str());
+        m_log.debug("Temperature limit field found with value [ %.2f ]", temperatureLimit);
+        result = ps.setTemperatureLimit(temperatureLimit);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage set temperature limit failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.success("New temperature limit set [ %.2f ]", temperatureLimit);
+    }
+    else
+    {
+        m_log.debug("Temperature limit field missing so will be ignored");
+    }
+
+    if (iniMap.has(OCD_LEVEL_INI_KEY))
+    {
+        ocdLevel = atoi(iniMap[OCD_LEVEL_INI_KEY].c_str());
+        m_log.debug("OCD level field found with value [ %u ]", ocdLevel);
+        result = ps.setOcdLevel(ocdLevel);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage set OCD level failed [ %s ]", PdsModule::error2String(result));
+        else
+            m_log.success("OCD level set [ %u ]", ocdLevel);
+    }
+    else
+    {
+        m_log.debug("OCD level field missing so will be ignored");
+    }
+
+    if (iniMap.has(OCD_DELAY_INI_KEY))
+    {
+        ocdDelay = atoi(iniMap[OCD_DELAY_INI_KEY].c_str());
+        m_log.debug("OCD delay field found with value [ %u ]", ocdDelay);
+        result = ps.setOcdDelay(ocdDelay);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage set OCD delay failed [ %s ]", PdsModule::error2String(result));
+        else
+            m_log.success("OCD delay set [ %u ]", ocdDelay);
+    }
+    else
+    {
+        m_log.debug("OCD delay field missing so will be ignored");
+    }
+
+    if (iniMap.has(BR_SOCKET_INI_KEY))
+    {
+        u8 socketIndexNumber = atoi(iniMap[BR_SOCKET_INI_KEY].c_str());
+        brSocket             = decodeSocketIndex(socketIndexNumber);
+        if (brSocket == socketIndex_E::UNASSIGNED)
+        {
+            m_log.warn("Brake resistor UNASSIGNED");
+        }
+        else
+        {
+            m_log.debug("Brake resistor socket field found with value [ %u ]", (u8)brSocket);
+            result = ps.bindBrakeResistor(brSocket);
+            if (result != PdsModule::error_E::OK)
+                m_log.error("Power Stage bind brake resistor failed [ %s ]",
+                            PdsModule::error2String(result));
+            else
+                m_log.success("Brake resistor bind to socket [ %u ]", (u8)brSocket);
+        }
+    }
+    else
+    {
+        m_log.debug("Brake resistor socket field missing so will be ignored");
+    }
+
+    if (iniMap.has(BR_TRIG_V_INI_KEY))
+    {
+        brTriggerVoltage = atoi(iniMap[BR_TRIG_V_INI_KEY].c_str());
+        m_log.debug("Brake resistor trigger voltage field found with value [ %u ]",
+                    brTriggerVoltage);
+        result = ps.setBrakeResistorTriggerVoltage(brTriggerVoltage);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage set brake resistor trigger voltage failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.success("Brake resistor trigger voltage set [ %u ]", brTriggerVoltage);
+    }
+    else
+    {
+        m_log.debug("Brake resistor trigger voltage field missing so will be ignored");
+    }
 }
 
-void setupBrConfig(BrakeResistor& ps, mINI::INIStructure& setupIni, socketIndex_E socket)
+void PdsCli::setupIcCfg(IsolatedConv& ic, mINI::INIMap<std::string>& iniMap)
 {
+    m_log.debug("Setting up config for Isolated Converter [ %u ] module", ic.getSocketIndex());
+}
+
+void PdsCli::setupBrCfg(BrakeResistor& br, mINI::INIMap<std::string>& iniMap)
+{
+    m_log.debug("Setting up config for Brake Resistor [ %u ] module", br.getSocketIndex());
 }
 
 static std::optional<moduleType_E> parseSubmoduleTypeStrimg(std::string_view typeString)
@@ -1045,6 +1225,7 @@ static std::optional<moduleType_E> parseSubmoduleTypeStrimg(std::string_view typ
 
     return std::nullopt;
 }
+
 void PdsCli::pdsSetupConfig(const std::string& cfgPath)
 {
     mINI::INIFile      pdsCfgFile(cfgPath);
@@ -1052,7 +1233,7 @@ void PdsCli::pdsSetupConfig(const std::string& cfgPath)
     pdsCfgFile.read(pdsCfg);
 
     if (pdsCfg.has(CONTROL_BOARD_INI_SECTION))
-        setupCtrlConfig(pdsCfg);
+        setupCtrlConfig(pdsCfg[CONTROL_BOARD_INI_SECTION]);
     else
         m_log.warn("No \"control_board\" section in ,cfg file.");
 
@@ -1073,6 +1254,14 @@ void PdsCli::pdsSetupConfig(const std::string& cfgPath)
                 std::optional<moduleType_E> moduleType = parseSubmoduleTypeStrimg(moduleTypeString);
                 if (moduleType.has_value())
                 {
+                    setupModuleCfg(
+                        moduleType.value(), (socketIndex_E)si, pdsCfg[sectionName.c_str()]);
+                }
+                else
+                {
+                    m_log.warn("No \"%s\" field under \"%s\" so this section will be ignored",
+                               TYPE_INI_KEY,
+                               sectionName.c_str());
                 }
             }
             else

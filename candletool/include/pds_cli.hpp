@@ -96,13 +96,11 @@ class PdsCli
 
     void pdsSetupInfo(void);
     void pdsSetupConfig(const std::string& cfgPath);
-    void setupCtrlConfig(mINI::INIStructure& setupIni);
-    void setupPsConfig(PowerStage& ps, mINI::INIStructure& setupIni, socketIndex_E socket);
-    void setupIcConfig(IsolatedConv& ps, mINI::INIStructure& setupIni, socketIndex_E socket);
-    void setupBrConfig(BrakeResistor& ps, mINI::INIStructure& setupIni, socketIndex_E socket);
+    void setupCtrlConfig(mINI::INIMap<std::string>& iniMap);
+    void setupModuleCfg(moduleType_E type, socketIndex_E si, mINI::INIMap<std::string>& iniMap);
+    void setupPsCfg(PowerStage& ps, mINI::INIMap<std::string>& iniMap);
+    void setupIcCfg(IsolatedConv& ic, mINI::INIMap<std::string>& iniMap);
+    void setupBrCfg(BrakeResistor& br, mINI::INIMap<std::string>& iniMap);
     void pdsStoreConfig(void);
     void pdsReadConfig(const std::string& cfgPath);
-    void powerStageCmdParse(void);
-    void brakeResistorCmdParse(void);
-    void isolatedConverterCmdParse(void);
 };
