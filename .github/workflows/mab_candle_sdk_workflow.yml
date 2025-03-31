@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-22.04
     container:
       image: mabroboticsofficial/mab_build_environment
+      options: --user root
 
     steps:
     - name: Checkout
@@ -38,7 +39,8 @@ jobs:
   build-candleSDK-linux-arm64:
     runs-on: ubuntu-22.04
     container:
-      image: mabroboticsofficial/mab_build_environment
+      image: mabroboticsofficial/mab_build_environment_arm64_cross-compile
+      options: --user root
 
     steps:
     - name: Checkout
@@ -66,7 +68,8 @@ jobs:
   test-candleSDK-linux:
     runs-on: ubuntu-22.04
     container:
-      image: mabroboticsofficial/mab_build_environment
+      image: mabroboticsofficial/mab_build_environment    
+      options: --user root
     steps:
       - name: Checkout
         uses: actions/checkout@v4
