@@ -57,59 +57,179 @@ CandleTool::CandleTool(mab::Candle& candle) : m_candle(candle)
     else if (busString == "USB")
         bus = std::make_unique<USBv2>(CandleV2::CANDLE_VID, CandleV2::CANDLE_PID, device);
 
-    candle = std::make_unique<CandleV2>(baud, std::move(bus));
+    candle = new CandleV2(baud, std::move(bus));
     candle->init();
 
     return;
+}
+
+CandleTool::~CandleTool()
+{
+    detachCandle(candle);
 }
 
 void CandleTool::ping(const std::string& variant)
 {
     if (variant == "all")
     {
-        m_candle.ping(mab::CANdleBaudrate_E::CAN_BAUD_1M);
-        m_candle.ping(mab::CANdleBaudrate_E::CAN_BAUD_2M);
-        m_candle.ping(mab::CANdleBaudrate_E::CAN_BAUD_5M);
-        m_candle.ping(mab::CANdleBaudrate_E::CAN_BAUD_8M);
+        // TODO: implement all variant later, change string variant to enum to avoid undefined
+        log.error("Not implemented");
         return;
     }
-    m_candle.ping(str2baud(variant));
+    auto mdIds = MD::discoverMDs(candle);
+    log.info("Discovered MDs: ");
+    for (const auto& id : mdIds)
+    {
+        log.info("- %d", id);
+    }
 }
 
 void CandleTool::configCan(
     u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination)
 {
-    checkSpeedForId(id);
-    m_candle.configMd80Can(id, newId, str2baud(baud), timeout, termination);
+    MDRegisters_S mdRegisters;
+    MD            md        = MD(id, candle);
+    auto          connected = md.init();
+    if (connected != MD::Error_t::OK)
+    {
+        log.error("Could not connect MD with id %d", id);
+        return;
+    }
+    mdRegisters.canID        = newId;
+    mdRegisters.canBaudrate  = str2baud(baud);
+    mdRegisters.canWatchdog  = timeout;
+    mdRegisters.runCanReinit = 1;
+    auto result              = md.writeRegisters(mdRegisters.canID,
+                                    mdRegisters.canBaudrate,
+                                    mdRegisters.canWatchdog,
+                                    mdRegisters.runCanReinit);
+
+    if (result != MD::Error_t::OK)
+    {
+        log.error("Failed to setup can parameters for driver with id %d!", id);
+    }
+    else
+    {
+        log.info("Can parameter set successful!");
+    }
+    return;
 }
 void CandleTool::configSave(u16 id)
 {
-    m_candle.configMd80Save(id);
+    MD   md        = MD(id, candle);
+    auto connected = md.init();
+    if (connected != MD::Error_t::OK)
+    {
+        log.error("Could not connect MD with id %d", id);
+        return;
+    }
+    auto result = md.save();
+
+    if (result != MD::Error_t::OK)
+    {
+        log.error("Failed to save config for driver with id %d!", id);
+    }
+    else
+    {
+        log.info("Config saved successfully!");
+    }
+    return;
 }
 
 void CandleTool::configZero(u16 id)
 {
-    m_candle.controlMd80SetEncoderZero(id);
+    checkSpeedForId(id);
+    MD   md        = MD(id, candle);
+    auto connected = md.init();
+    if (connected != MD::Error_t::OK)
+    {
+        log.error("Could not connect MD with id %d", id);
+        return;
+    }
+    auto result = md.zero();
+
+    if (result != MD::Error_t::OK)
+    {
+        log.error("Failed to zero the driver with id %d!", id);
+    }
+    else
+    {
+        log.info("Drive %d zeroed", id);
+    }
+    return;
 }
 
 void CandleTool::configCurrent(u16 id, f32 current)
 {
-    m_candle.configMd80SetCurrentLimit(id, current);
+    checkSpeedForId(id);
+    MD   md        = MD(id, candle);
+    auto connected = md.init();
+    if (connected != MD::Error_t::OK)
+    {
+        log.error("Could not connect MD with id %d", id);
+        return;
+    }
+    auto result = md.setCurrentLimit(current);
+
+    if (result != MD::Error_t::OK)
+    {
+        log.error("Failed to set max current for the driver with id %d!", id);
+    }
+    else
+    {
+        log.info("Max current set successfully!");
+    }
+    return;
 }
 
 void CandleTool::configBandwidth(u16 id, f32 bandwidth)
 {
-    m_candle.configMd80TorqueBandwidth(id, bandwidth);
+    MDRegisters_S mdRegisters;
+    MD            md        = MD(id, candle);
+    auto          connected = md.init();
+    if (connected != MD::Error_t::OK)
+    {
+        log.error("Could not connect MD with id %d", id);
+        return;
+    }
+    mdRegisters.motorTorqueBandwidth = bandwidth;
+    mdRegisters.runCalibratePiGains  = 1;
+    auto result =
+        md.writeRegisters(mdRegisters.motorTorqueBandwidth, mdRegisters.runCalibratePiGains);
+
+    if (result != MD::Error_t::OK)
+    {
+        log.error("Failed to setup bandwidth for the driver with id %d!", id);
+    }
+    else
+    {
+        log.info("Bandwidth set successful!");
+    }
+    return;
 }
 
 void CandleTool::configClear(u16 id)
 {
-    if (!tryAddMD80(id))
+    MDRegisters_S mdRegisters;
+    MD            md        = MD(id, candle);
+    auto          connected = md.init();
+    if (connected != MD::Error_t::OK)
+    {
+        log.error("Could not connect MD with id %d", id);
         return;
-    if (m_candle.writeMd80Register(id, mab::Md80Reg_E::runRestoreFactoryConfig, true))
-        log.success("Config reverted to factory state!");
+    }
+    mdRegisters.runRestoreFactoryConfig = 1;
+    auto result                         = md.writeRegisters(mdRegisters.runRestoreFactoryConfig);
+
+    if (result != MD::Error_t::OK)
+    {
+        log.error("Failed to setup bandwidth for the driver with id %d!", id);
+    }
     else
-        log.error("Error reverting config to factory state!");
+    {
+        log.info("Bandwidth set successful!");
+    }
+    return;
 }
 
 void CandleTool::setupCalibration(u16 id)
@@ -117,21 +237,63 @@ void CandleTool::setupCalibration(u16 id)
     if (!ui::getCalibrationConfirmation() || checkSetupError(id))
         return;
 
-    m_candle.setupMd80Calibration(id);
+    MDRegisters_S mdRegisters;
+    MD            md        = MD(id, candle);
+    auto          connected = md.init();
+    if (connected != MD::Error_t::OK)
+    {
+        log.error("Could not connect MD with id %d", id);
+        return;
+    }
+    mdRegisters.runCalibrateCmd = 1;
+    auto result                 = md.writeRegisters(mdRegisters.runCalibrateCmd);
+
+    if (result != MD::Error_t::OK)
+    {
+        log.error("Failed to calibrate for the driver with id %d!", id);
+    }
+    else
+    {
+        log.info("Calibration started!");
+    }
+    return;
 }
 
 void CandleTool::setupCalibrationOutput(u16 id)
 {
     if (!ui::getCalibrationOutputConfirmation() || checkSetupError(id))
         return;
-    u16 outputEncoder = 0;
-    m_candle.readMd80Register(id, mab::Md80Reg_E::outputEncoder, outputEncoder);
-    if (!outputEncoder)
+
+    MDRegisters_S mdRegisters;
+    MD            md        = MD(id, candle);
+    auto          connected = md.init();
+    if (connected != MD::Error_t::OK)
+    {
+        log.error("Could not connect MD with id %d", id);
+        return;
+    }
+    mdRegisters.outputEncoder = 0;
+    auto resultRead           = md.readRegister(mdRegisters.outputEncoder);
+    if (mdRegisters.outputEncoder.value != 0)
     {
         log.error("No output encoder is configured!");
         return;
     }
-    m_candle.setupMd80CalibrationOutput(id);
+    if (resultRead.second != MD::Error_t::OK)
+    {
+        log.error("Failed to read output encoder type for the driver with id %d!", id);
+    }
+
+    mdRegisters.runCalibrateOutputEncoderCmd = 1;
+    auto resultWrite = md.writeRegisters(mdRegisters.runCalibrateOutputEncoderCmd);
+    if (resultWrite != MD::Error_t::OK)
+    {
+        log.error("Failed to calibrate for the driver with id %d!", id);
+    }
+    else
+    {
+        log.info("Calibration started!");
+    }
 }
 
 // TODO: Variant of this method for PDS device
@@ -215,7 +377,8 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
     mab::regWrite_st& regW = m_candle.getMd80FromList(id).getWriteReg();
     mab::regRead_st&  regR = m_candle.getMd80FromList(id).getReadReg();
 
-    /* add a field here only if you want to test it against limits form the candletool.ini file */
+    /* add a field here only if you want to test it against limits form the candletool.ini file
+     */
     memcpy(
         regW.RW.motorName, (cfg["motor"]["name"]).c_str(), strlen((cfg["motor"]["name"]).c_str()));
     if (!getField(cfg, ini, "motor", "pole pairs", regW.RW.polePairs))
