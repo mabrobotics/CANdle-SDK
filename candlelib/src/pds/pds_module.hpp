@@ -90,7 +90,10 @@ namespace mab
          */
         PdsModule(socketIndex_E socket, moduleType_E type, Candle& candle, u16& canId);
 
-        Logger m_log;
+        static constexpr Logger::ProgramLayer_E DEFAULT_PDS_MODULE_LOG_LAYER =
+            Logger::ProgramLayer_E::LAYER_2;
+
+        Logger m_log{DEFAULT_PDS_MODULE_LOG_LAYER, "PDS MODULE"};
 
         // Represents physical socket index number that the particular module is connected to.
         const socketIndex_E m_socketIndex;

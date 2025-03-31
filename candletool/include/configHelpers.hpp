@@ -121,7 +121,7 @@ inline bool getConfirmation()
     return false;
 }
 
-inline std::string floatToString(f32 value, bool noDecimals = false)
+inline std::string prettyFloatToString(f32 value, bool noDecimals = false)
 {
     std::stringstream ss;
     ss << std::fixed;

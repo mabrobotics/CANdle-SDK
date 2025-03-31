@@ -22,8 +22,7 @@ namespace mab
         if (result != PdsModule::error_E ::OK)
         {
             m_log.error("Reading PDS submodules failed! [ %s ]", PdsModule::error2String(result));
-            // throw std::runtime_error("Unable to read modules data from PDS");
-            exit(EXIT_FAILURE);
+            // TODO: How to handle this error?
         }
     }
     void Pds::init(u16 canId)

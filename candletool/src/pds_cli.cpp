@@ -876,16 +876,16 @@ static void fillPsIni(PowerStage& ps, mINI::INIStructure& rIni, std::string sect
 
     rIni[sectionName][TYPE_INI_KEY] = PdsModule::mType2Str(moduleType_E::POWER_STAGE);
     rIni[sectionName][TEMP_LIMIT_INI_KEY] =
-        floatToString(temperatureLimit) + "\t; Temperature limit [ ^C ]";
+        prettyFloatToString(temperatureLimit) + "\t; Temperature limit [ ^C ]";
     rIni[sectionName][OCD_LEVEL_INI_KEY] =
-        floatToString(ocdLevel, true) + "\t\t; Over-current detection level [ mA ]";
+        prettyFloatToString(ocdLevel, true) + "\t\t; Over-current detection level [ mA ]";
     rIni[sectionName][OCD_DELAY_INI_KEY] =
-        floatToString(ocdDelay, true) + "\t\t; Over-current detection delay [ ms ]";
+        prettyFloatToString(ocdDelay, true) + "\t\t; Over-current detection delay [ ms ]";
     rIni[sectionName][BR_SOCKET_INI_KEY] =
-        floatToString((uint8_t)brSocket, true) +
+        prettyFloatToString((uint8_t)brSocket, true) +
         "\t\t\t; Socket index where corresponding Brake Resistor is connected";
     rIni[sectionName][BR_TRIG_V_INI_KEY] =
-        floatToString(brTriggerVoltage, true) + "\t; Brake resistor trigger voltage [ mV ]";
+        prettyFloatToString(brTriggerVoltage, true) + "\t; Brake resistor trigger voltage [ mV ]";
 }
 
 // Fill Brake resistor Ini structure
@@ -897,7 +897,7 @@ static void fillBrIni(BrakeResistor& br, mINI::INIStructure& rIni, std::string s
 
     rIni[sectionName][TYPE_INI_KEY] = PdsModule::mType2Str(moduleType_E::BRAKE_RESISTOR);
     rIni[sectionName][TEMP_LIMIT_INI_KEY] =
-        floatToString(temperatureLimit) + "\t; Temperature limit [ ^C ]";
+        prettyFloatToString(temperatureLimit) + "\t; Temperature limit [ ^C ]";
 }
 
 // Fill Isolated Converter Ini structure
@@ -913,11 +913,11 @@ static void fillIcIni(IsolatedConv& ic, mINI::INIStructure& rIni, std::string se
 
     rIni[sectionName][TYPE_INI_KEY] = PdsModule::mType2Str(moduleType_E::ISOLATED_CONVERTER);
     rIni[sectionName][TEMP_LIMIT_INI_KEY] =
-        floatToString(temperatureLimit) + "\t; Temperature limit [ ^C ]";
+        prettyFloatToString(temperatureLimit) + "\t; Temperature limit [ ^C ]";
     rIni[sectionName][OCD_LEVEL_INI_KEY] =
-        floatToString(ocdLevel, true) + "\t\t; Over-current detection level [ mA ]";
+        prettyFloatToString(ocdLevel, true) + "\t\t; Over-current detection level [ mA ]";
     rIni[sectionName][OCD_DELAY_INI_KEY] =
-        floatToString(ocdDelay, true) + "\t\t; Over-current detection delay [ ms ]";
+        prettyFloatToString(ocdDelay, true) + "\t\t; Over-current detection delay [ ms ]";
 }
 
 static void fullModuleIni(Pds&                pds,
@@ -1351,14 +1351,14 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
     m_pds.getShutdownTime(shutDownTime);
     m_pds.getBatteryVoltageLevels(batLvl1, batLvl2);
 
-    readIni[CONTROL_BOARD_INI_SECTION][CAN_ID_INI_KEY]   = floatToString(m_canId, true);
+    readIni[CONTROL_BOARD_INI_SECTION][CAN_ID_INI_KEY]   = prettyFloatToString(m_canId, true);
     readIni[CONTROL_BOARD_INI_SECTION][CAN_BAUD_INI_KEY] = "TODO";
     readIni[CONTROL_BOARD_INI_SECTION][SHUTDOWN_TIME_INI_KEY] =
-        floatToString(shutDownTime, true) + "\t\t; Shutdown time [ ms ]";
+        prettyFloatToString(shutDownTime, true) + "\t\t; Shutdown time [ ms ]";
     readIni[CONTROL_BOARD_INI_SECTION][BATT_LVL_1_INI_KEY] =
-        floatToString(batLvl1, true) + "\t\t; Battery monitor lvl 1 [ mV ]";
+        prettyFloatToString(batLvl1, true) + "\t\t; Battery monitor lvl 1 [ mV ]";
     readIni[CONTROL_BOARD_INI_SECTION][BATT_LVL_2_INI_KEY] =
-        floatToString(batLvl2, true) + "\t\t; Battery monitor lvl 2 [ mV ]";
+        prettyFloatToString(batLvl2, true) + "\t\t; Battery monitor lvl 2 [ mV ]";
     fullModuleIni(m_pds, pdsModules.moduleTypeSocket1, readIni, socketIndex_E::SOCKET_1);
     fullModuleIni(m_pds, pdsModules.moduleTypeSocket2, readIni, socketIndex_E::SOCKET_2);
     fullModuleIni(m_pds, pdsModules.moduleTypeSocket3, readIni, socketIndex_E::SOCKET_3);
@@ -1388,8 +1388,8 @@ void PdsCli::pdsStoreConfig(void)
 
 socketIndex_E PdsCli::decodeSocketIndex(u8 numericSocketIndex)
 {
-    if (numericSocketIndex < 7)
-        return static_cast<socketIndex_E>(numericSocketIndex);
-    else
+    if (numericSocketIndex > (u8)mab::socketIndex_E::SOCKET_6)
         return socketIndex_E::UNASSIGNED;
+
+    return static_cast<socketIndex_E>(numericSocketIndex);
 }

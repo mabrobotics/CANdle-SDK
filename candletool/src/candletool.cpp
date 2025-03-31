@@ -439,18 +439,18 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
         log.warn("Failed to read motor config!");
 
     readIni["motor"]["name"]             = std::string(motorNameChar);
-    readIni["motor"]["pole pairs"]       = floatToString(regR.RW.polePairs);
-    readIni["motor"]["KV"]               = floatToString(regR.RW.motorKV);
-    readIni["motor"]["torque constant"]  = floatToString(regR.RW.motorKt);
-    readIni["motor"]["gear ratio"]       = floatToString(regR.RW.gearRatio);
-    readIni["motor"]["max current"]      = floatToString(regR.RW.iMax);
-    readIni["motor"]["torque bandwidth"] = floatToString(regR.RW.torqueBandwidth);
+    readIni["motor"]["pole pairs"]       = prettyFloatToString(regR.RW.polePairs);
+    readIni["motor"]["KV"]               = prettyFloatToString(regR.RW.motorKV);
+    readIni["motor"]["torque constant"]  = prettyFloatToString(regR.RW.motorKt);
+    readIni["motor"]["gear ratio"]       = prettyFloatToString(regR.RW.gearRatio);
+    readIni["motor"]["max current"]      = prettyFloatToString(regR.RW.iMax);
+    readIni["motor"]["torque bandwidth"] = prettyFloatToString(regR.RW.torqueBandwidth);
 
     if (!m_candle.readMd80Register(
             id, mab::Md80Reg_E::motorShutdownTemp, regR.RW.motorShutdownTemp))
         log.warn("Failed to read motor config!");
 
-    readIni["motor"]["shutdown temp"] = floatToString(regR.RW.motorShutdownTemp);
+    readIni["motor"]["shutdown temp"] = prettyFloatToString(regR.RW.motorShutdownTemp);
 
     /* Motor config - limits section */
     if (!m_candle.readMd80Register(id,
@@ -468,12 +468,12 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
                                    regR.RW.maxDeceleration))
         log.warn("Failed to read motor config!");
 
-    readIni["limits"]["max torque"]       = floatToString(regR.RW.maxTorque);
-    readIni["limits"]["max velocity"]     = floatToString(regR.RW.maxVelocity);
-    readIni["limits"]["max position"]     = floatToString(regR.RW.positionLimitMax);
-    readIni["limits"]["min position"]     = floatToString(regR.RW.positionLimitMin);
-    readIni["limits"]["max acceleration"] = floatToString(regR.RW.maxAcceleration);
-    readIni["limits"]["max deceleration"] = floatToString(regR.RW.maxDeceleration);
+    readIni["limits"]["max torque"]       = prettyFloatToString(regR.RW.maxTorque);
+    readIni["limits"]["max velocity"]     = prettyFloatToString(regR.RW.maxVelocity);
+    readIni["limits"]["max position"]     = prettyFloatToString(regR.RW.positionLimitMax);
+    readIni["limits"]["min position"]     = prettyFloatToString(regR.RW.positionLimitMin);
+    readIni["limits"]["max acceleration"] = prettyFloatToString(regR.RW.maxAcceleration);
+    readIni["limits"]["max deceleration"] = prettyFloatToString(regR.RW.maxDeceleration);
 
     /* Motor config - profile section */
     if (!m_candle.readMd80Register(id,
@@ -485,9 +485,9 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
                                    regR.RW.profileDeceleration))
         log.warn("Failed to read motor config!");
 
-    readIni["profile"]["acceleration"] = floatToString(regR.RW.profileAcceleration);
-    readIni["profile"]["deceleration"] = floatToString(regR.RW.profileDeceleration);
-    readIni["profile"]["velocity"]     = floatToString(regR.RW.profileVelocity);
+    readIni["profile"]["acceleration"] = prettyFloatToString(regR.RW.profileAcceleration);
+    readIni["profile"]["deceleration"] = prettyFloatToString(regR.RW.profileDeceleration);
+    readIni["profile"]["velocity"]     = prettyFloatToString(regR.RW.profileVelocity);
 
     /* Motor config - output encoder section */
     if (!m_candle.readMd80Register(id,
@@ -498,12 +498,12 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
         log.warn("Failed to read motor config!");
 
     if (regR.RW.outputEncoder == 0.f)
-        readIni["output encoder"]["output encoder"] = floatToString(0.f, true);
+        readIni["output encoder"]["output encoder"] = prettyFloatToString(0.f, true);
     else
         readIni["output encoder"]["output encoder"] = ui::encoderTypes[regR.RW.outputEncoder];
 
     if (regR.RW.outputEncoderMode == 0.f)
-        readIni["output encoder"]["output encoder mode"] = floatToString(0.f, true);
+        readIni["output encoder"]["output encoder mode"] = prettyFloatToString(0.f, true);
     else
         readIni["output encoder"]["output encoder mode"] =
             ui::encoderModes[regR.RW.outputEncoderMode];
@@ -520,10 +520,10 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
                                    regR.RW.positionPidGains.intWindup))
         log.warn("Failed to read motor config!");
 
-    readIni["position PID"]["kp"]     = floatToString(regR.RW.positionPidGains.kp);
-    readIni["position PID"]["ki"]     = floatToString(regR.RW.positionPidGains.ki);
-    readIni["position PID"]["kd"]     = floatToString(regR.RW.positionPidGains.kd);
-    readIni["position PID"]["windup"] = floatToString(regR.RW.positionPidGains.intWindup);
+    readIni["position PID"]["kp"]     = prettyFloatToString(regR.RW.positionPidGains.kp);
+    readIni["position PID"]["ki"]     = prettyFloatToString(regR.RW.positionPidGains.ki);
+    readIni["position PID"]["kd"]     = prettyFloatToString(regR.RW.positionPidGains.kd);
+    readIni["position PID"]["windup"] = prettyFloatToString(regR.RW.positionPidGains.intWindup);
 
     /* Motor config - velocity PID section */
     if (!m_candle.readMd80Register(id,
@@ -537,10 +537,10 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
                                    regR.RW.velocityPidGains.intWindup))
         log.warn("Failed to read motor config!");
 
-    readIni["velocity PID"]["kp"]     = floatToString(regR.RW.velocityPidGains.kp);
-    readIni["velocity PID"]["ki"]     = floatToString(regR.RW.velocityPidGains.ki);
-    readIni["velocity PID"]["kd"]     = floatToString(regR.RW.velocityPidGains.kd);
-    readIni["velocity PID"]["windup"] = floatToString(regR.RW.velocityPidGains.intWindup);
+    readIni["velocity PID"]["kp"]     = prettyFloatToString(regR.RW.velocityPidGains.kp);
+    readIni["velocity PID"]["ki"]     = prettyFloatToString(regR.RW.velocityPidGains.ki);
+    readIni["velocity PID"]["kd"]     = prettyFloatToString(regR.RW.velocityPidGains.kd);
+    readIni["velocity PID"]["windup"] = prettyFloatToString(regR.RW.velocityPidGains.intWindup);
 
     /* Motor config - impedance PD section */
     if (!m_candle.readMd80Register(id,
@@ -550,8 +550,8 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
                                    regR.RW.impedancePdGains.kd))
         log.warn("Failed to read motor config!");
 
-    readIni["impedance PD"]["kp"] = floatToString(regR.RW.impedancePdGains.kp);
-    readIni["impedance PD"]["kd"] = floatToString(regR.RW.impedancePdGains.kd);
+    readIni["impedance PD"]["kp"] = prettyFloatToString(regR.RW.impedancePdGains.kp);
+    readIni["impedance PD"]["kd"] = prettyFloatToString(regR.RW.impedancePdGains.kd);
 
     /* Motor config - homing section */
     if (!m_candle.readMd80Register(id,
@@ -566,9 +566,9 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
         log.warn("Failed to read motor config!");
 
     readIni["homing"]["mode"]         = ui::homingModes[regR.RW.homingMode];
-    readIni["homing"]["max travel"]   = floatToString(regR.RW.homingMaxTravel);
-    readIni["homing"]["max torque"]   = floatToString(regR.RW.homingTorque);
-    readIni["homing"]["max velocity"] = floatToString(regR.RW.homingVelocity);
+    readIni["homing"]["max travel"]   = prettyFloatToString(regR.RW.homingMaxTravel);
+    readIni["homing"]["max torque"]   = prettyFloatToString(regR.RW.homingTorque);
+    readIni["homing"]["max velocity"] = prettyFloatToString(regR.RW.homingVelocity);
 
     /* Saving motor config to file */
     if (saveConfig)
