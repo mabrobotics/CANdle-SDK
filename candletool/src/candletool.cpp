@@ -402,73 +402,75 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
     mINI::INIStructure ini;
     file.read(ini);
 
-    if (!tryAddMD80(id))
-        return;
-    mab::regWrite_st& regW = candle->getMd80FromList(id).getWriteReg();
-    mab::regRead_st&  regR = candle->getMd80FromList(id).getReadReg();
+    // if (!tryAddMD80(id))
+    //     return;
+    // mab::regWrite_st& regW = candle->getMd80FromList(id).getWriteReg();
+    // mab::regRead_st&  regR = candle->getMd80FromList(id).getReadReg();
+
+    mab::MDRegisters_S regs;
+    mab::MD            md = MD(id, candle);
+    if (md.init() != MD::Error_t::OK)
+    {
+        log.error("Failed to connect to MD!");
+    }
 
     /* add a field here only if you want to test it against limits form the candletool.ini file
      */
-    memcpy(
-        regW.RW.motorName, (cfg["motor"]["name"]).c_str(), strlen((cfg["motor"]["name"]).c_str()));
-    if (!getField(cfg, ini, "motor", "pole pairs", regW.RW.polePairs))
+    memcpy(regs.motorName.value,
+           (cfg["motor"]["name"]).c_str(),
+           strlen((cfg["motor"]["name"]).c_str()));
+    if (!getField(cfg, ini, "motor", "pole pairs", regs.motorPolePairs.value))
         return;
-    if (!getField(cfg, ini, "motor", "torque constant", regW.RW.motorKt))
+    if (!getField(cfg, ini, "motor", "torque constant", regs.motorKt.value))
         return;
-    if (!getField(cfg, ini, "motor", "KV", regW.RW.motorKV))
+    if (!getField(cfg, ini, "motor", "KV", regs.motorKV.value))
         return;
-    if (!getField(cfg, ini, "motor", "gear ratio", regW.RW.gearRatio))
+    if (!getField(cfg, ini, "motor", "gear ratio", regs.motorGearRatio.value))
         return;
-    if (!getField(cfg, ini, "motor", "max current", regW.RW.iMax))
+    if (!getField(cfg, ini, "motor", "max current", regs.motorIMax.value))
         return;
-    if (!getField(cfg, ini, "motor", "torque constant a", regW.RW.motorKt_a))
+    if (!getField(cfg, ini, "motor", "torque constant a", regs.motorKtPhaseA.value))
         return;
-    if (!getField(cfg, ini, "motor", "torque constant b", regW.RW.motorKt_b))
+    if (!getField(cfg, ini, "motor", "torque constant b", regs.motorKtPhaseB.value))
         return;
-    if (!getField(cfg, ini, "motor", "torque constant c", regW.RW.motorKt_c))
+    if (!getField(cfg, ini, "motor", "torque constant c", regs.motorKtPhaseC.value))
         return;
-    if (!getField(cfg, ini, "motor", "torque bandwidth", regW.RW.torqueBandwidth))
+    if (!getField(cfg, ini, "motor", "torque bandwidth", regs.motorTorqueBandwidth.value))
         return;
-    if (!getField(cfg, ini, "motor", "dynamic friction", regW.RW.friction))
+    if (!getField(cfg, ini, "motor", "dynamic friction", regs.motorFriction.value))
         return;
-    if (!getField(cfg, ini, "motor", "static friction", regW.RW.stiction))
+    if (!getField(cfg, ini, "motor", "static friction", regs.motorStiction.value))
         return;
-    if (!getField(cfg, ini, "motor", "shutdown temp", regW.RW.motorShutdownTemp))
+    if (!getField(cfg, ini, "motor", "shutdown temp", regs.motorShutdownTemp.value))
         return;
-    if (!getField(cfg, ini, "limits", "max velocity", regW.RW.maxVelocity))
+    if (!getField(cfg, ini, "limits", "max velocity", regs.maxVelocity.value))
         return;
-    if (!getField(cfg, ini, "limits", "max acceleration", regW.RW.maxAcceleration))
+    if (!getField(cfg, ini, "limits", "max acceleration", regs.maxAcceleration.value))
         return;
-    if (!getField(cfg, ini, "limits", "max deceleration", regW.RW.maxDeceleration))
+    if (!getField(cfg, ini, "limits", "max deceleration", regs.maxDeceleration.value))
         return;
 
     auto checkFieldWriteIfPopulated =
-        [&](const char* category, const char* field, auto& fieldVar, mab::Md80Reg_E reg) -> bool
+        [&]<class T>(const char* category, const char* field, RegisterEntry_S<T> regVal) -> bool
     {
         if (cfg[category][field] == "")
             return true;
 
-        if (!getField(cfg, ini, category, field, fieldVar))
+        if (!getField(cfg, ini, category, field, regVal.value))
             return false;
 
-        if (!candle->writeMd80Register(id, reg, fieldVar))
+        if (md.writeRegisters(regVal))
         {
-            log.error("Failed to setup motor! Error writing: 0x%x register.", (u16)reg);
+            log.error("Failed to setup motor! Error writing: 0x%x register.", regVal.m_regAddress);
             return false;
         }
         return true;
     };
 
-    if (!checkFieldWriteIfPopulated("hardware",
-                                    "shunt resistance",
-                                    regR.RO.shuntResistance,
-                                    mab::Md80Reg_E::shuntResistance))
+    if (!checkFieldWriteIfPopulated("hardware", "shunt resistance", regs.shuntResistance))
         return;
 
-    if (!checkFieldWriteIfPopulated("motor",
-                                    "reverse direction",
-                                    regR.RW.reverseDirection,
-                                    mab::Md80Reg_E::reverseDirection))
+    if (!checkFieldWriteIfPopulated("motor", "reverse direction", regs.reverseDirection))
         return;
 
     regW.RW.motorCalibrationMode =
