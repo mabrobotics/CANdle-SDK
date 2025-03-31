@@ -428,9 +428,8 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
     if (!getField(cfg, ini, "limits", "max deceleration", regs.maxDeceleration.value))
         return;
 
-    auto checkFieldWriteIfPopulated = [&]<class T>(const char*               category,
-                                                   const char*               field,
-                                                   mab::MDRegisterEntry_S<T> regVal) -> bool
+    auto checkFieldWriteIfPopulated =
+        [&]<class T>(const char* category, const char* field, RegisterEntry_S<T> regVal) -> bool
     {
         if (cfg[category][field] == "")
             return true;
