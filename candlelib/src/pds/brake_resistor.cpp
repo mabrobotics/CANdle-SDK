@@ -1,4 +1,5 @@
 #include "brake_resistor.hpp"
+#include <string>
 
 namespace mab
 {

@@ -1,4 +1,5 @@
 #include "isolated_converter.hpp"
+#include <string>
 
 namespace mab
 {

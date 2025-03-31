@@ -200,13 +200,4 @@ namespace mab
         BAUD_8M = 0x03
     };
 
-    struct pdsConfig_S
-    {
-        u16           canId;
-        canBaudrate_E canBaudrate;
-        u32           shutdownTime;
-        u32           batteryLevel1;
-        u32           batteryLevel2;
-    };
-
 }  // namespace mab
