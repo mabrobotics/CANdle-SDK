@@ -26,6 +26,7 @@ class CandleTool
 {
   public:
     CandleTool();
+    ~CandleTool();
     void ping(const std::string& variant);
     void configCan(u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination = 0);
     void configSave(u16 id);
@@ -83,8 +84,8 @@ class CandleTool
     void updatePds(const std::string& mabFilePath, uint16_t canId, bool noReset = false);
 
   private:
-    Logger                         log;
-    std::unique_ptr<mab::CandleV2> candle;
+    Logger         log;
+    mab::CandleV2* candle;
 
     std::string busString;
 
