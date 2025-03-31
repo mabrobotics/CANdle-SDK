@@ -1,61 +1,65 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(candletool VERSION ${CANDLESDK_VERSION_1}.${CANDLESDK_VERSION_2}.${CANDLESDK_VERSION_3})
+include(GNUInstallDirs)
 
-# file(GLOB SRC "src/*.cpp")
+message(CMAKE_INSTALL_SYSCONFDIR: ${CMAKE_INSTALL_SYSCONFDIR})
+
+set(CANDLETOOL_VERSION_MAJOR 0)
+set(CANDLETOOL_VERSION_MINOR 9)
+set(CANDLETOOL_VERSION_PATCH 2)
+set(CANDLETOOL_VERSION_TAG "beta")
+
+set(CANDLETOOL_VERSION_FULL "${CANDLETOOL_VERSION_MAJOR}.${CANDLETOOL_VERSION_MINOR}.${CANDLETOOL_VERSION_PATCH}-${CANDLETOOL_VERSION_TAG}") 
+
+add_subdirectory(3rd_party/CLI11)
+
 set(CANDLETOOL_SOURCES
 
-  src/candletool.cpp
-  src/canLoader.cpp
-  src/mab_crc.cpp
-  src/mabFileParser.cpp
-  src/main.cpp
-  src/pds_cli.cpp
-  src/ui.cpp
-  src/uploader.cpp
-  src/usbLoader.cpp
+    src/candletool.cpp
+    src/canLoader.cpp
+    src/mab_crc.cpp
+    src/mabFileParser.cpp
+    src/main.cpp
+    src/pds_cli.cpp
+    src/ui.cpp
+    src/uploader.cpp
+    src/usbLoader.cpp
 
 )
-# enable_testing()
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-add_executable(${PROJECT_NAME} ${CANDLETOOL_SOURCES})
-target_link_libraries(${PROJECT_NAME} candle logger)
-target_include_directories(
-  ${PROJECT_NAME}
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-         ${CMAKE_CURRENT_SOURCE_DIR}/../candlelib/include
-         ${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger
-         ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src
-         ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/CLI11/inc)
+
+add_executable(candletool ${CANDLETOOL_SOURCES})
+
+target_link_libraries(candletool candle logger)
+
+target_include_directories(candletool PUBLIC
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src
+
+)
+
 target_compile_options(candletool PRIVATE -g)
-set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "candletool")
 
-target_compile_definitions(
-  ${PROJECT_NAME}
-  PRIVATE CANDLETOOL_VMAJOR=${CANDLESDK_VERSION_1}
-  PRIVATE CANDLETOOL_VMINOR=${CANDLESDK_VERSION_2}
-  PRIVATE CANDLETOOL_VREVISION=${CANDLESDK_VERSION_3}
-  PRIVATE CANDLETOOL_VTAG=${CANDLESDK_VERSION_TAG})
+set_target_properties(candletool PROPERTIES OUTPUT_NAME "candletool")
 
-  set(DEB_GENERATOR_SCRIPT ${CMAKE_SOURCE_DIR}/create_deb_file.sh)
-  set(DEB_CTRL_FILE ${CMAKE_CURRENT_SOURCE_DIR}/deb/control)
+target_compile_definitions(candletool PRIVATE
+    CANDLETOOL_VMAJOR=${CANDLETOOL_VERSION_MAJOR}
+    CANDLETOOL_VMINOR=${CANDLETOOL_VERSION_MINOR}
+    CANDLETOOL_VREVISION=${CANDLETOOL_VERSION_PATCH}
+    CANDLETOOL_VTAG=${CANDLETOOL_VERSION_TAG}
+)
 
-  add_custom_command(TARGET ${PROJECT_NAME}
-  POST_BUILD
-  COMMAND cp -r ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/udev ${CMAKE_CURRENT_BINARY_DIR}/
-  COMMAND ${DEB_GENERATOR_SCRIPT} ${PROJECT_NAME} ${DEB_CTRL_FILE} $<TARGET_FILE:${PROJECT_NAME}>
-  )
-
-add_subdirectory(3rd_party/CLI11)
 target_link_libraries(candletool CLI11)
 
-if(MAKE_TESTS_CANDLETOOL)
-  add_subdirectory(test)
-endif()
+# add_unit_test_executable(pds_cli_test tests/pds_cli_test.cpp)
+# target_include_directories(pds_cli_test PRIVATE include)
+# target_link_libraries(pds_cli_test PRIVATE CLI11 shared_data)
+# target_
 
-add_custom_command(TARGET ${PROJECT_NAME}
+add_custom_command(TARGET candletool
   POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/ ${CMAKE_CURRENT_BINARY_DIR}/
   COMMENT "Copying configs..."
@@ -63,52 +67,64 @@ add_custom_command(TARGET ${PROJECT_NAME}
 
 # package / installer
 set(CPACK_PROJECT_NAME "candletool")
-set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
-set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}-${PROJECT_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR})
+set(CPACK_PACKAGE_NAME candletool)
+set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}-${CANDLETOOL_VERSION_FULL}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR})
+set(CPACK_PACKAGE_VERSION_MAJOR ${CANDLETOOL_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${CANDLETOOL_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${CANDLETOOL_VERSION_PATCH})
 set(CPACK_PACKAGE_VENDOR "MAB Robotics")
-set(CPACK_PACKAGE_DESCRIPTION
-    "Console tool for configuring and setting up MAB MD motor controllers via CANdle."
-)
+set(CPACK_PACKAGE_DESCRIPTION "Console tool for MAB devices ecosystem configuration")
+
 if(WIN32)
+
   set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL "ON")
   set(CPACK_NSIS_MODIFY_PATH ON)
   target_link_libraries(
-    ${PROJECT_NAME}
+    candletool
     -static
     candle
     -static-libstdc++
     -static-libgcc
     -static
     logger)
-  install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${INSTALL_PATH}
-                                          COMPONENT candletool)
-  install(
-    DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/motors"
-    DESTINATION "bin/config"
-    COMPONENT _configs)
-  install(
-    FILES "${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini"
-    DESTINATION "bin/config/"
-    PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
-                WORLD_WRITE
-    COMPONENT _configs)
+    
 elseif(UNIX)
+
+  install(TARGETS candletool
+          RUNTIME
+          COMPONENT candletool)
+
+  install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/motors
+          DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
+          COMPONENT _configs)
+
+  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini
+          DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
+          PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ WORLD_WRITE
+          COMPONENT _configs)
+    
   set(CPACK_GENERATOR "DEB")
   set(CPACK_DEBIAN_PACKAGE_MAINTAINER "MAB Robotics <contact@mabrobotics.pl>")
   set(CPACK_DEBIAN_PACKAGE_DEPENDS libusb-1.0-0)
   set(CPACK_DEBIAN_PACKAGE_VERSION)
+
   if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
+  
     set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "arm64")
+    
   endif()
-  set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
-      "${PROJECT_SOURCE_DIR}/template_package/postinst")
-  install(TARGETS ${PROJECT_NAME} DESTINATION /usr/local/bin EXCLUDE_FROM_ALL)
-  install(DIRECTORY "${PROJECT_SOURCE_DIR}/template_package/etc" DESTINATION / EXCLUDE_FROM_ALL)
-  install(
-    FILES "${PROJECT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini"
-    DESTINATION "/etc/candletool/"
-    PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
-                WORLD_WRITE EXCLUDE_FROM_ALL)
+
+  set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/template_package/postinst")
+ 
+
+  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/udev/rules.d/99-candletool.rules
+          DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/")
+
+  install(FILES "${PROJECT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini"
+          DESTINATION "/etc/candletool/"
+          PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
+          WORLD_WRITE EXCLUDE_FROM_ALL)
+
 endif()
 
 include(CPack)

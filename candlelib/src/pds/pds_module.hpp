@@ -23,7 +23,7 @@ namespace mab
         {
 
             OK                  = 0,
-            UNKNOWN_ERROR       = 1,
+            INTERNAL_ERROR      = 1,
             PROTOCOL_ERROR      = 2,
             COMMUNICATION_ERROR = 3,
 
@@ -31,13 +31,50 @@ namespace mab
 
         PdsModule() = delete;
 
-        socketIndex_E getSocketIndex();
+        socketIndex_E getSocketIndex() const;
 
-        error_E getBoardVersion(moduleVersion_E& version);
+        error_E getBoardVersion(moduleVersion_E& version) const;
 
         virtual void printModuleInfo(void) = 0;
 
-        static std::string moduleType2String(moduleType_E type);
+        constexpr static const char* mType2Str(moduleType_E type)
+        {
+            switch (type)
+            {
+                case moduleType_E::UNDEFINED:
+                    return "UNDEFINED";
+                case moduleType_E::CONTROL_BOARD:
+                    return "CONTROL_BOARD";
+                case moduleType_E::BRAKE_RESISTOR:
+                    return "BRAKE_RESISTOR";
+                case moduleType_E::ISOLATED_CONVERTER:
+                    return "ISOLATED_CONVERTER";
+                case moduleType_E::POWER_STAGE:
+                    return "POWER_STAGE";
+
+                    /* NEW MODULE TYPES HERE */
+
+                default:
+                    return "UNKNOWN";
+            }
+        }
+
+        constexpr static const char* error2String(error_E error)
+        {
+            switch (error)
+            {
+                case error_E::OK:
+                    return "OK";
+                case error_E::INTERNAL_ERROR:
+                    return "INTERNAL_ERROR";
+                case error_E::PROTOCOL_ERROR:
+                    return "PROTOCOL_ERROR";
+                case error_E::COMMUNICATION_ERROR:
+                    return "COMMUNICATION_ERROR";
+                default:
+                    return "UNKNOWN_ERROR";
+            }
+        }
 
       protected:
         /**
@@ -53,7 +90,10 @@ namespace mab
          */
         PdsModule(socketIndex_E socket, moduleType_E type, Candle& candle, u16& canId);
 
-        Logger m_log;
+        static constexpr Logger::ProgramLayer_E DEFAULT_PDS_MODULE_LOG_LAYER =
+            Logger::ProgramLayer_E::LAYER_2;
+
+        Logger m_log{DEFAULT_PDS_MODULE_LOG_LAYER, "PDS MODULE"};
 
         // Represents physical socket index number that the particular module is connected to.
         const socketIndex_E m_socketIndex;
@@ -72,7 +112,7 @@ namespace mab
         // TODO: Now propertyID is single for all modules so it dont has to be templated
         template <typename dataValueT>
         [[nodiscard]] PdsModule::error_E readModuleProperty(propertyId_E property,
-                                                            dataValueT&  dataValue)
+                                                            dataValueT&  dataValue) const
         {
             PdsMessage::error_E result = PdsMessage::error_E::OK;
             PropertyGetMessage  message(m_type, m_socketIndex);
@@ -114,6 +154,10 @@ namespace mab
             u8                  responseBuffer[64] = {0};
             size_t              responseLength     = 0;
 
+            m_log.debug("Attempt to write property [ %u ] with value [ 0x%08x ]",
+                        (uint8_t)property,
+                        dataValue);
+
             message.addProperty(property, dataValue);
             std::vector<u8> serializedMessage = message.serialize();
 
@@ -122,7 +166,8 @@ namespace mab
                     serializedMessage.size(),
                     reinterpret_cast<const char*>(serializedMessage.data()),
                     reinterpret_cast<char*>(responseBuffer),
-                    &responseLength)))
+                    &responseLength,
+                    1000)))
             {
                 return error_E::COMMUNICATION_ERROR;
             }

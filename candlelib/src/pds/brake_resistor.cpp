@@ -1,11 +1,12 @@
 #include "brake_resistor.hpp"
+#include <string>
 
 namespace mab
 {
     BrakeResistor::BrakeResistor(socketIndex_E socket, Candle& candle, u16& canId)
         : PdsModule(socket, moduleType_E::BRAKE_RESISTOR, candle, canId)
     {
-        m_log.m_tag = "BR  :: " + std::to_string(static_cast<int>(socket) + 1);
+        m_log.m_tag = "BR  :: " + std::to_string(static_cast<u8>(socket));
         m_log.debug("Object created");
     }
 
@@ -21,7 +22,7 @@ namespace mab
         getTemperature(temperature);
         getTemperatureLimit(temperatureLimit);
 
-        m_log.info("Module type: %s", moduleType2String(m_type).c_str());
+        m_log.info("Module type: %s", mType2Str(m_type));
         m_log.info("Module version: %u", (u8)hwVersion);
         m_log.info("Module status: %s", status.ENABLED ? "ENABLED" : "DISABLED");
         m_log.info("Module temperature: %.2f", temperature);

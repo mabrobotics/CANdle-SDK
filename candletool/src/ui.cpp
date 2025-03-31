@@ -481,20 +481,21 @@ namespace ui
              << std::endl;
         return true;
     }
-    bool getSaveMotorConfigConfirmation(std::string configName)
+    bool getSaveConfigConfirmation(std::string configName)
     {
-        vout << "[CANDLETOOL] Would you like to save the motor config under the name: "
-             << configName << " in your current directory? [Y/n]" << std::endl;
+        vout << "[CANDLETOOL] Would you like to save device config under the name: " << configName
+             << " in your current directory? [Y/n]" << std::endl;
         char x;
         std::cin >> x;
         if (x != 'Y' && x != 'y')
         {
-            vout << "[CANDLETOOL] Reading the motor config without saving to a file." << std::endl;
+            vout << "[CANDLETOOL] Reading device config without saving to a file." << std::endl;
             return false;
         }
-        vout << "[CANDLETOOL] Saving the motor config." << std::endl;
+        vout << "[CANDLETOOL] Saving device config." << std::endl;
         return true;
     }
+
     bool getOverwriteMotorConfigConfirmation(std::string configName)
     {
         vout << "[CANDLETOOL] The " << configName

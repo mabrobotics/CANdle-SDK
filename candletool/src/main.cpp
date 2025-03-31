@@ -1,4 +1,5 @@
 #include "candletool.hpp"
+#include "configHelpers.hpp"
 #include "logger.hpp"
 #include "ui.hpp"
 #include "CLI/CLI.hpp"
@@ -151,8 +152,32 @@ int main(int argc, char** argv)
     std::string logPath = "";
     app.add_flag("--log", logPath, "Redirect output to file")->default_val("")->expected(1);
 
-    CandleTool candleTool;
-    PdsCli     pdsCli(app, candleTool);
+    mab::BusType_E        busType = mab::BusType_E::USB;
+    mab::CANdleBaudrate_E baud    = mab::CANdleBaudrate_E::CAN_BAUD_1M;
+
+    mINI::INIFile      file(getCandletoolConfigPath());
+    mINI::INIStructure ini;
+    file.read(ini);
+
+    std::string busString = ini["communication"]["bus"];
+    if (busString == "SPI")
+        busType = mab::BusType_E::SPI;
+    else if (busString == "UART")
+        busType = mab::BusType_E::UART;
+    else if (busString == "USB")
+        busType = mab::BusType_E::USB;
+    std::string& device = ini["communication"]["device"];
+
+    std::shared_ptr<mab::Candle> candle       = nullptr;
+    bool                         printVerbose = true;
+
+    if (device != "" && busType != mab::BusType_E::USB)
+        candle = std::make_shared<mab::Candle>(baud, printVerbose, busType, device);
+    else
+        candle = std::make_shared<mab::Candle>(baud, printVerbose, busType);
+
+    CandleTool candleTool(*candle);
+    PdsCli     pdsCli(app, *candle);
 
     CLI11_PARSE(app, argc, argv);
 
@@ -231,7 +256,7 @@ int main(int argc, char** argv)
         if (testEncoderOut->parsed())
             candleTool.testEncoderOutput(cmd.id);
         if (testLatency->parsed())
-            candleTool.testLatency(cmd.baud);
+            candleTool.testLatency(cmd.baud, busString);
         if (testMoveAbs->parsed())
             candleTool.testMoveAbsolute(cmd.id, cmd.pos, cmd.vel, cmd.acc, cmd.dcc);
         if (testMoveRel->parsed())

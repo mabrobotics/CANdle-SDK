@@ -6,7 +6,7 @@ namespace mab
     PowerStage::PowerStage(socketIndex_E socket, Candle& candle, u16& canId)
         : PdsModule(socket, moduleType_E::POWER_STAGE, candle, canId)
     {
-        m_log.m_tag = "PS  :: " + std::to_string(static_cast<int>(socket) + 1);
+        m_log.m_tag = "PS  :: " + std::to_string(static_cast<u8>(socket));
         m_log.debug("Object created");
     }
 
@@ -35,7 +35,7 @@ namespace mab
         getOcdLevel(ocdLevel);
         getOcdDelay(ocdDelay);
 
-        m_log.info("Module type: %s", moduleType2String(m_type).c_str());
+        m_log.info("Module type: %s", mType2Str(m_type));
         m_log.info("Module version: %u", (u8)hwVersion);
         m_log.info("Module status: %s", status.ENABLED ? "ENABLED" : "DISABLED");
         m_log.info("Module temperature: %.2f", temperature);
@@ -69,6 +69,17 @@ namespace mab
         status.OVER_CURRENT     = statusWord & (u32)statusBits_E::OVER_CURRENT;
 
         return result;
+    }
+
+    PdsModule::error_E PowerStage::clearStatus(powerStageStatus_S status)
+    {
+        u32 statusClearWord = 0;
+
+        // statusClearWord |= status.ENABLED ? (u32)statusBits_E::ENABLED : 0;
+        statusClearWord |= status.OVER_TEMPERATURE ? (u32)statusBits_E::OVER_TEMPERATURE : 0;
+        statusClearWord |= status.OVER_CURRENT ? (u32)statusBits_E::OVER_CURRENT : 0;
+
+        return writeModuleProperty(propertyId_E::STATUS_CLEAR, statusClearWord);
     }
 
     PdsModule::error_E PowerStage::getEnabled(bool& enabled)

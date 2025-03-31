@@ -1,9 +1,12 @@
 #pragma once
 
+#include <string>
 #include "bus.hpp"
 #include "candle.hpp"
+#include "mab_types.hpp"
 #include "mini/ini.h"
 #include "logger.hpp"
+
 struct UserCommand
 {
     std::string variant     = "";
@@ -23,10 +26,11 @@ struct UserCommand
     std::string firmwareFileName = "";
     bool        noReset          = false;
 };
+
 class CandleTool
 {
   public:
-    CandleTool();
+    CandleTool(mab::Candle& candle);
     void ping(const std::string& variant);
     void configCan(u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination = 0);
     void configSave(u16 id);
@@ -44,7 +48,7 @@ class CandleTool
 
     void testMove(u16 id, f32 targetPosition);
     void testMoveAbsolute(u16 id, f32 targetPos, f32 velLimit, f32 accLimit, f32 dccLimit);
-    void testLatency(const std::string& canBaudrate);
+    void testLatency(const std::string& canBaudrate, std::string busString);
     void testEncoderOutput(u16 id);
     void testEncoderMain(u16 id);
     void blink(u16 id);
@@ -54,11 +58,6 @@ class CandleTool
     void reset(u16 id);
     void registerWrite(u16 id, u16 reg, const std::string& value);
     void registerRead(u16 id, u16 reg);
-
-    void pdsSetupInfo(u16 id);
-    void pdsSetupConfig(u16 id, const std::string& cfgPath);
-    void pdsStoreConfig(u16 id);
-    void pdsReadConfig(u16 id, const std::string& cfgPath);
 
     /**
      * @brief Update firmware on Candle device
@@ -84,12 +83,9 @@ class CandleTool
     void updatePds(const std::string& mabFilePath, uint16_t canId, bool noReset = false);
 
   private:
-    Logger                       log;
-    std::unique_ptr<mab::Candle> candle;
+    Logger       log;
+    mab::Candle& m_candle;
 
-    std::string busString;
-
-    bool                  printVerbose = true;
     std::string           validateAndGetFinalConfigPath(const std::string& cfgPath);
     mab::CANdleBaudrate_E checkSpeedForId(u16 id);
 
@@ -106,7 +102,7 @@ class CandleTool
     bool readRegisterToString(u16 id, mab::Md80Reg_E regId, std::string& str)
     {
         T    value  = 0;
-        bool status = candle->readMd80Register(id, regId, value);
+        bool status = m_candle.readMd80Register(id, regId, value);
         str         = std::to_string(value);
         return status;
     }

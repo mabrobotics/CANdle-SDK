@@ -13,6 +13,7 @@ inline std::string getDefaultConfigDir()
     return std::string("/etc/candletool/config/");
 #endif
 }
+
 inline std::string getMotorsConfigPath()
 {
 #ifdef WIN32
@@ -21,19 +22,23 @@ inline std::string getMotorsConfigPath()
     return getDefaultConfigDir() + "motors/";
 #endif
 }
+
 inline std::string getDefaultConfigPath()
 {
     return getMotorsConfigPath() + "default.cfg";
 }
+
 inline std::string getCandletoolConfigPath()
 {
     return getDefaultConfigDir() + "candletool.ini";
 }
+
 inline bool fileExists(const std::string& filepath)
 {
     std::ifstream fileStream(filepath);
     return fileStream.good();
 }
+
 inline bool isConfigValid(const std::string& pathToConfig)
 {
     std::string fileExtension = std::filesystem::path(pathToConfig).extension().string();
@@ -46,6 +51,7 @@ inline bool isConfigValid(const std::string& pathToConfig)
         return false;
     return true;
 }
+
 inline bool isConfigComplete(const std::string& pathToConfig)
 {
     mINI::INIFile      defaultFile(getDefaultConfigPath());
@@ -70,6 +76,7 @@ inline bool isConfigComplete(const std::string& pathToConfig)
     }
     return true;
 }
+
 inline std::string generateUpdatedConfigFile(const std::string& pathToConfig)
 {
     mINI::INIFile      defaultFile(getDefaultConfigPath());
@@ -104,6 +111,7 @@ inline std::string generateUpdatedConfigFile(const std::string& pathToConfig)
     updatedFile.write(updatedIni, true);
     return updatedUserConfigPath;
 }
+
 inline bool getConfirmation()
 {
     char x;
@@ -111,4 +119,33 @@ inline bool getConfirmation()
     if (x == 'Y' || x == 'y')
         return true;
     return false;
+}
+
+inline std::string prettyFloatToString(f32 value, bool noDecimals = false)
+{
+    std::stringstream ss;
+    ss << std::fixed;
+
+    if (noDecimals)
+    {
+        ss << std::setprecision(0);
+        ss << value;
+        return ss.str();
+    }
+    else
+    {
+        if (static_cast<int>(value) == value)
+        {
+            ss << std::setprecision(1);
+            ss << value;
+            return ss.str();
+        }
+        else
+        {
+            ss << std::setprecision(7);
+            ss << value;
+            std::string str = ss.str();
+            return str.substr(0, str.find_last_not_of('0') + 1);
+        }
+    }
 }

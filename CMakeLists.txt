@@ -4,7 +4,6 @@ include(git_func.cmake)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-
 if(NOT DEFINED PLATFORM)
   set(PLATFORM "native")
   message("Compiling for native system")
@@ -23,6 +22,8 @@ get_tag(CANDLESDK_VERSION_TAG)
 
 project(candlesdk VERSION ${CANDLESDK_VERSION_1}.${CANDLESDK_VERSION_2}.${CANDLESDK_VERSION_3})
 
+message("CandleSDK version: ${CANDLESDK_VERSION} ${CANDLESDK_VERSION_TAG}")
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -40,7 +41,7 @@ set(mINI_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/mINI/inc/)
 set(CANDLE_BUILD_STATIC TRUE)
 
 macro(add_unit_test_executable test_name)
-
+    message("Adding unit test executable ${test_name}")
     add_executable(${test_name} ${ARGN})
     target_link_libraries(${test_name} PRIVATE Unit_test)
     set_target_properties(${test_name} PROPERTIES

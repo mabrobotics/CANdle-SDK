@@ -2,14 +2,15 @@
 
 #include "CLI/CLI.hpp"
 #include "pds_types.hpp"
-#include "candletool.hpp"
+/*#include "candletool.hpp"*/
+#include "pds.hpp"
 
 using namespace mab;
 class PdsCli
 {
   public:
     PdsCli() = delete;
-    PdsCli(CLI::App& rootCli, CandleTool& candletool);
+    PdsCli(CLI::App& rootCli, mab::Candle& candle);
     ~PdsCli() = default;
 
     void parse(void);
@@ -18,26 +19,88 @@ class PdsCli
     Logger    m_log;
     CLI::App& m_rootCli;
 
-    CLI::App* m_pds = nullptr;
+    CLI::App* m_pdsCmd = nullptr;
 
-    CLI::App* m_infoCmd        = nullptr;
-    CLI::App* m_configSetupCmd = nullptr;
-    CLI::App* m_configReadCmd  = nullptr;
-    CLI::App* m_configSaveCmd  = nullptr;
+    CLI::App* m_infoCmd            = nullptr;
+    CLI::App* m_setCanIdCmd        = nullptr;
+    CLI::App* m_setBatteryLevelCmd = nullptr;
+    CLI::App* m_setShutdownTimeCmd = nullptr;
+
+    CLI::App* m_configSetupCmd      = nullptr;
+    CLI::App* m_interactiveSetupCmd = nullptr;
+    CLI::App* m_configReadCmd       = nullptr;
+    CLI::App* m_configSaveCmd       = nullptr;
+
+    CLI::App* m_disableCmd = nullptr;
 
     CLI::App* m_powerStageCmd        = nullptr;
     CLI::App* m_brakeResistorCmd     = nullptr;
     CLI::App* m_isolatedConverterCmd = nullptr;
 
-    u16         m_canId                 = 0;
+    // Power stage commands
+    CLI::App* m_psInfoCmd         = nullptr;
+    CLI::App* m_psEnableCmd       = nullptr;
+    CLI::App* m_psDisableCmd      = nullptr;
+    CLI::App* m_psSetOvcLevelCmd  = nullptr;
+    CLI::App* m_psGetOvcLevelCmd  = nullptr;
+    CLI::App* m_psSetOvcDelayCmd  = nullptr;
+    CLI::App* m_psGetOvcDelayCmd  = nullptr;
+    CLI::App* m_psSetTempLimitCmd = nullptr;
+    CLI::App* m_psGetTempLimitCmd = nullptr;
+    CLI::App* m_psSetBrCmd        = nullptr;
+    CLI::App* m_psGetBrCmd        = nullptr;
+    CLI::App* m_psSetBrTriggerCmd = nullptr;
+    CLI::App* m_psGetBrTriggerCmd = nullptr;
+
+    // Brake resistor commands
+    CLI::App* m_brInfoCmd         = nullptr;
+    CLI::App* m_brSetTempLimitCmd = nullptr;
+    CLI::App* m_brGetTempLimitCmd = nullptr;
+
+    // Isolated converter commands
+    CLI::App* m_icInfoCmd         = nullptr;
+    CLI::App* m_icEnableCmd       = nullptr;
+    CLI::App* m_icDisableCmd      = nullptr;
+    CLI::App* m_icSetOvcLevelCmd  = nullptr;
+    CLI::App* m_icGetOvcLevelCmd  = nullptr;
+    CLI::App* m_icSetOvcDelayCmd  = nullptr;
+    CLI::App* m_icGetOvcDelayCmd  = nullptr;
+    CLI::App* m_icSetTempLimitCmd = nullptr;
+    CLI::App* m_icGetTempLimitCmd = nullptr;
+
+    // Properties
+    u16 m_canId         = 0u;    // PDS CAN ID
+    u16 m_newCanId      = 0u;    // PDS CAN ID
+    u32 m_batteryLevel1 = 0u;    // Battery level in mV
+    u32 m_batteryLevel2 = 0u;    // Battery level in mV
+    u32 m_shutdownTime  = 0u;    // Shutdown time in ms
+    u32 m_ovcLevel      = 0u;    // Overcurrent detection level in mA
+    u32 m_ovcDelay      = 0u;    // Overcurrent detection delay in ms
+    f32 m_tempLimit     = 0.0f;  // Temperature limit in degrees Celsius
+    u32 m_brSocket      = 0u;    // Brake resistor socket index
+    u32 m_brTrigger     = 0u;    // Brake resistor trigger voltage in mV
+
+    // Brake resistor commands
+
     std::string m_cfgFilePath           = "";
     u8          m_submoduleSocketNumber = 0;
 
-    CandleTool& m_candleTool;
+    Candle& m_candle;
+    Pds     m_pds{m_canId, m_candle};
 
     socketIndex_E decodeSocketIndex(u8 numericSocketIndex);
 
     void powerStageCmdParse(void);
     void brakeResistorCmdParse(void);
     void isolatedConverterCmdParse(void);
+
+    void pdsSetupInfo(void);
+    void pdsSetupConfig(const std::string& cfgPath);
+    void setupCtrlConfig(mINI::INIMap<std::string>& iniMap);
+    void setupModuleCfg(moduleType_E type, socketIndex_E si, mINI::INIMap<std::string>& iniMap);
+    void setupPsCfg(PowerStage& ps, mINI::INIMap<std::string>& iniMap);
+    void setupIcCfg(IsolatedConv& ic, mINI::INIMap<std::string>& iniMap);
+    void setupBrCfg(BrakeResistor& br, mINI::INIMap<std::string>& iniMap);
+    void pdsStoreConfig(void);
+    void pdsReadConfig(const std::string& cfgPath);
 };

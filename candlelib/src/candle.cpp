@@ -35,6 +35,7 @@ namespace mab
     {
         log.m_tag   = "Candle";
         log.m_layer = Logger::ProgramLayer_E::TOP;
+        // log.m_optionalLevel = Logger::LogLevel_E::DEBUG;
     }
 
     Candle::Candle(CANdleBaudrate_E canBaudrate, bool printVerbose, std::shared_ptr<Bus> bus)
@@ -348,10 +349,15 @@ namespace mab
 
         size_t rxLength = 0;
 
-        frame.frameId    = mab::BusFrameId_t::BUS_FRAME_MD80_GENERIC_FRAME;
-        frame.driveCanId = canId;
-        frame.canMsgLen  = msgLen;
-        frame.timeoutMs  = timeoutMs < 3 ? 3 : timeoutMs - 3;
+        log.debug("Sending CAN frame ( ID [ %u ] :: [ %u ] bytes ] :: timeout [ %u ms ]",
+                  canId,
+                  msgLen,
+                  timeoutMs);
+
+        frame.frameId     = mab::BusFrameId_t::BUS_FRAME_MD80_GENERIC_FRAME;
+        frame.targetCanId = canId;
+        frame.canMsgLen   = msgLen;
+        frame.timeoutMs   = timeoutMs < 3 ? 3 : timeoutMs - 3;
         memcpy(frame.canMsg, txBuffer, msgLen);
         char tx[96];
         int  len = sizeof(frame) - sizeof(frame.canMsg) + msgLen;
@@ -362,15 +368,21 @@ namespace mab
             if (!waitForResponse)
                 return true;
             rxLength = bus->getBytesReceived();
-            if (*bus->getRxBuffer(0) == tx[0] &&                     // USB Frame ID matches
-                *bus->getRxBuffer(1) == true && rxLength <= 64 + 2)  // response can ID matches
+
+            if (*bus->getRxBuffer(0) == tx[0] &&                         // USB Frame ID matches
+                *bus->getRxBuffer(1) == true && (rxLength <= (64 + 2)))  // response can ID matches
             {
                 memcpy(rxBuffer, bus->getRxBuffer(2), rxLength - 2);
                 if (pRxLength != nullptr)
                     *pRxLength = rxLength;
                 return true;
             }
+            else
+            {
+                log.error("USB Protocol error :: bad response");
+            }
         }
+        log.error("USB Protocol error");
         return false;
     }
 

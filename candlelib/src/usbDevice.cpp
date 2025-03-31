@@ -14,6 +14,7 @@ UsbDevice::UsbDevice(u16 vid, u16 pid, const std::vector<u32>& idsToIgnore, cons
 {
     m_log.m_tag                 = "USB";
     m_log.m_layer               = Logger::ProgramLayer_E::BOTTOM;
+    m_log.m_optionalLevel       = Logger::LogLevel_E::DEBUG;
     busType                     = mab::BusType_E::USB;
     struct libusb_device** devs = nullptr;
 
@@ -207,7 +208,11 @@ bool UsbDevice::receive(int responseLen, int timeoutMs, bool checkCrc, bool faul
     s32 ret = libusb_bulk_transfer(
         devh, inEndpointAdr, (u8*)rxBuffer, responseLen, &bytesReceived, timeoutMs);
     if (ret < 0)
+    {
+        // see /usr/include/libusb-1.0/libusb.h for return code details
+        m_log.debug("libusb bulkt transfer error [ %d ]", ret);
         return false;
+    }
     return true;
 }
 

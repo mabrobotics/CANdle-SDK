@@ -15,10 +15,7 @@
 #include "md80.hpp"
 #include "usbDevice.hpp"
 
-#ifndef WIN32
-#include "spiDevice.hpp"
-#include "uartDevice.hpp"
-#else
+#ifdef WIN32
 #include <windows.h>
 #endif
 namespace mab
