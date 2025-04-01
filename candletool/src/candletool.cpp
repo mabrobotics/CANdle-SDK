@@ -53,7 +53,9 @@ CandleTool::CandleTool(mab::Candle& candle) : m_candle(candle)
     busString           = ini["communication"]["bus"];
 
     if (busString == "SPI")
+    {
         bus = nullptr;  // TODO: placeholder
+    }
     else if (busString == "USB")
         bus = std::make_unique<USBv2>(CandleV2::CANDLE_VID, CandleV2::CANDLE_PID, device);
 
@@ -443,147 +445,116 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
     if (!checkFieldWriteIfPopulated("motor", "reverse direction", regs.reverseDirection))
         return;
 
-    regW.RW.motorCalibrationMode =
+    regs.motorCalibrationMode =
         getNumericParamFromList(cfg["motor"]["calibration mode"], ui::motorCalibrationModes);
 
-    regW.RW.outputEncoderDefaultBaud =
-        atoi(cfg["output encoder"]["output encoder default baud"].c_str());
-    regW.RW.outputEncoder =
+    regs.outputEncoderDefaultBaud =
+        std::atoi(cfg["output encoder"]["output encoder default baud"].c_str());
+    regs.outputEncoder =
         getNumericParamFromList(cfg["output encoder"]["output encoder"], ui::encoderTypes);
-    regW.RW.outputEncoderMode =
+    regs.outputEncoderMode =
         getNumericParamFromList(cfg["output encoder"]["output encoder mode"], ui::encoderModes);
-    regW.RW.outputEncoderCalibrationMode = getNumericParamFromList(
+    regs.outputEncoderCalibrationMode = getNumericParamFromList(
         cfg["output encoder"]["output encoder calibration mode"], ui::encoderCalibrationModes);
-    regW.RW.homingMode = getNumericParamFromList(cfg["homing"]["mode"], ui::homingModes);
-    regW.RW.brakeMode  = getNumericParamFromList(cfg["brake"]["mode"], ui::brakeModes);
+    regs.userGpioConfiguration = getNumericParamFromList(cfg["GPIO"]["mode"], ui::GPIOmodes);
 
     auto f32FromField = [&](const char* category, const char* field) -> f32
-    { return atof(cfg[category][field].c_str()); };
+    { return std::atof(cfg[category][field].c_str()); };
 
     /* motor base config */
-    if (!m_candle.writeMd80Register(id,
-                                    mab::Md80Reg_E::motorName,
-                                    regW.RW.motorName,
-                                    mab::Md80Reg_E::motorPolePairs,
-                                    regW.RW.polePairs,
-                                    mab::Md80Reg_E::motorKt,
-                                    regW.RW.motorKt,
-                                    mab::Md80Reg_E::motorKV,
-                                    regW.RW.motorKV,
-                                    mab::Md80Reg_E::motorGearRatio,
-                                    regW.RW.gearRatio,
-                                    mab::Md80Reg_E::motorIMax,
-                                    regW.RW.iMax,
-                                    mab::Md80Reg_E::motorTorgueBandwidth,
-                                    regW.RW.torqueBandwidth))
-        log.error("Failed to setup motor!");
 
-    /* motor advanced config */
-    if (!m_candle.writeMd80Register(id,
-                                    mab::Md80Reg_E::motorFriction,
-                                    regW.RW.friction,
-                                    mab::Md80Reg_E::motorStiction,
-                                    regW.RW.stiction,
-                                    mab::Md80Reg_E::motorKt_a,
-                                    regW.RW.motorKt_a,
-                                    mab::Md80Reg_E::motorKt_b,
-                                    regW.RW.motorKt_b,
-                                    mab::Md80Reg_E::motorKt_c,
-                                    regW.RW.motorKt_c,
-                                    mab::Md80Reg_E::outputEncoder,
-                                    regW.RW.outputEncoder,
-                                    mab::Md80Reg_E::outputEncoderMode,
-                                    regW.RW.outputEncoderMode,
-                                    mab::Md80Reg_E::outputEncoderDefaultBaud,
-                                    regW.RW.outputEncoderDefaultBaud))
+    if (md.writeRegisters(regs.motorName,
+                          regs.motorPolePairs,
+                          regs.motorKt,
+                          regs.motorKV,
+                          regs.motorGearRatio,
+                          regs.motorIMax,
+                          regs.motorTorqueBandwidth) != MD::Error_t::OK)
+    {
         log.error("Failed to setup motor!");
+    }
+    /* motor advanced config */
+    if (md.writeRegisters(regs.motorFriction,
+                          regs.motorStiction,
+                          regs.motorKtPhaseA,
+                          regs.motorKtPhaseB,
+                          regs.motorKtPhaseC,
+                          regs.outputEncoder,
+                          regs.outputEncoderMode,
+                          regs.outputEncoderDefaultBaud) != MD::Error_t::OK)
+    {
+        log.error("Failed to setup motor!");
+    }
 
     /* motor motion config - Position and velocity PID*/
-    if (!m_candle.writeMd80Register(id,
-                                    mab::Md80Reg_E::motorPosPidKp,
-                                    f32FromField("position PID", "kp"),
-                                    mab::Md80Reg_E::motorPosPidKi,
-                                    f32FromField("position PID", "ki"),
-                                    mab::Md80Reg_E::motorPosPidKd,
-                                    f32FromField("position PID", "kd"),
-                                    mab::Md80Reg_E::motorPosPidWindup,
-                                    f32FromField("position PID", "windup"),
-                                    mab::Md80Reg_E::motorVelPidKp,
-                                    f32FromField("velocity PID", "kp"),
-                                    mab::Md80Reg_E::motorVelPidKi,
-                                    f32FromField("velocity PID", "ki"),
-                                    mab::Md80Reg_E::motorVelPidKd,
-                                    f32FromField("velocity PID", "kd"),
-                                    mab::Md80Reg_E::motorVelPidWindup,
-                                    f32FromField("velocity PID", "windup")))
-        log.error("Failed to setup motor!");
+    if (md.writeRegisters(regs.motorPosPidKp,
+                          regs.motorPosPidKi,
+                          regs.motorPosPidKd,
+                          regs.motorPosPidWindup,
+                          regs.motorVelPidKp,
+                          regs.motorVelPidKi,
+                          regs.motorVelPidKd,
+                          regs.motorVelPidWindup) != MD::Error_t::OK)
+    {
+        log.error("Failed to setup PIDs!");
+    }
 
     /* motor motion config - Impedance PD*/
-    if (!m_candle.writeMd80Register(id,
-                                    mab::Md80Reg_E::motorImpPidKp,
-                                    f32FromField("impedance PD", "kp"),
-                                    mab::Md80Reg_E::motorImpPidKd,
-                                    f32FromField("impedance PD", "kd"),
-                                    mab::Md80Reg_E::motorShutdownTemp,
-                                    regW.RW.motorShutdownTemp))
-        log.error("Failed to setup motor!");
-
-    if (!m_candle.writeMd80Register(
-            id, mab::Md80Reg_E::outputEncoderCalibrationMode, regW.RW.outputEncoderCalibrationMode))
-        log.error("Failed to setup motor!");
-
-    if (!m_candle.writeMd80Register(
-            id, mab::Md80Reg_E::motorCalibrationMode, regW.RW.motorCalibrationMode))
-        log.error("Failed to setup motor!");
-
-    if (!m_candle.writeMd80Register(id,
-                                    mab::Md80Reg_E::homingMode,
-                                    regW.RW.homingMode,
-                                    mab::Md80Reg_E::homingMaxTravel,
-                                    f32FromField("homing", "max travel"),
-                                    mab::Md80Reg_E::homingTorque,
-                                    f32FromField("homing", "max torque"),
-                                    mab::Md80Reg_E::homingVelocity,
-                                    f32FromField("homing", "max velocity")))
-        log.error("Failed to setup motor!");
-
-    if (!m_candle.writeMd80Register(id,
-                                    mab::Md80Reg_E::maxTorque,
-                                    f32FromField("limits", "max torque"),
-                                    mab::Md80Reg_E::maxAcceleration,
-                                    regW.RW.maxAcceleration,
-                                    mab::Md80Reg_E::maxDeceleration,
-                                    regW.RW.maxDeceleration,
-                                    mab::Md80Reg_E::maxVelocity,
-                                    regW.RW.maxVelocity,
-                                    mab::Md80Reg_E::positionLimitMin,
-                                    f32FromField("limits", "min position"),
-                                    mab::Md80Reg_E::positionLimitMax,
-                                    f32FromField("limits", "max position")))
-        log.error("Failed to setup motor!");
-
-    if (!m_candle.writeMd80Register(id,
-                                    mab::Md80Reg_E::profileAcceleration,
-                                    f32FromField("profile", "acceleration"),
-                                    mab::Md80Reg_E::profileDeceleration,
-                                    f32FromField("profile", "deceleration"),
-                                    mab::Md80Reg_E::quickStopDeceleration,
-                                    f32FromField("profile", "quick stop deceleration"),
-                                    mab::Md80Reg_E::profileVelocity,
-                                    f32FromField("profile", "velocity")))
-        log.error("Failed to setup motor!");
-
-    if (!m_candle.writeMd80Register(id, mab::Md80Reg_E::brakeMode, regW.RW.brakeMode))
-        log.error("Failed to setup motor!");
-
-    if (m_candle.configMd80Save(id))
+    regs.motorImpPidKp = f32FromField("impedance PD", "kp");
+    regs.motorImpPidKd = f32FromField("impedance PD", "kd");
+    if (md.writeRegisters(regs.motorImpPidKp, regs.motorImpPidKd, regs.motorShutdownTemp) !=
+        MD::Error_t::OK)
     {
-        log.success("Config save successfully!");
-        log.info("Rebooting md80...");
+        log.error("Failed to setup PIDs!");
     }
+
+    if (md.writeRegisters(regs.outputEncoderCalibrationMode, regs.outputEncoderCalibrationMode) !=
+        MD::Error_t::OK)
+    {
+        log.error("Failed to setup encoder calibration mode!");
+    }
+
+    // TODO: homing was here, just a remainder that adding it will be needed at some point
+
+    /*additional movement parameters*/
+    regs.maxTorque        = f32FromField("limits", "max torque");
+    regs.positionLimitMin = f32FromField("limits", "min position");
+    regs.positionLimitMax = f32FromField("limits", "max position");
+    if (md.writeRegisters(regs.maxTorque,
+                          regs.maxAcceleration,
+                          regs.maxDeceleration,
+                          regs.maxVelocity,
+                          regs.positionLimitMax,
+                          regs.positionLimitMin) != MD::Error_t::OK)
+    {
+        log.error("Failed to setup position limits!");
+    }
+
+    regs.profileAcceleration   = f32FromField("profile", "acceleration");
+    regs.profileDeceleration   = f32FromField("profile", "deceleration");
+    regs.quickStopDeceleration = f32FromField("profile", "quick stop deceleration");
+    regs.profileVelocity       = f32FromField("profile", "velocity");
+    if (md.writeRegisters(regs.profileAcceleration,
+                          regs.profileDeceleration,
+                          regs.quickStopDeceleration,
+                          regs.profileVelocity) != MD::Error_t::OK)
+    {
+        log.error("Failed to setup accelerations!");
+    }
+
+    if (md.writeRegisters(regs.userGpioConfiguration) != MD::Error_t::OK)
+    {
+        log.error("Failed to setup gpio configuration!");
+    }
+
+    if (md.save() != MD::Error_t::OK)
+    {
+        log.error("Save failed!");
+    }
+
     /* wait for a full reboot */
     sleep(3);
-    if (m_candle.controlMd80Enable(id, false))
+    if (md.enable() != MD::Error_t::OK)
         log.success("Ready!");
     else
         log.warn("Failed to reboot (ID: %d)!", id);
