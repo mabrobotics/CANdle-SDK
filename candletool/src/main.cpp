@@ -7,6 +7,7 @@
 
 int main(int argc, char** argv)
 {
+    std::cout << "CandleTool" << std::endl;
     CLI::App app{"candletool"};
     app.fallthrough();
     app.ignore_case();

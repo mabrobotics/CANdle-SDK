@@ -1,6 +1,11 @@
 #include "spiDevice.hpp"
 
 #include "bus.hpp"
+#include <fcntl.h>   // open
+#include <unistd.h>  // close
+#include <cerrno>    // errno
+#include <cstring>   // strerror
+#include <iostream>
 
 #define SPI_VERBOSE              0
 #define SPI_VERBOSE_ON_CRC_ERROR 0
@@ -12,9 +17,14 @@ SpiDevice::SpiDevice(const std::string device) : device(device)
     fd = open(device.c_str(), O_RDWR);
     if (fd < 0)
     {
-        const char* msg =
-            "[SPI] Could not open the SPI device... (is SPI bus available on your device?)";
+        char msg[128] = {0};
+        sprintf(msg,
+                "[SPI] Could not open the SPI device [ %s ] ( error %d ) (is SPI bus available on "
+                "your device?)",
+                device.c_str(),
+                fd);
         std::cout << msg << std::endl;
+        std::cerr << "Error opening file: " << strerror(errno) << " (errno: " << errno << ")\n";
         throw msg;
     }
 

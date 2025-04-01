@@ -60,6 +60,7 @@ target_sources(candle PRIVATE
 
 if(UNIX)
   target_sources(candle PRIVATE src/uartDevice.cpp src/spiDevice.cpp)
+  target_compile_definitions(candle PRIVATE UNIX)
 endif()
 target_include_directories(candle PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/include

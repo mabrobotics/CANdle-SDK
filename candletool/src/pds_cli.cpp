@@ -7,7 +7,7 @@
     PDS Ini fields keywords
     Using const char* instead of safer c++ features like std::string is because INI maps and logger
     requires c-strings and it simplifies the code since it does not require calls to .data() or
-   c_str() methods and still beeing quite safe as we are giving strings in ""
+    c_str() methods and still beeing quite safe as we are giving strings in ""
 */
 constexpr const char* CONTROL_BOARD_INI_SECTION = PdsModule::mType2Str(moduleType_E::CONTROL_BOARD);
 constexpr const char* CAN_ID_INI_KEY            = "CAN ID";
