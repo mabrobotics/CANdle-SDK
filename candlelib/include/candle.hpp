@@ -14,6 +14,8 @@
 #include "mab_types.hpp"
 #include "md80.hpp"
 #include "usbDevice.hpp"
+#include "spiDevice.hpp"
+#include "uartDevice.hpp"
 
 #ifdef WIN32
 #include <windows.h>
