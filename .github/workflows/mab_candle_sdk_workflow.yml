@@ -90,7 +90,7 @@ jobs:
     - name: Store artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: Candletool-build-artifacts-arm64
+        name: Candletool-build-artifacts-armhf
         path: |
           build/*.deb
 
