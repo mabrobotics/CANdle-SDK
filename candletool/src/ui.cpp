@@ -134,7 +134,7 @@ namespace ui
 
     // TODO: this is a placeholder, iterable structure required
     mab::MDRegisters_S registers;
-    void               printDriveInfoExtended(mab::MD& drive, bool printAll)
+    void               printDriveInfoExtended(const mab::MD& drive, bool printAll)
     {
         //    auto getStringBuildDate = [](uint32_t date)
         //    {
@@ -240,7 +240,7 @@ namespace ui
         vout << "- torque bandwidth: " << registers.motorTorqueBandwidth.value << " Hz"
              << std::endl;
         vout << "- CAN watchdog: " << registers.canWatchdog.value << " ms" << std::endl;
-        vout << "- GPIO mode: " << getListElement(brakeModes, registers.userGpioConfiguration.value)
+        vout << "- GPIO mode: " << getListElement(GPIOmodes, registers.userGpioConfiguration.value)
              << std::endl;
 
         if (printAll)
