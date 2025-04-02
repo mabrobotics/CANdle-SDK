@@ -161,7 +161,7 @@ namespace mab
     };
 
     template <typename T>
-    struct RegisterEntry_S
+    struct MDRegisterEntry_S
     {
       public:
         T value;
@@ -173,25 +173,25 @@ namespace mab
         std::array<u8, sizeof(value) + sizeof(m_regAddress)> serializedBuffer;
 
       public:
-        RegisterEntry_S(RegisterAccessLevel_E accessLevel, u16 regAddress)
+        MDRegisterEntry_S(RegisterAccessLevel_E accessLevel, u16 regAddress)
             : m_accessLevel(accessLevel), m_regAddress(regAddress)
         {
         }
 
-        RegisterEntry_S(const RegisterEntry_S& otherReg)
+        MDRegisterEntry_S(const MDRegisterEntry_S& otherReg)
             : m_accessLevel(otherReg.m_accessLevel), m_regAddress(otherReg.m_regAddress)
         {
             value = otherReg.value;
         }
 
-        RegisterEntry_S& operator=(T otherValue)
+        MDRegisterEntry_S& operator=(T otherValue)
         {
             value = otherValue;
 
             return *this;
         }
 
-        T operator=(RegisterEntry_S& reg)
+        T operator=(MDRegisterEntry_S& reg)
         {
             return reg.value;
         }
@@ -230,7 +230,7 @@ namespace mab
         }
     };
     template <typename T, size_t N>
-    struct RegisterEntry_S<T[N]>
+    struct MDRegisterEntry_S<T[N]>
     {
         T value[N];
 
@@ -241,11 +241,11 @@ namespace mab
         std::array<u8, sizeof(value) + sizeof(m_regAddress)> serializedBuffer;
 
       public:
-        RegisterEntry_S(RegisterAccessLevel_E accessLevel, u16 regAddress)
+        MDRegisterEntry_S(RegisterAccessLevel_E accessLevel, u16 regAddress)
             : m_accessLevel(accessLevel), m_regAddress(regAddress)
         {
         }
-        RegisterEntry_S(const RegisterEntry_S& otherReg)
+        MDRegisterEntry_S(const MDRegisterEntry_S& otherReg)
             : m_accessLevel(otherReg.m_accessLevel), m_regAddress(otherReg.m_regAddress)
         {
             static_assert(std::is_same_v<decltype(otherReg.value), decltype(value)>);
@@ -253,14 +253,14 @@ namespace mab
         }
 
         // This is kinda unsafe due to c-array not passing size, use with caution
-        RegisterEntry_S& operator=(T* otherValue)
+        MDRegisterEntry_S& operator=(T* otherValue)
         {
             memcpy(value, otherValue, N);
 
             return *this;
         }
 
-        T* operator=(RegisterEntry_S& reg)
+        T* operator=(MDRegisterEntry_S& reg)
         {
             return value;
         }
@@ -304,7 +304,7 @@ namespace mab
         RegisterAccessLevel_E const RW = RegisterAccessLevel_E::RW;
         RegisterAccessLevel_E const WO = RegisterAccessLevel_E::WO;
         template <class T>
-        using regE_S = RegisterEntry_S<T>;
+        using regE_S = MDRegisterEntry_S<T>;
 
 #define MD_REG(name, type, addr, access) regE_S<type> name = regE_S<type>(access, addr);
         REGISTER_LIST
