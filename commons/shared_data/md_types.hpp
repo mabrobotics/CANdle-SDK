@@ -5,6 +5,7 @@
 #include <cstring>
 #include <string>
 #include <utility>
+#include <tuple>
 #include <vector>
 
 #include "mab_types.hpp"
