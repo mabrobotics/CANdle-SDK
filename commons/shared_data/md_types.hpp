@@ -152,7 +152,7 @@ namespace mab
         WO = (1 << 2)
     };
 
-    enum class RegisterAddress_E
+    enum class MDRegisterAddress_E
     {
 #define MD_REG(name, type, addr, access) name = addr,
         REGISTER_LIST
