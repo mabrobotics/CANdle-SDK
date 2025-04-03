@@ -5,10 +5,137 @@
 #include <cstring>
 #include <string>
 #include <utility>
+#include <tuple>
 #include <vector>
 
 #include "mab_types.hpp"
 #include "manufacturer_data.hpp"
+
+// DEFINE ALL OF THE MD REGISTERS HERE
+#define REGISTER_LIST                                   \
+    MD_REG(canID, u32, 0x001, RW)                       \
+    MD_REG(canBaudrate, u32, 0x002, RW)                 \
+    MD_REG(canWatchdog, u16, 0x003, RW)                 \
+    MD_REG(canTermination, u8, 0x004, RW)               \
+                                                        \
+    MD_REG(motorName, char[24], 0x010, RW)              \
+    MD_REG(motorPolePairs, u32, 0x011, RW)              \
+    MD_REG(motorKt, float, 0x012, RW)                   \
+    MD_REG(motorKtPhaseA, float, 0x013, RW)             \
+    MD_REG(motorKtPhaseB, float, 0x014, RW)             \
+    MD_REG(motorKtPhaseC, float, 0x015, RW)             \
+    MD_REG(motorIMax, float, 0x016, RW)                 \
+    MD_REG(motorGearRatio, float, 0x017, RW)            \
+    MD_REG(motorTorqueBandwidth, u16, 0x018, RW)        \
+    MD_REG(motorFriction, float, 0x019, RW)             \
+    MD_REG(motorStiction, float, 0x01A, RW)             \
+    MD_REG(motorResistance, float, 0x01B, RO)           \
+    MD_REG(motorInductance, float, 0x01C, RO)           \
+    MD_REG(motorKV, u16, 0x01D, RW)                     \
+    MD_REG(motorCalibrationMode, u8, 0x01E, RW)         \
+    MD_REG(motorThermistorType, u8, 0x01F, RW)          \
+                                                        \
+    MD_REG(outputEncoder, u8, 0x020, RW)                \
+    MD_REG(outputEncoderDir, float, 0x021, RW)          \
+    MD_REG(outputEncoderDefaultBaud, u32, 0x022, RW)    \
+    MD_REG(outputEncoderVelocity, float, 0x023, RO)     \
+    MD_REG(outputEncoderPosition, float, 0x024, RO)     \
+    MD_REG(outputEncoderMode, u8, 0x025, RW)            \
+    MD_REG(outputEncoderCalibrationMode, u8, 0x026, RW) \
+                                                        \
+    MD_REG(motorPosPidKp, float, 0x030, RW)             \
+    MD_REG(motorPosPidKi, float, 0x031, RW)             \
+    MD_REG(motorPosPidKd, float, 0x032, RW)             \
+    MD_REG(motorPosPidWindup, float, 0x034, RW)         \
+                                                        \
+    MD_REG(motorVelPidKp, float, 0x040, RW)             \
+    MD_REG(motorVelPidKi, float, 0x041, RW)             \
+    MD_REG(motorVelPidKd, float, 0x042, RW)             \
+    MD_REG(motorVelPidWindup, float, 0x044, RW)         \
+                                                        \
+    MD_REG(motorImpPidKp, float, 0x050, RW)             \
+    MD_REG(motorImpPidKd, float, 0x051, RW)             \
+                                                        \
+    MD_REG(mainEncoderVelocity, float, 0x062, RO)       \
+    MD_REG(mainEncoderPosition, float, 0x063, RO)       \
+    MD_REG(motorTorque, float, 0x064, RO)               \
+                                                        \
+    MD_REG(homingMode, u8, 0x070, RW)                   \
+    MD_REG(homingMaxTravel, float, 0x071, RW)           \
+    MD_REG(homingVelocity, float, 0x072, RW)            \
+    MD_REG(homingTorque, float, 0x073, RW)              \
+                                                        \
+    MD_REG(runSaveCmd, u8, 0x080, WO)                   \
+    MD_REG(runTestMainEncoderCmd, u8, 0x081, WO)        \
+    MD_REG(runTestOutputEncoderCmd, u8, 0x082, WO)      \
+    MD_REG(runCalibrateCmd, u8, 0x083, WO)              \
+    MD_REG(runCalibrateOutputEncoderCmd, u8, 0x084, WO) \
+    MD_REG(runCalibratePiGains, u8, 0x085, WO)          \
+    MD_REG(runHoming, u8, 0x086, WO)                    \
+    MD_REG(runRestoreFactoryConfig, u8, 0x087, WO)      \
+    MD_REG(runReset, u8, 0x088, WO)                     \
+    MD_REG(runClearWarnings, u8, 0x089, WO)             \
+    MD_REG(runClearErrors, u8, 0x08A, WO)               \
+    MD_REG(runBlink, u8, 0x08B, WO)                     \
+    MD_REG(runZero, u8, 0x08C, WO)                      \
+    MD_REG(runCanReinit, u8, 0x08D, WO)                 \
+                                                        \
+    MD_REG(calOutputEncoderStdDev, float, 0x100, RO)    \
+    MD_REG(calOutputEncoderMinE, float, 0x101, RO)      \
+    MD_REG(calOutputEncoderMaxE, float, 0x102, RO)      \
+    MD_REG(calMainEncoderStdDev, float, 0x103, RO)      \
+    MD_REG(calMainEncoderMinE, float, 0x104, RO)        \
+    MD_REG(calMainEncoderMaxE, float, 0x105, RO)        \
+                                                        \
+    MD_REG(positionLimitMax, float, 0x110, RW)          \
+    MD_REG(positionLimitMin, float, 0x111, RW)          \
+    MD_REG(maxTorque, float, 0x112, RW)                 \
+    MD_REG(maxVelocity, float, 0x113, RW)               \
+    MD_REG(maxAcceleration, float, 0x114, RW)           \
+    MD_REG(maxDeceleration, float, 0x115, RW)           \
+                                                        \
+    MD_REG(profileVelocity, f32, 0x120, RW)             \
+    MD_REG(profileAcceleration, f32, 0x121, RW)         \
+    MD_REG(profileDeceleration, f32, 0x122, RW)         \
+    MD_REG(quickStopDeceleration, f32, 0x123, RW)       \
+    MD_REG(positionWindow, f32, 0x124, RW)              \
+    MD_REG(velocityWindow, f32, 0x125, RW)              \
+                                                        \
+    MD_REG(motionModeCommand, u8, 0x140, WO)            \
+    MD_REG(motionModeStatus, u8, 0x141, RO)             \
+    MD_REG(state, u16, 0x142, RW)                       \
+                                                        \
+    MD_REG(targetPosition, float, 0x150, RW)            \
+    MD_REG(targetVelocity, float, 0x151, RW)            \
+    MD_REG(targetTorque, float, 0x152, RW)              \
+                                                        \
+    MD_REG(userGpioConfiguration, u8, 0x160, RW)        \
+    MD_REG(userGpioState, u16, 0x161, RO)               \
+                                                        \
+    MD_REG(reverseDirection, u8, 0x600, RW)             \
+                                                        \
+    MD_REG(shuntResistance, float, 0x700, RO)           \
+                                                        \
+    MD_REG(hardwareType, hardwareType_S, 0x7FF, RO)     \
+    MD_REG(buildDate, u32, 0x800, RO)                   \
+    MD_REG(commitHash, char[8], 0x801, RO)              \
+    MD_REG(firmwareVersion, u32, 0x802, RO)             \
+    MD_REG(legacyHardwareVersion, u8, 0x803, RO)        \
+    MD_REG(bridgeType, u8, 0x804, RO)                   \
+    MD_REG(quickStatus, u16, 0x805, RO)                 \
+    MD_REG(mosfetTemperature, f32, 0x806, RO)           \
+    MD_REG(motorTemperature, f32, 0x807, RO)            \
+    MD_REG(motorShutdownTemp, f32, 0x808, RO)           \
+    MD_REG(mainEncoderErrors, u32, 0x809, RO)           \
+    MD_REG(outputEncoderErrors, u32, 0x80A, RO)         \
+    MD_REG(calibrationErrors, u32, 0x80B, RO)           \
+    MD_REG(bridgeErrors, u32, 0x80C, RO)                \
+    MD_REG(hardwareErrors, u32, 0x80D, RO)              \
+    MD_REG(communicationErrors, u32, 0x80E, RO)         \
+    MD_REG(homingErrors, u32, 0x80F, RO)                \
+    MD_REG(motionErrors, u32, 0x810, RO)                \
+    MD_REG(dcBusVoltage, f32, 0x811, RO)                \
+    MD_REG(bootloaderFixed, u8, 0x812, RO)
 
 namespace mab
 {
@@ -26,8 +153,15 @@ namespace mab
         WO = (1 << 2)
     };
 
+    enum class MDRegisterAddress_E
+    {
+#define MD_REG(name, type, addr, access) name = addr,
+        REGISTER_LIST
+#undef MD_REG
+    };
+
     template <typename T>
-    struct RegisterEntry_S
+    struct MDRegisterEntry_S
     {
       public:
         T value;
@@ -39,25 +173,25 @@ namespace mab
         std::array<u8, sizeof(value) + sizeof(m_regAddress)> serializedBuffer;
 
       public:
-        RegisterEntry_S(RegisterAccessLevel_E accessLevel, u16 regAddress)
+        MDRegisterEntry_S(RegisterAccessLevel_E accessLevel, u16 regAddress)
             : m_accessLevel(accessLevel), m_regAddress(regAddress)
         {
         }
 
-        RegisterEntry_S(const RegisterEntry_S& otherReg)
+        MDRegisterEntry_S(const MDRegisterEntry_S& otherReg)
             : m_accessLevel(otherReg.m_accessLevel), m_regAddress(otherReg.m_regAddress)
         {
             value = otherReg.value;
         }
 
-        RegisterEntry_S& operator=(T otherValue)
+        MDRegisterEntry_S& operator=(T otherValue)
         {
             value = otherValue;
 
             return *this;
         }
 
-        T operator=(RegisterEntry_S& reg)
+        T operator=(MDRegisterEntry_S& reg)
         {
             return reg.value;
         }
@@ -96,7 +230,7 @@ namespace mab
         }
     };
     template <typename T, size_t N>
-    struct RegisterEntry_S<T[N]>
+    struct MDRegisterEntry_S<T[N]>
     {
         T value[N];
 
@@ -107,11 +241,11 @@ namespace mab
         std::array<u8, sizeof(value) + sizeof(m_regAddress)> serializedBuffer;
 
       public:
-        RegisterEntry_S(RegisterAccessLevel_E accessLevel, u16 regAddress)
+        MDRegisterEntry_S(RegisterAccessLevel_E accessLevel, u16 regAddress)
             : m_accessLevel(accessLevel), m_regAddress(regAddress)
         {
         }
-        RegisterEntry_S(const RegisterEntry_S& otherReg)
+        MDRegisterEntry_S(const MDRegisterEntry_S& otherReg)
             : m_accessLevel(otherReg.m_accessLevel), m_regAddress(otherReg.m_regAddress)
         {
             static_assert(std::is_same_v<decltype(otherReg.value), decltype(value)>);
@@ -119,14 +253,14 @@ namespace mab
         }
 
         // This is kinda unsafe due to c-array not passing size, use with caution
-        RegisterEntry_S& operator=(T* otherValue)
+        MDRegisterEntry_S& operator=(T* otherValue)
         {
             memcpy(value, otherValue, N);
 
             return *this;
         }
 
-        T* operator=(RegisterEntry_S& reg)
+        T* operator=(MDRegisterEntry_S& reg)
         {
             return value;
         }
@@ -169,134 +303,31 @@ namespace mab
         RegisterAccessLevel_E const RO = RegisterAccessLevel_E::RO;
         RegisterAccessLevel_E const RW = RegisterAccessLevel_E::RW;
         RegisterAccessLevel_E const WO = RegisterAccessLevel_E::WO;
-        template <typename T>
-        using regE_S = RegisterEntry_S<T>;
+        template <class T>
+        using regE_S = MDRegisterEntry_S<T>;
 
-        regE_S<u32> canID          = regE_S<u32>(RW, 0x001);
-        regE_S<u32> canBaudrate    = regE_S<u32>(RW, 0x002);
-        regE_S<u16> canWatchdog    = regE_S<u16>(RW, 0x003);
-        regE_S<u8>  canTermination = regE_S<u8>(RW, 0x004);
+#define MD_REG(name, type, addr, access) regE_S<type> name = regE_S<type>(access, addr);
+        REGISTER_LIST
+#undef MD_REG
+        auto getAllRegisters()
+        {
+            return std::tie(
+#define MD_REG(name, type, addr, access) , name
+// Just a macro to remove empty argument, no fancy here
+#define REMOVE_FIRST(X, ...)         __VA_ARGS__
+#define EXPAND_AND_REMOVE_FIRST(...) REMOVE_FIRST(__VA_ARGS__)
+                EXPAND_AND_REMOVE_FIRST(REGISTER_LIST)
+#undef EXPAND_AND_REMOVE_FIRST
+#undef REMOVE_FIRST
+#undef MD_REG
+            );
+        }
 
-        regE_S<char[24]> motorName            = regE_S<char[24]>(RW, 0x010);
-        regE_S<u32>      motorPolePairs       = regE_S<u32>(RW, 0x011);
-        regE_S<float>    motorKt              = regE_S<float>(RW, 0x012);
-        regE_S<float>    motorKtPhaseA        = regE_S<float>(RW, 0x013);
-        regE_S<float>    motorKtPhaseB        = regE_S<float>(RW, 0x014);
-        regE_S<float>    motorKtPhaseC        = regE_S<float>(RW, 0x015);
-        regE_S<float>    motorIMax            = regE_S<float>(RW, 0x016);
-        regE_S<float>    motorGearRatio       = regE_S<float>(RW, 0x017);
-        regE_S<u16>      motorTorqueBandwidth = regE_S<u16>(RW, 0x018);
-        regE_S<float>    motorFriction        = regE_S<float>(RW, 0x019);
-
-        regE_S<float> motorStiction        = regE_S<float>(RW, 0x01A);
-        regE_S<float> motorResistance      = regE_S<float>(RO, 0x01B);
-        regE_S<float> motorInductance      = regE_S<float>(RO, 0x01C);
-        regE_S<u16>   motorKV              = regE_S<u16>(RW, 0x01D);
-        regE_S<u8>    motorCalibrationMode = regE_S<u8>(RW, 0x01E);
-        regE_S<u8>    motorThermistorType  = regE_S<u8>(RW, 0x01F);
-
-        regE_S<u8>    outputEncoder                = regE_S<u8>(RW, 0x020);
-        regE_S<float> outputEncoderDir             = regE_S<float>(RW, 0x021);
-        regE_S<u32>   outputEncoderDefaultBaud     = regE_S<u32>(RW, 0x022);
-        regE_S<float> outputEncoderVelocity        = regE_S<float>(RO, 0x023);
-        regE_S<float> outputEncoderPosition        = regE_S<float>(RO, 0x024);
-        regE_S<u8>    outputEncoderMode            = regE_S<u8>(RW, 0x025);
-        regE_S<u8>    outputEncoderCalibrationMode = regE_S<u8>(RW, 0x026);
-
-        regE_S<float> motorPosPidKp     = regE_S<float>(RW, 0x030);
-        regE_S<float> motorPosPidKi     = regE_S<float>(RW, 0x031);
-        regE_S<float> motorPosPidKd     = regE_S<float>(RW, 0x032);
-        regE_S<float> motorPosPidWindup = regE_S<float>(RW, 0x034);
-
-        regE_S<float> motorVelPidKp     = regE_S<float>(RW, 0x040);
-        regE_S<float> motorVelPidKi     = regE_S<float>(RW, 0x041);
-        regE_S<float> motorVelPidKd     = regE_S<float>(RW, 0x042);
-        regE_S<float> motorVelPidWindup = regE_S<float>(RW, 0x044);
-
-        regE_S<float> motorImpPidKp = regE_S<float>(RW, 0x050);
-        regE_S<float> motorImpPidKd = regE_S<float>(RW, 0x051);
-
-        regE_S<float> mainEncoderVelocity = regE_S<float>(RO, 0x062);
-        regE_S<float> mainEncoderPosition = regE_S<float>(RO, 0x063);
-        regE_S<float> motorTorque         = regE_S<float>(RO, 0x064);
-
-        regE_S<u8>    homingMode      = regE_S<u8>(RW, 0x070);
-        regE_S<float> homingMaxTravel = regE_S<float>(RW, 0x071);
-        regE_S<float> homingVelocity  = regE_S<float>(RW, 0x072);
-        regE_S<float> homingTorque    = regE_S<float>(RW, 0x073);
-
-        regE_S<u8> runSaveCmd                   = regE_S<u8>(WO, 0x080);
-        regE_S<u8> runTestMainEncoderCmd        = regE_S<u8>(WO, 0x081);
-        regE_S<u8> runTestOutputEncoderCmd      = regE_S<u8>(WO, 0x082);
-        regE_S<u8> runCalibrateCmd              = regE_S<u8>(WO, 0x083);
-        regE_S<u8> runCalibrateOutputEncoderCmd = regE_S<u8>(WO, 0x084);
-        regE_S<u8> runCalibratePiGains          = regE_S<u8>(WO, 0x085);
-        regE_S<u8> runHoming                    = regE_S<u8>(WO, 0x086);
-        regE_S<u8> runRestoreFactoryConfig      = regE_S<u8>(WO, 0x087);
-        regE_S<u8> runReset                     = regE_S<u8>(WO, 0x088);
-        regE_S<u8> runClearWarnings             = regE_S<u8>(WO, 0x089);
-        regE_S<u8> runClearErrors               = regE_S<u8>(WO, 0x08A);
-        regE_S<u8> runBlink                     = regE_S<u8>(WO, 0x08B);
-        regE_S<u8> runZero                      = regE_S<u8>(WO, 0x08C);
-        regE_S<u8> runCanReinit                 = regE_S<u8>(WO, 0x08D);
-
-        regE_S<float> calOutputEncoderStdDev = regE_S<float>(RO, 0x100);
-        regE_S<float> calOutputEncoderMinE   = regE_S<float>(RO, 0x101);
-        regE_S<float> calOutputEncoderMaxE   = regE_S<float>(RO, 0x102);
-        regE_S<float> calMainEncoderStdDev   = regE_S<float>(RO, 0x103);
-        regE_S<float> calMainEncoderMinE     = regE_S<float>(RO, 0x104);
-        regE_S<float> calMainEncoderMaxE     = regE_S<float>(RO, 0x105);
-
-        regE_S<float> positionLimitMax = regE_S<float>(RW, 0x110);
-        regE_S<float> positionLimitMin = regE_S<float>(RW, 0x111);
-        regE_S<float> maxTorque        = regE_S<float>(RW, 0x112);
-        regE_S<float> maxVelocity      = regE_S<float>(RW, 0x113);
-        regE_S<float> maxAcceleration  = regE_S<float>(RW, 0x114);
-        regE_S<float> maxDeceleration  = regE_S<float>(RW, 0x115);
-
-        regE_S<float> profileVelocity       = regE_S<float>(RW, 0x120);
-        regE_S<float> profileAcceleration   = regE_S<float>(RW, 0x121);
-        regE_S<float> profileDeceleration   = regE_S<float>(RW, 0x122);
-        regE_S<float> quickStopDeceleration = regE_S<float>(RW, 0x123);
-        regE_S<float> positionWindow        = regE_S<float>(RW, 0x124);
-        regE_S<float> velocityWindow        = regE_S<float>(RW, 0x125);
-
-        regE_S<u8>  motionModeCommand = regE_S<u8>(WO, 0x140);
-        regE_S<u8>  motionModeStatus  = regE_S<u8>(RO, 0x141);
-        regE_S<u16> state             = regE_S<u16>(RW, 0x142);
-
-        regE_S<float> targetPosition = regE_S<float>(RW, 0x150);
-        regE_S<float> targetVelocity = regE_S<float>(RW, 0x151);
-        regE_S<float> targetTorque   = regE_S<float>(RW, 0x152);
-
-        regE_S<u8>  userGpioConfiguration = regE_S<u8>(RW, 0x160);
-        regE_S<u16> userGpioState         = regE_S<u16>(RO, 0x161);
-
-        regE_S<u8> reverseDirection = regE_S<u8>(RW, 0x600);
-
-        regE_S<float> shuntResistance = regE_S<float>(RO, 0x700);
-
-        regE_S<hardwareType_S> hardwareType          = regE_S<hardwareType_S>(RO, 0x7FF);
-        regE_S<u32>            buildDate             = regE_S<u32>(RO, 0x800);
-        regE_S<char[8]>        commitHash            = regE_S<char[8]>(RO, 0x801);
-        regE_S<u32>            firmwareVersion       = regE_S<u32>(RO, 0x802);
-        regE_S<u8>             legacyHardwareVersion = regE_S<u8>(RO, 0x803);
-        regE_S<u8>             bridgeType            = regE_S<u8>(RO, 0x804);
-        regE_S<u16>            quickStatus           = regE_S<u16>(RO, 0x805);
-        regE_S<float>          mosfetTemperature     = regE_S<float>(RO, 0x806);
-        regE_S<float>          motorTemperature      = regE_S<float>(RO, 0x807);
-        regE_S<float>          motorShutdownTemp     = regE_S<float>(RO, 0x808);
-        regE_S<u32>            mainEncoderErrors     = regE_S<u32>(RO, 0x809);
-        regE_S<u32>            outputEncoderErrors   = regE_S<u32>(RO, 0x80A);
-        regE_S<u32>            calibrationErrors     = regE_S<u32>(RO, 0x80B);
-        regE_S<u32>            bridgeErrors          = regE_S<u32>(RO, 0x80C);
-        regE_S<u32>            hardwareErrors        = regE_S<u32>(RO, 0x80D);
-        regE_S<u32>            communicationErrors   = regE_S<u32>(RO, 0x80E);
-        regE_S<u32>            homingErrors          = regE_S<u32>(RO, 0x80F);
-        regE_S<u32>            motionErrors          = regE_S<u32>(RO, 0x810);
-
-        regE_S<float> dcBusVoltage    = regE_S<float>(RO, 0x811);
-        regE_S<u8>    bootloaderFixed = regE_S<u8>(RO, 0x812);
+        template <class F>
+        void forEachRegister(MDRegisters_S& regs, F&& func)
+        {
+            std::apply([&](auto&&... regs) { (func(regs), ...); }, regs.getAllRegisters());
+        }
     };
 
 }  // namespace mab

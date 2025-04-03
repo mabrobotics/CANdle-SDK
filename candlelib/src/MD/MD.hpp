@@ -234,7 +234,7 @@ namespace mab
         /// overwritten by received data)
         /// @return
         template <class T>
-        inline std::pair<RegisterEntry_S<T>, Error_t> readRegister(RegisterEntry_S<T>& reg)
+        inline std::pair<MDRegisterEntry_S<T>, Error_t> readRegister(MDRegisterEntry_S<T>& reg)
         {
             auto regTuple   = std::make_tuple(std::reference_wrapper(reg));
             auto resultPair = readRegisters(regTuple);
@@ -248,10 +248,10 @@ namespace mab
         /// read)
         /// @return Register values read and error type on failure
         template <class... T>
-        inline std::pair<std::tuple<RegisterEntry_S<T>...>, Error_t> readRegisters(
-            RegisterEntry_S<T>&... regs)
+        inline std::pair<std::tuple<MDRegisterEntry_S<T>...>, Error_t> readRegisters(
+            MDRegisterEntry_S<T>&... regs)
         {
-            auto regTuple   = std::tuple<RegisterEntry_S<T>&...>(regs...);
+            auto regTuple   = std::tuple<MDRegisterEntry_S<T>&...>(regs...);
             auto resultPair = readRegisters(regTuple);
             return resultPair;
         }
@@ -261,8 +261,8 @@ namespace mab
         /// @param regs Tuple with register references intended to be read (overwritten by read)
         /// @return Register values read and error type on failure
         template <class... T>
-        inline std::pair<std::tuple<RegisterEntry_S<T>...>, Error_t> readRegisters(
-            std::tuple<RegisterEntry_S<T>&...>& regs)
+        inline std::pair<std::tuple<MDRegisterEntry_S<T>...>, Error_t> readRegisters(
+            std::tuple<MDRegisterEntry_S<T>&...>& regs)
         {
             m_log.debug("Reading register...");
 
@@ -307,9 +307,9 @@ namespace mab
         /// @param ...regs Registry references to be written to memory
         /// @return Error on failure
         template <class... T>
-        inline Error_t writeRegisters(RegisterEntry_S<T>&... regs)
+        inline Error_t writeRegisters(MDRegisterEntry_S<T>&... regs)
         {
-            auto tuple = std::tuple<RegisterEntry_S<T>&...>(regs...);
+            auto tuple = std::tuple<MDRegisterEntry_S<T>&...>(regs...);
             return writeRegisters(tuple);
         }
 
@@ -318,7 +318,7 @@ namespace mab
         /// @param regs Tuple of register reference to be written
         /// @return Error on failure
         template <class... T>
-        inline Error_t writeRegisters(std::tuple<RegisterEntry_S<T>&...>& regs)
+        inline Error_t writeRegisters(std::tuple<MDRegisterEntry_S<T>&...>& regs)
         {
             m_log.debug("Writing register...");
             std::vector<u8> frame;
@@ -359,7 +359,8 @@ namespace mab
         }
 
         template <class... T>
-        static inline std::vector<u8> serializeMDRegisters(std::tuple<RegisterEntry_S<T>&...>& regs)
+        static inline std::vector<u8> serializeMDRegisters(
+            std::tuple<MDRegisterEntry_S<T>&...>& regs)
         {
             std::vector<u8> serialized;
             std::apply(
@@ -375,8 +376,8 @@ namespace mab
         }
 
         template <class... T>
-        static inline bool deserializeMDRegisters(std::vector<u8>&                    output,
-                                                  std::tuple<RegisterEntry_S<T>&...>& regs)
+        static inline bool deserializeMDRegisters(std::vector<u8>&                      output,
+                                                  std::tuple<MDRegisterEntry_S<T>&...>& regs)
         {
             bool failure            = false;
             auto performForEachElem = [&](auto& reg)  // Capture by reference to modify 'failure'
