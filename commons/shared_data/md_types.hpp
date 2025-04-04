@@ -67,9 +67,9 @@
                                                      \
     MD_REG(runSaveCmd, u8, 0x080, WO)                \
     MD_REG(runTestMainEncoderCmd, u8, 0x081, WO)     \
-    MD_REG(runTestauxEncoderCmd, u8, 0x082, WO)      \
+    MD_REG(runTestAuxEncoderCmd, u8, 0x082, WO)      \
     MD_REG(runCalibrateCmd, u8, 0x083, WO)           \
-    MD_REG(runCalibrateauxEncoderCmd, u8, 0x084, WO) \
+    MD_REG(runCalibrateAuxEncoderCmd, u8, 0x084, WO) \
     MD_REG(runCalibratePiGains, u8, 0x085, WO)       \
     MD_REG(runHoming, u8, 0x086, WO)                 \
     MD_REG(runRestoreFactoryConfig, u8, 0x087, WO)   \
@@ -80,9 +80,9 @@
     MD_REG(runZero, u8, 0x08C, WO)                   \
     MD_REG(runCanReinit, u8, 0x08D, WO)              \
                                                      \
-    MD_REG(calauxEncoderStdDev, float, 0x100, RO)    \
-    MD_REG(calauxEncoderMinE, float, 0x101, RO)      \
-    MD_REG(calauxEncoderMaxE, float, 0x102, RO)      \
+    MD_REG(calAuxEncoderStdDev, float, 0x100, RO)    \
+    MD_REG(calAuxEncoderMinE, float, 0x101, RO)      \
+    MD_REG(calAuxEncoderMaxE, float, 0x102, RO)      \
     MD_REG(calMainEncoderStdDev, float, 0x103, RO)   \
     MD_REG(calMainEncoderMinE, float, 0x104, RO)     \
     MD_REG(calMainEncoderMaxE, float, 0x105, RO)     \
@@ -116,6 +116,7 @@
                                                      \
     MD_REG(shuntResistance, float, 0x700, RO)        \
                                                      \
+    MD_REG(uniqueID, char[12], 0x7FE, RO)            \
     MD_REG(hardwareType, hardwareType_S, 0x7FF, RO)  \
     MD_REG(buildDate, u32, 0x800, RO)                \
     MD_REG(commitHash, char[8], 0x801, RO)           \
@@ -126,16 +127,17 @@
     MD_REG(mosfetTemperature, f32, 0x806, RO)        \
     MD_REG(motorTemperature, f32, 0x807, RO)         \
     MD_REG(motorShutdownTemp, f32, 0x808, RO)        \
-    MD_REG(mainEncoderErrors, u32, 0x809, RO)        \
-    MD_REG(auxEncoderErrors, u32, 0x80A, RO)         \
-    MD_REG(calibrationErrors, u32, 0x80B, RO)        \
-    MD_REG(bridgeErrors, u32, 0x80C, RO)             \
-    MD_REG(hardwareErrors, u32, 0x80D, RO)           \
-    MD_REG(communicationErrors, u32, 0x80E, RO)      \
-    MD_REG(homingErrors, u32, 0x80F, RO)             \
-    MD_REG(motionErrors, u32, 0x810, RO)             \
+    MD_REG(mainEncoderStatus, u32, 0x809, RO)        \
+    MD_REG(auxEncoderStatus, u32, 0x80A, RO)         \
+    MD_REG(calibrationStatus, u32, 0x80B, RO)        \
+    MD_REG(bridgeStatus, u32, 0x80C, RO)             \
+    MD_REG(hardwareStatus, u32, 0x80D, RO)           \
+    MD_REG(communicationStatus, u32, 0x80E, RO)      \
+    MD_REG(homingStatus, u32, 0x80F, RO)             \
+    MD_REG(motionStatus, u32, 0x810, RO)             \
     MD_REG(dcBusVoltage, f32, 0x811, RO)             \
-    MD_REG(bootloaderFixed, u8, 0x812, RO)
+    MD_REG(bootloaderFixed, u8, 0x812, RO)           \
+    MD_REG(miscStatus, u32, 0x813, RO)
 
 namespace mab
 {
