@@ -333,91 +333,91 @@ namespace mab
     std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, MD::Error_t>
     MD::getMainEncoderErrors()
     {
-        auto result = readRegister(m_mdRegisters.mainEncoderErrors);
+        auto result = readRegister(m_mdRegisters.mainEncoderStatus);
         if (result.second != Error_t::OK)
         {
             m_log.error("Could not read main encoder errors!");
             return std::make_pair(m_status.encoderError, result.second);
         }
-        MDStatus::toMap(m_mdRegisters.mainEncoderErrors.value, m_status.encoderError);
+        MDStatus::toMap(m_mdRegisters.mainEncoderStatus.value, m_status.encoderError);
         return std::make_pair(m_status.encoderError, result.second);
     }
 
     std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, MD::Error_t>
     MD::getOutputEncoderErrors()
     {
-        auto result = readRegister(m_mdRegisters.outputEncoderErrors);
+        auto result = readRegister(m_mdRegisters.auxEncoderStatus);
         if (result.second != Error_t::OK)
         {
             m_log.error("Could not read output encoder errors!");
             return std::make_pair(m_status.encoderError, result.second);
         }
-        MDStatus::toMap(m_mdRegisters.outputEncoderErrors.value, m_status.encoderError);
+        MDStatus::toMap(m_mdRegisters.auxEncoderStatus.value, m_status.encoderError);
         return std::make_pair(m_status.encoderError, result.second);
     }
 
     std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, MD::Error_t>
     MD::getCalibrationErrors()
     {
-        auto result = readRegister(m_mdRegisters.calibrationErrors);
+        auto result = readRegister(m_mdRegisters.calibrationStatus);
         if (result.second != Error_t::OK)
         {
             m_log.error("Could not read ");
             return std::make_pair(m_status.calibrationError, result.second);
         }
-        MDStatus::toMap(m_mdRegisters.calibrationErrors.value, m_status.calibrationError);
+        MDStatus::toMap(m_mdRegisters.calibrationStatus.value, m_status.calibrationError);
         return std::make_pair(m_status.calibrationError, result.second);
     }
 
     std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, MD::Error_t>
     MD::getBridgeErrors()
     {
-        auto result = readRegister(m_mdRegisters.bridgeErrors);
+        auto result = readRegister(m_mdRegisters.bridgeStatus);
         if (result.second != Error_t::OK)
         {
             m_log.error("Could not read ");
             return std::make_pair(m_status.bridgeError, result.second);
         }
-        MDStatus::toMap(m_mdRegisters.bridgeErrors.value, m_status.bridgeError);
+        MDStatus::toMap(m_mdRegisters.bridgeStatus.value, m_status.bridgeError);
         return std::make_pair(m_status.bridgeError, result.second);
     }
 
     std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, MD::Error_t>
     MD::getHardwareErrors()
     {
-        auto result = readRegister(m_mdRegisters.hardwareErrors);
+        auto result = readRegister(m_mdRegisters.hardwareStatus);
         if (result.second != Error_t::OK)
         {
             m_log.error("Could not read ");
             return std::make_pair(m_status.hardwareError, result.second);
         }
-        MDStatus::toMap(m_mdRegisters.hardwareErrors.value, m_status.hardwareError);
+        MDStatus::toMap(m_mdRegisters.hardwareStatus.value, m_status.hardwareError);
         return std::make_pair(m_status.hardwareError, result.second);
     }
 
     std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, MD::Error_t>
     MD::getCommunicationErrors()
     {
-        auto result = readRegister(m_mdRegisters.communicationErrors);
+        auto result = readRegister(m_mdRegisters.communicationStatus);
         if (result.second != Error_t::OK)
         {
             m_log.error("Could not read ");
             return std::make_pair(m_status.communicationError, result.second);
         }
-        MDStatus::toMap(m_mdRegisters.communicationErrors.value, m_status.communicationError);
+        MDStatus::toMap(m_mdRegisters.communicationStatus.value, m_status.communicationError);
         return std::make_pair(m_status.communicationError, result.second);
     }
 
     std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, MD::Error_t>
     MD::getMotionErrors()
     {
-        auto result = readRegister(m_mdRegisters.motionErrors);
+        auto result = readRegister(m_mdRegisters.motionStatus);
         if (result.second != Error_t::OK)
         {
             m_log.error("Could not read ");
             return std::make_pair(m_status.motionErrors, result.second);
         }
-        MDStatus::toMap(m_mdRegisters.motionErrors.value, m_status.motionErrors);
+        MDStatus::toMap(m_mdRegisters.motionStatus.value, m_status.motionErrors);
         return std::make_pair(m_status.motionErrors, result.second);
     }
 
@@ -456,24 +456,24 @@ namespace mab
 
     std::pair<float, MD::Error_t> MD::getOutputEncoderPosition()
     {
-        auto result = readRegister(m_mdRegisters.outputEncoderPosition);
+        auto result = readRegister(m_mdRegisters.auxEncoderPosition);
         if (result.second != Error_t::OK)
         {
             m_log.error("Could not read ");
             return std::make_pair(0, result.second);
         }
-        return std::make_pair(m_mdRegisters.outputEncoderPosition.value, result.second);
+        return std::make_pair(m_mdRegisters.auxEncoderPosition.value, result.second);
     }
 
     std::pair<float, MD::Error_t> MD::getOutputEncoderVelocity()
     {
-        auto result = readRegister(m_mdRegisters.outputEncoderVelocity);
+        auto result = readRegister(m_mdRegisters.auxEncoderVelocity);
         if (result.second != Error_t::OK)
         {
             m_log.error("Could not read ");
             return std::make_pair(0, result.second);
         }
-        return std::make_pair(m_mdRegisters.outputEncoderVelocity.value, result.second);
+        return std::make_pair(m_mdRegisters.auxEncoderVelocity.value, result.second);
     }
 
     std::pair<u8, MD::Error_t> MD::getTemperature()
