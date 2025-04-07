@@ -118,6 +118,9 @@ PdsCli::PdsCli(CLI::App& rootCli, mab::Candle& candle) : m_rootCli(rootCli), m_c
     m_psSetBrTriggerCmd =
         m_powerStageCmd->add_subcommand("set_br_trigger", "Set the Brake Resistor Trigger Voltage");
 
+    m_psSetBrTriggerCmd->add_option("<br_trigger>", m_brTrigger, "Brake Resistor Trigger Voltage")
+        ->required();
+
     m_psGetBrTriggerCmd =
         m_powerStageCmd->add_subcommand("get_br_trigger", "Get the Brake Resistor Trigger Voltage");
 
