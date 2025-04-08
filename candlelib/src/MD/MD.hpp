@@ -165,43 +165,58 @@ namespace mab
 
         /// @brief Request quick status update
         /// @return Quick Status map with bit positions as ids
-        std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, Error_t>
+        std::pair<const std::unordered_map<const MDStatus::QuickStatusBits, MDStatus::StatusItem_S>,
+                  Error_t>
         getQuickStatus();
 
         /// @brief Request main encoder status
         /// @return Main encoder status map with bit positions as ids
-        std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, Error_t>
-        getMainEncoderErrors();
+        std::pair<
+            const std::unordered_map<const MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
+            Error_t>
+        getMainEncoderStatus();
 
         /// @brief Request output encoder status
         /// @return Output encoder status map with bit positions as ids
-        std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, Error_t>
-        getOutputEncoderErrors();
+        std::pair<
+            const std::unordered_map<const MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
+            Error_t>
+        getOutputEncoderStatus();
 
         /// @brief Request calibration status
         /// @return Calibration status map with bit positions as ids
-        std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, Error_t>
-        getCalibrationErrors();
+        std::pair<
+            const std::unordered_map<const MDStatus::CalibrationStatusBits, MDStatus::StatusItem_S>,
+            Error_t>
+        getCalibrationStatus();
 
         /// @brief Request bridge status
         /// @return Bridge status map with bit positions as ids
-        std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, Error_t>
-        getBridgeErrors();
+        std::pair<
+            const std::unordered_map<const MDStatus::BridgeStatusBits, MDStatus::StatusItem_S>,
+            Error_t>
+        getBridgeStatus();
 
         /// @brief Request hardware status
         /// @return Hardware status map with bit positions as ids
-        std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, Error_t>
-        getHardwareErrors();
+        std::pair<
+            const std::unordered_map<const MDStatus::HardwareStatusBits, MDStatus::StatusItem_S>,
+            Error_t>
+        getHardwareStatus();
 
         /// @brief Request communication status
         /// @return Communication status map with bit positions as ids
-        std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, Error_t>
-        getCommunicationErrors();
+        std::pair<const std::unordered_map<const MDStatus::CommunicationStatusBits,
+                                           MDStatus::StatusItem_S>,
+                  Error_t>
+        getCommunicationStatus();
 
         /// @brief Request motion status
         /// @return Motion status map with bit positions as ids
-        std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, Error_t>
-        getMotionErrors();
+        std::pair<
+            const std::unordered_map<const MDStatus::MotionStatusBits, MDStatus::StatusItem_S>,
+            Error_t>
+        getMotionStatus();
 
         /// @brief Request position of the MD
         /// @return Position in radians

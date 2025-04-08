@@ -99,7 +99,5 @@ class CandleTool
                   std::string         field,
                   T&                  value);
 
-    bool hasError(u16 id);
-    bool tryAddMD80(u16 id);
     bool checkSetupError(u16 id);
 };
