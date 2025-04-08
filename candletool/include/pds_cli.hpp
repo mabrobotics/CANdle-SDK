@@ -26,6 +26,11 @@ class PdsCli
     CLI::App* m_setBatteryLevelCmd = nullptr;
     CLI::App* m_setShutdownTimeCmd = nullptr;
 
+    CLI::App* m_ctrlSetBrCmd        = nullptr;
+    CLI::App* m_ctrlGetBrCmd        = nullptr;
+    CLI::App* m_ctrlSetBrTriggerCmd = nullptr;
+    CLI::App* m_ctrlGetBrTriggerCmd = nullptr;
+
     CLI::App* m_configSetupCmd      = nullptr;
     CLI::App* m_interactiveSetupCmd = nullptr;
     CLI::App* m_configReadCmd       = nullptr;
