@@ -81,6 +81,12 @@ namespace mab
         error_E getBatteryVoltageLevels(u32& batteryLvl1, u32& batteryLvl2);
         error_E setBatteryVoltageLevels(u32 batteryLvl1, u32 batteryLvl2);
 
+        error_E bindBrakeResistor(socketIndex_E brakeResistorSocketIndex);
+        error_E getBindBrakeResistor(socketIndex_E& brakeResistorSocketIndex);
+
+        error_E setBrakeResistorTriggerVoltage(u32 brTriggerVoltage);
+        error_E getBrakeResistorTriggerVoltage(u32& brTriggerVoltage);
+
         error_E shutdown(void);
         error_E saveConfig(void);
 

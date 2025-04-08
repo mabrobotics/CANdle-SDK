@@ -75,9 +75,10 @@ namespace mab
             if (propertyResult != propertyError_E::OK)
             {
                 propertiesModifySuccess = false;
-                m_log.warn("Setting property [ %u ] failed with error code [ %u ]",
+                m_log.warn("Setting property [ %u ] failed with error code [ %u ( %s ) ]",
                            m_properties[i].first,
-                           propertyResult);
+                           propertyResult,
+                           propertyError2String(propertyResult));
             }
         }
 
@@ -149,6 +150,24 @@ namespace mab
         }
 
         return error_E::OK;
+    }
+
+    // propertyError2String
+    const char* PdsMessage::propertyError2String(propertyError_E error)
+    {
+        switch (error)
+        {
+            case propertyError_E::OK:
+                return "OK";
+            case propertyError_E::PROPERTY_NOT_AVAILABLE:
+                return "PROPERTY_NOT_AVAILABLE";
+            case propertyError_E::INVALID_ACCESS:
+                return "INVALID_ACCESS";
+            case propertyError_E::INVALID_DATA:
+                return "INVALID_DATA";
+            default:
+                return "UNKNOWN_ERROR";
+        }
     }
 
 }  // namespace mab

@@ -68,6 +68,25 @@ PdsCli::PdsCli(CLI::App& rootCli, mab::Candle& candle) : m_rootCli(rootCli), m_c
 
     m_setShutdownTimeCmd->add_option("<time>", m_shutdownTime, "Shutdown time in ms")->required();
 
+    m_ctrlSetBrCmd =
+        m_pdsCmd->add_subcommand("set_br", "Bind PS with the Brake Resistor at given Socket index");
+    m_ctrlSetBrCmd->add_option("<socket_index>", m_brSocket, "Brake Resistor Socket index")
+        ->required();
+
+    m_ctrlGetBrCmd = m_pdsCmd->add_subcommand("get_br", "Get the Brake Resistor Socket index");
+
+    m_ctrlSetBrTriggerCmd =
+        m_pdsCmd->add_subcommand("set_br_trigger", "Set the Brake Resistor Trigger Voltage");
+
+    m_ctrlSetBrTriggerCmd->add_option(
+        "<br_trigger>", m_brTrigger, "Brake Resistor Trigger Voltage");
+
+    m_ctrlGetBrTriggerCmd =
+        m_pdsCmd->add_subcommand("get_br_trigger", "Get the Brake Resistor Trigger Voltage");
+
+    m_ctrlGetBrTriggerCmd->add_option("<br_trigger>", m_brTrigger, "Brake Resistor Trigger Voltage")
+        ->required();
+
     m_disableCmd = m_pdsCmd->add_subcommand("disable", "Disable the PDS device");
 
     // POWER STAGE commands set
@@ -108,7 +127,8 @@ PdsCli::PdsCli(CLI::App& rootCli, mab::Candle& candle) : m_rootCli(rootCli), m_c
     m_psGetTempLimitCmd =
         m_powerStageCmd->add_subcommand("get_temp_limit", "Get the Temperature Limit");
 
-    m_psSetBrCmd = m_powerStageCmd->add_subcommand("set_br", "Set the Brake Resistor Socket index");
+    m_psSetBrCmd = m_powerStageCmd->add_subcommand(
+        "set_br", "Bind PS with the Brake Resistor at given Socket index");
 
     m_psSetBrCmd->add_option("<socket_index>", m_brSocket, "Brake Resistor Socket index")
         ->required();
@@ -282,6 +302,61 @@ void PdsCli::parse(void)
                 m_log.success("Shutdown time set [ %u ]", m_shutdownTime);
         }
 
+        else if (m_ctrlSetBrCmd->parsed())
+        {
+            socketIndex_E brSocket = decodeSocketIndex(m_brSocket);
+            if (brSocket == socketIndex_E::UNASSIGNED)
+            {
+                m_log.error("Invalid socket index [ %u ]", m_brSocket);
+                return;
+            }
+
+            if (!m_pds.verifyModuleSocket(moduleType_E::BRAKE_RESISTOR, brSocket))
+            {
+                m_log.error("Invalid socket number for Brake Resistor submodule");
+                return;
+            }
+
+            result = m_pds.bindBrakeResistor(brSocket);
+            if (result != PdsModule::error_E::OK)
+                m_log.error("Binding Brake Resistor failed [ %s ]",
+                            PdsModule::error2String(result));
+            else
+                m_log.success("Brake Resistor bound to socket [ %u ]", m_brSocket);
+        }
+
+        else if (m_ctrlGetBrCmd->parsed())
+        {
+            socketIndex_E brSocket = socketIndex_E::UNASSIGNED;
+            result                 = m_pds.getBindBrakeResistor(brSocket);
+            if (result != PdsModule::error_E::OK)
+                m_log.error("Getting Brake Resistor failed [ %s ]",
+                            PdsModule::error2String(result));
+            else
+                m_log.success("Brake Resistor bound to socket [ %u ]", (u8)brSocket);
+        }
+
+        else if (m_ctrlSetBrTriggerCmd->parsed())
+        {
+            result = m_pds.setBrakeResistorTriggerVoltage(m_brTrigger);
+            if (result != PdsModule::error_E::OK)
+                m_log.error("Setting Brake Resistor trigger voltage failed [ %s ]",
+                            PdsModule::error2String(result));
+            else
+                m_log.success("Brake Resistor trigger voltage set [ %u ]", m_brTrigger);
+        }
+
+        else if (m_ctrlGetBrTriggerCmd->parsed())
+        {
+            u32 brTrigger = 0;
+            result        = m_pds.getBrakeResistorTriggerVoltage(brTrigger);
+            if (result != PdsModule::error_E::OK)
+                m_log.error("Getting Brake Resistor trigger voltage failed [ %s ]",
+                            PdsModule::error2String(result));
+            else
+                m_log.success("Brake Resistor trigger voltage [ %u ]", brTrigger);
+        }
+
         else if (m_disableCmd->parsed())
         {
             m_pds.shutdown();
@@ -315,6 +390,7 @@ void PdsCli::powerStageCmdParse(void)
 
     if (m_psInfoCmd->parsed())
     {
+        // TODO: Create a separate function for submodules info
         powerStageStatus_S   psStatus         = {0};
         u32                  busVoltage       = 0;
         s32                  current          = 0;
@@ -489,13 +565,20 @@ void PdsCli::powerStageCmdParse(void)
 
     else if (m_psSetBrCmd->parsed())
     {
-        result = ps->bindBrakeResistor(decodeSocketIndex(m_brSocket));
-
         if (!m_pds.verifyModuleSocket(moduleType_E::BRAKE_RESISTOR, decodeSocketIndex(m_brSocket)))
         {
-            m_log.error("Invalid socket number for Brake Resistor submodule");
-            return;
+            if (m_brSocket == 0)
+            {
+                m_log.warn("Unbinding Brake Resistor from Power Stage");
+            }
+            else
+            {
+                m_log.error("Invalid socket number for Brake Resistor submodule");
+                return;
+            }
         }
+
+        result = ps->bindBrakeResistor(decodeSocketIndex(m_brSocket));
 
         if (result != PdsModule::error_E::OK)
             m_log.error("Power Stage set brake resistor failed [ %s ]",
@@ -812,16 +895,42 @@ void PdsCli::pdsSetupInfo()
 {
     mab::Pds::modulesSet_S pdsModules = m_pds.getModules();
 
+    mab::controlBoardStatus_S pdsStatus     = {0};
+    u32                       pdsBusVoltage = 0;
     u32                       shutdownTime  = 0;
     u32                       batteryLvl1   = 0;
     u32                       batteryLvl2   = 0;
-    u32                       pdsBusVoltage = 0;
-    mab::controlBoardStatus_S pdsStatus     = {0};
+    socketIndex_E             brSocket      = socketIndex_E::UNASSIGNED;
+    u32                       brTrigger     = 0;
 
-    m_pds.getStatus(pdsStatus);
-    m_pds.getBusVoltage(pdsBusVoltage);
-    m_pds.getShutdownTime(shutdownTime);
-    m_pds.getBatteryVoltageLevels(batteryLvl1, batteryLvl2);
+    PdsModule::error_E result = m_pds.getStatus(pdsStatus);
+    if (result != PdsModule::error_E::OK)
+        m_log.error("PDS get status failed [ %s ]", PdsModule::error2String(result));
+
+    result = m_pds.getBusVoltage(pdsBusVoltage);
+    if (result != PdsModule::error_E::OK)
+        m_log.error("PDS get bus voltage failed [ %s ]", PdsModule::error2String(result));
+
+    result = m_pds.getShutdownTime(shutdownTime);
+    if (result != PdsModule::error_E::OK)
+        m_log.error("PDS get shutdown time failed [ %s ]", PdsModule::error2String(result));
+
+    result = m_pds.getBatteryVoltageLevels(batteryLvl1, batteryLvl2);
+    if (result != PdsModule::error_E::OK)
+        m_log.error("PDS get battery levels failed [ %s ]", PdsModule::error2String(result));
+
+    result = m_pds.getBindBrakeResistor(brSocket);
+    if (result != PdsModule::error_E::OK)
+        m_log.error("Power Stage get brake resistor failed [ %s ]",
+                    PdsModule::error2String(result));
+
+    if (brSocket != socketIndex_E::UNASSIGNED)
+    {
+        result = m_pds.getBrakeResistorTriggerVoltage(brTrigger);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage get brake resistor trigger voltage failed [ %s ]",
+                        PdsModule::error2String(result));
+    }
 
     m_log.info("Power Distribution Module");
 
@@ -852,9 +961,17 @@ void PdsCli::pdsSetupInfo()
     m_log.info("---------------------------------");
 
     m_log.info("Config data:");
-    m_log.info("shutdown time: [ %u mS ] ", shutdownTime);
-    m_log.info("Battery level 1: %0.2f", batteryLvl1 / 1000.0f);
-    m_log.info("Battery level 2: %0.2f", batteryLvl2 / 1000.0f);
+    m_log.info("\t* shutdown time: [ %u mS ] ", shutdownTime);
+    m_log.info("\t* Battery level 1: [ %0.2f V ]", batteryLvl1 / 1000.0f);
+    m_log.info("\t* Battery level 2: [ %0.2f V ]", batteryLvl2 / 1000.0f);
+
+    if (brSocket == socketIndex_E::UNASSIGNED)
+        m_log.info("\t* Brake resistor is not set");
+    else
+    {
+        m_log.info("\t* Brake resistor socket [ %u ]", (u8)brSocket);
+        m_log.info("\t* Brake resistor trigger voltage [ %0.2f V ]", brTrigger / 1000.0f);
+    }
 
     m_log.info("---------------------------------");
 
@@ -1053,7 +1170,50 @@ void PdsCli::setupCtrlConfig(mINI::INIMap<std::string>& iniMap)
     }
     else
     {
-        m_log.error("Battery levels field missing so will be ignored");
+        m_log.warn("Battery levels field missing so will be ignored");
+    }
+
+    // Brake resistor
+    if (iniMap.has(BR_SOCKET_INI_KEY))
+    {
+        u8            socketIndexNumber = atoi(iniMap[BR_SOCKET_INI_KEY].c_str());
+        socketIndex_E brSocket          = decodeSocketIndex(socketIndexNumber);
+        if (brSocket == socketIndex_E::UNASSIGNED)
+        {
+            m_log.warn("Brake resistor UNASSIGNED");
+        }
+        else
+        {
+            m_log.debug("Brake resistor socket field found with value [ %u ]", (u8)brSocket);
+            result = m_pds.bindBrakeResistor(brSocket);
+            if (result != PdsModule::error_E::OK)
+                m_log.error("PDS bind brake resistor failed [ %s ]",
+                            PdsModule::error2String(result));
+            else
+                m_log.success("Brake resistor bind to socket [ %u ]", (u8)brSocket);
+        }
+    }
+    else
+    {
+        m_log.warn("Brake resistor socket field missing so will be ignored");
+    }
+
+    // Brake resistor trigger voltage
+    if (iniMap.has(BR_TRIG_V_INI_KEY))
+    {
+        u32 brTriggerVoltage = atoi(iniMap[BR_TRIG_V_INI_KEY].c_str());
+        m_log.debug("Brake resistor trigger voltage field found with value [ %u ]",
+                    brTriggerVoltage);
+        result = m_pds.setBrakeResistorTriggerVoltage(brTriggerVoltage);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("PDS set brake resistor trigger voltage failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.success("Brake resistor trigger voltage set [ %u ]", brTriggerVoltage);
+    }
+    else
+    {
+        m_log.warn("Brake resistor trigger voltage field missing so will be ignored");
     }
 }
 
@@ -1338,10 +1498,13 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
 {
     mINI::INIStructure readIni; /**< mINI structure for read data */
     // Control Board properties
-    u32               shutDownTime = 0;
-    u32               batLvl1      = 0;
-    u32               batLvl2      = 0;
-    Pds::modulesSet_S pdsModules   = m_pds.getModules();
+    u32           shutDownTime = 0;
+    u32           batLvl1      = 0;
+    u32           batLvl2      = 0;
+    socketIndex_E brSocket     = socketIndex_E::UNASSIGNED;
+    u32           brTrigger    = 0;
+
+    Pds::modulesSet_S pdsModules = m_pds.getModules();
 
     std::string configName = cfgPath;
     if (configName == "")
@@ -1351,8 +1514,11 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
 
     bool saveConfig = ui::getSaveConfigConfirmation(configName);
 
+    // TODO: Consider error handling here ?
     m_pds.getShutdownTime(shutDownTime);
     m_pds.getBatteryVoltageLevels(batLvl1, batLvl2);
+    m_pds.getBindBrakeResistor(brSocket);
+    m_pds.getBrakeResistorTriggerVoltage(brTrigger);
 
     readIni[CONTROL_BOARD_INI_SECTION][CAN_ID_INI_KEY]   = prettyFloatToString(m_canId, true);
     readIni[CONTROL_BOARD_INI_SECTION][CAN_BAUD_INI_KEY] = "TODO";
@@ -1362,6 +1528,12 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
         prettyFloatToString(batLvl1, true) + "\t\t; Battery monitor lvl 1 [ mV ]";
     readIni[CONTROL_BOARD_INI_SECTION][BATT_LVL_2_INI_KEY] =
         prettyFloatToString(batLvl2, true) + "\t\t; Battery monitor lvl 2 [ mV ]";
+    readIni[CONTROL_BOARD_INI_SECTION][BR_SOCKET_INI_KEY] =
+        prettyFloatToString((u8)brSocket, true) +
+        "\t\t; Socket index where corresponding Brake Resistor is connected";
+    readIni[CONTROL_BOARD_INI_SECTION][BR_TRIG_V_INI_KEY] =
+        prettyFloatToString(brTrigger, true) + "\t\t; Brake resistor trigger voltage [ mV ]";
+
     fullModuleIni(m_pds, pdsModules.moduleTypeSocket1, readIni, socketIndex_E::SOCKET_1);
     fullModuleIni(m_pds, pdsModules.moduleTypeSocket2, readIni, socketIndex_E::SOCKET_2);
     fullModuleIni(m_pds, pdsModules.moduleTypeSocket3, readIni, socketIndex_E::SOCKET_3);
