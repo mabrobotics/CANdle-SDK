@@ -6,6 +6,7 @@
 #include <array>
 #include <vector>
 
+#include "md_types.hpp"
 #include "ui.hpp"
 #include "configHelpers.hpp"
 
@@ -59,8 +60,8 @@ CandleTool::CandleTool()
     else if (busString == "USB")
         bus = std::make_unique<USBv2>(CandleV2::CANDLE_VID, CandleV2::CANDLE_PID, device);
 
-    candle = new CandleV2(baud, std::move(bus));
-    candle->init();
+    m_candle = new CandleV2(baud, std::move(bus));
+    m_candle->init();
     // TODO: move this to be more stateless and be able to start w/o candle attached
 
     return;
@@ -68,7 +69,7 @@ CandleTool::CandleTool()
 
 CandleTool::~CandleTool()
 {
-    detachCandle(candle);
+    detachCandle(m_candle);
 }
 
 void CandleTool::ping(const std::string& variant)
@@ -79,7 +80,7 @@ void CandleTool::ping(const std::string& variant)
         log.error("Not implemented");
         return;
     }
-    auto mdIds = MD::discoverMDs(candle);
+    auto mdIds = MD::discoverMDs(m_candle);
     log.info("Discovered MDs: ");
     for (const auto& id : mdIds)
     {
@@ -91,7 +92,7 @@ void CandleTool::configCan(
     u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination)
 {
     MDRegisters_S mdRegisters;
-    MD            md        = MD(id, candle);
+    MD            md        = MD(id, m_candle);
     auto          connected = md.init();
     if (connected != MD::Error_t::OK)
     {
@@ -119,7 +120,7 @@ void CandleTool::configCan(
 }
 void CandleTool::configSave(u16 id)
 {
-    MD   md        = MD(id, candle);
+    MD   md        = MD(id, m_candle);
     auto connected = md.init();
     if (connected != MD::Error_t::OK)
     {
@@ -142,7 +143,7 @@ void CandleTool::configSave(u16 id)
 void CandleTool::configZero(u16 id)
 {
     checkSpeedForId(id);
-    MD   md        = MD(id, candle);
+    MD   md        = MD(id, m_candle);
     auto connected = md.init();
     if (connected != MD::Error_t::OK)
     {
@@ -165,7 +166,7 @@ void CandleTool::configZero(u16 id)
 void CandleTool::configCurrent(u16 id, f32 current)
 {
     checkSpeedForId(id);
-    MD   md        = MD(id, candle);
+    MD   md        = MD(id, m_candle);
     auto connected = md.init();
     if (connected != MD::Error_t::OK)
     {
@@ -188,7 +189,7 @@ void CandleTool::configCurrent(u16 id, f32 current)
 void CandleTool::configBandwidth(u16 id, f32 bandwidth)
 {
     MDRegisters_S mdRegisters;
-    MD            md        = MD(id, candle);
+    MD            md        = MD(id, m_candle);
     auto          connected = md.init();
     if (connected != MD::Error_t::OK)
     {
@@ -214,7 +215,7 @@ void CandleTool::configBandwidth(u16 id, f32 bandwidth)
 void CandleTool::configClear(u16 id)
 {
     MDRegisters_S mdRegisters;
-    MD            md        = MD(id, candle);
+    MD            md        = MD(id, m_candle);
     auto          connected = md.init();
     if (connected != MD::Error_t::OK)
     {
@@ -241,7 +242,7 @@ void CandleTool::setupCalibration(u16 id)
         return;
 
     MDRegisters_S mdRegisters;
-    MD            md        = MD(id, candle);
+    MD            md        = MD(id, m_candle);
     auto          connected = md.init();
     if (connected != MD::Error_t::OK)
     {
@@ -268,16 +269,16 @@ void CandleTool::setupCalibrationOutput(u16 id)
         return;
 
     MDRegisters_S mdRegisters;
-    MD            md        = MD(id, candle);
+    MD            md        = MD(id, m_candle);
     auto          connected = md.init();
     if (connected != MD::Error_t::OK)
     {
         log.error("Could not connect MD with id %d", id);
         return;
     }
-    mdRegisters.outputEncoder = 0;
-    auto resultRead           = md.readRegister(mdRegisters.outputEncoder);
-    if (mdRegisters.outputEncoder.value != 0)
+    mdRegisters.auxEncoder = 0;
+    auto resultRead           = md.readRegister(mdRegisters.auxEncoder);
+    if (mdRegisters.auxEncoder.value != 0)
     {
         log.error("No output encoder is configured!");
         return;
@@ -287,8 +288,8 @@ void CandleTool::setupCalibrationOutput(u16 id)
         log.error("Failed to read output encoder type for the driver with id %d!", id);
     }
 
-    mdRegisters.runCalibrateOutputEncoderCmd = 1;
-    auto resultWrite = md.writeRegisters(mdRegisters.runCalibrateOutputEncoderCmd);
+    mdRegisters.runCalibrateAuxEncoderCmd = 1;
+    auto resultWrite = md.writeRegisters(mdRegisters.runCalibrateAuxEncoderCmd);
     if (resultWrite != MD::Error_t::OK)
     {
         log.error("Failed to calibrate for the driver with id %d!", id);
@@ -381,7 +382,7 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
     // mab::regRead_st&  regR = candle->getMd80FromList(id).getReadReg();
 
     mab::MDRegisters_S regs;
-    mab::MD            md = MD(id, candle);
+    mab::MD            md = MD(id, m_candle);
     if (md.init() != MD::Error_t::OK)
     {
         log.error("Failed to connect to MD!");
@@ -424,7 +425,7 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
         return;
 
     auto checkFieldWriteIfPopulated =
-        [&]<class T>(const char* category, const char* field, RegisterEntry_S<T> regVal) -> bool
+        [&]<class T>(const char* category, const char* field, mab::MDRegisterEntry_S<T> regVal) -> bool
     {
         if (cfg[category][field] == "")
             return true;
@@ -449,13 +450,13 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
     regs.motorCalibrationMode =
         getNumericParamFromList(cfg["motor"]["calibration mode"], ui::motorCalibrationModes);
 
-    regs.outputEncoderDefaultBaud =
+    regs.auxEncoderDefaultBaud =
         std::atoi(cfg["output encoder"]["output encoder default baud"].c_str());
-    regs.outputEncoder =
+    regs.auxEncoder =
         getNumericParamFromList(cfg["output encoder"]["output encoder"], ui::encoderTypes);
-    regs.outputEncoderMode =
+    regs.auxEncoderMode =
         getNumericParamFromList(cfg["output encoder"]["output encoder mode"], ui::encoderModes);
-    regs.outputEncoderCalibrationMode = getNumericParamFromList(
+    regs.auxEncoderCalibrationMode = getNumericParamFromList(
         cfg["output encoder"]["output encoder calibration mode"], ui::encoderCalibrationModes);
     regs.userGpioConfiguration = getNumericParamFromList(cfg["GPIO"]["mode"], ui::GPIOmodes);
 
@@ -480,9 +481,9 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
                           regs.motorKtPhaseA,
                           regs.motorKtPhaseB,
                           regs.motorKtPhaseC,
-                          regs.outputEncoder,
-                          regs.outputEncoderMode,
-                          regs.outputEncoderDefaultBaud) != MD::Error_t::OK)
+                          regs.auxEncoder,
+                          regs.auxEncoderMode,
+                          regs.auxEncoderDefaultBaud) != MD::Error_t::OK)
     {
         log.error("Failed to setup motor!");
     }
@@ -509,7 +510,7 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
         log.error("Failed to setup PIDs!");
     }
 
-    if (md.writeRegisters(regs.outputEncoderCalibrationMode, regs.outputEncoderCalibrationMode) !=
+    if (md.writeRegisters(regs.auxEncoderCalibrationMode, regs.auxEncoderCalibrationMode) !=
         MD::Error_t::OK)
     {
         log.error("Failed to setup encoder calibration mode!");
@@ -566,7 +567,7 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
         return;
 
     mINI::INIStructure readIni; /**< mINI structure for read data */
-    MD                 md = MD(id, candle);
+    MD                 md = MD(id, m_candle);
     MDRegisters_S      regs; /**< read register */
     char               motorNameChar[24];
     std::string        configName = cfgName;
@@ -606,19 +607,19 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
     }
 
     readIni["motor"]["name"]             = std::string(regs.motorName.value);
-    readIni["motor"]["pole pairs"]       = floatToString(regs.motorPolePairs.value);
-    readIni["motor"]["KV"]               = floatToString(regs.motorKV.value);
-    readIni["motor"]["torque constant"]  = floatToString(regs.motorKt.value);
-    readIni["motor"]["gear ratio"]       = floatToString(regs.motorGearRatio.value);
-    readIni["motor"]["max current"]      = floatToString(regs.motorIMax.value);
-    readIni["motor"]["torque bandwidth"] = floatToString(regs.motorTorqueBandwidth.value);
+    readIni["motor"]["pole pairs"]       = prettyFloatToString(regs.motorPolePairs.value);
+    readIni["motor"]["KV"]               = prettyFloatToString(regs.motorKV.value);
+    readIni["motor"]["torque constant"]  = prettyFloatToString(regs.motorKt.value);
+    readIni["motor"]["gear ratio"]       = prettyFloatToString(regs.motorGearRatio.value);
+    readIni["motor"]["max current"]      = prettyFloatToString(regs.motorIMax.value);
+    readIni["motor"]["torque bandwidth"] = prettyFloatToString(regs.motorTorqueBandwidth.value);
 
     if (md.readRegisters(regs.motorShutdownTemp).second != MD::Error_t::OK)
     {
         log.warn("Failed to read motor config!");
     }
 
-    readIni["motor"]["shutdown temp"] = floatToString(regs.motorShutdownTemp.value);
+    readIni["motor"]["shutdown temp"] = prettyFloatToString(regs.motorShutdownTemp.value);
 
     /* Motor config - limits section */
     if (md.readRegisters(regs.maxTorque,
@@ -631,12 +632,12 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
     {
         log.warn("Failed to read motor config!");
     }
-    readIni["limits"]["max velocity"]     = floatToString(regs.maxVelocity.value);
-    readIni["limits"]["max position"]     = floatToString(regs.positionLimitMax.value);
-    readIni["limits"]["min position"]     = floatToString(regs.positionLimitMin.value);
-    readIni["limits"]["max acceleration"] = floatToString(regs.maxAcceleration.value);
-    readIni["limits"]["max deceleration"] = floatToString(regs.maxDeceleration.value);
-    readIni["limits"]["max torque"]       = floatToString(regs.maxTorque.value);
+    readIni["limits"]["max velocity"]     = prettyFloatToString(regs.maxVelocity.value);
+    readIni["limits"]["max position"]     = prettyFloatToString(regs.positionLimitMax.value);
+    readIni["limits"]["min position"]     = prettyFloatToString(regs.positionLimitMin.value);
+    readIni["limits"]["max acceleration"] = prettyFloatToString(regs.maxAcceleration.value);
+    readIni["limits"]["max deceleration"] = prettyFloatToString(regs.maxDeceleration.value);
+    readIni["limits"]["max torque"]       = prettyFloatToString(regs.maxTorque.value);
 
     /* Motor config - profile section */
     if (md.readRegisters(regs.profileVelocity, regs.profileAcceleration, regs.profileDeceleration)
@@ -645,9 +646,9 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
         log.warn("Failed to read motor config!");
     }
 
-    readIni["profile"]["quick stop deceleration"] = floatToString(regs.quickStopDeceleration.value);
-    readIni["profile"]["max acceleration"]        = floatToString(regs.maxAcceleration.value);
-    readIni["profile"]["max deceleration"]        = floatToString(regs.maxDeceleration.value);
+    readIni["profile"]["quick stop deceleration"] = prettyFloatToString(regs.quickStopDeceleration.value);
+    readIni["profile"]["max acceleration"]        = prettyFloatToString(regs.maxAcceleration.value);
+    readIni["profile"]["max deceleration"]        = prettyFloatToString(regs.maxDeceleration.value);
 
     /* Motor config - output encoder section */
     // if (!candle->readMd80Register(id,
@@ -656,21 +657,21 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
     //                               mab::Md80Reg_E::outputEncoderMode,
     //                               regR.RW.outputEncoderMode))
     //     log.warn("Failed to read motor config!");
-    if (md.readRegisters(regs.outputEncoder, regs.outputEncoderMode).second != MD::Error_t::OK)
+    if (md.readRegisters(regs.auxEncoder, regs.auxEncoderMode).second != MD::Error_t::OK)
     {
         log.warn("Failed to read motor config!");
     }
 
-    if (regs.outputEncoder.value == 0)
-        readIni["output encoder"]["output encoder"] = floatToString(0.f, true);
+    if (regs.auxEncoder.value == 0)
+        readIni["output encoder"]["output encoder"] = prettyFloatToString(0.f, true);
     else
-        readIni["output encoder"]["output encoder"] = ui::encoderTypes[regs.outputEncoder.value];
+        readIni["output encoder"]["output encoder"] = ui::encoderTypes[regs.auxEncoder.value];
 
-    if (regs.outputEncoderMode.value == 0)
-        readIni["output encoder"]["output encoder mode"] = floatToString(0.f, true);
+    if (regs.auxEncoderMode.value == 0)
+        readIni["output encoder"]["output encoder mode"] = prettyFloatToString(0.f, true);
     else
         readIni["output encoder"]["output encoder mode"] =
-            ui::encoderModes[regs.outputEncoderMode.value];
+            ui::encoderModes[regs.auxEncoderMode.value];
 
     /* Motor config - position PID section */
     if (md.readRegisters(
@@ -679,10 +680,10 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
     {
         log.warn("Failed to read motor config!");
     }
-    readIni["position PID"]["kp"]     = floatToString(regs.motorPosPidKp.value);
-    readIni["position PID"]["ki"]     = floatToString(regs.motorPosPidKi.value);
-    readIni["position PID"]["kd"]     = floatToString(regs.motorPosPidKd.value);
-    readIni["position PID"]["windup"] = floatToString(regs.motorPosPidWindup.value);
+    readIni["position PID"]["kp"]     = prettyFloatToString(regs.motorPosPidKp.value);
+    readIni["position PID"]["ki"]     = prettyFloatToString(regs.motorPosPidKi.value);
+    readIni["position PID"]["kd"]     = prettyFloatToString(regs.motorPosPidKd.value);
+    readIni["position PID"]["windup"] = prettyFloatToString(regs.motorPosPidWindup.value);
 
     /* Motor config - velocity PID section */
     if (md.readRegisters(
@@ -691,18 +692,18 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
     {
         log.warn("Failed to read motor config!");
     }
-    readIni["velocity PID"]["kp"]     = floatToString(regs.motorVelPidKp.value);
-    readIni["velocity PID"]["ki"]     = floatToString(regs.motorVelPidKi.value);
-    readIni["velocity PID"]["kd"]     = floatToString(regs.motorVelPidKd.value);
-    readIni["velocity PID"]["windup"] = floatToString(regs.motorVelPidWindup.value);
+    readIni["velocity PID"]["kp"]     = prettyFloatToString(regs.motorVelPidKp.value);
+    readIni["velocity PID"]["ki"]     = prettyFloatToString(regs.motorVelPidKi.value);
+    readIni["velocity PID"]["kd"]     = prettyFloatToString(regs.motorVelPidKd.value);
+    readIni["velocity PID"]["windup"] = prettyFloatToString(regs.motorVelPidWindup.value);
 
     /* Motor config - impedance PD section */
     if (md.readRegisters(regs.motorImpPidKp, regs.motorImpPidKd).second != MD::Error_t::OK)
     {
         log.warn("Failed to read motor config!");
     }
-    readIni["impedance PD"]["kp"] = floatToString(regs.motorImpPidKp.value);
-    readIni["impedance PD"]["kd"] = floatToString(regs.motorImpPidKd.value);
+    readIni["impedance PD"]["kp"] = prettyFloatToString(regs.motorImpPidKp.value);
+    readIni["impedance PD"]["kd"] = prettyFloatToString(regs.motorImpPidKd.value);
 
     /* Motor config - homing section */
 
@@ -745,14 +746,14 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
 
 void CandleTool::setupInfo(u16 id, bool printAll)
 {
-    MD md = MD(id, candle);
+    MD md = MD(id, m_candle);
     if (md.init() != MD::Error_t::OK)
     {
         log.error("Could not communicate with MD device with ID %d", id);
         return;
     }
 
-    candle->setupMd80DiagnosticExtended(id);
+    m_candle->setupMd80DiagnosticExtended(id);
     ui::printDriveInfoExtended(md, printAll);
 }
 
