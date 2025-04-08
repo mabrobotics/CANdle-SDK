@@ -35,6 +35,8 @@ namespace mab
             SET_MODULE_PROPERTY = 0x21
         };
 
+        static const char* propertyError2String(propertyError_E error);
+
       protected:
         /* ModuleType / socket AKA who / where */
         PdsMessage(moduleType_E moduleType, socketIndex_E socket);
