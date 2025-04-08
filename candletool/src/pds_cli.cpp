@@ -1170,7 +1170,50 @@ void PdsCli::setupCtrlConfig(mINI::INIMap<std::string>& iniMap)
     }
     else
     {
-        m_log.error("Battery levels field missing so will be ignored");
+        m_log.warn("Battery levels field missing so will be ignored");
+    }
+
+    // Brake resistor
+    if (iniMap.has(BR_SOCKET_INI_KEY))
+    {
+        u8            socketIndexNumber = atoi(iniMap[BR_SOCKET_INI_KEY].c_str());
+        socketIndex_E brSocket          = decodeSocketIndex(socketIndexNumber);
+        if (brSocket == socketIndex_E::UNASSIGNED)
+        {
+            m_log.warn("Brake resistor UNASSIGNED");
+        }
+        else
+        {
+            m_log.debug("Brake resistor socket field found with value [ %u ]", (u8)brSocket);
+            result = m_pds.bindBrakeResistor(brSocket);
+            if (result != PdsModule::error_E::OK)
+                m_log.error("PDS bind brake resistor failed [ %s ]",
+                            PdsModule::error2String(result));
+            else
+                m_log.success("Brake resistor bind to socket [ %u ]", (u8)brSocket);
+        }
+    }
+    else
+    {
+        m_log.warn("Brake resistor socket field missing so will be ignored");
+    }
+
+    // Brake resistor trigger voltage
+    if (iniMap.has(BR_TRIG_V_INI_KEY))
+    {
+        u32 brTriggerVoltage = atoi(iniMap[BR_TRIG_V_INI_KEY].c_str());
+        m_log.debug("Brake resistor trigger voltage field found with value [ %u ]",
+                    brTriggerVoltage);
+        result = m_pds.setBrakeResistorTriggerVoltage(brTriggerVoltage);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("PDS set brake resistor trigger voltage failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.success("Brake resistor trigger voltage set [ %u ]", brTriggerVoltage);
+    }
+    else
+    {
+        m_log.warn("Brake resistor trigger voltage field missing so will be ignored");
     }
 }
 
@@ -1455,10 +1498,13 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
 {
     mINI::INIStructure readIni; /**< mINI structure for read data */
     // Control Board properties
-    u32               shutDownTime = 0;
-    u32               batLvl1      = 0;
-    u32               batLvl2      = 0;
-    Pds::modulesSet_S pdsModules   = m_pds.getModules();
+    u32           shutDownTime = 0;
+    u32           batLvl1      = 0;
+    u32           batLvl2      = 0;
+    socketIndex_E brSocket     = socketIndex_E::UNASSIGNED;
+    u32           brTrigger    = 0;
+
+    Pds::modulesSet_S pdsModules = m_pds.getModules();
 
     std::string configName = cfgPath;
     if (configName == "")
@@ -1468,8 +1514,11 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
 
     bool saveConfig = ui::getSaveConfigConfirmation(configName);
 
+    // TODO: Consider error handling here ?
     m_pds.getShutdownTime(shutDownTime);
     m_pds.getBatteryVoltageLevels(batLvl1, batLvl2);
+    m_pds.getBindBrakeResistor(brSocket);
+    m_pds.getBrakeResistorTriggerVoltage(brTrigger);
 
     readIni[CONTROL_BOARD_INI_SECTION][CAN_ID_INI_KEY]   = prettyFloatToString(m_canId, true);
     readIni[CONTROL_BOARD_INI_SECTION][CAN_BAUD_INI_KEY] = "TODO";
@@ -1479,6 +1528,12 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
         prettyFloatToString(batLvl1, true) + "\t\t; Battery monitor lvl 1 [ mV ]";
     readIni[CONTROL_BOARD_INI_SECTION][BATT_LVL_2_INI_KEY] =
         prettyFloatToString(batLvl2, true) + "\t\t; Battery monitor lvl 2 [ mV ]";
+    readIni[CONTROL_BOARD_INI_SECTION][BR_SOCKET_INI_KEY] =
+        prettyFloatToString((u8)brSocket, true) +
+        "\t\t; Socket index where corresponding Brake Resistor is connected";
+    readIni[CONTROL_BOARD_INI_SECTION][BR_TRIG_V_INI_KEY] =
+        prettyFloatToString(brTrigger, true) + "\t\t; Brake resistor trigger voltage [ mV ]";
+
     fullModuleIni(m_pds, pdsModules.moduleTypeSocket1, readIni, socketIndex_E::SOCKET_1);
     fullModuleIni(m_pds, pdsModules.moduleTypeSocket2, readIni, socketIndex_E::SOCKET_2);
     fullModuleIni(m_pds, pdsModules.moduleTypeSocket3, readIni, socketIndex_E::SOCKET_3);
