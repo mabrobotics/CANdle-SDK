@@ -15,6 +15,8 @@
 #include "I_communication_interface.hpp"
 #include "mab_crc.hpp"
 
+#include "pds.hpp"
+
 using namespace mab;
 
 f32 lerp(f32 start, f32 end, f32 t)
@@ -1207,6 +1209,8 @@ void CandleTool::updateCandle(const std::string& mabFilePath, bool noReset)
                 break;
             }
         }
+        // mab::FirmwareUploader firmwareUploader(*candle, mabFile);
+        // firmwareUploader.flashDevice(noReset);
     }
 
     void CandleTool::updateMd(const std::string& mabFilePath, uint16_t canId, bool noReset)

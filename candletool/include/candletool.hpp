@@ -30,6 +30,7 @@ class CandleTool
   public:
     CandleTool();
     ~CandleTool();
+    ~CandleTool();
     void ping(const std::string& variant);
     void configCan(u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination = 0);
     void configSave(u16 id);
@@ -63,6 +64,7 @@ class CandleTool
      *
      * @param firmwareFile path to firmware file (.mab)
      */
+    void updateCandle(const std::string& mabFilePath);
     void updateCandle(const std::string& mabFilePath);
 
     /**
@@ -98,15 +100,6 @@ class CandleTool
                   std::string         category,
                   std::string         field,
                   T&                  value);
-
-    template <typename T>
-    bool readRegisterToString(u16 id, mab::Md80Reg_E regId, std::string& str)
-    {
-        T    value  = 0;
-        bool status = m_candle.readMd80Register(id, regId, value);
-        str         = std::to_string(value);
-        return status;
-    }
 
     bool hasError(u16 id);
     bool tryAddMD80(u16 id);
