@@ -133,8 +133,10 @@ namespace ui
     }
 
     // TODO: this is a placeholder, iterable structure required
-    mab::MDRegisters_S registers;
-    void               printDriveInfoExtended(const mab::MD& drive, bool printAll)
+
+    void printDriveInfoExtended(const mab::MD&            drive,
+                                const mab::MDRegisters_S& registers,
+                                bool                      printAll)
     {
         //    auto getStringBuildDate = [](uint32_t date)
         //    {
