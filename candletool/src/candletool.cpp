@@ -35,7 +35,7 @@ mab::CANdleBaudrate_E str2baud(const std::string& baud)
     return mab::CANdleBaudrate_E::CAN_BAUD_1M;
 }
 
-CandleTool::CandleTool(mab::Candle& candle) : m_candle(candle)
+CandleTool::CandleTool()
 {
     log.m_tag   = "CANDLETOOL";
     log.m_layer = Logger::ProgramLayer_E::TOP;
@@ -61,6 +61,7 @@ CandleTool::CandleTool(mab::Candle& candle) : m_candle(candle)
 
     candle = new CandleV2(baud, std::move(bus));
     candle->init();
+    // TODO: move this to be more stateless and be able to start w/o candle attached
 
     return;
 }
@@ -755,11 +756,6 @@ void CandleTool::setupInfo(u16 id, bool printAll)
     ui::printDriveInfoExtended(md, printAll);
 }
 
-void CandleTool::setupHoming(u16 id)
-{
-    m_candle.setupMd80PerformHoming(id);
-}
-
 void CandleTool::testMove(u16 id, f32 targetPosition)
 {
     if (targetPosition > 10.0f)
@@ -771,14 +767,14 @@ void CandleTool::testMove(u16 id, f32 targetPosition)
     if (hasError(id))
         return;
 
-    mab::Md80& md = m_candle.md80s[0];
-    m_candle.controlMd80Mode(id, mab::Md80Mode_E::IMPEDANCE);
+    mab::Md80& md = m_candle->md80s[0];
+    m_candle->controlMd80Mode(id, mab::Md80Mode_E::IMPEDANCE);
     f32 pos = md.getPosition();
     md.setTargetPosition(pos);
     targetPosition += pos;
 
-    m_candle.controlMd80Enable(id, true);
-    m_candle.begin();
+    m_candle->controlMd80Enable(id, true);
+    m_candle->begin();
     for (f32 t = 0.f; t < 1.f; t += 0.01f)
     {
         f32 target  = lerp(pos, targetPosition, t);
@@ -787,7 +783,7 @@ void CandleTool::testMove(u16 id, f32 targetPosition)
         log.info("[%4d] Position: %4.2f, Velocity: %4.1f", id, md.getPosition(), md.getVelocity());
         usleep(30000);
     }
-    m_candle.end();
+    m_candle->end();
 }
 
 void CandleTool::testMoveAbsolute(u16 id, f32 targetPos, f32 velLimit, f32 accLimit, f32 dccLimit)
@@ -798,20 +794,20 @@ void CandleTool::testMoveAbsolute(u16 id, f32 targetPos, f32 velLimit, f32 accLi
     if (hasError(id))
         return;
     if (velLimit > 0)
-        m_candle.writeMd80Register(id, mab::Md80Reg_E::profileVelocity, velLimit);
+        m_candle->writeMd80Register(id, mab::Md80Reg_E::profileVelocity, velLimit);
     if (accLimit > 0)
-        m_candle.writeMd80Register(id, mab::Md80Reg_E::profileAcceleration, accLimit);
+        m_candle->writeMd80Register(id, mab::Md80Reg_E::profileAcceleration, accLimit);
     if (dccLimit > 0)
-        m_candle.writeMd80Register(id, mab::Md80Reg_E::profileDeceleration, dccLimit);
+        m_candle->writeMd80Register(id, mab::Md80Reg_E::profileDeceleration, dccLimit);
 
-    m_candle.controlMd80Mode(id, mab::Md80Mode_E::POSITION_PROFILE);
-    m_candle.controlMd80Enable(id, true);
-    m_candle.begin();
-    m_candle.md80s[0].setTargetPosition(targetPos);
-    while (!m_candle.md80s[0].isTargetPositionReached())
+    m_candle->controlMd80Mode(id, mab::Md80Mode_E::POSITION_PROFILE);
+    m_candle->controlMd80Enable(id, true);
+    m_candle->begin();
+    m_candle->md80s[0].setTargetPosition(targetPos);
+    while (!m_candle->md80s[0].isTargetPositionReached())
         sleep(1);
     log.info("TARGET REACHED!");
-    m_candle.end();
+    m_candle->end();
 }
 
 void CandleTool::testLatency(const std::string& canBaudrate, std::string busString)
@@ -825,25 +821,25 @@ void CandleTool::testLatency(const std::string& canBaudrate, std::string busStri
 #ifdef WIN32
     SetPriorityClass(GetCurrentProcess(), REALTIME_PRIORITY_CLASS);
 #endif
-    auto ids = m_candle.ping(str2baud(canBaudrate));
+    auto ids = m_candle->ping(str2baud(canBaudrate));
     if (ids.size() == 0)
         return;
     checkSpeedForId(ids[0]);
 
     for (auto& id : ids)
     {
-        m_candle.addMd80(id);
-        m_candle.controlMd80Mode(id, mab::Md80Mode_E::IMPEDANCE);
+        m_candle->addMd80(id);
+        m_candle->controlMd80Mode(id, mab::Md80Mode_E::IMPEDANCE);
     }
 
-    m_candle.begin();
+    m_candle->begin();
     std::vector<u32> samples;
     const u32        timelen = 10;
     sleep(1);
     for (u32 i = 0; i < timelen; i++)
     {
         sleep(1);
-        samples.push_back(m_candle.getActualCommunicationFrequency());
+        samples.push_back(m_candle->getActualCommunicationFrequency());
         log.info("Current average communication speed: %d Hz", samples[i]);
     }
 
@@ -858,7 +854,7 @@ void CandleTool::testLatency(const std::string& canBaudrate, std::string busStri
 
     ui::printLatencyTestResult(ids.size(), m, stdev, busString);
 
-    m_candle.end();
+    m_candle->end();
 }
 
 void CandleTool::testEncoderOutput(u16 id)
@@ -867,20 +863,20 @@ void CandleTool::testEncoderOutput(u16 id)
         return;
 
     u16 outputEncoder = 0;
-    m_candle.readMd80Register(id, mab::Md80Reg_E::outputEncoder, outputEncoder);
+    m_candle->readMd80Register(id, mab::Md80Reg_E::outputEncoder, outputEncoder);
     if (!outputEncoder)
     {
         log.warn("No output encoder on ID: %d! Not testing.", id);
         return;
     }
-    m_candle.setupMd80TestOutputEncoder(id);
+    m_candle->setupMd80TestOutputEncoder(id);
 }
 
 void CandleTool::testEncoderMain(u16 id)
 {
     if (!tryAddMD80(id) && hasError(id))
         return;
-    m_candle.setupMd80TestMainEncoder(id);
+    m_candle->setupMd80TestMainEncoder(id);
 }
 
 void CandleTool::registerWrite(u16 id, u16 reg, const std::string& value)
@@ -896,31 +892,31 @@ void CandleTool::registerWrite(u16 id, u16 reg, const std::string& value)
     switch (mab::Register::getType(regId))
     {
         case mab::Register::type::U8:
-            success = m_candle.writeMd80Register(id, regId, (u8)regValue);
+            success = m_candle->writeMd80Register(id, regId, (u8)regValue);
             break;
         case mab::Register::type::I8:
-            success = m_candle.writeMd80Register(id, regId, (s8)regValue);
+            success = m_candle->writeMd80Register(id, regId, (s8)regValue);
             break;
         case mab::Register::type::U16:
-            success = m_candle.writeMd80Register(id, regId, (u16)regValue);
+            success = m_candle->writeMd80Register(id, regId, (u16)regValue);
             break;
         case mab::Register::type::I16:
-            success = m_candle.writeMd80Register(id, regId, (s16)regValue);
+            success = m_candle->writeMd80Register(id, regId, (s16)regValue);
             break;
         case mab::Register::type::U32:
-            success = m_candle.writeMd80Register(id, regId, (u32)regValue);
+            success = m_candle->writeMd80Register(id, regId, (u32)regValue);
             break;
         case mab::Register::type::I32:
-            success = m_candle.writeMd80Register(id, regId, (s32)regValue);
+            success = m_candle->writeMd80Register(id, regId, (s32)regValue);
             break;
         case mab::Register::type::F32:
-            success = m_candle.writeMd80Register(id, regId, (f32)std::atof(value.c_str()));
+            success = m_candle->writeMd80Register(id, regId, (f32)std::atof(value.c_str()));
             break;
         case mab::Register::type::STR:
         {
             char str[24] = {};
             memcpy(str, value.c_str(), sizeof(str));
-            success = m_candle.writeMd80Register(id, regId, str);
+            success = m_candle->writeMd80Register(id, regId, str);
             break;
         }
         case mab::Register::type::UNKNOWN:
@@ -965,7 +961,7 @@ void CandleTool::registerRead(u16 id, u16 reg)
         case mab::Register::type::STR:
         {
             char str[24]{};
-            m_candle.readMd80Register(id, regId, str);
+            m_candle->readMd80Register(id, regId, str);
             value = std::string(str);
             break;
         }
@@ -1284,19 +1280,19 @@ void CandleTool::updateCandle(const std::string& mabFilePath, bool noReset)
     void CandleTool::clearErrors(u16 id, const std::string& level)
     {
         if (level == "error")
-            m_candle.setupMd80ClearErrors(id);
+            m_candle->setupMd80ClearErrors(id);
         if (level == "warning")
-            m_candle.setupMd80ClearWarnings(id);
+            m_candle->setupMd80ClearWarnings(id);
         else
         {
-            m_candle.setupMd80ClearErrors(id);
-            m_candle.setupMd80ClearWarnings(id);
+            m_candle->setupMd80ClearErrors(id);
+            m_candle->setupMd80ClearWarnings(id);
         }
     }
 
     void CandleTool::reset(u16 id)
     {
-        m_candle.setupMd80PerformReset(id);
+        m_candle->setupMd80PerformReset(id);
     }
 
     mab::CANdleBaudrate_E CandleTool::checkSpeedForId(u16 id)
@@ -1308,8 +1304,8 @@ void CandleTool::updateCandle(const std::string& mabFilePath, bool noReset)
 
         for (auto& baud : bauds)
         {
-            m_candle.configCandleBaudrate(baud);
-            if (m_candle.checkMd80ForBaudrate(id))
+            m_candle->configCandleBaudrate(baud);
+            if (m_candle->checkMd80ForBaudrate(id))
                 return baud;
         }
 
@@ -1331,18 +1327,18 @@ void CandleTool::updateCandle(const std::string& mabFilePath, bool noReset)
 
     bool CandleTool::hasError(u16 canId)
     {
-        m_candle.setupMd80DiagnosticExtended(canId);
+        m_candle->setupMd80DiagnosticExtended(canId);
 
-        if (m_candle.getMd80FromList(canId).getReadReg().RO.mainEncoderErrors & 0x0000ffff ||
-            m_candle.getMd80FromList(canId).getReadReg().RO.outputEncoderErrors & 0x0000ffff ||
-            m_candle.getMd80FromList(canId).getReadReg().RO.calibrationErrors & 0x0000ffff ||
-            m_candle.getMd80FromList(canId).getReadReg().RO.hardwareErrors & 0x0000ffff ||
-            m_candle.getMd80FromList(canId).getReadReg().RO.bridgeErrors & 0x0000ffff ||
-            m_candle.getMd80FromList(canId).getReadReg().RO.communicationErrors & 0x0000ffff ||
-            m_candle.getMd80FromList(canId).getReadReg().RO.miscStatus & 0x0000ffff)
+        if (m_candle->getMd80FromList(canId).getReadReg().RO.mainEncoderErrors & 0x0000ffff ||
+            m_candle->getMd80FromList(canId).getReadReg().RO.outputEncoderErrors & 0x0000ffff ||
+            m_candle->getMd80FromList(canId).getReadReg().RO.calibrationErrors & 0x0000ffff ||
+            m_candle->getMd80FromList(canId).getReadReg().RO.hardwareErrors & 0x0000ffff ||
+            m_candle->getMd80FromList(canId).getReadReg().RO.bridgeErrors & 0x0000ffff ||
+            m_candle->getMd80FromList(canId).getReadReg().RO.communicationErrors & 0x0000ffff ||
+            m_candle->getMd80FromList(canId).getReadReg().RO.miscStatus & 0x0000ffff)
         {
             log.error("Cannot execute command. MD has error:");
-            ui::printAllErrors(m_candle.md80s[0]);
+            ui::printAllErrors(m_candle->md80s[0]);
             return true;
         }
 
@@ -1390,7 +1386,7 @@ void CandleTool::updateCandle(const std::string& mabFilePath, bool noReset)
     bool CandleTool::tryAddMD80(u16 id)
     {
         checkSpeedForId(id);
-        if (!m_candle.addMd80(id))
+        if (!m_candle->addMd80(id))
         {
             log.error("MD with ID: %d, not found on the bus.", id);
             return false;
@@ -1400,7 +1396,7 @@ void CandleTool::updateCandle(const std::string& mabFilePath, bool noReset)
     bool CandleTool::checkSetupError(u16 id)
     {
         u32 calibrationStatus = 0;
-        m_candle.readMd80Register(id, mab::Md80Reg_E::calibrationErrors, calibrationStatus);
+        m_candle->readMd80Register(id, mab::Md80Reg_E::calibrationErrors, calibrationStatus);
 
         if (calibrationStatus & (1 << ui::calibrationErrorList.at(std::string("ERROR_SETUP"))))
         {
