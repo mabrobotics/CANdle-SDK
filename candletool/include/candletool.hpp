@@ -30,7 +30,6 @@ class CandleTool
   public:
     CandleTool();
     ~CandleTool();
-    ~CandleTool();
     void ping(const std::string& variant);
     void configCan(u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination = 0);
     void configSave(u16 id);
@@ -64,7 +63,6 @@ class CandleTool
      *
      * @param firmwareFile path to firmware file (.mab)
      */
-    void updateCandle(const std::string& mabFilePath);
     void updateCandle(const std::string& mabFilePath);
 
     /**
