@@ -2,7 +2,9 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdio>
 #include <cstring>
+#include <optional>
 #include <string>
 #include <utility>
 #include <tuple>
@@ -170,7 +172,7 @@ namespace mab
 
         const RegisterAccessLevel_E m_accessLevel;
         const u16                   m_regAddress;
-        const std::string                m_name;
+        const std::string           m_name;
 
       private:
         std::array<u8, sizeof(value) + sizeof(m_regAddress)> serializedBuffer;
@@ -245,7 +247,7 @@ namespace mab
         std::array<u8, sizeof(value) + sizeof(m_regAddress)> serializedBuffer;
 
       public:
-        MDRegisterEntry_S(RegisterAccessLevel_E accessLevel, u16 regAddress,std::string name)
+        MDRegisterEntry_S(RegisterAccessLevel_E accessLevel, u16 regAddress, std::string name)
             : m_accessLevel(accessLevel), m_regAddress(regAddress), m_name(name)
         {
         }
@@ -331,6 +333,28 @@ namespace mab
         void forEachRegister(MDRegisters_S& regs, F&& func)
         {
             std::apply([&](auto&&... regs) { (func(regs), ...); }, regs.getAllRegisters());
+        }
+
+        template <typename T>
+        std::optional<std::reference_wrapper<MDRegisterEntry_S<T>&>> findRegisterByAddress(
+            u16 targetAddress)
+        {
+            std::optional<std::reference_wrapper<MDRegisterEntry_S<T>&>> result;
+
+            forEachRegister(this,
+                            [&](auto& reg)
+                            {
+                                if (reg.m_regAddress == targetAddress && !result.has_value())
+                                {
+                                    if constexpr (std::is_same_v<std::decay_t<decltype(reg)>,
+                                                                 MDRegisterEntry_S<T>>)
+                                    {
+                                        result = &reg;
+                                    }
+                                }
+                            });
+
+            return result;
         }
     };
 

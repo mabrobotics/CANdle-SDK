@@ -8,6 +8,7 @@
 #include "MD.hpp"
 #include "candletool.hpp"
 #include "logger.hpp"
+#include "md_types.hpp"
 
 /* ERROR COLORING NOTE: may not work on all terminals! */
 #define REDSTART    "\033[1;31m"
@@ -37,7 +38,7 @@ namespace ui
     bool getCalibrationOutputConfirmation();
     void printPositionAndVelocity(int id, float pos, float velocity);
     void printFoundDrives(std::vector<uint16_t> ids);
-    void printDriveInfoExtended(mab::MD& drive, bool printAll);
+    void printDriveInfoExtended(const mab::MD& drive, const mab::MDRegisters_S&, bool printAll);
     void printAllErrors(mab::MD& drive);
     void printErrorDetails(uint32_t error, const std::map<std::string, uint8_t>& errorMap);
     void printParameterOutOfBounds(std::string category, std::string field);

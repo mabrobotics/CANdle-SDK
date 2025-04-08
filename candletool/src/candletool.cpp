@@ -6,7 +6,9 @@
 #include <array>
 #include <vector>
 
+#include "MDStatus.hpp"
 #include "md_types.hpp"
+#include "register.hpp"
 #include "ui.hpp"
 #include "configHelpers.hpp"
 
@@ -279,7 +281,7 @@ void CandleTool::setupCalibrationOutput(u16 id)
         return;
     }
     mdRegisters.auxEncoder = 0;
-    auto resultRead           = md.readRegister(mdRegisters.auxEncoder);
+    auto resultRead        = md.readRegister(mdRegisters.auxEncoder);
     if (mdRegisters.auxEncoder.value != 0)
     {
         log.error("No output encoder is configured!");
@@ -426,8 +428,9 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
     if (!getField(cfg, ini, "limits", "max deceleration", regs.maxDeceleration.value))
         return;
 
-    auto checkFieldWriteIfPopulated =
-        [&]<class T>(const char* category, const char* field, mab::MDRegisterEntry_S<T> regVal) -> bool
+    auto checkFieldWriteIfPopulated = [&]<class T>(const char*               category,
+                                                   const char*               field,
+                                                   mab::MDRegisterEntry_S<T> regVal) -> bool
     {
         if (cfg[category][field] == "")
             return true;
@@ -565,9 +568,6 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
 }
 void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
 {
-    if (!tryAddMD80(id))
-        return;
-
     mINI::INIStructure readIni; /**< mINI structure for read data */
     MD                 md = MD(id, m_candle);
     MDRegisters_S      regs; /**< read register */
@@ -648,9 +648,10 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
         log.warn("Failed to read motor config!");
     }
 
-    readIni["profile"]["quick stop deceleration"] = prettyFloatToString(regs.quickStopDeceleration.value);
-    readIni["profile"]["max acceleration"]        = prettyFloatToString(regs.maxAcceleration.value);
-    readIni["profile"]["max deceleration"]        = prettyFloatToString(regs.maxDeceleration.value);
+    readIni["profile"]["quick stop deceleration"] =
+        prettyFloatToString(regs.quickStopDeceleration.value);
+    readIni["profile"]["max acceleration"] = prettyFloatToString(regs.maxAcceleration.value);
+    readIni["profile"]["max deceleration"] = prettyFloatToString(regs.maxDeceleration.value);
 
     /* Motor config - output encoder section */
     // if (!candle->readMd80Register(id,
@@ -748,15 +749,24 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
 
 void CandleTool::setupInfo(u16 id, bool printAll)
 {
-    MD md = MD(id, m_candle);
+    MD            md = MD(id, m_candle);
+    MDRegisters_S readableRegisters;
     if (md.init() != MD::Error_t::OK)
     {
         log.error("Could not communicate with MD device with ID %d", id);
         return;
     }
 
-    m_candle->setupMd80DiagnosticExtended(id);
-    ui::printDriveInfoExtended(md, printAll);
+    auto readReadableRegs = [&]<typename T>(MDRegisterEntry_S<T> reg)
+    {
+        auto fault = md.readRegisters(reg).second;
+        if (fault != MD::Error_t::OK)
+            log.error("Error while reading register %s", reg.m_name);
+    };
+
+    readableRegisters.forEachRegister(readableRegisters, readReadableRegs);
+
+    ui::printDriveInfoExtended(md, readableRegisters, printAll);
 }
 
 void CandleTool::testMove(u16 id, f32 targetPosition)
@@ -765,130 +775,158 @@ void CandleTool::testMove(u16 id, f32 targetPosition)
         targetPosition = 10.0f;
     if (targetPosition < -10.0f)
         targetPosition = -10.0f;
-    if (!tryAddMD80(id))
-        return;
-    if (hasError(id))
-        return;
 
-    mab::Md80& md = m_candle->md80s[0];
-    m_candle->controlMd80Mode(id, mab::Md80Mode_E::IMPEDANCE);
-    f32 pos = md.getPosition();
+    mab::MD md(id, m_candle);
+    auto    mdInitResult = md.init();
+    if (mdInitResult != MD::Error_t::OK)
+        log.error("Error while initializing MD80");
+
+    md.setMotionMode(mab::Md80Mode_E::IMPEDANCE);
+    f32 pos = md.getPosition().first;
     md.setTargetPosition(pos);
     targetPosition += pos;
 
-    m_candle->controlMd80Enable(id, true);
-    m_candle->begin();
+    md.enable();
+
     for (f32 t = 0.f; t < 1.f; t += 0.01f)
     {
-        f32 target  = lerp(pos, targetPosition, t);
+        f32 target  = std::lerp(pos, targetPosition, t);
         log.m_layer = Logger::ProgramLayer_E::TOP;
         md.setTargetPosition(target);
         log.info("[%4d] Position: %4.2f, Velocity: %4.1f", id, md.getPosition(), md.getVelocity());
         usleep(30000);
     }
-    m_candle->end();
 }
 
 void CandleTool::testMoveAbsolute(u16 id, f32 targetPos, f32 velLimit, f32 accLimit, f32 dccLimit)
 {
-    if (!tryAddMD80(id))
+    MD md(id, m_candle);
+    if (md.init() != MD::Error_t::OK)
+    {
+        log.error("Failed to initialize MD");
         return;
+    }
 
-    if (hasError(id))
-        return;
+    MDRegisters_S registers;
+    registers.profileVelocity     = velLimit;
+    registers.profileAcceleration = accLimit;
+    registers.profileDeceleration = dccLimit;
+
     if (velLimit > 0)
-        m_candle->writeMd80Register(id, mab::Md80Reg_E::profileVelocity, velLimit);
+        md.writeRegisters(registers.profileVelocity);
     if (accLimit > 0)
-        m_candle->writeMd80Register(id, mab::Md80Reg_E::profileAcceleration, accLimit);
+        md.writeRegisters(registers.profileAcceleration);
     if (dccLimit > 0)
-        m_candle->writeMd80Register(id, mab::Md80Reg_E::profileDeceleration, dccLimit);
+        md.writeRegisters(registers.profileDeceleration);
 
-    m_candle->controlMd80Mode(id, mab::Md80Mode_E::POSITION_PROFILE);
-    m_candle->controlMd80Enable(id, true);
-    m_candle->begin();
-    m_candle->md80s[0].setTargetPosition(targetPos);
-    while (!m_candle->md80s[0].isTargetPositionReached())
+    md.setMotionMode(mab::Md80Mode_E::POSITION_PROFILE);
+    md.enable();
+    md.setTargetPosition(targetPos);
+    while (
+        !(md.getQuickStatus().first.at(MDStatus::QuickStatusBits::TargetPositionReached).isSet()))
         sleep(1);
     log.info("TARGET REACHED!");
-    m_candle->end();
 }
 
 void CandleTool::testLatency(const std::string& canBaudrate, std::string busString)
 {
-#ifdef UNIX
-    struct sched_param sp;
-    memset(&sp, 0, sizeof(sp));
-    sp.sched_priority = 99;
-    sched_setscheduler(0, SCHED_FIFO, &sp);
-#endif
-#ifdef WIN32
-    SetPriorityClass(GetCurrentProcess(), REALTIME_PRIORITY_CLASS);
-#endif
-    auto ids = m_candle->ping(str2baud(canBaudrate));
-    if (ids.size() == 0)
-        return;
-    checkSpeedForId(ids[0]);
+    // #ifdef UNIX
+    //     struct sched_param sp;
+    //     memset(&sp, 0, sizeof(sp));
+    //     sp.sched_priority = 99;
+    //     sched_setscheduler(0, SCHED_FIFO, &sp);
+    // #endif
+    // #ifdef WIN32
+    //     SetPriorityClass(GetCurrentProcess(), REALTIME_PRIORITY_CLASS);
+    // #endif
+    //     auto ids = m_candle->ping(str2baud(canBaudrate));
+    //     if (ids.size() == 0)
+    //         return;
+    //     checkSpeedForId(ids[0]);
 
-    for (auto& id : ids)
-    {
-        m_candle->addMd80(id);
-        m_candle->controlMd80Mode(id, mab::Md80Mode_E::IMPEDANCE);
-    }
+    //     for (auto& id : ids)
+    //     {
+    //         m_candle->addMd80(id);
+    //         m_candle->controlMd80Mode(id, mab::Md80Mode_E::IMPEDANCE);
+    //     }
 
-    m_candle->begin();
-    std::vector<u32> samples;
-    const u32        timelen = 10;
-    sleep(1);
-    for (u32 i = 0; i < timelen; i++)
-    {
-        sleep(1);
-        samples.push_back(m_candle->getActualCommunicationFrequency());
-        log.info("Current average communication speed: %d Hz", samples[i]);
-    }
+    //     m_candle->begin();
+    //     std::vector<u32> samples;
+    //     const u32        timelen = 10;
+    //     sleep(1);
+    //     for (u32 i = 0; i < timelen; i++)
+    //     {
+    //         sleep(1);
+    //         samples.push_back(m_candle->getActualCommunicationFrequency());
+    //         log.info("Current average communication speed: %d Hz", samples[i]);
+    //     }
 
-    /* calculate mean and stdev */
-    f32 sum = std::accumulate(std::begin(samples), std::end(samples), 0.0);
-    f32 m   = sum / samples.size();
+    //     /* calculate mean and stdev */
+    //     f32 sum = std::accumulate(std::begin(samples), std::end(samples), 0.0);
+    //     f32 m   = sum / samples.size();
 
-    f32 accum = 0.0;
-    std::for_each(
-        std::begin(samples), std::end(samples), [&](const f32 d) { accum += (d - m) * (d - m); });
-    f32 stdev = sqrt(accum / (samples.size() - 1));
+    //     f32 accum = 0.0;
+    //     std::for_each(
+    //         std::begin(samples), std::end(samples), [&](const f32 d) { accum += (d - m) * (d -
+    //         m); });
+    //     f32 stdev = sqrt(accum / (samples.size() - 1));
 
-    ui::printLatencyTestResult(ids.size(), m, stdev, busString);
+    //     ui::printLatencyTestResult(ids.size(), m, stdev, busString);
 
-    m_candle->end();
+    //     m_candle->end();
+    //
+    // TODO: think of a better way to test communication speed
 }
 
 void CandleTool::testEncoderOutput(u16 id)
 {
-    if (!tryAddMD80(id) && hasError(id))
+    MD md(id, m_candle);
+    if (md.init() != MD::Error_t::OK)
+    {
+        log.error("Failed to initialize MD with ID: %d", id);
         return;
-
-    u16 outputEncoder = 0;
-    m_candle->readMd80Register(id, mab::Md80Reg_E::outputEncoder, outputEncoder);
-    if (!outputEncoder)
+    }
+    MDRegisters_S regs;
+    md.readRegister(regs.auxEncoder);
+    if (regs.auxEncoder.value == 0)
     {
         log.warn("No output encoder on ID: %d! Not testing.", id);
         return;
     }
-    m_candle->setupMd80TestOutputEncoder(id);
+    regs.runTestAuxEncoderCmd = 1;
+    md.writeRegisters(regs.runTestAuxEncoderCmd);
+    log.info("Please wait for the test to finish...");
 }
 
 void CandleTool::testEncoderMain(u16 id)
 {
-    if (!tryAddMD80(id) && hasError(id))
+    MD md(id, m_candle);
+    if (md.init() != MD::Error_t::OK)
+    {
+        log.error("Failed to initialize MD with ID: %d", id);
         return;
-    m_candle->setupMd80TestMainEncoder(id);
+    }
+    MDRegisters_S regs;
+    regs.runTestMainEncoderCmd = 1;
+    md.writeRegisters(regs.runTestMainEncoderCmd);
+    log.info("Please wait for the test to finish...");
 }
 
 void CandleTool::registerWrite(u16 id, u16 reg, const std::string& value)
 {
-    if (!tryAddMD80(id))
+    MD md(id, m_candle);
+    if (md.init() != MD::Error_t::OK)
+    {
+        log.error("Failed to initialize MD with ID: %d", id);
         return;
+    }
 
-    mab::Md80Reg_E regId    = (mab::Md80Reg_E)reg;
-    u32            regValue = atoi(value.c_str());
+    MDRegisters_S regs;
+
+    auto reg = regs.findRegisterByAddress(reg);
+
+    // mab::Md80Reg_E regId    = (mab::Md80Reg_E)reg;
+    // u32            regValue = atoi(value.c_str());
 
     bool success = false;
 
@@ -1328,26 +1366,6 @@ void CandleTool::updateCandle(const std::string& mabFilePath, bool noReset)
         return 0;
     }
 
-    bool CandleTool::hasError(u16 canId)
-    {
-        m_candle->setupMd80DiagnosticExtended(canId);
-
-        if (m_candle->getMd80FromList(canId).getReadReg().RO.mainEncoderErrors & 0x0000ffff ||
-            m_candle->getMd80FromList(canId).getReadReg().RO.outputEncoderErrors & 0x0000ffff ||
-            m_candle->getMd80FromList(canId).getReadReg().RO.calibrationErrors & 0x0000ffff ||
-            m_candle->getMd80FromList(canId).getReadReg().RO.hardwareErrors & 0x0000ffff ||
-            m_candle->getMd80FromList(canId).getReadReg().RO.bridgeErrors & 0x0000ffff ||
-            m_candle->getMd80FromList(canId).getReadReg().RO.communicationErrors & 0x0000ffff ||
-            m_candle->getMd80FromList(canId).getReadReg().RO.miscStatus & 0x0000ffff)
-        {
-            log.error("Cannot execute command. MD has error:");
-            ui::printAllErrors(m_candle->md80s[0]);
-            return true;
-        }
-
-        return false;
-    }
-
     /* gets field only if the value is within bounds form the ini file */
     template <class T>
     bool CandleTool::getField(mINI::INIStructure & cfg,
@@ -1386,16 +1404,7 @@ void CandleTool::updateCandle(const std::string& mabFilePath, bool noReset)
             return false;
         }
     }
-    bool CandleTool::tryAddMD80(u16 id)
-    {
-        checkSpeedForId(id);
-        if (!m_candle->addMd80(id))
-        {
-            log.error("MD with ID: %d, not found on the bus.", id);
-            return false;
-        }
-        return true;
-    }
+
     bool CandleTool::checkSetupError(u16 id)
     {
         u32 calibrationStatus = 0;
