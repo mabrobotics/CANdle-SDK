@@ -170,13 +170,14 @@ namespace mab
 
         const RegisterAccessLevel_E m_accessLevel;
         const u16                   m_regAddress;
+        const std::string                m_name;
 
       private:
         std::array<u8, sizeof(value) + sizeof(m_regAddress)> serializedBuffer;
 
       public:
-        MDRegisterEntry_S(RegisterAccessLevel_E accessLevel, u16 regAddress)
-            : m_accessLevel(accessLevel), m_regAddress(regAddress)
+        MDRegisterEntry_S(RegisterAccessLevel_E accessLevel, u16 regAddress, std::string name)
+            : m_accessLevel(accessLevel), m_regAddress(regAddress), m_name(name)
         {
         }
 
@@ -238,13 +239,14 @@ namespace mab
 
         const RegisterAccessLevel_E m_accessLevel;
         const u16                   m_regAddress;
+        const std::string           m_name;
 
       private:
         std::array<u8, sizeof(value) + sizeof(m_regAddress)> serializedBuffer;
 
       public:
-        MDRegisterEntry_S(RegisterAccessLevel_E accessLevel, u16 regAddress)
-            : m_accessLevel(accessLevel), m_regAddress(regAddress)
+        MDRegisterEntry_S(RegisterAccessLevel_E accessLevel, u16 regAddress,std::string name)
+            : m_accessLevel(accessLevel), m_regAddress(regAddress), m_name(name)
         {
         }
         MDRegisterEntry_S(const MDRegisterEntry_S& otherReg)
@@ -308,7 +310,7 @@ namespace mab
         template <class T>
         using regE_S = MDRegisterEntry_S<T>;
 
-#define MD_REG(name, type, addr, access) regE_S<type> name = regE_S<type>(access, addr);
+#define MD_REG(name, type, addr, access) regE_S<type> name = regE_S<type>(access, addr, #name);
         REGISTER_LIST
 #undef MD_REG
         auto getAllRegisters()
