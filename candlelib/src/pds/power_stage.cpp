@@ -112,6 +112,16 @@ namespace mab
         return readModuleProperty(propertyId_E::BUS_VOLTAGE, outputVoltage);
     }
 
+    PdsModule::error_E PowerStage::setAutostart(bool autoStart)
+    {
+        return writeModuleProperty(propertyId_E::AUTOSTART, autoStart);
+    }
+
+    PdsModule::error_E PowerStage::getAutostart(bool& autoStart)
+    {
+        return readModuleProperty(propertyId_E::AUTOSTART, autoStart);
+    }
+
     PdsModule::error_E PowerStage::getLoadCurrent(s32& loadCurrent)
     {
         return readModuleProperty(propertyId_E::LOAD_CURRENT, loadCurrent);

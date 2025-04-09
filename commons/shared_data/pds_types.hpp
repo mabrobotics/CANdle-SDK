@@ -83,6 +83,7 @@ namespace mab
         TEMPERATURE              = 0x03,
         TEMPERATURE_LIMIT        = 0x04,
         BUS_VOLTAGE              = 0x05,
+        AUTOSTART                = 0x06,
         LOAD_CURRENT             = 0x10,
         LOAD_POWER               = 0x11,
         TOTAL_DELIVERED_ENERGY   = 0x12,
