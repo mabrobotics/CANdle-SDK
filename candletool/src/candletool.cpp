@@ -980,6 +980,12 @@ void CandleTool::registerRead(u16 id, u16 regAdress)
         {
             if constexpr (std::is_arithmetic_v<T>)
             {
+                auto result = md.readRegister(reg);
+                if (result.second != MD::Error_t::OK)
+                {
+                    log.error("Failed to read register %d", regAdress);
+                    return false;
+                }
                 std::string value = std::to_string(reg.value);
                 log.success("Register %d value: %s", regAdress, value.c_str());
                 return true;
