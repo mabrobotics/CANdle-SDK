@@ -13,6 +13,7 @@
 
 // DEFINE ALL OF THE MD REGISTERS HERE
 #define REGISTER_LIST                                \
+    MD_REG(nullreg, u8, 0x000, RO)                   \
     MD_REG(canID, u32, 0x001, RW)                    \
     MD_REG(canBaudrate, u32, 0x002, RW)              \
     MD_REG(canWatchdog, u16, 0x003, RW)              \
@@ -126,7 +127,7 @@
     MD_REG(quickStatus, u16, 0x805, RO)              \
     MD_REG(mosfetTemperature, f32, 0x806, RO)        \
     MD_REG(motorTemperature, f32, 0x807, RO)         \
-    MD_REG(motorShutdownTemp, f32, 0x808, RO)        \
+    MD_REG(motorShutdownTemp, u8, 0x808, RO)         \
     MD_REG(mainEncoderStatus, u32, 0x809, RO)        \
     MD_REG(auxEncoderStatus, u32, 0x80A, RO)         \
     MD_REG(calibrationStatus, u32, 0x80B, RO)        \
@@ -155,7 +156,7 @@ namespace mab
         WO = (1 << 2)
     };
 
-    enum class MDRegisterAddress_E
+    enum class MDRegisterAddress_E : u16
     {
 #define MD_REG(name, type, addr, access) name = addr,
         REGISTER_LIST
@@ -170,7 +171,7 @@ namespace mab
 
         const RegisterAccessLevel_E m_accessLevel;
         const u16                   m_regAddress;
-        const std::string                m_name;
+        const std::string           m_name;
 
       private:
         std::array<u8, sizeof(value) + sizeof(m_regAddress)> serializedBuffer;
@@ -245,7 +246,7 @@ namespace mab
         std::array<u8, sizeof(value) + sizeof(m_regAddress)> serializedBuffer;
 
       public:
-        MDRegisterEntry_S(RegisterAccessLevel_E accessLevel, u16 regAddress,std::string name)
+        MDRegisterEntry_S(RegisterAccessLevel_E accessLevel, u16 regAddress, std::string name)
             : m_accessLevel(accessLevel), m_regAddress(regAddress), m_name(name)
         {
         }
