@@ -7,7 +7,6 @@
 
 int main(int argc, char** argv)
 {
-    Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_3;
     std::cout << "CandleTool" << std::endl;
     CLI::App app{"candletool"};
     app.fallthrough();
