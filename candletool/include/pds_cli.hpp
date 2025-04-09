@@ -56,6 +56,8 @@ class PdsCli
     CLI::App* m_psGetBrCmd        = nullptr;
     CLI::App* m_psSetBrTriggerCmd = nullptr;
     CLI::App* m_psGetBrTriggerCmd = nullptr;
+    CLI::App* m_psSetAutoStartCmd = nullptr;
+    CLI::App* m_psGetAutoStartCmd = nullptr;
 
     // Brake resistor commands
     CLI::App* m_brInfoCmd         = nullptr;
@@ -74,16 +76,17 @@ class PdsCli
     CLI::App* m_icGetTempLimitCmd = nullptr;
 
     // Properties
-    u16 m_canId         = 0u;    // PDS CAN ID
-    u16 m_newCanId      = 0u;    // PDS CAN ID
-    u32 m_batteryLevel1 = 0u;    // Battery level in mV
-    u32 m_batteryLevel2 = 0u;    // Battery level in mV
-    u32 m_shutdownTime  = 0u;    // Shutdown time in ms
-    u32 m_ovcLevel      = 0u;    // Overcurrent detection level in mA
-    u32 m_ovcDelay      = 0u;    // Overcurrent detection delay in ms
-    f32 m_tempLimit     = 0.0f;  // Temperature limit in degrees Celsius
-    u32 m_brSocket      = 0u;    // Brake resistor socket index
-    u32 m_brTrigger     = 0u;    // Brake resistor trigger voltage in mV
+    u16  m_canId         = 0u;     // PDS CAN ID
+    u16  m_newCanId      = 0u;     // PDS CAN ID
+    u32  m_batteryLevel1 = 0u;     // Battery level in mV
+    u32  m_batteryLevel2 = 0u;     // Battery level in mV
+    u32  m_shutdownTime  = 0u;     // Shutdown time in ms
+    u32  m_ovcLevel      = 0u;     // Overcurrent detection level in mA
+    u32  m_ovcDelay      = 0u;     // Overcurrent detection delay in ms
+    f32  m_tempLimit     = 0.0f;   // Temperature limit in degrees Celsius
+    u32  m_brSocket      = 0u;     // Brake resistor socket index
+    u32  m_brTrigger     = 0u;     // Brake resistor trigger voltage in mV
+    bool m_autoStart     = false;  // Power stage auto start
 
     // Brake resistor commands
 

@@ -22,6 +22,7 @@ constexpr const char* OCD_LEVEL_INI_KEY  = "OCD LEVEL";
 constexpr const char* OCD_DELAY_INI_KEY  = "OCD DELAY";
 constexpr const char* BR_SOCKET_INI_KEY  = "BR SOCKET";
 constexpr const char* BR_TRIG_V_INI_KEY  = "BR TRIGGER VOLTAGE";
+constexpr const char* AUTOSTART_INI_KEY  = "AUTOSTART";
 
 PdsCli::PdsCli(CLI::App& rootCli, mab::Candle& candle) : m_rootCli(rootCli), m_candle(candle)
 {
@@ -143,6 +144,14 @@ PdsCli::PdsCli(CLI::App& rootCli, mab::Candle& candle) : m_rootCli(rootCli), m_c
 
     m_psGetBrTriggerCmd =
         m_powerStageCmd->add_subcommand("get_br_trigger", "Get the Brake Resistor Trigger Voltage");
+
+    m_psSetAutoStartCmd =
+        m_powerStageCmd->add_subcommand("set_auto_start", "Set the Auto Start mode");
+
+    m_psSetAutoStartCmd->add_option("<auto_start>", m_autoStart, "Auto Start mode")->required();
+
+    m_psGetAutoStartCmd =
+        m_powerStageCmd->add_subcommand("get_auto_start", "Get the Auto Start mode");
 
     // BRAKE RESISTOR commands set
 
@@ -400,6 +409,7 @@ void PdsCli::powerStageCmdParse(void)
         f32                  temperatureLimit = 0.0f;
         socketIndex_E        brSocket         = socketIndex_E::UNASSIGNED;
         u32                  brTrigger        = 0;
+        bool                 autoStart        = false;
         mab::moduleVersion_E version          = mab::moduleVersion_E::UNKNOWN;
 
         result = ps->getBoardVersion(version);
@@ -484,6 +494,13 @@ void PdsCli::powerStageCmdParse(void)
             else
                 m_log.info("\t* Brake resistor trigger voltage [ %u ]", brTrigger);
         }
+
+        result = ps->getAutostart(autoStart);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Reading Power Stage autostart filed failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.info("\t* Autostart [ %s ]", autoStart ? "ENABLED" : "DISABLED");
     }
 
     else if (m_psEnableCmd->parsed())
@@ -618,6 +635,24 @@ void PdsCli::powerStageCmdParse(void)
         else
             m_log.info("Brake resistor trigger voltage [ %u ]", brTrigger);
     }
+    else if (m_psSetAutoStartCmd->parsed())
+    {
+        result = ps->setAutostart(m_autoStart);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage set autostart failed [ %s ]", PdsModule::error2String(result));
+        else
+            m_log.success("Autostart set [ %s ]", m_autoStart ? "ENABLED" : "DISABLED");
+    }
+    else if (m_psGetAutoStartCmd->parsed())
+    {
+        bool autoStart = false;
+        result         = ps->getAutostart(autoStart);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage get autostart failed [ %s ]", PdsModule::error2String(result));
+        else
+            m_log.info("Autostart [ %s ]", autoStart ? "ENABLED" : "DISABLED");
+    }
+
     else
         m_log.error("PS subcommand is missing");
 }
@@ -987,12 +1022,14 @@ static void fillPsIni(PowerStage& ps, mINI::INIStructure& rIni, std::string sect
     u32           ocdLevel         = 0;
     u32           ocdDelay         = 0;
     f32           temperatureLimit = 0.0f;
+    bool          autoStart        = false;
 
     ps.getBindBrakeResistor(brSocket);
     ps.getBrakeResistorTriggerVoltage(brTriggerVoltage);
     ps.getOcdLevel(ocdLevel);
     ps.getOcdDelay(ocdDelay);
     ps.getTemperatureLimit(temperatureLimit);
+    ps.getAutostart(autoStart);
 
     rIni[sectionName][TYPE_INI_KEY] = PdsModule::mType2Str(moduleType_E::POWER_STAGE);
     rIni[sectionName][TEMP_LIMIT_INI_KEY] =
@@ -1006,6 +1043,8 @@ static void fillPsIni(PowerStage& ps, mINI::INIStructure& rIni, std::string sect
         "\t\t\t; Socket index where corresponding Brake Resistor is connected";
     rIni[sectionName][BR_TRIG_V_INI_KEY] =
         prettyFloatToString(brTriggerVoltage, true) + "\t; Brake resistor trigger voltage [ mV ]";
+    rIni[sectionName][AUTOSTART_INI_KEY] =
+        std::string(autoStart ? "ON" : "OFF") + "\t\t\t; Autostart [ ON | OFF ]";
 }
 
 // Fill Brake resistor Ini structure
@@ -1094,6 +1133,22 @@ static std::optional<canBaudrate_E> parseCanBaudIniString(std::string_view baudS
 
     return std::nullopt;
 }
+
+std::optional<bool> parseBooleanIniField(std::string_view input)
+{
+    // Convert to lowercase
+    std::string lower(input);
+    std::transform(
+        lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return std::tolower(c); });
+
+    if (lower == "on")
+        return true;
+    if (lower == "off")
+        return false;
+
+    return std::nullopt;
+}
+
 void PdsCli::setupCtrlConfig(mINI::INIMap<std::string>& iniMap)
 {
     using err_E  = mab::PdsModule::error_E;
@@ -1340,7 +1395,9 @@ void PdsCli::setupPsCfg(PowerStage& ps, mINI::INIMap<std::string>& iniMap)
         u32 brTriggerVoltage = atoi(iniMap[BR_TRIG_V_INI_KEY].c_str());
         m_log.debug("Brake resistor trigger voltage field found with value [ %u ]",
                     brTriggerVoltage);
+
         result = ps.setBrakeResistorTriggerVoltage(brTriggerVoltage);
+
         if (result != PdsModule::error_E::OK)
             m_log.error("Power Stage set brake resistor trigger voltage failed [ %s ]",
                         PdsModule::error2String(result));
@@ -1350,6 +1407,27 @@ void PdsCli::setupPsCfg(PowerStage& ps, mINI::INIMap<std::string>& iniMap)
     else
     {
         m_log.debug("Brake resistor trigger voltage field missing so will be ignored");
+    }
+
+    if (iniMap.has(AUTOSTART_INI_KEY))
+    {
+        std::optional<bool> autostart = parseBooleanIniField((iniMap[AUTOSTART_INI_KEY]));
+        if (autostart.has_value())
+        {
+            m_log.debug("Autostart field found with value [ %s ]",
+                        autostart.value() ? "ON" : "OFF");
+            result = ps.setAutostart(autostart.value());
+            if (result != PdsModule::error_E::OK)
+                m_log.error("Power Stage set autostart failed [ %s ]",
+                            PdsModule::error2String(result));
+            else
+                m_log.success("Power Stage autostart set [ %s ]", autostart.value() ? "ON" : "OFF");
+        }
+        else
+        {
+            m_log.error("Given Autostart [ %s ] is INVALID! Acceptable values are: ON, OFF",
+                        iniMap[AUTOSTART_INI_KEY]);
+        }
     }
 }
 
