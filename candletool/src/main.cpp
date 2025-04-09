@@ -241,8 +241,6 @@ int main(int argc, char** argv)
             candleTool.setupCalibration(cmd.id);
         if (setupCalibOut->parsed())
             candleTool.setupCalibrationOutput(cmd.id);
-        if (setupHoming->parsed())
-            candleTool.setupHoming(cmd.id);
         if (setupInfo->parsed())
             candleTool.setupInfo(cmd.id, (setupInfoAllFlag->count() > 0 ? true : false));
         if (setupMotor->parsed())

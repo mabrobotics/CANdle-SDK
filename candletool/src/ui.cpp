@@ -134,9 +134,7 @@ namespace ui
 
     // TODO: this is a placeholder, iterable structure required
 
-    void printDriveInfoExtended(mab::MD&            drive,
-                                const mab::MDRegisters_S& registers,
-                                bool                      printAll)
+    void printDriveInfoExtended(mab::MD& drive, const mab::MDRegisters_S& registers, bool printAll)
     {
         //    auto getStringBuildDate = [](uint32_t date)
         //    {
@@ -278,8 +276,8 @@ namespace ui
                  << getListElement(encoderCalibrationModes,
                                    registers.auxEncoderCalibrationMode.value)
                  << std::endl;
-            vout << "   - output encoder position: " << registers.auxEncoderPosition.value
-                 << " rad" << std::endl;
+            vout << "   - output encoder position: " << registers.auxEncoderPosition.value << " rad"
+                 << std::endl;
             vout << "   - output encoder velocity: " << registers.auxEncoderVelocity.value
                  << " rad/s" << std::endl;
 
@@ -345,43 +343,36 @@ namespace ui
         vout << std::endl;
 
         vout << "***** ERRORS *****" << std::endl;
-        printAllErrors(drive);
+        printAllErrors(std::reference_wrapper(registers));
     }
 
-    void printAllErrors(mab::MD& drive)
+    void printAllErrors(const mab::MDRegisters_S& registers)
     {
         vout << "- main encoder error: 	0x" << std::hex
-             << (unsigned short)registers.mainEncoderErrors.value << std::dec;
-        printErrorDetails(registers.mainEncoderErrors.value, encoderErrorList);
+             << (unsigned short)registers.mainEncoderStatus.value << std::dec;
+        printErrorDetails(registers.mainEncoderStatus.value, encoderErrorList);
 
         if (registers.auxEncoder.value != 0)
         {
             vout << "- output encoder status: 0x" << std::hex
-                 << (unsigned short)registers.auxEncoderErrors.value << std::dec;
-            printErrorDetails(registers.auxEncoderErrors.value, encoderErrorList);
+                 << (unsigned short)registers.auxEncoderStatus.value << std::dec;
+            printErrorDetails(registers.auxEncoderStatus.value, encoderErrorList);
         }
 
         vout << "- calibration status: 	0x" << std::hex
-             << (unsigned short)registers.calibrationErrors.value << std::dec;
-        printErrorDetails(registers.calibrationErrors.value, calibrationErrorList);
-        vout << "- bridge status: 	0x" << std::hex << (unsigned short)registers.bridgeErrors.value
+             << (unsigned short)registers.calibrationStatus.value << std::dec;
+        printErrorDetails(registers.calibrationStatus.value, calibrationErrorList);
+        vout << "- bridge status: 	0x" << std::hex << (unsigned short)registers.bridgeStatus.value
              << std::dec;
-        printErrorDetails(registers.bridgeErrors.value, bridgeErrorList);
+        printErrorDetails(registers.bridgeStatus.value, bridgeErrorList);
         vout << "- hardware status: 	0x" << std::hex
-             << (unsigned short)registers.hardwareErrors.value << std::dec;
-        printErrorDetails(registers.hardwareErrors.value, hardwareErrorList);
+             << (unsigned short)registers.hardwareStatus.value << std::dec;
+        printErrorDetails(registers.hardwareStatus.value, hardwareErrorList);
         vout << "- communication status: 0x" << std::hex
-             << (unsigned short)registers.communicationErrors.value << std::dec;
-        printErrorDetails(registers.communicationErrors.value, communicationErrorList);
-        vout << "- motion status: 	0x" << std::hex << (unsigned short)registers.motionErrors.value
+             << (unsigned short)registers.communicationStatus.value << std::dec;
+        printErrorDetails(registers.communicationStatus.value, communicationErrorList);
+        vout << "- motion status: 	0x" << std::hex << (unsigned short)registers.motionStatus.value
              << std::dec;
-
-        if (registers.homingMode.value != 0)
-        {
-            vout << "- homing status: 	0x" << std::hex
-                 << (unsigned short)registers.homingErrors.value << std::dec;
-            printErrorDetails(registers.homingErrors.value, homingErrorList);
-        }
     }
 
     void printErrorDetails(uint32_t error, const std::vector<std::string>& errorList)

@@ -42,7 +42,6 @@ class CandleTool
     void setupCalibrationOutput(u16 id);
     void setupMotor(u16 id, const std::string& cfgPath, bool force);
     void setupInfo(u16 id, bool printAll);
-    void setupHoming(u16 id);
     void setupReadConfig(u16 id, const std::string& cfgName);
 
     void testMove(u16 id, f32 targetPosition);
@@ -87,8 +86,7 @@ class CandleTool
 
     std::string busString;
 
-    std::string           validateAndGetFinalConfigPath(const std::string& cfgPath);
-    mab::CANdleBaudrate_E checkSpeedForId(u16 id);
+    std::string validateAndGetFinalConfigPath(const std::string& cfgPath);
 
     u8 getNumericParamFromList(std::string& param, const std::vector<std::string>& list);
 
