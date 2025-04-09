@@ -49,7 +49,7 @@ CandleTool::CandleTool()
 {
     log.m_tag   = "CANDLETOOL";
     log.m_layer = Logger::ProgramLayer_E::TOP;
-    log << "CandleSDK Version: " << mab::Candle::getVersion() << std::endl;
+    log.info("CandleSDK Version: %s", mab::Candle::getVersion().c_str());
 
     std::unique_ptr<I_CommunicationInterface> bus;
     mab::CANdleBaudrate_E                     baud =
@@ -62,18 +62,15 @@ CandleTool::CandleTool()
     std::string& device = ini["communication"]["device"];
     busString           = ini["communication"]["bus"];
 
-    if (busString == "SPI")
-    {
-        bus = nullptr;  // TODO: placeholder
-    }
-    else if (busString == "USB")
-        bus = std::make_unique<USBv2>(CandleV2::CANDLE_VID, CandleV2::CANDLE_PID, device);
+    // if (busString == "SPI")
+    // {
+    //     bus = nullptr;  // TODO: placeholder
+    // }
+    // else if (busString == "USB")
+    bus = std::make_unique<USBv2>(CandleV2::CANDLE_VID, CandleV2::CANDLE_PID, device);
 
-    m_candle = new CandleV2(baud, std::move(bus));
-    m_candle->init();
+    m_candle = attachCandle(baud, std::move(bus));
     // TODO: move this to be more stateless and be able to start w/o candle attached
-
-    return;
 }
 
 CandleTool::~CandleTool()
