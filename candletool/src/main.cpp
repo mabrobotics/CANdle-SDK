@@ -192,8 +192,10 @@ int main(int argc, char** argv)
     else
         candle = std::make_shared<mab::Candle>(baud, printVerbose, busType);
 
-    CandleTool candleTool(*candle);
-    Pds        pds(100, *candle);
+    CandleTool candleTool;
+    PdsCli     pdsCli(app, *candle);
+
+    CLI11_PARSE(app, argc, argv);
 
     // set global verbosity for loggers
     if (silentMode)

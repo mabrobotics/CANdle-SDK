@@ -1,5 +1,6 @@
 #include "candletool.hpp"
 
+#include <any>
 #include <numeric>
 #include <unistd.h>
 #include <string>
@@ -7,6 +8,7 @@
 #include <vector>
 
 #include "MDStatus.hpp"
+#include "mab_types.hpp"
 #include "md_types.hpp"
 #include "register.hpp"
 #include "ui.hpp"
@@ -910,7 +912,7 @@ void CandleTool::testEncoderMain(u16 id)
     log.info("Please wait for the test to finish...");
 }
 
-void CandleTool::registerWrite(u16 id, u16 reg, const std::string& value)
+void CandleTool::registerWrite(u16 id, u16 regAdress, const std::string& value)
 {
     MD md(id, m_candle);
     if (md.init() != MD::Error_t::OK)
@@ -919,52 +921,46 @@ void CandleTool::registerWrite(u16 id, u16 reg, const std::string& value)
         return;
     }
 
-    MDRegisters_S regs;
+    MDRegisters_S            regs;
+    std::variant<s32, float> regValue;
+    bool                     foundRegister      = false;
+    bool                     registerCompatible = false;
 
-    auto reg = regs.findRegisterByAddress(reg);
-
-    // mab::Md80Reg_E regId    = (mab::Md80Reg_E)reg;
-    // u32            regValue = atoi(value.c_str());
-
-    bool success = false;
-
-    switch (mab::Register::getType(regId))
-    {
-        case mab::Register::type::U8:
-            success = m_candle->writeMd80Register(id, regId, (u8)regValue);
-            break;
-        case mab::Register::type::I8:
-            success = m_candle->writeMd80Register(id, regId, (s8)regValue);
-            break;
-        case mab::Register::type::U16:
-            success = m_candle->writeMd80Register(id, regId, (u16)regValue);
-            break;
-        case mab::Register::type::I16:
-            success = m_candle->writeMd80Register(id, regId, (s16)regValue);
-            break;
-        case mab::Register::type::U32:
-            success = m_candle->writeMd80Register(id, regId, (u32)regValue);
-            break;
-        case mab::Register::type::I32:
-            success = m_candle->writeMd80Register(id, regId, (s32)regValue);
-            break;
-        case mab::Register::type::F32:
-            success = m_candle->writeMd80Register(id, regId, (f32)std::atof(value.c_str()));
-            break;
-        case mab::Register::type::STR:
-        {
-            char str[24] = {};
-            memcpy(str, value.c_str(), sizeof(str));
-            success = m_candle->writeMd80Register(id, regId, str);
-            break;
-        }
-        case mab::Register::type::UNKNOWN:
-            log.error("Unknown register! Please check the ID and try again");
-    }
-    if (success)
-        log.success("Writing register successful!");
+    /// Check if the value is a float or an integer
+    if (value.find('.') != std::string::npos)
+        regValue = std::stof(value);
     else
-        log.error("Writing register failed!");
+        regValue = std::stoi(value);
+
+    // TODO: make it work for integers smaller than s32
+    auto getRegValueByAdress = [&]<typename T>(MDRegisterEntry_S<T> reg)
+    {
+        if (reg.m_regAddress == regAdress)
+        {
+            foundRegister      = true;
+            registerCompatible = std::holds_alternative<T>(regValue);
+            if (registerCompatible)
+            {
+                reg.value   = std::get<T>(regValue);
+                auto result = md.writeRegisters(reg);
+                if (result != MD::Error_t::OK)
+                    log.error("Failed to write register %d", reg.m_regAddress);
+            }
+        }
+    };
+    regs.forEachRegister(regs, getRegValueByAdress);
+    if (!foundRegister)
+    {
+        log.error("Register %d not found", regAdress);
+        return;
+    }
+    if (!registerCompatible)
+    {
+        log.error("Register %d not compatible with value %s", regAdress, value.c_str());
+        return;
+    }
+
+    log.success("Writing register successful!");
 }
 
 void CandleTool::registerRead(u16 id, u16 reg)

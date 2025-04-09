@@ -134,7 +134,7 @@ namespace ui
 
     // TODO: this is a placeholder, iterable structure required
 
-    void printDriveInfoExtended(const mab::MD&            drive,
+    void printDriveInfoExtended(mab::MD&            drive,
                                 const mab::MDRegisters_S& registers,
                                 bool                      printAll)
     {
@@ -265,29 +265,29 @@ namespace ui
         }
 
         vout << "- output encoder: "
-             << (registers.outputEncoder.value
-                     ? getListElement(encoderTypes, registers.outputEncoder.value)
+             << (registers.auxEncoder.value
+                     ? getListElement(encoderTypes, registers.auxEncoder.value)
                      : "no")
              << std::endl;
 
-        if (registers.outputEncoder.value != 0)
+        if (registers.auxEncoder.value != 0)
         {
             vout << "   - output encoder mode: "
-                 << getListElement(encoderModes, registers.outputEncoderMode.value) << std::endl;
+                 << getListElement(encoderModes, registers.auxEncoderMode.value) << std::endl;
             vout << "   - output encoder calibration mode: "
                  << getListElement(encoderCalibrationModes,
-                                   registers.outputEncoderCalibrationMode.value)
+                                   registers.auxEncoderCalibrationMode.value)
                  << std::endl;
-            vout << "   - output encoder position: " << registers.outputEncoderPosition.value
+            vout << "   - output encoder position: " << registers.auxEncoderPosition.value
                  << " rad" << std::endl;
-            vout << "   - output encoder velocity: " << registers.outputEncoderVelocity.value
+            vout << "   - output encoder velocity: " << registers.auxEncoderVelocity.value
                  << " rad/s" << std::endl;
 
             if (printAll)
             {
-                float stddevE = registers.calOutputEncoderStdDev.value;
-                float minE    = registers.calOutputEncoderMinE.value;
-                float maxE    = registers.calOutputEncoderMaxE.value;
+                float stddevE = registers.calAuxEncoderStdDev.value;
+                float minE    = registers.calAuxEncoderMinE.value;
+                float maxE    = registers.calAuxEncoderMaxE.value;
                 vout << "   - output encoder last check error stddev: "
                      << (stddevE < outputEncoderStdDevMax ? std::to_string(stddevE)
                                                           : YELLOW_(std::to_string(stddevE)))
@@ -354,11 +354,11 @@ namespace ui
              << (unsigned short)registers.mainEncoderErrors.value << std::dec;
         printErrorDetails(registers.mainEncoderErrors.value, encoderErrorList);
 
-        if (registers.outputEncoder.value != 0)
+        if (registers.auxEncoder.value != 0)
         {
             vout << "- output encoder status: 0x" << std::hex
-                 << (unsigned short)registers.outputEncoderErrors.value << std::dec;
-            printErrorDetails(registers.outputEncoderErrors.value, encoderErrorList);
+                 << (unsigned short)registers.auxEncoderErrors.value << std::dec;
+            printErrorDetails(registers.auxEncoderErrors.value, encoderErrorList);
         }
 
         vout << "- calibration status: 	0x" << std::hex
