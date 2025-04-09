@@ -187,7 +187,9 @@ namespace mab
         }
 
         constexpr MDRegisterEntry_S(const MDRegisterEntry_S& otherReg)
-            : m_accessLevel(otherReg.m_accessLevel), m_regAddress(otherReg.m_regAddress)
+            : m_accessLevel(otherReg.m_accessLevel),
+              m_regAddress(otherReg.m_regAddress),
+              m_name(otherReg.m_name)
         {
             value = otherReg.value;
         }
@@ -236,7 +238,6 @@ namespace mab
         {
             memset(&value, 0, sizeof(value));
         }
-
     };
     template <typename T, size_t N>
     struct MDRegisterEntry_S<T[N]>
@@ -251,15 +252,16 @@ namespace mab
         std::array<u8, sizeof(value) + sizeof(m_regAddress)> serializedBuffer;
 
       public:
-
         constexpr MDRegisterEntry_S(RegisterAccessLevel_E accessLevel,
                                     u16                   regAddress,
                                     std::string           name)
-            : m_accessLevel(accessLevel), m_regAddress(regAddress), m_name(name)
+            : m_accessLevel(accessLevel), m_regAddress(regAddress), m_name(std::string(name))
         {
         }
         constexpr MDRegisterEntry_S(const MDRegisterEntry_S& otherReg)
-            : m_accessLevel(otherReg.m_accessLevel), m_regAddress(otherReg.m_regAddress)
+            : m_accessLevel(otherReg.m_accessLevel),
+              m_regAddress(otherReg.m_regAddress),
+              m_name(otherReg.m_name)
         {
             static_assert(std::is_same_v<decltype(otherReg.value), decltype(value)>);
             std::memcpy(&value, &otherReg.value, sizeof(value));
@@ -341,7 +343,6 @@ namespace mab
         {
             std::apply([&](auto&&... regs) { (func(regs), ...); }, regs.getAllRegisters());
         }
-
 
         template <class F>
         constexpr void compileTimeForEachRegister(F&& func)
