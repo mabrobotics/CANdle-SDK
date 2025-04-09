@@ -177,7 +177,7 @@ int main(int argc, char** argv)
     else
         candle = std::make_shared<mab::Candle>(baud, printVerbose, busType);
 
-    CandleTool candleTool(*candle);
+    CandleTool candleTool;
     PdsCli     pdsCli(app, *candle);
 
     CLI11_PARSE(app, argc, argv);

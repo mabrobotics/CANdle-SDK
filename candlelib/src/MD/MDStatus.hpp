@@ -171,7 +171,7 @@ namespace mab
         {
             for (auto& bit : map)
             {
-                bit.second.set(static_cast<bool>(bytes & (1 << bit.first)));
+                bit.second.set(static_cast<bool>(bytes & (1 << static_cast<u8>(bit.first))));
             }
         }
     };

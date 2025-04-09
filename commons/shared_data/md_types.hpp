@@ -235,6 +235,7 @@ namespace mab
         {
             memset(&value, 0, sizeof(value));
         }
+
     };
     template <typename T, size_t N>
     struct MDRegisterEntry_S<T[N]>
