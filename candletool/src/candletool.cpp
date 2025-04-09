@@ -1,5 +1,6 @@
 #include "candletool.hpp"
 
+#include <algorithm>
 #include <any>
 #include <cstdint>
 #include <numeric>
@@ -755,11 +756,17 @@ void CandleTool::setupInfo(u16 id, bool printAll)
         return;
     }
 
-    auto readReadableRegs = [&]<typename T>(MDRegisterEntry_S<T> reg)
+    auto readReadableRegs = [&]<typename T>(MDRegisterEntry_S<T>& reg)
     {
-        auto fault = md.readRegisters(reg).second;
-        if (fault != MD::Error_t::OK)
-            log.error("Error while reading register %s", reg.m_name);
+        // TODO: skipping new registers for now
+        if ((reg.m_regAddress < 0x800 && reg.m_regAddress > 0x700) || reg.m_regAddress > 0x810)
+            return;
+        if (reg.m_accessLevel != RegisterAccessLevel_E::WO)
+        {
+            auto fault = md.readRegisters(reg).second;
+            if (fault != MD::Error_t::OK)
+                log.error("Error while reading register %s", reg.m_name.c_str());
+        }
     };
 
     readableRegisters.forEachRegister(readableRegisters, readReadableRegs);
@@ -791,7 +798,10 @@ void CandleTool::testMove(u16 id, f32 targetPosition)
         f32 target  = std::lerp(pos, targetPosition, t);
         log.m_layer = Logger::ProgramLayer_E::TOP;
         md.setTargetPosition(target);
-        log.info("[%4d] Position: %4.2f, Velocity: %4.1f", id, md.getPosition(), md.getVelocity());
+        log.info("[%4d] Position: %4.2f, Velocity: %4.1f",
+                 id,
+                 md.getPosition().first,
+                 md.getVelocity().first);
         usleep(30000);
     }
 }
@@ -822,7 +832,7 @@ void CandleTool::testMoveAbsolute(u16 id, f32 targetPos, f32 velLimit, f32 accLi
     md.setTargetPosition(targetPos);
     while (
         !(md.getQuickStatus().first.at(MDStatus::QuickStatusBits::TargetPositionReached).isSet()))
-        sleep(1);
+        usleep(10'000);
     log.info("TARGET REACHED!");
 }
 
