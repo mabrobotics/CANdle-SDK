@@ -179,12 +179,14 @@ namespace mab
         std::array<u8, sizeof(value) + sizeof(m_regAddress)> serializedBuffer;
 
       public:
-        MDRegisterEntry_S(RegisterAccessLevel_E accessLevel, u16 regAddress, std::string name)
+        constexpr MDRegisterEntry_S(RegisterAccessLevel_E accessLevel,
+                                    u16                   regAddress,
+                                    std::string           name)
             : m_accessLevel(accessLevel), m_regAddress(regAddress), m_name(name)
         {
         }
 
-        MDRegisterEntry_S(const MDRegisterEntry_S& otherReg)
+        constexpr MDRegisterEntry_S(const MDRegisterEntry_S& otherReg)
             : m_accessLevel(otherReg.m_accessLevel), m_regAddress(otherReg.m_regAddress)
         {
             value = otherReg.value;
@@ -248,11 +250,14 @@ namespace mab
         std::array<u8, sizeof(value) + sizeof(m_regAddress)> serializedBuffer;
 
       public:
-        MDRegisterEntry_S(RegisterAccessLevel_E accessLevel, u16 regAddress, std::string name)
+
+        constexpr MDRegisterEntry_S(RegisterAccessLevel_E accessLevel,
+                                    u16                   regAddress,
+                                    std::string           name)
             : m_accessLevel(accessLevel), m_regAddress(regAddress), m_name(name)
         {
         }
-        MDRegisterEntry_S(const MDRegisterEntry_S& otherReg)
+        constexpr MDRegisterEntry_S(const MDRegisterEntry_S& otherReg)
             : m_accessLevel(otherReg.m_accessLevel), m_regAddress(otherReg.m_regAddress)
         {
             static_assert(std::is_same_v<decltype(otherReg.value), decltype(value)>);
@@ -267,7 +272,7 @@ namespace mab
             return *this;
         }
 
-        T* operator=(MDRegisterEntry_S& reg)
+        T* operator=(MDRegisterEntry_S& reg) const
         {
             return value;
         }
@@ -316,7 +321,7 @@ namespace mab
 #define MD_REG(name, type, addr, access) regE_S<type> name = regE_S<type>(access, addr, #name);
         REGISTER_LIST
 #undef MD_REG
-        auto getAllRegisters()
+        constexpr auto getAllRegisters()
         {
             return std::tie(
 #define MD_REG(name, type, addr, access) , name
@@ -336,26 +341,11 @@ namespace mab
             std::apply([&](auto&&... regs) { (func(regs), ...); }, regs.getAllRegisters());
         }
 
-        template <typename T>
-        std::optional<std::reference_wrapper<MDRegisterEntry_S<T>&>> findRegisterByAddress(
-            u16 targetAddress)
+
+        template <class F>
+        constexpr void compileTimeForEachRegister(F&& func)
         {
-            std::optional<std::reference_wrapper<MDRegisterEntry_S<T>&>> result;
-
-            forEachRegister(this,
-                            [&](auto& reg)
-                            {
-                                if (reg.m_regAddress == targetAddress && !result.has_value())
-                                {
-                                    if constexpr (std::is_same_v<std::decay_t<decltype(reg)>,
-                                                                 MDRegisterEntry_S<T>>)
-                                    {
-                                        result = &reg;
-                                    }
-                                }
-                            });
-
-            return result;
+            std::apply([&](auto&&... regs) { (func(regs), ...); }, getAllRegisters());
         }
     };
 
