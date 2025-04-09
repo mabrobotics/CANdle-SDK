@@ -352,26 +352,10 @@ namespace mab
             std::apply([&](auto&&... regs) { (func(regs), ...); }, regs.getAllRegisters());
         }
 
-        template <typename T>
-        std::optional<std::reference_wrapper<MDRegisterEntry_S<T>&>> findRegisterByAddress(
-            u16 targetAddress)
+        template <class F>
+        constexpr void compileTimeForEachRegister(F&& func)
         {
-            std::optional<std::reference_wrapper<MDRegisterEntry_S<T>&>> result;
-
-            forEachRegister(this,
-                            [&](auto& reg)
-                            {
-                                if (reg.m_regAddress == targetAddress && !result.has_value())
-                                {
-                                    if constexpr (std::is_same_v<std::decay_t<decltype(reg)>,
-                                                                 MDRegisterEntry_S<T>>)
-                                    {
-                                        result = &reg;
-                                    }
-                                }
-                            });
-
-            return result;
+            std::apply([&](auto&&... regs) { (func(regs), ...); }, getAllRegisters());
         }
     };
 
