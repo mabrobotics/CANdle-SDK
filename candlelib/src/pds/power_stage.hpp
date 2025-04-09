@@ -77,6 +77,25 @@ namespace mab
         error_E getOutputVoltage(u32& outputVoltage);
 
         /**
+         * @brief Enable or disable the Power Stage autostart feature.
+         * @note  If the autostart is enabled, the Power Stage module will be enabled
+         * by default when device is powered on. Notice that setting this feature in
+         * runtime will not take effect until the user will explicitly save the configuration
+         * to the device. Otherwise the autostart will be set to default value ( disabled )
+         * @param autoStart
+         * @return error_E
+         */
+        error_E setAutostart(bool autoStart);
+
+        /**
+         * @brief Check if the Power Stage module is set to autostart or not.
+         *
+         * @param autoStart
+         * @return error_E
+         */
+        error_E getAutostart(bool& autoStart);
+
+        /**
          * @brief Get the Load Current of the Power Stage module
          *
          * @param loadCurrent
