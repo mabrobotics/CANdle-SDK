@@ -7,6 +7,7 @@
 
 int main(int argc, char** argv)
 {
+    Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_3;
     std::cout << "CandleTool" << std::endl;
     CLI::App app{"candletool"};
     app.fallthrough();
@@ -176,21 +177,8 @@ int main(int argc, char** argv)
     file.read(ini);
 
     std::string busString = ini["communication"]["bus"];
-    if (busString == "SPI")
-        busType = mab::BusType_E::SPI;
-    else if (busString == "UART")
-        busType = mab::BusType_E::UART;
-    else if (busString == "USB")
-        busType = mab::BusType_E::USB;
-    std::string& device = ini["communication"]["device"];
 
-    std::shared_ptr<mab::Candle> candle       = nullptr;
-    bool                         printVerbose = true;
-
-    if (device != "" && busType != mab::BusType_E::USB)
-        candle = std::make_shared<mab::Candle>(baud, printVerbose, busType, device);
-    else
-        candle = std::make_shared<mab::Candle>(baud, printVerbose, busType);
+    std::shared_ptr<mab::Candle> candle = nullptr;
 
     CandleTool candleTool;
     PdsCli     pdsCli(app, *candle);
