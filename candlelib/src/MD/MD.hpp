@@ -12,6 +12,7 @@
 
 #include <array>
 #include <queue>
+#include <type_traits>
 #include <utility>
 #include <functional>
 #include <tuple>
@@ -253,7 +254,7 @@ namespace mab
         {
             auto regTuple   = std::make_tuple(std::reference_wrapper(reg));
             auto resultPair = readRegisters(regTuple);
-            reg.value       = std::get<0>(regTuple).value;
+            reg             = std::get<0>(regTuple);
             return std::pair(reg, resultPair.second);
         }
 

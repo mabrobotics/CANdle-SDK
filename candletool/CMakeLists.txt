@@ -21,6 +21,7 @@ set(CANDLETOOL_SOURCES
   src/mabFileParser.cpp
   src/main.cpp
   src/pds_cli.cpp
+  src/utilities.cpp
   src/ui.cpp
 
 )

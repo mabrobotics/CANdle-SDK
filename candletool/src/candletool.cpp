@@ -17,6 +17,7 @@
 #include "register.hpp"
 #include "ui.hpp"
 #include "configHelpers.hpp"
+#include "utilities.hpp"
 
 #include "mabFileParser.hpp"
 #include "candle_bootloader.hpp"
@@ -931,16 +932,26 @@ void CandleTool::registerWrite(u16 id, u16 regAdress, const std::string& value)
         return;
     }
 
-    MDRegisters_S                regs;
-    std::variant<int64_t, float> regValue;
-    bool                         foundRegister      = false;
-    bool                         registerCompatible = false;
+    std::string trimmedValue = trim(value);
 
-    /// Check if the value is a float or an integer
-    if (value.find('.') != std::string::npos)
-        regValue = std::stof(value);
+    MDRegisters_S                             regs;
+    std::variant<int64_t, float, std::string> regValue;
+    bool                                      foundRegister      = false;
+    bool                                      registerCompatible = false;
+
+    // Check if the value is a string or a number
+    if (trimmedValue.find_first_not_of("0123456789.f") == std::string::npos)
+    {
+        /// Check if the value is a float or an integer
+        if (trimmedValue.find('.') != std::string::npos)
+            regValue = std::stof(value);
+        else
+            regValue = std::stoll(value);
+    }
     else
-        regValue = std::stoll(value);
+    {
+        regValue = trimmedValue;
+    }
 
     // TODO: make it work for integers smaller than s32
     auto setRegValueByAdress = [&]<typename T>(MDRegisterEntry_S<T> reg)
@@ -955,6 +966,30 @@ void CandleTool::registerWrite(u16 id, u16 regAdress, const std::string& value)
                     reg.value = std::get<int64_t>(regValue);
                 else if (std::holds_alternative<float>(regValue))
                     reg.value = std::get<float>(regValue);
+
+                auto result = md.writeRegisters(reg);
+                if (result != MD::Error_t::OK)
+                    log.error("Failed to write register %d", reg.m_regAddress);
+            }
+            else if constexpr (std::is_same<std::decay_t<T>, char*>::value)
+            {
+                registerCompatible = true;
+                std::string_view strV;
+                if (std::holds_alternative<std::string>(regValue))
+                    strV = std::get<std::string>(regValue).c_str();
+                else
+                {
+                    log.error("Invalid value type for register %d", reg.m_regAddress);
+                    return;
+                }
+
+                if (strV.length() > sizeof(reg.value) + 1)
+                {
+                    log.error("Value too long for register %d", reg.m_regAddress);
+                    return;
+                }
+
+                std::copy(strV.data(), strV.data() + strV.length(), reg.value);
 
                 auto result = md.writeRegisters(reg);
                 if (result != MD::Error_t::OK)
@@ -1000,6 +1035,18 @@ void CandleTool::registerRead(u16 id, u16 regAdress)
                 }
                 std::string value = std::to_string(reg.value);
                 log.success("Register %d value: %s", regAdress, value.c_str());
+                return true;
+            }
+            else if constexpr (std::is_same<std::decay_t<T>, char*>::value)
+            {
+                auto result = md.readRegisters(reg);
+                if (result.second != MD::Error_t::OK)
+                {
+                    log.error("Failed to read register %d", regAdress);
+                    return false;
+                }
+                const char* value = reg.value;
+                log.success("Register %d value: %s", regAdress, value);
                 return true;
             }
         }
