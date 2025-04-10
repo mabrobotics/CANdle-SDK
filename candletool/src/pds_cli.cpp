@@ -313,20 +313,23 @@ void PdsCli::parse(void)
 
         else if (m_ctrlSetBrCmd->parsed())
         {
+            // Notice that the m_brSocket is a numeric value, and brSocket is a enum value
             socketIndex_E brSocket = decodeSocketIndex(m_brSocket);
-            if (brSocket == socketIndex_E::UNASSIGNED)
-            {
-                m_log.error("Invalid socket index [ %u ]", m_brSocket);
-                return;
-            }
-
             if (!m_pds.verifyModuleSocket(moduleType_E::BRAKE_RESISTOR, brSocket))
             {
-                m_log.error("Invalid socket number for Brake Resistor submodule");
-                return;
+                if (m_brSocket == 0)
+                {
+                    m_log.warn("Unbinding Brake Resistor from the Control Board");
+                }
+                else
+                {
+                    m_log.error("Invalid socket number for Brake Resistor submodule");
+                    return;
+                }
             }
 
             result = m_pds.bindBrakeResistor(brSocket);
+
             if (result != PdsModule::error_E::OK)
                 m_log.error("Binding Brake Resistor failed [ %s ]",
                             PdsModule::error2String(result));
@@ -582,11 +585,13 @@ void PdsCli::powerStageCmdParse(void)
 
     else if (m_psSetBrCmd->parsed())
     {
-        if (!m_pds.verifyModuleSocket(moduleType_E::BRAKE_RESISTOR, decodeSocketIndex(m_brSocket)))
+        // Notice that the m_brSocket is a numeric value, and brSocket is a enum value
+        socketIndex_E brSocket = decodeSocketIndex(m_brSocket);
+        if (!m_pds.verifyModuleSocket(moduleType_E::BRAKE_RESISTOR, brSocket))
         {
             if (m_brSocket == 0)
             {
-                m_log.warn("Unbinding Brake Resistor from Power Stage");
+                m_log.warn("Unbinding Brake Resistor from the Power Stage");
             }
             else
             {
