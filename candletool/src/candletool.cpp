@@ -771,7 +771,7 @@ void CandleTool::setupInfo(u16 id, bool printAll)
         }
     };
 
-    readableRegisters.forEachRegister(readableRegisters, readReadableRegs);
+    readableRegisters.forEachRegister(readReadableRegs);
 
     ui::printDriveInfoExtended(md, readableRegisters, printAll);
 }
@@ -962,7 +962,7 @@ void CandleTool::registerWrite(u16 id, u16 regAdress, const std::string& value)
             }
         }
     };
-    regs.forEachRegister(regs, setRegValueByAdress);
+    regs.forEachRegister(setRegValueByAdress);
     if (!foundRegister)
     {
         log.error("Register %d not found", regAdress);
@@ -1005,7 +1005,7 @@ void CandleTool::registerRead(u16 id, u16 regAdress)
         }
         return false;
     };
-    regs.forEachRegister(regs, getValueByAdress);
+    regs.forEachRegister(getValueByAdress);
 }
 
 void CandleTool::updateCandle(const std::string& mabFilePath)
