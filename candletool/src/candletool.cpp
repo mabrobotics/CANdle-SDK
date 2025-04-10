@@ -1083,19 +1083,23 @@ void CandleTool::updateCandle(const std::string& mabFilePath)
 
     MabFileParser candleFirmware(mabFilePath, MabFileParser::TargetDevice_E::CANDLE);
 
+    detachCandle(m_candle);
+    m_candle = nullptr;
+
     auto candle_bootloader = attachCandleBootloader();
     for (size_t i = 0; i < candleFirmware.m_fwEntry.size;
          i += CandleBootloader::PAGE_SIZE_STM32G474)
     {
         std::array<u8, CandleBootloader::PAGE_SIZE_STM32G474> page;
         std::memcpy(page.data(), &candleFirmware.m_fwEntry.data[i], page.size());
-        u32 crc = crc32(page.data(), page.size());
+        u32 crc = candleCRC::crc32(page.data(), page.size());
         if (candle_bootloader->writePage(page, crc) != candleTypes::Error_t::OK)
         {
             log.error("Candle flashing failed!");
-            break;
+            return;
         }
     }
+    log.success("Flashing complete!");
     // mab::FirmwareUploader firmwareUploader(*candle, mabFile);
     // firmwareUploader.flashDevice(noReset);
 }
