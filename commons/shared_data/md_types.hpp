@@ -339,9 +339,9 @@ namespace mab
         }
 
         template <class F>
-        void forEachRegister(MDRegisters_S& regs, F&& func)
+        void forEachRegister(F&& func)
         {
-            std::apply([&](auto&&... regs) { (func(regs), ...); }, regs.getAllRegisters());
+            std::apply([&](auto&&... regs) { (func(regs), ...); }, getAllRegisters());
         }
 
         template <class F>
