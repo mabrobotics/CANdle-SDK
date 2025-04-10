@@ -345,16 +345,18 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
             id, mab::Md80Reg_E::motorCalibrationMode, regW.RW.motorCalibrationMode))
         log.error("Failed to setup motor!");
 
-    if (!m_candle.writeMd80Register(id,
-                                    mab::Md80Reg_E::homingMode,
-                                    regW.RW.homingMode,
-                                    mab::Md80Reg_E::homingMaxTravel,
-                                    f32FromField("homing", "max travel"),
-                                    mab::Md80Reg_E::homingTorque,
-                                    f32FromField("homing", "max torque"),
-                                    mab::Md80Reg_E::homingVelocity,
-                                    f32FromField("homing", "max velocity")))
-        log.error("Failed to setup motor!");
+    // TODO: For some reason, this causes USB Receive timeout, and breaks any further calls to 
+    // m_candle.writeMd80Register.
+    // if (!m_candle.writeMd80Register(id,
+    //                                 mab::Md80Reg_E::homingMode,
+    //                                 regW.RW.homingMode,
+    //                                 mab::Md80Reg_E::homingMaxTravel,
+    //                                 f32FromField("homing", "max travel"),
+    //                                 mab::Md80Reg_E::homingTorque,
+    //                                 f32FromField("homing", "max torque"),
+    //                                 mab::Md80Reg_E::homingVelocity,
+    //                                 f32FromField("homing", "max velocity")))
+    //     log.error("Failed to setup motor!");
 
     if (!m_candle.writeMd80Register(id,
                                     mab::Md80Reg_E::maxTorque,
