@@ -25,6 +25,8 @@
 #include "I_communication_interface.hpp"
 #include "mab_crc.hpp"
 
+#include "pds.hpp"
+
 using namespace mab;
 
 f32 lerp(f32 start, f32 end, f32 t)
