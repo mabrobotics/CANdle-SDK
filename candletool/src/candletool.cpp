@@ -233,11 +233,11 @@ void CandleTool::configClear(u16 id)
 
     if (result != MD::Error_t::OK)
     {
-        log.error("Failed to setup bandwidth for the driver with id %d!", id);
+        log.error("Failed to clear config in the driver with id %d!", id);
     }
     else
     {
-        log.info("Bandwidth set successful!");
+        log.info("Config cleared successful!");
     }
     return;
 }
@@ -500,6 +500,10 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
     }
 
     /* motor motion config - Position and velocity PID*/
+    regs.motorPosPidKp     = f32FromField("position PID", "kp");
+    regs.motorPosPidKi     = f32FromField("position PID", "ki");
+    regs.motorPosPidKd     = f32FromField("position PID", "kd");
+    regs.motorPosPidWindup = f32FromField("position PID", "windup");
     if (md.writeRegisters(
             regs.motorPosPidKp, regs.motorPosPidKi, regs.motorPosPidKd, regs.motorPosPidWindup) !=
         MD::Error_t::OK)
@@ -508,6 +512,10 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
         return;
     }
 
+    regs.motorVelPidKp     = f32FromField("velocity PID", "kp");
+    regs.motorVelPidKi     = f32FromField("velocity PID", "ki");
+    regs.motorVelPidKd     = f32FromField("velocity PID", "kd");
+    regs.motorVelPidWindup = f32FromField("velocity PID", "windup");
     if (md.writeRegisters(
             regs.motorVelPidKp, regs.motorVelPidKi, regs.motorVelPidKd, regs.motorVelPidWindup) !=
         MD::Error_t::OK)
@@ -563,6 +571,7 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
         return;
     }
 
+    regs.userGpioConfiguration = getNumericParamFromList(cfg["GPIO"]["mode"], ui::GPIOmodes);
     if (md.writeRegisters(regs.userGpioConfiguration) != MD::Error_t::OK)
     {
         log.error("Failed to setup gpio configuration!");
@@ -589,6 +598,7 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
     MDRegisters_S      regs; /**< read register */
     char               motorNameChar[24];
     std::string        configName = cfgName;
+    md.m_timeout                  = 10;
 
     if (md.init() != MD::Error_t::OK)
     {
