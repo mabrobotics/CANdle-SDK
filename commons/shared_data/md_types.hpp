@@ -128,7 +128,7 @@
     MD_REG(quickStatus, u16, 0x805, RO)              \
     MD_REG(mosfetTemperature, f32, 0x806, RO)        \
     MD_REG(motorTemperature, f32, 0x807, RO)         \
-    MD_REG(motorShutdownTemp, f32, 0x808, RO)        \
+    MD_REG(motorShutdownTemp, u8, 0x808, RO)         \
     MD_REG(mainEncoderStatus, u32, 0x809, RO)        \
     MD_REG(auxEncoderStatus, u32, 0x80A, RO)         \
     MD_REG(calibrationStatus, u32, 0x80B, RO)        \
