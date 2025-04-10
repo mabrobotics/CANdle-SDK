@@ -349,12 +349,6 @@ namespace mab
         template <class F>
         constexpr void compileTimeForEachRegister(F&& func)
         {
-            std::apply([&](auto&&... regs) { (func(regs), ...); }, regs.getAllRegisters());
-        }
-
-        template <class F>
-        constexpr void compileTimeForEachRegister(F&& func)
-        {
             std::apply([&](auto&&... regs) { (func(regs), ...); }, getAllRegisters());
         }
     };
