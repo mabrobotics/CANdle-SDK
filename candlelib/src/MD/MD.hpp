@@ -350,7 +350,7 @@ namespace mab
             else
             {
                 m_log.error("Error in the register write response!");
-                return Error_t::OK;
+                return Error_t::TRANSFER_FAILED;
             }
         }
 

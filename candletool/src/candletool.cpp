@@ -470,6 +470,8 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
 
     /* motor base config */
 
+    md.m_timeout = 10;
+
     if (md.writeRegisters(regs.motorName,
                           regs.motorPolePairs,
                           regs.motorKt,
@@ -479,6 +481,7 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
                           regs.motorTorqueBandwidth) != MD::Error_t::OK)
     {
         log.error("Failed to setup motor!");
+        return;
     }
     /* motor advanced config */
     if (md.writeRegisters(regs.motorFriction,
@@ -491,19 +494,24 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
                           regs.auxEncoderDefaultBaud) != MD::Error_t::OK)
     {
         log.error("Failed to setup motor!");
+        return;
     }
 
     /* motor motion config - Position and velocity PID*/
-    if (md.writeRegisters(regs.motorPosPidKp,
-                          regs.motorPosPidKi,
-                          regs.motorPosPidKd,
-                          regs.motorPosPidWindup,
-                          regs.motorVelPidKp,
-                          regs.motorVelPidKi,
-                          regs.motorVelPidKd,
-                          regs.motorVelPidWindup) != MD::Error_t::OK)
+    if (md.writeRegisters(
+            regs.motorPosPidKp, regs.motorPosPidKi, regs.motorPosPidKd, regs.motorPosPidWindup) !=
+        MD::Error_t::OK)
     {
-        log.error("Failed to setup PIDs!");
+        log.error("Failed to setup pos PIDs!");
+        return;
+    }
+
+    if (md.writeRegisters(
+            regs.motorVelPidKp, regs.motorVelPidKi, regs.motorVelPidKd, regs.motorVelPidWindup) !=
+        MD::Error_t::OK)
+    {
+        log.error("Failed to setup vel PIDs!");
+        return;
     }
 
     /* motor motion config - Impedance PD*/
@@ -512,13 +520,15 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
     if (md.writeRegisters(regs.motorImpPidKp, regs.motorImpPidKd, regs.motorShutdownTemp) !=
         MD::Error_t::OK)
     {
-        log.error("Failed to setup PIDs!");
+        log.error("Failed to setup impedance PIDs!");
+        return;
     }
 
     if (md.writeRegisters(regs.auxEncoderCalibrationMode, regs.auxEncoderCalibrationMode) !=
         MD::Error_t::OK)
     {
         log.error("Failed to setup encoder calibration mode!");
+        return;
     }
 
     // TODO: homing was here, just a remainder that adding it will be needed at some point
@@ -535,6 +545,7 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
                           regs.positionLimitMin) != MD::Error_t::OK)
     {
         log.error("Failed to setup position limits!");
+        return;
     }
 
     regs.profileAcceleration   = f32FromField("profile", "acceleration");
@@ -547,21 +558,24 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
                           regs.profileVelocity) != MD::Error_t::OK)
     {
         log.error("Failed to setup accelerations!");
+        return;
     }
 
     if (md.writeRegisters(regs.userGpioConfiguration) != MD::Error_t::OK)
     {
         log.error("Failed to setup gpio configuration!");
+        return;
     }
 
     if (md.save() != MD::Error_t::OK)
     {
         log.error("Save failed!");
+        return;
     }
 
     /* wait for a full reboot */
     sleep(3);
-    if (md.enable() != MD::Error_t::OK)
+    if (md.disable() == MD::Error_t::OK)
         log.success("Ready!");
     else
         log.warn("Failed to reboot (ID: %d)!", id);
