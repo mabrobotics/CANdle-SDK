@@ -680,12 +680,7 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
     readIni["profile"]["max deceleration"] = prettyFloatToString(regs.maxDeceleration.value);
 
     /* Motor config - output encoder section */
-    // if (!candle->readMd80Register(id,
-    //                               mab::Md80Reg_E::outputEncoder,
-    //                               regR.RW.outputEncoder,
-    //                               mab::Md80Reg_E::outputEncoderMode,
-    //                               regR.RW.outputEncoderMode))
-    //     log.warn("Failed to read motor config!");
+
     if (md.readRegisters(regs.auxEncoder, regs.auxEncoderMode).second != MD::Error_t::OK)
     {
         log.warn("Failed to read motor config!");
@@ -977,7 +972,6 @@ void CandleTool::registerWrite(u16 id, u16 regAdress, const std::string& value)
         regValue = trimmedValue;
     }
 
-    // TODO: make it work for integers smaller than s32
     auto setRegValueByAdress = [&]<typename T>(MDRegisterEntry_S<T> reg)
     {
         if (reg.m_regAddress == regAdress)
@@ -1109,6 +1103,7 @@ void CandleTool::updateCandle(const std::string& mabFilePath)
 void CandleTool::updateMd(const std::string& mabFilePath, uint16_t canId, bool noReset)
 {
     MabFileParser mabFile(mabFilePath, MabFileParser::TargetDevice_E::MD);
+
     // mab::FirmwareUploader firmwareUploader(*candle, mabFile, canId);
     // if (firmwareUploader.flashDevice(noReset))
     //     log.success("Update complete for MD @ %d", canId);

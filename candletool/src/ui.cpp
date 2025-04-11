@@ -132,8 +132,6 @@ namespace ui
         }
     }
 
-    // TODO: this is a placeholder, iterable structure required
-
     void printDriveInfoExtended(mab::MD& drive, const mab::MDRegisters_S& registers, bool printAll)
     {
         auto getStringBuildDate = [](uint32_t date)
@@ -161,38 +159,39 @@ namespace ui
             }
         };
 
-        //    auto getHardwareType = [](mab::hardwareType_S hwType_)
-        //    {
-        //        std::string deviceType = "UNKNOWN";
-        //        switch (hwType_.deviceType)
-        //        {
-        //            case mab::deviceType_E::CANDLE:
-        //                deviceType = "CANDLE";
-        //                break;
-        //            case mab::deviceType_E::CANDLE_HAT:
-        //                deviceType = "CANDLE_HAT";
-        //                break;
-        //            case mab::deviceType_E::MD20:
-        //                deviceType = "MD20";
-        //                break;
-        //            case mab::deviceType_E::MD80:
-        //                deviceType = "MD80";
-        //                break;
-        //            case mab::deviceType_E::MD80HV:
-        //                deviceType = "MD80HV";
-        //                break;
-        //            case mab::deviceType_E::PDS:
-        //                deviceType = "PDS";
-        //                break;
-        //            default:
-        //                break;
-        //        }
-        //        deviceType += " v";
-        //        deviceType += std::to_string(hwType_.deviceRevision / 10);
-        //        deviceType += ".";
-        //        deviceType += std::to_string(hwType_.deviceRevision % 10);
-        //        return deviceType;
-        //    };
+        // TODO: this idea is long gone probably
+        //     auto getHardwareType = [](mab::hardwareType_S hwType_)
+        //     {
+        //         std::string deviceType = "UNKNOWN";
+        //         switch (hwType_.deviceType)
+        //         {
+        //             case mab::deviceType_E::CANDLE:
+        //                 deviceType = "CANDLE";
+        //                 break;
+        //             case mab::deviceType_E::CANDLE_HAT:
+        //                 deviceType = "CANDLE_HAT";
+        //                 break;
+        //             case mab::deviceType_E::MD20:
+        //                 deviceType = "MD20";
+        //                 break;
+        //             case mab::deviceType_E::MD80:
+        //                 deviceType = "MD80";
+        //                 break;
+        //             case mab::deviceType_E::MD80HV:
+        //                 deviceType = "MD80HV";
+        //                 break;
+        //             case mab::deviceType_E::PDS:
+        //                 deviceType = "PDS";
+        //                 break;
+        //             default:
+        //                 break;
+        //         }
+        //         deviceType += " v";
+        //         deviceType += std::to_string(hwType_.deviceRevision / 10);
+        //         deviceType += ".";
+        //         deviceType += std::to_string(hwType_.deviceRevision % 10);
+        //         return deviceType;
+        //     };
 
         auto getListElement = [](std::vector<std::string> vec, uint32_t idx)
         {
@@ -215,7 +214,8 @@ namespace ui
         vout << "- firmware version: v" << (int)firmwareVersion.s.major << "."
              << (int)firmwareVersion.s.minor << "." << (int)firmwareVersion.s.revision << "."
              << firmwareVersion.s.tag << std::endl;
-        vout << "- hardware version(legacy): " << "Not implemented yet" << std::endl;
+        vout << "- hardware version(legacy): "
+             << "Not implemented yet" << std::endl;
         vout << "- hardware type: "
              << getLegacyHardwareVersion(registers.legacyHardwareVersion.value) << std::endl;
         vout << "- build date: " << getStringBuildDate(registers.buildDate.value) << std::endl;
