@@ -860,6 +860,7 @@ void CandleTool::testMoveAbsolute(u16 id, f32 targetPos, f32 velLimit, f32 accLi
 
 void CandleTool::testLatency(const std::string& canBaudrate, std::string busString)
 {
+    log.warn("Not implemented");
     // #ifdef UNIX
     //     struct sched_param sp;
     //     memset(&sp, 0, sizeof(sp));
