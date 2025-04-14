@@ -10,10 +10,10 @@ class PdsCli
 {
   public:
     PdsCli() = delete;
-    PdsCli(CLI::App& rootCli, mab::Candle& candle);
+    PdsCli(CLI::App& rootCli);
     ~PdsCli() = default;
 
-    void parse(void);
+    void parse(Pds* p_pds);
 
   private:
     Logger    m_log;
@@ -23,6 +23,7 @@ class PdsCli
 
     CLI::App* m_infoCmd            = nullptr;
     CLI::App* m_setCanIdCmd        = nullptr;
+    CLI::App* m_setCanBaudCmd      = nullptr;
     CLI::App* m_setBatteryLevelCmd = nullptr;
     CLI::App* m_setShutdownTimeCmd = nullptr;
 
@@ -76,25 +77,25 @@ class PdsCli
     CLI::App* m_icGetTempLimitCmd = nullptr;
 
     // Properties
-    u16  m_canId         = 0u;     // PDS CAN ID
-    u16  m_newCanId      = 0u;     // PDS CAN ID
-    u32  m_batteryLevel1 = 0u;     // Battery level in mV
-    u32  m_batteryLevel2 = 0u;     // Battery level in mV
-    u32  m_shutdownTime  = 0u;     // Shutdown time in ms
-    u32  m_ovcLevel      = 0u;     // Overcurrent detection level in mA
-    u32  m_ovcDelay      = 0u;     // Overcurrent detection delay in ms
-    f32  m_tempLimit     = 0.0f;   // Temperature limit in degrees Celsius
-    u32  m_brSocket      = 0u;     // Brake resistor socket index
-    u32  m_brTrigger     = 0u;     // Brake resistor trigger voltage in mV
-    bool m_autoStart     = false;  // Power stage auto start
+    u16         m_canId         = 0u;     // PDS CAN ID
+    u16         m_newCanId      = 0u;     // PDS CAN ID
+    std::string m_canBaudrate   = "";     // PDS CAN baudrate
+    u32         m_batteryLevel1 = 0u;     // Battery level in mV
+    u32         m_batteryLevel2 = 0u;     // Battery level in mV
+    u32         m_shutdownTime  = 0u;     // Shutdown time in ms
+    u32         m_ovcLevel      = 0u;     // Overcurrent detection level in mA
+    u32         m_ovcDelay      = 0u;     // Overcurrent detection delay in ms
+    f32         m_tempLimit     = 0.0f;   // Temperature limit in degrees Celsius
+    u32         m_brSocket      = 0u;     // Brake resistor socket index
+    u32         m_brTrigger     = 0u;     // Brake resistor trigger voltage in mV
+    bool        m_autoStart     = false;  // Power stage auto start
 
     // Brake resistor commands
 
     std::string m_cfgFilePath           = "";
     u8          m_submoduleSocketNumber = 0;
 
-    Candle& m_candle;
-    Pds     m_pds{m_canId, m_candle};
+    Pds* mp_pds;
 
     socketIndex_E decodeSocketIndex(u8 numericSocketIndex);
 

@@ -353,7 +353,7 @@ namespace mab
         return result;
     }
 
-    PdsModule::error_E Pds::setCanBaudrate(canBaudrate_E canBaudrate)
+    PdsModule::error_E Pds::setCanBaudrate(CANdleBaudrate_E canBaudrate)
     {
         return writeModuleProperty(propertyId_E::CAN_BAUDRATE, canBaudrate);
     }

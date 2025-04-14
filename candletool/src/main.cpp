@@ -25,7 +25,11 @@ int main(int argc, char** argv)
     auto* test    = app.add_subcommand("test", "Basic MD drive testing routines.");
     auto* update  = app.add_subcommand("update", "Firmware update.");
 
-    // CLI::App* pds = app.add_subcommand("pds", "Tweak the PDS device");
+    app.add_option(
+        "-b,--baud", cmd.baud, "Select FD CAN Baudrate CANdleTOOL will use for communication.");
+    // ->default_val("1M")
+    // ->check(CLI::IsMember({"1M", "2M", "5M", "8M"}))
+    // ->expected(1);
 
     // BLINK
     blink->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
@@ -153,8 +157,23 @@ int main(int argc, char** argv)
     std::string logPath = "";
     app.add_flag("--log", logPath, "Redirect output to file")->default_val("")->expected(1);
 
-    mab::BusType_E        busType = mab::BusType_E::USB;
-    mab::CANdleBaudrate_E baud    = mab::CANdleBaudrate_E::CAN_BAUD_1M;
+    mab::BusType_E busType = mab::BusType_E::USB;
+    PdsCli         pdsCli(app);
+
+    CLI11_PARSE(app, argc, argv);
+
+    std::cout << "cmd.baud: " << cmd.baud << std::endl;
+
+    std::optional<mab::CANdleBaudrate_E> baudOpt = Candle::stringToBaudrate(cmd.baud);
+    if (!baudOpt.has_value())
+    {
+        std::cerr << "Invalid baudrate: " << cmd.baud << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    mab::CANdleBaudrate_E baud = baudOpt.value();
+
+    std::cout << "Selected baudrate: " << cmd.baud << std::endl;
 
     mINI::INIFile      file(getCandletoolConfigPath());
     mINI::INIStructure ini;
@@ -178,9 +197,7 @@ int main(int argc, char** argv)
         candle = std::make_shared<mab::Candle>(baud, printVerbose, busType);
 
     CandleTool candleTool(*candle);
-    PdsCli     pdsCli(app, *candle);
-
-    CLI11_PARSE(app, argc, argv);
+    Pds        pds(100, *candle);
 
     // set global verbosity for loggers
     if (silentMode)
@@ -298,7 +315,7 @@ int main(int argc, char** argv)
         }
     }
 
-    pdsCli.parse();
+    pdsCli.parse(&pds);
 
     return EXIT_SUCCESS;
 }

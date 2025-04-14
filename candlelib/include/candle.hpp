@@ -382,6 +382,9 @@ namespace mab
         bool reconnectToCandleBootloader();
         bool reconnectToCandleApp();
 
+        static std::optional<CANdleBaudrate_E> stringToBaudrate(const std::string& baudrateStr);
+        static std::string                     baudrateToString(CANdleBaudrate_E baudrate);
+
       protected:
         std::shared_ptr<Register> md80Register;
 
