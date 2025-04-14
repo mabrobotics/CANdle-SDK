@@ -191,14 +191,4 @@ namespace mab
         bool OVER_CURRENT;
     };
 
-    // TODO: This enum should be replaced with a single one for all MAB Codebase ( The one that is
-    // used in CANdle )
-    enum class canBaudrate_E : u8
-    {
-        BAUD_1M = 0x00,
-        BAUD_2M = 0x01,
-        BAUD_5M = 0x02,
-        BAUD_8M = 0x03
-    };
-
 }  // namespace mab

@@ -38,6 +38,9 @@ namespace mab
         if (directly == false)
             pLoader->resetDevice();
 
+        // Bootloader always communicates with 1M baud
+        m_candle.configCandleBaudrate(mab::CANdleBaudrate_E::CAN_BAUD_1M);
+
         m_log.debug("Entering bootloader");
         if (I_Loader::Error_E::OK != pLoader->enterBootloader())
         {
@@ -63,7 +66,7 @@ namespace mab
                 m_log.error("Failed to validate page CRC.");
                 break;
             default:
-                m_log.error("Unexpected error happend. Error code: %d", result);
+                m_log.error("Unexpected error happened. Error code: %d", result);
         }
         if (result != I_Loader::Error_E::OK)
         {
