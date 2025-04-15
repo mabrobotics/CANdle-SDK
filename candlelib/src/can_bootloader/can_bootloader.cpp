@@ -88,8 +88,9 @@ namespace mab
         std::vector<u8> payload;
         payload.push_back(static_cast<u8>(save));
         payload.insert(payload.end(), firmwareSHA256.begin(), firmwareSHA256.end());
+        payload.resize(63);
 
-        return sendCommand(Command_t::WRITE, payload);
+        return sendCommand(Command_t::META, payload);
     }
 
     CanBootloader::Error_t CanBootloader::boot(const u32 bootAddress) const
@@ -122,7 +123,7 @@ namespace mab
         if (!mp_candle)
             return Error_t::NOT_CONNNECTED;
 
-        auto result = mp_candle->transferCANFrame(m_id, frame, DEFAULT_REPONSE.size());
+        auto result = mp_candle->transferCANFrame(m_id, frame, DEFAULT_REPONSE.size(), 240);
         if (result.second != candleTypes::Error_t::OK)
         {
             m_log.error("Failed to send frame!");
