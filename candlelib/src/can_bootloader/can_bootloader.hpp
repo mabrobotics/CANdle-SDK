@@ -11,6 +11,7 @@
 
 namespace mab
 {
+    /// @brief Class for interacting with devices in bootloader mode on the CAN bus.
     class CanBootloader
     {
         static constexpr std::string_view DEFAULT_REPONSE     = "OK";
@@ -42,6 +43,10 @@ namespace mab
             DATA_TRANSFER_ERROR
         };
 
+        /// @brief Create CanBootloader instance
+        /// @param id The CAN ID for the device
+        /// @param candle Pointer to initialized Candle object. It is destroyed at the end of the
+        /// object lifetime.
         CanBootloader(const canId_t id, CandleV2* candle);
         ~CanBootloader();
 
