@@ -35,6 +35,7 @@ PdsCli::PdsCli(CLI::App& rootCli) : m_rootCli(rootCli)
         ->required();
 
     m_infoCmd = m_pdsCmd->add_subcommand("info", "Display debug info about PDS device");
+
     m_configSetupCmd =
         m_pdsCmd->add_subcommand("setup_cfg", "Configure PDS device with the .cfg file");
 
@@ -298,7 +299,12 @@ void PdsCli::parse(Pds* p_pds)
                 m_log.error("Invalid baudrate: %s", m_canBaudrate);
                 return;
             }
+
             result = mp_pds->setCanBaudrate(baudOpt.value());
+            if (result != PdsModule::error_E::OK)
+                m_log.error("Setting CAN baudrate failed [ %s ]", PdsModule::error2String(result));
+            else
+                m_log.success("New CAN baudrate set [ %s ]", m_canBaudrate.c_str());
         }
 
         else if (m_powerStageCmd->parsed())

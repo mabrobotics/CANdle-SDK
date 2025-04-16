@@ -26,10 +26,10 @@ int main(int argc, char** argv)
     auto* update  = app.add_subcommand("update", "Firmware update.");
 
     app.add_option(
-        "-b,--baud", cmd.baud, "Select FD CAN Baudrate CANdleTOOL will use for communication.");
-    // ->default_val("1M")
-    // ->check(CLI::IsMember({"1M", "2M", "5M", "8M"}))
-    // ->expected(1);
+           "-b,--baud", cmd.baud, "Select FD CAN Baudrate CANdleTOOL will use for communication.")
+        ->default_val("1M")
+        ->check(CLI::IsMember({"1M", "2M", "5M", "8M"}))
+        ->expected(1);
 
     // BLINK
     blink->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();

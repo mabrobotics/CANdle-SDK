@@ -21,7 +21,13 @@ class PdsCli
 
     CLI::App* m_pdsCmd = nullptr;
 
-    CLI::App* m_infoCmd            = nullptr;
+    CLI::App* m_infoCmd = nullptr;
+
+    CLI::App* m_canCmd        = nullptr;
+    CLI::App* m_canIdCmd      = nullptr;
+    CLI::App* m_canBaudCmd    = nullptr;
+    CLI::App* m_canTimeoutCmd = nullptr;
+
     CLI::App* m_setCanIdCmd        = nullptr;
     CLI::App* m_setCanBaudCmd      = nullptr;
     CLI::App* m_setBatteryLevelCmd = nullptr;
