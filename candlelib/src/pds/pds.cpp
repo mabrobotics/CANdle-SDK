@@ -342,6 +342,11 @@ namespace mab
         }
     }
 
+    u16 Pds::getCanId()
+    {
+        return m_rootCanId;
+    }
+
     PdsModule::error_E Pds::setCanId(u16 canId)
     {
         m_log.debug("Setting new CAN ID [ %u ]", canId);

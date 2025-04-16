@@ -1,6 +1,8 @@
 {
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
-    "cmake.buildDirectory": "${workspaceFolder}/../build/CANdleSDK",
+    "clangd.enable": false,
+    "C_Cpp.intelliSenseEngine": "default",
+    "cmake.buildDirectory": "${workspaceFolder}/build",
     "cmake.generator": "Unix Makefiles",
     "editor.formatOnSave": true,
     "files.associations": {

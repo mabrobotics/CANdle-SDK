@@ -1,6 +1,10 @@
 #pragma once
 
+#ifdef __cplusplus
 #include <cstdint>
+#else
+#include <stdint.h>
+#endif
 
 typedef uint64_t u64;
 typedef int64_t  s64;
@@ -23,6 +27,7 @@ typedef float f32;
 typedef void function(void*);
 typedef u32  flags_t;
 
+#ifdef __cplusplus
 namespace mab
 {
     using canId_t = u16;
@@ -152,3 +157,5 @@ namespace mab
     } version_ut;
 
 }  // namespace mab
+
+#endif

@@ -103,6 +103,23 @@
             "MIMode": "gdb",
         },
         {
+            "name": "pds set can baud",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/../build/CANdleSDK/candletool/candletool",
+            "args": [
+                "pds",
+                "100",
+                "set_can_baud",
+                "2X"
+            ],
+            "stopAtEntry": true,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+        },
+        {
             "name": "pds read cfg",
             "type": "cppdbg",
             "request": "launch",
