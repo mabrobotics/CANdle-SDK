@@ -239,6 +239,36 @@ PdsCli::PdsCli(CLI::App& rootCli) : m_rootCli(rootCli)
         m_isolatedConverterCmd->add_subcommand("get_temp_limit", "Get the Temperature Limit");
 }
 
+void PdsCli::clearCliNodeInit(void)
+{
+    m_clearCmd    = m_pdsCmd->add_subcommand("clear", "Clear Errors / Warnings status bits");
+    m_clearAllCmd = m_clearCmd->add_subcommand("all", "Clear both errors and warnings bits");
+}
+
+void PdsCli::clearCliNodeParse(void)
+{
+    if (m_clearCmd->parsed())
+    {
+        PdsModule::error_E result = PdsModule::error_E::OK;
+        result                    = mp_pds->clearErrors();
+        if (result != PdsModule::error_E::OK)
+        {
+            m_log.error("Clearing Errors status bits failed [ %s ]",
+                        PdsModule::error2String(result));
+        }
+        else
+        {
+            m_log.success("Clearing Errors status bits succeeded");
+        }
+
+        if (m_clearAllCmd->parsed())
+        {
+            m_log.info("Clearing error flags for all submodules...");
+            m_log.warn("Not implemented yet");
+        }
+    }
+}
+
 static bool isCanIdValid(u16 canId)
 {
     return ((canId >= CAN_MIN_ID) || (canId <= CAN_MAX_ID));
@@ -1105,7 +1135,7 @@ void PdsCli::pdsSetupInfo()
 
     m_log.info("\t* ENABLED           [ %s ]", pdsStatus.ENABLED ? "YES" : "NO");
     m_log.info("\t* OVER_TEMPERATURE  [ %s ]", pdsStatus.OVER_TEMPERATURE ? "YES" : "NO");
-    m_log.info("\t* OVER_CURRENT      [ %s ]", pdsStatus.OVER_CURRENT ? "YES" : "NO");
+    // m_log.info("\t* OVER_CURRENT      [ %s ]", pdsStatus.OVER_CURRENT ? "YES" : "NO");
     m_log.info("\t* STO_1             [ %s ]", pdsStatus.STO_1 ? "YES" : "NO");
     m_log.info("\t* STO_2             [ %s ]", pdsStatus.STO_2 ? "YES" : "NO");
     m_log.info("\t* FDCAN_TIMEOUT     [ %s ]", pdsStatus.FDCAN_TIMEOUT ? "YES" : "NO");
