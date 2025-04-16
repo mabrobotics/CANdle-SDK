@@ -26,6 +26,141 @@ namespace mab
         return MD(canId, candle.get());
     }
 
+    template <typename T>
+    std::pair<T, MD::Error_t> readReg(MD& md, const std::string& regName)
+    {
+        Logger log(Logger::ProgramLayer_E::TOP, "MD_READ_REG");
+
+        MDRegisters_S mdRegisters;
+        bool          found = false;
+
+        T           value = T{};
+        MD::Error_t err   = MD::Error_t::OK;
+
+        auto getReg = [&]<typename R>(MDRegisterEntry_S<R>& reg)
+        {
+            if constexpr (std::is_same_v<T, R>)
+            {
+                if (reg.m_name == regName)
+                {
+                    found = true;
+                    md.readRegisters(reg);
+                    value = reg.value;
+                }
+            }
+        };
+
+        mdRegisters.forEachRegister(mdRegisters, getReg);
+        if (!found)
+        {
+            log.error("Wrong name or type!");
+            err = MD::Error_t::REQUEST_INVALID;
+        }
+        return std::make_pair(value, err);
+    }
+
+    std::pair<std::string, MD::Error_t> readRegString(MD& md, const std::string& regName)
+    {
+        Logger log(Logger::ProgramLayer_E::TOP, "MD_READ_REG");
+
+        MDRegisters_S mdRegisters;
+        bool          found = false;
+
+        std::string value = "";
+        MD::Error_t err   = MD::Error_t::OK;
+
+        auto getReg = [&]<typename R>(MDRegisterEntry_S<R>& reg)
+        {
+            if constexpr (std::is_same<std::decay_t<R>, char*>::value)
+            {
+                if (reg.m_name == regName)
+                {
+                    found = true;
+                    md.readRegisters(reg);
+                    value = std::string(reg.value);
+                }
+            }
+        };
+
+        mdRegisters.forEachRegister(mdRegisters, getReg);
+        if (!found)
+        {
+            log.error("Wrong name or type!");
+            err = MD::Error_t::REQUEST_INVALID;
+        }
+        return std::make_pair(value, err);
+    }
+
+    template <typename T>
+    MD::Error_t writeReg(MD& md, const std::string& regName, T value)
+    {
+        Logger log(Logger::ProgramLayer_E::TOP, "MD_WRITE_REG");
+
+        MDRegisters_S mdRegisters;
+        bool          found = false;
+
+        MD::Error_t err = MD::Error_t::OK;
+
+        auto getReg = [&]<typename R>(MDRegisterEntry_S<R>& reg)
+        {
+            if constexpr (std::is_same_v<T, R>)
+            {
+                if (reg.m_name == regName)
+                {
+                    found     = true;
+                    reg.value = value;
+                    md.writeRegisters(reg);
+                }
+            }
+        };
+
+        mdRegisters.forEachRegister(mdRegisters, getReg);
+        if (!found)
+        {
+            log.error("Wrong name or type!");
+            err = MD::Error_t::REQUEST_INVALID;
+        }
+        return err;
+    }
+
+    MD::Error_t writeRegString(MD& md, const std::string& regName, const std::string& value)
+    {
+        Logger log(Logger::ProgramLayer_E::TOP, "MD_WRITE_REG");
+
+        MDRegisters_S mdRegisters;
+        bool          found = false;
+
+        MD::Error_t err = MD::Error_t::OK;
+
+        auto getReg = [&]<typename R>(MDRegisterEntry_S<R>& reg)
+        {
+            if constexpr (std::is_same<std::decay_t<R>, char*>::value)
+            {
+                if (reg.m_name == regName)
+                {
+                    found = true;
+                    if (value.size() + 1 > sizeof(reg.value))
+                    {
+                        log.error("String too long!");
+                        err = MD::Error_t::REQUEST_INVALID;
+                        return;
+                    }
+                    std::memset(reg.value, 0, sizeof(reg.value));
+                    std::strncpy(reg.value, value.c_str(), sizeof(value.c_str()));
+                    md.writeRegisters(reg);
+                }
+            }
+        };
+
+        mdRegisters.forEachRegister(mdRegisters, getReg);
+        if (!found)
+        {
+            log.error("Wrong name or type!");
+            err = MD::Error_t::REQUEST_INVALID;
+        }
+        return err;
+    }
+
 }  // namespace mab
 
 PYBIND11_MODULE(pyCandle, m)
@@ -163,4 +298,62 @@ PYBIND11_MODULE(pyCandle, m)
         .def("getTemperature",
              &mab::MD::getTemperature,
              "Get the current temperature of the MD device.");
+
+    // Register read/write methods
+    m.def("readRegisterFloat",
+          &mab::readReg<float>,
+          py::arg("md"),
+          py::arg("regName"),
+          "Read a register from the MD device.");
+    m.def("readRegisterU8",
+          &mab::readReg<u8>,
+          py::arg("md"),
+          py::arg("regName"),
+          "Read a register from the MD device.");
+    m.def("readRegisterU16",
+          &mab::readReg<u16>,
+          py::arg("md"),
+          py::arg("regName"),
+          "Read a register from the MD device.");
+    m.def("readRegisterU32",
+          &mab::readReg<u32>,
+          py::arg("md"),
+          py::arg("regName"),
+          "Read a register from the MD device.");
+    m.def("readRegisterString",
+          &mab::readRegString,
+          py::arg("md"),
+          py::arg("regName"),
+          "Read a register from the MD device.");
+
+    m.def("writeRegisterFloat",
+          &mab::writeReg<float>,
+          py::arg("md"),
+          py::arg("regName"),
+          py::arg("value"),
+          "Write a register to the MD device.");
+    m.def("writeRegisterU8",
+          &mab::writeReg<u8>,
+          py::arg("md"),
+          py::arg("regName"),
+          py::arg("value"),
+          "Write a register to the MD device.");
+    m.def("writeRegisterU16",
+          &mab::writeReg<u16>,
+          py::arg("md"),
+          py::arg("regName"),
+          py::arg("value"),
+          "Write a register to the MD device.");
+    m.def("writeRegisterU32",
+          &mab::writeReg<u32>,
+          py::arg("md"),
+          py::arg("regName"),
+          py::arg("value"),
+          "Write a register to the MD device.");
+    m.def("writeRegisterString",
+          &mab::writeRegString,
+          py::arg("md"),
+          py::arg("regName"),
+          py::arg("value"),
+          "Write a register to the MD device.");
 }

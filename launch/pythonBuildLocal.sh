@@ -5,6 +5,7 @@ if test -f ./venv/bin/python3; then
 else
     echo "Creating Python virtual environment..."
     python3 -m venv ./venv
+    ./venv/bin/python3 -m pip install build
 fi
 
 if ./venv/bin/python3 -m build; then
