@@ -14,6 +14,9 @@ if err == pc.MD_Error_t.OK:
     md.setMotionMode(pc.MotionMode_t.IMPEDANCE)
     md.enable()
     for i in range(100):
-        md.setTargetPosition(i * 0.05)
+        t = i * 0.2
+        md.setTargetPosition(t)
+        pos, err = md.getPosition()
+        print(f"Position: {round(pos,2)}, Target position: {round(t,2)} Error: {err}")
         time.sleep(0.1)
     md.disable()

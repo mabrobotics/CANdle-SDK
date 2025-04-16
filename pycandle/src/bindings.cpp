@@ -93,13 +93,74 @@ PYBIND11_MODULE(pyCandle, m)
         .def("enable", &mab::MD::enable, "Enable PWM output of the drive.")
         .def("disable", &mab::MD::disable, "Disable PWM output of the drive.")
         .def("reset", &mab::MD::reset, "Reset the driver.")
+        .def("clearErrors", &mab::MD::clearErrors, "Clear errors present in the driver.")
+        .def("save", &mab::MD::save, "Save configuration data to the memory.")
         .def("zero", &mab::MD::zero, "Zero out the position of the encoder.")
+        .def("setCurrentLimit",
+             &mab::MD::setCurrentLimit,
+             py::arg("currentLimit"),
+             "Set the current limit associated with the motor that is driven.")
+        .def("setTorqueBandwidth",
+             &mab::MD::setTorqueBandwidth,
+             py::arg("torqueBandwidth"),
+             "Set the torque bandwidth of the MD device.")
         .def("setMotionMode",
              &mab::MD::setMotionMode,
              py::arg("mode"),
              "Set the motion mode of the MD device.")
+        .def("setPositionPIDparam",
+             &mab::MD::setPositionPIDparam,
+             py::arg("kp"),
+             py::arg("ki"),
+             py::arg("kd"),
+             py::arg("integralMax"),
+             "Set position controller PID parameters.")
+        .def("setVelocityPIDparam",
+             &mab::MD::setVelocityPIDparam,
+             py::arg("kp"),
+             py::arg("ki"),
+             py::arg("kd"),
+             py::arg("integralMax"),
+             "Set velocity controller PID parameters.")
+        .def("setImpedanceParams",
+             &mab::MD::setImpedanceParams,
+             py::arg("kp"),
+             py::arg("kd"),
+             "Set impedance controller parameters.")
+        .def("setMaxTorque",
+             &mab::MD::setMaxTorque,
+             py::arg("maxTorque"),
+             "Set the maximum torque to be output by the controller.")
+        .def("setProfileVelocity",
+             &mab::MD::setProfileVelocity,
+             py::arg("profileVelocity"),
+             "Set the target velocity of the profile movement.")
+        .def("setProfileAcceleration",
+             &mab::MD::setProfileAcceleration,
+             py::arg("profileAcceleration"),
+             "Set the target profile acceleration when performing profile movement.")
         .def("setTargetPosition",
              &mab::MD::setTargetPosition,
              py::arg("position"),
-             "Set the target position of the MD device.");
+             "Set the target position of the MD device.")
+        .def("setTargetVelocity",
+             &mab::MD::setTargetVelocity,
+             py::arg("velocity"),
+             "Set the target velocity of the MD device.")
+        .def("setTargetTorque",
+             &mab::MD::setTargetTorque,
+             py::arg("torque"),
+             "Set the target torque of the MD device.")
+        .def("getPosition", &mab::MD::getPosition, "Get the current position of the MD device.")
+        .def("getVelocity", &mab::MD::getVelocity, "Get the current velocity of the MD device.")
+        .def("getTorque", &mab::MD::getTorque, "Get the current torque of the MD device.")
+        .def("getOutputEncoderPosition",
+             &mab::MD::getOutputEncoderPosition,
+             "Get the output position of the MD device.")
+        .def("getOutputEncoderVelocity",
+             &mab::MD::getOutputEncoderVelocity,
+             "Get the output velocity of the MD device.")
+        .def("getTemperature",
+             &mab::MD::getTemperature,
+             "Get the current temperature of the MD device.");
 }
