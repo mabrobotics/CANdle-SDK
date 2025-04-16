@@ -36,6 +36,22 @@ PdsCli::PdsCli(CLI::App& rootCli) : m_rootCli(rootCli)
 
     m_infoCmd = m_pdsCmd->add_subcommand("info", "Display debug info about PDS device");
 
+    m_canCmd   = m_pdsCmd->add_subcommand("can", "Manage CAN parameters of the PDS device");
+    m_canIdCmd = m_canCmd->add_subcommand("id", "Set the CAN ID of the PDS device");
+
+    m_canIdCmdOption = m_canIdCmd->add_option("<NEW_CAN_ID>", m_newCanId, "New CAN ID")->required();
+
+    m_canBaudCmd = m_canCmd->add_subcommand("baud", "Set the CAN baudrate of the PDS device");
+
+    m_canBaudCmdOption =
+        m_canBaudCmd->add_option("<NEW_CAN_BAUD>", m_canBaudrate, "New CAN Baudrate")->required();
+
+    m_canTimeoutCmd = m_canCmd->add_subcommand(
+        "timeout", "Set the CAN timeout of the PDS device ( Or read if no args )");
+
+    m_canTimeoutCmdOption =
+        m_canTimeoutCmd->add_option("<NEW_CAN_TIMEOUT>", m_canBaudrate, "New CAN Timeout");
+
     m_configSetupCmd =
         m_pdsCmd->add_subcommand("setup_cfg", "Configure PDS device with the .cfg file");
 
@@ -249,6 +265,79 @@ void PdsCli::parse(Pds* p_pds)
         if (m_infoCmd->parsed())
         {
             pdsSetupInfo();
+        }
+
+        else if (m_canCmd->parsed())
+        {
+            m_log.debug("CAN command parsed");
+            if (m_canIdCmd->parsed())
+            {
+                m_log.debug("CAN ID command parsed");
+
+                /*
+                     For ID and Baud there is actually no sense to read them
+                     so the conditions and handler might be removed in further refactor
+                */
+                if (!m_canIdCmdOption->empty())
+                {
+                    if (!isCanIdValid(m_newCanId))
+                    {
+                        m_log.error(
+                            "Given CAN ID ( %u ) is invalid. Acceptable range is [ %u - %u ]",
+                            m_newCanId,
+                            CAN_MIN_ID,
+                            CAN_MAX_ID);
+                        return;
+                    }
+                    result = mp_pds->setCanId(m_newCanId);
+                    if (result != PdsModule::error_E::OK)
+                        m_log.error("Setting CAN ID failed [ %s ]",
+                                    PdsModule::error2String(result));
+                    else
+                        m_log.success("New CAN ID set [ %u ]", m_newCanId);
+                }
+                else
+                {
+                    m_log.success("Current CAN ID [ %u ]", mp_pds->getCanId());
+                }
+            }
+            else if (m_canBaudCmd->parsed())
+            {
+                m_log.debug("CAN Baudrate command parsed");
+                if (!m_canBaudCmdOption->empty())
+                {
+                    std::optional<CANdleBaudrate_E> baudOpt =
+                        Candle::stringToBaudrate(m_canBaudrate);
+                    if (!baudOpt.has_value())
+                    {
+                        m_log.error("Invalid baudrate: %s", m_canBaudrate);
+                        return;
+                    }
+                    result = mp_pds->setCanBaudrate(baudOpt.value());
+                    if (result != PdsModule::error_E::OK)
+                        m_log.error("Setting CAN baudrate failed [ %s ]",
+                                    PdsModule::error2String(result));
+                    else
+                        m_log.success("New CAN baudrate set [ %s ]", m_canBaudrate.c_str());
+                }
+                else
+                {
+                    m_log.success("Current CAN Baudrate [ %s ]", m_canBaudrate.c_str());
+                }
+            }
+            else if (m_canTimeoutCmd->parsed())
+            {
+                m_log.debug("CAN Timeout command parsed");
+                if (!m_canTimeoutCmdOption->empty())
+                {
+                    // TODO:
+                    m_log.warn("Setting CAN timeout is not implemented yet");
+                }
+                else
+                {
+                    m_log.warn("Setting CAN timeout is not implemented yet");
+                }
+            }
         }
 
         else if (m_configSetupCmd->parsed())

@@ -23,13 +23,21 @@ class PdsCli
 
     CLI::App* m_infoCmd = nullptr;
 
-    CLI::App* m_canCmd        = nullptr;
-    CLI::App* m_canIdCmd      = nullptr;
-    CLI::App* m_canBaudCmd    = nullptr;
-    CLI::App* m_canTimeoutCmd = nullptr;
+    // "can" commands node
+    CLI::App*    m_canCmd         = nullptr;
+    CLI::App*    m_canIdCmd       = nullptr;
+    CLI::Option* m_canIdCmdOption = nullptr;
 
-    CLI::App* m_setCanIdCmd        = nullptr;
-    CLI::App* m_setCanBaudCmd      = nullptr;
+    CLI::App*    m_canBaudCmd       = nullptr;
+    CLI::Option* m_canBaudCmdOption = nullptr;
+
+    CLI::App*    m_canTimeoutCmd       = nullptr;
+    CLI::Option* m_canTimeoutCmdOption = nullptr;
+
+    // Deprecated
+    CLI::App* m_setCanIdCmd   = nullptr;
+    CLI::App* m_setCanBaudCmd = nullptr;
+
     CLI::App* m_setBatteryLevelCmd = nullptr;
     CLI::App* m_setShutdownTimeCmd = nullptr;
 

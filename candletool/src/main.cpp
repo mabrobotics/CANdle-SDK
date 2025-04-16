@@ -162,8 +162,6 @@ int main(int argc, char** argv)
 
     CLI11_PARSE(app, argc, argv);
 
-    std::cout << "cmd.baud: " << cmd.baud << std::endl;
-
     std::optional<mab::CANdleBaudrate_E> baudOpt = Candle::stringToBaudrate(cmd.baud);
     if (!baudOpt.has_value())
     {
@@ -172,8 +170,6 @@ int main(int argc, char** argv)
     }
 
     mab::CANdleBaudrate_E baud = baudOpt.value();
-
-    std::cout << "Selected baudrate: " << cmd.baud << std::endl;
 
     mINI::INIFile      file(getCandletoolConfigPath());
     mINI::INIStructure ini;
