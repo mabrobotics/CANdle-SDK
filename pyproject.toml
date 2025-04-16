@@ -39,7 +39,6 @@ sdist.include = [".git"]
 cmake.build-type = "Release"
 install.strip = false
 
-
 [tool.scikit-build.cmake.define]
 PYTHON_BUILD = "ON"
 

@@ -10,3 +10,4 @@ message(${CMAKE_SOURCE_DIR})
 pybind11_add_module(pyCandle MODULE src/bindings.cpp)
 
 target_link_libraries(pyCandle PUBLIC candle)
+install(TARGETS pyCandle LIBRARY DESTINATION .)
