@@ -36,7 +36,7 @@ classifiers = [
 [tool.scikit-build]
 cmake.verbose = true
 logging.level = "INFO"
-sdist.include = [".git"]
+sdist.include = [".git","candlelib/third_party"]
 cmake.build-type = "Release"
 install.strip = false
 

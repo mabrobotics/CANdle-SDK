@@ -7,7 +7,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 if(PYTHON_BUILD)
   set(CANDLE_BUILD_STATIC ON)
 endif()
-  
+
 
 if(UNIX)
   set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
@@ -151,4 +151,3 @@ target_include_directories(md_v2_test PRIVATE
   src/MD/
 )
 target_link_libraries(md_v2_test PRIVATE logger shared_data candle)
-
