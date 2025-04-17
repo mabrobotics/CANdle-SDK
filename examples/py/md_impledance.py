@@ -1,10 +1,11 @@
 import pyCandle as pc
 import time
 
+# pc.logVerbosity(pc.Verbosity_E.VERBOSITY_3)
+
 candle = pc.attachCandle(pc.CANdleBaudrate_E.CAN_BAUD_1M, pc.busTypes_t.USB)
 
 md = pc.MD(100, candle)
-
 err = md.init()
 
 print(err)
@@ -29,6 +30,7 @@ if err == pc.MD_Error_t.OK:
         print(f"With bandwidth: {band} Hz")
         torque = pc.readRegisterFloat(md, "motorTorque")[0]
         print(f"Exerting torque: {round(torque,2)} Nm")
-        print(f"Position: {round(pos,2)}, Target position: {round(t,2)} Error: {err}")
+        print(
+            f"Position: {round(pos,2)}, Target position: {round(t,2)} Error: {err}")
         time.sleep(0.1)
     md.disable()

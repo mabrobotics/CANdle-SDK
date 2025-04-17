@@ -11,6 +11,7 @@
 #include "candle_types.hpp"
 #include "candle_v2.hpp"
 #include "MD.hpp"
+#include "logger.hpp"
 
 namespace py = pybind11;
 
@@ -221,8 +222,8 @@ PYBIND11_MODULE(pyCandle, m)
         .export_values();
 
     py::class_<mab::MD>(m, "MD")
-        .def(py::init([](int canId, mab::CandleV2* candle) -> auto
-                      { return mab::MD(canId, candle); }))
+        .def(py::init(
+            [](int canId, mab::CandleV2* candle) -> auto{ return mab::MD(canId, candle); }))
         .def("init", &mab::MD::init, "Initialize the MD device. Returns an error if not connected.")
         .def("blink", &mab::MD::blink, "Blink the built-in LEDs.")
         .def("enable", &mab::MD::enable, "Enable PWM output of the drive.")
@@ -324,7 +325,8 @@ PYBIND11_MODULE(pyCandle, m)
           &mab::readRegString,
           py::arg("md"),
           py::arg("regName"),
-          "Read a register from the MD device.");
+          "Read a register from the MD device.",
+          py::return_value_policy::copy);
 
     m.def("writeRegisterFloat",
           &mab::writeReg<float>,
@@ -356,4 +358,18 @@ PYBIND11_MODULE(pyCandle, m)
           py::arg("regName"),
           py::arg("value"),
           "Write a register to the MD device.");
+
+    // Logger
+    py::enum_<Logger::Verbosity_E>(m, "Verbosity_E")
+        .value("DEFAULT", Logger::Verbosity_E::DEFAULT)
+        .value("VERBOSITY_1", Logger::Verbosity_E::VERBOSITY_1)
+        .value("VERBOSITY_2", Logger::Verbosity_E::VERBOSITY_2)
+        .value("VERBOSITY_3", Logger::Verbosity_E::VERBOSITY_3)
+        .value("SILENT", Logger::Verbosity_E::SILENT)
+        .export_values();
+
+    m.def(
+        "logVerbosity",
+        [](Logger::Verbosity_E verbosity) { Logger::g_m_verbosity = verbosity; },
+        py::arg("verbosity"));
 }

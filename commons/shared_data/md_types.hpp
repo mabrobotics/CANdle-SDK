@@ -222,7 +222,8 @@ namespace mab
             if (addressFromSerial == m_regAddress)
             {
                 std::memcpy(&value, data.data() + sizeof(m_regAddress), sizeof(value));
-                data.erase(data.begin(), data.begin() + sizeof(m_regAddress) + sizeof(value));
+                if (data.size() > sizeof(m_regAddress) + sizeof(value))
+                    data.erase(data.begin(), data.begin() + sizeof(m_regAddress) + sizeof(value));
                 return true;
             }
             return false;
@@ -292,7 +293,8 @@ namespace mab
             if (addressFromSerial == m_regAddress)
             {
                 std::memcpy(value, data.data() + sizeof(m_regAddress), sizeof(value));
-                data.erase(data.begin(), data.begin() + sizeof(m_regAddress) + sizeof(value));
+                if (data.size() > sizeof(m_regAddress) + sizeof(value))
+                    data.erase(data.begin(), data.begin() + sizeof(m_regAddress) + sizeof(value));
                 return true;
             }
             return false;
