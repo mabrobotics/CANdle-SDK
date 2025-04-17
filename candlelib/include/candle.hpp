@@ -14,11 +14,15 @@
 #include "mab_types.hpp"
 #include "md80.hpp"
 #include "usbDevice.hpp"
+
+#ifndef WIN32
 #include "spiDevice.hpp"
 #include "uartDevice.hpp"
+#endif
 
 #ifdef WIN32
 #include <windows.h>
+#include <unistd.h>
 #endif
 namespace mab
 {
