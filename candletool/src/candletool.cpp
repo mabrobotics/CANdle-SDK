@@ -1065,17 +1065,7 @@ void CandleTool::testMoveAbsolute(u16 id, f32 targetPos, f32 velLimit, f32 accLi
     if (md.init() != MD::Error_t::OK)
     {
         log.error("Failed to initialize MD");
-        MD md(id, m_candle);
-        if (md.init() != MD::Error_t::OK)
-        {
-            log.error("Failed to initialize MD");
-            return;
-        }
-
-        MDRegisters_S registers;
-        registers.profileVelocity     = velLimit;
-        registers.profileAcceleration = accLimit;
-        registers.profileDeceleration = dccLimit;
+        return;
     }
 
     MDRegisters_S registers;
@@ -1099,12 +1089,7 @@ void CandleTool::testMoveAbsolute(u16 id, f32 targetPos, f32 velLimit, f32 accLi
     while (
         !(md.getQuickStatus().first.at(MDStatus::QuickStatusBits::TargetPositionReached).isSet()))
         usleep(10'000);
-    md.setMotionMode(mab::Md80Mode_E::POSITION_PROFILE);
-    md.enable();
-    md.setTargetPosition(targetPos);
-    while (
-        !(md.getQuickStatus().first.at(MDStatus::QuickStatusBits::TargetPositionReached).isSet()))
-        usleep(10'000);
+    md.disable();
     log.info("TARGET REACHED!");
 }
 
