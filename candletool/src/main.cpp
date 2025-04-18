@@ -181,7 +181,6 @@ int main(int argc, char** argv)
     std::shared_ptr<mab::Candle> candle = nullptr;
 
     CandleTool candleTool;
-    PdsCli     pdsCli(app, *candle);
 
     CLI11_PARSE(app, argc, argv);
 
@@ -299,7 +298,7 @@ int main(int argc, char** argv)
         }
     }
 
-    pdsCli.parse(&pds);
+    // pdsCli.parse(&pds);
 
     return EXIT_SUCCESS;
 }
