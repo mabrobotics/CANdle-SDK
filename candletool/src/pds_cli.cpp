@@ -175,6 +175,8 @@ PdsCli::PdsCli(CLI::App& rootCli) : m_rootCli(rootCli)
     m_psGetAutoStartCmd =
         m_powerStageCmd->add_subcommand("get_auto_start", "Get the Auto Start mode");
 
+    m_psClearCmd = m_powerStageCmd->add_subcommand("clear", "Clear errors status bits");
+
     // BRAKE RESISTOR commands set
 
     m_brakeResistorCmd = m_pdsCmd->add_subcommand("br", "Manage the Brake Resistor submodule");
@@ -193,6 +195,8 @@ PdsCli::PdsCli(CLI::App& rootCli) : m_rootCli(rootCli)
 
     m_brGetTempLimitCmd =
         m_brakeResistorCmd->add_subcommand("get_temp_limit", "Get the Temperature Limit");
+
+    m_brClearCmd = m_brakeResistorCmd->add_subcommand("clear", "Clear errors status bits");
 
     // ISOLATED CONVERTER commands set
 
@@ -237,12 +241,15 @@ PdsCli::PdsCli(CLI::App& rootCli) : m_rootCli(rootCli)
 
     m_icGetTempLimitCmd =
         m_isolatedConverterCmd->add_subcommand("get_temp_limit", "Get the Temperature Limit");
+
+    m_icClearCmd = m_isolatedConverterCmd->add_subcommand("clear", "Clear errors status bits");
 }
 
 void PdsCli::clearCliNodeInit(void)
 {
-    m_clearCmd    = m_pdsCmd->add_subcommand("clear", "Clear Errors / Warnings status bits");
-    m_clearAllCmd = m_clearCmd->add_subcommand("all", "Clear both errors and warnings bits");
+    m_clearCmd = m_pdsCmd->add_subcommand("clear", "Clear errors status bits");
+    m_clearAllCmd =
+        m_clearCmd->add_subcommand("all", "Clear errors status bits for all submodules");
 }
 
 void PdsCli::clearCliNodeParse(void)
@@ -806,6 +813,19 @@ void PdsCli::powerStageCmdParse(void)
         else
             m_log.info("Autostart [ %s ]", autoStart ? "ENABLED" : "DISABLED");
     }
+    else if (m_psClearCmd->parsed())
+    {
+        powerStageStatus_S psStatus = {0};
+
+        psStatus.OVER_CURRENT     = true;
+        psStatus.OVER_TEMPERATURE = true;
+
+        result = ps->clearStatus(psStatus);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage clear errors failed [ %s ]", PdsModule::error2String(result));
+        else
+            m_log.success("Power Stage errors cleared");
+    }
 
     else
         m_log.error("PS subcommand is missing");
@@ -893,6 +913,20 @@ void PdsCli::brakeResistorCmdParse(void)
         else
             m_log.info("Temperature limit [ %0.2f ]", tempLimit);
     }
+
+    else if (m_brClearCmd->parsed())
+    {
+        brakeResistorStatus_S brStatus = {0};
+        brStatus.OVER_TEMPERATURE      = true;
+
+        result = br->clearStatus(brStatus);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Brake Resistor clear errors failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.success("Brake Resistor errors cleared");
+    }
+
     else
         m_log.error("BR subcommand is missing");
 }
@@ -1076,6 +1110,21 @@ void PdsCli::isolatedConverterCmdParse(void)
         else
             m_log.info("Temperature limit [ %0.2f ]", tempLimit);
     }
+
+    else if (m_icClearCmd->parsed())
+    {
+        isolatedConverterStatus_S icStatus = {0};
+        icStatus.OVER_TEMPERATURE          = true;
+        icStatus.OVER_CURRENT              = true;
+
+        result = ic->clearStatus(icStatus);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Isolated Converter clear errors failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.success("Isolated Converter errors cleared");
+    }
+
     else
         m_log.error("IC subcommand is missing");
 }
