@@ -43,6 +43,7 @@ target_sources(candle PRIVATE
   src/bus.cpp
   src/crc.cpp
   src/md80.cpp
+  src/can_bootloader/can_bootloader.cpp
   src/communication_device/candle_v2.cpp
   src/communication_device/candle_bootloader.cpp
   src/communication_interface/SPI_v2.cpp
@@ -66,6 +67,7 @@ target_include_directories(candle PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/include
   ${CMAKE_CURRENT_SOURCE_DIR}/src/MD
   ${CMAKE_CURRENT_SOURCE_DIR}/src/pds
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/can_bootloader
   ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_device
   ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_interface
   ${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger
