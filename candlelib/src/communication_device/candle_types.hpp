@@ -1,6 +1,12 @@
 #pragma once
 
 #include "mab_types.hpp"
+
+#ifdef WIN32
+#include <windows.h>
+#include <unistd.h>
+#endif
+
 namespace mab
 {
     namespace candleTypes

@@ -5,7 +5,7 @@ if test -f ./venv/bin/python3; then
 else
     echo "Creating Python virtual environment..."
     python3 -m venv ./venv
-    ./venv/bin/python3 -m pip install build
+    ./venv/bin/python3 -m pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org build
 fi
 
 if ./venv/bin/python3 -m build; then
@@ -21,4 +21,3 @@ else
     echo -e "\e[31mError in installing pycandle\e[0m"
     exit 1
 fi
-

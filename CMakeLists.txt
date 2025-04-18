@@ -33,8 +33,12 @@ add_compile_options(
   -Wextra
   -Wpedantic
   -Wno-unused-parameter
-  -Wno-missing-field-initializers
+  -Wno-missing-field-initializers)
+
+if(NOT DEFINED PLATFORM)
+add_compile_options(
   -Werror)
+endif()
 
 set(mINI_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/mINI/inc/)
 
