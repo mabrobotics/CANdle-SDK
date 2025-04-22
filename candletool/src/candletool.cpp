@@ -23,6 +23,7 @@
 #include "md_types.hpp"
 #include "register.hpp"
 #include "MDStatus.hpp"
+#include "canLoader.hpp"
 #include "mab_types.hpp"
 #include "md_types.hpp"
 #include "register.hpp"
@@ -1319,7 +1320,7 @@ void CandleTool::updateCandle(const std::string& mabFilePath)
          i += CandleBootloader::PAGE_SIZE_STM32G474)
     {
         std::array<u8, CandleBootloader::PAGE_SIZE_STM32G474> page;
-        std::memcpy(page.data(), &candleFirmware.m_fwEntry.data[i], page.size());
+        std::memcpy(page.data(), &candleFirmware.m_fwEntry.data->data()[i], page.size());
         u32 crc = crc32(page.data(), page.size());
         if (candle_bootloader->writePage(page, crc) != candleTypes::Error_t::OK)
         {
@@ -1329,14 +1330,29 @@ void CandleTool::updateCandle(const std::string& mabFilePath)
     }
 }
 
-void CandleTool::updateMd(const std::string& mabFilePath, uint16_t canId, bool noReset)
+void CandleTool::updateMd(const std::string& mabFilePath, mab::canId_t canId, bool noReset)
 {
     MabFileParser mabFile(mabFilePath, MabFileParser::TargetDevice_E::MD);
 
-    // mab::FirmwareUploader firmwareUploader(*candle, mabFile, canId);
-    // if (firmwareUploader.flashDevice(noReset))
-    //     log.success("Update complete for MD @ %d", canId);
-    // TODO: implement this
+    if (!noReset)
+    {
+        MD md(canId, m_candle);
+        if (md.init() != MD::Error_t::OK)
+        {
+            log.error("Could not communicate with MD device with ID %d", canId);
+            return;
+        }
+        md.reset();
+    }
+    CanLoader canLoader(m_candle, &mabFile, canId);
+    if (canLoader.flashAndBoot(0x8006000))
+    {
+        log.success("Update complete for MD @ %d", canId);
+    }
+    else
+    {
+        log.error("MD flashing failed!");
+    }
 }
 
 void CandleTool::updatePds(const std::string& mabFilePath, uint16_t canId, bool noReset)

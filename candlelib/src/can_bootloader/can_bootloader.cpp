@@ -1,5 +1,6 @@
 #include "can_bootloader.hpp"
 #include <array>
+#include <span>
 #include <string_view>
 #include <vector>
 #include "candle_bootloader.hpp"
@@ -54,7 +55,7 @@ namespace mab
     }
 
     CanBootloader::Error_t CanBootloader::startTransfer(
-        const bool encrypted, const std::array<u8, 16>& initializationVector) const
+        const bool encrypted, const std::span<const u8, 16> initializationVector) const
     {
         std::vector<u8> payload;
         payload.push_back(static_cast<u8>(encrypted));
@@ -63,8 +64,8 @@ namespace mab
         return sendCommand(Command_t::PROG, payload);
     }
 
-    CanBootloader::Error_t CanBootloader::transferData(const std::array<u8, TRANSFER_SIZE>& data,
-                                                       const u32 crc32) const
+    CanBootloader::Error_t CanBootloader::transferData(
+        const std::span<const u8, TRANSFER_SIZE> data, const u32 crc32) const
     {
         std::vector<u8> payload;
         for (size_t i = 0; i < data.size(); i += CHUNK_SIZE)
@@ -83,7 +84,7 @@ namespace mab
     }
 
     CanBootloader::Error_t CanBootloader::transferMetadata(
-        const bool save, const std::array<u8, 32>& firmwareSHA256) const
+        const bool save, const std::span<const u8, 32> firmwareSHA256) const
     {
         std::vector<u8> payload;
         payload.push_back(static_cast<u8>(save));
