@@ -24,6 +24,8 @@ namespace mab
 
         error_E getStatus(isolatedConverterStatus_S& status);
 
+        error_E clearStatus(isolatedConverterStatus_S status);
+
         error_E getEnabled(bool& enabled);
 
         /**

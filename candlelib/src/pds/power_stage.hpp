@@ -167,6 +167,5 @@ namespace mab
 
         error_E setTemperatureLimit(f32 temperatureLimit);
         error_E getTemperatureLimit(f32& temperatureLimit);
-        // private:
     };
 }  // namespace mab

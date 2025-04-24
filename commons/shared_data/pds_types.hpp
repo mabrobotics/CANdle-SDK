@@ -151,7 +151,7 @@ namespace mab
     {
         bool ENABLED;
         bool OVER_TEMPERATURE;
-        bool OVER_CURRENT;
+        // bool OVER_CURRENT; // To be removed? CTRL does not measure current?
 
         /*...*/
 
