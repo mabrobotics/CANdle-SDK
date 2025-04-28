@@ -67,6 +67,8 @@ namespace mab
 
         u16     getCanId();
         error_E setCanId(u16 canId);
+
+        CANdleBaudrate_E getCanBaudrate(void);
         error_E setCanBaudrate(CANdleBaudrate_E canBaudrate);
 
         error_E getBusVoltage(u32& busVoltage);

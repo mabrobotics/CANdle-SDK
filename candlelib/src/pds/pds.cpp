@@ -358,6 +358,11 @@ namespace mab
         return result;
     }
 
+    CANdleBaudrate_E Pds::getCanBaudrate(void)
+    {
+        return m_candle.getCurrentBaudrate();
+    }
+
     PdsModule::error_E Pds::setCanBaudrate(CANdleBaudrate_E canBaudrate)
     {
         return writeModuleProperty(propertyId_E::CAN_BAUDRATE, canBaudrate);
