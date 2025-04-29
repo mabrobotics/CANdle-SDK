@@ -52,7 +52,7 @@ class Logger
         DEBUG  = 0,
         INFO   = 10,
         WARN   = 20,
-        ERROR  = 30,
+        ERROR_ = 30,  // WINDOWS does not tollerate ERROR word in code
         SILENT = 255
     };
     enum class Verbosity_E : uint8_t
@@ -75,7 +75,7 @@ class Logger
         SUCCESS,
         DEBUG,
         WARN,
-        ERROR
+        ERROR_  // WINDOWS does not tollerate ERROR word in code
     };
     Logger() = default;
     /// @brief constructor with all the necessary parameters
@@ -88,7 +88,7 @@ class Logger
 
     static constexpr std::array<std::array<LogLevel_E, 3>, 5> g_m_verbosityTable{
         // TOP, LAYER_2, BOTTOM
-        {{{LogLevel_E::INFO, LogLevel_E::WARN, LogLevel_E::ERROR}},         // DEFAULT
+        {{{LogLevel_E::INFO, LogLevel_E::WARN, LogLevel_E::ERROR_}},        // DEFAULT
          {{LogLevel_E::INFO, LogLevel_E::INFO, LogLevel_E::WARN}},          // V1
          {{LogLevel_E::DEBUG, LogLevel_E::INFO, LogLevel_E::INFO}},         // V2
          {{LogLevel_E::DEBUG, LogLevel_E::DEBUG, LogLevel_E::DEBUG}},       // V3

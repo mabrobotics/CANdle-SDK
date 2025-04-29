@@ -2,7 +2,9 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdio>
 #include <cstring>
+#include <optional>
 #include <string>
 #include <utility>
 #include <tuple>
@@ -177,13 +179,17 @@ namespace mab
         std::array<u8, sizeof(value) + sizeof(m_regAddress)> serializedBuffer;
 
       public:
-        MDRegisterEntry_S(RegisterAccessLevel_E accessLevel, u16 regAddress, std::string name)
+        constexpr MDRegisterEntry_S(RegisterAccessLevel_E accessLevel,
+                                    u16                   regAddress,
+                                    std::string           name)
             : m_accessLevel(accessLevel), m_regAddress(regAddress), m_name(name)
         {
         }
 
-        MDRegisterEntry_S(const MDRegisterEntry_S& otherReg)
-            : m_accessLevel(otherReg.m_accessLevel), m_regAddress(otherReg.m_regAddress)
+        constexpr MDRegisterEntry_S(const MDRegisterEntry_S& otherReg)
+            : m_accessLevel(otherReg.m_accessLevel),
+              m_regAddress(otherReg.m_regAddress),
+              m_name(otherReg.m_name)
         {
             value = otherReg.value;
         }
@@ -222,7 +228,8 @@ namespace mab
             if (addressFromSerial == m_regAddress)
             {
                 std::memcpy(&value, data.data() + sizeof(m_regAddress), sizeof(value));
-                data.erase(data.begin(), data.begin() + sizeof(m_regAddress) + sizeof(value));
+                if (data.size() > sizeof(m_regAddress) + sizeof(value))
+                    data.erase(data.begin(), data.begin() + sizeof(m_regAddress) + sizeof(value));
                 return true;
             }
             return false;
@@ -246,12 +253,16 @@ namespace mab
         std::array<u8, sizeof(value) + sizeof(m_regAddress)> serializedBuffer;
 
       public:
-        MDRegisterEntry_S(RegisterAccessLevel_E accessLevel, u16 regAddress, std::string name)
-            : m_accessLevel(accessLevel), m_regAddress(regAddress), m_name(name)
+        constexpr MDRegisterEntry_S(RegisterAccessLevel_E accessLevel,
+                                    u16                   regAddress,
+                                    std::string           name)
+            : m_accessLevel(accessLevel), m_regAddress(regAddress), m_name(std::string(name))
         {
         }
-        MDRegisterEntry_S(const MDRegisterEntry_S& otherReg)
-            : m_accessLevel(otherReg.m_accessLevel), m_regAddress(otherReg.m_regAddress)
+        constexpr MDRegisterEntry_S(const MDRegisterEntry_S& otherReg)
+            : m_accessLevel(otherReg.m_accessLevel),
+              m_regAddress(otherReg.m_regAddress),
+              m_name(otherReg.m_name)
         {
             static_assert(std::is_same_v<decltype(otherReg.value), decltype(value)>);
             std::memcpy(&value, &otherReg.value, sizeof(value));
@@ -265,7 +276,7 @@ namespace mab
             return *this;
         }
 
-        T* operator=(MDRegisterEntry_S& reg)
+        T* operator=(MDRegisterEntry_S& reg) const
         {
             return value;
         }
@@ -292,7 +303,8 @@ namespace mab
             if (addressFromSerial == m_regAddress)
             {
                 std::memcpy(value, data.data() + sizeof(m_regAddress), sizeof(value));
-                data.erase(data.begin(), data.begin() + sizeof(m_regAddress) + sizeof(value));
+                if (data.size() > sizeof(m_regAddress) + sizeof(value))
+                    data.erase(data.begin(), data.begin() + sizeof(m_regAddress) + sizeof(value));
                 return true;
             }
             return false;
@@ -314,7 +326,7 @@ namespace mab
 #define MD_REG(name, type, addr, access) regE_S<type> name = regE_S<type>(access, addr, #name);
         REGISTER_LIST
 #undef MD_REG
-        auto getAllRegisters()
+        constexpr auto getAllRegisters()
         {
             return std::tie(
 #define MD_REG(name, type, addr, access) , name
@@ -329,9 +341,15 @@ namespace mab
         }
 
         template <class F>
-        void forEachRegister(MDRegisters_S& regs, F&& func)
+        void forEachRegister(F&& func)
         {
-            std::apply([&](auto&&... regs) { (func(regs), ...); }, regs.getAllRegisters());
+            std::apply([&](auto&&... regs) { (func(regs), ...); }, getAllRegisters());
+        }
+
+        template <class F>
+        constexpr void compileTimeForEachRegister(F&& func)
+        {
+            std::apply([&](auto&&... regs) { (func(regs), ...); }, getAllRegisters());
         }
     };
 

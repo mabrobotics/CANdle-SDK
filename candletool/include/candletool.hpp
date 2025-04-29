@@ -1,9 +1,7 @@
 #pragma once
 
 #include <string>
-#include "bus.hpp"
-#include "candle.hpp"
-#include "mab_types.hpp"
+#include "candle_v2.hpp"
 #include "mini/ini.h"
 #include "logger.hpp"
 
@@ -30,7 +28,8 @@ struct UserCommand
 class CandleTool
 {
   public:
-    CandleTool(mab::Candle& candle);
+    CandleTool();
+    ~CandleTool();
     void ping(const std::string& variant);
     void configCan(u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination = 0);
     void configSave(u16 id);
@@ -43,7 +42,6 @@ class CandleTool
     void setupCalibrationOutput(u16 id);
     void setupMotor(u16 id, const std::string& cfgPath, bool force);
     void setupInfo(u16 id, bool printAll);
-    void setupHoming(u16 id);
     void setupReadConfig(u16 id, const std::string& cfgName);
 
     void testMove(u16 id, f32 targetPosition);
@@ -64,7 +62,7 @@ class CandleTool
      *
      * @param firmwareFile path to firmware file (.mab)
      */
-    void updateCandle(const std::string& mabFilePath, bool noReset = false);
+    void updateCandle(const std::string& mabFilePath);
 
     /**
      * @brief Update firmware on Motor Driver
@@ -83,11 +81,12 @@ class CandleTool
     void updatePds(const std::string& mabFilePath, uint16_t canId, bool noReset = false);
 
   private:
-    Logger       log;
-    mab::Candle& m_candle;
+    Logger         log;
+    mab::CandleV2* m_candle;
 
-    std::string           validateAndGetFinalConfigPath(const std::string& cfgPath);
-    mab::CANdleBaudrate_E checkSpeedForId(u16 id);
+    std::string busString;
+
+    std::string validateAndGetFinalConfigPath(const std::string& cfgPath);
 
     u8 getNumericParamFromList(std::string& param, const std::vector<std::string>& list);
 
@@ -98,16 +97,5 @@ class CandleTool
                   std::string         field,
                   T&                  value);
 
-    template <typename T>
-    bool readRegisterToString(u16 id, mab::Md80Reg_E regId, std::string& str)
-    {
-        T    value  = 0;
-        bool status = m_candle.readMd80Register(id, regId, value);
-        str         = std::to_string(value);
-        return status;
-    }
-
-    bool hasError(u16 id);
-    bool tryAddMD80(u16 id);
     bool checkSetupError(u16 id);
 };

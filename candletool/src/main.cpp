@@ -7,6 +7,7 @@
 
 int main(int argc, char** argv)
 {
+    // Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_3;
     std::cout << "CandleTool" << std::endl;
     CLI::App app{"candletool"};
     app.fallthrough();
@@ -176,24 +177,12 @@ int main(int argc, char** argv)
     file.read(ini);
 
     std::string busString = ini["communication"]["bus"];
-    if (busString == "SPI")
-        busType = mab::BusType_E::SPI;
-    else if (busString == "UART")
-        busType = mab::BusType_E::UART;
-    else if (busString == "USB")
-        busType = mab::BusType_E::USB;
-    std::string& device = ini["communication"]["device"];
 
-    std::shared_ptr<mab::Candle> candle       = nullptr;
-    bool                         printVerbose = true;
+    std::shared_ptr<mab::Candle> candle = nullptr;
 
-    if (device != "" && busType != mab::BusType_E::USB)
-        candle = std::make_shared<mab::Candle>(baud, printVerbose, busType, device);
-    else
-        candle = std::make_shared<mab::Candle>(baud, printVerbose, busType);
+    CandleTool candleTool;
 
-    CandleTool candleTool(*candle);
-    Pds        pds(100, *candle);
+    CLI11_PARSE(app, argc, argv);
 
     // set global verbosity for loggers
     if (silentMode)
@@ -254,8 +243,6 @@ int main(int argc, char** argv)
             candleTool.setupCalibration(cmd.id);
         if (setupCalibOut->parsed())
             candleTool.setupCalibrationOutput(cmd.id);
-        if (setupHoming->parsed())
-            candleTool.setupHoming(cmd.id);
         if (setupInfo->parsed())
             candleTool.setupInfo(cmd.id, (setupInfoAllFlag->count() > 0 ? true : false));
         if (setupMotor->parsed())
@@ -294,7 +281,7 @@ int main(int argc, char** argv)
 
         if (candleUpdate->parsed())
         {
-            candleTool.updateCandle(cmd.firmwareFileName, cmd.noReset);
+            candleTool.updateCandle(cmd.firmwareFileName);
             return EXIT_SUCCESS;
         }
 
@@ -311,7 +298,7 @@ int main(int argc, char** argv)
         }
     }
 
-    pdsCli.parse(&pds);
+    // pdsCli.parse(&pds);
 
     return EXIT_SUCCESS;
 }

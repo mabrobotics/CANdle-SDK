@@ -1,205 +1,101 @@
 #include "canLoader.hpp"
+#include "can_bootloader.hpp"
+#include "candle_v2.hpp"
+#include "mabFileParser.hpp"
 #include "mab_crc.hpp"
 
-CanLoader::CanLoader(mab::Candle& candle, MabFileParser& mabFile, uint32_t canId)
-    : I_Loader(mabFile), m_candle(candle), m_canId(canId)
+#include <array>
+#include <cmath>
+#include <cstring>
+#include <string>
+#include <algorithm>
+
+namespace mab
 {
-    m_log.m_tag   = "CAN LOADER";
-    m_log.m_layer = Logger::ProgramLayer_E::LAYER_2;
-}
 
-CanLoader::Error_E CanLoader::resetDevice()
-{
-    sendResetCmd();
-    return Error_E::OK;
-}
-
-CanLoader::Error_E CanLoader::enterBootloader()
-{
-    if (!sendSetupCmd())
-        return Error_E::ERROR_SETUP;
-
-    return Error_E::OK;
-}
-
-CanLoader::Error_E CanLoader::uploadFirmware()
-{
-    if (!sendEraseCmd())
-        return Error_E::ERROR_ERASE;
-    if (!sendProgTransferStartCmd())
-        return Error_E::ERROR_PROG;
-
-    u32 bytesToSend = m_mabFile.m_fwEntry.size;
-    u32 bytesSent   = 0;
-
-    while (bytesSent < bytesToSend)
+    CanLoader::CanLoader(mab::CandleV2* candle, MabFileParser* mabFile, mab::canId_t canId)
+        : m_mabFile(mabFile), m_candle(candle), m_canId(canId)
     {
-        m_log.debug("Sending page %d", bytesSent / M_PAGE_SIZE);
-        u8* dataChunk = &m_mabFile.m_fwEntry.data[bytesSent];
-        if (!sendPage(dataChunk))
-            return Error_E::ERROR_PAGE;
-        if (!sendWriteCmd(dataChunk))
-            return Error_E::ERROR_WRITE;
-        bytesSent += M_PAGE_SIZE;
-        m_log.progress(std::clamp((f32)bytesSent / bytesToSend, 0.f, 1.f));
+        m_log.m_tag   = "CAN LOADER";
+        m_log.m_layer = Logger::ProgramLayer_E::LAYER_2;
     }
-    if (!sendSetupCmd())  // to exit from PROG mode
-        return Error_E::ERROR_UNKNOWN;
-    if (!sendMetaCmd())
-        return Error_E::ERROR_META;
 
-    return Error_E::OK;
-}
-
-CanLoader::Error_E CanLoader::sendBootCommand()
-{
-    if (sendBootCmd())
-        return Error_E::OK;
-    return Error_E::ERROR_BOOT;
-}
-
-void CanLoader::sendResetCmd()
-{
-    uint8_t txBuff[M_CAN_CHUNK_SIZE] = {0};
-    char    rxBuff[M_CAN_CHUNK_SIZE] = {0};
-
-    txBuff[0] = (u8)CMD_TARGET_RESET;
-    txBuff[1] = 0x00;
-
-    m_log.debug("Entering bootloader mode...");
-    if (!m_candle.sendGenericFDCanFrame(m_canId, 2, (const char*)txBuff, rxBuff, nullptr, 1000))
+    CanLoader::~CanLoader()
     {
-        m_log.warn(
-            "Error while sendind bootloader enter command! Checking if not already in "
-            "bootloader mode...");
-        return;
+        mab::detachCandle(m_candle);
     }
-    usleep(150000);
-}
 
-bool CanLoader::sendSetupCmd()
-{
-    uint8_t txBuff[M_CAN_CHUNK_SIZE] = {0};
-    char    rxBuff[M_CAN_CHUNK_SIZE] = {0};
-
-    txBuff[0]         = (u8)CMD_SETUP;
-    *(u32*)&txBuff[1] = m_mabFile.m_fwEntry.bootAddress;
-    *(u32*)&txBuff[5] = m_mabFile.m_fwEntry.size;
-
-    s32 retries = 10;
-    while (retries-- > 0)
+    bool CanLoader::flashAndBoot(const u32 swAdress)
     {
-        m_candle.sendGenericFDCanFrame(
-            m_canId, 9, (const char*)txBuff, (char*)rxBuff, nullptr, 100);
-        if (strcmp("OK", (char*)rxBuff) == 0)
-            return true;
-    }
-    return false;
-}
-bool CanLoader::sendEraseCmd()
-{
-    uint8_t   txBuff[M_CAN_CHUNK_SIZE] = {0};
-    char      rxBuff[M_CAN_CHUNK_SIZE] = {0};
-    const u32 MAX_ERASE_SIZE           = 8 * M_PAGE_SIZE;
-    // Workaround for CANdle firmware max timeout of 255ms.
-    // Erasing 8 pages takes ~235ms, thus this is a max erase size we can do without modding CANdle
-    // firmware, and remaining backwards compatibile.
-    u32 remainingBytesToErase = m_mabFile.m_fwEntry.size;
-
-    txBuff[0]         = (u8)CMD_ERASE;
-    *(u32*)&txBuff[1] = m_mabFile.m_fwEntry.bootAddress;
-
-    while (remainingBytesToErase > 0)
-    {
-        u32 bytesToErase = MAX_ERASE_SIZE;
-        if (remainingBytesToErase < MAX_ERASE_SIZE)
-            bytesToErase = remainingBytesToErase;
-        *(u32*)&txBuff[5] = bytesToErase;
-        m_log.debug("ERASE @ %x, %d bytes.", *(u32*)&txBuff[1], *(u32*)&txBuff[5]);
-        m_candle.sendGenericFDCanFrame(
-            m_canId, 9, (const char*)txBuff, (char*)rxBuff, nullptr, 250);
-        if (strncmp(rxBuff, "OK", 2) != 0)
+        if (m_candle == nullptr)
+        {
+            m_log.error("Candle not initialized");
             return false;
-        memset(rxBuff, 0, 2);
-        *(u32*)&txBuff[1] += bytesToErase;
-        remainingBytesToErase -= bytesToErase;
-    }
-    return true;
-}
+        }
+        if (m_mabFile == nullptr)
+        {
+            m_log.error("MAB file not initialized");
+            return false;
+        }
 
-bool CanLoader::sendProgTransferStartCmd()
-{
-    m_log.debug("Sending enter page programming mode command... ");
+        CanBootloader                 bootloader     = mab::CanBootloader(m_canId, m_candle);
+        const u32                     appSize        = m_mabFile->m_fwEntry.size;
+        const std::span<u8>           firmware       = *(m_mabFile->m_fwEntry.data);
+        const std::span<const u8, 32> firmwareSHA256 = (m_mabFile->m_fwEntry.checksum);
 
-    uint8_t txBuff[M_CAN_CHUNK_SIZE] = {0};
-    char    rxBuff[M_CAN_CHUNK_SIZE] = {0};
-    bool    useCipher                = strlen((const char*)m_mabFile.m_fwEntry.aes_iv) > 0;
+        // Verify communication
+        if (bootloader.init(swAdress, appSize) != CanBootloader::Error_t::OK)
+        {
+            m_log.error("Failed to initialize bootloader");
+            return false;
+        }
 
-    txBuff[0] = (u8)CMD_PROG;
-    txBuff[1] = useCipher;
-    if (useCipher)
-        memcpy(&txBuff[2], m_mabFile.m_fwEntry.aes_iv, 16);
+        // Clearing memory
+        if (bootloader.erase(swAdress, appSize) != CanBootloader::Error_t::OK)
+        {
+            m_log.error("Failed to erase memory");
+            return false;
+        }
 
-    m_candle.sendGenericFDCanFrame(m_canId, 18, (const char*)txBuff, rxBuff, nullptr, 100);
-    if (strcmp("OK", (char*)rxBuff) == 0)
+        // Enter "transfer mode"
+        std::array<u8, 16> empty = {0};
+        if (bootloader.startTransfer(false /*Change when ready */, empty) !=
+            CanBootloader::Error_t::OK)
+        {
+            m_log.error("Failed to start transfer");
+            return false;
+        }
+
+        // Transfering fw
+        for (size_t i = 0; i <= appSize; i += CanBootloader::TRANSFER_SIZE)
+        {
+            m_log.progress((float)i / (float)appSize);
+            std::span<u8, CanBootloader::TRANSFER_SIZE> chunk =
+                firmware.subspan(i)
+                    .first<CanBootloader::TRANSFER_SIZE>();  // Take a chunk of data from firmware
+            const u32 crc = crc32(chunk.data(), chunk.size());
+            if (bootloader.transferData(chunk, crc) != CanBootloader::Error_t::OK)
+            {
+                m_log.error("Failed to transfer firmware");
+                return false;
+            }
+        }
+
+        // Transfering metadata about firmware
+        if (bootloader.transferMetadata(true, firmwareSHA256) != CanBootloader::Error_t::OK)
+        {
+            m_log.error("Failed to transfer metadata");
+            return false;
+        }
+
+        // Send boot cmd
+        if (bootloader.boot(swAdress))
+        {
+            m_log.error("Failed to boot");
+            return false;
+        }
+        m_log.success("Flashing sucessful!");
+
         return true;
-    m_log.error("Sending prog start command FAILED!");
-    return false;
-}
-
-bool CanLoader::sendPage(u8* data)
-{
-    char txBuff[M_CAN_CHUNK_SIZE] = {0};
-    char rxBuff[M_CAN_CHUNK_SIZE] = {0};
-
-    for (int i = 0; i < 32; i++)
-    {
-        memcpy(txBuff, &data[i * M_CAN_CHUNK_SIZE], M_CAN_CHUNK_SIZE);
-        if (m_candle.sendGenericFDCanFrame(m_canId, M_CAN_CHUNK_SIZE, txBuff, rxBuff, nullptr, 100))
-            if (strncmp(rxBuff, "OK", 2) == 0)
-                continue;
-        return false;
     }
-    return true;
-}
-
-bool CanLoader::sendWriteCmd(u8* data)
-{
-    char tx[M_CAN_CHUNK_SIZE] = {};
-    char rx[M_CAN_CHUNK_SIZE] = {};
-
-    tx[0]         = (u8)CMD_WRITE;
-    *(u32*)&tx[1] = mab::crc32(data, M_PAGE_SIZE);
-    if (m_candle.sendGenericFDCanFrame(m_canId, 5, tx, rx, nullptr, 200))
-        return strncmp(rx, "OK", 2) == 0;
-    return false;
-}
-
-bool CanLoader::sendBootCmd()
-{
-    char tx[M_CAN_CHUNK_SIZE] = {};
-    char rx[M_CAN_CHUNK_SIZE] = {};
-
-    tx[0]         = (u8)CMD_BOOT;
-    *(u32*)&tx[1] = m_mabFile.m_fwEntry.bootAddress;
-    if (m_candle.sendGenericFDCanFrame(m_canId, 5, tx, rx, nullptr, 200))
-        return strncmp(rx, "OK", 2) == 0;
-    return false;
-}
-bool CanLoader::sendMetaCmd()
-{
-    char tx[M_CAN_CHUNK_SIZE] = {};
-    char rx[M_CAN_CHUNK_SIZE] = {};
-    bool shouldSaveMeta       = true;
-
-    tx[0] = (u8)CMD_META;
-    tx[1] = shouldSaveMeta;
-    memcpy(&tx[2], m_mabFile.m_fwEntry.checksum, 32);
-    m_candle.sendGenericFDCanFrame(m_canId, M_CAN_CHUNK_SIZE, tx, nullptr, nullptr, 10);
-    usleep(300000);
-    // Again this is workaround for CANdle firmware limitation allowing only for 255ms timout.
-    // Checksum validation & config saving takes ~350ms, thus this hack is required.
-    if (m_candle.sendGenericFDCanFrame(m_canId, 0, tx, rx, nullptr, 250))
-        return (strncmp(rx, "OK", 2) == 0);
-    return false;
-}
+}  // namespace mab

@@ -50,6 +50,11 @@ namespace mab
         libusb_error unclogInput();
         libusb_error unclogOutput();
 
+        bool isConnected() const
+        {
+            return m_connected;
+        }
+
         std::string getSerialNo();
     };
 

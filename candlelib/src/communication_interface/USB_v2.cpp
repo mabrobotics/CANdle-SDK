@@ -99,6 +99,7 @@ namespace mab
                 message = translateLibusbError(usbClaimError);
                 message.insert(0, "On claim: ");
                 m_log.error(message.c_str());
+                return;
             }
 
             m_connected = true;
@@ -276,7 +277,16 @@ namespace mab
             m_Log.error("Device was not found!");
             return Error_t::NOT_CONNECTED;
         }
-        return Error_t::OK;
+        else if (!m_libusbDevice->isConnected())
+        {
+            m_Log.error("Device is not connected!");
+            return Error_t::NOT_CONNECTED;
+        }
+        else
+        {
+            m_Log.info("Device connected");
+            return Error_t::OK;
+        }
     }
     USBv2::Error_t USBv2::disconnect()
     {

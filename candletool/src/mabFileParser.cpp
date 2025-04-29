@@ -30,7 +30,8 @@ MabFileParser::MabFileParser(std::string filePath, TargetDevice_E target)
     m_fwEntry.bootAddress = strtol(ini.get("firmware").get("start").c_str(), nullptr, 16);
     strcpy((char*)m_fwEntry.version, ini.get("firmware").get("version").c_str());
     hexStringToBytes(m_fwEntry.aes_iv, sizeof(m_fwEntry.aes_iv), ini.get("firmware").get("iv"));
-    hexStringToBytes(m_fwEntry.data, m_fwEntry.size, ini.get("firmware").get("binary"));
+    hexStringToBytes(
+        m_fwEntry.data.get()->data(), m_fwEntry.size, ini.get("firmware").get("binary"));
 
     // validate
     if (target != m_fwEntry.targetDevice || m_fwEntry.targetDevice == TargetDevice_E::INVALID)
@@ -42,7 +43,7 @@ MabFileParser::MabFileParser(std::string filePath, TargetDevice_E target)
         throw std::runtime_error("Error processing file");
     }
     if (m_fwEntry.bootAddress < 0x8000000 || m_fwEntry.size == 0 ||
-        m_fwEntry.size > sizeof(m_fwEntry.data))
+        m_fwEntry.size > m_fwEntry.data.get()->size())
     {
         log.error("Error processing .mab file!");
         log.error("Boot address [0x%x] or size of firmware [%d bytes] invalid!",
@@ -54,7 +55,6 @@ MabFileParser::MabFileParser(std::string filePath, TargetDevice_E target)
 
     log.success(".mab file OK");
 }
-
 
 bool hexStringToBytes(u8 buffer[], u32 bufferLen, const std::string& str)
 {
@@ -93,4 +93,3 @@ MabFileParser::TargetDevice_E parseTargetDevice(std::string tag)
     else
         return MabFileParser::TargetDevice_E::INVALID;
 }
-
