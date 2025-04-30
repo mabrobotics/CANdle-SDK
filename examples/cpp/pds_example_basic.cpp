@@ -9,7 +9,7 @@
         * DC Bus voltage
         * Submodules Info
 */
-#include "candle.hpp"
+#include "candle_v2.hpp"
 #include "pds.hpp"
 
 using namespace mab;
@@ -18,8 +18,9 @@ constexpr u16 PDS_CAN_ID = 100;
 
 int main()
 {
-    Candle candle(mab::CAN_BAUD_1M, true);
-    Pds    pds(PDS_CAN_ID, candle);
+    auto candle =
+        mab::attachCandle(mab::CANdleBaudrate_E::CAN_BAUD_1M, mab::candleTypes::busTypes_t::USB);
+    Pds pds(PDS_CAN_ID, candle);
 
     pds.init();
 

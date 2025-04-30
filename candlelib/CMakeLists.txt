@@ -107,7 +107,7 @@ target_include_directories(pds_protocol_test PRIVATE
   include
   src/pds
 )
-target_link_libraries(pds_protocol_test PRIVATE logger shared_data)
+target_link_libraries(pds_protocol_test PRIVATE logger shared_data candle)
 
 
 add_unit_test_executable(candle_v2_test src/communication_device/candle_v2_test.cpp)
