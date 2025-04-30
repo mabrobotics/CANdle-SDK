@@ -57,6 +57,12 @@ class CandleTool
     void registerWrite(u16 id, u16 reg, const std::string& value);
     void registerRead(u16 id, u16 reg);
 
+    // Retrieve the Candle object
+    mab::CandleV2* getCandle()
+    {
+        return m_candle;
+    }
+
     /**
      * @brief Update firmware on Candle device
      *
