@@ -9,7 +9,6 @@ jobs:
 
     steps:
       - name: Install GitHub CLI
-        uses: cli/cli-action@v2
 
       - name: Delete artifacts older than 30 days
         run: |
