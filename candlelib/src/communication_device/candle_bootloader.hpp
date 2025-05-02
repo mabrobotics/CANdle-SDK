@@ -29,6 +29,10 @@ namespace mab
         candleTypes::Error_t sendCmd(const BootloaderCommand_E cmd,
                                      const std::vector<u8>     payload) const;
 
+        /// @brief Command to boot forward, handle no longer valid at this point
+        /// @return Error on failure
+        candleTypes::Error_t enterAppFromBootloader();
+
       public:
         static constexpr u32 BOOTLOADER_VID = 0x69;
         static constexpr u32 BOOTLOADER_PID = 0x2000;
@@ -51,17 +55,13 @@ namespace mab
         /// @return Error on failure
         candleTypes::Error_t init();
 
-        /// @brief Command to boot forward
-        /// @return Error on failure
-        candleTypes::Error_t enterAppFromBootloader();
-
         /// @brief Write a consecutive page to the bootloader memory. If write fails it is the best
         /// to reconstruct the object as a the state of a memory load inside CANdle is undefined.
         /// @param page filled flash page to be written
         /// @param crc32 checksum from the candle implementation TODO: this will be unified in CS-40
         /// @return Error on failure
         candleTypes::Error_t writePage(const std::array<u8, PAGE_SIZE_STM32G474> page,
-                                       const u32                                 crc32);
+                                       const u32                                 crc32) const;
     };
 
     /// @brief Helper function to initialise CandleBootloader object

@@ -16,10 +16,16 @@ namespace mab
                        std::unique_ptr<mab::I_CommunicationInterface>&& bus)
         : m_canBaudrate(canBaudrate), m_bus(std::move(bus))
     {
+        m_log.warn("This is an experimental software, please use with caution!");
     }
 
     candleTypes::Error_t CandleV2::init()
     {
+        if (m_bus == nullptr)
+        {
+            m_log.error("Bus not initialized!");
+            return candleTypes::Error_t::INITIALIZATION_ERROR;
+        }
         m_bus->disconnect();
         I_CommunicationInterface::Error_t connectStatus = m_bus->connect();
         if (connectStatus != I_CommunicationInterface::Error_t::OK)

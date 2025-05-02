@@ -121,7 +121,8 @@ namespace mab
             for (const auto byte : frame)
             {
                 std::stringstream ss;
-                ss << " 0x" << std::hex << std::setfill('0') << std::setw(2) << (int)byte << " ";
+                ss << " 0x" << std::hex << std::setfill('0') << std::setw(2) << (int)byte << " "
+                   << "[ " << ((char)byte == 0 ? '0' : (char)byte) << " ]";
                 m_log.debug(ss.str().c_str());
             }
         }

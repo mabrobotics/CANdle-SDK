@@ -14,11 +14,15 @@
 #include "mab_types.hpp"
 #include "md80.hpp"
 #include "usbDevice.hpp"
+
+#ifndef WIN32
 #include "spiDevice.hpp"
 #include "uartDevice.hpp"
+#endif
 
 #ifdef WIN32
 #include <windows.h>
+#include <unistd.h>
 #endif
 namespace mab
 {
@@ -381,9 +385,6 @@ namespace mab
 
         bool reconnectToCandleBootloader();
         bool reconnectToCandleApp();
-
-        static std::optional<CANdleBaudrate_E> stringToBaudrate(const std::string& baudrateStr);
-        static std::string                     baudrateToString(CANdleBaudrate_E baudrate);
 
       protected:
         std::shared_ptr<Register> md80Register;

@@ -306,8 +306,7 @@ void PdsCli::parse(Pds* p_pds)
                 m_log.debug("CAN Baudrate command parsed");
                 if (!m_canBaudCmdOption->empty())
                 {
-                    std::optional<CANdleBaudrate_E> baudOpt =
-                        Candle::stringToBaudrate(m_canBaudrate);
+                    std::optional<CANdleBaudrate_E> baudOpt = stringToBaudrate(m_canBaudrate);
                     if (!baudOpt.has_value())
                     {
                         m_log.error("Invalid baudrate: %s", m_canBaudrate);
@@ -382,7 +381,7 @@ void PdsCli::parse(Pds* p_pds)
 
         else if (m_setCanBaudCmd->parsed())
         {
-            std::optional<CANdleBaudrate_E> baudOpt = Candle::stringToBaudrate(m_canBaudrate);
+            std::optional<CANdleBaudrate_E> baudOpt = stringToBaudrate(m_canBaudrate);
             if (!baudOpt.has_value())
             {
                 m_log.error("Invalid baudrate: %s", m_canBaudrate);

@@ -109,10 +109,10 @@ void Logger::warn(const char* msg, ...) const
 
 void Logger::error(const char* msg, ...) const
 {
-    if (getCurrentLevel() > LogLevel_E::ERROR)
+    if (getCurrentLevel() > LogLevel_E::ERROR_)
         return;
 
-    const std::string header(generateHeader(MessageType_E::ERROR).c_str());
+    const std::string header(generateHeader(MessageType_E::ERROR_).c_str());
 
     va_list args;
     va_start(args, msg);
@@ -206,7 +206,7 @@ std::string Logger ::generateHeader(Logger::MessageType_E messageType) const noe
         case MT_E::WARN:
             header.append("[" + yellow + "WARN" + resetClr + "] ");
             break;
-        case MT_E::ERROR:
+        case MT_E::ERROR_:
             header.append("[" + red + "ERROR" + resetClr + "] ");
             break;
         default:
