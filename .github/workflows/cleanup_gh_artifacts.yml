@@ -8,8 +8,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install GitHub CLI
-
       - name: Delete artifacts older than 30 days
         run: |
           cutoff=$(date -d "-30 days" +%s)
