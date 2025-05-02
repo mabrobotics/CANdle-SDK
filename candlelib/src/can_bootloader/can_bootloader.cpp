@@ -44,6 +44,9 @@ namespace mab
             return Error_t::NOT_CONNNECTED;
         }
 
+        // Erase is staged in pages because CAN wdg in Candle fw is too short
+        // to erase all at once
+
         const u32 startAddress     = address;
         const u32 endAddress       = address + size;
         const u32 fullPagesToErase = (endAddress - startAddress) / STM32_PAGE_SIZE;
