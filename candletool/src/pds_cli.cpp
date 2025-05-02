@@ -1731,7 +1731,7 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
 
     readIni[CONTROL_BOARD_INI_SECTION][CAN_ID_INI_KEY] = prettyFloatToString(m_canId, true);
     readIni[CONTROL_BOARD_INI_SECTION][CAN_BAUD_INI_KEY] =
-        Candle::baudrateToString(mp_pds->getCanBaudrate());
+        baudrateToString(mp_pds->getCanBaudrate());
     readIni[CONTROL_BOARD_INI_SECTION][SHUTDOWN_TIME_INI_KEY] =
         prettyFloatToString(shutDownTime, true) + "\t\t; Shutdown time [ ms ]";
     readIni[CONTROL_BOARD_INI_SECTION][BATT_LVL_1_INI_KEY] =

@@ -361,7 +361,7 @@ namespace mab
 
     CANdleBaudrate_E Pds::getCanBaudrate(void)
     {
-        return m_candle.getCurrentBaudrate();
+        return mp_candle->m_canBaudrate;
     }
 
     PdsModule::error_E Pds::setCanBaudrate(CANdleBaudrate_E canBaudrate)
