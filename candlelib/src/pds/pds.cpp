@@ -456,6 +456,11 @@ namespace mab
         return writeModuleProperty(propertyId_E::COMMAND, commands_E::SHUTDOWN);
     }
 
+    PdsModule::error_E Pds::reboot(void)
+    {
+        return writeModuleProperty(propertyId_E::COMMAND, commands_E::REBOOT);
+    }
+
     PdsModule::error_E Pds::saveConfig(void)
     {
         return writeModuleProperty(propertyId_E::COMMAND, commands_E::SAVE_CONFIG);

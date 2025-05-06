@@ -295,7 +295,7 @@ int main(int argc, char** argv)
 
         if (pdsUpdate->parsed())
         {
-            candleTool.updatePds(cmd.firmwareFileName, cmd.id, cmd.noReset);
+            candleTool.updatePds(pds, cmd.firmwareFileName, cmd.id, cmd.noReset);
             return EXIT_SUCCESS;
         }
     }

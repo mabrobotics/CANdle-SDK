@@ -4,6 +4,7 @@
 #include "candle_v2.hpp"
 #include "mini/ini.h"
 #include "logger.hpp"
+#include "pds.hpp"
 
 struct UserCommand
 {
@@ -84,7 +85,10 @@ class CandleTool
      * @param firmwareFile path to firmware file (.mab)
      * @param canId CAN ID of the PDS to be updated
      */
-    void updatePds(const std::string& mabFilePath, uint16_t canId, bool noReset = false);
+    void updatePds(mab::Pds&          pds,
+                   const std::string& mabFilePath,
+                   uint16_t           canId,
+                   bool               noReset = false);
 
   private:
     Logger         log;

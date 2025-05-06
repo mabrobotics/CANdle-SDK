@@ -69,7 +69,7 @@ namespace mab
         error_E setCanId(u16 canId);
 
         CANdleBaudrate_E getCanBaudrate(void);
-        error_E setCanBaudrate(CANdleBaudrate_E canBaudrate);
+        error_E          setCanBaudrate(CANdleBaudrate_E canBaudrate);
 
         error_E getBusVoltage(u32& busVoltage);
         error_E getTemperature(f32& temperature);
@@ -90,6 +90,10 @@ namespace mab
         error_E getBrakeResistorTriggerVoltage(u32& brTriggerVoltage);
 
         error_E shutdown(void);
+
+        /* Note that after bootup, the PDS require the RGB Button to be pressed for at least 2
+          seconds to enter operating mode. Otherwise it will shutdown after 2 seconds */
+        error_E reboot(void);
         error_E saveConfig(void);
 
         static const char* moduleTypeToString(moduleType_E type);

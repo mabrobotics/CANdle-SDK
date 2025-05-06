@@ -1355,12 +1355,26 @@ void CandleTool::updateMd(const std::string& mabFilePath, mab::canId_t canId, bo
     }
 }
 
-void CandleTool::updatePds(const std::string& mabFilePath, uint16_t canId, bool noReset)
+void CandleTool::updatePds(Pds& pds, const std::string& mabFilePath, uint16_t canId, bool noReset)
 {
     MabFileParser mabFile(mabFilePath, MabFileParser::TargetDevice_E::PDS);
-    // mab::FirmwareUploader firmwareUploader(*candle, mabFile, canId);
-    // if (firmwareUploader.flashDevice(noReset))
-    //     log.success("Update complete for PDS @ %d", canId);
+    log.warn("PDS Firmware update is under development and not yet available.");
+
+    if (!noReset)
+    {
+        log.debug("Resetting PDS...");
+        pds.reboot();
+    }
+
+    CanLoader canLoader(m_candle, &mabFile, canId);
+    if (canLoader.flashAndBoot(0x8006000))
+    {
+        log.success("Update complete for PDS @ %d", canId);
+    }
+    else
+    {
+        log.error("PDS flashing failed!");
+    }
 }
 
 void CandleTool::blink(u16 id)
