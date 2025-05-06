@@ -38,8 +38,7 @@ namespace mab
 
     TEST_F(SetPropertyMessageTest, CheckSerializedMessageWhenPropertyAdded)
     {
-        std::vector<u8> EXPECTED_SERIALIZED_MESSAGE = {
-            0x21, 0x02, 0x01, 0x01, 0x02, 0x01, 0x00, 0x00, 0x00};
+        std::vector<u8>    EXPECTED_SERIALIZED_MESSAGE = {0x21, 0x02, 0x01, 0x01, 0x02, 0x01};
         PropertySetMessage testMessage(moduleType_E::BRAKE_RESISTOR, socketIndex_E::SOCKET_1);
         testMessage.addProperty(propertyId_E::ENABLE, true);
         std::vector<u8> serializedMessage = testMessage.serialize();
@@ -121,7 +120,7 @@ namespace mab
     TEST_F(GetPropertyMessageTest, parseResponseWithSingleBoolPropertyWithoutErrors)
     {
         std::vector<u8> EXPECTED_SERIALIZED_MESSAGE = {0x20, 0x02, 0x01, 0x01, 0x02};
-        std::vector<u8> RESPONSE                    = {0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00};
+        std::vector<u8> RESPONSE                    = {0x00, 0x01, 0x00, 0x01};
 
         constexpr bool EXPECTED_READ_ENABLE_PROPERTY = true;
 
