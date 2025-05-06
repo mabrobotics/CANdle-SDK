@@ -68,7 +68,7 @@ CandleTool::CandleTool()
 {
     log.m_tag   = "CANDLETOOL";
     log.m_layer = Logger::ProgramLayer_E::TOP;
-    log.info("CandleSDK Version: %s", mab::Candle::getVersion().c_str());
+    // log.info("CandleSDK Version: %s", mab::Candle::getVersion().c_str());
 
     std::unique_ptr<I_CommunicationInterface> bus;
     mab::CANdleBaudrate_E                     baud =

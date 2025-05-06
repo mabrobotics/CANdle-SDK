@@ -4,8 +4,9 @@
 #include "logger.hpp"
 
 #include "pds_types.hpp"
+#include "candle_types.hpp"
 #include "pds_protocol.hpp"
-#include "candle.hpp"
+#include "candle_v2.hpp"
 #include <cstring>
 #include <memory>
 
@@ -88,7 +89,7 @@ namespace mab
          * @note Constructor is protected because even if this class has no pure virtual methods, it
             still should not be instantiated.
          */
-        PdsModule(socketIndex_E socket, moduleType_E type, Candle& candle, u16& canId);
+        PdsModule(socketIndex_E socket, moduleType_E type, CandleV2* p_candle, u16& canId);
 
         static constexpr Logger::ProgramLayer_E DEFAULT_PDS_MODULE_LOG_LAYER =
             Logger::ProgramLayer_E::LAYER_2;
@@ -103,7 +104,7 @@ namespace mab
 
         /* Pointer to the candle object. Assumed to be passed in a constructor from parent PDS
          * object. It will be used for independent communication from each module perspective */
-        Candle& m_candle;
+        CandleV2* mp_candle;
 
         /* CAN ID of the parent PDS device. Assumed to be passed in a constructor from parent PDS
          * object */
@@ -114,25 +115,31 @@ namespace mab
         [[nodiscard]] PdsModule::error_E readModuleProperty(propertyId_E property,
                                                             dataValueT&  dataValue) const
         {
-            PdsMessage::error_E result = PdsMessage::error_E::OK;
-            PropertyGetMessage  message(m_type, m_socketIndex);
+            PdsMessage::error_E                                   result = PdsMessage::error_E::OK;
+            std::pair<std::vector<u8>, mab::candleTypes::Error_t> transferResult;
+            PropertyGetMessage                                    message(m_type, m_socketIndex);
 
-            u8     responseBuffer[64] = {0};
-            size_t responseLength     = 0;
-            u32    rawData            = 0;
+            // u8     responseBuffer[64] = {0};
+            // size_t responseLength     = 0;
+
+            // std::pair<std::vector<u8> responseBuffer(64, 0), mab::candleTypes::Error_t error>
+            //     result;
+
+            u32 rawData = 0;
 
             message.addProperty(property);
 
             std::vector<u8> serializedMessage = message.serialize();
-            if (!m_candle.sendGenericFDCanFrame(
-                    m_canId,
-                    serializedMessage.size(),
-                    reinterpret_cast<const char*>(serializedMessage.data()),
-                    reinterpret_cast<char*>(responseBuffer),
-                    &responseLength))
-                return error_E::COMMUNICATION_ERROR;
+            transferResult = mp_candle->transferCANFrame(m_canId, serializedMessage, 66U);
 
-            result = message.parseResponse(responseBuffer, responseLength);
+            if (transferResult.second != mab::candleTypes::Error_t::OK)
+            {
+                m_log.error("Failed to transfer CAN frame");
+                return error_E::COMMUNICATION_ERROR;
+            }
+
+            result =
+                message.parseResponse(transferResult.first.data(), transferResult.first.size());
             if (result != PdsMessage::error_E::OK)
                 return error_E::PROTOCOL_ERROR;
 
@@ -149,10 +156,11 @@ namespace mab
         [[nodiscard]] PdsModule::error_E writeModuleProperty(propertyId_E property,
                                                              dataValueT   dataValue)
         {
-            PdsMessage::error_E result = PdsMessage::error_E::OK;
-            PropertySetMessage  message(m_type, m_socketIndex);
-            u8                  responseBuffer[64] = {0};
-            size_t              responseLength     = 0;
+            PdsMessage::error_E                                   result = PdsMessage::error_E::OK;
+            std::pair<std::vector<u8>, mab::candleTypes::Error_t> transferResult;
+            PropertySetMessage                                    message(m_type, m_socketIndex);
+            // u8                                                    responseBuffer[64] = {0};
+            // size_t                                                responseLength     = 0;
 
             m_log.debug("Attempt to write property [ %u ] with value [ 0x%08x ]",
                         (uint8_t)property,
@@ -161,18 +169,14 @@ namespace mab
             message.addProperty(property, dataValue);
             std::vector<u8> serializedMessage = message.serialize();
 
-            if (!(m_candle.sendGenericFDCanFrame(
-                    m_canId,
-                    serializedMessage.size(),
-                    reinterpret_cast<const char*>(serializedMessage.data()),
-                    reinterpret_cast<char*>(responseBuffer),
-                    &responseLength,
-                    1000)))
+            transferResult = mp_candle->transferCANFrame(m_canId, serializedMessage, 66U);
+            if (transferResult.second != mab::candleTypes::Error_t::OK)
             {
+                m_log.error("Failed to transfer CAN frame");
                 return error_E::COMMUNICATION_ERROR;
             }
-
-            result = message.parseResponse(responseBuffer, responseLength);
+            result =
+                message.parseResponse(transferResult.first.data(), transferResult.first.size());
             if (result != PdsMessage::error_E::OK)
                 return error_E::PROTOCOL_ERROR;
 

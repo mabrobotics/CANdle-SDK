@@ -163,14 +163,14 @@ int main(int argc, char** argv)
 
     CLI11_PARSE(app, argc, argv);
 
-    std::optional<mab::CANdleBaudrate_E> baudOpt = Candle::stringToBaudrate(cmd.baud);
+    std::optional<mab::CANdleBaudrate_E> baudOpt = stringToBaudrate(cmd.baud);
     if (!baudOpt.has_value())
     {
         std::cerr << "Invalid baudrate: " << cmd.baud << std::endl;
         return EXIT_FAILURE;
     }
 
-    mab::CANdleBaudrate_E baud = baudOpt.value();
+    mab::CANdleBaudrate_E baud = baudOpt.value_or(CANdleBaudrate_E::CAN_BAUD_1M);
 
     mINI::INIFile      file(getCandletoolConfigPath());
     mINI::INIStructure ini;
@@ -178,11 +178,13 @@ int main(int argc, char** argv)
 
     std::string busString = ini["communication"]["bus"];
 
-    std::shared_ptr<mab::Candle> candle = nullptr;
-
-    CandleTool candleTool;
+    // std::shared_ptr<mab::Candle> candle = nullptr;
 
     CLI11_PARSE(app, argc, argv);
+
+    // TODO: make use of busType and baudrate options when creating Candle object within CandleTool
+    CandleTool candleTool;
+    Pds        pds(cmd.id, candleTool.getCandle());
 
     // set global verbosity for loggers
     if (silentMode)
@@ -298,7 +300,7 @@ int main(int argc, char** argv)
         }
     }
 
-    // pdsCli.parse(&pds);
+    pdsCli.parse(&pds);
 
     return EXIT_SUCCESS;
 }
