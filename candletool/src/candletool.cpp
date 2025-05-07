@@ -1344,8 +1344,9 @@ void CandleTool::updateMd(const std::string& mabFilePath, mab::canId_t canId, bo
         }
         md.reset();
     }
+    usleep(300'000);
     CanLoader canLoader(m_candle, &mabFile, canId);
-    if (canLoader.flashAndBoot(0x8006000))
+    if (canLoader.flashAndBoot())
     {
         log.success("Update complete for MD @ %d", canId);
     }

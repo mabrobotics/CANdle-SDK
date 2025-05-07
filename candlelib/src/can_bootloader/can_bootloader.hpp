@@ -15,6 +15,8 @@ namespace mab
     /// @brief Class for interacting with devices in bootloader mode on the CAN bus.
     class CanBootloader
     {
+        static constexpr u32 STM32_PAGE_SIZE = 2048;
+
         static constexpr std::string_view DEFAULT_REPONSE     = "OK";
         static constexpr size_t           CHUNK_SIZE          = 64;
         static constexpr u32              CHUNKS_PER_TRANSFER = 32;

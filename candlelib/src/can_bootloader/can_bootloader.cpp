@@ -10,7 +10,7 @@ namespace mab
 {
 
     CanBootloader::CanBootloader(const canId_t id, CandleV2* candle)
-        : m_id(id), mp_candle(candle){};
+        : m_id(id), mp_candle(candle) {};
 
     CanBootloader::~CanBootloader()
     {
@@ -44,8 +44,37 @@ namespace mab
             return Error_t::NOT_CONNNECTED;
         }
 
-        std::array<u8, sizeof(address)> addressData = serializeData(address);
-        std::array<u8, sizeof(size)>    sizeData    = serializeData(size);
+        // Erase is staged in pages because CAN wdg in Candle fw is too short
+        // to erase all at once
+
+        const u32 startAddress     = address;
+        const u32 endAddress       = address + size;
+        const u32 fullPagesToErase = (endAddress - startAddress) / STM32_PAGE_SIZE;
+        for (u32 i = 0; i < fullPagesToErase; i += 1)
+        {
+            std::vector<u8> payload;
+
+            std::array<u8, sizeof(address)> addressData =
+                serializeData(startAddress + i * STM32_PAGE_SIZE);
+            std::array<u8, sizeof(size)> sizeData = serializeData(STM32_PAGE_SIZE);
+
+            payload.insert(payload.end(), addressData.begin(), addressData.end());
+            payload.insert(payload.end(), sizeData.begin(), sizeData.end());
+
+            m_log.debug("Erasing page %d", i);
+            if (sendCommand(Command_t::ERASE, payload) != Error_t::OK)
+            {
+                m_log.error("Failed to erase page %d", i);
+                return CanBootloader::Error_t::DATA_TRANSFER_ERROR;
+            }
+        }
+
+        m_log.debug("Erasing %d bytes from address %d", size, address);
+
+        std::array<u8, sizeof(address)> addressData =
+            serializeData(address + fullPagesToErase * STM32_PAGE_SIZE);
+        std::array<u8, sizeof(size)> sizeData =
+            serializeData(size - fullPagesToErase * STM32_PAGE_SIZE);
 
         std::vector<u8> payload;
         payload.insert(payload.end(), addressData.begin(), addressData.end());
@@ -124,7 +153,7 @@ namespace mab
         if (!mp_candle)
             return Error_t::NOT_CONNNECTED;
 
-        auto result = mp_candle->transferCANFrame(m_id, frame, DEFAULT_REPONSE.size(), 240);
+        auto result = mp_candle->transferCANFrame(m_id, frame, DEFAULT_REPONSE.size(), 2000);
         if (result.second != candleTypes::Error_t::OK)
         {
             m_log.error("Failed to send frame!");

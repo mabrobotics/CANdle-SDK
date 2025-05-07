@@ -25,7 +25,7 @@ namespace mab
         mab::detachCandle(m_candle);
     }
 
-    bool CanLoader::flashAndBoot(const u32 swAdress)
+    bool CanLoader::flashAndBoot()
     {
         if (m_candle == nullptr)
         {
@@ -42,25 +42,25 @@ namespace mab
         const u32                     appSize        = m_mabFile->m_fwEntry.size;
         const std::span<u8>           firmware       = *(m_mabFile->m_fwEntry.data);
         const std::span<const u8, 32> firmwareSHA256 = (m_mabFile->m_fwEntry.checksum);
+        const u32                     swAddress      = m_mabFile->m_fwEntry.bootAddress;
 
         // Verify communication
-        if (bootloader.init(swAdress, appSize) != CanBootloader::Error_t::OK)
+        if (bootloader.init(swAddress, appSize) != CanBootloader::Error_t::OK)
         {
             m_log.error("Failed to initialize bootloader");
             return false;
         }
 
         // Clearing memory
-        if (bootloader.erase(swAdress, appSize) != CanBootloader::Error_t::OK)
+        if (bootloader.erase(swAddress, appSize) != CanBootloader::Error_t::OK)
         {
             m_log.error("Failed to erase memory");
             return false;
         }
 
         // Enter "transfer mode"
-        std::array<u8, 16> empty = {0};
-        if (bootloader.startTransfer(false /*Change when ready */, empty) !=
-            CanBootloader::Error_t::OK)
+        std::array<u8, 16> iv = std::to_array(m_mabFile->m_fwEntry.aes_iv);
+        if (bootloader.startTransfer(!iv.empty(), iv) != CanBootloader::Error_t::OK)
         {
             m_log.error("Failed to start transfer");
             return false;
@@ -89,7 +89,7 @@ namespace mab
         }
 
         // Send boot cmd
-        if (bootloader.boot(swAdress))
+        if (bootloader.boot(swAddress))
         {
             m_log.error("Failed to boot");
             return false;

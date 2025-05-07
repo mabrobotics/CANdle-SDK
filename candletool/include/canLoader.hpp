@@ -15,7 +15,7 @@ namespace mab
         CanLoader() = delete;
         CanLoader(mab::CandleV2* candle, MabFileParser* mabFile, mab::canId_t canId);
         ~CanLoader();
-        bool flashAndBoot(const u32 swAdress);
+        bool flashAndBoot();
 
       private:
         const MabFileParser* m_mabFile;
