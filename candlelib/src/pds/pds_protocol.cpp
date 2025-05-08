@@ -31,12 +31,16 @@ namespace mab
 
         for (auto property : m_properties)
         {
-            // TODO: Tweak property value size in bytes to its actual size instead of fixed 4 bytes
-            serializedMessage.push_back(property.first);
-            for (u8 byteI = 0; byteI < sizeof(property.second); byteI++)
+            serializedMessage.push_back(static_cast<u8>(property.first));
+            size_t propertySize = getPropertySize(property.first);
+            for (size_t i = 0; i < propertySize; i++)
             {
-                serializedMessage.push_back(*(((u8*)&property.second) + byteI));
+                serializedMessage.push_back(static_cast<u8>(property.second >> (i * 8)));
             }
+            // for (u8 byteI = 0; byteI < sizeof(property.second); byteI++)
+            // {
+            //     serializedMessage.push_back(*(((u8*)&property.second) + byteI));
+            // }
         }
 
         if (serializedMessage.size() > MAX_SERIALIZED_SIZE)
@@ -109,7 +113,7 @@ namespace mab
 
         for (auto property : m_properties)
         {
-            serializedMessage.push_back(property);
+            serializedMessage.push_back(static_cast<u8>(property));
         }
 
         if (serializedMessage.size() > MAX_SERIALIZED_SIZE)
@@ -120,6 +124,7 @@ namespace mab
 
     PdsMessage::error_E PropertyGetMessage::parseResponse(u8* p_response, size_t responseLength)
     {
+        u8*           initialPointer             = p_response;
         msgResponse_E responseStatusCode         = msgResponse_E::OK;
         size_t        numberOfReceivedProperties = 0;
 
@@ -140,13 +145,20 @@ namespace mab
 
         for (uint8_t i = 0; i < numberOfReceivedProperties; i++)
         {
-            u8              type           = m_properties[i];
+            propertyId_E    type           = m_properties[i];
+            size_t          propertySize   = getPropertySize(type);
             u32             rawValue       = 0;
             propertyError_E propertyStatus = static_cast<propertyError_E>(*p_response++);
-            memcpy(&rawValue, p_response, sizeof(u32));
+            size_t          bytesLeft      = responseLength - (p_response - initialPointer);
+            if (bytesLeft < propertySize)
+            {
+                m_log.error("Not enough bytes left in response buffer to read property value");
+                return error_E::INVALID_RESPONSE_LENGTH;
+            }
+            memcpy(&rawValue, p_response, propertySize);
             if (propertyStatus == propertyError_E::OK)
                 m_receivedProperties.push_back(std::make_pair(type, rawValue));
-            p_response += 4;
+            p_response += propertySize;
         }
 
         return error_E::OK;

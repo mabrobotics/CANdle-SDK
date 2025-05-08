@@ -137,6 +137,24 @@
             "MIMode": "gdb",
         },
         {
+            "name": "pds setup cfg",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/candletool/candletool",
+            "args": [
+                "-v3",
+                "pds",
+                "100",
+                "setup_cfg",
+                "../awesome_pds.cfg"
+            ],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+        },
+        {
             "name": "candletool ping all",
             "type": "cppdbg",
             "request": "launch",

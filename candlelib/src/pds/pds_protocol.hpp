@@ -55,18 +55,18 @@ namespace mab
         template <typename valueT>
         void addProperty(propertyId_E propertyType, valueT value)
         {
-            u8  castedPropertyType = static_cast<u8>(propertyType);
-            u32 castedValue        = 0;
+            // u8  castedPropertyType = static_cast<u8>(propertyType);
+            u32 castedValue = 0;
             memcpy(&castedValue, &value, sizeof(valueT));
 
-            m_properties.push_back(std::make_pair(castedPropertyType, castedValue));
+            m_properties.push_back(std::make_pair(propertyType, castedValue));
         }
 
         std::vector<u8> serialize();
         error_E         parseResponse(u8* p_response, size_t responseLength);
 
       private:
-        std::vector<std::pair<u8, u32>> m_properties;
+        std::vector<std::pair<propertyId_E, u32>> m_properties;
     };
 
     class PropertyGetMessage : public PdsMessage
@@ -78,16 +78,16 @@ namespace mab
 
         void addProperty(propertyId_E propertyId)
         {
-            u8 castedPropertyType = static_cast<u8>(propertyId);
-            m_properties.push_back(castedPropertyType);
+            // u8 castedPropertyType = static_cast<u8>(propertyId);
+            m_properties.push_back(propertyId);
         }
 
         error_E getProperty(propertyId_E propertyId, u32* p_propertyValue)
         {
-            u8 castedPropertyType = static_cast<u8>(propertyId);
+            // u8 castedPropertyType = static_cast<u8>(propertyId);
             for (auto& property : m_receivedProperties)
             {
-                if (property.first == castedPropertyType)
+                if (property.first == propertyId)
                 {
                     *p_propertyValue = property.second;
                     return error_E::OK;
@@ -102,13 +102,13 @@ namespace mab
 
       private:
         // Vector that holds a set of properties that we want to read
-        std::vector<u8> m_properties;
+        std::vector<propertyId_E> m_properties;
 
         /*
           Vector that holds a set of properties that has been received in response
           in the same order that we construct the message
           */
-        std::vector<std::pair<u8, u32>> m_receivedProperties;
+        std::vector<std::pair<propertyId_E, u32>> m_receivedProperties;
     };
 
 }  // namespace mab

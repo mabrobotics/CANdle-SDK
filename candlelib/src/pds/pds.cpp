@@ -252,9 +252,9 @@ namespace mab
         if (result != PdsModule::error_E::OK)
             return result;
 
-        status.ENABLED            = statusWord & (u32)statusBits_E::ENABLED;
-        status.OVER_TEMPERATURE   = statusWord & (u32)statusBits_E::OVER_TEMPERATURE;
-        status.OVER_CURRENT       = statusWord & (u32)statusBits_E::OVER_CURRENT;
+        status.ENABLED          = statusWord & (u32)statusBits_E::ENABLED;
+        status.OVER_TEMPERATURE = statusWord & (u32)statusBits_E::OVER_TEMPERATURE;
+        // status.OVER_CURRENT       = statusWord & (u32)statusBits_E::OVER_CURRENT;
         status.STO_1              = statusWord & (u32)statusBits_E::STO_1;
         status.STO_2              = statusWord & (u32)statusBits_E::STO_2;
         status.FDCAN_TIMEOUT      = statusWord & (u32)statusBits_E::FDCAN_TIMEOUT;
@@ -276,7 +276,7 @@ namespace mab
 
         statusClearWord |= status.ENABLED ? (u32)statusBits_E::ENABLED : 0;
         statusClearWord |= status.OVER_TEMPERATURE ? (u32)statusBits_E::OVER_TEMPERATURE : 0;
-        statusClearWord |= status.OVER_CURRENT ? (u32)statusBits_E::OVER_CURRENT : 0;
+        // statusClearWord |= status.OVER_CURRENT ? (u32)statusBits_E::OVER_CURRENT : 0;
         statusClearWord |= status.STO_1 ? (u32)statusBits_E::STO_1 : 0;
         statusClearWord |= status.STO_2 ? (u32)statusBits_E::STO_2 : 0;
         statusClearWord |= status.FDCAN_TIMEOUT ? (u32)statusBits_E::FDCAN_TIMEOUT : 0;
@@ -289,6 +289,14 @@ namespace mab
         statusClearWord |= status.CHARGER_DETECTED ? (u32)statusBits_E::CHARGER_DETECTED : 0;
         statusClearWord |= status.SHUTDOWN_SCHEDULED ? (u32)statusBits_E::SHUTDOWN_SCHEDULED : 0;
 
+        return writeModuleProperty(propertyId_E::STATUS_CLEAR, statusClearWord);
+    }
+
+    PdsModule::error_E Pds::clearErrors(void)
+    {
+        u32 statusClearWord = 0;
+        statusClearWord |= (u32)statusBits_E::OVER_TEMPERATURE;
+        statusClearWord |= (u32)statusBits_E::FDCAN_TIMEOUT;
         return writeModuleProperty(propertyId_E::STATUS_CLEAR, statusClearWord);
     }
 
@@ -357,6 +365,11 @@ namespace mab
             m_rootCanId = canId;
 
         return result;
+    }
+
+    CANdleBaudrate_E Pds::getCanBaudrate(void)
+    {
+        return mp_candle->m_canBaudrate;
     }
 
     PdsModule::error_E Pds::setCanBaudrate(CANdleBaudrate_E canBaudrate)
@@ -449,6 +462,11 @@ namespace mab
     PdsModule::error_E Pds::shutdown(void)
     {
         return writeModuleProperty(propertyId_E::COMMAND, commands_E::SHUTDOWN);
+    }
+
+    PdsModule::error_E Pds::reboot(void)
+    {
+        return writeModuleProperty(propertyId_E::COMMAND, commands_E::REBOOT);
     }
 
     PdsModule::error_E Pds::saveConfig(void)
