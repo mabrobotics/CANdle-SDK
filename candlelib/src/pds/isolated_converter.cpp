@@ -67,6 +67,22 @@ namespace mab
         return result;
     }
 
+    PdsModule::error_E IsolatedConv::clearStatus(isolatedConverterStatus_S status)
+    {
+        u32 statusWord = 0;
+
+        // if (status.ENABLED)
+        //     statusWord |= (u32)statusBits_E::ENABLED;
+
+        if (status.OVER_TEMPERATURE)
+            statusWord |= (u32)statusBits_E::OVER_TEMPERATURE;
+
+        if (status.OVER_CURRENT)
+            statusWord |= (u32)statusBits_E::OVER_CURRENT;
+
+        return writeModuleProperty(propertyId_E::STATUS_CLEAR, statusWord);
+    }
+
     PdsModule::error_E IsolatedConv::getEnabled(bool& enabled)
     {
         return readModuleProperty(propertyId_E::ENABLE, enabled);

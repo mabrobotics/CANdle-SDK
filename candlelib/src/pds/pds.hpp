@@ -64,6 +64,7 @@ namespace mab
 
         error_E getStatus(controlBoardStatus_S& status);
         error_E clearStatus(controlBoardStatus_S status);
+        error_E clearErrors(void);
 
         u16     getCanId();
         error_E setCanId(u16 canId);
