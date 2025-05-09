@@ -29,7 +29,7 @@ struct UserCommand
 class CandleTool
 {
   public:
-    CandleTool();
+    explicit CandleTool(mab::CANdleBaudrate_E baud);
     ~CandleTool();
     void ping(const std::string& variant);
     void configCan(u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination = 0);
