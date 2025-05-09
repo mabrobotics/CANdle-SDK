@@ -10,7 +10,7 @@ namespace mab
 {
 
     CanBootloader::CanBootloader(const canId_t id, CandleV2* candle)
-        : m_id(id), mp_candle(candle) {};
+        : m_id(id), mp_candle(candle){};
 
     CanBootloader::~CanBootloader()
     {
@@ -153,7 +153,8 @@ namespace mab
         if (!mp_candle)
             return Error_t::NOT_CONNNECTED;
 
-        auto result = mp_candle->transferCANFrame(m_id, frame, DEFAULT_REPONSE.size(), 2000);
+        auto result = mp_candle->transferCANFrame(
+            m_id, frame, DEFAULT_REPONSE.size(), m_customReponseTimeoutMs.value_or(DEFAULT_TIMOUT));
         if (result.second != candleTypes::Error_t::OK)
         {
             m_log.error("Failed to send frame!");

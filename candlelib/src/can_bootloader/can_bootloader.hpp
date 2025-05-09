@@ -15,11 +15,13 @@ namespace mab
     /// @brief Class for interacting with devices in bootloader mode on the CAN bus.
     class CanBootloader
     {
-        static constexpr u32 STM32_PAGE_SIZE = 2048;
+        static constexpr u32 DEFAULT_TIMOUT  = 2000;  // ms
+        static constexpr u32 STM32_PAGE_SIZE = 2048;  // In STM32G4
 
-        static constexpr std::string_view DEFAULT_REPONSE     = "OK";
-        static constexpr size_t           CHUNK_SIZE          = 64;
-        static constexpr u32              CHUNKS_PER_TRANSFER = 32;
+        static constexpr std::string_view DEFAULT_REPONSE =
+            "OK";  // Bootloader v2 almost always acknowleges with OK message
+        static constexpr size_t CHUNK_SIZE          = 64;  // Max transfer size of CANdle device
+        static constexpr u32    CHUNKS_PER_TRANSFER = 32;  // Required transfers by bootloader
 
         enum class Command_t : u8
         {
@@ -36,6 +38,8 @@ namespace mab
         const canId_t m_id;
         CandleV2*     mp_candle;
         Logger        m_log = Logger(Logger::ProgramLayer_E::LAYER_2, "CAN BOOTLOADER");
+
+        std::optional<u32> m_customReponseTimeoutMs;
 
       public:
         static constexpr u32 TRANSFER_SIZE = CHUNK_SIZE * CHUNKS_PER_TRANSFER;
