@@ -64,15 +64,13 @@ mab::CANdleBaudrate_E str2baud(const std::string& baud)
     return mab::CANdleBaudrate_E::CAN_BAUD_1M;
 }
 
-CandleTool::CandleTool()
+CandleTool::CandleTool(const mab::CANdleBaudrate_E baud)
 {
     log.m_tag   = "CANDLETOOL";
     log.m_layer = Logger::ProgramLayer_E::TOP;
     // log.info("CandleSDK Version: %s", mab::Candle::getVersion().c_str());
 
     std::unique_ptr<I_CommunicationInterface> bus;
-    mab::CANdleBaudrate_E                     baud =
-        mab::CANdleBaudrate_E::CAN_BAUD_1M;  // TODO: this must be parsed as a flag
 
     mINI::INIFile      file(getCandletoolConfigPath());
     mINI::INIStructure ini;

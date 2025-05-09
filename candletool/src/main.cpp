@@ -183,7 +183,7 @@ int main(int argc, char** argv)
     CLI11_PARSE(app, argc, argv);
 
     // TODO: make use of busType and baudrate options when creating Candle object within CandleTool
-    CandleTool candleTool;
+    CandleTool candleTool(baud);
     Pds        pds(cmd.id, candleTool.getCandle());
 
     // set global verbosity for loggers
