@@ -1,49 +1,80 @@
+#include <asm-generic/errno-base.h>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <functional>
 
+#include "I_communication_interface.hpp"
+#include "I_communication_interface_mock.hpp"
 #include "MD.hpp"
+#include "candle_v2.hpp"
+#include "gmock/gmock.h"
+#include "mab_types.hpp"
 #include "md_types.hpp"
+
+using testing::_;
+using testing::Return;
 
 class MD_test : public ::testing::Test
 {
   protected:
-    void SetUp() override
+    std::unique_ptr<MockBus> m_bus;
+    MockBus*                 m_debugBus;
+    mab::CandleV2*           m_candle;
+    void                     SetUp() override
     {
+        ::testing::FLAGS_gmock_verbose = "error";
+        Logger::g_m_verbosity          = Logger::Verbosity_E::SILENT;
+        m_bus                          = std::make_unique<MockBus>();
+        m_debugBus                     = m_bus.get();
+        m_candle                       = mab::attachCandle(mab::CAN_BAUD_1M, std::move(m_bus));
+    }
+    void TearDown() override
+    {
+        mab::detachCandle(m_candle);
     }
 };
 
-TEST_F(MD_test, serializeDeserializeRegisters)
+TEST_F(MD_test, checkROAccess)
 {
-    // auto registerStruct               = mab::MDRegisters_S();
-    // registerStruct.canBaudrate        = 1'000'000;
-    // registerStruct.motorName.value[0] = 'a';
-    // registerStruct.motorName.value[1] = 'b';
-    // registerStruct.motorName.value[2] = 'c';
-    // registerStruct.motorName.value[3] = 'd';
-    // registerStruct.dcBusVoltage       = 24000;
+    mab::MDRegisters_S registers;
+    std::vector<u8>    mockReponse = {0x00,
+                                      0x00,
+                                      (u8)(registers.auxEncoderPosition.m_regAddress),
+                                      (u8)(registers.auxEncoderPosition.m_regAddress >> 8),
+                                      0x00,
+                                      0x00,
+                                      0x00,
+                                      0x00};
 
-    // auto registersOut = std::make_tuple(std::reference_wrapper(registerStruct.canBaudrate),
-    //                                     std::reference_wrapper(registerStruct.motorName),
-    //                                     std::reference_wrapper(registerStruct.dcBusVoltage));
+    EXPECT_CALL(*m_debugBus, transfer(_, _, _))
+        .Times(1)
+        .WillOnce(Return(std::make_pair(mockReponse, mab::I_CommunicationInterface::Error_t::OK)));
 
-    // auto serialized = mab::MD::serializeMDRegisters(registersOut);
+    mab::MD md(100, m_candle);
 
-    // ASSERT_EQ(serialized.size(),
-    //           (3 * sizeof(u16) + registerStruct.canBaudrate.getSize() +
-    //            registerStruct.motorName.getSize() + registerStruct.dcBusVoltage.getSize()));
+    auto resultRead = md.readRegister(registers.auxEncoderPosition);
+    EXPECT_EQ(resultRead.second, mab::MD::Error_t::OK);
 
-    // registerStruct.canBaudrate        = 5'000'000;
-    // registerStruct.motorName.value[0] = 'c';
-    // registerStruct.motorName.value[1] = 'c';
-    // registerStruct.motorName.value[2] = 'd';
-    // registerStruct.motorName.value[3] = 'a';
-    // registerStruct.dcBusVoltage       = 48000;
-    // auto registersIn = std::make_tuple(std::reference_wrapper(registerStruct.canBaudrate),
-    //                                    std::reference_wrapper(registerStruct.motorName),
-    //                                    std::reference_wrapper(registerStruct.dcBusVoltage));
+    auto resultWrite = md.writeRegister(registers.auxEncoderPosition);
+    EXPECT_EQ(resultWrite, mab::MD::Error_t::REQUEST_INVALID);
+}
 
-    // mab::MD::deserializeMDRegisters(serialized, registersIn);
-    // ASSERT_EQ(std::get<0>(registersOut).value, std::get<0>(registersIn).value);
-    // ASSERT_EQ(std::get<2>(registersOut).value, std::get<2>(registersIn).value);
+TEST_F(MD_test, checkWOAccess)
+{
+    mab::MDRegisters_S registers;
+    mab::MD            md(100, m_candle);
+    std::vector<u8>    mockReponse = {0x0,  // header
+                                      0x01,
+                                      0xA0,  // payload
+                                      0x00};
+
+    EXPECT_CALL(*m_debugBus, transfer(_, _, _))
+        .Times(1)
+        .WillOnce(Return(std::make_pair(mockReponse, mab::I_CommunicationInterface::Error_t::OK)));
+
+    auto resultWrite = md.writeRegister(registers.runBlink);
+    EXPECT_EQ(resultWrite, mab::MD::Error_t::OK);
+
+    auto resultRead = md.readRegister(registers.runBlink);
+    EXPECT_EQ(resultRead.second, mab::MD::Error_t::REQUEST_INVALID);
 }
