@@ -8,7 +8,6 @@
 #include "logger.hpp"
 #include "mab_def.hpp"
 #include "mab_types.hpp"
-#include "register.hpp"
 
 namespace mab
 {

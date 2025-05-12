@@ -1,7 +1,6 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 
-#include "candle.hpp"
 #include "candle_ros2/msg/impedance_command.hpp"
 #include "candle_ros2/msg/motion_command.hpp"
 #include "candle_ros2/msg/position_pid_command.hpp"

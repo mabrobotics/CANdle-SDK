@@ -1,3 +1,4 @@
+#include "candle_types.hpp"
 #include "candletool.hpp"
 #include "configHelpers.hpp"
 #include "logger.hpp"
@@ -158,8 +159,7 @@ int main(int argc, char** argv)
     std::string logPath = "";
     app.add_flag("--log", logPath, "Redirect output to file")->default_val("")->expected(1);
 
-    mab::BusType_E busType = mab::BusType_E::USB;
-    PdsCli         pdsCli(app);
+    PdsCli pdsCli(app);
 
     CLI11_PARSE(app, argc, argv);
 
