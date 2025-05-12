@@ -12,6 +12,7 @@
 
 #include <array>
 #include <queue>
+#include <type_traits>
 #include <utility>
 #include <functional>
 #include <tuple>
@@ -165,43 +166,58 @@ namespace mab
 
         /// @brief Request quick status update
         /// @return Quick Status map with bit positions as ids
-        std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, Error_t>
+        std::pair<const std::unordered_map<const MDStatus::QuickStatusBits, MDStatus::StatusItem_S>,
+                  Error_t>
         getQuickStatus();
 
         /// @brief Request main encoder status
         /// @return Main encoder status map with bit positions as ids
-        std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, Error_t>
-        getMainEncoderErrors();
+        std::pair<
+            const std::unordered_map<const MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
+            Error_t>
+        getMainEncoderStatus();
 
         /// @brief Request output encoder status
         /// @return Output encoder status map with bit positions as ids
-        std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, Error_t>
-        getOutputEncoderErrors();
+        std::pair<
+            const std::unordered_map<const MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
+            Error_t>
+        getOutputEncoderStatus();
 
         /// @brief Request calibration status
         /// @return Calibration status map with bit positions as ids
-        std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, Error_t>
-        getCalibrationErrors();
+        std::pair<
+            const std::unordered_map<const MDStatus::CalibrationStatusBits, MDStatus::StatusItem_S>,
+            Error_t>
+        getCalibrationStatus();
 
         /// @brief Request bridge status
         /// @return Bridge status map with bit positions as ids
-        std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, Error_t>
-        getBridgeErrors();
+        std::pair<
+            const std::unordered_map<const MDStatus::BridgeStatusBits, MDStatus::StatusItem_S>,
+            Error_t>
+        getBridgeStatus();
 
         /// @brief Request hardware status
         /// @return Hardware status map with bit positions as ids
-        std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, Error_t>
-        getHardwareErrors();
+        std::pair<
+            const std::unordered_map<const MDStatus::HardwareStatusBits, MDStatus::StatusItem_S>,
+            Error_t>
+        getHardwareStatus();
 
         /// @brief Request communication status
         /// @return Communication status map with bit positions as ids
-        std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, Error_t>
-        getCommunicationErrors();
+        std::pair<const std::unordered_map<const MDStatus::CommunicationStatusBits,
+                                           MDStatus::StatusItem_S>,
+                  Error_t>
+        getCommunicationStatus();
 
         /// @brief Request motion status
         /// @return Motion status map with bit positions as ids
-        std::pair<std::unordered_map<MDStatus::bitPos, MDStatus::StatusItem_S>, Error_t>
-        getMotionErrors();
+        std::pair<
+            const std::unordered_map<const MDStatus::MotionStatusBits, MDStatus::StatusItem_S>,
+            Error_t>
+        getMotionStatus();
 
         /// @brief Request position of the MD
         /// @return Position in radians
@@ -238,7 +254,7 @@ namespace mab
         {
             auto regTuple   = std::make_tuple(std::reference_wrapper(reg));
             auto resultPair = readRegisters(regTuple);
-            reg.value       = std::get<0>(regTuple).value;
+            reg             = std::get<0>(regTuple);
             return std::pair(reg, resultPair.second);
         }
 
@@ -276,8 +292,7 @@ namespace mab
             // Add serialized register data to be read [LSB addr, MSB addr, payload-bytes...]
             auto payload = serializeMDRegisters(regs);
             frame.insert(frame.end(), payload.begin(), payload.end());
-            auto readRegResult =
-                transferCanFrame(frame, frame.size(), m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
+            auto readRegResult = transferCanFrame(frame, frame.size());
             // TODO: for some reason MD sends first byte as 0x0, investigate
             //  if (readRegResult.first.at(0) == 0x41)
             //  {
@@ -326,8 +341,7 @@ namespace mab
             frame.push_back((u8)0x0);
             auto payload = serializeMDRegisters(regs);
             frame.insert(frame.end(), payload.begin(), payload.end());
-            auto readRegResult = transferCanFrame(
-                frame, DEFAULT_RESPONSE_SIZE, m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
+            auto readRegResult = transferCanFrame(frame, DEFAULT_RESPONSE_SIZE);
 
             if (readRegResult.first.at(0) == 0xA0)
             {
@@ -336,7 +350,7 @@ namespace mab
             else
             {
                 m_log.error("Error in the register write response!");
-                return Error_t::OK;
+                return Error_t::TRANSFER_FAILED;
             }
         }
 
@@ -388,18 +402,16 @@ namespace mab
             return failure;
         }
 
-        std::pair<std::vector<u8>, mab::candleTypes::Error_t> transferCanFrame(
-            std::vector<u8> frameToSend, size_t responseSize, u32 timeoutMs = 1U) const
+        inline std::pair<std::vector<u8>, mab::candleTypes::Error_t> transferCanFrame(
+            std::vector<u8> frameToSend, size_t responseSize) const
         {
             if (m_candle == nullptr)
             {
                 m_log.error("Candle empty!");
                 return {{}, candleTypes::Error_t::DEVICE_NOT_CONNECTED};
             }
-            auto result = getCandle()->transferCANFrame(m_canId,
-                                                        frameToSend,
-                                                        DEFAULT_RESPONSE_SIZE,
-                                                        m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
+            auto result = getCandle()->transferCANFrame(
+                m_canId, frameToSend, responseSize, m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
 
             if (result.second != candleTypes::Error_t::OK)
             {

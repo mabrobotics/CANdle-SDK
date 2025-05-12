@@ -4,9 +4,11 @@
 #include <string>
 #include <vector>
 
-#include "candle.hpp"
+#include "candle_v2.hpp"
+#include "MD.hpp"
 #include "candletool.hpp"
 #include "logger.hpp"
+#include "md_types.hpp"
 
 /* ERROR COLORING NOTE: may not work on all terminals! */
 #define REDSTART    "\033[1;31m"
@@ -36,8 +38,8 @@ namespace ui
     bool getCalibrationOutputConfirmation();
     void printPositionAndVelocity(int id, float pos, float velocity);
     void printFoundDrives(std::vector<uint16_t> ids);
-    void printDriveInfoExtended(mab::Md80& drive, bool printAll);
-    void printAllErrors(mab::Md80& drive);
+    void printDriveInfoExtended(mab::MD& drive, const mab::MDRegisters_S&, bool printAll);
+    void printAllErrors(const mab::MDRegisters_S& registers);
     void printErrorDetails(uint32_t error, const std::map<std::string, uint8_t>& errorMap);
     void printParameterOutOfBounds(std::string category, std::string field);
     void printMotorConfig(mINI::INIStructure Ini);
@@ -68,7 +70,7 @@ namespace ui
     const std::vector<std::string> encoderCalibrationModes = {"FULL", "DIRONLY"};
     const std::vector<std::string> motorCalibrationModes   = {"FULL", "NOPPDET"};
     const std::vector<std::string> homingModes             = {"OFF", "SENSORLESS"};
-    const std::vector<std::string> brakeModes              = {"OFF", "AUTO", "MANUAL"};
+    const std::vector<std::string> GPIOmodes               = {"OFF", "BRAKE", "GPIO INPUT"};
     const std::vector<std::string> errorVectorList         = {"ERROR_BRIDGE_OCP",
                                                               "ERROR_BRIDGE_FAULT",
                                                               "ERROR_OUT_ENCODER_E",

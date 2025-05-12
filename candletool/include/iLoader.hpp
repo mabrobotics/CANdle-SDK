@@ -9,20 +9,15 @@ class I_Loader
     enum class Error_E : uint8_t
     {
         OK = 0,
-        ERROR_SETUP,    // Could not enter setup mode
-        ERROR_ERASE,    // Problem during erasing flash
-        ERROR_PROG,     // Could not init frimware transfer
-        ERROR_PAGE,     // Error during bulk data transfer
-        ERROR_WRITE,    // Error during saving data in FLASH (possible CRC error of whole page)
-        ERROR_META,     // Error of checksum or saving configuration in FLASH
-        ERROR_BOOT,     // Error in transfer of boot command 
+        ERROR_SETUP,  // Could not enter setup mode
+        ERROR_ERASE,  // Problem during erasing flash
+        ERROR_PROG,   // Could not init frimware transfer
+        ERROR_PAGE,   // Error during bulk data transfer
+        ERROR_WRITE,  // Error during saving data in FLASH (possible CRC error of whole page)
+        ERROR_META,   // Error of checksum or saving configuration in FLASH
+        ERROR_BOOT,   // Error in transfer of boot command
         ERROR_UNKNOWN,
     };
-    I_Loader() = delete;
-    I_Loader(MabFileParser& mabFile)
-        : m_mabFile(mabFile){
-
-          };
 
     /**
      * @brief Reset the target device
@@ -46,9 +41,7 @@ class I_Loader
     virtual Error_E sendBootCommand() = 0;
 
   protected:
-    static constexpr size_t   M_PAGE_SIZE      = 2048U;
-    static constexpr size_t   M_CAN_CHUNK_SIZE = 64U;
-    static constexpr size_t   M_USB_CHUNK_SIZE = 2044;
-
-    MabFileParser m_mabFile;
+    static constexpr size_t M_PAGE_SIZE      = 2048U;
+    static constexpr size_t M_CAN_CHUNK_SIZE = 64U;
+    static constexpr size_t M_USB_CHUNK_SIZE = 2044;
 };

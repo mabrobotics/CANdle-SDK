@@ -14,7 +14,7 @@ namespace mab
     {
       public:
         IsolatedConv() = delete;
-        IsolatedConv(socketIndex_E socket, Candle& candle, u16& canId);
+        IsolatedConv(socketIndex_E socket, CandleV2* p_candle, u16& canId);
         ~IsolatedConv() = default;
 
         virtual void printModuleInfo(void) override;

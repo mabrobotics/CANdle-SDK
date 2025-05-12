@@ -1,5 +1,6 @@
 #include "can_bootloader.hpp"
 #include <array>
+#include <span>
 #include <string_view>
 #include <vector>
 #include "candle_bootloader.hpp"
@@ -43,8 +44,37 @@ namespace mab
             return Error_t::NOT_CONNNECTED;
         }
 
-        std::array<u8, sizeof(address)> addressData = serializeData(address);
-        std::array<u8, sizeof(size)>    sizeData    = serializeData(size);
+        // Erase is staged in pages because CAN wdg in Candle fw is too short
+        // to erase all at once
+
+        const u32 startAddress     = address;
+        const u32 endAddress       = address + size;
+        const u32 fullPagesToErase = (endAddress - startAddress) / STM32_PAGE_SIZE;
+        for (u32 i = 0; i < fullPagesToErase; i += 1)
+        {
+            std::vector<u8> payload;
+
+            std::array<u8, sizeof(address)> addressData =
+                serializeData(startAddress + i * STM32_PAGE_SIZE);
+            std::array<u8, sizeof(size)> sizeData = serializeData(STM32_PAGE_SIZE);
+
+            payload.insert(payload.end(), addressData.begin(), addressData.end());
+            payload.insert(payload.end(), sizeData.begin(), sizeData.end());
+
+            m_log.debug("Erasing page %d", i);
+            if (sendCommand(Command_t::ERASE, payload) != Error_t::OK)
+            {
+                m_log.error("Failed to erase page %d", i);
+                return CanBootloader::Error_t::DATA_TRANSFER_ERROR;
+            }
+        }
+
+        m_log.debug("Erasing %d bytes from address %d", size, address);
+
+        std::array<u8, sizeof(address)> addressData =
+            serializeData(address + fullPagesToErase * STM32_PAGE_SIZE);
+        std::array<u8, sizeof(size)> sizeData =
+            serializeData(size - fullPagesToErase * STM32_PAGE_SIZE);
 
         std::vector<u8> payload;
         payload.insert(payload.end(), addressData.begin(), addressData.end());
@@ -54,7 +84,7 @@ namespace mab
     }
 
     CanBootloader::Error_t CanBootloader::startTransfer(
-        const bool encrypted, const std::array<u8, 16>& initializationVector) const
+        const bool encrypted, const std::span<const u8, 16> initializationVector) const
     {
         std::vector<u8> payload;
         payload.push_back(static_cast<u8>(encrypted));
@@ -63,8 +93,8 @@ namespace mab
         return sendCommand(Command_t::PROG, payload);
     }
 
-    CanBootloader::Error_t CanBootloader::transferData(const std::array<u8, TRANSFER_SIZE>& data,
-                                                       const u32 crc32) const
+    CanBootloader::Error_t CanBootloader::transferData(
+        const std::span<const u8, TRANSFER_SIZE> data, const u32 crc32) const
     {
         std::vector<u8> payload;
         for (size_t i = 0; i < data.size(); i += CHUNK_SIZE)
@@ -83,7 +113,7 @@ namespace mab
     }
 
     CanBootloader::Error_t CanBootloader::transferMetadata(
-        const bool save, const std::array<u8, 32>& firmwareSHA256) const
+        const bool save, const std::span<const u8, 32> firmwareSHA256) const
     {
         std::vector<u8> payload;
         payload.push_back(static_cast<u8>(save));
@@ -123,7 +153,8 @@ namespace mab
         if (!mp_candle)
             return Error_t::NOT_CONNNECTED;
 
-        auto result = mp_candle->transferCANFrame(m_id, frame, DEFAULT_REPONSE.size(), 240);
+        auto result = mp_candle->transferCANFrame(
+            m_id, frame, DEFAULT_REPONSE.size(), m_customReponseTimeoutMs.value_or(DEFAULT_TIMOUT));
         if (result.second != candleTypes::Error_t::OK)
         {
             m_log.error("Failed to send frame!");

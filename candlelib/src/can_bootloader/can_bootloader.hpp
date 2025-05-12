@@ -3,6 +3,7 @@
 #include <array>
 #include <cstring>
 #include <string_view>
+#include <span>
 #include "candle_v2.hpp"
 #include "logger.hpp"
 #include "mab_def.hpp"
@@ -14,10 +15,13 @@ namespace mab
     /// @brief Class for interacting with devices in bootloader mode on the CAN bus.
     class CanBootloader
     {
-        static constexpr std::string_view DEFAULT_REPONSE     = "OK";
-        static constexpr size_t           CHUNK_SIZE          = 64;
-        static constexpr u32              CHUNKS_PER_TRANSFER = 32;
-        static constexpr u32              TRANSFER_SIZE       = CHUNK_SIZE * CHUNKS_PER_TRANSFER;
+        static constexpr u32 DEFAULT_TIMOUT  = 2000;  // ms
+        static constexpr u32 STM32_PAGE_SIZE = 2048;  // In STM32G4
+
+        static constexpr std::string_view DEFAULT_REPONSE =
+            "OK";  // Bootloader v2 almost always acknowleges with OK message
+        static constexpr size_t CHUNK_SIZE          = 64;  // Max transfer size of CANdle device
+        static constexpr u32    CHUNKS_PER_TRANSFER = 32;  // Required transfers by bootloader
 
         enum class Command_t : u8
         {
@@ -35,7 +39,11 @@ namespace mab
         CandleV2*     mp_candle;
         Logger        m_log = Logger(Logger::ProgramLayer_E::LAYER_2, "CAN BOOTLOADER");
 
+        std::optional<u32> m_customReponseTimeoutMs;
+
       public:
+        static constexpr u32 TRANSFER_SIZE = CHUNK_SIZE * CHUNKS_PER_TRANSFER;
+
         enum Error_t
         {
             OK,
@@ -52,10 +60,11 @@ namespace mab
 
         Error_t init(const u32 bootAdress, const u32 appSize) const;
         Error_t erase(const u32 address, const u32 size) const;
-        Error_t startTransfer(const bool                encrypted,
-                              const std::array<u8, 16>& initializationVector) const;
-        Error_t transferData(const std::array<u8, TRANSFER_SIZE>& data, const u32 crc32) const;
-        Error_t transferMetadata(const bool save, const std::array<u8, 32>& firmwareSHA256) const;
+        Error_t startTransfer(const bool                    encrypted,
+                              const std::span<const u8, 16> initializationVector) const;
+        Error_t transferData(const std::span<const u8, TRANSFER_SIZE> data, const u32 crc32) const;
+        Error_t transferMetadata(const bool                    save,
+                                 const std::span<const u8, 32> firmwareSHA256) const;
         Error_t boot(const u32 bootAddress) const;
 
       private:

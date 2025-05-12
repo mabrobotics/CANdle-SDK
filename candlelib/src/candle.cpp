@@ -61,7 +61,7 @@ namespace mab
             log.error("Failed to set up CANdle baudrate @%dMbps", canBaudrate);
             throw std::runtime_error("Failed to set up CANdle baudrate!");
         }
-        log.info("FD CAN Baudrate [ %s ]", baudrateToString(canBaudrate).c_str());
+        // log.info("FD CAN Baudrate [ %s ]", baudrateToString(canBaudrate).c_str());
 
         if (bus->getType() == mab::BusType_E::USB)
             log.info("CANdle 0x%x ready (USB)", getDeviceId());
@@ -1028,37 +1028,6 @@ namespace mab
         usleep(5000000);
 
         return static_cast<UsbDevice*>(bus.get())->reconnect(candleVid, candlePid);
-    }
-
-    std::optional<CANdleBaudrate_E> Candle::stringToBaudrate(const std::string& baudrateStr)
-    {
-        if (baudrateStr == "1M")
-            return CANdleBaudrate_E::CAN_BAUD_1M;
-        else if (baudrateStr == "2M")
-            return CANdleBaudrate_E::CAN_BAUD_2M;
-        else if (baudrateStr == "5M")
-            return CANdleBaudrate_E::CAN_BAUD_5M;
-        else if (baudrateStr == "8M")
-            return CANdleBaudrate_E::CAN_BAUD_8M;
-        else
-            throw std::invalid_argument("Invalid baudrate string: " + baudrateStr);
-    }
-
-    std::string Candle::baudrateToString(CANdleBaudrate_E baudrate)
-    {
-        switch (baudrate)
-        {
-            case CANdleBaudrate_E::CAN_BAUD_1M:
-                return "1M";
-            case CANdleBaudrate_E::CAN_BAUD_2M:
-                return "2M";
-            case CANdleBaudrate_E::CAN_BAUD_5M:
-                return "5M";
-            case CANdleBaudrate_E::CAN_BAUD_8M:
-                return "8M";
-            default:
-                throw std::invalid_argument("Invalid CANdleBaudrate_E value");
-        }
     }
 
 }  // namespace mab

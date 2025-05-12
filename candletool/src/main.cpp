@@ -7,6 +7,7 @@
 
 int main(int argc, char** argv)
 {
+    // Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_3;
     std::cout << "CandleTool" << std::endl;
     CLI::App app{"candletool"};
     app.fallthrough();
@@ -162,38 +163,28 @@ int main(int argc, char** argv)
 
     CLI11_PARSE(app, argc, argv);
 
-    std::optional<mab::CANdleBaudrate_E> baudOpt = Candle::stringToBaudrate(cmd.baud);
+    std::optional<mab::CANdleBaudrate_E> baudOpt = stringToBaudrate(cmd.baud);
     if (!baudOpt.has_value())
     {
         std::cerr << "Invalid baudrate: " << cmd.baud << std::endl;
         return EXIT_FAILURE;
     }
 
-    mab::CANdleBaudrate_E baud = baudOpt.value();
+    mab::CANdleBaudrate_E baud = baudOpt.value_or(CANdleBaudrate_E::CAN_BAUD_1M);
 
     mINI::INIFile      file(getCandletoolConfigPath());
     mINI::INIStructure ini;
     file.read(ini);
 
     std::string busString = ini["communication"]["bus"];
-    if (busString == "SPI")
-        busType = mab::BusType_E::SPI;
-    else if (busString == "UART")
-        busType = mab::BusType_E::UART;
-    else if (busString == "USB")
-        busType = mab::BusType_E::USB;
-    std::string& device = ini["communication"]["device"];
 
-    std::shared_ptr<mab::Candle> candle       = nullptr;
-    bool                         printVerbose = true;
+    // std::shared_ptr<mab::Candle> candle = nullptr;
 
-    if (device != "" && busType != mab::BusType_E::USB)
-        candle = std::make_shared<mab::Candle>(baud, printVerbose, busType, device);
-    else
-        candle = std::make_shared<mab::Candle>(baud, printVerbose, busType);
+    CLI11_PARSE(app, argc, argv);
 
-    CandleTool candleTool(*candle);
-    Pds        pds(100, *candle);
+    // TODO: make use of busType and baudrate options when creating Candle object within CandleTool
+    CandleTool candleTool(baud);
+    Pds        pds(cmd.id, candleTool.getCandle());
 
     // set global verbosity for loggers
     if (silentMode)
@@ -254,8 +245,6 @@ int main(int argc, char** argv)
             candleTool.setupCalibration(cmd.id);
         if (setupCalibOut->parsed())
             candleTool.setupCalibrationOutput(cmd.id);
-        if (setupHoming->parsed())
-            candleTool.setupHoming(cmd.id);
         if (setupInfo->parsed())
             candleTool.setupInfo(cmd.id, (setupInfoAllFlag->count() > 0 ? true : false));
         if (setupMotor->parsed())
@@ -294,7 +283,7 @@ int main(int argc, char** argv)
 
         if (candleUpdate->parsed())
         {
-            candleTool.updateCandle(cmd.firmwareFileName, cmd.noReset);
+            candleTool.updateCandle(cmd.firmwareFileName);
             return EXIT_SUCCESS;
         }
 
@@ -306,7 +295,7 @@ int main(int argc, char** argv)
 
         if (pdsUpdate->parsed())
         {
-            candleTool.updatePds(cmd.firmwareFileName, cmd.id, cmd.noReset);
+            candleTool.updatePds(pds, cmd.firmwareFileName, cmd.id, cmd.noReset);
             return EXIT_SUCCESS;
         }
     }

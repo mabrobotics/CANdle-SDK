@@ -75,11 +75,12 @@ namespace mab
         static candleTypes::Error_t enterBootloader(
             std::unique_ptr<mab::I_CommunicationInterface>&& usb);
 
+        const CANdleBaudrate_E m_canBaudrate;
+
       private:
         static constexpr u32 DEFAULT_CONFIGURATION_TIMEOUT = 10;
 
-        CANdleBaudrate_E m_canBaudrate = CANdleBaudrate_E::CAN_BAUD_1M;
-        Logger           m_log         = Logger(Logger::ProgramLayer_E::TOP, "CANDLE");
+        Logger m_log = Logger(Logger::ProgramLayer_E::TOP, "CANDLE");
 
         std::unique_ptr<mab::I_CommunicationInterface> m_bus;
 

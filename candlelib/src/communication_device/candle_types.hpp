@@ -32,5 +32,5 @@ namespace mab
             SPI
         };
     };                                      // namespace candleTypes
-    constexpr u32 DEFAULT_CAN_TIMEOUT = 1;  // ms
+    constexpr u32 DEFAULT_CAN_TIMEOUT = 2;  // ms
 }  // namespace mab

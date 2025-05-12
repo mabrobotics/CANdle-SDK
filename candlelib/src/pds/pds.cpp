@@ -2,9 +2,9 @@
 
 namespace mab
 {
-    Pds::Pds(uint16_t canId, Candle& candle)
-        : PdsModule(socketIndex_E::UNASSIGNED, moduleType_E::CONTROL_BOARD, candle, m_rootCanId),
-          m_candle(candle),
+    Pds::Pds(u16 canId, CandleV2* p_candle)
+        : PdsModule(socketIndex_E::UNASSIGNED, moduleType_E::CONTROL_BOARD, p_candle, m_rootCanId),
+          mp_candle(p_candle),
           m_rootCanId(canId)
     {
         m_log.m_tag   = "PDS";
@@ -37,17 +37,17 @@ namespace mab
         {
             case moduleType_E::BRAKE_RESISTOR:
                 m_brakeResistors.push_back(
-                    std::make_shared<BrakeResistor>(socket, m_candle, m_rootCanId));
+                    std::make_shared<BrakeResistor>(socket, mp_candle, m_rootCanId));
                 return PdsModule::error_E::OK;
 
             case moduleType_E::ISOLATED_CONVERTER:
                 m_IsolatedConvs.push_back(
-                    std::make_shared<IsolatedConv>(socket, m_candle, m_rootCanId));
+                    std::make_shared<IsolatedConv>(socket, mp_candle, m_rootCanId));
                 return PdsModule::error_E::OK;
 
             case moduleType_E::POWER_STAGE:
                 m_powerStages.push_back(
-                    std::make_shared<PowerStage>(socket, m_candle, m_rootCanId));
+                    std::make_shared<PowerStage>(socket, mp_candle, m_rootCanId));
                 return PdsModule::error_E::OK;
 
             case moduleType_E::UNDEFINED:
@@ -61,9 +61,10 @@ namespace mab
         PdsMessage::error_E result = PdsMessage::error_E::OK;
         PropertyGetMessage  message(moduleType_E::CONTROL_BOARD, socketIndex_E::UNASSIGNED);
 
-        u8     responseBuffer[64] = {0};
-        size_t responseLength     = 0;
-        u32    rawData            = 0;
+        std::pair<std::vector<u8>, mab::candleTypes::Error_t> transferResult;
+        // u8     responseBuffer[64] = {0};
+        // size_t responseLength     = 0;
+        u32 rawData = 0;
 
         message.addProperty(propertyId_E::SOCKET_1_MODULE);
         message.addProperty(propertyId_E::SOCKET_2_MODULE);
@@ -74,15 +75,15 @@ namespace mab
 
         std::vector<u8> serializedMessage = message.serialize();
 
-        if (!m_candle.sendGenericFDCanFrame(m_canId,
-                                            serializedMessage.size(),
-                                            reinterpret_cast<const char*>(serializedMessage.data()),
-                                            reinterpret_cast<char*>(responseBuffer),
-                                            &responseLength,
-                                            500))
+        transferResult = mp_candle->transferCANFrame(m_canId, serializedMessage, 66U);
+        if (transferResult.second != mab::candleTypes::Error_t::OK)
+        {
+            m_log.error("Failed to transfer CAN frame");
             return PdsModule::error_E ::COMMUNICATION_ERROR;
+        }
 
-        result = message.parseResponse(responseBuffer, responseLength);
+        result = message.parseResponse(transferResult.first.data(), transferResult.first.size());
+
         if (result != PdsMessage::error_E::OK)
             return PdsModule::error_E ::COMMUNICATION_ERROR;
 
@@ -366,6 +367,11 @@ namespace mab
         return result;
     }
 
+    CANdleBaudrate_E Pds::getCanBaudrate(void)
+    {
+        return mp_candle->m_canBaudrate;
+    }
+
     PdsModule::error_E Pds::setCanBaudrate(CANdleBaudrate_E canBaudrate)
     {
         return writeModuleProperty(propertyId_E::CAN_BAUDRATE, canBaudrate);
@@ -456,6 +462,11 @@ namespace mab
     PdsModule::error_E Pds::shutdown(void)
     {
         return writeModuleProperty(propertyId_E::COMMAND, commands_E::SHUTDOWN);
+    }
+
+    PdsModule::error_E Pds::reboot(void)
+    {
+        return writeModuleProperty(propertyId_E::COMMAND, commands_E::REBOOT);
     }
 
     PdsModule::error_E Pds::saveConfig(void)

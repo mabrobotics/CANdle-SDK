@@ -343,8 +343,7 @@ void PdsCli::parse(Pds* p_pds)
                 m_log.debug("CAN Baudrate command parsed");
                 if (!m_canBaudCmdOption->empty())
                 {
-                    std::optional<CANdleBaudrate_E> baudOpt =
-                        Candle::stringToBaudrate(m_canBaudrate);
+                    std::optional<CANdleBaudrate_E> baudOpt = stringToBaudrate(m_canBaudrate);
                     if (!baudOpt.has_value())
                     {
                         m_log.error("Invalid baudrate: %s", m_canBaudrate);
@@ -419,7 +418,7 @@ void PdsCli::parse(Pds* p_pds)
 
         else if (m_setCanBaudCmd->parsed())
         {
-            std::optional<CANdleBaudrate_E> baudOpt = Candle::stringToBaudrate(m_canBaudrate);
+            std::optional<CANdleBaudrate_E> baudOpt = stringToBaudrate(m_canBaudrate);
             if (!baudOpt.has_value())
             {
                 m_log.error("Invalid baudrate: %s", m_canBaudrate);
@@ -1614,7 +1613,9 @@ void PdsCli::setupPsCfg(PowerStage& ps, mINI::INIMap<std::string>& iniMap)
 
     if (iniMap.has(AUTOSTART_INI_KEY))
     {
-        std::optional<bool> autostart = parseBooleanIniField((iniMap[AUTOSTART_INI_KEY]));
+        m_log.debug("Autostart field found with value [ %s ]", iniMap[AUTOSTART_INI_KEY].c_str());
+        std::optional<bool> autostart =
+            parseBooleanIniField(std::string_view(iniMap[AUTOSTART_INI_KEY].c_str()));
         if (autostart.has_value())
         {
             m_log.debug("Autostart field found with value [ %s ]",
@@ -1728,7 +1729,13 @@ void PdsCli::pdsSetupConfig(const std::string& cfgPath)
 {
     mINI::INIFile      pdsCfgFile(cfgPath);
     mINI::INIStructure pdsCfg;
-    pdsCfgFile.read(pdsCfg);
+
+    m_log.info("Reading .cfg file [ %s ]", cfgPath.c_str());
+    if (!pdsCfgFile.read(pdsCfg))
+    {
+        m_log.error("Failed to read .cfg file [ %s ]", cfgPath.c_str());
+        return;
+    }
 
     if (pdsCfg.has(CONTROL_BOARD_INI_SECTION))
         setupCtrlConfig(pdsCfg[CONTROL_BOARD_INI_SECTION]);
@@ -1801,8 +1808,9 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
     mp_pds->getBindBrakeResistor(brSocket);
     mp_pds->getBrakeResistorTriggerVoltage(brTrigger);
 
-    readIni[CONTROL_BOARD_INI_SECTION][CAN_ID_INI_KEY]   = prettyFloatToString(m_canId, true);
-    readIni[CONTROL_BOARD_INI_SECTION][CAN_BAUD_INI_KEY] = "TODO";
+    readIni[CONTROL_BOARD_INI_SECTION][CAN_ID_INI_KEY] = prettyFloatToString(m_canId, true);
+    readIni[CONTROL_BOARD_INI_SECTION][CAN_BAUD_INI_KEY] =
+        baudrateToString(mp_pds->getCanBaudrate());
     readIni[CONTROL_BOARD_INI_SECTION][SHUTDOWN_TIME_INI_KEY] =
         prettyFloatToString(shutDownTime, true) + "\t\t; Shutdown time [ ms ]";
     readIni[CONTROL_BOARD_INI_SECTION][BATT_LVL_1_INI_KEY] =

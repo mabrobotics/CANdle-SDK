@@ -38,8 +38,7 @@ namespace mab
 
     TEST_F(SetPropertyMessageTest, CheckSerializedMessageWhenPropertyAdded)
     {
-        std::vector<u8> EXPECTED_SERIALIZED_MESSAGE = {
-            0x21, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00};
+        std::vector<u8>    EXPECTED_SERIALIZED_MESSAGE = {0x21, 0x02, 0x01, 0x01, 0x02, 0x01};
         PropertySetMessage testMessage(moduleType_E::BRAKE_RESISTOR, socketIndex_E::SOCKET_1);
         testMessage.addProperty(propertyId_E::ENABLE, true);
         std::vector<u8> serializedMessage = testMessage.serialize();
@@ -103,7 +102,7 @@ namespace mab
 
     TEST_F(GetPropertyMessageTest, CheckSerializedMessageWhenPropertyAdded)
     {
-        std::vector<u8>    EXPECTED_SERIALIZED_MESSAGE = {0x20, 0x01, 0x00, 0x01, 0x00};
+        std::vector<u8>    EXPECTED_SERIALIZED_MESSAGE = {0x20, 0x02, 0x01, 0x01, 0x02};
         PropertyGetMessage testMessage(moduleType_E::BRAKE_RESISTOR, socketIndex_E::SOCKET_1);
         testMessage.addProperty(propertyId_E::ENABLE);
         std::vector<u8> serializedMessage = testMessage.serialize();
@@ -120,8 +119,8 @@ namespace mab
 
     TEST_F(GetPropertyMessageTest, parseResponseWithSingleBoolPropertyWithoutErrors)
     {
-        std::vector<u8> EXPECTED_SERIALIZED_MESSAGE = {0x20, 0x01, 0x00, 0x01, 0x00};
-        std::vector<u8> RESPONSE                    = {0x00, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00};
+        std::vector<u8> EXPECTED_SERIALIZED_MESSAGE = {0x20, 0x02, 0x01, 0x01, 0x02};
+        std::vector<u8> RESPONSE                    = {0x00, 0x01, 0x00, 0x01};
 
         constexpr bool EXPECTED_READ_ENABLE_PROPERTY = true;
 
@@ -157,8 +156,8 @@ namespace mab
 
     TEST_F(GetPropertyMessageTest, parsePowerStageGetBusVoltageResponse)
     {
-        std::vector<u8> EXPECTED_SERIALIZED_MESSAGE   = {0x20, 0x04, 0x00, 0x01, 0x02};
-        std::vector<u8> RESPONSE                      = {0x00, 0x01, 0x01, 0xE0, 0x5B, 0x00, 0x00};
+        std::vector<u8> EXPECTED_SERIALIZED_MESSAGE   = {0x20, 0x04, 0x01, 0x01, 0x05};
+        std::vector<u8> RESPONSE                      = {0x00, 0x01, 0x00, 0xE0, 0x5B, 0x00, 0x00};
         constexpr u32   EXPECTED_RECEIVED_BUS_VOLTAGE = 23520;
 
         PdsMessage::error_E result = PdsMessage::error_E::OK;
