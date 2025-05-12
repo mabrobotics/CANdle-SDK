@@ -135,7 +135,7 @@ namespace mab
         if (responseStatusCode != msgResponse_E::OK)
             return error_E::RESPONSE_STATUS_ERROR;
 
-        // Remove all previously parsed properties. It allows to reuse previously defined message to
+        // Remove all previously parsed properties. It allows to reuse already defined message to
         // be used multiple times
         m_receivedProperties.clear();
 

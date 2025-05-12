@@ -7,6 +7,8 @@
 namespace mab
 {
 
+    constexpr size_t GIT_HASH_STRLEN = 8;  // NULL-terminated short git hash string
+
     enum class accessRights_E
     {
         READ_ONLY  = 0x00,
@@ -52,9 +54,10 @@ namespace mab
 
         /* ... */
 
-        HW_VERSION = 0xFD,
-        FW_VERSION = 0xFE,
-        COMMAND    = 0xFF,  // Used for sending various commands to PDS Device
+        FW_GIT_HASH = 0xFC,
+        HW_VERSION  = 0xFD,
+        FW_VERSION  = 0xFE,
+        COMMAND     = 0xFF,  // Used for sending various commands to PDS Device
 
     };
 
@@ -93,7 +96,7 @@ namespace mab
 
     };
 
-    constexpr std::array<std::pair<propertyId_E, size_t>, 29> propertiesSizeArray = {
+    constexpr std::array<std::pair<propertyId_E, size_t>, 30> propertiesSizeArray = {
         std::make_pair(propertyId_E::STATUS_WORD, sizeof(u32)),
         std::make_pair(propertyId_E::STATUS_CLEAR, sizeof(u32)),
         std::make_pair(propertyId_E::ENABLE, sizeof(bool)),
@@ -120,6 +123,8 @@ namespace mab
         std::make_pair(propertyId_E::BR_TRIGGER_VOLTAGE, sizeof(u32)),
         std::make_pair(propertyId_E::OCD_LEVEL, sizeof(u32)),
         std::make_pair(propertyId_E::OCD_DELAY, sizeof(u32)),
+
+        std::make_pair(propertyId_E::FW_GIT_HASH, GIT_HASH_STRLEN),
         std::make_pair(propertyId_E::HW_VERSION, sizeof(u8)),
         std::make_pair(propertyId_E::FW_VERSION, sizeof(u32)),
     };
