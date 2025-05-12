@@ -127,6 +127,7 @@ namespace mab
         std::make_pair(propertyId_E::FW_GIT_HASH, GIT_HASH_STRLEN),
         std::make_pair(propertyId_E::HW_VERSION, sizeof(u8)),
         std::make_pair(propertyId_E::FW_VERSION, sizeof(u32)),
+        std::make_pair(propertyId_E::COMMAND, sizeof(commands_E)),
     };
 
     inline size_t getPropertySize(propertyId_E propertyId)

@@ -120,7 +120,7 @@ namespace mab
                                                                     communicationStatus);
 
         m_log.debug("SEND");
-        // frameDump(dataToSend); can be enabled for in depth debugging
+        // frameDump(dataToSend);  // can be enabled for in depth debugging
 
         if (dataToSend.size() > 64)
         {

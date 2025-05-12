@@ -23,6 +23,8 @@ namespace mab
 
         error_E getStatus(brakeResistorStatus_S& status);
 
+        error_E clearStatus(brakeResistorStatus_S status);
+
         error_E getEnabled(bool& enabled);
 
         /**

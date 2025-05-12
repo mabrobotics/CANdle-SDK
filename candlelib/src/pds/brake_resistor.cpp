@@ -53,6 +53,19 @@ namespace mab
         return result;
     }
 
+    PdsModule::error_E BrakeResistor::clearStatus(brakeResistorStatus_S status)
+    {
+        u32 statusWord = 0;
+
+        // if (status.ENABLED)
+        //     statusWord |= (u32)statusBits_E::ENABLED;
+
+        if (status.OVER_TEMPERATURE)
+            statusWord |= (u32)statusBits_E::OVER_TEMPERATURE;
+
+        return writeModuleProperty(propertyId_E::STATUS_CLEAR, statusWord);
+    }
+
     PdsModule::error_E BrakeResistor::getEnabled(bool& enabled)
     {
         return readModuleProperty(propertyId_E::ENABLE, enabled);

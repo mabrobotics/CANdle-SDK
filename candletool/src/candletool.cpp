@@ -64,15 +64,13 @@ mab::CANdleBaudrate_E str2baud(const std::string& baud)
     return mab::CANdleBaudrate_E::CAN_BAUD_1M;
 }
 
-CandleTool::CandleTool()
+CandleTool::CandleTool(const mab::CANdleBaudrate_E baud)
 {
     log.m_tag   = "CANDLETOOL";
     log.m_layer = Logger::ProgramLayer_E::TOP;
     // log.info("CandleSDK Version: %s", mab::Candle::getVersion().c_str());
 
     std::unique_ptr<I_CommunicationInterface> bus;
-    mab::CANdleBaudrate_E                     baud =
-        mab::CANdleBaudrate_E::CAN_BAUD_1M;  // TODO: this must be parsed as a flag
 
     mINI::INIFile      file(getCandletoolConfigPath());
     mINI::INIStructure ini;
@@ -1344,8 +1342,9 @@ void CandleTool::updateMd(const std::string& mabFilePath, mab::canId_t canId, bo
         }
         md.reset();
     }
+    usleep(300'000);
     CanLoader canLoader(m_candle, &mabFile, canId);
-    if (canLoader.flashAndBoot(0x8006000))
+    if (canLoader.flashAndBoot())
     {
         log.success("Update complete for MD @ %d", canId);
     }
@@ -1355,12 +1354,39 @@ void CandleTool::updateMd(const std::string& mabFilePath, mab::canId_t canId, bo
     }
 }
 
-void CandleTool::updatePds(const std::string& mabFilePath, uint16_t canId, bool noReset)
+void CandleTool::updatePds(Pds& pds, const std::string& mabFilePath, uint16_t canId, bool noReset)
 {
-    MabFileParser mabFile(mabFilePath, MabFileParser::TargetDevice_E::PDS);
-    // mab::FirmwareUploader firmwareUploader(*candle, mabFile, canId);
-    // if (firmwareUploader.flashDevice(noReset))
-    //     log.success("Update complete for PDS @ %d", canId);
+    MabFileParser      mabFile(mabFilePath, MabFileParser::TargetDevice_E::PDS);
+    PdsModule::error_E result = PdsModule::error_E::OK;
+
+    log.warn("PDS Firmware update is under development and not yet available.");
+
+    if (!noReset)
+    {
+        log.debug("Resetting PDS...");
+        result = pds.reboot();
+        if (result != PdsModule::error_E::OK)
+        {
+            log.error("PDS Reset failed! [ %s ]", PdsModule::error2String(result));
+            return;
+        }
+        else
+        {
+            log.success("PDS Reset successful!");
+        }
+    }
+    log.debug("Waiting for PDS to boot...");
+    usleep(400000);
+
+    CanLoader canLoader(m_candle, &mabFile, canId);
+    if (canLoader.flashAndBoot())
+    {
+        log.success("Update complete for PDS @ %d", canId);
+    }
+    else
+    {
+        log.error("PDS flashing failed!");
+    }
 }
 
 void CandleTool::blink(u16 id)

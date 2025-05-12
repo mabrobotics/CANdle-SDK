@@ -34,7 +34,11 @@ class PdsCli
     CLI::App*    m_canTimeoutCmd       = nullptr;
     CLI::Option* m_canTimeoutCmdOption = nullptr;
 
-    // Deprecated
+    // "clear" commands node
+    CLI::App* m_clearCmd    = nullptr;
+    CLI::App* m_clearAllCmd = nullptr;
+
+    // Deprecated can comands ( But still usable )
     CLI::App* m_setCanIdCmd   = nullptr;
     CLI::App* m_setCanBaudCmd = nullptr;
 
@@ -73,11 +77,13 @@ class PdsCli
     CLI::App* m_psGetBrTriggerCmd = nullptr;
     CLI::App* m_psSetAutoStartCmd = nullptr;
     CLI::App* m_psGetAutoStartCmd = nullptr;
+    CLI::App* m_psClearCmd        = nullptr;
 
     // Brake resistor commands
     CLI::App* m_brInfoCmd         = nullptr;
     CLI::App* m_brSetTempLimitCmd = nullptr;
     CLI::App* m_brGetTempLimitCmd = nullptr;
+    CLI::App* m_brClearCmd        = nullptr;
 
     // Isolated converter commands
     CLI::App* m_icInfoCmd         = nullptr;
@@ -89,13 +95,14 @@ class PdsCli
     CLI::App* m_icGetOvcDelayCmd  = nullptr;
     CLI::App* m_icSetTempLimitCmd = nullptr;
     CLI::App* m_icGetTempLimitCmd = nullptr;
+    CLI::App* m_icClearCmd        = nullptr;
 
     // Properties
     u16         m_canId         = 0u;     // PDS CAN ID
     u16         m_newCanId      = 0u;     // PDS CAN ID
     std::string m_canBaudrate   = "";     // PDS CAN baudrate
-    u32         m_batteryLevel1 = 0u;     // Battery level in mV
-    u32         m_batteryLevel2 = 0u;     // Battery level in mV
+    u32         m_batteryLevel1 = 0u;     // Battery level 1 in mV
+    u32         m_batteryLevel2 = 0u;     // Battery level 2 in mV
     u32         m_shutdownTime  = 0u;     // Shutdown time in ms
     u32         m_ovcLevel      = 0u;     // Overcurrent detection level in mA
     u32         m_ovcDelay      = 0u;     // Overcurrent detection delay in ms
@@ -112,6 +119,10 @@ class PdsCli
     Pds* mp_pds;
 
     socketIndex_E decodeSocketIndex(u8 numericSocketIndex);
+
+    // "clear" node subcommands and options adding
+    void clearCliNodeInit(void);
+    void clearCliNodeParse(void);
 
     void powerStageCmdParse(void);
     void brakeResistorCmdParse(void);
