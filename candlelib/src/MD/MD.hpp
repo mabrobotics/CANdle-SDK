@@ -243,12 +243,11 @@ namespace mab
         /// @return Temperature in degrees celsius from 0 C to 125 C
         std::pair<u8, Error_t> getTemperature();
 
-        // TODO: this method is useless, remove it after unit test refactor
         /// @brief Read register from the memory of the MD
         /// @tparam T Register entry underlying type (should be deducible)
-        /// @param reg Register entries references to be read from memory (references are
+        /// @param reg Register entry reference to be read from memory (reference is
         /// overwritten by received data)
-        /// @return
+        /// @return Pair containing the register with data and error type on failure
         template <class T>
         inline std::pair<MDRegisterEntry_S<T>, Error_t> readRegister(MDRegisterEntry_S<T>& reg)
         {
@@ -256,6 +255,26 @@ namespace mab
             auto resultPair = readRegisters(regTuple);
             reg             = std::get<0>(regTuple);
             return std::pair(reg, resultPair.second);
+        }
+
+        /// @brief Write register to the memory of the MD
+        /// @tparam T Register entry underlying type (should be deducible)
+        /// @param reg Register entry reference to be written to memory
+        /// @return Error on failure
+        template <class T>
+        inline Error_t writeRegister(MDRegisterEntry_S<T>& reg)
+        {
+            // Check if register has read-only access level
+            if (reg.m_accessLevel == RegisterAccessLevel_E::RO)
+            {
+                std::string errMsg =
+                    "Attempt to write to read-only register: " + std::string(reg.m_name);
+                m_log.error(errMsg.c_str());
+                return Error_t::REQUEST_INVALID;
+            }
+
+            auto regTuple = std::make_tuple(std::reference_wrapper(reg));
+            return writeRegisters(regTuple);
         }
 
         /// @brief Read registers from the memory of the MD
@@ -281,6 +300,29 @@ namespace mab
             std::tuple<MDRegisterEntry_S<T>&...>& regs)
         {
             m_log.debug("Reading register...");
+
+            // Check if any registers have write-only access level
+            bool        hasWriteOnlyRegister = false;
+            std::string writeOnlyRegNames;
+            std::apply(
+                [&](auto&&... reg)
+                {
+                    ((hasWriteOnlyRegister |=
+                      (reg.m_accessLevel == RegisterAccessLevel_E::WO)
+                          ? (writeOnlyRegNames.append(writeOnlyRegNames.empty() ? "" : ", ")
+                                 .append(std::string(reg.m_name)),
+                             true)
+                          : false),
+                     ...);
+                },
+                regs);
+
+            if (hasWriteOnlyRegister)
+            {
+                std::string errMsg = "Attempt to read write-only registers: " + writeOnlyRegNames;
+                m_log.error(errMsg.c_str());
+                return std::pair(regs, Error_t::REQUEST_INVALID);
+            }
 
             // clear all the values for the incoming data from the MD
             std::apply([&](auto&&... reg) { ((reg.clear()), ...); }, regs);
@@ -324,11 +366,29 @@ namespace mab
         template <class... T>
         inline Error_t writeRegisters(MDRegisterEntry_S<T>&... regs)
         {
+            // Check if any registers have read-only access level
+            bool        hasReadOnlyRegister = false;
+            std::string readOnlyRegNames;
+            ((hasReadOnlyRegister |=
+              (regs.m_accessLevel == RegisterAccessLevel_E::RO)
+                  ? (readOnlyRegNames.append(readOnlyRegNames.empty() ? "" : ", ")
+                         .append(std::string(regs.m_name)),
+                     true)
+                  : false),
+             ...);
+
+            if (hasReadOnlyRegister)
+            {
+                std::string errMsg = "Attempt to write to read-only registers: " + readOnlyRegNames;
+                m_log.error(errMsg.c_str());
+                return Error_t::REQUEST_INVALID;
+            }
+
             auto tuple = std::tuple<MDRegisterEntry_S<T>&...>(regs...);
             return writeRegisters(tuple);
         }
 
-        /// @briefWrite registers to MD memory
+        /// @brief Write registers to MD memory
         /// @tparam ...T Register entry underlying type (should be deducible)
         /// @param regs Tuple of register reference to be written
         /// @return Error on failure
@@ -336,6 +396,31 @@ namespace mab
         inline Error_t writeRegisters(std::tuple<MDRegisterEntry_S<T>&...>& regs)
         {
             m_log.debug("Writing register...");
+
+            // Check has already been performed in the variadic template version if coming from
+            // there Double-check here for direct tuple calls
+            bool        hasReadOnlyRegister = false;
+            std::string readOnlyRegNames;
+            std::apply(
+                [&](auto&&... reg)
+                {
+                    ((hasReadOnlyRegister |=
+                      (reg.m_accessLevel == RegisterAccessLevel_E::RO)
+                          ? (readOnlyRegNames.append(readOnlyRegNames.empty() ? "" : ", ")
+                                 .append(std::string(reg.m_name)),
+                             true)
+                          : false),
+                     ...);
+                },
+                regs);
+
+            if (hasReadOnlyRegister)
+            {
+                std::string errMsg = "Attempt to write to read-only registers: " + readOnlyRegNames;
+                m_log.error(errMsg.c_str());
+                return Error_t::REQUEST_INVALID;
+            }
+
             std::vector<u8> frame;
             frame.push_back((u8)MdFrameId_E::FRAME_WRITE_REGISTER);
             frame.push_back((u8)0x0);

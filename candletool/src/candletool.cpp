@@ -1002,7 +1002,7 @@ void CandleTool::setupInfo(u16 id, bool printAll)
             {
                 auto fault = md.readRegisters(reg).second;
                 if (fault != MD::Error_t::OK)
-                    log.error("Error while reading register %s", reg.m_name.c_str());
+                    log.error("Error while reading register %s", reg.m_name.data());
             }
         };
 
@@ -1020,7 +1020,7 @@ void CandleTool::setupInfo(u16 id, bool printAll)
         {
             auto fault = md.readRegisters(reg).second;
             if (fault != MD::Error_t::OK)
-                log.error("Error while reading register %s", reg.m_name.c_str());
+                log.error("Error while reading register %s", reg.m_name.data());
         }
     };
 

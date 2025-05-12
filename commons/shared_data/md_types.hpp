@@ -6,6 +6,7 @@
 #include <cstring>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <tuple>
 #include <vector>
@@ -173,7 +174,7 @@ namespace mab
 
         const RegisterAccessLevel_E m_accessLevel;
         const u16                   m_regAddress;
-        const std::string           m_name;
+        const std::string_view      m_name;
 
       private:
         std::array<u8, sizeof(value) + sizeof(m_regAddress)> serializedBuffer;
@@ -181,7 +182,7 @@ namespace mab
       public:
         constexpr MDRegisterEntry_S(RegisterAccessLevel_E accessLevel,
                                     u16                   regAddress,
-                                    std::string           name)
+                                    std::string_view      name)
             : m_accessLevel(accessLevel), m_regAddress(regAddress), m_name(name)
         {
         }
@@ -247,7 +248,7 @@ namespace mab
 
         const RegisterAccessLevel_E m_accessLevel;
         const u16                   m_regAddress;
-        const std::string           m_name;
+        const std::string_view      m_name;
 
       private:
         std::array<u8, sizeof(value) + sizeof(m_regAddress)> serializedBuffer;
@@ -255,8 +256,8 @@ namespace mab
       public:
         constexpr MDRegisterEntry_S(RegisterAccessLevel_E accessLevel,
                                     u16                   regAddress,
-                                    std::string           name)
-            : m_accessLevel(accessLevel), m_regAddress(regAddress), m_name(std::string(name))
+                                    std::string_view      name)
+            : m_accessLevel(accessLevel), m_regAddress(regAddress), m_name(name)
         {
         }
         constexpr MDRegisterEntry_S(const MDRegisterEntry_S& otherReg)
