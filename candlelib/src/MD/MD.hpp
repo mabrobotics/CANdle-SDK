@@ -366,24 +366,6 @@ namespace mab
         template <class... T>
         inline Error_t writeRegisters(MDRegisterEntry_S<T>&... regs)
         {
-            // Check if any registers have read-only access level
-            bool        hasReadOnlyRegister = false;
-            std::string readOnlyRegNames;
-            ((hasReadOnlyRegister |=
-              (regs.m_accessLevel == RegisterAccessLevel_E::RO)
-                  ? (readOnlyRegNames.append(readOnlyRegNames.empty() ? "" : ", ")
-                         .append(std::string(regs.m_name)),
-                     true)
-                  : false),
-             ...);
-
-            if (hasReadOnlyRegister)
-            {
-                std::string errMsg = "Attempt to write to read-only registers: " + readOnlyRegNames;
-                m_log.error(errMsg.c_str());
-                return Error_t::REQUEST_INVALID;
-            }
-
             auto tuple = std::tuple<MDRegisterEntry_S<T>&...>(regs...);
             return writeRegisters(tuple);
         }
