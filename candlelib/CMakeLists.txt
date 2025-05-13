@@ -39,10 +39,7 @@ message(
 )
 
 target_sources(candle PRIVATE
-  src/candle.cpp
-  src/bus.cpp
   src/crc.cpp
-  src/md80.cpp
   src/can_bootloader/can_bootloader.cpp
   src/communication_device/candle_v2.cpp
   src/communication_device/candle_bootloader.cpp
@@ -55,12 +52,9 @@ target_sources(candle PRIVATE
   src/pds/power_stage.cpp
   src/pds/brake_resistor.cpp
   src/pds/isolated_converter.cpp
-  src/register.cpp
-  src/usbDevice.cpp
 )
 
 if(UNIX)
-  target_sources(candle PRIVATE src/uartDevice.cpp src/spiDevice.cpp)
   target_compile_definitions(candle PRIVATE UNIX)
 endif()
 target_include_directories(candle PUBLIC
@@ -80,7 +74,6 @@ else()
   target_link_libraries(candle shared_data logger pthread ${LIBUSB_WINDOWS_STATIC} -static)
 
 endif()
-set_target_properties(candle PROPERTIES PUBLIC_HEADER candle.hpp)
 target_compile_options(candle PRIVATE -Wall -Wextra -Wpedantic)
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   target_compile_options(candle PRIVATE -g3)

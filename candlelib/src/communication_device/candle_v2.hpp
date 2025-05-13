@@ -9,7 +9,6 @@
 
 #include "candle_types.hpp"
 #include "logger.hpp"
-#include "bus.hpp"
 #include "I_communication_interface.hpp"
 #include "USB_v2.hpp"
 #include "mab_types.hpp"
