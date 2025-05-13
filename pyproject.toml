@@ -14,9 +14,9 @@ name = "pyCandleMAB"
 version = "2.0.0"
 dependencies = ["cmake"]
 requires-python = ">= 3.7"
-authors = [{ name = "MAB Robotics", email = "support.md80@mabrobotics.pl" }]
-maintainers = [{ name = "MAB Robotics", email = "support.md80@mabrobotics.pl" }]
-description = "Python package for controlling MD80-based actuators"
+authors = [{ name = "MAB Robotics", email = "support@mabrobotics.pl" }]
+maintainers = [{ name = "MAB Robotics", email = "support@mabrobotics.pl" }]
+description = "Python package for controlling MD-based actuators"
 readme = { file = "README.md", content-type = "text/markdown" }
 license = { file = "LICENSE.txt" }
 classifiers = [

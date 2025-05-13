@@ -59,7 +59,7 @@ namespace mab
             m_log.error("Motion status check failed");
             return MD::Error_t::TRANSFER_FAILED;
         }
-        if (m_mdRegisters.motionModeStatus.value == mab::Md80Mode_E::IDLE)
+        if (m_mdRegisters.motionModeStatus.value == mab::MdMode_E::IDLE)
             m_log.warn("Motion mode not set");
 
         return MD::Error_t::OK;
@@ -148,7 +148,7 @@ namespace mab
         return MD::Error_t::OK;
     }
 
-    MD::Error_t MD::setMotionMode(mab::Md80Mode_E mode)
+    MD::Error_t MD::setMotionMode(mab::MdMode_E mode)
     {
         m_mdRegisters.motionModeCommand = mode;
         if (writeRegisters(m_mdRegisters.motionModeCommand))
@@ -159,25 +159,25 @@ namespace mab
         std::string modeDisplay;
         switch (mode)
         {
-            case mab::Md80Mode_E::IDLE:
+            case mab::MdMode_E::IDLE:
                 modeDisplay = "IDLE";
                 break;
-            case mab::Md80Mode_E::IMPEDANCE:
+            case mab::MdMode_E::IMPEDANCE:
                 modeDisplay = "IMPEDANCE";
                 break;
-            case mab::Md80Mode_E::POSITION_PID:
+            case mab::MdMode_E::POSITION_PID:
                 modeDisplay = "POSITION PID";
                 break;
-            case mab::Md80Mode_E::POSITION_PROFILE:
+            case mab::MdMode_E::POSITION_PROFILE:
                 modeDisplay = "POSITION PROFILE";
                 break;
-            case mab::Md80Mode_E::RAW_TORQUE:
+            case mab::MdMode_E::RAW_TORQUE:
                 modeDisplay = "RAW TORQUE";
                 break;
-            case mab::Md80Mode_E::VELOCITY_PID:
+            case mab::MdMode_E::VELOCITY_PID:
                 modeDisplay = "VELOCITY PID";
                 break;
-            case mab::Md80Mode_E::VELOCITY_PROFILE:
+            case mab::MdMode_E::VELOCITY_PROFILE:
                 modeDisplay = "VELOCITY PROFILE";
                 break;
             default:

@@ -34,7 +34,7 @@ namespace mab
                 return false;
         }
 
-        /* send reset command to the md80 firmware */
+        /* send reset command to the md firmware */
         if (directly == false)
             pLoader->resetDevice();
 

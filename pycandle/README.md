@@ -1,7 +1,7 @@
-# MD80 Python driver
-This Python package can be used to configure and control MD80-based actuators using MAB's communication dongle (CANdle or CANdle HAT). The package is a wrapper around the C++ library - with simple python examples there won’t be any noticeable performance decrease compared to plain C++, however for real-time applications we advise using C++ libraries directly. 
+# MD Python driver
+This Python package can be used to configure and control MD-based actuators using MAB's communication dongle (CANdle or CANdle HAT). The package is a wrapper around the C++ library - with simple python examples there won’t be any noticeable performance decrease compared to plain C++, however for real-time applications we advise using C++ libraries directly. 
 
-The original C++ libraries and python examples are located in the [candle](https://github.com/mabrobotics/candle) repository. Please make sure you read the [MD80 x CANdle manual](https://www.mabrobotics.pl/servos/manual) before you start playing with the examples.
+The original C++ libraries and python examples are located in the [candle](https://github.com/mabrobotics/candle) repository. Please make sure you read the [MD manual](https://www.mabrobotics.pl/servos/manual) before you start playing with the examples.
 
 # Getting started
 
