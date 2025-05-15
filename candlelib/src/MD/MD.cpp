@@ -9,7 +9,7 @@ namespace mab
         //  m_mdRegisters.hardwareType.value.deviceType = deviceType_E::UNKNOWN_DEVICE;
         //  auto mfDataResult                           = readRegister(m_mdRegisters.hardwareType);
 
-        // if (mfDataResult.second == Error_t::OK)
+        // if (mfDataresult == Error_t::OK)
         // {
         //     m_mdRegisters.hardwareType = mfDataResult.first;
 
@@ -22,7 +22,7 @@ namespace mab
 
         auto mfLegacydataResult = readRegister(m_mdRegisters.legacyHardwareVersion);
 
-        if (mfLegacydataResult.second != Error_t::OK)
+        if (mfLegacydataResult != Error_t::OK)
             return Error_t::NOT_CONNECTED;
 
         if (m_mdRegisters.legacyHardwareVersion.value != 0)
@@ -54,7 +54,7 @@ namespace mab
         }
         m_log.info("Driver enabled");
         m_mdRegisters.motionModeStatus = 0;
-        if (readRegisters(m_mdRegisters.motionModeStatus).second != MD::Error_t::OK)
+        if (readRegisters(m_mdRegisters.motionModeStatus) != MD::Error_t::OK)
         {
             m_log.error("Motion status check failed");
             return MD::Error_t::TRANSFER_FAILED;
@@ -322,13 +322,13 @@ namespace mab
     MD::getQuickStatus()
     {
         auto result = readRegister(m_mdRegisters.quickStatus);
-        if (result.second != Error_t::OK)
+        if (result != Error_t::OK)
         {
             m_log.error("Could not read quick status vector!");
-            return std::make_pair(m_status.quickStatus, result.second);
+            return std::make_pair(m_status.quickStatus, result);
         }
         MDStatus::toMap(m_mdRegisters.quickStatus.value, m_status.quickStatus);
-        return std::make_pair(m_status.quickStatus, result.second);
+        return std::make_pair(m_status.quickStatus, result);
     }
 
     std::pair<const std::unordered_map<const MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
@@ -336,13 +336,13 @@ namespace mab
     MD::getMainEncoderStatus()
     {
         auto result = readRegister(m_mdRegisters.mainEncoderStatus);
-        if (result.second != Error_t::OK)
+        if (result != Error_t::OK)
         {
             m_log.error("Could not read main encoder errors!");
-            return std::make_pair(m_status.encoderStatus, result.second);
+            return std::make_pair(m_status.encoderStatus, result);
         }
         MDStatus::toMap(m_mdRegisters.mainEncoderStatus.value, m_status.encoderStatus);
-        return std::make_pair(m_status.encoderStatus, result.second);
+        return std::make_pair(m_status.encoderStatus, result);
     }
 
     std::pair<const std::unordered_map<const MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
@@ -350,13 +350,13 @@ namespace mab
     MD::getOutputEncoderStatus()
     {
         auto result = readRegister(m_mdRegisters.auxEncoderStatus);
-        if (result.second != Error_t::OK)
+        if (result != Error_t::OK)
         {
             m_log.error("Could not read output encoder errors!");
-            return std::make_pair(m_status.encoderStatus, result.second);
+            return std::make_pair(m_status.encoderStatus, result);
         }
         MDStatus::toMap(m_mdRegisters.auxEncoderStatus.value, m_status.encoderStatus);
-        return std::make_pair(m_status.encoderStatus, result.second);
+        return std::make_pair(m_status.encoderStatus, result);
     }
 
     std::pair<
@@ -365,13 +365,13 @@ namespace mab
     MD::getCalibrationStatus()
     {
         auto result = readRegister(m_mdRegisters.calibrationStatus);
-        if (result.second != Error_t::OK)
+        if (result != Error_t::OK)
         {
             m_log.error("Could not read ");
-            return std::make_pair(m_status.calibrationStatus, result.second);
+            return std::make_pair(m_status.calibrationStatus, result);
         }
         MDStatus::toMap(m_mdRegisters.calibrationStatus.value, m_status.calibrationStatus);
-        return std::make_pair(m_status.calibrationStatus, result.second);
+        return std::make_pair(m_status.calibrationStatus, result);
     }
 
     std::pair<const std::unordered_map<const MDStatus::BridgeStatusBits, MDStatus::StatusItem_S>,
@@ -379,13 +379,13 @@ namespace mab
     MD::getBridgeStatus()
     {
         auto result = readRegister(m_mdRegisters.bridgeStatus);
-        if (result.second != Error_t::OK)
+        if (result != Error_t::OK)
         {
             m_log.error("Could not read ");
-            return std::make_pair(m_status.bridgeStatus, result.second);
+            return std::make_pair(m_status.bridgeStatus, result);
         }
         MDStatus::toMap(m_mdRegisters.bridgeStatus.value, m_status.bridgeStatus);
-        return std::make_pair(m_status.bridgeStatus, result.second);
+        return std::make_pair(m_status.bridgeStatus, result);
     }
 
     std::pair<const std::unordered_map<const MDStatus::HardwareStatusBits, MDStatus::StatusItem_S>,
@@ -393,13 +393,13 @@ namespace mab
     MD::getHardwareStatus()
     {
         auto result = readRegister(m_mdRegisters.hardwareStatus);
-        if (result.second != Error_t::OK)
+        if (result != Error_t::OK)
         {
             m_log.error("Could not read ");
-            return std::make_pair(m_status.hardwareStatus, result.second);
+            return std::make_pair(m_status.hardwareStatus, result);
         }
         MDStatus::toMap(m_mdRegisters.hardwareStatus.value, m_status.hardwareStatus);
-        return std::make_pair(m_status.hardwareStatus, result.second);
+        return std::make_pair(m_status.hardwareStatus, result);
     }
 
     std::pair<
@@ -408,13 +408,13 @@ namespace mab
     MD::getCommunicationStatus()
     {
         auto result = readRegister(m_mdRegisters.communicationStatus);
-        if (result.second != Error_t::OK)
+        if (result != Error_t::OK)
         {
             m_log.error("Could not read ");
-            return std::make_pair(m_status.communicationStatus, result.second);
+            return std::make_pair(m_status.communicationStatus, result);
         }
         MDStatus::toMap(m_mdRegisters.communicationStatus.value, m_status.communicationStatus);
-        return std::make_pair(m_status.communicationStatus, result.second);
+        return std::make_pair(m_status.communicationStatus, result);
     }
 
     std::pair<const std::unordered_map<const MDStatus::MotionStatusBits, MDStatus::StatusItem_S>,
@@ -422,79 +422,79 @@ namespace mab
     MD::getMotionStatus()
     {
         auto result = readRegister(m_mdRegisters.motionStatus);
-        if (result.second != Error_t::OK)
+        if (result != Error_t::OK)
         {
             m_log.error("Could not read ");
-            return std::make_pair(m_status.motionStatus, result.second);
+            return std::make_pair(m_status.motionStatus, result);
         }
         MDStatus::toMap(m_mdRegisters.motionStatus.value, m_status.motionStatus);
-        return std::make_pair(m_status.motionStatus, result.second);
+        return std::make_pair(m_status.motionStatus, result);
     }
 
     std::pair<float, MD::Error_t> MD::getPosition()
     {
         auto result = readRegister(m_mdRegisters.mainEncoderPosition);
-        if (result.second != Error_t::OK)
+        if (result != Error_t::OK)
         {
             m_log.error("Could not read ");
-            return std::make_pair(0, result.second);
+            return std::make_pair(0, result);
         }
-        return std::make_pair(m_mdRegisters.mainEncoderPosition.value, result.second);
+        return std::make_pair(m_mdRegisters.mainEncoderPosition.value, result);
     }
 
     std::pair<float, MD::Error_t> MD::getVelocity()
     {
         auto result = readRegister(m_mdRegisters.mainEncoderVelocity);
-        if (result.second != Error_t::OK)
+        if (result != Error_t::OK)
         {
             m_log.error("Could not read ");
-            return std::make_pair(0, result.second);
+            return std::make_pair(0, result);
         }
-        return std::make_pair(m_mdRegisters.mainEncoderVelocity.value, result.second);
+        return std::make_pair(m_mdRegisters.mainEncoderVelocity.value, result);
     }
 
     std::pair<float, MD::Error_t> MD::getTorque()
     {
         auto result = readRegister(m_mdRegisters.motorTorque);
-        if (result.second != Error_t::OK)
+        if (result != Error_t::OK)
         {
             m_log.error("Could not read ");
-            return std::make_pair(0, result.second);
+            return std::make_pair(0, result);
         }
-        return std::make_pair(m_mdRegisters.motorTorque.value, result.second);
+        return std::make_pair(m_mdRegisters.motorTorque.value, result);
     }
 
     std::pair<float, MD::Error_t> MD::getOutputEncoderPosition()
     {
         auto result = readRegister(m_mdRegisters.auxEncoderPosition);
-        if (result.second != Error_t::OK)
+        if (result != Error_t::OK)
         {
             m_log.error("Could not read ");
-            return std::make_pair(0, result.second);
+            return std::make_pair(0, result);
         }
-        return std::make_pair(m_mdRegisters.auxEncoderPosition.value, result.second);
+        return std::make_pair(m_mdRegisters.auxEncoderPosition.value, result);
     }
 
     std::pair<float, MD::Error_t> MD::getOutputEncoderVelocity()
     {
         auto result = readRegister(m_mdRegisters.auxEncoderVelocity);
-        if (result.second != Error_t::OK)
+        if (result != Error_t::OK)
         {
             m_log.error("Could not read ");
-            return std::make_pair(0, result.second);
+            return std::make_pair(0, result);
         }
-        return std::make_pair(m_mdRegisters.auxEncoderVelocity.value, result.second);
+        return std::make_pair(m_mdRegisters.auxEncoderVelocity.value, result);
     }
 
     std::pair<u8, MD::Error_t> MD::getTemperature()
     {
         auto result = readRegister(m_mdRegisters.motorTemperature);
-        if (result.second != Error_t::OK)
+        if (result != Error_t::OK)
         {
             m_log.error("Could not read ");
-            return std::make_pair(0, result.second);
+            return std::make_pair(0, result);
         }
-        return std::make_pair(m_mdRegisters.motorTemperature.value, result.second);
+        return std::make_pair(m_mdRegisters.motorTemperature.value, result);
     }
 
     /// @brief This test should be performed with 1M datarate on CAN network

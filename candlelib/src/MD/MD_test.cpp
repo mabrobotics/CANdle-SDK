@@ -53,7 +53,7 @@ TEST_F(MD_test, checkROAccess)
     mab::MD md(100, m_candle);
 
     auto resultRead = md.readRegister(registers.auxEncoderPosition);
-    EXPECT_EQ(resultRead.second, mab::MD::Error_t::OK);
+    EXPECT_EQ(resultRead, mab::MD::Error_t::OK);
 
     auto resultWrite = md.writeRegister(registers.auxEncoderPosition);
     EXPECT_EQ(resultWrite, mab::MD::Error_t::REQUEST_INVALID);
@@ -76,5 +76,5 @@ TEST_F(MD_test, checkWOAccess)
     EXPECT_EQ(resultWrite, mab::MD::Error_t::OK);
 
     auto resultRead = md.readRegister(registers.runBlink);
-    EXPECT_EQ(resultRead.second, mab::MD::Error_t::REQUEST_INVALID);
+    EXPECT_EQ(resultRead, mab::MD::Error_t::REQUEST_INVALID);
 }

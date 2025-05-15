@@ -323,7 +323,7 @@ void CandleTool::setupCalibrationOutput(u16 id)
         log.error("No output encoder is configured!");
         return;
     }
-    if (resultRead.second != MD::Error_t::OK)
+    if (resultRead != MD::Error_t::OK)
     {
         log.error("Failed to read output encoder type for the driver with id %d!", id);
     }
@@ -767,8 +767,8 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
 
     if (cfgName == "")
     {
-        if (md.readRegisters(regs.motorName).second != MD::Error_t::OK)
-            if (md.readRegisters(regs.motorName).second != MD::Error_t::OK)
+        if (md.readRegisters(regs.motorName) != MD::Error_t::OK)
+            if (md.readRegisters(regs.motorName) != MD::Error_t::OK)
             {
                 log.error("Failed to read motor config %d!", id);
                 snprintf(motorNameChar, 24, "UNKNOWN_MD");
@@ -788,16 +788,14 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
                          regs.motorIMax,
                          regs.motorGearRatio,
                          regs.motorTorqueBandwidth,
-                         regs.motorKV)
-            .second != MD::Error_t::OK)
+                         regs.motorKV) != MD::Error_t::OK)
     {
         if (md.readRegisters(regs.motorPolePairs,
                              regs.motorKt,
                              regs.motorIMax,
                              regs.motorGearRatio,
                              regs.motorTorqueBandwidth,
-                             regs.motorKV)
-                .second != MD::Error_t::OK)
+                             regs.motorKV) != MD::Error_t::OK)
         {
             log.warn("Failed to read motor config!");
         }
@@ -818,9 +816,9 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
     readIni["motor"]["max current"]      = prettyFloatToString(regs.motorIMax.value);
     readIni["motor"]["torque bandwidth"] = prettyFloatToString(regs.motorTorqueBandwidth.value);
 
-    if (md.readRegisters(regs.motorShutdownTemp).second != MD::Error_t::OK)
+    if (md.readRegisters(regs.motorShutdownTemp) != MD::Error_t::OK)
     {
-        if (md.readRegisters(regs.motorShutdownTemp).second != MD::Error_t::OK)
+        if (md.readRegisters(regs.motorShutdownTemp) != MD::Error_t::OK)
         {
             log.warn("Failed to read motor config!");
         }
@@ -835,16 +833,14 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
                          regs.maxAcceleration,
                          regs.maxDeceleration,
                          regs.positionLimitMax,
-                         regs.positionLimitMin)
-            .second != MD::Error_t::OK)
+                         regs.positionLimitMin) != MD::Error_t::OK)
     {
         if (md.readRegisters(regs.maxTorque,
                              regs.maxVelocity,
                              regs.maxAcceleration,
                              regs.maxDeceleration,
                              regs.positionLimitMax,
-                             regs.positionLimitMin)
-                .second != MD::Error_t::OK)
+                             regs.positionLimitMin) != MD::Error_t::OK)
         {
             log.warn("Failed to read motor config!");
         }
@@ -863,12 +859,13 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
     readIni["limits"]["max torque"]       = prettyFloatToString(regs.maxTorque.value);
 
     /* Motor config - profile section */
-    if (md.readRegisters(regs.profileVelocity, regs.profileAcceleration, regs.profileDeceleration)
-            .second != MD::Error_t::OK)
+    if (md.readRegisters(regs.profileVelocity,
+                         regs.profileAcceleration,
+                         regs.profileDeceleration) != MD::Error_t::OK)
     {
-        if (md.readRegisters(
-                  regs.profileVelocity, regs.profileAcceleration, regs.profileDeceleration)
-                .second != MD::Error_t::OK)
+        if (md.readRegisters(regs.profileVelocity,
+                             regs.profileAcceleration,
+                             regs.profileDeceleration) != MD::Error_t::OK)
         {
             log.warn("Failed to read motor config!");
         }
@@ -885,9 +882,9 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
 
     /* Motor config - output encoder section */
 
-    if (md.readRegisters(regs.auxEncoder, regs.auxEncoderMode).second != MD::Error_t::OK)
+    if (md.readRegisters(regs.auxEncoder, regs.auxEncoderMode) != MD::Error_t::OK)
     {
-        if (md.readRegisters(regs.auxEncoder, regs.auxEncoderMode).second != MD::Error_t::OK)
+        if (md.readRegisters(regs.auxEncoder, regs.auxEncoderMode) != MD::Error_t::OK)
         {
             log.warn("Failed to read motor config!");
         }
@@ -906,8 +903,8 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
 
     /* Motor config - position PID section */
     if (md.readRegisters(
-              regs.motorPosPidKp, regs.motorPosPidKi, regs.motorPosPidKd, regs.motorPosPidWindup)
-            .second != MD::Error_t::OK)
+            regs.motorPosPidKp, regs.motorPosPidKi, regs.motorPosPidKd, regs.motorPosPidWindup) !=
+        MD::Error_t::OK)
 
     {
         log.warn("Failed to read motor config!");
@@ -919,8 +916,8 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
 
     /* Motor config - velocity PID section */
     if (md.readRegisters(
-              regs.motorVelPidKp, regs.motorVelPidKi, regs.motorVelPidKd, regs.motorVelPidWindup)
-            .second != MD::Error_t::OK)
+            regs.motorVelPidKp, regs.motorVelPidKi, regs.motorVelPidKd, regs.motorVelPidWindup) !=
+        MD::Error_t::OK)
     {
         log.warn("Failed to read motor config!");
     }
@@ -930,7 +927,7 @@ void CandleTool::setupReadConfig(u16 id, const std::string& cfgName)
     readIni["velocity PID"]["windup"] = prettyFloatToString(regs.motorVelPidWindup.value);
 
     /* Motor config - impedance PD section */
-    if (md.readRegisters(regs.motorImpPidKp, regs.motorImpPidKd).second != MD::Error_t::OK)
+    if (md.readRegisters(regs.motorImpPidKp, regs.motorImpPidKd) != MD::Error_t::OK)
     {
         log.warn("Failed to read motor config!");
     }
@@ -998,7 +995,7 @@ void CandleTool::setupInfo(u16 id, bool printAll)
                 return;
             if (reg.m_accessLevel != RegisterAccessLevel_E::WO)
             {
-                auto fault = md.readRegisters(reg).second;
+                auto fault = md.readRegisters(reg);
                 if (fault != MD::Error_t::OK)
                     log.error("Error while reading register %s", reg.m_name.data());
             }
@@ -1016,7 +1013,7 @@ void CandleTool::setupInfo(u16 id, bool printAll)
             return;
         if (reg.m_accessLevel != RegisterAccessLevel_E::WO)
         {
-            auto fault = md.readRegisters(reg).second;
+            auto fault = md.readRegisters(reg);
             if (fault != MD::Error_t::OK)
                 log.error("Error while reading register %s", reg.m_name.data());
         }
@@ -1278,7 +1275,7 @@ void CandleTool::registerRead(u16 id, u16 regAdress)
             if constexpr (std::is_arithmetic_v<T>)
             {
                 auto result = md.readRegister(reg);
-                if (result.second != MD::Error_t::OK)
+                if (result != MD::Error_t::OK)
                 {
                     log.error("Failed to read register %d", regAdress);
                     return false;
@@ -1290,7 +1287,7 @@ void CandleTool::registerRead(u16 id, u16 regAdress)
             else if constexpr (std::is_same<std::decay_t<T>, char*>::value)
             {
                 auto result = md.readRegisters(reg);
-                if (result.second != MD::Error_t::OK)
+                if (result != MD::Error_t::OK)
                 {
                     log.error("Failed to read register %d", regAdress);
                     return false;
