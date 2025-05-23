@@ -384,9 +384,7 @@ void PdsCli::parse(Pds* p_pds)
 
         else if (m_interactiveSetupCmd->parsed())
         {
-            m_log.warn(
-                "This command is under development. For now please be patient and "
-                "https://pl.wikipedia.org/wiki/RTFM");
+            m_log.warn("This command is under development. Please contact support");
         }
 
         else if (m_configReadCmd->parsed())
