@@ -4,7 +4,7 @@
 #include <cstring>
 #include <string_view>
 #include <span>
-#include "candle_v2.hpp"
+#include "candle.hpp"
 #include "logger.hpp"
 #include "mab_def.hpp"
 #include "mab_types.hpp"
@@ -35,7 +35,7 @@ namespace mab
         };
 
         const canId_t m_id;
-        CandleV2*     mp_candle;
+        Candle*       mp_candle;
         Logger        m_log = Logger(Logger::ProgramLayer_E::LAYER_2, "CAN BOOTLOADER");
 
         std::optional<u32> m_customReponseTimeoutMs;
@@ -54,7 +54,7 @@ namespace mab
         /// @param id The CAN ID for the device
         /// @param candle Pointer to initialized Candle object. It is destroyed at the end of the
         /// object lifetime.
-        CanBootloader(const canId_t id, CandleV2* candle);
+        CanBootloader(const canId_t id, Candle* candle);
         ~CanBootloader();
 
         Error_t init(const u32 bootAdress, const u32 appSize) const;

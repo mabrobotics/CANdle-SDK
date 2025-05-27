@@ -6,7 +6,7 @@
 #include "manufacturer_data.hpp"
 #include "candle_types.hpp"
 #include "MDStatus.hpp"
-#include "candle_v2.hpp"
+#include "candle.hpp"
 
 #include <cstring>
 
@@ -58,7 +58,7 @@ namespace mab
         /// @brief Create MD object instance
         /// @param canId can node id of MD
         /// @param transferCANFrame
-        MD(canId_t canId, CandleV2* candle) : m_canId(canId), m_candle(candle)
+        MD(canId_t canId, Candle* candle) : m_canId(canId), m_candle(candle)
         {
             m_log.m_layer = Logger::ProgramLayer_E::TOP;
             std::stringstream tag;
@@ -422,12 +422,12 @@ namespace mab
         /// @brief Debugging method to test communication efficiency
         void testLatency();
 
-        static std::vector<canId_t> discoverMDs(CandleV2* candle);
+        static std::vector<canId_t> discoverMDs(Candle* candle);
 
       private:
-        const CandleV2* m_candle;
+        const Candle* m_candle;
 
-        inline const CandleV2* getCandle() const
+        inline const Candle* getCandle() const
         {
             if (m_candle != nullptr)
             {

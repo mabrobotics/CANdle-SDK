@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "candle_v2.hpp"
+#include "candle.hpp"
 #include "MD.hpp"
 #include "candletool.hpp"
 #include "logger.hpp"

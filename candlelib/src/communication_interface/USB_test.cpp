@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-#include <USB_v2.hpp>
+#include <USB.hpp>
 
-class USBv2_test : public ::testing::Test
+class USB_test : public ::testing::Test
 {
   protected:
     void SetUp() override

@@ -6,7 +6,7 @@
 #include "pds_types.hpp"
 #include "candle_types.hpp"
 #include "pds_protocol.hpp"
-#include "candle_v2.hpp"
+#include "candle.hpp"
 #include <cstring>
 #include <memory>
 
@@ -89,7 +89,7 @@ namespace mab
          * @note Constructor is protected because even if this class has no pure virtual methods, it
             still should not be instantiated.
          */
-        PdsModule(socketIndex_E socket, moduleType_E type, CandleV2* p_candle, u16& canId);
+        PdsModule(socketIndex_E socket, moduleType_E type, Candle* p_candle, u16& canId);
 
         static constexpr Logger::ProgramLayer_E DEFAULT_PDS_MODULE_LOG_LAYER =
             Logger::ProgramLayer_E::LAYER_2;
@@ -104,7 +104,7 @@ namespace mab
 
         /* Pointer to the candle object. Assumed to be passed in a constructor from parent PDS
          * object. It will be used for independent communication from each module perspective */
-        CandleV2* mp_candle;
+        Candle* mp_candle;
 
         /* CAN ID of the parent PDS device. Assumed to be passed in a constructor from parent PDS
          * object */

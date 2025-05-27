@@ -1,9 +1,9 @@
-#include "candle_v2.hpp"
+#include "candle.hpp"
 #include "MD.hpp"
 
 int main()
 {
-    mab::CandleV2* candle =
+    mab::Candle* candle =
         mab::attachCandle(mab::CANdleBaudrate_E::CAN_BAUD_1M, mab::candleTypes::busTypes_t::USB);
 
     constexpr mab::canId_t mdId = 100;

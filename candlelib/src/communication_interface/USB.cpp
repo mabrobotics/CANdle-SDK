@@ -1,4 +1,4 @@
-#include <USB_v2.hpp>
+#include <USB.hpp>
 #include <cstring>
 #include <string>
 
@@ -199,7 +199,7 @@ namespace mab
     }
 
     //----------------------------USB-DEVICE-SECTION---------------------------------------------
-    USBv2::USBv2(const u16 vid, const u16 pid, const std::string serialNo) : m_vid(vid), m_pid(pid)
+    USB::USB(const u16 vid, const u16 pid, const std::string serialNo) : m_vid(vid), m_pid(pid)
     {
         if (!serialNo.empty())
             m_serialNo = serialNo;
@@ -210,14 +210,14 @@ namespace mab
         // libusb_set_option(&m_ctx, libusb_option::LIBUSB_OPTION_LOG_LEVEL,
         // LIBUSB_LOG_LEVEL_DEBUG);
     }
-    USBv2::~USBv2()
+    USB::~USB()
     {
         m_Log.debug("Deinit libusb for context %d: ", (size_t)m_ctx);
         disconnect();
         libusb_exit(m_ctx);
     }
 
-    USBv2::Error_t USBv2::connect()
+    USB::Error_t USB::connect()
     {
         m_libusbDevice                = nullptr;
         libusb_device** deviceList    = nullptr;
@@ -288,7 +288,7 @@ namespace mab
             return Error_t::OK;
         }
     }
-    USBv2::Error_t USBv2::disconnect()
+    USB::Error_t USB::disconnect()
     {
         if (m_libusbDevice == nullptr)
         {
@@ -299,14 +299,15 @@ namespace mab
         return Error_t::OK;
     }
 
-    USBv2::Error_t USBv2::transfer(std::vector<u8> data, const u32 timeoutMs)
+    USB::Error_t USB::transfer(std::vector<u8> data, const u32 timeoutMs)
     {
         auto ret = transfer(data, timeoutMs, 0);
         return ret.second;
     }
 
-    std::pair<std::vector<u8>, USBv2::Error_t> USBv2::transfer(
-        std::vector<u8> data, const u32 timeoutMs, const size_t expectedReceivedDataSize)
+    std::pair<std::vector<u8>, USB::Error_t> USB::transfer(std::vector<u8> data,
+                                                           const u32       timeoutMs,
+                                                           const size_t    expectedReceivedDataSize)
     {
         if (m_libusbDevice == nullptr)
         {

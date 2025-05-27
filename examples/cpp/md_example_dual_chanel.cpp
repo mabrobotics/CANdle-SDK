@@ -1,4 +1,4 @@
-#include "candle_v2.hpp"
+#include "candle.hpp"
 #include "MD.hpp"
 
 int main()
@@ -6,11 +6,11 @@ int main()
     const std::string candleSerial1 = "ENTER YOUR FIRST CANDLE SERIAL NUMBER";
     const std::string candleSerial2 = "ENTER YOUR SECOND CANDLE SERIAL NUMBER";
 
-    std::unique_ptr<mab::I_CommunicationInterface> usb1 = std::make_unique<mab::USBv2>(
-        mab::CandleV2::CANDLE_VID, mab::CandleV2::CANDLE_PID, candleSerial1);
+    std::unique_ptr<mab::I_CommunicationInterface> usb1 =
+        std::make_unique<mab::USB>(mab::Candle::CANDLE_VID, mab::Candle::CANDLE_PID, candleSerial1);
     usb1->connect();
-    std::unique_ptr<mab::I_CommunicationInterface> usb2 = std::make_unique<mab::USBv2>(
-        mab::CandleV2::CANDLE_VID, mab::CandleV2::CANDLE_PID, candleSerial2);
+    std::unique_ptr<mab::I_CommunicationInterface> usb2 =
+        std::make_unique<mab::USB>(mab::Candle::CANDLE_VID, mab::Candle::CANDLE_PID, candleSerial2);
     usb2->connect();
 
     auto candle1 = mab::attachCandle(mab::CANdleBaudrate_E::CAN_BAUD_1M, std::move(usb1));

@@ -6,7 +6,7 @@
 #include "I_communication_interface.hpp"
 #include "I_communication_interface_mock.hpp"
 #include "MD.hpp"
-#include "candle_v2.hpp"
+#include "candle.hpp"
 #include "gmock/gmock.h"
 #include "mab_types.hpp"
 #include "md_types.hpp"
@@ -19,7 +19,7 @@ class MD_test : public ::testing::Test
   protected:
     std::unique_ptr<MockBus> m_bus;
     MockBus*                 m_debugBus;
-    mab::CandleV2*           m_candle;
+    mab::Candle*             m_candle;
     void                     SetUp() override
     {
         ::testing::FLAGS_gmock_verbose = "error";

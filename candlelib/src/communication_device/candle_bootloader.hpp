@@ -4,11 +4,11 @@
 #include <vector>
 
 #include "I_communication_interface.hpp"
-#include "USB_v2.hpp"
+#include "USB.hpp"
 #include "logger.hpp"
 #include "mab_types.hpp"
 #include "candle_types.hpp"
-#include "candle_v2.hpp"
+#include "candle.hpp"
 namespace mab
 {
     /// @brief Representation of CANdle USB bootloader
@@ -72,11 +72,11 @@ namespace mab
         log.info("Looking for CANdle...");
 
         // Detecting candle app and enter bootloader command if present
-        auto busApp = std::make_unique<USBv2>(CandleV2::CANDLE_VID, CandleV2::CANDLE_PID);
+        auto busApp = std::make_unique<USB>(Candle::CANDLE_VID, Candle::CANDLE_PID);
         if (busApp->connect() == I_CommunicationInterface::Error_t::OK)
         {
             log.info("Found! Rebooting to bootloader...");
-            if (CandleV2::enterBootloader(std::move(busApp)) != candleTypes::Error_t::OK)
+            if (Candle::enterBootloader(std::move(busApp)) != candleTypes::Error_t::OK)
             {
                 log.error("Failed to communicate with candle");
                 return {};
@@ -94,8 +94,8 @@ namespace mab
                            // for some reason! So no implementation can live while the
                            // libusb_exit(context) is called.
 
-        auto busBoot = std::make_unique<USBv2>(CandleBootloader::BOOTLOADER_VID,
-                                               CandleBootloader::BOOTLOADER_PID);
+        auto busBoot = std::make_unique<USB>(CandleBootloader::BOOTLOADER_VID,
+                                             CandleBootloader::BOOTLOADER_PID);
         if (busBoot->connect() == I_CommunicationInterface::Error_t::OK)
         {
             log.info("Found!");

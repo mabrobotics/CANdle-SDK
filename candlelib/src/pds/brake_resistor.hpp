@@ -13,7 +13,7 @@ namespace mab
     {
       public:
         BrakeResistor() = delete;
-        BrakeResistor(socketIndex_E socket, CandleV2* p_candle, u16& canId);
+        BrakeResistor(socketIndex_E socket, Candle* p_candle, u16& canId);
         ~BrakeResistor() = default;
 
         virtual void printModuleInfo(void) override;

@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-#include "SPI_v2.hpp"
+#include "SPI.hpp"
 
-class SPIv2 : public ::testing::Test
+class SPITest : public ::testing::Test
 {
   protected:
     void SetUp() override
