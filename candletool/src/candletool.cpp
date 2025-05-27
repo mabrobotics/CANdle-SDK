@@ -376,13 +376,15 @@ std::string CandleTool::validateAndGetFinalConfigPath(const std::string& cfgPath
         log.m_layer = Logger::ProgramLayer_E::TOP;
         log.error("\"%s\" is incomplete.", finalConfigPath.c_str());
         log.info("Generate updated file with all required fields? [y/n]");
-        if (!getConfirmation())
-            exit(0);
+        // TODO: that is so dumb
+        //  if (!getConfirmation())
+        //      exit(0);
         finalConfigPath = generateUpdatedConfigFile(finalConfigPath);
         log.info("Generated updated file \"%s\"", finalConfigPath.c_str());
         log.info("Setup MD with newly generated config? [y/n]");
-        if (!getConfirmation())
-            exit(0);
+        // TODO: that is so dumb, again!
+        // if (!getConfirmation())
+        //     exit(0);
     }
     return finalConfigPath;
 }

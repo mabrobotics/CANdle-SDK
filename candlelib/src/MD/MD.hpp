@@ -297,7 +297,7 @@ namespace mab
         template <class... T>
         inline Error_t readRegisters(std::tuple<MDRegisterEntry_S<T>&...>& regs)
         {
-            m_log.debug("Reading register...");
+            m_log.debug("Reading registers...");
 
             // Check if any registers have write-only access level
             bool        hasWriteOnlyRegister = false;
@@ -376,6 +376,10 @@ namespace mab
         inline Error_t writeRegisters(std::tuple<MDRegisterEntry_S<T>&...>& regs)
         {
             m_log.debug("Writing register...");
+            // Print registers names
+            std::apply([&](auto&&... reg)
+                       { ((m_log.debug("Register %s", reg.m_name.data())), ...); },
+                       regs);
 
             // Check has already been performed in the variadic template version if coming from
             // there Double-check here for direct tuple calls
