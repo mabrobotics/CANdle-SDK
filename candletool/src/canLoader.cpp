@@ -1,6 +1,6 @@
 #include "canLoader.hpp"
 #include "can_bootloader.hpp"
-#include "candle_v2.hpp"
+#include "candle.hpp"
 #include "mabFileParser.hpp"
 #include "mab_crc.hpp"
 
@@ -13,7 +13,7 @@
 namespace mab
 {
 
-    CanLoader::CanLoader(mab::CandleV2* candle, MabFileParser* mabFile, mab::canId_t canId)
+    CanLoader::CanLoader(mab::Candle* candle, MabFileParser* mabFile, mab::canId_t canId)
         : m_mabFile(mabFile), m_candle(candle), m_canId(canId)
     {
         m_log.m_tag   = "CAN LOADER";

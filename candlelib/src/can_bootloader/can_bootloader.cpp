@@ -4,13 +4,12 @@
 #include <string_view>
 #include <vector>
 #include "candle_bootloader.hpp"
-#include "candle_v2.hpp"
+#include "candle.hpp"
 
 namespace mab
 {
 
-    CanBootloader::CanBootloader(const canId_t id, CandleV2* candle)
-        : m_id(id), mp_candle(candle){};
+    CanBootloader::CanBootloader(const canId_t id, Candle* candle) : m_id(id), mp_candle(candle) {};
 
     CanBootloader::~CanBootloader()
     {

@@ -1,6 +1,6 @@
 
 #include <I_communication_interface_mock.hpp>
-#include <candle_v2.hpp>
+#include <candle.hpp>
 #include <mab_types.hpp>
 
 #include <bit>
@@ -12,7 +12,7 @@
 using ::testing::_;
 using ::testing::Return;
 
-class CandleV2Test : public ::testing::Test
+class CandleTest : public ::testing::Test
 {
   protected:
     std::unique_ptr<MockBus> mockBus;
@@ -29,14 +29,14 @@ class CandleV2Test : public ::testing::Test
 
     void SetUp() override
     {
-        mockData                       = {mab::CandleV2::CandleCommands_t::RESET, 0x1};
+        mockData                       = {mab::Candle::CandleCommands_t::RESET, 0x1};
         Logger::g_m_verbosity          = Logger::Verbosity_E::SILENT;
         mockBus                        = std::make_unique<MockBus>();
         ::testing::FLAGS_gmock_verbose = "error";
     }
 };
 
-TEST_F(CandleV2Test, failAttach)
+TEST_F(CandleTest, failAttach)
 {
     EXPECT_CALL(*mockBus, connect())
         .Times(1)
@@ -47,7 +47,7 @@ TEST_F(CandleV2Test, failAttach)
     mab::detachCandle(candle);
 }
 
-TEST_F(CandleV2Test, passAttach)
+TEST_F(CandleTest, passAttach)
 {
     EXPECT_CALL(*mockBus, connect())
         .Times(1)
@@ -60,7 +60,7 @@ TEST_F(CandleV2Test, passAttach)
     mab::detachCandle(candle);
 }
 
-TEST_F(CandleV2Test, failAfterInit)
+TEST_F(CandleTest, failAfterInit)
 {
     EXPECT_CALL(*mockBus, connect())
         .Times(1)
@@ -76,7 +76,7 @@ TEST_F(CandleV2Test, failAfterInit)
     mab::detachCandle(candle);
 }
 
-TEST_F(CandleV2Test, successAfterInit)
+TEST_F(CandleTest, successAfterInit)
 {
     EXPECT_CALL(*mockBus, connect())
         .Times(1)

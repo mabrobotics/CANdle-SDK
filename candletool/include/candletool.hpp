@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include "candle_v2.hpp"
+#include "candle.hpp"
 #include "mini/ini.h"
 #include "logger.hpp"
 #include "pds.hpp"
@@ -59,7 +59,7 @@ class CandleTool
     void registerRead(u16 id, u16 reg);
 
     // Retrieve the Candle object
-    mab::CandleV2* getCandle()
+    mab::Candle* getCandle()
     {
         return m_candle;
     }
@@ -91,8 +91,8 @@ class CandleTool
                    bool               noReset = false);
 
   private:
-    Logger         log;
-    mab::CandleV2* m_candle;
+    Logger       log;
+    mab::Candle* m_candle;
 
     std::string busString;
 

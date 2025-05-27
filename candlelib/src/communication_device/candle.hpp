@@ -10,14 +10,14 @@
 #include "candle_types.hpp"
 #include "logger.hpp"
 #include "I_communication_interface.hpp"
-#include "USB_v2.hpp"
+#include "USB.hpp"
 #include "mab_types.hpp"
 
 namespace mab
 {
     /// @brief Backbone object for CANdle ecosystem, contains all the peripheral handles. When it is
     /// destroyed all the handles become invalid so manage its lifetime carefully.
-    class CandleV2
+    class Candle
     {
       public:
         static constexpr u32 DEFAULT_CAN_TIMEOUT = 1;
@@ -35,17 +35,17 @@ namespace mab
         static constexpr u32 CANDLE_VID = 0x69;
         static constexpr u32 CANDLE_PID = 0x1000;
 
-        CandleV2() = delete;
+        Candle() = delete;
 
-        CandleV2(const CandleV2&) = delete;
+        Candle(const Candle&) = delete;
 
-        ~CandleV2();
+        ~Candle();
 
         /// @brief Create CANdle device object based on provided communication interface
         /// @param canBaudrate CAN network datarate
         /// @param bus Initialized communication interface
-        explicit CandleV2(const CANdleBaudrate_E                           canBaudrate,
-                          std::unique_ptr<mab::I_CommunicationInterface>&& bus);
+        explicit Candle(const CANdleBaudrate_E                           canBaudrate,
+                        std::unique_ptr<mab::I_CommunicationInterface>&& bus);
 
         /// @brief Method for transfering CAN packets via CANdle device
         /// @param canId Target CAN node ID
@@ -132,8 +132,8 @@ namespace mab
     /// @param baudrate Target data-rate of the CAN bus
     /// @param bus Initialized CANdle communication interface
     /// @return Configured candle object or nullptr
-    inline mab::CandleV2* attachCandle(const CANdleBaudrate_E                      baudrate,
-                                       std::unique_ptr<I_CommunicationInterface>&& bus)
+    inline mab::Candle* attachCandle(const CANdleBaudrate_E                      baudrate,
+                                     std::unique_ptr<I_CommunicationInterface>&& bus)
     {
         Logger log(Logger::ProgramLayer_E::TOP, "CANDLE_BUILDER");
         if (bus == nullptr)
@@ -142,7 +142,7 @@ namespace mab
             return {};
         }
 
-        mab::CandleV2* candle = new mab::CandleV2(baudrate, std::move(bus));
+        mab::Candle* candle = new mab::Candle(baudrate, std::move(bus));
         if (candle == nullptr || candle->init() != candleTypes::Error_t::OK)
         {
             log.error("Could not initialize CANdle device!");
@@ -155,15 +155,14 @@ namespace mab
     /// @param baudrate Target data-rate of the CAN bus
     /// @param bus Initialized CANdle communication interface
     /// @return Configured candle object or nullptr
-    inline mab::CandleV2* attachCandle(const CANdleBaudrate_E  baudrate,
-                                       candleTypes::busTypes_t busType)
+    inline mab::Candle* attachCandle(const CANdleBaudrate_E  baudrate,
+                                     candleTypes::busTypes_t busType)
     {
         std::unique_ptr<mab::I_CommunicationInterface> bus;
         switch (busType)
         {
             case candleTypes::busTypes_t::USB:
-                bus = std::make_unique<mab::USBv2>(mab::CandleV2::CANDLE_VID,
-                                                   mab::CandleV2::CANDLE_PID);
+                bus = std::make_unique<mab::USB>(mab::Candle::CANDLE_VID, mab::Candle::CANDLE_PID);
                 if (bus->connect() != mab::I_CommunicationInterface::Error_t::OK)
                     throw std::runtime_error("Could not connect USB device!");
                 return attachCandle(baudrate, std::move(bus));
@@ -175,7 +174,7 @@ namespace mab
 
     /// @brief Destroy candle object. Must be called after each initialization of CANdle
     /// @param candle Candle object to be destroyed
-    inline void detachCandle(CandleV2* candle)
+    inline void detachCandle(Candle* candle)
     {
         if (candle != nullptr)
             delete candle;

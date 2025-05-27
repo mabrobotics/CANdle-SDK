@@ -2,7 +2,7 @@
 
 namespace mab
 {
-    Pds::Pds(u16 canId, CandleV2* p_candle)
+    Pds::Pds(u16 canId, Candle* p_candle)
         : PdsModule(socketIndex_E::UNASSIGNED, moduleType_E::CONTROL_BOARD, p_candle, m_rootCanId),
           mp_candle(p_candle),
           m_rootCanId(canId)

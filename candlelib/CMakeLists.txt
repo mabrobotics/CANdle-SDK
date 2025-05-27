@@ -41,10 +41,10 @@ message(
 target_sources(candle PRIVATE
   src/crc.cpp
   src/can_bootloader/can_bootloader.cpp
-  src/communication_device/candle_v2.cpp
+  src/communication_device/candle.cpp
   src/communication_device/candle_bootloader.cpp
-  src/communication_interface/SPI_v2.cpp
-  src/communication_interface/USB_v2.cpp
+  src/communication_interface/SPI.cpp
+  src/communication_interface/USB.cpp
   src/MD/MD.cpp
   src/pds/pds.cpp
   src/pds/pds_module.cpp
@@ -103,8 +103,8 @@ target_include_directories(pds_protocol_test PRIVATE
 target_link_libraries(pds_protocol_test PRIVATE logger shared_data candle)
 
 
-add_unit_test_executable(candle_v2_test src/communication_device/candle_v2_test.cpp)
-target_sources(candle_v2_test PRIVATE src/communication_device/candle_v2.cpp)
+add_unit_test_executable(candle_v2_test src/communication_device/candle_test.cpp)
+target_sources(candle_v2_test PRIVATE src/communication_device/candle.cpp)
 target_include_directories(candle_v2_test PRIVATE
   include
   src/communication_device
@@ -122,16 +122,16 @@ target_include_directories(candle_bootloader_test PRIVATE
 target_link_libraries(candle_bootloader_test PRIVATE logger shared_data candle)
 
 
-add_unit_test_executable(usb_v2_test src/communication_interface/SPI_v2_test.cpp)
-target_sources(usb_v2_test PRIVATE src/communication_interface/USB_v2.cpp)
+add_unit_test_executable(usb_v2_test src/communication_interface/SPI_test.cpp)
+target_sources(usb_v2_test PRIVATE src/communication_interface/USB.cpp)
 target_include_directories(usb_v2_test PRIVATE
   include
   src/communication_interface/
 )
 target_link_libraries(usb_v2_test PRIVATE logger shared_data candle)
 
-add_unit_test_executable(spi_v2_test src/communication_interface/SPI_v2_test.cpp)
-target_sources(spi_v2_test PRIVATE  src/communication_interface/SPI_v2.cpp)
+add_unit_test_executable(spi_v2_test src/communication_interface/SPI_test.cpp)
+target_sources(spi_v2_test PRIVATE  src/communication_interface/SPI.cpp)
 target_include_directories(spi_v2_test PRIVATE
   include
   src/communication_interface/

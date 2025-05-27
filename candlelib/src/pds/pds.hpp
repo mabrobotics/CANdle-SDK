@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-#include "candle_v2.hpp"
+#include "candle.hpp"
 #include "logger.hpp"
 
 #include "pds_module.hpp"
@@ -46,7 +46,7 @@ namespace mab
          * @note Note that default constructor is deleted so PDS Class is forced to take Candle
          * dependency during creation
          */
-        Pds(u16 canId, CandleV2* p_candle);
+        Pds(u16 canId, Candle* p_candle);
 
         void printModuleInfo(void);
 
@@ -104,7 +104,7 @@ namespace mab
          * @brief Member reference to Candle object representing Candle device the PDS is
          * connected to over CANBus
          */
-        CandleV2* mp_candle;
+        Candle* mp_candle;
 
         Logger   m_log;
         uint16_t m_rootCanId = 0;

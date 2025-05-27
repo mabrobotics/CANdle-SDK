@@ -1,25 +1,25 @@
-#include "candle_v2.hpp"
+#include "candle.hpp"
 
 #include <exception>
 #include <MD.hpp>
 
 namespace mab
 {
-    CandleV2::~CandleV2()
+    Candle::~Candle()
     {
         m_log.debug("Deconstructing Candle, do not reuse any handles provided by it!\n");
         m_bus->disconnect();
         m_bus = nullptr;
     }
 
-    CandleV2::CandleV2(const CANdleBaudrate_E                           canBaudrate,
-                       std::unique_ptr<mab::I_CommunicationInterface>&& bus)
+    Candle::Candle(const CANdleBaudrate_E                           canBaudrate,
+                   std::unique_ptr<mab::I_CommunicationInterface>&& bus)
         : m_canBaudrate(canBaudrate), m_bus(std::move(bus))
     {
         m_log.warn("This is an experimental software, please use with caution!");
     }
 
-    candleTypes::Error_t CandleV2::init()
+    candleTypes::Error_t Candle::init()
     {
         if (m_bus == nullptr)
         {
@@ -47,7 +47,7 @@ namespace mab
         return initStatus;
     }
 
-    candleTypes::Error_t CandleV2::reset()
+    candleTypes::Error_t Candle::reset()
     {
         std::vector<u8> resetCmd;
         for (auto byte : resetCommandFrame())
@@ -68,9 +68,9 @@ namespace mab
         return candleTypes::Error_t::OK;
     }
 
-    candleTypes::Error_t CandleV2::busTransfer(std::vector<u8>* data,
-                                               size_t           responseLength,
-                                               const u32        timeoutMs) const
+    candleTypes::Error_t Candle::busTransfer(std::vector<u8>* data,
+                                             size_t           responseLength,
+                                             const u32        timeoutMs) const
     {
         if (data == nullptr)
         {
@@ -104,7 +104,7 @@ namespace mab
         return candleTypes::Error_t::OK;
     }
 
-    const std::pair<std::vector<u8>, candleTypes::Error_t> CandleV2::transferCANFrame(
+    const std::pair<std::vector<u8>, candleTypes::Error_t> Candle::transferCANFrame(
         const canId_t         canId,
         const std::vector<u8> dataToSend,
         const size_t          responseSize,
@@ -159,7 +159,7 @@ namespace mab
     }
 
     // TODO: this must be changed to something less invasive
-    candleTypes::Error_t CandleV2::legacyCheckConnection()
+    candleTypes::Error_t Candle::legacyCheckConnection()
     {
         auto baudrateFrame = baudrateCommandFrame(m_canBaudrate);
 
@@ -171,13 +171,13 @@ namespace mab
         return candleTypes::Error_t::OK;
     }
 
-    candleTypes::Error_t CandleV2::enterBootloader(
+    candleTypes::Error_t Candle::enterBootloader(
         std::unique_ptr<mab::I_CommunicationInterface>&& usb)
     {
-        CandleV2 candleApp = CandleV2(CANdleBaudrate_E::CAN_BAUD_1M, std::move(usb));
+        Candle candleApp = Candle(CANdleBaudrate_E::CAN_BAUD_1M, std::move(usb));
 
         std::vector<u8> enterBootloaderCmd;
-        for (auto byte : CandleV2::enterBootloaderFrame())
+        for (auto byte : Candle::enterBootloaderFrame())
         {
             enterBootloaderCmd.push_back(byte);
         }

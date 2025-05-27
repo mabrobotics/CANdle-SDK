@@ -4,7 +4,7 @@
 namespace mab
 {
 
-    PdsModule::PdsModule(socketIndex_E socket, moduleType_E type, CandleV2* p_candle, u16& canId)
+    PdsModule::PdsModule(socketIndex_E socket, moduleType_E type, Candle* p_candle, u16& canId)
         : m_socketIndex(socket), m_type(type), mp_candle(p_candle), m_canId(canId)
     {
     }

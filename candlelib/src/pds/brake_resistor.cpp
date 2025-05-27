@@ -3,7 +3,7 @@
 
 namespace mab
 {
-    BrakeResistor::BrakeResistor(socketIndex_E socket, CandleV2* p_candle, u16& canId)
+    BrakeResistor::BrakeResistor(socketIndex_E socket, Candle* p_candle, u16& canId)
         : PdsModule(socket, moduleType_E::BRAKE_RESISTOR, p_candle, canId)
     {
         m_log.m_tag = "BR  :: " + std::to_string(static_cast<u8>(socket));

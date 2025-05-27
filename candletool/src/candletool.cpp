@@ -32,13 +32,13 @@
 
 #include "mabFileParser.hpp"
 #include "candle_bootloader.hpp"
-#include "candle_v2.hpp"
+#include "candle.hpp"
 #include "I_communication_interface.hpp"
 #include "mab_crc.hpp"
 
 #include "pds.hpp"
 #include "candle_bootloader.hpp"
-#include "candle_v2.hpp"
+#include "candle.hpp"
 #include "I_communication_interface.hpp"
 #include "mab_crc.hpp"
 
@@ -82,7 +82,7 @@ CandleTool::CandleTool(const mab::CANdleBaudrate_E baud)
     //     bus = nullptr;  // TODO: placeholder
     // }
     // else if (busString == "USB")
-    bus = std::make_unique<USBv2>(CandleV2::CANDLE_VID, CandleV2::CANDLE_PID, device);
+    bus = std::make_unique<USB>(Candle::CANDLE_VID, Candle::CANDLE_PID, device);
 
     m_candle = attachCandle(baud, std::move(bus));
     // TODO: move this to be more stateless and be able to start w/o candle attached
@@ -376,13 +376,15 @@ std::string CandleTool::validateAndGetFinalConfigPath(const std::string& cfgPath
         log.m_layer = Logger::ProgramLayer_E::TOP;
         log.error("\"%s\" is incomplete.", finalConfigPath.c_str());
         log.info("Generate updated file with all required fields? [y/n]");
-        if (!getConfirmation())
-            exit(0);
+        // TODO: that is so dumb
+        //  if (!getConfirmation())
+        //      exit(0);
         finalConfigPath = generateUpdatedConfigFile(finalConfigPath);
         log.info("Generated updated file \"%s\"", finalConfigPath.c_str());
         log.info("Setup MD with newly generated config? [y/n]");
-        if (!getConfirmation())
-            exit(0);
+        // TODO: that is so dumb, again!
+        // if (!getConfirmation())
+        //     exit(0);
     }
     return finalConfigPath;
 }

@@ -3,7 +3,7 @@
 
 #include <array>
 #include "iLoader.hpp"
-#include "candle_v2.hpp"
+#include "candle.hpp"
 #include "logger.hpp"
 #include "mab_types.hpp"
 #include "can_bootloader.hpp"
@@ -13,13 +13,13 @@ namespace mab
     {
       public:
         CanLoader() = delete;
-        CanLoader(mab::CandleV2* candle, MabFileParser* mabFile, mab::canId_t canId);
+        CanLoader(mab::Candle* candle, MabFileParser* mabFile, mab::canId_t canId);
         ~CanLoader();
         bool flashAndBoot();
 
       private:
         const MabFileParser* m_mabFile;
-        mab::CandleV2*       m_candle;
+        mab::Candle*         m_candle;
         const mab::canId_t   m_canId;
         Logger               m_log;
     };

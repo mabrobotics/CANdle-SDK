@@ -535,7 +535,7 @@ namespace mab
                                 100.0f);
     }
 
-    std::vector<canId_t> MD::discoverMDs(CandleV2* candle)
+    std::vector<canId_t> MD::discoverMDs(Candle* candle)
     {
         constexpr canId_t MIN_VAILID_ID = 10;     // ids less than that are reserved for special
         constexpr canId_t MAX_VAILID_ID = 0x7FF;  // 11-bit value (standard can ID max)

@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "candle_types.hpp"
-#include "candle_v2.hpp"
+#include "candle.hpp"
 #include "MD.hpp"
 #include "logger.hpp"
 
@@ -17,12 +17,12 @@ namespace py = pybind11;
 
 namespace mab
 {
-    CandleV2* pyAttachCandle(const CANdleBaudrate_E baudrate, candleTypes::busTypes_t busType)
+    Candle* pyAttachCandle(const CANdleBaudrate_E baudrate, candleTypes::busTypes_t busType)
     {
         return attachCandle(baudrate, busType);
     }
 
-    MD createMD(int canId, std::shared_ptr<CandleV2> candle)
+    MD createMD(int canId, std::shared_ptr<Candle> candle)
     {
         return MD(canId, candle.get());
     }
@@ -203,7 +203,7 @@ PYBIND11_MODULE(pyCandle, m)
           py::return_value_policy::take_ownership,
           "Attach a CANdle device to the system.");
 
-    py::class_<mab::CandleV2>(m, "CandleV2");
+    py::class_<mab::Candle>(m, "Candle");
 
     // MD class
     py::enum_<mab::MD::Error_t>(m, "MD_Error_t")
@@ -222,8 +222,8 @@ PYBIND11_MODULE(pyCandle, m)
         .export_values();
 
     py::class_<mab::MD>(m, "MD")
-        .def(py::init(
-            [](int canId, mab::CandleV2* candle) -> auto{ return mab::MD(canId, candle); }))
+        .def(
+            py::init([](int canId, mab::Candle* candle) -> auto { return mab::MD(canId, candle); }))
         .def("init", &mab::MD::init, "Initialize the MD device. Returns an error if not connected.")
         .def("blink", &mab::MD::blink, "Blink the built-in LEDs.")
         .def("enable", &mab::MD::enable, "Enable PWM output of the drive.")
