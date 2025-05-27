@@ -416,11 +416,6 @@ void CandleTool::setupMotor(u16 id, const std::string& cfgPath, bool force)
     mINI::INIStructure ini;
     file.read(ini);
 
-    // if (!tryAddMD80(id))
-    //     return;
-    // mab::regWrite_st& regW = candle->getMd80FromList(id).getWriteReg();
-    // mab::regRead_st&  regR = candle->getMd80FromList(id).getReadReg();
-
     mab::MDRegisters_S regs;
     mab::MD            md = MD(id, m_candle);
     if (md.init() != MD::Error_t::OK)
@@ -1035,9 +1030,9 @@ void CandleTool::testMove(u16 id, f32 targetPosition)
     mab::MD md(id, m_candle);
     auto    mdInitResult = md.init();
     if (mdInitResult != MD::Error_t::OK)
-        log.error("Error while initializing MD80");
+        log.error("Error while initializing MD");
 
-    md.setMotionMode(mab::Md80Mode_E::IMPEDANCE);
+    md.setMotionMode(mab::MdMode_E::IMPEDANCE);
     f32 pos = md.getPosition().first;
     md.setTargetPosition(pos);
     targetPosition += pos;
@@ -1080,7 +1075,7 @@ void CandleTool::testMoveAbsolute(u16 id, f32 targetPos, f32 velLimit, f32 accLi
         md.writeRegisters(registers.profileDeceleration);
     md.writeRegisters(registers.profileDeceleration);
 
-    md.setMotionMode(mab::Md80Mode_E::POSITION_PROFILE);
+    md.setMotionMode(mab::MdMode_E::POSITION_PROFILE);
     md.enable();
     md.setTargetPosition(targetPos);
     while (
@@ -1093,51 +1088,6 @@ void CandleTool::testMoveAbsolute(u16 id, f32 targetPos, f32 velLimit, f32 accLi
 void CandleTool::testLatency(const std::string& canBaudrate, std::string busString)
 {
     log.warn("Not implemented");
-    // #ifdef UNIX
-    //     struct sched_param sp;
-    //     memset(&sp, 0, sizeof(sp));
-    //     sp.sched_priority = 99;
-    //     sched_setscheduler(0, SCHED_FIFO, &sp);
-    // #endif
-    // #ifdef WIN32
-    //     SetPriorityClass(GetCurrentProcess(), REALTIME_PRIORITY_CLASS);
-    // #endif
-    //     auto ids = m_candle->ping(str2baud(canBaudrate));
-    //     if (ids.size() == 0)
-    //         return;
-    //     checkSpeedForId(ids[0]);
-
-    //     for (auto& id : ids)
-    //     {
-    //         m_candle->addMd80(id);
-    //         m_candle->controlMd80Mode(id, mab::Md80Mode_E::IMPEDANCE);
-    //     }
-
-    //     m_candle->begin();
-    //     std::vector<u32> samples;
-    //     const u32        timelen = 10;
-    //     sleep(1);
-    //     for (u32 i = 0; i < timelen; i++)
-    //     {
-    //         sleep(1);
-    //         samples.push_back(m_candle->getActualCommunicationFrequency());
-    //         log.info("Current average communication speed: %d Hz", samples[i]);
-    //     }
-
-    //     /* calculate mean and stdev */
-    //     f32 sum = std::accumulate(std::begin(samples), std::end(samples), 0.0);
-    //     f32 m   = sum / samples.size();
-
-    //     f32 accum = 0.0;
-    //     std::for_each(
-    //         std::begin(samples), std::end(samples), [&](const f32 d) { accum += (d - m) * (d -
-    //         m); });
-    //     f32 stdev = sqrt(accum / (samples.size() - 1));
-
-    //     ui::printLatencyTestResult(ids.size(), m, stdev, busString);
-
-    //     m_candle->end();
-    //
     // TODO: think of a better way to test communication speed
 }
 

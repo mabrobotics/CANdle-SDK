@@ -110,7 +110,7 @@ namespace mab
         /// @brief Set controller mode
         /// @param mode Mode selected
         /// @return
-        Error_t setMotionMode(mab::Md80Mode_E mode);
+        Error_t setMotionMode(mab::MdMode_E mode);
 
         /// @brief Set position controller PID parameters
         /// @param kp

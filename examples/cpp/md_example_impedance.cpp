@@ -45,7 +45,7 @@ int main()
 
     // Selecting motion mode to be impedance. Important note is that motion mode resets every time
     // MD is disabled or timed out
-    md.setMotionMode(mab::Md80Mode_E::IMPEDANCE);
+    md.setMotionMode(mab::MdMode_E::IMPEDANCE);
 
     // Enable the drive. From this point on it is our objective to send regular messages to the MD,
     // otherwise it will timeout via watchdog and disable itself.

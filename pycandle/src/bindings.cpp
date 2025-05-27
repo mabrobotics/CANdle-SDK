@@ -166,7 +166,7 @@ namespace mab
 
 PYBIND11_MODULE(pyCandle, m)
 {
-    m.doc() = "pyCandle module for interfacing with md80 drives using Python";
+    m.doc() = "pyCandle module for interfacing with MD drives using Python";
 
     // CANdle class
 
@@ -213,12 +213,12 @@ PYBIND11_MODULE(pyCandle, m)
         .value("NOT_CONNECTED", mab::MD::Error_t::NOT_CONNECTED)
         .export_values();
 
-    py::enum_<mab::Md80Mode_E>(m, "MotionMode_t")
-        .value("IDLE", mab::Md80Mode_E::IDLE)
-        .value("POSITION_PID", mab::Md80Mode_E::POSITION_PID)
-        .value("VELOCITY_PID", mab::Md80Mode_E::VELOCITY_PID)
-        .value("RAW_TORQUE", mab::Md80Mode_E::RAW_TORQUE)
-        .value("IMPEDANCE", mab::Md80Mode_E::IMPEDANCE)
+    py::enum_<mab::MdMode_E>(m, "MotionMode_t")
+        .value("IDLE", mab::MdMode_E::IDLE)
+        .value("POSITION_PID", mab::MdMode_E::POSITION_PID)
+        .value("VELOCITY_PID", mab::MdMode_E::VELOCITY_PID)
+        .value("RAW_TORQUE", mab::MdMode_E::RAW_TORQUE)
+        .value("IMPEDANCE", mab::MdMode_E::IMPEDANCE)
         .export_values();
 
     py::class_<mab::MD>(m, "MD")
