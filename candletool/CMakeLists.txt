@@ -17,6 +17,7 @@ set(CANDLETOOL_SOURCES
 
   src/candletool.cpp
   src/canLoader.cpp
+  src/md_cli.cpp
   src/mab_crc.cpp
   src/mabFileParser.cpp
   src/main.cpp

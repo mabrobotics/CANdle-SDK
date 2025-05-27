@@ -2,6 +2,7 @@
 #include "candletool.hpp"
 #include "configHelpers.hpp"
 #include "logger.hpp"
+#include "md_cli.hpp"
 #include "ui.hpp"
 #include "CLI/CLI.hpp"
 #include "pds_cli.hpp"
@@ -15,7 +16,7 @@ int main(int argc, char** argv)
     app.ignore_case();
     UserCommand cmd;
 
-    auto* blink   = app.add_subcommand("blink", "Blink LEDs on MD drive.");
+    // auto* blink   = app.add_subcommand("blink", "Blink LEDs on MD drive.");
     auto* bus     = app.add_subcommand("bus", "Set CANdle bus parameters.");
     auto* clear   = app.add_subcommand("clear", "Clear Errors and Warnings.");
     auto* config  = app.add_subcommand("config", "Configure CAN parameters of MD drive.");
@@ -34,7 +35,7 @@ int main(int argc, char** argv)
         ->expected(1);
 
     // BLINK
-    blink->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
+    // blink->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
 
     // BUS
     bus->add_option("<BUS>", cmd.bus, "Can be USB/SPI/UART. Only for CANdleHAT.")->required();
@@ -159,6 +160,7 @@ int main(int argc, char** argv)
     std::string logPath = "";
     app.add_flag("--log", logPath, "Redirect output to file")->default_val("")->expected(1);
 
+    MDCli  mdCli(&app);
     PdsCli pdsCli(app);
 
     CLI11_PARSE(app, argc, argv);
@@ -204,8 +206,8 @@ int main(int argc, char** argv)
     if (app.count_all() == 1)
         std::cerr << app.help() << std::endl;
 
-    if (blink->parsed())
-        candleTool.blink(cmd.id);
+    // if (blink->parsed())
+    //     candleTool.blink(cmd.id);
     if (bus->parsed())
         candleTool.bus(cmd.bus, cmd.variant);
     if (clear->parsed())
