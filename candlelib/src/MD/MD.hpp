@@ -247,14 +247,14 @@ namespace mab
         /// @tparam T Register entry underlying type (should be deducible)
         /// @param reg Register entry reference to be read from memory (reference is
         /// overwritten by received data)
-        /// @return Pair containing the register with data and error type on failure
+        /// @return Error type on failure
         template <class T>
-        inline std::pair<MDRegisterEntry_S<T>, Error_t> readRegister(MDRegisterEntry_S<T>& reg)
+        inline Error_t readRegister(MDRegisterEntry_S<T>& reg)
         {
-            auto regTuple   = std::make_tuple(std::reference_wrapper(reg));
-            auto resultPair = readRegisters(regTuple);
-            reg             = std::get<0>(regTuple);
-            return std::pair(reg, resultPair.second);
+            auto regTuple = std::make_tuple(std::reference_wrapper(reg));
+            auto result   = readRegisters(regTuple);
+            reg           = std::get<0>(regTuple);
+            return result;
         }
 
         /// @brief Write register to the memory of the MD
@@ -281,10 +281,9 @@ namespace mab
         /// @tparam ...T Register underlying types
         /// @param ...regs References to the registers to be read from the MD memory (overwritten by
         /// read)
-        /// @return Register values read and error type on failure
+        /// @return Error type on failure
         template <class... T>
-        inline std::pair<std::tuple<MDRegisterEntry_S<T>...>, Error_t> readRegisters(
-            MDRegisterEntry_S<T>&... regs)
+        inline Error_t readRegisters(MDRegisterEntry_S<T>&... regs)
         {
             auto regTuple   = std::tuple<MDRegisterEntry_S<T>&...>(regs...);
             auto resultPair = readRegisters(regTuple);
@@ -294,10 +293,9 @@ namespace mab
         /// @brief Read registers from the memory of the MD
         /// @tparam ...T Register entry underlying type (should be deducible)
         /// @param regs Tuple with register references intended to be read (overwritten by read)
-        /// @return Register values read and error type on failure
+        /// @return Error type on failure
         template <class... T>
-        inline std::pair<std::tuple<MDRegisterEntry_S<T>...>, Error_t> readRegisters(
-            std::tuple<MDRegisterEntry_S<T>&...>& regs)
+        inline Error_t readRegisters(std::tuple<MDRegisterEntry_S<T>&...>& regs)
         {
             m_log.debug("Reading register...");
 
@@ -321,7 +319,7 @@ namespace mab
             {
                 std::string errMsg = "Attempt to read write-only registers: " + writeOnlyRegNames;
                 m_log.error(errMsg.c_str());
-                return std::pair(regs, Error_t::REQUEST_INVALID);
+                return Error_t::REQUEST_INVALID;
             }
 
             // clear all the values for the incoming data from the MD
@@ -353,10 +351,10 @@ namespace mab
             if (deserializeFailed)
             {
                 m_log.error("Error while parsing response!");
-                return std::pair(regs, Error_t::TRANSFER_FAILED);
+                return Error_t::TRANSFER_FAILED;
             }
 
-            return std::pair(regs, Error_t::OK);
+            return Error_t::OK;
         }
 
         /// @brief Write registers to MD memory
