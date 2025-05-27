@@ -2,6 +2,7 @@
 
 #include <array>
 #include <memory>
+#include <string_view>
 #include <vector>
 #include <utility>
 #include <iomanip>
@@ -179,4 +180,48 @@ namespace mab
         if (candle != nullptr)
             delete candle;
     }
+
+    class CandleBuilder
+    {
+        Logger m_logger = Logger(Logger::ProgramLayer_E::TOP, "CANDLE_BUILDER");
+
+      public:
+        CandleBuilder() = default;
+
+        CANdleBaudrate_E*               datarate = nullptr;
+        candleTypes::busTypes_t*        busType  = nullptr;
+        std::optional<std::string_view> pathOrId;
+
+        std::optional<Candle*> build()
+        {
+            if (datarate == nullptr || busType == nullptr)
+            {
+                m_logger.error("Parameters missing. Could create Candle.");
+                return {};
+            }
+            std::unique_ptr<I_CommunicationInterface> bus;
+            switch (*busType)
+            {
+                case candleTypes::busTypes_t::USB:
+                    bus = std::make_unique<mab::USB>(
+                        Candle::CANDLE_VID, Candle::CANDLE_PID, std::string(pathOrId.value_or({})));
+                    if (bus->connect() != I_CommunicationInterface::Error_t::OK)
+                    {
+                        m_logger.error("Could not connect USB device!");
+                        return {};
+                    }
+                    break;
+                default:
+                    m_logger.error("Unimplemented bus type");
+                    return {};
+            }
+            Candle* candle = new Candle(*datarate, std::move(bus));
+            if (candle == nullptr || candle->init() != candleTypes::Error_t::OK)
+            {
+                m_logger.error("Could not initialize CANdle device!");
+                return {};
+            }
+            return candle;
+        }
+    };
 }  // namespace mab
