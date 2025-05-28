@@ -1,5 +1,6 @@
 #pragma once
 #include "CLI/CLI.hpp"
+#include "candle.hpp"
 #include "mab_types.hpp"
 #include "logger.hpp"
 #include "MD.hpp"
@@ -14,13 +15,13 @@ namespace mab
     {
       public:
         MDCli() = delete;
-        MDCli(CLI::App* rootCli);
+        MDCli(CLI::App* rootCli, const std::shared_ptr<const CandleBuilder> candleBuilder);
         ~MDCli() = default;
 
       private:
         Logger m_logger = Logger(Logger::ProgramLayer_E::TOP, "MD_CLI");
-        std::unique_ptr<MD, std::function<void(MD*)>> getMd(const canId_t                 mdCanId,
-                                                            const CANdleBaudrate_E        datarate,
-                                                            const candleTypes::busTypes_t busType);
+        std::unique_ptr<MD, std::function<void(MD*)>> getMd(
+            const std::shared_ptr<canId_t>             mdCanId,
+            const std::shared_ptr<const CandleBuilder> candleBuilder);
     };
 }  // namespace mab

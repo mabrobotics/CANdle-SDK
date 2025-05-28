@@ -188,11 +188,11 @@ namespace mab
       public:
         CandleBuilder() = default;
 
-        CANdleBaudrate_E*               datarate = nullptr;
-        candleTypes::busTypes_t*        busType  = nullptr;
-        std::optional<std::string_view> pathOrId;
+        std::shared_ptr<CANdleBaudrate_E>        datarate = nullptr;
+        std::shared_ptr<candleTypes::busTypes_t> busType  = nullptr;
+        std::optional<std::string_view>          pathOrId;
 
-        std::optional<Candle*> build()
+        std::optional<Candle*> build() const
         {
             if (datarate == nullptr || busType == nullptr)
             {

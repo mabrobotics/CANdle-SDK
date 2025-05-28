@@ -1,7 +1,10 @@
+#include <memory>
+#include "candle.hpp"
 #include "candle_types.hpp"
 #include "candletool.hpp"
 #include "configHelpers.hpp"
 #include "logger.hpp"
+#include "mab_types.hpp"
 #include "md_cli.hpp"
 #include "ui.hpp"
 #include "CLI/CLI.hpp"
@@ -160,7 +163,16 @@ int main(int argc, char** argv)
     std::string logPath = "";
     app.add_flag("--log", logPath, "Redirect output to file")->default_val("")->expected(1);
 
-    MDCli  mdCli(&app);
+    auto candleBuilder = std::make_shared<CandleBuilder>();
+    // TODO: remplace mocks with real data
+    auto canId        = std::make_shared<canId_t>(100);
+    auto mockBusType  = std::make_shared<candleTypes::busTypes_t>(candleTypes::busTypes_t::USB);
+    auto mockBaudrate = std::make_shared<CANdleBaudrate_E>(CANdleBaudrate_E::CAN_BAUD_1M);
+
+    candleBuilder->busType  = mockBusType;
+    candleBuilder->datarate = mockBaudrate;
+
+    MDCli  mdCli(&app, candleBuilder);
     PdsCli pdsCli(app);
 
     CLI11_PARSE(app, argc, argv);
