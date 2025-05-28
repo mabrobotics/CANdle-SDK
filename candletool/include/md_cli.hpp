@@ -23,5 +23,35 @@ namespace mab
         std::unique_ptr<MD, std::function<void(MD*)>> getMd(
             const std::shared_ptr<canId_t>             mdCanId,
             const std::shared_ptr<const CandleBuilder> candleBuilder);
+
+        struct CanOptions
+        {
+            CanOptions(CLI::App* rootCli)
+                : canId(std::make_shared<canId_t>(100)),
+                  datarate(std::make_shared<std::string>("1M")),
+                  timeoutMs(std::make_shared<uint16_t>(200)),
+                  save(std::make_shared<bool>(false))
+            {
+                optionsMap = std::map<std::string, CLI::Option*>{
+                    {"id",
+                     rootCli->add_option(
+                         "-i,--id", *canId, "New CAN node id for the MD controller.")},
+                    {"datarate",
+                     rootCli->add_option(
+                         "-d,--datarate", *datarate, "New datarate of the MD controller.")},
+                    {"timeout",
+                     rootCli->add_option(
+                         "-t,--timeout", *timeoutMs, "New timeout of the MD controller.")},
+                    {"save",
+                     rootCli->add_flag(
+                         "-s,--save", *save, "Save the new CAN parameters to the MD controller.")}};
+            }
+            const std::shared_ptr<canId_t>     canId;
+            const std::shared_ptr<std::string> datarate;
+            const std::shared_ptr<uint16_t>    timeoutMs;
+            const std::shared_ptr<bool>        save;
+
+            std::map<std::string, CLI::Option*> optionsMap;
+        };
     };
 }  // namespace mab

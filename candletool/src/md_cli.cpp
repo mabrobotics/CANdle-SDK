@@ -1,4 +1,6 @@
 #include "md_cli.hpp"
+#include <cstdint>
+#include <memory>
 #include <stdexcept>
 #include <string_view>
 #include "candle.hpp"
@@ -6,6 +8,7 @@
 #include "mab_types.hpp"
 #include "md_types.hpp"
 #include "candle_types.hpp"
+#include "candletool.hpp"
 
 namespace mab
 {
@@ -26,18 +29,93 @@ namespace mab
             {
                 auto md = getMd(mdCanId, candleBuilder);
                 md->blink();
+                m_logger.success("MD is blinking!");
             });
 
-        // // Can
-        // auto* can = mdCLi->add_subcommand(
-        //     "can", "Configure CAN network parameters id, datarate and timeout.");
-        // std::string configPathTo can->callback(
-        //     [this, candleBuilder, mdCanId]()
-        //     {
-        //         auto md = getMd(mdCanId, candleBuilder);
-        //         // md->can();
-        //         logger::info("CAN command placeholder");
-        //     });
+        // Can
+        auto* can = mdCLi->add_subcommand(
+            "can", "Configure CAN network parameters id, datarate and timeout.");
+
+        CanOptions canOptions(can);
+
+        can->callback(
+            [this, candleBuilder, mdCanId, canOptions]()
+            {
+                auto          md = getMd(mdCanId, candleBuilder);
+                MDRegisters_S registers;
+                // download current config from md
+                if (md->readRegisters(registers.canID,
+                                      registers.canBaudrate,
+                                      registers.canWatchdog) != MD::Error_t::OK)
+
+                {
+                    m_logger.error("Could not get can registers from MD!");
+                    return;
+                }
+
+                bool canChanged = false;
+
+                if (!canOptions.optionsMap.at("id")->empty())
+                {
+                    // set new can id
+                    registers.canID = *canOptions.canId;
+                    canChanged      = true;
+                }
+                if (!canOptions.optionsMap.at("datarate")->empty())
+                {
+                    // set new can datarate
+                    auto baudrate = CandleTool::stringToBaud(*canOptions.datarate);
+                    if (baudrate.has_value())
+                    {
+                        registers.canBaudrate = *baudrate;
+                        canChanged            = true;
+                    }
+                    else
+                    {
+                        m_logger.error("Invalid CAN datarate provided!");
+                        return;
+                    }
+                }
+                if (!canOptions.optionsMap.at("timeout")->empty())
+                {
+                    // set new can timeout
+                    registers.canWatchdog = *canOptions.timeoutMs;
+                    canChanged            = true;
+                }
+                // Exit if nothing changed
+                if (!canChanged)
+                {
+                    m_logger.warn("No CAN parameters changed, skipping write!");
+                    return;
+                }
+
+                registers.runCanReinit = 1;  // Set flag to reinitialize CAN
+
+                m_logger.info("New id: %d, baudrate: %d, timeout: %d ms",
+                              registers.canID.value,
+                              registers.canBaudrate.value,
+                              registers.canWatchdog.value);
+                if (md->writeRegisters(registers.canID,
+                                       registers.canBaudrate,
+                                       registers.canWatchdog,
+                                       registers.runCanReinit) != MD::Error_t::OK)
+                {
+                    m_logger.error("Could not write can registers to MD!");
+                    return;
+                }
+
+                if (*canOptions.save)
+                {
+                    usleep(400'000);  // Wait for the MD to reinitialize CAN
+                    // Save the new can parameters to the MD
+                    if (md->save() != MD::Error_t::OK)
+                    {
+                        m_logger.error("Could not save can parameters to MD!");
+                        return;
+                    }
+                }
+                m_logger.success("MD CAN parameters updated successfully!");
+            });
 
         // // Calibration
         // auto* calibration = mdCLi->add_subcommand("calibration", "Calibrate the MD drive.");
@@ -125,6 +203,7 @@ namespace mab
         const std::shared_ptr<const CandleBuilder> candleBuilder)
     {
         auto candle = candleBuilder->build().value_or(nullptr);
+        candle->init();
         if (candle == nullptr)
         {
             return (nullptr);

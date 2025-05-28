@@ -14,6 +14,7 @@
 #include <variant>
 #include <vector>
 #include <array>
+#include <optional>
 #include <type_traits>
 #include <variant>
 #include <vector>
@@ -49,7 +50,7 @@ f32 lerp(f32 start, f32 end, f32 t)
     return (start * (1.f - t)) + (end * t);
 }
 
-mab::CANdleBaudrate_E str2baud(const std::string& baud)
+std::optional<mab::CANdleBaudrate_E> CandleTool::stringToBaud(const std::string_view baud)
 {
     if (baud == "1M")
         return mab::CANdleBaudrate_E::CAN_BAUD_1M;
@@ -59,7 +60,7 @@ mab::CANdleBaudrate_E str2baud(const std::string& baud)
         return mab::CANdleBaudrate_E::CAN_BAUD_5M;
     if (baud == "8M")
         return mab::CANdleBaudrate_E::CAN_BAUD_8M;
-    return mab::CANdleBaudrate_E::CAN_BAUD_1M;
+    return {};
 }
 
 CandleTool::CandleTool(const mab::CANdleBaudrate_E baud)
@@ -123,7 +124,7 @@ void CandleTool::configCan(
         return;
     }
     mdRegisters.canID        = newId;
-    mdRegisters.canBaudrate  = str2baud(baud);
+    mdRegisters.canBaudrate  = stringToBaud(baud).value_or(mab::CANdleBaudrate_E::CAN_BAUD_1M);
     mdRegisters.canWatchdog  = timeout;
     mdRegisters.runCanReinit = 1;
     auto result              = md.writeRegisters(mdRegisters.canID,

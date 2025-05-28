@@ -31,6 +31,10 @@ class CandleTool
   public:
     explicit CandleTool(mab::CANdleBaudrate_E baud);
     ~CandleTool();
+
+    static std::optional<mab::CANdleBaudrate_E> stringToBaud(const std::string_view baud);
+
+    // OLD
     void ping(const std::string& variant);
     void configCan(u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination = 0);
     void configSave(u16 id);
