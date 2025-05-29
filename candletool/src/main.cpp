@@ -10,10 +10,22 @@
 #include "CLI/CLI.hpp"
 #include "pds_cli.hpp"
 
+//     ___     _     _  _      _   _         _____               _
+//    / __|   /_\   | \| |  __| | | |  ___  |_   _|  ___   ___  | |
+//   | (__   / _ \  | .` | / _` | | | / -_)   | |   / _ \ / _ \ | |
+//    \___| /_/ \_\ |_|\_| \__,_| |_| \___|   |_|   \___/ \___/ |_|
+//
+
 int main(int argc, char** argv)
 {
     // Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_3;
-    std::cout << "CandleTool" << std::endl;
+
+    std::cout << "   ___     _     _  _      _   _         _____               _ \n";
+    std::cout << "  / __|   /_\\   | \\| |  __| | | |  ___  |_   _|  ___   ___  | |\n";
+    std::cout << " | (__   / _ \\  | .` | / _` | | | / -_)   | |   / _ \\ / _ \\ | |\n";
+    std::cout << "  \\___| /_/ \\_\\ |_|\\_| \\__,_| |_| \\___|   |_|   \\___/ \\___/ |_|\n";
+    std::cout << "                                                               \n";
+
     CLI::App app{"candletool"};
     app.fallthrough();
     app.ignore_case();
@@ -194,7 +206,7 @@ int main(int argc, char** argv)
 
     // std::shared_ptr<mab::Candle> candle = nullptr;
 
-    CLI11_PARSE(app, argc, argv);
+    // CLI11_PARSE(app, argc, argv);
 
     // TODO: make use of busType and baudrate options when creating Candle object within CandleTool
     CandleTool candleTool(baud);
