@@ -90,6 +90,6 @@ namespace mab
             }
             const std::shared_ptr<std::string>  clearType;
             std::map<std::string, CLI::Option*> optionsMap;
-        }
+        };
     };
 }  // namespace mab

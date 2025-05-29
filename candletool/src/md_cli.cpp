@@ -315,6 +315,35 @@ namespace mab
 
         ClearOptions clearOptions(clear);
 
+        clear->callback(
+            [this, candleBuilder, mdCanId, clearOptions]()
+            {
+                auto          md = getMd(mdCanId, candleBuilder);
+                MDRegisters_S registers;
+
+                if (*clearOptions.clearType == "warn" || *clearOptions.clearType == "all")
+                {
+                    m_logger.info("Clearing MD warnings...");
+                    registers.runClearWarnings = 1;
+                    if (md->writeRegisters(registers.runClearWarnings) != MD::Error_t::OK)
+                    {
+                        m_logger.error("Could not clear MD warnings!");
+                        return;
+                    }
+                }
+                if (*clearOptions.clearType == "err" || *clearOptions.clearType == "all")
+                {
+                    m_logger.info("Clearing MD errors...");
+                    registers.runClearErrors = 1;
+                    if (md->writeRegisters(registers.runClearErrors) != MD::Error_t::OK)
+                    {
+                        m_logger.error("Could not clear MD errors!");
+                        return;
+                    }
+                }
+                m_logger.success("MD errors and warnings cleared successfully!");
+            });
+
         // // Config
         // auto* config = mdCLi->add_subcommand("config", "Configure MD drive.");
         // config->callback(
