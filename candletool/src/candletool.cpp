@@ -50,19 +50,6 @@ f32 lerp(f32 start, f32 end, f32 t)
     return (start * (1.f - t)) + (end * t);
 }
 
-std::optional<mab::CANdleBaudrate_E> CandleTool::stringToBaud(const std::string_view baud)
-{
-    if (baud == "1M")
-        return mab::CANdleBaudrate_E::CAN_BAUD_1M;
-    if (baud == "2M")
-        return mab::CANdleBaudrate_E::CAN_BAUD_2M;
-    if (baud == "5M")
-        return mab::CANdleBaudrate_E::CAN_BAUD_5M;
-    if (baud == "8M")
-        return mab::CANdleBaudrate_E::CAN_BAUD_8M;
-    return {};
-}
-
 CandleTool::CandleTool(const mab::CANdleBaudrate_E baud)
 {
     log.m_tag   = "CANDLETOOL";

@@ -32,7 +32,34 @@ class CandleTool
     explicit CandleTool(mab::CANdleBaudrate_E baud);
     ~CandleTool();
 
-    static std::optional<mab::CANdleBaudrate_E> stringToBaud(const std::string_view baud);
+    inline static std::optional<mab::CANdleBaudrate_E> stringToBaud(const std::string_view baud)
+    {
+        if (baud == "1M")
+            return mab::CANdleBaudrate_E::CAN_BAUD_1M;
+        if (baud == "2M")
+            return mab::CANdleBaudrate_E::CAN_BAUD_2M;
+        if (baud == "5M")
+            return mab::CANdleBaudrate_E::CAN_BAUD_5M;
+        if (baud == "8M")
+            return mab::CANdleBaudrate_E::CAN_BAUD_8M;
+        return {};
+    }
+    inline static std::optional<mab::CANdleBaudrate_E> intToBaud(const u32 baud)
+    {
+        switch (baud)
+        {
+            case 1000000:
+                return mab::CANdleBaudrate_E::CAN_BAUD_1M;
+            case 2000000:
+                return mab::CANdleBaudrate_E::CAN_BAUD_2M;
+            case 5000000:
+                return mab::CANdleBaudrate_E::CAN_BAUD_5M;
+            case 8000000:
+                return mab::CANdleBaudrate_E::CAN_BAUD_8M;
+            default:
+                return {};
+        }
+    }
 
     // OLD
     void ping(const std::string& variant);

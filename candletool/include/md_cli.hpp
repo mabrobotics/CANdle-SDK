@@ -53,5 +53,43 @@ namespace mab
 
             std::map<std::string, CLI::Option*> optionsMap;
         };
+        struct CalibrationOptions
+        {
+            CalibrationOptions(CLI::App* rootCli)
+                : calibrationOfEncoder(std::make_shared<std::string>("all"))
+            {
+                optionsMap = std::map<std::string, CLI::Option*>{
+
+                    {"encoder",
+                     rootCli
+                         ->add_option("-e,--encoder",
+                                      *calibrationOfEncoder,
+                                      "Type of encoder calibration to perform. "
+                                      "Possible values: all, main, aux.")
+                         ->default_str("all")},
+                };
+            }
+
+            const std::shared_ptr<std::string>  calibrationOfEncoder;
+            std::map<std::string, CLI::Option*> optionsMap;
+        };
+
+        struct ClearOptions
+        {
+            ClearOptions(CLI::App* rootCli) : clearType(std::make_shared<std::string>("all"))
+            {
+                optionsMap = std::map<std::string, CLI::Option*>{
+                    {"type",
+                     rootCli
+                         ->add_option("type",
+                                      *clearType,
+                                      "Type of clearing to perform. "
+                                      "Possible values: all, warn, err")
+                         ->default_str("all")},
+                };
+            }
+            const std::shared_ptr<std::string>  clearType;
+            std::map<std::string, CLI::Option*> optionsMap;
+        }
     };
 }  // namespace mab

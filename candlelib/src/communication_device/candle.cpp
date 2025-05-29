@@ -16,7 +16,6 @@ namespace mab
                    std::unique_ptr<mab::I_CommunicationInterface>&& bus)
         : m_canBaudrate(canBaudrate), m_bus(std::move(bus))
     {
-        m_log.warn("This is an experimental software, please use with caution!");
     }
 
     candleTypes::Error_t Candle::init()

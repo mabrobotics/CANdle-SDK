@@ -106,7 +106,17 @@ namespace mab
 
                 if (*canOptions.save)
                 {
-                    usleep(400'000);  // Wait for the MD to reinitialize CAN
+                    m_logger.info("Saving new CAN parameters to MD...");
+                    usleep(1000'000);  // Wait for the MD to reinitialize CAN
+                    auto newCanId              = std::make_shared<canId_t>(registers.canID.value);
+                    auto newCandleBuilder      = std::make_shared<CandleBuilder>();
+                    newCandleBuilder->datarate = std::make_shared<CANdleBaudrate_E>(
+                        CandleTool::intToBaud(registers.canBaudrate.value)
+                            .value_or(CANdleBaudrate_E::CAN_BAUD_1M));
+                    newCandleBuilder->pathOrId = candleBuilder->pathOrId;
+                    newCandleBuilder->busType  = candleBuilder->busType;
+                    md                         = nullptr;  // Reset the old MD instance
+                    md                         = getMd(newCanId, newCandleBuilder);
                     // Save the new can parameters to the MD
                     if (md->save() != MD::Error_t::OK)
                     {
@@ -117,25 +127,193 @@ namespace mab
                 m_logger.success("MD CAN parameters updated successfully!");
             });
 
-        // // Calibration
-        // auto* calibration = mdCLi->add_subcommand("calibration", "Calibrate the MD drive.");
-        // calibration->callback(
-        //     [this, candleBuilder, mdCanId]()
-        //     {
-        //         auto md = getMd(mdCanId, candleBuilder);
-        //         // md->calibrate();
-        //         logger::info("Calibration command placeholder");
-        //     });
+        // Calibration
+        auto* calibration = mdCLi->add_subcommand("calibration", "Calibrate the MD drive.");
+
+        CalibrationOptions calibrationOptions(calibration);
+
+        calibration->callback(
+            [this, candleBuilder, mdCanId, calibrationOptions]()
+            {
+                auto          md = getMd(mdCanId, candleBuilder);
+                MDRegisters_S registers;
+                // Determine if setup error are present
+                auto calibrationStatus = md->getCalibrationStatus();
+                if (calibrationStatus.second != MD::Error_t::OK)
+                {
+                    m_logger.error("Could not get calibration status from MD!");
+                    return;
+                }
+                bool setupError =
+                    calibrationStatus.first.at(MDStatus::CalibrationStatusBits::ErrorSetup).isSet();
+                if (setupError)
+                {
+                    m_logger.error(
+                        "MD setup error present, please validate your configuration file!");
+                    return;
+                }
+
+                // Determine if output encoder is present
+                if (md->readRegisters(registers.auxEncoder) != MD::Error_t::OK)
+                {
+                    m_logger.error("Could not read auxilary encoder presence from MD!");
+                    return;
+                }
+                // Determine types of calibration that will be performed
+                bool performMainEncoderCalibration = false;
+                bool performAuxEncoderCalibration  = false;
+
+                // Check if aux encoder will be calibrated
+                if (*calibrationOptions.calibrationOfEncoder == "aux" ||
+                    *calibrationOptions.calibrationOfEncoder == "all")
+                {
+                    if (registers.auxEncoder.value == 0)
+                    {
+                        m_logger.warn(
+                            "Auxilary encoder not present, skipping aux encoder "
+                            "calibration!");
+                    }
+                    else
+                    {
+                        performAuxEncoderCalibration = true;
+                    }
+                }
+
+                // Check if main encoder will be calibrated
+                if (*calibrationOptions.calibrationOfEncoder == "main" ||
+                    *calibrationOptions.calibrationOfEncoder == "all")
+                {
+                    performMainEncoderCalibration = true;
+                }
+
+                // Perform main encoder calibration
+                if (performMainEncoderCalibration)
+                {
+                    m_logger.info("Starting main encoder calibration...");
+                    registers.runCalibrateCmd = 1;  // Set flag to run main encoder calibration
+                    if (md->writeRegister(registers.runCalibrateCmd) != MD::Error_t::OK)
+                    {
+                        m_logger.error("Main encoder calibration failed!");
+                        return;
+                    }
+                    constexpr int CALIBRATION_TIME = 40;  // seconds
+                    for (int seconds = 0; seconds < CALIBRATION_TIME; seconds++)
+                    {
+                        m_logger.progress(static_cast<double>(seconds) /
+                                          static_cast<double>(CALIBRATION_TIME));
+                        usleep(1'000'000);  // Wait for the MD to calibrate, TODO: change it when
+                                            // routines are ready
+                    }
+                    m_logger.progress(1.0f);  // Ensure progress is at 100%
+
+                    // Check if main encoder calibration was successful
+                    auto mainEncoderStatus = md->getMainEncoderStatus();
+                    if (mainEncoderStatus.second != MD::Error_t::OK)
+                    {
+                        m_logger.error("Could not get calibration status from MD!");
+                        return;
+                    }
+                    if (mainEncoderStatus.first.at(MDStatus::EncoderStatusBits::ErrorCalibration)
+                            .isSet())
+                    {
+                        m_logger.error("Main encoder calibration failed!");
+                        return;
+                    }
+                    m_logger.success("Main encoder calibration completed successfully!");
+                }
+                // Perform aux encoder calibration
+                if (performAuxEncoderCalibration)
+                {
+                    m_logger.info("Starting aux encoder calibration...");
+                    // get gear ratio
+                    if (md->readRegister(registers.motorGearRatio))
+                    {
+                        m_logger.error("Could not read gear ratio from MD!");
+                        return;
+                    }
+                    // Calibrate
+                    registers.runCalibrateAuxEncoderCmd =
+                        1;  // Set flag to run aux encoder calibration
+                    if (md->writeRegister(registers.runCalibrateAuxEncoderCmd) != MD::Error_t::OK)
+                    {
+                        m_logger.error("Aux encoder calibration failed!");
+                        return;
+                    }
+
+                    constexpr double AUX_CALIBRATION_TIME_COEFF = 2.8;  // seconds
+
+                    // Calculate calibration time based on gear ratio
+                    const int auxCalibrationTime =
+                        static_cast<int>((1.0 / registers.motorGearRatio.value) *
+                                         AUX_CALIBRATION_TIME_COEFF) +
+                        AUX_CALIBRATION_TIME_COEFF;
+
+                    for (int seconds = 0; seconds < auxCalibrationTime; seconds++)
+                    {
+                        m_logger.progress(static_cast<double>(seconds) /
+                                          static_cast<double>(auxCalibrationTime));
+                        usleep(1'000'000);  // Wait for the MD to calibrate, TODO: change it when
+                                            // routines are ready
+                    }
+                    m_logger.progress(1.0f);  // Ensure progress is at 100%
+
+                    // Check if aux encoder calibration was successful
+                    auto auxEncoderStatus = md->getOutputEncoderStatus();
+                    if (auxEncoderStatus.second != MD::Error_t::OK)
+                    {
+                        m_logger.error("Could not get calibration status from MD!");
+                        return;
+                    }
+                    if (auxEncoderStatus.first.at(MDStatus::EncoderStatusBits::ErrorCalibration)
+                            .isSet())
+                    {
+                        m_logger.error("Aux encoder calibration failed!");
+                        return;
+                    }
+                    m_logger.success("Aux encoder calibration completed successfully!");
+
+                    // Testing aux encoder accuracy
+                    m_logger.info("Starting aux encoder accuracy test...");
+                    registers.runTestAuxEncoderCmd =
+                        1;  // Set flag to run aux encoder accuracy test
+                    if (md->writeRegister(registers.runTestAuxEncoderCmd) != MD::Error_t::OK)
+                    {
+                        m_logger.error("Aux encoder accuracy test failed!");
+                        return;
+                    }
+                    for (int seconds = 0; seconds < auxCalibrationTime; seconds++)
+                    {
+                        m_logger.progress(static_cast<double>(seconds) / auxCalibrationTime);
+                        usleep(1'000'000);  // Wait for the MD to test, TODO: change it when
+                                            // routines are ready
+                    }
+                    m_logger.progress(1.0f);  // Ensure progress is at 100%
+
+                    if (md->readRegisters(registers.calAuxEncoderStdDev,
+                                          registers.calAuxEncoderMinE,
+                                          registers.calAuxEncoderMaxE) != MD::Error_t::OK)
+                    {
+                        m_logger.error("Could not read aux encoder accuracy test results!");
+                        return;
+                    }
+                    constexpr double RAD_TO_DEG = 180.0 / M_PI;
+                    m_logger.info("Aux encoder accuracy test results:");
+                    m_logger.info("  Standard deviation: %.6f rad  (%.4f deg)",
+                                  registers.calAuxEncoderStdDev.value,
+                                  RAD_TO_DEG * registers.calAuxEncoderStdDev.value);
+                    m_logger.info("  Lowest error:      %.6f rad (%.4f deg)",
+                                  registers.calAuxEncoderMinE.value,
+                                  RAD_TO_DEG * registers.calAuxEncoderMinE.value);
+                    m_logger.info("  Highest error:      %.6f rad  (%.4f deg)",
+                                  registers.calAuxEncoderMaxE.value,
+                                  RAD_TO_DEG * registers.calAuxEncoderMaxE.value);
+                }
+            });
 
         // // Clear
-        // auto* clear = mdCLi->add_subcommand("clear", "Clear MD drive errors and warnings.");
-        // clear->callback(
-        //     [this, candleBuilder, mdCanId]()
-        //     {
-        //         auto md = getMd(mdCanId, candleBuilder);
-        //         // md->clear();
-        //         logger::info("Clear command placeholder");
-        //     });
+        auto* clear = mdCLi->add_subcommand("clear", "Clear MD drive errors and warnings.");
+
+        ClearOptions clearOptions(clear);
 
         // // Config
         // auto* config = mdCLi->add_subcommand("config", "Configure MD drive.");
