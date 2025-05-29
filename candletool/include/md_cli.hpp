@@ -91,5 +91,19 @@ namespace mab
             const std::shared_ptr<std::string>  clearType;
             std::map<std::string, CLI::Option*> optionsMap;
         };
+
+        struct ConfigOptions
+        {
+            ConfigOptions(CLI::App* rootCli) : configFile(std::make_shared<std::string>(""))
+            {
+                optionsMap = std::map<std::string, CLI::Option*>{
+                    {"file",
+                     rootCli->add_option("-f,--file", *configFile, "Path to the MD config file.")
+                         ->required()}};
+            }
+
+            const std::shared_ptr<std::string>  configFile;
+            std::map<std::string, CLI::Option*> optionsMap;
+        };
     };
 }  // namespace mab

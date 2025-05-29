@@ -9,6 +9,7 @@
 #include "md_types.hpp"
 #include "candle_types.hpp"
 #include "candletool.hpp"
+#include "mabFileParser.hpp"
 
 namespace mab
 {
@@ -310,7 +311,7 @@ namespace mab
                 }
             });
 
-        // // Clear
+        // Clear
         auto* clear = mdCLi->add_subcommand("clear", "Clear MD drive errors and warnings.");
 
         ClearOptions clearOptions(clear);
@@ -344,15 +345,54 @@ namespace mab
                 m_logger.success("MD errors and warnings cleared successfully!");
             });
 
-        // // Config
-        // auto* config = mdCLi->add_subcommand("config", "Configure MD drive.");
-        // config->callback(
-        //     [this, candleBuilder, mdCanId]()
-        //     {
-        //         auto md = getMd(mdCanId, candleBuilder);
-        //         // md->config();
-        //         logger::info("Config command placeholder");
-        //     });
+        // Config
+        auto* config = mdCLi->add_subcommand("config", "Configure MD drive.");
+        // Download configuration file
+        auto* downloadConfig =
+            config->add_subcommand("download", "Download configuration from MD drive.");
+
+        ConfigOptions downloadConfigOptions(downloadConfig);
+
+        downloadConfig->callback(
+            [this, candleBuilder, mdCanId, downloadConfigOptions]()
+            {
+                auto          md = getMd(mdCanId, candleBuilder);
+                MDRegisters_S registers;
+
+                std::string configFilePath = *downloadConfigOptions.configFile;
+                if (configFilePath.empty())
+                {
+                    m_logger.error("Configuration file path is empty!");
+                    return;
+                }
+                // If the path is not specified, prepend the standard path
+                if (std::find(configFilePath.begin(), configFilePath.end(), '/') !=
+                    configFilePath.end())
+                {
+                    configFilePath = "/etc/candletool/config/motors/" + configFilePath;
+                }
+                mINI::INIFile      iniFile(configFilePath);
+                mINI::INIStructure iniStructure;
+            });
+
+        // Upload configuration file
+        auto* uploadConfig = config->add_subcommand("upload", "Upload configuration to MD drive.");
+
+        // Reset configuration
+        auto* factoryReset = config->add_subcommand("factory-reset", "Factory reset the MD drive.");
+        factoryReset->callback(
+            [this, candleBuilder, mdCanId]()
+            {
+                auto          md = getMd(mdCanId, candleBuilder);
+                MDRegisters_S registers;
+                registers.runRestoreFactoryConfig = 1;  // Set flag to restore factory config
+                if (md->writeRegister(registers.runRestoreFactoryConfig) != MD::Error_t::OK)
+                {
+                    m_logger.error("Could not restore factory configuration on MD!");
+                    return;
+                }
+                m_logger.success("MD drive reset successfully!");
+            });
 
         // // Discover
         // auto* discover = mdCLi->add_subcommand("discover", "Discover MD drives on the network.");
