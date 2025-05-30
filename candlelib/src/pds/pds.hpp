@@ -53,6 +53,7 @@ namespace mab
         void init(void);
         void init(u16 canId);
 
+        error_E      getFwMetadata(pdsFwMetadata_S& metadata) const;
         modulesSet_S getModules(void);
         bool         verifyModuleSocket(moduleType_E type, socketIndex_E socket);
 
@@ -60,7 +61,7 @@ namespace mab
         std::shared_ptr<PowerStage>    attachPowerStage(socketIndex_E socket);
         std::shared_ptr<IsolatedConv>  attachIsolatedConverter(socketIndex_E socket);
 
-        error_E getFwVersion(version_ut& version);
+        // error_E getFwVersion(version_ut& version); //deprecated
 
         error_E getStatus(controlBoardStatus_S& status);
         error_E clearStatus(controlBoardStatus_S status);
