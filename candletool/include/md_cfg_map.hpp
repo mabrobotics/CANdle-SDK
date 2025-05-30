@@ -167,20 +167,20 @@ namespace mab
             }
         }
 
-      private:
-        MDRegisters_S registers;  // only for verification purposes
-
         // special cases for parsing
-        static std::function<std::string(std::string_view)> encoderToReadable;
-        static std::function<std::optional<std::string>(const std::string_view)>
+        static const std::function<std::string(std::string_view)> encoderToReadable;
+        static const std::function<std::optional<std::string>(const std::string_view)>
             encoderFromReadable;
 
         // static std::function<std::string(std::string_view)> encoderModeToReadable;
         // static std::function<std::optional<std::string>(const std::string_view)>
         //     encoderModeFromReadable;
+
+      private:
+        MDRegisters_S registers;  // only for verification purposes
     };
 
-    inline std::function<std::optional<std::string>(const std::string_view)>
+    inline const std::function<std::optional<std::string>(const std::string_view)>
         MDConfigMap::encoderFromReadable =
             [](const std::string_view value) -> std::optional<std::string>
     {
@@ -202,7 +202,7 @@ namespace mab
         return std::nullopt;  // Return nullopt if the value is not recognized
     };
 
-    inline std::function<std::string(std::string_view)> MDConfigMap::encoderToReadable =
+    inline const std::function<std::string(std::string_view)> MDConfigMap::encoderToReadable =
         [](const std::string_view value) -> std::string
     {
         if (value == "0")
