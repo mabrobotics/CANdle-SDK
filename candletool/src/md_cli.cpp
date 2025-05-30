@@ -398,8 +398,64 @@ namespace mab
             });
 
         // Upload configuration file
-        // auto* uploadConfig = config->add_subcommand("upload", "Upload configuration to MD
-        // drive.");
+        auto* uploadConfig = config->add_subcommand("upload", "Upload configuration to MD drive.");
+
+        ConfigOptions uploadConfigOptions(uploadConfig);
+
+        uploadConfig->callback(
+            [this, candleBuilder, mdCanId, uploadConfigOptions]()
+            {
+                auto md = getMd(mdCanId, candleBuilder);
+
+                std::string configFilePath = *uploadConfigOptions.configFile;
+                if (configFilePath.empty())
+                {
+                    m_logger.error("Configuration file path is empty!");
+                    return;
+                }
+                // If the path is not specified, prepend the standard path
+                if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
+                    configFilePath.end())
+                {
+                    configFilePath = "/etc/candletool/config/motors/" + configFilePath;
+                }
+
+                mINI::INIFile      configFile(configFilePath);
+                mINI::INIStructure ini;
+                if (!configFile.read(ini))
+                {
+                    m_logger.error("Could not read configuration file: %s", configFilePath.c_str());
+                    return;
+                }
+
+                MDConfigMap cfgMap;
+
+                for (auto& [address, toml] : cfgMap.m_map)
+                {
+                    auto it = ini[toml.m_tomlSection.data()][toml.m_tomlKey.data()];
+                    if (it.empty())
+                    {
+                        m_logger.warn("Key %s.%s not found in configuration file!",
+                                      toml.m_tomlSection.data(),
+                                      toml.m_tomlKey.data());
+                        continue;
+                    }
+                    try
+                    {
+                        toml.setFromReadable(it);
+                    }
+                    catch (const std::runtime_error& e)
+                    {
+                        m_logger.error("Could not set value for %s.%s: %s",
+                                       toml.m_tomlSection.data(),
+                                       toml.m_tomlKey.data(),
+                                       e.what());
+                        return;
+                    }
+                    // Write the value to the MD
+                    registerWrite(*md, address, toml.m_value);
+                }
+            });
 
         // Reset configuration
         auto* factoryReset = config->add_subcommand("factory-reset", "Factory reset the MD drive.");

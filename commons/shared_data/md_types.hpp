@@ -119,7 +119,7 @@
                                                      \
     MD_REG(reverseDirection, u8, 0x600, RW)          \
                                                      \
-    MD_REG(shuntResistance, float, 0x700, RO)        \
+    MD_REG(shuntResistance, float, 0x700, RW)        \
                                                      \
     MD_REG(uniqueID, char[12], 0x7FE, RO)            \
     MD_REG(hardwareType, hardwareType_S, 0x7FF, RO)  \
