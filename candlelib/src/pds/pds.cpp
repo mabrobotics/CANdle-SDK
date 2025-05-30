@@ -126,6 +126,37 @@ namespace mab
         return PdsModule::error_E ::OK;
     }
 
+    PdsModule::error_E Pds::getFwMetadata(pdsFwMetadata_S& metadata) const
+    {
+        msgResponse_E responseStatusCode = msgResponse_E::UNKNOWN_ERROR;
+        std::pair<std::vector<u8>, mab::candleTypes::Error_t> transferResult;
+
+        std::vector<u8> getFwMetadataMessage = {
+            static_cast<u8>(PdsMessage::commandCode_E::GET_FW_METADATA)};
+
+        transferResult = mp_candle->transferCANFrame(m_canId, getFwMetadataMessage, 66U);
+
+        if (transferResult.second != mab::candleTypes::Error_t::OK)
+        {
+            m_log.error("Failed to transfer CAN frame");
+            return PdsModule::error_E ::COMMUNICATION_ERROR;
+        }
+
+        responseStatusCode = (msgResponse_E)*transferResult.first.data();
+        if (responseStatusCode != msgResponse_E::OK)
+        {
+            m_log.error("Failed to get firmware metadata! [ %u ]",
+                        static_cast<uint8_t>(responseStatusCode));
+            return PdsModule::error_E ::PROTOCOL_ERROR;
+        }
+
+        size_t responseSize = (u8) * (transferResult.first.data() + 1);
+
+        memcpy(&metadata, transferResult.first.data() + 2, sizeof(pdsFwMetadata_S));
+
+        return PdsModule::error_E ::OK;
+    }
+
     Pds::modulesSet_S Pds::getModules(void)
     {
         return m_modulesSet;
@@ -237,11 +268,6 @@ namespace mab
 
         m_log.error("No Isolated Converter modules connected to PDS device!");
         return nullptr;
-    }
-
-    PdsModule::error_E Pds::getFwVersion(version_ut& version)
-    {
-        return readModuleProperty(propertyId_E::FW_VERSION, version);
     }
 
     PdsModule::error_E Pds::getStatus(controlBoardStatus_S& status)
