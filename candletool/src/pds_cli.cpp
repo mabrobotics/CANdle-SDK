@@ -1128,14 +1128,6 @@ void PdsCli::isolatedConverterCmdParse(void)
 
 void PdsCli::pdsSetupInfo()
 {
-    mab::pdsFwMetadata_S pdsFwMetadata = {0};
-    PdsModule::error_E   result        = mp_pds->getFwMetadata(pdsFwMetadata);
-    if (result != PdsModule::error_E::OK)
-    {
-        m_log.error("PDS get firmware metadata failed [ %s ]", PdsModule::error2String(result));
-        return;
-    }
-
     mab::Pds::modulesSet_S pdsModules = mp_pds->getModules();
 
     mab::controlBoardStatus_S pdsStatus     = {0};
@@ -1146,7 +1138,7 @@ void PdsCli::pdsSetupInfo()
     socketIndex_E             brSocket      = socketIndex_E::UNASSIGNED;
     u32                       brTrigger     = 0;
 
-    result = mp_pds->getStatus(pdsStatus);
+    PdsModule::error_E result = mp_pds->getStatus(pdsStatus);
     if (result != PdsModule::error_E::OK)
         m_log.error("PDS get status failed [ %s ]", PdsModule::error2String(result));
 
@@ -1176,12 +1168,6 @@ void PdsCli::pdsSetupInfo()
     }
 
     m_log.info("Power Distribution Module");
-
-    m_log.info("Firmware version: %u.%u.%u-%s",
-               pdsFwMetadata.version.s.major,
-               pdsFwMetadata.version.s.minor,
-               pdsFwMetadata.version.s.revision,
-               pdsFwMetadata.gitHash);
 
     m_log.info("Submodules:");
     m_log.info("\t1 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket1));

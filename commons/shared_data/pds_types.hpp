@@ -61,11 +61,4 @@ namespace mab
 
     };
 
-    struct __attribute__((packed)) pdsFwMetadata_S
-    {
-        u8         metadataStructVersion;  // Version of this structure. Keep this always first!
-        version_ut version;                // Version of the firmware
-        char       gitHash[8];             // 8 characters of git hash
-    };
-
 }  // namespace mab
