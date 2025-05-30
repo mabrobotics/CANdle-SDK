@@ -61,8 +61,6 @@ namespace mab
         std::shared_ptr<PowerStage>    attachPowerStage(socketIndex_E socket);
         std::shared_ptr<IsolatedConv>  attachIsolatedConverter(socketIndex_E socket);
 
-        // error_E getFwVersion(version_ut& version); //deprecated
-
         error_E getStatus(controlBoardStatus_S& status);
         error_E clearStatus(controlBoardStatus_S status);
         error_E clearErrors(void);
