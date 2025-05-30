@@ -7,6 +7,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <functional>
 #include <utility>
 #include <tuple>
 #include <vector>
@@ -40,7 +41,7 @@
     MD_REG(motorThermistorType, u8, 0x01F, RW)       \
                                                      \
     MD_REG(auxEncoder, u8, 0x020, RW)                \
-    MD_REG(auxEncoderDir, float, 0x021, RW)          \
+    MD_REG(auxEncoderDir, u8, 0x021, RW)             \
     MD_REG(auxEncoderDefaultBaud, u32, 0x022, RW)    \
     MD_REG(auxEncoderVelocity, float, 0x023, RO)     \
     MD_REG(auxEncoderPosition, float, 0x024, RO)     \

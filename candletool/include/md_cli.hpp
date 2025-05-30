@@ -6,6 +6,7 @@
 #include "MD.hpp"
 #include <algorithm>
 #include <memory>
+#include <optional>
 #include <candle_types.hpp>
 
 namespace mab
@@ -23,6 +24,8 @@ namespace mab
         std::unique_ptr<MD, std::function<void(MD*)>> getMd(
             const std::shared_ptr<canId_t>             mdCanId,
             const std::shared_ptr<const CandleBuilder> candleBuilder);
+        void                       registerWrite(MD& md, u16 regAdress, const std::string& value);
+        std::optional<std::string> registerRead(MD& md, u16 regAdress);
 
         struct CanOptions
         {

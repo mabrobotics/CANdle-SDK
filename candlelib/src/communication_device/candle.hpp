@@ -203,8 +203,9 @@ namespace mab
             switch (*busType)
             {
                 case candleTypes::busTypes_t::USB:
-                    bus = std::make_unique<mab::USB>(
-                        Candle::CANDLE_VID, Candle::CANDLE_PID, std::string(pathOrId.value_or({})));
+                    bus = std::make_unique<mab::USB>(Candle::CANDLE_VID,
+                                                     Candle::CANDLE_PID,
+                                                     std::string(pathOrId.value_or(std::string())));
                     if (bus->connect() != I_CommunicationInterface::Error_t::OK)
                     {
                         m_logger.error("Could not connect USB device!");

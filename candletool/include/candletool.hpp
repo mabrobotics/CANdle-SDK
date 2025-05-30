@@ -60,6 +60,38 @@ class CandleTool
                 return {};
         }
     }
+    inline static std::optional<std::string> datarateToString(const mab::CANdleBaudrate_E baud)
+    {
+        switch (baud)
+        {
+            case mab::CANdleBaudrate_E::CAN_BAUD_1M:
+                return "1M";
+            case mab::CANdleBaudrate_E::CAN_BAUD_2M:
+                return "2M";
+            case mab::CANdleBaudrate_E::CAN_BAUD_5M:
+                return "5M";
+            case mab::CANdleBaudrate_E::CAN_BAUD_8M:
+                return "8M";
+            default:
+                return {};
+        }
+    }
+    inline static u32 baudToInt(const mab::CANdleBaudrate_E baud)
+    {
+        switch (baud)
+        {
+            case mab::CANdleBaudrate_E::CAN_BAUD_1M:
+                return 1000000;
+            case mab::CANdleBaudrate_E::CAN_BAUD_2M:
+                return 2000000;
+            case mab::CANdleBaudrate_E::CAN_BAUD_5M:
+                return 5000000;
+            case mab::CANdleBaudrate_E::CAN_BAUD_8M:
+                return 8000000;
+            default:
+                return 1000000;  // Default to 1M if unknown
+        }
+    }
 
     // OLD
     void ping(const std::string& variant);

@@ -3,6 +3,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string_view>
+#include <variant>
 #include "candle.hpp"
 #include "logger.hpp"
 #include "mab_types.hpp"
@@ -10,6 +11,8 @@
 #include "candle_types.hpp"
 #include "candletool.hpp"
 #include "mabFileParser.hpp"
+#include "md_cfg_map.hpp"
+#include "utilities.hpp"
 
 namespace mab
 {
@@ -356,8 +359,7 @@ namespace mab
         downloadConfig->callback(
             [this, candleBuilder, mdCanId, downloadConfigOptions]()
             {
-                auto          md = getMd(mdCanId, candleBuilder);
-                MDRegisters_S registers;
+                auto md = getMd(mdCanId, candleBuilder);
 
                 std::string configFilePath = *downloadConfigOptions.configFile;
                 if (configFilePath.empty())
@@ -366,17 +368,38 @@ namespace mab
                     return;
                 }
                 // If the path is not specified, prepend the standard path
-                if (std::find(configFilePath.begin(), configFilePath.end(), '/') !=
+                if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
                     configFilePath.end())
                 {
                     configFilePath = "/etc/candletool/config/motors/" + configFilePath;
                 }
-                mINI::INIFile      iniFile(configFilePath);
-                mINI::INIStructure iniStructure;
+
+                MDConfigMap cfgMap;
+                for (auto& [regAddress, cfgElement] : cfgMap.m_map)
+                {
+                    cfgElement.m_value = registerRead(*md, regAddress).value_or("NOT FOUND");
+                }
+                // Write the configuration to the file
+                mINI::INIFile      configFile(configFilePath);
+                mINI::INIStructure ini;
+                for (const auto& [regAddress, cfgElement] : cfgMap.m_map)
+                {
+                    ini[cfgElement.m_tomlSection.data()][cfgElement.m_tomlKey.data()] =
+                        cfgElement.getReadable();
+                }
+                if (!configFile.write(ini))
+                {
+                    m_logger.error("Could not write configuration to file: %s",
+                                   configFilePath.c_str());
+                    return;
+                }
+                m_logger.success("Configuration downloaded successfully to %s",
+                                 configFilePath.c_str());
             });
 
         // Upload configuration file
-        auto* uploadConfig = config->add_subcommand("upload", "Upload configuration to MD drive.");
+        // auto* uploadConfig = config->add_subcommand("upload", "Upload configuration to MD
+        // drive.");
 
         // Reset configuration
         auto* factoryReset = config->add_subcommand("factory-reset", "Factory reset the MD drive.");
@@ -467,5 +490,135 @@ namespace mab
         {
             return nullptr;
         }
+    }
+
+    void MDCli::registerWrite(MD& md, u16 regAdress, const std::string& value)
+    {
+        std::string trimmedValue = trim(value);
+
+        MDRegisters_S                             regs;
+        std::variant<int64_t, float, std::string> regValue;
+        bool                                      foundRegister      = false;
+        bool                                      registerCompatible = false;
+
+        // Check if the value is a string or a number
+        if (trimmedValue.find_first_not_of("0123456789.f") == std::string::npos)
+        {
+            /// Check if the value is a float or an integer
+            if (trimmedValue.find('.') != std::string::npos)
+                regValue = std::stof(value);
+            else
+                regValue = std::stoll(value);
+        }
+        else
+        {
+            regValue = trimmedValue;
+        }
+
+        auto setRegValueByAdress = [&]<typename T>(MDRegisterEntry_S<T> reg)
+        {
+            if (reg.m_regAddress == regAdress)
+            {
+                foundRegister = true;
+                if constexpr (std::is_arithmetic<T>::value)
+                {
+                    registerCompatible = true;
+                    if (std::holds_alternative<int64_t>(regValue))
+                        reg.value = std::get<int64_t>(regValue);
+                    else if (std::holds_alternative<float>(regValue))
+                        reg.value = std::get<float>(regValue);
+
+                    auto result = md.writeRegisters(reg);
+
+                    if (result != MD::Error_t::OK)
+                    {
+                        m_logger.error("Failed to write register %d", reg.m_regAddress);
+                        return;
+                    }
+                    m_logger.success("Writing register %s successful!", reg.m_name.data());
+                }
+                else if constexpr (std::is_same<std::decay_t<T>, char*>::value)
+                {
+                    registerCompatible = true;
+                    std::string_view strV;
+                    if (std::holds_alternative<std::string>(regValue))
+                        strV = std::get<std::string>(regValue).c_str();
+                    else
+                    {
+                        m_logger.error("Invalid value type for register %d", reg.m_regAddress);
+                        return;
+                    }
+
+                    if (strV.length() > sizeof(reg.value) + 1)
+                    {
+                        m_logger.error("Value too long for register %d", reg.m_regAddress);
+                        return;
+                    }
+
+                    std::copy(strV.data(), strV.data() + strV.length(), reg.value);
+
+                    auto result = md.writeRegisters(reg);
+
+                    if (result != MD::Error_t::OK)
+                    {
+                        m_logger.error("Failed to write register %d", reg.m_regAddress);
+                        return;
+                    }
+                    m_logger.success("Writing register %s successful!", reg.m_name.data());
+                }
+            }
+        };
+        regs.forEachRegister(setRegValueByAdress);
+        if (!foundRegister)
+        {
+            m_logger.error("Register %d not found", regAdress);
+            return;
+        }
+        if (!registerCompatible)
+        {
+            m_logger.error("Register %d not compatible with value %s", regAdress, value.c_str());
+            return;
+        }
+    }
+
+    std::optional<std::string> MDCli::registerRead(MD& md, u16 regAdress)
+    {
+        std::optional<std::string> registerStringValue;
+        MDRegisters_S              regs;
+        auto                       getValueByAdress = [&]<typename T>(MDRegisterEntry_S<T> reg)
+        {
+            if (reg.m_regAddress == regAdress)
+            {
+                if constexpr (std::is_arithmetic_v<T>)
+                {
+                    auto result = md.readRegister(reg);
+                    if (result != MD::Error_t::OK)
+                    {
+                        m_logger.error("Failed to read register %d", regAdress);
+                        return false;
+                    }
+                    std::string value   = std::to_string(reg.value);
+                    registerStringValue = value;  // Store the value in the result
+                    m_logger.success("Register %d value: %s", regAdress, value.c_str());
+                    return true;
+                }
+                else if constexpr (std::is_same<std::decay_t<T>, char*>::value)
+                {
+                    auto result = md.readRegisters(reg);
+                    if (result != MD::Error_t::OK)
+                    {
+                        m_logger.error("Failed to read register %d", regAdress);
+                        return false;
+                    }
+                    const char* value   = reg.value;
+                    registerStringValue = std::string(value);  // Store the value in the result
+                    m_logger.success("Register %d value: %s", regAdress, value);
+                    return true;
+                }
+            }
+            return false;
+        };
+        regs.forEachRegister(getValueByAdress);
+        return registerStringValue;
     }
 }  // namespace mab
