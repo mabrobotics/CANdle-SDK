@@ -387,7 +387,7 @@ namespace mab
                     ini[cfgElement.m_tomlSection.data()][cfgElement.m_tomlKey.data()] =
                         cfgElement.getReadable();
                 }
-                if (!configFile.write(ini))
+                if (!configFile.generate(ini, true))
                 {
                     m_logger.error("Could not write configuration to file: %s",
                                    configFilePath.c_str());

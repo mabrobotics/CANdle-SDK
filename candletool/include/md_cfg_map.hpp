@@ -105,9 +105,12 @@ namespace mab
             {0x020,
              MDCfgElement(
                  "output encoder", "output encoder", encoderToReadable, encoderFromReadable)},
-            {0x021, MDCfgElement("output encoder", "output encoder direction")},
             {0x022, MDCfgElement("output encoder", "output encoder default baud")},
-            {0x025, MDCfgElement("output encoder", "output encoder mode")},
+            {0x025,
+             MDCfgElement("output encoder",
+                          "output encoder mode",
+                          encoderModeToReadable,
+                          encoderModeFromReadable)},
             {0x026, MDCfgElement("output encoder", "output encoder calibration mode")},
 
             // PID parameters
@@ -138,7 +141,7 @@ namespace mab
 
             // Hardware configuration
             {0x700, MDCfgElement("hardware", "shunt resistance")},
-            {0x160, MDCfgElement("GPIO", "mode")}};
+            {0x160, MDCfgElement("GPIO", "mode", GPIOModeToReadable, GPIOModeFromReadable)}};
 
         // Function to get the value of a specific register by address
         std::string getValueByAddress(u16 address) const
@@ -172,14 +175,19 @@ namespace mab
         static const std::function<std::optional<std::string>(const std::string_view)>
             encoderFromReadable;
 
-        // static std::function<std::string(std::string_view)> encoderModeToReadable;
-        // static std::function<std::optional<std::string>(const std::string_view)>
-        //     encoderModeFromReadable;
+        static const std::function<std::string(std::string_view)> encoderModeToReadable;
+        static const std::function<std::optional<std::string>(const std::string_view)>
+            encoderModeFromReadable;
+
+        static const std::function<std::string(std::string_view)> GPIOModeToReadable;
+        static const std::function<std::optional<std::string>(const std::string_view)>
+            GPIOModeFromReadable;
 
       private:
         MDRegisters_S registers;  // only for verification purposes
     };
 
+    // Special case for encoder type
     inline const std::function<std::optional<std::string>(const std::string_view)>
         MDConfigMap::encoderFromReadable =
             [](const std::string_view value) -> std::optional<std::string>
@@ -223,4 +231,70 @@ namespace mab
         return "UNKNOWN: " + std::string(value);
     };
 
+    // Special case for encoder mode
+    inline const std::function<std::string(std::string_view)> MDConfigMap::encoderModeToReadable =
+        [](const std::string_view value) -> std::string
+    {
+        if (value == "0")
+            return "NONE";
+        if (value == "1")
+            return "STARTUP";
+        if (value == "2")
+            return "MOTION";
+        if (value == "3")
+            return "REPORT";
+        if (value == "4")
+            return "MAIN";
+        if (value == "5")
+            return "CALIBRATED_REPORT";
+
+        return "UNKNOWN: " + std::string(value);
+    };
+
+    inline const std::function<std::optional<std::string>(const std::string_view)>
+        MDConfigMap::encoderModeFromReadable =
+            [](const std::string_view value) -> std::optional<std::string>
+    {
+        if (value == "NONE")
+            return "0";
+        if (value == "STARTUP")
+            return "1";
+        if (value == "MOTION")
+            return "2";
+        if (value == "REPORT")
+            return "3";
+        if (value == "MAIN")
+            return "4";
+        if (value == "CALIBRATED_REPORT")
+            return "5";
+
+        return std::nullopt;  // Return nullopt if the value is not recognized
+    };
+
+    // Special case for GPIO mode
+    inline const std::function<std::string(std::string_view)> MDConfigMap::GPIOModeToReadable =
+        [](const std::string_view value) -> std::string
+    {
+        if (value == "0")
+            return "OFF";
+        if (value == "1")
+            return "AUTO-BRAKE";
+        if (value == "2")
+            return "INPUT";
+
+        return "UNKNOWN: " + std::string(value);
+    };
+    inline const std::function<std::optional<std::string>(const std::string_view)>
+        MDConfigMap::GPIOModeFromReadable =
+            [](const std::string_view value) -> std::optional<std::string>
+    {
+        if (value == "OFF")
+            return "0";
+        if (value == "AUTO-BRAKE")
+            return "1";
+        if (value == "INPUT")
+            return "2";
+
+        return std::nullopt;  // Return nullopt if the value is not recognized
+    };
 }  // namespace mab
