@@ -5,6 +5,7 @@
 #include <string>
 #include <string_view>
 #include <variant>
+#include "canLoader.hpp"
 #include "candle.hpp"
 #include "logger.hpp"
 #include "mab_types.hpp"
@@ -486,6 +487,13 @@ namespace mab
                     // Write the value to the MD
                     registerWrite(*md, address, toml.m_value);
                 }
+
+                if (md->save() != MD::Error_t::OK)
+                {
+                    m_logger.error("Could not save configuration!");
+                    return;
+                }
+                m_logger.success("Uploaded configuration to the MD!");
             });
 
         // Reset configuration
@@ -556,6 +564,7 @@ namespace mab
 
         // Register =======================================================================
         auto* reg = mdCLi->add_subcommand("register", "Register operations for MD drive.");
+
         // Register read
         auto regRead = reg->add_subcommand("read", "Read register value.");
 
@@ -564,15 +573,15 @@ namespace mab
         regRead->callback(
             [this, candleBuilder, mdCanId, regReadOptions]()
             {
-                std::string result  = "Failed to read";
-                auto        md      = getMd(mdCanId, candleBuilder);
-                u16         address = 0x0;
+                std::string result      = "Failed to read";
+                auto        md          = getMd(mdCanId, candleBuilder);
+                u16         address     = 0x0;
+                std::string registerStr = *(regReadOptions.registerAddressOrName);
                 if (md == nullptr)
                 {
                     m_logger.error("Coudl not connect to MD!");
                     return;
                 }
-                std::string registerStr = *(regReadOptions.registerAddressOrName);
                 if (std::string("0x").compare(registerStr.substr(0, 2)) == 0)
                 {
                     address = std::stoll(registerStr, nullptr, 16);
@@ -607,25 +616,120 @@ namespace mab
                     "Register %s has a value of %s", registerStr.c_str(), result.c_str());
             });
 
-        // // Test
-        // auto* test = mdCLi->add_subcommand("test", "Test the MD drive.");
-        // test->callback(
-        //     [this, candleBuilder, mdCanId]()
-        //     {
-        //         auto md = getMd(mdCanId, candleBuilder);
-        //         // md->test();
-        //         logger::info("Test command placeholder");
-        //     });
+        // Register write
 
-        // // Update
-        // auto* update = mdCLi->add_subcommand("update", "Update firmware on MD drive.");
-        // update->callback(
-        //     [this, candleBuilder, mdCanId]()
-        //     {
-        //         auto md = getMd(mdCanId, candleBuilder);
-        //         // md->update();
-        //         logger::info("Update command placeholder");
-        //     });
+        // Test
+        auto* test = mdCLi->add_subcommand("test", "Test the MD drive movement.");
+
+        // Absolute
+        auto* absolute =
+            test->add_subcommand("absolute", "Move to target utilizing trapezoidal profile");
+        TestOptions absoluteTestOptions(absolute);
+
+        absolute->callback(
+            [this, candleBuilder, mdCanId, absoluteTestOptions]()
+            {
+                auto md = getMd(mdCanId, candleBuilder);
+                if (md == nullptr)
+                {
+                    m_logger.error("Coudl not connect to MD!");
+                    return;
+                }
+                md->setTargetPosition(*absoluteTestOptions.target);
+                md->setMotionMode(mab::MdMode_E::POSITION_PROFILE);
+                md->enable();
+                while (!(md->getQuickStatus()
+                             .first.at(MDStatus::QuickStatusBits::TargetPositionReached)
+                             .isSet()))
+                {
+                    m_logger.info("Position: %4.2f", md->getPosition().first);
+                    usleep(50'000);
+                }
+                md->disable();
+                m_logger.info("TARGET REACHED!");
+            });
+
+        // Relative
+        auto* relative = test->add_subcommand("relative", "Move relative to current position");
+
+        TestOptions relativeTestOptions(relative);
+
+        relative->callback(
+            [this, candleBuilder, mdCanId, relativeTestOptions]()
+            {
+                auto md = getMd(mdCanId, candleBuilder);
+                if (md == nullptr)
+                {
+                    m_logger.error("Coudl not connect to MD!");
+                    return;
+                }
+                if (*relativeTestOptions.target > 10.0f)
+                    *relativeTestOptions.target = 10.0f;
+                else if (*relativeTestOptions.target < -10.0f)
+                    *relativeTestOptions.target = -10.0f;
+
+                md->setMotionMode(mab::MdMode_E::IMPEDANCE);
+                f32 pos = md->getPosition().first;
+                md->setTargetPosition(pos);
+                *relativeTestOptions.target += pos;
+                md->enable();
+
+                for (f32 t = 0.f; t < 1.f; t += 0.01f)
+                {
+                    f32 target = std::lerp(pos, *relativeTestOptions.target, t);
+                    md->setTargetPosition(target);
+                    m_logger.info("[%4d] Position: %4.2f, Velocity: %4.1f",
+                                  *mdCanId,
+                                  md->getPosition().first,
+                                  md->getVelocity().first);
+                    usleep(30000);
+                }
+                m_logger.success("Movement ended.");
+            });
+
+        // Update
+        auto* update = mdCLi->add_subcommand("update", "Update firmware on MD drive.");
+
+        UpdateOptions updateOptions(update);
+
+        update->callback(
+            [this, candleBuilder, mdCanId, updateOptions]()
+            {
+                MabFileParser mabFile(*updateOptions.pathToMabFile,
+                                      MabFileParser::TargetDevice_E::MD);
+
+                if (*(updateOptions.recovery) == false)
+                {
+                    auto md = getMd(mdCanId, candleBuilder);
+                    if (md == nullptr)
+                    {
+                        m_logger.error("Could not communicate with MD device with ID %d", *mdCanId);
+                        return;
+                    }
+                    md->reset();
+                    usleep(300'000);
+                }
+                else
+                {
+                    m_logger.warn("Recovery mode...");
+                    m_logger.warn("Please make sure driver is in the bootload phase (rebooting)");
+                }
+                auto candle = candleBuilder->build().value_or(nullptr);
+                if (candle == nullptr)
+                {
+                    m_logger.error("Could not connect to candle!");
+                    return;
+                }
+                CanLoader canLoader(candle, &mabFile, *mdCanId);
+                if (canLoader.flashAndBoot())
+                {
+                    m_logger.success("Update complete for MD @ %d", *mdCanId);
+                }
+                else
+                {
+                    m_logger.error("MD flashing failed!");
+                }
+            });
     }
 
     std::unique_ptr<MD, std::function<void(MD*)>> MDCli::getMd(
@@ -662,7 +766,7 @@ namespace mab
         bool                                      registerCompatible = false;
 
         // Check if the value is a string or a number
-        if (trimmedValue.find_first_not_of("0123456789.f") == std::string::npos)
+        if (trimmedValue.find_first_not_of("-0123456789.f") == std::string::npos)
         {
             /// Check if the value is a float or an integer
             if (trimmedValue.find('.') != std::string::npos)

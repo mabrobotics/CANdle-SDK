@@ -138,13 +138,42 @@ namespace mab
             RegisterWriteOption(CLI::App* rootCli)
                 : RegisterReadOption(rootCli), registerValue(std::make_shared<std::string>("0x0"))
             {
-                optionsMap = std::map<std::string, CLI::Option*>{
-                    {"value",
-                     rootCli->add_option("value", *registerValue, "Value to write to register")
-                         ->required()}};
+                optionsMap["value"] =
+                    rootCli->add_option("value", *registerValue, "Value to write to register")
+                        ->required();
             }
 
             const std::shared_ptr<std::string> registerValue;
+        };
+
+        struct TestOptions
+        {
+            TestOptions(CLI::App* rootCli) : target(std::make_shared<float>(0.0f))
+            {
+                optionsMap = std::map<std::string, CLI::Option*>{
+                    {"target",
+                     rootCli->add_option("target", *target, "Position target of movement")}};
+            }
+            const std::shared_ptr<float>        target;
+            std::map<std::string, CLI::Option*> optionsMap;
+        };
+
+        struct UpdateOptions
+        {
+            UpdateOptions(CLI::App* rootCli)
+                : recovery(std::make_shared<bool>(false)),
+                  pathToMabFile(std::make_shared<std::string>(""))
+            {
+                optionsMap = std::map<std::string, CLI::Option*>{
+                    {"path",
+                     rootCli->add_option("path", *pathToMabFile, "Path to .mab file")->required()},
+                    {"recovery",
+                     rootCli->add_flag(
+                         "-r,--recovery", *recovery, "Driver recovery affter failed flashing")}};
+            }
+            const std::shared_ptr<bool>         recovery;
+            const std::shared_ptr<std::string>  pathToMabFile;
+            std::map<std::string, CLI::Option*> optionsMap;
         };
     };
 }  // namespace mab

@@ -193,19 +193,19 @@ namespace mab
         MDConfigMap::encoderFromReadable =
             [](const std::string_view value) -> std::optional<std::string>
     {
-        if (value == "NONE")
+        if (value == "NONE" || value == "0")
             return "0";
-        if (value == "ME_AS_CENTER")
+        if (value == "ME_AS_CENTER" || value == "1")
             return "1";
-        if (value == "ME_AS_OFFAXIS")
+        if (value == "ME_AS_OFFAXIS" || value == "2")
             return "2";
-        if (value == "MB053SFA17BENT00")
+        if (value == "MB053SFA17BENT00" || value == "3")
             return "3";
-        if (value == "CM_OFFAXIS")
+        if (value == "CM_OFFAXIS" || value == "4")
             return "4";
-        if (value == "M24B_CENTER")
+        if (value == "M24B_CENTER" || value == "5")
             return "5";
-        if (value == "M24B_OFFAXIS")
+        if (value == "M24B_OFFAXIS" || value == "6")
             return "6";
 
         return std::nullopt;  // Return nullopt if the value is not recognized
@@ -256,17 +256,17 @@ namespace mab
         MDConfigMap::encoderModeFromReadable =
             [](const std::string_view value) -> std::optional<std::string>
     {
-        if (value == "NONE")
+        if (value == "NONE" || value == "0")
             return "0";
-        if (value == "STARTUP")
+        if (value == "STARTUP" || value == "1")
             return "1";
-        if (value == "MOTION")
+        if (value == "MOTION" || value == "2")
             return "2";
-        if (value == "REPORT")
+        if (value == "REPORT" || value == "3")
             return "3";
-        if (value == "MAIN")
+        if (value == "MAIN" || value == "4")
             return "4";
-        if (value == "CALIBRATED_REPORT")
+        if (value == "CALIBRATED_REPORT" || value == "5")
             return "5";
 
         return std::nullopt;  // Return nullopt if the value is not recognized
