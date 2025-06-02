@@ -101,12 +101,50 @@ namespace mab
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
                     {"file",
-                     rootCli->add_option("-f,--file", *configFile, "Path to the MD config file.")
+                     rootCli
+                         ->add_option(
+                             "file",
+                             *configFile,
+                             "Path to the MD config file \n note: if no \"/\" sign is present than "
+                             "global config path will be prepended.")
                          ->required()}};
             }
 
             const std::shared_ptr<std::string>  configFile;
             std::map<std::string, CLI::Option*> optionsMap;
+        };
+
+        struct RegisterReadOption
+        {
+            RegisterReadOption(CLI::App* rootCli)
+                : registerAddressOrName(std::make_shared<std::string>("0x001"))
+            {
+                optionsMap = std::map<std::string, CLI::Option*>{
+                    {"register",
+                     rootCli
+                         ->add_option("register",
+                                      *registerAddressOrName,
+                                      "Name or adress (must start with 0x and be in hex) of a "
+                                      "register to interact with")
+                         ->required()}};
+            }
+
+            const std::shared_ptr<std::string>  registerAddressOrName;
+            std::map<std::string, CLI::Option*> optionsMap;
+        };
+
+        struct RegisterWriteOption : public RegisterReadOption
+        {
+            RegisterWriteOption(CLI::App* rootCli)
+                : RegisterReadOption(rootCli), registerValue(std::make_shared<std::string>("0x0"))
+            {
+                optionsMap = std::map<std::string, CLI::Option*>{
+                    {"value",
+                     rootCli->add_option("value", *registerValue, "Value to write to register")
+                         ->required()}};
+            }
+
+            const std::shared_ptr<std::string> registerValue;
         };
     };
 }  // namespace mab

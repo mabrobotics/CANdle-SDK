@@ -42,16 +42,17 @@ namespace mab
         {
             return m_toReadable(m_value);
         }
-        void setFromReadable(const std::string_view value)
+        [[nodiscard("Info on parsing state")]] bool setFromReadable(
+            const std::string_view value) noexcept
         {
             if (m_fromReadable(value).has_value())
             {
                 m_value = m_fromReadable(value).value();
+                return true;
             }
             else
             {
-                throw std::runtime_error("MDCfgElement: Invalid value for " +
-                                         std::string(m_tomlSection) + "." + std::string(m_tomlKey));
+                return false;
             }
         }
     };

@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 #include <variant>
 #include "candle.hpp"
@@ -26,17 +27,22 @@ namespace mab
         const std::shared_ptr<canId_t> mdCanId = std::make_shared<canId_t>(100);
         mdCLi->add_option("<CAN_ID>", *mdCanId, "CAN ID of the MD to interact with.")->required();
 
-        // Blink
+        // Blink ============================================================================
         auto* blink = mdCLi->add_subcommand("blink", "Blink LEDs on MD drive.");
         blink->callback(
             [this, candleBuilder, mdCanId]()
             {
                 auto md = getMd(mdCanId, candleBuilder);
+                if (md == nullptr)
+                {
+                    m_logger.error("Coudl not connect to MD!");
+                    return;
+                }
                 md->blink();
                 m_logger.success("MD is blinking!");
             });
 
-        // Can
+        // Can ============================================================================
         auto* can = mdCLi->add_subcommand(
             "can", "Configure CAN network parameters id, datarate and timeout.");
 
@@ -45,7 +51,12 @@ namespace mab
         can->callback(
             [this, candleBuilder, mdCanId, canOptions]()
             {
-                auto          md = getMd(mdCanId, candleBuilder);
+                auto md = getMd(mdCanId, candleBuilder);
+                if (md == nullptr)
+                {
+                    m_logger.error("Coudl not connect to MD!");
+                    return;
+                }
                 MDRegisters_S registers;
                 // download current config from md
                 if (md->readRegisters(registers.canID,
@@ -121,6 +132,11 @@ namespace mab
                     newCandleBuilder->busType  = candleBuilder->busType;
                     md                         = nullptr;  // Reset the old MD instance
                     md                         = getMd(newCanId, newCandleBuilder);
+                    if (md == nullptr)
+                    {
+                        m_logger.error("Coudl not connect to MD!");
+                        return;
+                    }
                     // Save the new can parameters to the MD
                     if (md->save() != MD::Error_t::OK)
                     {
@@ -131,7 +147,7 @@ namespace mab
                 m_logger.success("MD CAN parameters updated successfully!");
             });
 
-        // Calibration
+        // Calibration  ====================================================================
         auto* calibration = mdCLi->add_subcommand("calibration", "Calibrate the MD drive.");
 
         CalibrationOptions calibrationOptions(calibration);
@@ -139,7 +155,12 @@ namespace mab
         calibration->callback(
             [this, candleBuilder, mdCanId, calibrationOptions]()
             {
-                auto          md = getMd(mdCanId, candleBuilder);
+                auto md = getMd(mdCanId, candleBuilder);
+                if (md == nullptr)
+                {
+                    m_logger.error("Coudl not connect to MD!");
+                    return;
+                }
                 MDRegisters_S registers;
                 // Determine if setup error are present
                 auto calibrationStatus = md->getCalibrationStatus();
@@ -314,7 +335,7 @@ namespace mab
                 }
             });
 
-        // Clear
+        // Clear  =========================================================================
         auto* clear = mdCLi->add_subcommand("clear", "Clear MD drive errors and warnings.");
 
         ClearOptions clearOptions(clear);
@@ -322,7 +343,12 @@ namespace mab
         clear->callback(
             [this, candleBuilder, mdCanId, clearOptions]()
             {
-                auto          md = getMd(mdCanId, candleBuilder);
+                auto md = getMd(mdCanId, candleBuilder);
+                if (md == nullptr)
+                {
+                    m_logger.error("Coudl not connect to MD!");
+                    return;
+                }
                 MDRegisters_S registers;
 
                 if (*clearOptions.clearType == "warn" || *clearOptions.clearType == "all")
@@ -348,7 +374,7 @@ namespace mab
                 m_logger.success("MD errors and warnings cleared successfully!");
             });
 
-        // Config
+        // Config  ===========================================================
         auto* config = mdCLi->add_subcommand("config", "Configure MD drive.");
         // Download configuration file
         auto* downloadConfig =
@@ -360,6 +386,11 @@ namespace mab
             [this, candleBuilder, mdCanId, downloadConfigOptions]()
             {
                 auto md = getMd(mdCanId, candleBuilder);
+                if (md == nullptr)
+                {
+                    m_logger.error("Coudl not connect to MD!");
+                    return;
+                }
 
                 std::string configFilePath = *downloadConfigOptions.configFile;
                 if (configFilePath.empty())
@@ -406,6 +437,11 @@ namespace mab
             [this, candleBuilder, mdCanId, uploadConfigOptions]()
             {
                 auto md = getMd(mdCanId, candleBuilder);
+                if (md == nullptr)
+                {
+                    m_logger.error("Coudl not connect to MD!");
+                    return;
+                }
 
                 std::string configFilePath = *uploadConfigOptions.configFile;
                 if (configFilePath.empty())
@@ -435,21 +471,16 @@ namespace mab
                     auto it = ini[toml.m_tomlSection.data()][toml.m_tomlKey.data()];
                     if (it.empty())
                     {
-                        m_logger.warn("Key %s.%s not found in configuration file!",
+                        m_logger.warn("Key %s.%s not found in configuration file. Skipping.",
                                       toml.m_tomlSection.data(),
                                       toml.m_tomlKey.data());
                         continue;
                     }
-                    try
+                    if (!toml.setFromReadable(it))
                     {
-                        toml.setFromReadable(it);
-                    }
-                    catch (const std::runtime_error& e)
-                    {
-                        m_logger.error("Could not set value for %s.%s: %s",
+                        m_logger.error("Could not set value for %s.%s",
                                        toml.m_tomlSection.data(),
-                                       toml.m_tomlKey.data(),
-                                       e.what());
+                                       toml.m_tomlKey.data());
                         return;
                     }
                     // Write the value to the MD
@@ -462,7 +493,12 @@ namespace mab
         factoryReset->callback(
             [this, candleBuilder, mdCanId]()
             {
-                auto          md = getMd(mdCanId, candleBuilder);
+                auto md = getMd(mdCanId, candleBuilder);
+                if (md == nullptr)
+                {
+                    m_logger.error("Coudl not connect to MD!");
+                    return;
+                }
                 MDRegisters_S registers;
                 registers.runRestoreFactoryConfig = 1;  // Set flag to restore factory config
                 if (md->writeRegister(registers.runRestoreFactoryConfig) != MD::Error_t::OK)
@@ -473,17 +509,42 @@ namespace mab
                 m_logger.success("MD drive reset successfully!");
             });
 
-        // // Discover
-        // auto* discover = mdCLi->add_subcommand("discover", "Discover MD drives on the network.");
-        // discover->callback(
-        //     [this, candleBuilder, mdCanId]()
-        //     {
-        //         auto md = getMd(mdCanId, candleBuilder);
-        //         // md->discover();
-        //         logger::info("Discover command placeholder");
-        //     });
+        // Discover ============================================================================
+        auto* discover = mdCLi->add_subcommand("discover",
+                                               "Discover MD drives on the"
+                                               "network.");
 
-        // // Info
+        discover->callback(
+            [this, candleBuilder, mdCanId]()
+            {
+                auto candleOpt = candleBuilder->build();
+                if (!candleOpt.has_value())
+                {
+                    m_logger.error("Could not initialize Candle!");
+                    return;
+                }
+                Candle* candle = candleOpt.value();
+                auto    ids    = MD::discoverMDs(candle);
+
+                if (ids.empty())
+                {
+                    m_logger.error("No MD found on the bus for baud %s",
+                                   CandleTool::datarateToString(*(candleBuilder->datarate))
+                                       .value_or("NOT A DATARATE")
+                                       .c_str());
+                }
+                else
+                {
+                    m_logger.info("Found following MDs:");
+                }
+                for (const auto& id : ids)
+                {
+                    m_logger.info("- %d", id);
+                }
+                detachCandle(candle);
+            });
+
+        // Info ============================================================================
         // auto* info = mdCLi->add_subcommand("info", "Get information about the MD drive.");
         // info->callback(
         //     [this, candleBuilder, mdCanId]()
@@ -493,15 +554,58 @@ namespace mab
         //         logger::info("Info command placeholder");
         //     });
 
-        // // Register
-        // auto* reg = mdCLi->add_subcommand("register", "Register operations for MD drive.");
-        // reg->callback(
-        //     [this, candleBuilder, mdCanId]()
-        //     {
-        //         auto md = getMd(mdCanId, candleBuilder);
-        //         // md->register();
-        //         logger::info("Register command placeholder");
-        //     });
+        // Register =======================================================================
+        auto* reg = mdCLi->add_subcommand("register", "Register operations for MD drive.");
+        // Register read
+        auto regRead = reg->add_subcommand("read", "Read register value.");
+
+        RegisterReadOption regReadOptions(regRead);
+
+        regRead->callback(
+            [this, candleBuilder, mdCanId, regReadOptions]()
+            {
+                std::string result  = "Failed to read";
+                auto        md      = getMd(mdCanId, candleBuilder);
+                u16         address = 0x0;
+                if (md == nullptr)
+                {
+                    m_logger.error("Coudl not connect to MD!");
+                    return;
+                }
+                std::string registerStr = *(regReadOptions.registerAddressOrName);
+                if (std::string("0x").compare(registerStr.substr(0, 2)) == 0)
+                {
+                    address = std::stoll(registerStr, nullptr, 16);
+                    if (address != 0x0)
+                        result = registerRead(*md, address).value_or(result);
+                    else
+                    {
+                        m_logger.error("Could not find provided register!");
+                        return;
+                    }
+                }
+                else
+                {
+                    MDRegisters_S regs;
+                    auto          findAddressByName = [&]<typename T>(MDRegisterEntry_S<T> reg)
+                    {
+                        if (registerStr.compare(reg.m_name) == 0)
+                            address = reg.m_regAddress;
+                    };
+                    regs.forEachRegister(findAddressByName);
+                    if (address != 0x0)
+                    {
+                        result = registerRead(*md, address).value_or(result);
+                    }
+                    else
+                    {
+                        m_logger.error("Could not find provided register!");
+                        return;
+                    }
+                }
+                m_logger.success(
+                    "Register %s has a value of %s", registerStr.c_str(), result.c_str());
+            });
 
         // // Test
         // auto* test = mdCLi->add_subcommand("test", "Test the MD drive.");
@@ -641,10 +745,12 @@ namespace mab
     {
         std::optional<std::string> registerStringValue;
         MDRegisters_S              regs;
+        std::string                nameOfRegister   = "NULL";
         auto                       getValueByAdress = [&]<typename T>(MDRegisterEntry_S<T> reg)
         {
             if (reg.m_regAddress == regAdress)
             {
+                nameOfRegister = reg.m_name;
                 if constexpr (std::is_arithmetic_v<T>)
                 {
                     auto result = md.readRegister(reg);
@@ -655,7 +761,8 @@ namespace mab
                     }
                     std::string value   = std::to_string(reg.value);
                     registerStringValue = value;  // Store the value in the result
-                    m_logger.success("Register %d value: %s", regAdress, value.c_str());
+                    m_logger.success(
+                        "Register %s value = %s", nameOfRegister.c_str(), value.c_str());
                     return true;
                 }
                 else if constexpr (std::is_same<std::decay_t<T>, char*>::value)
@@ -668,7 +775,7 @@ namespace mab
                     }
                     const char* value   = reg.value;
                     registerStringValue = std::string(value);  // Store the value in the result
-                    m_logger.success("Register %d value: %s", regAdress, value);
+                    m_logger.success("Register %s value = %s", nameOfRegister.c_str(), value);
                     return true;
                 }
             }
