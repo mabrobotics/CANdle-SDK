@@ -333,6 +333,11 @@ namespace mab
             auto payload = serializeMDRegisters(regs);
             frame.insert(frame.end(), payload.begin(), payload.end());
             auto readRegResult = transferCanFrame(frame, frame.size());
+            if (readRegResult.second != candleTypes::Error_t::OK)
+            {
+                m_log.error("Error while reading register!");
+                return Error_t::TRANSFER_FAILED;
+            }
             // TODO: for some reason MD sends first byte as 0x0, investigate
             //  if (readRegResult.first.at(0) == 0x41)
             //  {
