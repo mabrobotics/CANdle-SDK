@@ -2,8 +2,11 @@
 
 #include "mab_types.hpp"
 #include "md_types.hpp"
+#include "MD_strings.hpp"
 #include "candletool.hpp"
+#include "utilities.hpp"
 
+#include <cctype>
 #include <stdexcept>
 #include <map>
 #include <string>
@@ -84,6 +87,8 @@ namespace mab
             }
         }
         ~MDConfigMap() = default;
+
+        // ADD NEW CONFIGURATION PARAMETERS HERE
         std::map<u16, MDCfgElement> m_map{
             // Motor parameters
             {0x010, MDCfgElement("motor", "name")},
@@ -193,109 +198,47 @@ namespace mab
         MDConfigMap::encoderFromReadable =
             [](const std::string_view value) -> std::optional<std::string>
     {
-        if (value == "NONE" || value == "0")
-            return "0";
-        if (value == "ME_AS_CENTER" || value == "1")
-            return "1";
-        if (value == "ME_AS_OFFAXIS" || value == "2")
-            return "2";
-        if (value == "MB053SFA17BENT00" || value == "3")
-            return "3";
-        if (value == "CM_OFFAXIS" || value == "4")
-            return "4";
-        if (value == "M24B_CENTER" || value == "5")
-            return "5";
-        if (value == "M24B_OFFAXIS" || value == "6")
-            return "6";
-
-        return std::nullopt;  // Return nullopt if the value is not recognized
+        std::string output = trim(value);
+        return std::to_string(MDAuxEncoderValue_S::toNumeric(output).value_or(0));
     };
 
     inline const std::function<std::string(std::string_view)> MDConfigMap::encoderToReadable =
         [](const std::string_view value) -> std::string
     {
-        if (value == "0")
-            return "NONE";
-        if (value == "1")
-            return "ME_AS_CENTER";
-        if (value == "2")
-            return "ME_AS_OFFAXIS";
-        if (value == "3")
-            return "MB053SFA17BENT00";
-        if (value == "4")
-            return "CM_OFFAXIS";
-        if (value == "5")
-            return "M24B_CENTER";
-        if (value == "6")
-            return "M24B_OFFAXIS";
-
-        return "UNKNOWN: " + std::string(value);
+        std::string output = trim(value);
+        return MDAuxEncoderValue_S::toReadable(std::stoll(value.data())).value_or("NOT FOUND");
     };
 
     // Special case for encoder mode
     inline const std::function<std::string(std::string_view)> MDConfigMap::encoderModeToReadable =
         [](const std::string_view value) -> std::string
     {
-        if (value == "0")
-            return "NONE";
-        if (value == "1")
-            return "STARTUP";
-        if (value == "2")
-            return "MOTION";
-        if (value == "3")
-            return "REPORT";
-        if (value == "4")
-            return "MAIN";
-        if (value == "5")
-            return "CALIBRATED_REPORT";
-
-        return "UNKNOWN: " + std::string(value);
+        std::string output = trim(value);
+        return MDAuxEncoderModeValue_S::toReadable(std::stoll(output)).value_or("NOT FOUND");
     };
 
     inline const std::function<std::optional<std::string>(const std::string_view)>
         MDConfigMap::encoderModeFromReadable =
             [](const std::string_view value) -> std::optional<std::string>
     {
-        if (value == "NONE" || value == "0")
-            return "0";
-        if (value == "STARTUP" || value == "1")
-            return "1";
-        if (value == "MOTION" || value == "2")
-            return "2";
-        if (value == "REPORT" || value == "3")
-            return "3";
-        if (value == "MAIN" || value == "4")
-            return "4";
-        if (value == "CALIBRATED_REPORT" || value == "5")
-            return "5";
-
-        return std::nullopt;  // Return nullopt if the value is not recognized
+        std::string output = trim(value);
+        return std::to_string(MDAuxEncoderModeValue_S::toNumeric(value.data()).value_or(0));
     };
 
     // Special case for GPIO mode
     inline const std::function<std::string(std::string_view)> MDConfigMap::GPIOModeToReadable =
         [](const std::string_view value) -> std::string
     {
-        if (value == "0")
-            return "OFF";
-        if (value == "1")
-            return "AUTO-BRAKE";
-        if (value == "2")
-            return "INPUT";
-
-        return "UNKNOWN: " + std::string(value);
+        std::string output = trim(value);
+        return MDUserGpioConfigurationValue_S::toReadable(std::stoll(value.data()))
+            .value_or("NOT FOUND");
     };
     inline const std::function<std::optional<std::string>(const std::string_view)>
         MDConfigMap::GPIOModeFromReadable =
             [](const std::string_view value) -> std::optional<std::string>
     {
-        if (value == "OFF")
-            return "0";
-        if (value == "AUTO-BRAKE")
-            return "1";
-        if (value == "INPUT")
-            return "2";
-
-        return std::nullopt;  // Return nullopt if the value is not recognized
+        std::string output = trim(value);
+        return std::to_string(MDUserGpioConfigurationValue_S::toNumeric(output).value_or(0));
     };
+
 }  // namespace mab

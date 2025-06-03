@@ -440,6 +440,7 @@ namespace mab
                     m_log.error("Transfer of CAN frame failed!");
                     return true;
             }
+            return true;
         }
 
         /// @brief Debugging method to test communication efficiency

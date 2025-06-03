@@ -578,14 +578,31 @@ namespace mab
             });
 
         // Info ============================================================================
-        // auto* info = mdCLi->add_subcommand("info", "Get information about the MD drive.");
-        // info->callback(
-        //     [this, candleBuilder, mdCanId]()
-        //     {
-        //         auto md = getMd(mdCanId, candleBuilder);
-        //         // md->info();
-        //         logger::info("Info command placeholder");
-        //     });
+        auto* info = mdCLi->add_subcommand("info", "Get information about the MD drive.");
+        info->callback(
+            [this, candleBuilder, mdCanId]()
+            {
+                auto          md = getMd(mdCanId, candleBuilder);
+                MDRegisters_S readableRegisters;
+
+                auto readReadableRegs = [&]<typename T>(MDRegisterEntry_S<T>& reg)
+                {
+                    // TODO: skipping new registers for now
+                    if ((reg.m_regAddress < 0x800 && reg.m_regAddress > 0x700) ||
+                        reg.m_regAddress > 0x810)
+                        return;
+                    if (reg.m_accessLevel != RegisterAccessLevel_E::WO)
+                    {
+                        auto fault = md->readRegisters(reg);
+                        if (fault != MD::Error_t::OK)
+                            m_logger.error("Error while reading register %s", reg.m_name.data());
+                    }
+                };
+
+                readableRegisters.forEachRegister(readReadableRegs);
+
+                // ui::printDriveInfoExtended(md, readableRegisters, printAll);
+            });
 
         // Register =======================================================================
         auto* reg = mdCLi->add_subcommand("register", "Register operations for MD drive.");
