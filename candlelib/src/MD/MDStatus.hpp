@@ -19,7 +19,12 @@ namespace mab
             {
             }
 
-            inline void set(bool _set) const
+            operator bool() const
+            {
+                return isSet();
+            }
+
+            inline void set(bool _set)
             {
                 m_set = _set;
             }
@@ -44,19 +49,16 @@ namespace mab
             TargetPositionReached    = 15
         };
 
-        const std::unordered_map<const QuickStatusBits, StatusItem_S> quickStatus =
-            std::unordered_map<const QuickStatusBits, StatusItem_S>{
-                {QuickStatusBits::MainEncoderStatus, StatusItem_S("Main Encoder Status")},
-                {QuickStatusBits::OutputEncoderStatus, StatusItem_S("Output Encoder Status")},
-                {QuickStatusBits::CalibrationEncoderStatus,
-                 StatusItem_S("Calibration Encoder Status")},
-                {QuickStatusBits::MosfetBridgeStatus, StatusItem_S("Mosfet Bridge Status")},
-                {QuickStatusBits::HardwareStatus, StatusItem_S("Hardware Status")},
-                {QuickStatusBits::CommunicationStatus, StatusItem_S("Communication Status")},
-                {QuickStatusBits::MotionStatus, StatusItem_S("Motion Status")},
-                {QuickStatusBits::TargetPositionReached,
-                 StatusItem_S("Target Position Reached")}  //
-            };
+        std::unordered_map<QuickStatusBits, StatusItem_S> quickStatus = {
+            {QuickStatusBits::MainEncoderStatus, StatusItem_S("Main Encoder Status")},
+            {QuickStatusBits::OutputEncoderStatus, StatusItem_S("Output Encoder Status")},
+            {QuickStatusBits::CalibrationEncoderStatus, StatusItem_S("Calibration Encoder Status")},
+            {QuickStatusBits::MosfetBridgeStatus, StatusItem_S("Mosfet Bridge Status")},
+            {QuickStatusBits::HardwareStatus, StatusItem_S("Hardware Status")},
+            {QuickStatusBits::CommunicationStatus, StatusItem_S("Communication Status")},
+            {QuickStatusBits::MotionStatus, StatusItem_S("Motion Status")},
+            {QuickStatusBits::TargetPositionReached, StatusItem_S("Target Position Reached")}  //
+        };
 
         enum class EncoderStatusBits : bitPos
         {
@@ -70,7 +72,7 @@ namespace mab
             WarningLowAccuracy   = 30
         };
 
-        const std::unordered_map<const EncoderStatusBits, StatusItem_S> encoderStatus = {
+        std::unordered_map<EncoderStatusBits, StatusItem_S> encoderStatus = {
             {EncoderStatusBits::ErrorCommunication, StatusItem_S("Error Communication")},
             {EncoderStatusBits::ErrorWrongDirection, StatusItem_S("Error Wrong Direction")},
             {EncoderStatusBits::ErrorEmptyLUT, StatusItem_S("Error Empty LUT")},
@@ -89,7 +91,7 @@ namespace mab
             ErrorSetup             = 4
         };
 
-        const std::unordered_map<const CalibrationStatusBits, StatusItem_S> calibrationStatus = {
+        std::unordered_map<CalibrationStatusBits, StatusItem_S> calibrationStatus = {
             {CalibrationStatusBits::ErrorOffsetCalibration,
              StatusItem_S("Error Offset Calibration")},
             {CalibrationStatusBits::ErrorResistance, StatusItem_S("Error Resistance")},
@@ -105,7 +107,7 @@ namespace mab
             ErrorGeneralFault  = 2
         };
 
-        const std::unordered_map<const BridgeStatusBits, StatusItem_S> bridgeStatus = {
+        std::unordered_map<BridgeStatusBits, StatusItem_S> bridgeStatus = {
             {BridgeStatusBits::ErrorCommunication, StatusItem_S("Error Communication")},
             {BridgeStatusBits::ErrorOvercurrent, StatusItem_S("Error Overcurrent")},
             {BridgeStatusBits::ErrorGeneralFault, StatusItem_S("Error General Fault")}};
@@ -120,7 +122,7 @@ namespace mab
             ErrorADCCurrentOffset  = 5
         };
 
-        const std::unordered_map<const HardwareStatusBits, StatusItem_S> hardwareStatus = {
+        std::unordered_map<HardwareStatusBits, StatusItem_S> hardwareStatus = {
             {HardwareStatusBits::ErrorOverCurrent, StatusItem_S("Error Over Current")},
             {HardwareStatusBits::ErrorOverVoltage, StatusItem_S("Error Over Voltage")},
             {HardwareStatusBits::ErrorUnderVoltage, StatusItem_S("Error Under Voltage")},
@@ -133,8 +135,8 @@ namespace mab
             WarningCANWatchdog = 30
         };
 
-        const std::unordered_map<const CommunicationStatusBits, StatusItem_S> communicationStatus =
-            {{CommunicationStatusBits::WarningCANWatchdog, StatusItem_S("Warning CAN Watchdog")}};
+        std::unordered_map<CommunicationStatusBits, StatusItem_S> communicationStatus = {
+            {CommunicationStatusBits::WarningCANWatchdog, StatusItem_S("Warning CAN Watchdog")}};
 
         enum class MotionStatusBits : bitPos
         {
@@ -146,7 +148,7 @@ namespace mab
             WarningPosition     = 27
         };
 
-        const std::unordered_map<const MotionStatusBits, StatusItem_S> motionStatus = {
+        std::unordered_map<MotionStatusBits, StatusItem_S> motionStatus = {
             {MotionStatusBits::ErrorPositionLimit, StatusItem_S("Error Position Limit")},
             {MotionStatusBits::ErrorVelocityLimit, StatusItem_S("Error Velocity Limit")},
             {MotionStatusBits::WarningAcceleration, StatusItem_S("Warning Acceleration")},
@@ -167,7 +169,7 @@ namespace mab
         }
 
         template <class T>
-        static void toMap(u32 bytes, const std::unordered_map<const T, StatusItem_S>& map)
+        static void toMap(u32 bytes, std::unordered_map<T, StatusItem_S>& map)
         {
             for (auto& bit : map)
             {

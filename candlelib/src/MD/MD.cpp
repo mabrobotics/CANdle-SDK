@@ -317,7 +317,7 @@ namespace mab
         return MD::Error_t::OK;
     }
 
-    std::pair<const std::unordered_map<const MDStatus::QuickStatusBits, MDStatus::StatusItem_S>,
+    std::pair<const std::unordered_map<MDStatus::QuickStatusBits, MDStatus::StatusItem_S>,
               MD::Error_t>
     MD::getQuickStatus()
     {
@@ -331,7 +331,7 @@ namespace mab
         return std::make_pair(m_status.quickStatus, result);
     }
 
-    std::pair<const std::unordered_map<const MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
+    std::pair<const std::unordered_map<MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
               MD::Error_t>
     MD::getMainEncoderStatus()
     {
@@ -345,7 +345,7 @@ namespace mab
         return std::make_pair(m_status.encoderStatus, result);
     }
 
-    std::pair<const std::unordered_map<const MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
+    std::pair<const std::unordered_map<MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
               MD::Error_t>
     MD::getOutputEncoderStatus()
     {
@@ -359,9 +359,8 @@ namespace mab
         return std::make_pair(m_status.encoderStatus, result);
     }
 
-    std::pair<
-        const std::unordered_map<const MDStatus::CalibrationStatusBits, MDStatus::StatusItem_S>,
-        MD::Error_t>
+    std::pair<const std::unordered_map<MDStatus::CalibrationStatusBits, MDStatus::StatusItem_S>,
+              MD::Error_t>
     MD::getCalibrationStatus()
     {
         auto result = readRegister(m_mdRegisters.calibrationStatus);
@@ -374,7 +373,7 @@ namespace mab
         return std::make_pair(m_status.calibrationStatus, result);
     }
 
-    std::pair<const std::unordered_map<const MDStatus::BridgeStatusBits, MDStatus::StatusItem_S>,
+    std::pair<const std::unordered_map<MDStatus::BridgeStatusBits, MDStatus::StatusItem_S>,
               MD::Error_t>
     MD::getBridgeStatus()
     {
@@ -388,7 +387,7 @@ namespace mab
         return std::make_pair(m_status.bridgeStatus, result);
     }
 
-    std::pair<const std::unordered_map<const MDStatus::HardwareStatusBits, MDStatus::StatusItem_S>,
+    std::pair<const std::unordered_map<MDStatus::HardwareStatusBits, MDStatus::StatusItem_S>,
               MD::Error_t>
     MD::getHardwareStatus()
     {
@@ -402,9 +401,8 @@ namespace mab
         return std::make_pair(m_status.hardwareStatus, result);
     }
 
-    std::pair<
-        const std::unordered_map<const MDStatus::CommunicationStatusBits, MDStatus::StatusItem_S>,
-        MD::Error_t>
+    std::pair<const std::unordered_map<MDStatus::CommunicationStatusBits, MDStatus::StatusItem_S>,
+              MD::Error_t>
     MD::getCommunicationStatus()
     {
         auto result = readRegister(m_mdRegisters.communicationStatus);
@@ -417,7 +415,7 @@ namespace mab
         return std::make_pair(m_status.communicationStatus, result);
     }
 
-    std::pair<const std::unordered_map<const MDStatus::MotionStatusBits, MDStatus::StatusItem_S>,
+    std::pair<const std::unordered_map<MDStatus::MotionStatusBits, MDStatus::StatusItem_S>,
               MD::Error_t>
     MD::getMotionStatus()
     {

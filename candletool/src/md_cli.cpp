@@ -5,6 +5,7 @@
 #include <string>
 #include <string_view>
 #include <variant>
+#include "MDStatus.hpp"
 #include "canLoader.hpp"
 #include "candle.hpp"
 #include "logger.hpp"
@@ -334,6 +335,30 @@ namespace mab
                                   registers.calAuxEncoderMaxE.value,
                                   RAD_TO_DEG * registers.calAuxEncoderMaxE.value);
                 }
+                auto quickStatus = md->getQuickStatus().first;
+                if (quickStatus.at(MDStatus::QuickStatusBits::CalibrationEncoderStatus))
+                {
+                    m_logger.error("Calibration failed!");
+                    auto calibrationStatus = md->getCalibrationStatus().first;
+                    if (calibrationStatus.at(
+                            MDStatus::CalibrationStatusBits::ErrorOffsetCalibration))
+                        m_logger.error("Offset calibration failed!");
+                    if (calibrationStatus.at(MDStatus::CalibrationStatusBits::ErrorInductance))
+                        m_logger.error("Inductance measurement failed!");
+                    if (calibrationStatus.at(MDStatus::CalibrationStatusBits::ErrorResistance))
+                        m_logger.error("Resistance measurement failed!");
+                    if (calibrationStatus.at(
+                            MDStatus::CalibrationStatusBits::ErrorPolePairDetection))
+                        m_logger.error("Pole pair detection failed!");
+                }
+                else if (quickStatus.at(MDStatus::QuickStatusBits::MainEncoderStatus) ||
+                         quickStatus.at(MDStatus::QuickStatusBits::OutputEncoderStatus))
+                {
+                    m_logger.debug("Calibration failed at %s encoder error correction",
+                                   quickStatus.at(MDStatus::QuickStatusBits::OutputEncoderStatus)
+                                       ? "output"
+                                       : "main");
+                }
             });
 
         // Clear  =========================================================================
@@ -617,6 +642,65 @@ namespace mab
             });
 
         // Register write
+        auto regWrite = reg->add_subcommand("write", "Write register value to MD");
+
+        RegisterWriteOption registerWriteOption(regWrite);
+
+        regWrite->callback(
+            [this, candleBuilder, mdCanId, registerWriteOption]()
+            {
+                auto        md           = getMd(mdCanId, candleBuilder);
+                std::string resultBefore = "Failed to read";
+                std::string resultAffter = "Failed to read";
+                u16         address      = 0x0;
+                std::string registerStr  = *(registerWriteOption.registerAddressOrName);
+                if (md == nullptr)
+                {
+                    m_logger.error("Coudl not connect to MD!");
+                    return;
+                }
+                if (std::string("0x").compare(registerStr.substr(0, 2)) == 0)
+                {
+                    address = std::stoll(registerStr, nullptr, 16);
+                    if (address != 0x0)
+                        resultBefore = registerRead(*md, address).value_or(resultBefore);
+                    else
+                    {
+                        m_logger.error("Could not find provided register!");
+                        return;
+                    }
+                }
+                else
+                {
+                    MDRegisters_S regs;
+                    auto          findAddressByName = [&]<typename T>(MDRegisterEntry_S<T> reg)
+                    {
+                        if (registerStr.compare(reg.m_name) == 0)
+                            address = reg.m_regAddress;
+                    };
+                    regs.forEachRegister(findAddressByName);
+                    if (address != 0x0)
+                    {
+                        resultBefore = registerRead(*md, address).value_or(resultBefore);
+                    }
+                    else
+                    {
+                        m_logger.error("Could not find provided register!");
+                        return;
+                    }
+                }
+                if (registerWrite(*md, address, *registerWriteOption.registerValue) == false)
+                {
+                    m_logger.error("Could not parse value to the MD register!");
+                }
+                resultAffter = registerRead(*md, address).value_or("Failed to read");
+                m_logger.success(
+                    "Written value to the register %s which had a value of %s, and now has a value "
+                    "of %s",
+                    registerStr.c_str(),
+                    resultBefore.c_str(),
+                    resultAffter.c_str());
+            });
 
         // Test
         auto* test = mdCLi->add_subcommand("test", "Test the MD drive movement.");
@@ -635,9 +719,15 @@ namespace mab
                     m_logger.error("Coudl not connect to MD!");
                     return;
                 }
-                md->setTargetPosition(*absoluteTestOptions.target);
-                md->setMotionMode(mab::MdMode_E::POSITION_PROFILE);
-                md->enable();
+                if (md->isMDError(md->setTargetPosition(*absoluteTestOptions.target)))
+                    return;
+
+                if (md->isMDError(md->setMotionMode(mab::MdMode_E::POSITION_PROFILE)))
+                    return;
+
+                if (md->isMDError(md->enable()))
+                    return;
+
                 while (!(md->getQuickStatus()
                              .first.at(MDStatus::QuickStatusBits::TargetPositionReached)
                              .isSet()))
@@ -756,7 +846,7 @@ namespace mab
         }
     }
 
-    void MDCli::registerWrite(MD& md, u16 regAdress, const std::string& value)
+    bool MDCli::registerWrite(MD& md, u16 regAdress, const std::string& value)
     {
         std::string trimmedValue = trim(value);
 
@@ -836,13 +926,14 @@ namespace mab
         if (!foundRegister)
         {
             m_logger.error("Register %d not found", regAdress);
-            return;
+            return false;
         }
         if (!registerCompatible)
         {
             m_logger.error("Register %d not compatible with value %s", regAdress, value.c_str());
-            return;
+            return false;
         }
+        return true;
     }
 
     std::optional<std::string> MDCli::registerRead(MD& md, u16 regAdress)
