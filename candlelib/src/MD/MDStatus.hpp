@@ -13,9 +13,10 @@ namespace mab
         struct StatusItem_S
         {
             const std::string name;
-            mutable bool      m_set = false;
+            const bool        isError = false;
+            mutable bool      m_set   = false;
 
-            StatusItem_S(std::string _name) : name(_name)
+            StatusItem_S(std::string _name, bool _isError) : name(_name), isError(_isError)
             {
             }
 
@@ -50,14 +51,16 @@ namespace mab
         };
 
         std::unordered_map<QuickStatusBits, StatusItem_S> quickStatus = {
-            {QuickStatusBits::MainEncoderStatus, StatusItem_S("Main Encoder Status")},
-            {QuickStatusBits::OutputEncoderStatus, StatusItem_S("Output Encoder Status")},
-            {QuickStatusBits::CalibrationEncoderStatus, StatusItem_S("Calibration Encoder Status")},
-            {QuickStatusBits::MosfetBridgeStatus, StatusItem_S("Mosfet Bridge Status")},
-            {QuickStatusBits::HardwareStatus, StatusItem_S("Hardware Status")},
-            {QuickStatusBits::CommunicationStatus, StatusItem_S("Communication Status")},
-            {QuickStatusBits::MotionStatus, StatusItem_S("Motion Status")},
-            {QuickStatusBits::TargetPositionReached, StatusItem_S("Target Position Reached")}  //
+            {QuickStatusBits::MainEncoderStatus, StatusItem_S("Main Encoder Status", false)},
+            {QuickStatusBits::OutputEncoderStatus, StatusItem_S("Output Encoder Status", false)},
+            {QuickStatusBits::CalibrationEncoderStatus,
+             StatusItem_S("Calibration Encoder Status", false)},
+            {QuickStatusBits::MosfetBridgeStatus, StatusItem_S("Mosfet Bridge Status", false)},
+            {QuickStatusBits::HardwareStatus, StatusItem_S("Hardware Status", false)},
+            {QuickStatusBits::CommunicationStatus, StatusItem_S("Communication Status", false)},
+            {QuickStatusBits::MotionStatus, StatusItem_S("Motion Status", false)},
+            {QuickStatusBits::TargetPositionReached,
+             StatusItem_S("Target Position Reached", false)}  //
         };
 
         enum class EncoderStatusBits : bitPos
@@ -73,14 +76,14 @@ namespace mab
         };
 
         std::unordered_map<EncoderStatusBits, StatusItem_S> encoderStatus = {
-            {EncoderStatusBits::ErrorCommunication, StatusItem_S("Error Communication")},
-            {EncoderStatusBits::ErrorWrongDirection, StatusItem_S("Error Wrong Direction")},
-            {EncoderStatusBits::ErrorEmptyLUT, StatusItem_S("Error Empty LUT")},
-            {EncoderStatusBits::ErrorFaultyLUT, StatusItem_S("Error Faulty LUT")},
-            {EncoderStatusBits::ErrorCalibration, StatusItem_S("Error Calibration")},
-            {EncoderStatusBits::ErrorPositionInvalid, StatusItem_S("Error Position Invalid")},
-            {EncoderStatusBits::ErrorInitialization, StatusItem_S("Error Initialization")},
-            {EncoderStatusBits::WarningLowAccuracy, StatusItem_S("Warning Low Accuracy")}};
+            {EncoderStatusBits::ErrorCommunication, StatusItem_S("Error Communication", true)},
+            {EncoderStatusBits::ErrorWrongDirection, StatusItem_S("Error Wrong Direction", true)},
+            {EncoderStatusBits::ErrorEmptyLUT, StatusItem_S("Error Empty LUT", true)},
+            {EncoderStatusBits::ErrorFaultyLUT, StatusItem_S("Error Faulty LUT", true)},
+            {EncoderStatusBits::ErrorCalibration, StatusItem_S("Error Calibration", true)},
+            {EncoderStatusBits::ErrorPositionInvalid, StatusItem_S("Error Position Invalid", true)},
+            {EncoderStatusBits::ErrorInitialization, StatusItem_S("Error Initialization", true)},
+            {EncoderStatusBits::WarningLowAccuracy, StatusItem_S("Warning Low Accuracy", false)}};
 
         enum class CalibrationStatusBits : bitPos
         {
@@ -93,12 +96,12 @@ namespace mab
 
         std::unordered_map<CalibrationStatusBits, StatusItem_S> calibrationStatus = {
             {CalibrationStatusBits::ErrorOffsetCalibration,
-             StatusItem_S("Error Offset Calibration")},
-            {CalibrationStatusBits::ErrorResistance, StatusItem_S("Error Resistance")},
-            {CalibrationStatusBits::ErrorInductance, StatusItem_S("Error Inductance")},
+             StatusItem_S("Error Offset Calibration", true)},
+            {CalibrationStatusBits::ErrorResistance, StatusItem_S("Error Resistance", true)},
+            {CalibrationStatusBits::ErrorInductance, StatusItem_S("Error Inductance", true)},
             {CalibrationStatusBits::ErrorPolePairDetection,
-             StatusItem_S("Error Pole Pair Detection")},
-            {CalibrationStatusBits::ErrorSetup, StatusItem_S("Error Setup")}};
+             StatusItem_S("Error Pole Pair Detection", true)},
+            {CalibrationStatusBits::ErrorSetup, StatusItem_S("Error Setup", true)}};
 
         enum class BridgeStatusBits : bitPos
         {
@@ -108,9 +111,9 @@ namespace mab
         };
 
         std::unordered_map<BridgeStatusBits, StatusItem_S> bridgeStatus = {
-            {BridgeStatusBits::ErrorCommunication, StatusItem_S("Error Communication")},
-            {BridgeStatusBits::ErrorOvercurrent, StatusItem_S("Error Overcurrent")},
-            {BridgeStatusBits::ErrorGeneralFault, StatusItem_S("Error General Fault")}};
+            {BridgeStatusBits::ErrorCommunication, StatusItem_S("Error Communication", true)},
+            {BridgeStatusBits::ErrorOvercurrent, StatusItem_S("Error Overcurrent", true)},
+            {BridgeStatusBits::ErrorGeneralFault, StatusItem_S("Error General Fault", true)}};
 
         enum class HardwareStatusBits : bitPos
         {
@@ -123,12 +126,15 @@ namespace mab
         };
 
         std::unordered_map<HardwareStatusBits, StatusItem_S> hardwareStatus = {
-            {HardwareStatusBits::ErrorOverCurrent, StatusItem_S("Error Over Current")},
-            {HardwareStatusBits::ErrorOverVoltage, StatusItem_S("Error Over Voltage")},
-            {HardwareStatusBits::ErrorUnderVoltage, StatusItem_S("Error Under Voltage")},
-            {HardwareStatusBits::ErrorMotorTemperature, StatusItem_S("Error Motor Temperature")},
-            {HardwareStatusBits::ErrorMosfetTemperature, StatusItem_S("Error Mosfet Temperature")},
-            {HardwareStatusBits::ErrorADCCurrentOffset, StatusItem_S("Error ADC Current Offset")}};
+            {HardwareStatusBits::ErrorOverCurrent, StatusItem_S("Error Over Current", true)},
+            {HardwareStatusBits::ErrorOverVoltage, StatusItem_S("Error Over Voltage", true)},
+            {HardwareStatusBits::ErrorUnderVoltage, StatusItem_S("Error Under Voltage", true)},
+            {HardwareStatusBits::ErrorMotorTemperature,
+             StatusItem_S("Error Motor Temperature", true)},
+            {HardwareStatusBits::ErrorMosfetTemperature,
+             StatusItem_S("Error Mosfet Temperature", true)},
+            {HardwareStatusBits::ErrorADCCurrentOffset,
+             StatusItem_S("Error ADC Current Offset", true)}};
 
         enum class CommunicationStatusBits : bitPos
         {
@@ -136,7 +142,8 @@ namespace mab
         };
 
         std::unordered_map<CommunicationStatusBits, StatusItem_S> communicationStatus = {
-            {CommunicationStatusBits::WarningCANWatchdog, StatusItem_S("Warning CAN Watchdog")}};
+            {CommunicationStatusBits::WarningCANWatchdog,
+             StatusItem_S("Warning CAN Watchdog", false)}};
 
         enum class MotionStatusBits : bitPos
         {
@@ -149,12 +156,12 @@ namespace mab
         };
 
         std::unordered_map<MotionStatusBits, StatusItem_S> motionStatus = {
-            {MotionStatusBits::ErrorPositionLimit, StatusItem_S("Error Position Limit")},
-            {MotionStatusBits::ErrorVelocityLimit, StatusItem_S("Error Velocity Limit")},
-            {MotionStatusBits::WarningAcceleration, StatusItem_S("Warning Acceleration")},
-            {MotionStatusBits::WarningTorque, StatusItem_S("Warning Torque")},
-            {MotionStatusBits::WarningVelocity, StatusItem_S("Warning Velocity")},
-            {MotionStatusBits::WarningPosition, StatusItem_S("Warning Position")}};
+            {MotionStatusBits::ErrorPositionLimit, StatusItem_S("Error Position Limit", true)},
+            {MotionStatusBits::ErrorVelocityLimit, StatusItem_S("Error Velocity Limit", true)},
+            {MotionStatusBits::WarningAcceleration, StatusItem_S("Warning Acceleration", true)},
+            {MotionStatusBits::WarningTorque, StatusItem_S("Warning Torque", false)},
+            {MotionStatusBits::WarningVelocity, StatusItem_S("Warning Velocity", false)},
+            {MotionStatusBits::WarningPosition, StatusItem_S("Warning Position", false)}};
 
         static std::vector<std::string> getStatusString(
             std::unordered_map<bitPos, StatusItem_S> errors)
