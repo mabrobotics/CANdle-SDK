@@ -596,6 +596,24 @@ namespace mab
                 }
                 detachCandle(candle);
             });
+        // Save ============================================================================
+        auto* save = mdCLi->add_subcommand("save", "Save MD drive configuration to flash memory.");
+        save->callback(
+            [this, candleBuilder, mdCanId]()
+            {
+                auto md = getMd(mdCanId, candleBuilder);
+                if (md == nullptr)
+                {
+                    m_logger.error("Coudl not connect to MD!");
+                    return;
+                }
+                if (md->save() != MD::Error_t::OK)
+                {
+                    m_logger.error("Could not save MD configuration!");
+                    return;
+                }
+                m_logger.success("MD configuration saved successfully!");
+            });
 
         // Info ============================================================================
         auto* info = mdCLi->add_subcommand("info", "Get information about the MD drive.");
