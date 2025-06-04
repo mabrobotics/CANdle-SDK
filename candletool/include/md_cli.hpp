@@ -59,7 +59,8 @@ namespace mab
         struct CalibrationOptions
         {
             CalibrationOptions(CLI::App* rootCli)
-                : calibrationOfEncoder(std::make_shared<std::string>("all"))
+                : calibrationOfEncoder(std::make_shared<std::string>("all")),
+                  runTests(std::make_shared<bool>(false))
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
 
@@ -70,10 +71,13 @@ namespace mab
                                       "Type of encoder calibration to perform. "
                                       "Possible values: all, main, aux.")
                          ->default_str("all")},
-                };
+                    {"run-tests",
+                     rootCli->add_flag(
+                         "-t,--run-tests", *runTests, "Run accuracy tests after calibration. ")}};
             }
 
             const std::shared_ptr<std::string>  calibrationOfEncoder;
+            const std::shared_ptr<bool>         runTests;
             std::map<std::string, CLI::Option*> optionsMap;
         };
 

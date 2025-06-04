@@ -177,6 +177,20 @@ namespace mab
         calibration->callback(
             [this, candleBuilder, mdCanId, calibrationOptions]()
             {
+                m_logger.info(
+                    "Calibration requires about 20W of power, please ensure that the "
+                    "power supply is sufficient!");
+                m_logger.warn(
+                    "The motor will rotate during calibration, "
+                    "are you sure you want to proceed?");
+                std::string answer;
+                std::cout << "Type 'Y' to continue: ";
+                std::getline(std::cin, answer);
+                if (answer != "Y" && answer != "y")
+                {
+                    m_logger.error("Calibration aborted by user!");
+                    return;
+                }
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
@@ -320,40 +334,43 @@ namespace mab
                     m_logger.success("Aux encoder calibration completed successfully!");
 
                     // Testing aux encoder accuracy
-                    m_logger.info("Starting aux encoder accuracy test...");
-                    registers.runTestAuxEncoderCmd =
-                        1;  // Set flag to run aux encoder accuracy test
-                    if (md->writeRegister(registers.runTestAuxEncoderCmd) != MD::Error_t::OK)
+                    if (*calibrationOptions.runTests)
                     {
-                        m_logger.error("Aux encoder accuracy test failed!");
-                        return;
-                    }
-                    for (int seconds = 0; seconds < auxCalibrationTime; seconds++)
-                    {
-                        m_logger.progress(static_cast<double>(seconds) / auxCalibrationTime);
-                        usleep(1'000'000);  // Wait for the MD to test, TODO: change it when
-                                            // routines are ready
-                    }
-                    m_logger.progress(1.0f);  // Ensure progress is at 100%
+                        m_logger.info("Starting aux encoder accuracy test...");
+                        registers.runTestAuxEncoderCmd =
+                            1;  // Set flag to run aux encoder accuracy test
+                        if (md->writeRegister(registers.runTestAuxEncoderCmd) != MD::Error_t::OK)
+                        {
+                            m_logger.error("Aux encoder accuracy test failed!");
+                            return;
+                        }
+                        for (int seconds = 0; seconds < auxCalibrationTime; seconds++)
+                        {
+                            m_logger.progress(static_cast<double>(seconds) / auxCalibrationTime);
+                            usleep(1'000'000);  // Wait for the MD to test, TODO: change it when
+                                                // routines are ready
+                        }
+                        m_logger.progress(1.0f);  // Ensure progress is at 100%
 
-                    if (md->readRegisters(registers.calAuxEncoderStdDev,
-                                          registers.calAuxEncoderMinE,
-                                          registers.calAuxEncoderMaxE) != MD::Error_t::OK)
-                    {
-                        m_logger.error("Could not read aux encoder accuracy test results!");
-                        return;
+                        if (md->readRegisters(registers.calAuxEncoderStdDev,
+                                              registers.calAuxEncoderMinE,
+                                              registers.calAuxEncoderMaxE) != MD::Error_t::OK)
+                        {
+                            m_logger.error("Could not read aux encoder accuracy test results!");
+                            return;
+                        }
+                        constexpr double RAD_TO_DEG = 180.0 / M_PI;
+                        m_logger.info("Aux encoder accuracy test results:");
+                        m_logger.info("  Standard deviation: %.6f rad  (%.4f deg)",
+                                      registers.calAuxEncoderStdDev.value,
+                                      RAD_TO_DEG * registers.calAuxEncoderStdDev.value);
+                        m_logger.info("  Lowest error:      %.6f rad (%.4f deg)",
+                                      registers.calAuxEncoderMinE.value,
+                                      RAD_TO_DEG * registers.calAuxEncoderMinE.value);
+                        m_logger.info("  Highest error:      %.6f rad  (%.4f deg)",
+                                      registers.calAuxEncoderMaxE.value,
+                                      RAD_TO_DEG * registers.calAuxEncoderMaxE.value);
                     }
-                    constexpr double RAD_TO_DEG = 180.0 / M_PI;
-                    m_logger.info("Aux encoder accuracy test results:");
-                    m_logger.info("  Standard deviation: %.6f rad  (%.4f deg)",
-                                  registers.calAuxEncoderStdDev.value,
-                                  RAD_TO_DEG * registers.calAuxEncoderStdDev.value);
-                    m_logger.info("  Lowest error:      %.6f rad (%.4f deg)",
-                                  registers.calAuxEncoderMinE.value,
-                                  RAD_TO_DEG * registers.calAuxEncoderMinE.value);
-                    m_logger.info("  Highest error:      %.6f rad  (%.4f deg)",
-                                  registers.calAuxEncoderMaxE.value,
-                                  RAD_TO_DEG * registers.calAuxEncoderMaxE.value);
                 }
                 auto quickStatus = md->getQuickStatus().first;
                 if (quickStatus.at(MDStatus::QuickStatusBits::CalibrationEncoderStatus))
