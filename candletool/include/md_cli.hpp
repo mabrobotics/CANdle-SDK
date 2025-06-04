@@ -40,8 +40,9 @@ namespace mab
                      rootCli->add_option(
                          "-i,--id", *canId, "New CAN node id for the MD controller.")},
                     {"datarate",
-                     rootCli->add_option(
-                         "-d,--datarate", *datarate, "New datarate of the MD controller.")},
+                     rootCli->add_option("-d,--datarate",
+                                         *datarate,
+                                         "New datarate of the MD controller. [1M, 2M, 5M, 8M]")},
                     {"timeout",
                      rootCli->add_option(
                          "-t,--timeout", *timeoutMs, "New timeout of the MD controller.")},

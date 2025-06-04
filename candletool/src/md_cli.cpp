@@ -104,12 +104,14 @@ namespace mab
                     auto baudrate = CandleTool::stringToBaud(*canOptions.datarate);
                     if (baudrate.has_value())
                     {
-                        registers.canBaudrate = *baudrate;
+                        registers.canBaudrate = CandleTool::baudToInt(baudrate.value());
                         canChanged            = true;
                     }
                     else
                     {
-                        m_logger.error("Invalid CAN datarate provided!");
+                        m_logger.error(
+                            "Invalid CAN datarate provided! Please specify one of the "
+                            "following: [1M, 2M, 5M, 8M]");
                         return;
                     }
                 }
