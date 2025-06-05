@@ -1,23 +1,26 @@
 #pragma once
 
 #include "CLI/CLI.hpp"
+#include "mab_types.hpp"
 #include "pds_types.hpp"
 /*#include "candletool.hpp"*/
 #include "pds.hpp"
+#include "candle.hpp"
 
 using namespace mab;
 class PdsCli
 {
   public:
     PdsCli() = delete;
-    PdsCli(CLI::App& rootCli);
+    PdsCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleBuilder);
     ~PdsCli() = default;
 
-    void parse(Pds* p_pds);
+    void parse();
 
   private:
-    Logger    m_log;
-    CLI::App& m_rootCli;
+    Logger                               m_log;
+    CLI::App&                            m_rootCli;
+    const std::shared_ptr<CandleBuilder> m_candleBuilder;
 
     CLI::App* m_pdsCmd = nullptr;
 
@@ -116,7 +119,7 @@ class PdsCli
     std::string m_cfgFilePath           = "";
     u8          m_submoduleSocketNumber = 0;
 
-    Pds* mp_pds;
+    std::unique_ptr<Pds, std::function<void(Pds*)>> getPDS(canId_t id);
 
     socketIndex_E decodeSocketIndex(u8 numericSocketIndex);
 

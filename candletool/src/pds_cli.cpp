@@ -1,3 +1,4 @@
+#include "pds.hpp"
 #include "ui.hpp"
 #include "pds_cli.hpp"
 #include "mab_def.hpp"
@@ -24,7 +25,8 @@ constexpr const char* BR_SOCKET_INI_KEY  = "BR SOCKET";
 constexpr const char* BR_TRIG_V_INI_KEY  = "BR TRIGGER VOLTAGE";
 constexpr const char* AUTOSTART_INI_KEY  = "AUTOSTART";
 
-PdsCli::PdsCli(CLI::App& rootCli) : m_rootCli(rootCli)
+PdsCli::PdsCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleBuilder)
+    : m_rootCli(rootCli), m_candleBuilder(candleBuilder)
 {
     m_log.m_tag   = "PDS";
     m_log.m_layer = Logger::ProgramLayer_E::TOP;
@@ -257,7 +259,13 @@ void PdsCli::clearCliNodeParse(void)
     if (m_clearCmd->parsed())
     {
         PdsModule::error_E result = PdsModule::error_E::OK;
-        result                    = mp_pds->clearErrors();
+        auto               pds    = getPDS(m_canId);
+        if (pds == nullptr)
+        {
+            m_log.error("Could not initialize PDS!");
+            return;
+        }
+        result = pds->clearErrors();
         if (result != PdsModule::error_E::OK)
         {
             m_log.error("Clearing Errors status bits failed [ %s ]",
@@ -281,24 +289,12 @@ static bool isCanIdValid(u16 canId)
     return ((canId >= CAN_MIN_ID) || (canId <= CAN_MAX_ID));
 }
 
-void PdsCli::parse(Pds* p_pds)
+void PdsCli::parse()
 {
     PdsModule::error_E result = PdsModule::error_E::OK;
 
-    if (p_pds == nullptr)
-    {
-        m_log.error("Internal error...");
-        return;
-    }
-
-    mp_pds = p_pds;
-
     if (m_pdsCmd->parsed())
     {
-        mp_pds->init(m_canId);
-
-        m_log.info("PDS - Power Distribution System :: CAN ID [ %u ]", m_canId);
-
         if (m_infoCmd->parsed())
         {
             pdsSetupInfo();
@@ -315,6 +311,13 @@ void PdsCli::parse(Pds* p_pds)
                      For ID and Baud there is actually no sense to read them
                      so the conditions and handler might be removed in further refactor
                 */
+
+                auto pds = getPDS(m_canId);
+                if (pds == nullptr)
+                {
+                    m_log.error("Could not initialize PDS!");
+                    return;
+                }
                 if (!m_canIdCmdOption->empty())
                 {
                     if (!isCanIdValid(m_newCanId))
@@ -326,7 +329,7 @@ void PdsCli::parse(Pds* p_pds)
                             CAN_MAX_ID);
                         return;
                     }
-                    result = mp_pds->setCanId(m_newCanId);
+                    result = pds->setCanId(m_newCanId);
                     if (result != PdsModule::error_E::OK)
                         m_log.error("Setting CAN ID failed [ %s ]",
                                     PdsModule::error2String(result));
@@ -335,7 +338,7 @@ void PdsCli::parse(Pds* p_pds)
                 }
                 else
                 {
-                    m_log.success("Current CAN ID [ %u ]", mp_pds->getCanId());
+                    m_log.success("Current CAN ID [ %u ]", pds->getCanId());
                 }
             }
             else if (m_canBaudCmd->parsed())
@@ -346,10 +349,17 @@ void PdsCli::parse(Pds* p_pds)
                     std::optional<CANdleBaudrate_E> baudOpt = stringToBaudrate(m_canBaudrate);
                     if (!baudOpt.has_value())
                     {
-                        m_log.error("Invalid baudrate: %s", m_canBaudrate);
+                        m_log.error("Invalid baudrate: %s", m_canBaudrate.c_str());
                         return;
                     }
-                    result = mp_pds->setCanBaudrate(baudOpt.value());
+
+                    auto pds = getPDS(m_canId);
+                    if (pds == nullptr)
+                    {
+                        m_log.error("Could not initialize PDS!");
+                        return;
+                    }
+                    result = pds->setCanBaudrate(baudOpt.value());
                     if (result != PdsModule::error_E::OK)
                         m_log.error("Setting CAN baudrate failed [ %s ]",
                                     PdsModule::error2String(result));
@@ -407,7 +417,14 @@ void PdsCli::parse(Pds* p_pds)
                             CAN_MAX_ID);
                 return;
             }
-            result = mp_pds->setCanId(m_newCanId);
+
+            auto pds = getPDS(m_canId);
+            if (pds == nullptr)
+            {
+                m_log.error("Could not initialize PDS!");
+                return;
+            }
+            result = pds->setCanId(m_newCanId);
             if (result != PdsModule::error_E::OK)
                 m_log.error("Setting CAN ID failed [ %s ]", PdsModule::error2String(result));
             else
@@ -419,11 +436,17 @@ void PdsCli::parse(Pds* p_pds)
             std::optional<CANdleBaudrate_E> baudOpt = stringToBaudrate(m_canBaudrate);
             if (!baudOpt.has_value())
             {
-                m_log.error("Invalid baudrate: %s", m_canBaudrate);
+                m_log.error("Invalid baudrate: %s", m_canBaudrate.c_str());
                 return;
             }
 
-            result = mp_pds->setCanBaudrate(baudOpt.value());
+            auto pds = getPDS(m_canId);
+            if (pds == nullptr)
+            {
+                m_log.error("Could not initialize PDS!");
+                return;
+            }
+            result = pds->setCanBaudrate(baudOpt.value());
             if (result != PdsModule::error_E::OK)
                 m_log.error("Setting CAN baudrate failed [ %s ]", PdsModule::error2String(result));
             else
@@ -447,7 +470,13 @@ void PdsCli::parse(Pds* p_pds)
 
         else if (m_setBatteryLevelCmd->parsed())
         {
-            result = mp_pds->setBatteryVoltageLevels(m_batteryLevel1, m_batteryLevel2);
+            auto pds = getPDS(m_canId);
+            if (pds == nullptr)
+            {
+                m_log.error("Could not initialize PDS!");
+                return;
+            }
+            result = pds->setBatteryVoltageLevels(m_batteryLevel1, m_batteryLevel2);
             if (result != PdsModule::error_E::OK)
                 m_log.error("Battery levels setting failed [ %s ]",
                             PdsModule::error2String(result));
@@ -457,7 +486,13 @@ void PdsCli::parse(Pds* p_pds)
 
         else if (m_setShutdownTimeCmd->parsed())
         {
-            result = mp_pds->setShutdownTime(m_shutdownTime);
+            auto pds = getPDS(m_canId);
+            if (pds == nullptr)
+            {
+                m_log.error("Could not initialize PDS!");
+                return;
+            }
+            result = pds->setShutdownTime(m_shutdownTime);
             if (result != PdsModule::error_E::OK)
                 m_log.error("Shutdown time setting failed [ %s ]", PdsModule::error2String(result));
             else
@@ -468,7 +503,15 @@ void PdsCli::parse(Pds* p_pds)
         {
             // Notice that the m_brSocket is a numeric value, and brSocket is a enum value
             socketIndex_E brSocket = decodeSocketIndex(m_brSocket);
-            if (!mp_pds->verifyModuleSocket(moduleType_E::BRAKE_RESISTOR, brSocket))
+
+            auto pds = getPDS(m_canId);
+            if (pds == nullptr)
+            {
+                m_log.error("Could not initialize PDS!");
+                return;
+            }
+
+            if (!pds->verifyModuleSocket(moduleType_E::BRAKE_RESISTOR, brSocket))
             {
                 if (m_brSocket == 0)
                 {
@@ -481,7 +524,7 @@ void PdsCli::parse(Pds* p_pds)
                 }
             }
 
-            result = mp_pds->bindBrakeResistor(brSocket);
+            result = pds->bindBrakeResistor(brSocket);
 
             if (result != PdsModule::error_E::OK)
                 m_log.error("Binding Brake Resistor failed [ %s ]",
@@ -492,8 +535,14 @@ void PdsCli::parse(Pds* p_pds)
 
         else if (m_ctrlGetBrCmd->parsed())
         {
+            auto pds = getPDS(m_canId);
+            if (pds == nullptr)
+            {
+                m_log.error("Could not initialize PDS!");
+                return;
+            }
             socketIndex_E brSocket = socketIndex_E::UNASSIGNED;
-            result                 = mp_pds->getBindBrakeResistor(brSocket);
+            result                 = pds->getBindBrakeResistor(brSocket);
             if (result != PdsModule::error_E::OK)
                 m_log.error("Getting Brake Resistor failed [ %s ]",
                             PdsModule::error2String(result));
@@ -503,7 +552,13 @@ void PdsCli::parse(Pds* p_pds)
 
         else if (m_ctrlSetBrTriggerCmd->parsed())
         {
-            result = mp_pds->setBrakeResistorTriggerVoltage(m_brTrigger);
+            auto pds = getPDS(m_canId);
+            if (pds == nullptr)
+            {
+                m_log.error("Could not initialize PDS!");
+                return;
+            }
+            result = pds->setBrakeResistorTriggerVoltage(m_brTrigger);
             if (result != PdsModule::error_E::OK)
                 m_log.error("Setting Brake Resistor trigger voltage failed [ %s ]",
                             PdsModule::error2String(result));
@@ -513,8 +568,14 @@ void PdsCli::parse(Pds* p_pds)
 
         else if (m_ctrlGetBrTriggerCmd->parsed())
         {
+            auto pds = getPDS(m_canId);
+            if (pds == nullptr)
+            {
+                m_log.error("Could not initialize PDS!");
+                return;
+            }
             u32 brTrigger = 0;
-            result        = mp_pds->getBrakeResistorTriggerVoltage(brTrigger);
+            result        = pds->getBrakeResistorTriggerVoltage(brTrigger);
             if (result != PdsModule::error_E::OK)
                 m_log.error("Getting Brake Resistor trigger voltage failed [ %s ]",
                             PdsModule::error2String(result));
@@ -524,7 +585,13 @@ void PdsCli::parse(Pds* p_pds)
 
         else if (m_disableCmd->parsed())
         {
-            mp_pds->shutdown();
+            auto pds = getPDS(m_canId);
+            if (pds == nullptr)
+            {
+                m_log.error("Could not initialize PDS!");
+                return;
+            }
+            pds->shutdown();
             m_log.success("PDS disabled");
         }
         else
@@ -537,13 +604,20 @@ void PdsCli::powerStageCmdParse(void)
     socketIndex_E      socketIndex = decodeSocketIndex(m_submoduleSocketNumber);
     PdsModule::error_E result      = PdsModule::error_E::OK;
 
-    if (!mp_pds->verifyModuleSocket(moduleType_E::POWER_STAGE, socketIndex))
+    auto pds = getPDS(m_canId);
+    if (pds == nullptr)
+    {
+        m_log.error("Could not initialize PDS!");
+        return;
+    }
+
+    if (!pds->verifyModuleSocket(moduleType_E::POWER_STAGE, socketIndex))
     {
         m_log.error("Invalid socket number for Power Stage submodule");
         return;
     }
 
-    auto ps = mp_pds->attachPowerStage(socketIndex);
+    auto ps = pds->attachPowerStage(socketIndex);
 
     if (ps == nullptr)
     {
@@ -740,7 +814,14 @@ void PdsCli::powerStageCmdParse(void)
     {
         // Notice that the m_brSocket is a numeric value, and brSocket is a enum value
         socketIndex_E brSocket = decodeSocketIndex(m_brSocket);
-        if (!mp_pds->verifyModuleSocket(moduleType_E::BRAKE_RESISTOR, brSocket))
+
+        auto pds = getPDS(m_canId);
+        if (pds == nullptr)
+        {
+            m_log.error("Could not initialize PDS!");
+            return;
+        }
+        if (!pds->verifyModuleSocket(moduleType_E::BRAKE_RESISTOR, brSocket))
         {
             if (m_brSocket == 0)
             {
@@ -833,13 +914,20 @@ void PdsCli::brakeResistorCmdParse(void)
     socketIndex_E      socketIndex = decodeSocketIndex(m_submoduleSocketNumber);
     PdsModule::error_E result      = PdsModule::error_E::OK;
 
-    if (!mp_pds->verifyModuleSocket(moduleType_E::BRAKE_RESISTOR, socketIndex))
+    auto pds = getPDS(m_canId);
+    if (pds == nullptr)
+    {
+        m_log.error("Could not initialize PDS!");
+        return;
+    }
+
+    if (!pds->verifyModuleSocket(moduleType_E::BRAKE_RESISTOR, socketIndex))
     {
         m_log.error("Invalid socket number for Brake Resistor submodule");
         return;
     }
 
-    auto br = mp_pds->attachBrakeResistor(socketIndex);
+    auto br = pds->attachBrakeResistor(socketIndex);
 
     if (br == nullptr)
     {
@@ -933,13 +1021,20 @@ void PdsCli::isolatedConverterCmdParse(void)
     socketIndex_E      socketIndex = decodeSocketIndex(m_submoduleSocketNumber);
     PdsModule::error_E result      = PdsModule::error_E::OK;
 
-    if (!mp_pds->verifyModuleSocket(moduleType_E::ISOLATED_CONVERTER, socketIndex))
+    auto pds = getPDS(m_canId);
+    if (pds == nullptr)
+    {
+        m_log.error("Could not initialize PDS!");
+        return;
+    }
+
+    if (!pds->verifyModuleSocket(moduleType_E::ISOLATED_CONVERTER, socketIndex))
     {
         m_log.error("Invalid socket number for Isolated Converter submodule");
         return;
     }
 
-    auto ic = mp_pds->attachIsolatedConverter(socketIndex);
+    auto ic = pds->attachIsolatedConverter(socketIndex);
 
     if (ic == nullptr)
     {
@@ -1128,7 +1223,13 @@ void PdsCli::isolatedConverterCmdParse(void)
 
 void PdsCli::pdsSetupInfo()
 {
-    mab::Pds::modulesSet_S pdsModules = mp_pds->getModules();
+    auto pds = getPDS(m_canId);
+    if (pds == nullptr)
+    {
+        m_log.error("Could not initialize PDS!");
+        return;
+    }
+    mab::Pds::modulesSet_S pdsModules = pds->getModules();
 
     mab::controlBoardStatus_S pdsStatus     = {0};
     u32                       pdsBusVoltage = 0;
@@ -1138,30 +1239,30 @@ void PdsCli::pdsSetupInfo()
     socketIndex_E             brSocket      = socketIndex_E::UNASSIGNED;
     u32                       brTrigger     = 0;
 
-    PdsModule::error_E result = mp_pds->getStatus(pdsStatus);
+    PdsModule::error_E result = pds->getStatus(pdsStatus);
     if (result != PdsModule::error_E::OK)
         m_log.error("PDS get status failed [ %s ]", PdsModule::error2String(result));
 
-    result = mp_pds->getBusVoltage(pdsBusVoltage);
+    result = pds->getBusVoltage(pdsBusVoltage);
     if (result != PdsModule::error_E::OK)
         m_log.error("PDS get bus voltage failed [ %s ]", PdsModule::error2String(result));
 
-    result = mp_pds->getShutdownTime(shutdownTime);
+    result = pds->getShutdownTime(shutdownTime);
     if (result != PdsModule::error_E::OK)
         m_log.error("PDS get shutdown time failed [ %s ]", PdsModule::error2String(result));
 
-    result = mp_pds->getBatteryVoltageLevels(batteryLvl1, batteryLvl2);
+    result = pds->getBatteryVoltageLevels(batteryLvl1, batteryLvl2);
     if (result != PdsModule::error_E::OK)
         m_log.error("PDS get battery levels failed [ %s ]", PdsModule::error2String(result));
 
-    result = mp_pds->getBindBrakeResistor(brSocket);
+    result = pds->getBindBrakeResistor(brSocket);
     if (result != PdsModule::error_E::OK)
         m_log.error("Power Stage get brake resistor failed [ %s ]",
                     PdsModule::error2String(result));
 
     if (brSocket != socketIndex_E::UNASSIGNED)
     {
-        result = mp_pds->getBrakeResistorTriggerVoltage(brTrigger);
+        result = pds->getBrakeResistorTriggerVoltage(brTrigger);
         if (result != PdsModule::error_E::OK)
             m_log.error("Power Stage get brake resistor trigger voltage failed [ %s ]",
                         PdsModule::error2String(result));
@@ -1359,7 +1460,13 @@ void PdsCli::setupCtrlConfig(mINI::INIMap<std::string>& iniMap)
     {
         u16 canId = atoi(iniMap[CAN_ID_INI_KEY].c_str());
         m_log.debug("CAN ID field found with value [ %u ]", canId);
-        result = mp_pds->setCanId(canId);
+        auto pds = getPDS(m_canId);
+        if (pds == nullptr)
+        {
+            m_log.error("Could not initialize PDS!");
+            return;
+        }
+        result = pds->setCanId(canId);
         if (result != PdsModule::error_E::OK)
             m_log.error("CAN ID setting failed [ %s ]", PdsModule::error2String(result));
         else
@@ -1375,9 +1482,15 @@ void PdsCli::setupCtrlConfig(mINI::INIMap<std::string>& iniMap)
     {
         std::string_view                canBaudString = iniMap[CAN_BAUD_INI_KEY];
         std::optional<CANdleBaudrate_E> canBaud       = parseCanBaudIniString(canBaudString);
+        auto                            pds           = getPDS(m_canId);
+        if (pds == nullptr)
+        {
+            m_log.error("Could not initialize PDS!");
+            return;
+        }
         if (canBaud.has_value())
         {
-            result = mp_pds->setCanBaudrate(canBaud.value());
+            result = pds->setCanBaudrate(canBaud.value());
             if (result != PdsModule::error_E::OK)
                 m_log.error("CAN BAUD setting failed [ %s ]", PdsModule::error2String(result));
             else
@@ -1399,7 +1512,13 @@ void PdsCli::setupCtrlConfig(mINI::INIMap<std::string>& iniMap)
     {
         u32 shutdownTime = atoi(iniMap[SHUTDOWN_TIME_INI_KEY].c_str());
         m_log.debug("Shutdown time field found with value [ %u ]", shutdownTime);
-        result = mp_pds->setShutdownTime(shutdownTime);
+        auto pds = getPDS(m_canId);
+        if (pds == nullptr)
+        {
+            m_log.error("Could not initialize PDS!");
+            return;
+        }
+        result = pds->setShutdownTime(shutdownTime);
         if (result != PdsModule::error_E::OK)
             m_log.error("Shutdown time setting failed [ %s ]", PdsModule::error2String(result));
         else
@@ -1417,7 +1536,13 @@ void PdsCli::setupCtrlConfig(mINI::INIMap<std::string>& iniMap)
         m_log.debug("Battery level 1 field found with value [ %u ]", battLvl1);
         u32 battLvl2 = atoi(iniMap[BATT_LVL_2_INI_KEY].c_str());
         m_log.debug("Battery level 2 field found with value [ %u ]", battLvl2);
-        result = mp_pds->setBatteryVoltageLevels(battLvl1, battLvl2);
+        auto pds = getPDS(m_canId);
+        if (pds == nullptr)
+        {
+            m_log.error("Could not initialize PDS!");
+            return;
+        }
+        result = pds->setBatteryVoltageLevels(battLvl1, battLvl2);
         if (result != PdsModule::error_E::OK)
             m_log.error("Battery levels setting failed [ %s ]", PdsModule::error2String(result));
         else
@@ -1440,7 +1565,13 @@ void PdsCli::setupCtrlConfig(mINI::INIMap<std::string>& iniMap)
         else
         {
             m_log.debug("Brake resistor socket field found with value [ %u ]", (u8)brSocket);
-            result = mp_pds->bindBrakeResistor(brSocket);
+            auto pds = getPDS(m_canId);
+            if (pds == nullptr)
+            {
+                m_log.error("Could not initialize PDS!");
+                return;
+            }
+            result = pds->bindBrakeResistor(brSocket);
             if (result != PdsModule::error_E::OK)
                 m_log.error("PDS bind brake resistor failed [ %s ]",
                             PdsModule::error2String(result));
@@ -1459,7 +1590,13 @@ void PdsCli::setupCtrlConfig(mINI::INIMap<std::string>& iniMap)
         u32 brTriggerVoltage = atoi(iniMap[BR_TRIG_V_INI_KEY].c_str());
         m_log.debug("Brake resistor trigger voltage field found with value [ %u ]",
                     brTriggerVoltage);
-        result = mp_pds->setBrakeResistorTriggerVoltage(brTriggerVoltage);
+        auto pds = getPDS(m_canId);
+        if (pds == nullptr)
+        {
+            m_log.error("Could not initialize PDS!");
+            return;
+        }
+        result = pds->setBrakeResistorTriggerVoltage(brTriggerVoltage);
         if (result != PdsModule::error_E::OK)
             m_log.error("PDS set brake resistor trigger voltage failed [ %s ]",
                         PdsModule::error2String(result));
@@ -1476,7 +1613,13 @@ void PdsCli::setupModuleCfg(moduleType_E type, socketIndex_E si, mINI::INIMap<st
 {
     if (type == moduleType_E::POWER_STAGE)
     {
-        auto powerStage = mp_pds->attachPowerStage(si);
+        auto pds = getPDS(m_canId);
+        if (pds == nullptr)
+        {
+            m_log.error("Could not initialize PDS!");
+            return;
+        }
+        auto powerStage = pds->attachPowerStage(si);
         if (powerStage == nullptr)
         {
             m_log.error("Attaching Power Stage module at socket [ %u ] failed...", (u8)si);
@@ -1489,7 +1632,13 @@ void PdsCli::setupModuleCfg(moduleType_E type, socketIndex_E si, mINI::INIMap<st
 
     if (type == moduleType_E::ISOLATED_CONVERTER)
     {
-        auto isolatedConverter = mp_pds->attachIsolatedConverter(si);
+        auto pds = getPDS(m_canId);
+        if (pds == nullptr)
+        {
+            m_log.error("Could not initialize PDS!");
+            return;
+        }
+        auto isolatedConverter = pds->attachIsolatedConverter(si);
         if (isolatedConverter == nullptr)
         {
             m_log.error("Attaching Isolated converter module at socket [ %u ] failed...", (u8)si);
@@ -1502,7 +1651,13 @@ void PdsCli::setupModuleCfg(moduleType_E type, socketIndex_E si, mINI::INIMap<st
 
     if (type == moduleType_E::BRAKE_RESISTOR)
     {
-        auto brakeResistor = mp_pds->attachBrakeResistor(si);
+        auto pds = getPDS(m_canId);
+        if (pds == nullptr)
+        {
+            m_log.error("Could not initialize PDS!");
+            return;
+        }
+        auto brakeResistor = pds->attachBrakeResistor(si);
         if (brakeResistor == nullptr)
         {
             m_log.error("Attaching Brake resistor module at socket [ %u ] failed...", (u8)si);
@@ -1790,7 +1945,13 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
     socketIndex_E brSocket     = socketIndex_E::UNASSIGNED;
     u32           brTrigger    = 0;
 
-    Pds::modulesSet_S pdsModules = mp_pds->getModules();
+    auto pds = getPDS(m_canId);
+    if (pds == nullptr)
+    {
+        m_log.error("Could not initialize PDS!");
+        return;
+    }
+    Pds::modulesSet_S pdsModules = pds->getModules();
 
     std::string configName = cfgPath;
     if (configName == "")
@@ -1801,14 +1962,13 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
     bool saveConfig = ui::getSaveConfigConfirmation(configName);
 
     // TODO: Consider error handling here ?
-    mp_pds->getShutdownTime(shutDownTime);
-    mp_pds->getBatteryVoltageLevels(batLvl1, batLvl2);
-    mp_pds->getBindBrakeResistor(brSocket);
-    mp_pds->getBrakeResistorTriggerVoltage(brTrigger);
+    pds->getShutdownTime(shutDownTime);
+    pds->getBatteryVoltageLevels(batLvl1, batLvl2);
+    pds->getBindBrakeResistor(brSocket);
+    pds->getBrakeResistorTriggerVoltage(brTrigger);
 
-    readIni[CONTROL_BOARD_INI_SECTION][CAN_ID_INI_KEY] = prettyFloatToString(m_canId, true);
-    readIni[CONTROL_BOARD_INI_SECTION][CAN_BAUD_INI_KEY] =
-        baudrateToString(mp_pds->getCanBaudrate());
+    readIni[CONTROL_BOARD_INI_SECTION][CAN_ID_INI_KEY]   = prettyFloatToString(m_canId, true);
+    readIni[CONTROL_BOARD_INI_SECTION][CAN_BAUD_INI_KEY] = baudrateToString(pds->getCanBaudrate());
     readIni[CONTROL_BOARD_INI_SECTION][SHUTDOWN_TIME_INI_KEY] =
         prettyFloatToString(shutDownTime, true) + "\t\t; Shutdown time [ ms ]";
     readIni[CONTROL_BOARD_INI_SECTION][BATT_LVL_1_INI_KEY] =
@@ -1821,12 +1981,12 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
     readIni[CONTROL_BOARD_INI_SECTION][BR_TRIG_V_INI_KEY] =
         prettyFloatToString(brTrigger, true) + "\t\t; Brake resistor trigger voltage [ mV ]";
 
-    fullModuleIni(*mp_pds, pdsModules.moduleTypeSocket1, readIni, socketIndex_E::SOCKET_1);
-    fullModuleIni(*mp_pds, pdsModules.moduleTypeSocket2, readIni, socketIndex_E::SOCKET_2);
-    fullModuleIni(*mp_pds, pdsModules.moduleTypeSocket3, readIni, socketIndex_E::SOCKET_3);
-    fullModuleIni(*mp_pds, pdsModules.moduleTypeSocket4, readIni, socketIndex_E::SOCKET_4);
-    fullModuleIni(*mp_pds, pdsModules.moduleTypeSocket5, readIni, socketIndex_E::SOCKET_5);
-    fullModuleIni(*mp_pds, pdsModules.moduleTypeSocket6, readIni, socketIndex_E::SOCKET_6);
+    fullModuleIni(*pds, pdsModules.moduleTypeSocket1, readIni, socketIndex_E::SOCKET_1);
+    fullModuleIni(*pds, pdsModules.moduleTypeSocket2, readIni, socketIndex_E::SOCKET_2);
+    fullModuleIni(*pds, pdsModules.moduleTypeSocket3, readIni, socketIndex_E::SOCKET_3);
+    fullModuleIni(*pds, pdsModules.moduleTypeSocket4, readIni, socketIndex_E::SOCKET_4);
+    fullModuleIni(*pds, pdsModules.moduleTypeSocket5, readIni, socketIndex_E::SOCKET_5);
+    fullModuleIni(*pds, pdsModules.moduleTypeSocket6, readIni, socketIndex_E::SOCKET_6);
 
     mINI::INIFile configFile(configName);
 
@@ -1839,13 +1999,43 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
 void PdsCli::pdsStoreConfig(void)
 {
     using err_E = mab::PdsModule::error_E;
+    auto pds    = getPDS(m_canId);
+    if (pds == nullptr)
+    {
+        m_log.error("Could not initialize PDS!");
+        return;
+    }
 
-    err_E result = mp_pds->saveConfig();
+    err_E result = pds->saveConfig();
 
     if (result != err_E::OK)
         m_log.error("PDS Configuration save error [ %u ] [ %s:%u ]", result, __FILE__, __LINE__);
     else
         m_log.success("PDS Configuration saved");
+}
+
+std::unique_ptr<Pds, std::function<void(Pds*)>> PdsCli::getPDS(canId_t id)
+{
+    auto candleOpt = m_candleBuilder->build();
+    if (!candleOpt.has_value())
+    {
+        m_log.error("Could not connect to CANdle!");
+        return nullptr;
+    }
+    Candle*                   candle  = candleOpt.value();
+    std::function<void(Pds*)> deleter = [candle](Pds* ptr)
+    {
+        delete ptr;
+        detachCandle(candle);
+    };
+
+    auto pds = std::unique_ptr<Pds, std::function<void(Pds*)>>(new Pds(id, candle), deleter);
+    if (pds != nullptr)
+    {
+        pds->init(id);
+        m_log.info("PDS - Power Distribution System :: CAN ID [ %u ]", m_canId);
+    }
+    return pds;
 }
 
 socketIndex_E PdsCli::decodeSocketIndex(u8 numericSocketIndex)

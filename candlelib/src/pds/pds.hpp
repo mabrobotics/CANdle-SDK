@@ -36,7 +36,8 @@ namespace mab
             moduleType_E moduleTypeSocket6;
         };
 
-        Pds() = delete;
+        Pds()          = delete;
+        virtual ~Pds() = default;
 
         /**
          * @brief Construct a new Pds object

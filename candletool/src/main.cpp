@@ -1,14 +1,20 @@
+#include <cstdlib>
 #include <memory>
 #include "candle.hpp"
+#include "candle_bootloader.hpp"
 #include "candle_types.hpp"
 #include "candletool.hpp"
 #include "configHelpers.hpp"
 #include "logger.hpp"
+#include "mabFileParser.hpp"
+#include "mab_crc.hpp"
 #include "mab_types.hpp"
 #include "md_cli.hpp"
 #include "ui.hpp"
 #include "CLI/CLI.hpp"
 #include "pds_cli.hpp"
+
+#include "utilities.hpp"
 
 //     ___     _     _  _      _   _         _____               _
 //    / __|   /_\   | \| |  __| | | |  ___  |_   _|  ___   ___  | |
@@ -20,14 +26,11 @@ int main(int argc, char** argv)
 {
     // Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_3;
 
-    std::cout << "   ___     _     _  _      _   _         _____               _ \n";
-    std::cout << "  / __|   /_\\   | \\| |  __| | | |  ___  |_   _|  ___   ___  | |\n";
-    std::cout << " | (__   / _ \\  | .` | / _` | | | / -_)   | |   / _ \\ / _ \\ | |\n";
-    std::cout << "  \\___| /_/ \\_\\ |_|\\_| \\__,_| |_| \\___|   |_|   \\___/ \\___/ |_|\n";
-    std::cout << "                                                               \n";
-
+    auto mabDescriptionFormatter = std::make_shared<MABDescriptionFormatter>();
+    mabDescriptionFormatter->enable_description_formatting(false);
     CLI::App app{};
     app.fallthrough();
+    app.formatter(mabDescriptionFormatter);
     app.ignore_case();
     UserCommand cmd;
 
@@ -105,7 +108,7 @@ int main(int argc, char** argv)
     candleBuilder->preBuildTask = preBuildTask;
 
     MDCli  mdCli(&app, candleBuilder);
-    PdsCli pdsCli(app);
+    PdsCli pdsCli(app, candleBuilder);
 
     CLI11_PARSE(app, argc, argv);
 
@@ -115,8 +118,6 @@ int main(int argc, char** argv)
         std::cerr << "Invalid baudrate: " << cmd.baud << std::endl;
         return EXIT_FAILURE;
     }
-
-    mab::CANdleBaudrate_E baud = baudOpt.value_or(CANdleBaudrate_E::CAN_BAUD_1M);
 
     mINI::INIFile      file(getCandletoolConfigPath());
     mINI::INIStructure ini;
@@ -129,8 +130,7 @@ int main(int argc, char** argv)
     // CLI11_PARSE(app, argc, argv);
 
     // TODO: make use of busType and baudrate options when creating Candle object within CandleTool
-    CandleTool candleTool(baud);
-    Pds        pds(cmd.id, candleTool.getCandle());
+    // Pds pds(cmd.id, candleTool.getCandle());
 
     // set global verbosity for loggers
     if (silentMode)
@@ -148,10 +148,7 @@ int main(int argc, char** argv)
     }
 
     if (app.count_all() == 1)
-        std::cerr << app.help(
-                         "For more information please refer to the manual: "
-                         "\033[32mhttps://mabrobotics.pl/servos/manual\033[0m \n\n")
-                  << std::endl;
+        std::cerr << app.help() << std::endl;
 
     if (update->parsed())
     {
@@ -170,24 +167,40 @@ int main(int argc, char** argv)
 
         if (candleUpdate->parsed())
         {
-            candleTool.updateCandle(cmd.firmwareFileName);
+            MabFileParser candleFirmware(cmd.firmwareFileName,
+                                         MabFileParser::TargetDevice_E::CANDLE);
+
+            auto candle_bootloader = attachCandleBootloader();
+            for (size_t i = 0; i < candleFirmware.m_fwEntry.size;
+                 i += CandleBootloader::PAGE_SIZE_STM32G474)
+            {
+                std::array<u8, CandleBootloader::PAGE_SIZE_STM32G474> page;
+                std::memcpy(page.data(), &candleFirmware.m_fwEntry.data->data()[i], page.size());
+                u32 crc = crc32(page.data(), page.size());
+                if (candle_bootloader->writePage(page, crc) != candleTypes::Error_t::OK)
+                {
+                    return EXIT_FAILURE;
+                    break;
+                }
+            }
             return EXIT_SUCCESS;
         }
 
         if (mdUpdate->parsed())
         {
-            candleTool.updateMd(cmd.firmwareFileName, cmd.id, cmd.noReset);
-            return EXIT_SUCCESS;
+            // candleTool.updateMd(cmd.firmwareFileName, cmd.id, cmd.noReset);
+            // return EXIT_SUCCESS;
         }
 
         if (pdsUpdate->parsed())
         {
-            candleTool.updatePds(pds, cmd.firmwareFileName, cmd.id, cmd.noReset);
+            std::cout << "Implementation needed!\n";
+            // candleTool.updatePds(pds, cmd.firmwareFileName, cmd.id, cmd.noReset); TODO
             return EXIT_SUCCESS;
         }
     }
 
-    pdsCli.parse(&pds);
+    pdsCli.parse();
 
     return EXIT_SUCCESS;
 }
