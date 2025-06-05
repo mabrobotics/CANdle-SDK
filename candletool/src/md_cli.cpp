@@ -701,7 +701,7 @@ namespace mab
                          << MDBuildDateValue_S::toReadable(readableRegisters.buildDate.value)
                                 .value_or("Unknown")
                          << std::endl;
-                m_logger << "- commit hash: " << readableRegisters.commitHash.value[0]
+                m_logger << "- commit hash: " << readableRegisters.commitHash.value
                          << std::endl;  // TODO: printable format
                 m_logger << "- max current: " << std::setprecision(1)
                          << readableRegisters.motorIMax.value << " A" << std::endl;
