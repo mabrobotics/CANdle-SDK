@@ -38,17 +38,17 @@ namespace mab
                 optionsMap = std::map<std::string, CLI::Option*>{
                     {"id",
                      rootCli->add_option(
-                         "-i,--id", *canId, "New CAN node id for the MD controller.")},
+                         "--new_id", *canId, "New CAN node id for the MD controller.")},
                     {"datarate",
-                     rootCli->add_option("-d,--datarate",
+                     rootCli->add_option("--new_datarate",
                                          *datarate,
                                          "New datarate of the MD controller. [1M, 2M, 5M, 8M]")},
                     {"timeout",
                      rootCli->add_option(
-                         "-t,--timeout", *timeoutMs, "New timeout of the MD controller.")},
+                         "--new_timeout", *timeoutMs, "New timeout of the MD controller.")},
                     {"save",
                      rootCli->add_flag(
-                         "-s,--save", *save, "Save the new CAN parameters to the MD controller.")}};
+                         "--save", *save, "Save the new CAN parameters to the MD controller.")}};
             }
             const std::shared_ptr<canId_t>     canId;
             const std::shared_ptr<std::string> datarate;

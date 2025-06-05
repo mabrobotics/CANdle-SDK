@@ -47,10 +47,12 @@ namespace mab
         }
         auto*                          mdCLi   = rootCli->add_subcommand("md", "MD commands");
         const std::shared_ptr<canId_t> mdCanId = std::make_shared<canId_t>(100);
-        mdCLi->add_option("<CAN_ID>", *mdCanId, "CAN ID of the MD to interact with.")->required();
+        auto*                          mdCanIdOption =
+            mdCLi->add_option("-i,--id", *mdCanId, "CAN ID of the MD to interact with.");
 
         // Blink ============================================================================
-        auto* blink = mdCLi->add_subcommand("blink", "Blink LEDs on MD drive.");
+        auto* blink =
+            mdCLi->add_subcommand("blink", "Blink LEDs on MD drive.")->needs(mdCanIdOption);
         blink->callback(
             [this, candleBuilder, mdCanId]()
             {
@@ -65,8 +67,11 @@ namespace mab
             });
 
         // Can ============================================================================
-        auto* can = mdCLi->add_subcommand(
-            "can", "Configure CAN network parameters id, datarate and timeout.");
+        auto* can = mdCLi
+                        ->add_subcommand(
+                            "can", "Configure CAN network parameters id, datarate and timeout.")
+                        ->needs(mdCanIdOption)
+                        ->require_option();
 
         CanOptions canOptions(can);
 
@@ -172,7 +177,8 @@ namespace mab
             });
 
         // Calibration  ====================================================================
-        auto* calibration = mdCLi->add_subcommand("calibration", "Calibrate the MD drive.");
+        auto* calibration =
+            mdCLi->add_subcommand("calibration", "Calibrate the MD drive.")->needs(mdCanIdOption);
 
         CalibrationOptions calibrationOptions(calibration);
 
@@ -401,7 +407,8 @@ namespace mab
             });
 
         // Clear  =========================================================================
-        auto* clear = mdCLi->add_subcommand("clear", "Clear MD drive errors and warnings.");
+        auto* clear = mdCLi->add_subcommand("clear", "Clear MD drive errors and warnings.")
+                          ->needs(mdCanIdOption);
 
         ClearOptions clearOptions(clear);
 
@@ -440,7 +447,9 @@ namespace mab
             });
 
         // Config  ===========================================================
-        auto* config = mdCLi->add_subcommand("config", "Configure MD drive.");
+        auto* config = mdCLi->add_subcommand("config", "Configure MD drive.")
+                           ->needs(mdCanIdOption)
+                           ->require_subcommand();
         // Download configuration file
         auto* downloadConfig =
             config->add_subcommand("download", "Download configuration from MD drive.");
@@ -494,7 +503,8 @@ namespace mab
             });
 
         // Upload configuration file
-        auto* uploadConfig = config->add_subcommand("upload", "Upload configuration to MD drive.");
+        auto* uploadConfig = config->add_subcommand("upload", "Upload configuration to MD drive.")
+                                 ->needs(mdCanIdOption);
 
         ConfigOptions uploadConfigOptions(uploadConfig);
 
@@ -561,7 +571,8 @@ namespace mab
             });
 
         // Reset configuration
-        auto* factoryReset = config->add_subcommand("factory-reset", "Factory reset the MD drive.");
+        auto* factoryReset = config->add_subcommand("factory-reset", "Factory reset the MD drive.")
+                                 ->needs(mdCanIdOption);
         factoryReset->callback(
             [this, candleBuilder, mdCanId]()
             {
@@ -582,12 +593,14 @@ namespace mab
             });
 
         // Discover ============================================================================
-        auto* discover = mdCLi->add_subcommand("discover",
-                                               "Discover MD drives on the"
-                                               "network.");
+        auto* discover = mdCLi
+                             ->add_subcommand("discover",
+                                              "Discover MD drives on the"
+                                              "network.")
+                             ->excludes(mdCanIdOption);
 
         discover->callback(
-            [this, candleBuilder, mdCanId]()
+            [this, candleBuilder]()
             {
                 auto candleOpt = candleBuilder->build();
                 if (!candleOpt.has_value())
@@ -616,7 +629,8 @@ namespace mab
                 detachCandle(candle);
             });
         // Save ============================================================================
-        auto* save = mdCLi->add_subcommand("save", "Save MD drive configuration to flash memory.");
+        auto* save = mdCLi->add_subcommand("save", "Save MD drive configuration to flash memory.")
+                         ->needs(mdCanIdOption);
         save->callback(
             [this, candleBuilder, mdCanId]()
             {
@@ -635,7 +649,8 @@ namespace mab
             });
 
         // Info ============================================================================
-        auto* info = mdCLi->add_subcommand("info", "Get information about the MD drive.");
+        auto* info = mdCLi->add_subcommand("info", "Get information about the MD drive.")
+                         ->needs(mdCanIdOption);
         info->callback(
             [this, candleBuilder, mdCanId]()
             {
@@ -830,7 +845,9 @@ namespace mab
             });
 
         // Register =======================================================================
-        auto* reg = mdCLi->add_subcommand("register", "Register operations for MD drive.");
+        auto* reg = mdCLi->add_subcommand("register", "Register operations for MD drive.")
+                        ->needs(mdCanIdOption)
+                        ->require_subcommand();
 
         // Register read
         auto regRead = reg->add_subcommand("read", "Read register value.");
@@ -946,11 +963,14 @@ namespace mab
             });
 
         // Test
-        auto* test = mdCLi->add_subcommand("test", "Test the MD drive movement.");
+        auto* test = mdCLi->add_subcommand("test", "Test the MD drive movement.")
+                         ->needs(mdCanIdOption)
+                         ->require_subcommand();
 
         // Absolute
         auto* absolute =
-            test->add_subcommand("absolute", "Move to target utilizing trapezoidal profile");
+            test->add_subcommand("absolute", "Move to target utilizing trapezoidal profile")
+                ->require_option();
         TestOptions absoluteTestOptions(absolute);
 
         absolute->callback(
@@ -983,7 +1003,8 @@ namespace mab
             });
 
         // Relative
-        auto* relative = test->add_subcommand("relative", "Move relative to current position");
+        auto* relative =
+            test->add_subcommand("relative", "Move relative to current position")->require_option();
 
         TestOptions relativeTestOptions(relative);
 
@@ -1011,8 +1032,7 @@ namespace mab
                 {
                     f32 target = std::lerp(pos, *relativeTestOptions.target, t);
                     md->setTargetPosition(target);
-                    m_logger.info("[%4d] Position: %4.2f, Velocity: %4.1f",
-                                  *mdCanId,
+                    m_logger.info("Position: %4.2f, Velocity: %4.1f",
                                   md->getPosition().first,
                                   md->getVelocity().first);
                     usleep(30000);
@@ -1021,8 +1041,8 @@ namespace mab
             });
 
         // Update
-        auto* update = mdCLi->add_subcommand("update", "Update firmware on MD drive.");
-
+        auto* update =
+            mdCLi->add_subcommand("update", "Update firmware on MD drive.")->needs(mdCanIdOption);
         UpdateOptions updateOptions(update);
 
         update->callback(

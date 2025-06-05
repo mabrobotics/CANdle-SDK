@@ -176,10 +176,8 @@ int main(int argc, char** argv)
     app.add_flag("--log", logPath, "Redirect output to file")->default_val("")->expected(1);
 
     auto candleBuilder = std::make_shared<CandleBuilder>();
-    // TODO: remplace mocks with real data
-    auto canId    = std::make_shared<canId_t>(100);
-    auto busType  = std::make_shared<candleTypes::busTypes_t>(candleTypes::busTypes_t::USB);
-    auto datarate = std::make_shared<CANdleBaudrate_E>(CANdleBaudrate_E::CAN_BAUD_1M);
+    auto busType       = std::make_shared<candleTypes::busTypes_t>(candleTypes::busTypes_t::USB);
+    auto datarate      = std::make_shared<CANdleBaudrate_E>(CANdleBaudrate_E::CAN_BAUD_1M);
 
     candleBuilder->busType  = busType;
     candleBuilder->datarate = datarate;
@@ -211,6 +209,7 @@ int main(int argc, char** argv)
     };
 
     // This is to keep the compatibility of std::string argument as a parsed value between instances
+    // of parsers
     candleBuilder->preBuildTask = preBuildTask;
 
     MDCli  mdCli(&app, candleBuilder);
