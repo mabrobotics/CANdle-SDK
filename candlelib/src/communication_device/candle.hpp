@@ -192,8 +192,11 @@ namespace mab
         std::shared_ptr<candleTypes::busTypes_t> busType  = nullptr;
         std::optional<std::string_view>          pathOrId;
 
+        std::function<void()> preBuildTask = []() {};
+
         std::optional<Candle*> build() const
         {
+            preBuildTask();
             if (datarate == nullptr || busType == nullptr)
             {
                 m_logger.error("Parameters missing. Could create Candle.");

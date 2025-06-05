@@ -177,12 +177,41 @@ int main(int argc, char** argv)
 
     auto candleBuilder = std::make_shared<CandleBuilder>();
     // TODO: remplace mocks with real data
-    auto canId        = std::make_shared<canId_t>(100);
-    auto mockBusType  = std::make_shared<candleTypes::busTypes_t>(candleTypes::busTypes_t::USB);
-    auto mockBaudrate = std::make_shared<CANdleBaudrate_E>(CANdleBaudrate_E::CAN_BAUD_1M);
+    auto canId    = std::make_shared<canId_t>(100);
+    auto busType  = std::make_shared<candleTypes::busTypes_t>(candleTypes::busTypes_t::USB);
+    auto datarate = std::make_shared<CANdleBaudrate_E>(CANdleBaudrate_E::CAN_BAUD_1M);
 
-    candleBuilder->busType  = mockBusType;
-    candleBuilder->datarate = mockBaudrate;
+    candleBuilder->busType  = busType;
+    candleBuilder->datarate = datarate;
+
+    auto preBuildTask = [busType, datarate, &cmd]()
+    {
+        Logger log(Logger::ProgramLayer_E::TOP, "CANDLE_PREBUILD");
+        log.debug("Running candle pre-build CLI parsing task...");
+        // Parsing bus type
+        if (cmd.bus.find("USB" != 0))
+        {
+            *busType = candleTypes::busTypes_t::USB;
+        }
+        else if (cmd.bus.find("SPI" != 0))
+        {
+            *busType = candleTypes::busTypes_t::SPI;
+        }
+        else
+        {
+            log.error("Specified bus is not valid!");
+        }
+
+        // Parsing baudrate
+        auto parsedBaudOpt = CandleTool::stringToBaud(cmd.baud);
+        if (parsedBaudOpt.has_value())
+            *datarate = parsedBaudOpt.value();
+        else
+            log.error("Parsing of the datarate failed!");
+    };
+
+    // This is to keep the compatibility of std::string argument as a parsed value between instances
+    candleBuilder->preBuildTask = preBuildTask;
 
     MDCli  mdCli(&app, candleBuilder);
     PdsCli pdsCli(app);
