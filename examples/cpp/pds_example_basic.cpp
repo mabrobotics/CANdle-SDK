@@ -20,7 +20,8 @@ int main()
 {
     auto candle =
         mab::attachCandle(mab::CANdleBaudrate_E::CAN_BAUD_1M, mab::candleTypes::busTypes_t::USB);
-    Pds pds(PDS_CAN_ID, candle);
+    auto findPdses = Pds::discoverPDS(candle);
+    Pds  pds(findPdses[0], candle);
 
     pds.init();
 

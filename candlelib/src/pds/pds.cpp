@@ -351,6 +351,48 @@ namespace mab
         }
     }
 
+    const std::vector<canId_t> Pds::discoverPDS(Candle* candle)
+    {
+        constexpr canId_t MIN_VAILID_ID = 10;     // ids less than that are reserved for special
+        constexpr canId_t MAX_VAILID_ID = 0x7FF;  // 11-bit value (standard can ID max)
+
+        Logger               log(Logger::ProgramLayer_E::TOP, "PDS_DISCOVERY");
+        std::vector<canId_t> ids;
+
+        if (candle == nullptr)
+        {
+            log.error("Candle is empty!");
+            return std::vector<canId_t>();
+        }
+
+        log.info("Looking for PDS");
+        version_ut ver;
+
+        for (canId_t id = MIN_VAILID_ID; id < MAX_VAILID_ID; id++)
+        {
+            log.debug("Trying to bind PDS with id %d", id);
+            log.progress(float(id) / float(MAX_VAILID_ID));
+            // workaround for ping error spam
+            Logger::Verbosity_E prevVerbosity =
+                Logger::g_m_verbosity.value_or(Logger::Verbosity_E::VERBOSITY_1);
+            Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
+            Pds pds(id, candle);
+            if (pds.getFwVersion(ver) == Pds::error_E::OK)
+                ids.push_back(id);
+
+            Logger::g_m_verbosity = prevVerbosity;
+        }
+        for (canId_t id : ids)
+        {
+            log.info("Discovered PDS device with ID: %d", id);
+        }
+        if (ids.size() > 0)
+            return ids;
+
+        log.warn("Have not found any PDS devices on the CAN bus!");
+        return ids;
+    }
+
     u16 Pds::getCanId()
     {
         return m_rootCanId;

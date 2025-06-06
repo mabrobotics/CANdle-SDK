@@ -33,8 +33,7 @@ PdsCli::PdsCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleBui
 
     m_pdsCmd = m_rootCli.add_subcommand("pds", "Tweak the PDS device");
 
-    m_pdsCmd->add_option("<CAN_ID>", m_canId, "MAB FD-CAN protocol :: Target device ID")
-        ->required();
+    m_pdsCmd->add_option("-i,--id", m_canId, "MAB FD-CAN protocol :: Target device ID")->required();
 
     m_infoCmd = m_pdsCmd->add_subcommand("info", "Display debug info about PDS device");
 
