@@ -1,5 +1,6 @@
 #pragma once
 
+#include <CLI/App.hpp>
 #include "CLI/CLI.hpp"
 #include "mab_types.hpp"
 #include "pds_types.hpp"
@@ -25,6 +26,8 @@ class PdsCli
     CLI::App* m_pdsCmd = nullptr;
 
     CLI::App* m_infoCmd = nullptr;
+
+    CLI::App* m_discovery = nullptr;
 
     // "can" commands node
     CLI::App*    m_canCmd         = nullptr;

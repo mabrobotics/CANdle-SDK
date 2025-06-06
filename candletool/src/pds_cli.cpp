@@ -1,3 +1,4 @@
+#include "candle.hpp"
 #include "pds.hpp"
 #include "ui.hpp"
 #include "pds_cli.hpp"
@@ -33,12 +34,18 @@ PdsCli::PdsCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleBui
 
     m_pdsCmd = m_rootCli.add_subcommand("pds", "Tweak the PDS device");
 
-    m_pdsCmd->add_option("-i,--id", m_canId, "MAB FD-CAN protocol :: Target device ID")->required();
+    auto id_opt =
+        m_pdsCmd->add_option("-i,--id", m_canId, "MAB FD-CAN protocol :: Target device ID");
 
-    m_infoCmd = m_pdsCmd->add_subcommand("info", "Display debug info about PDS device");
+    m_discovery = m_pdsCmd->add_subcommand("discover", "Find PDS on the bus");
 
-    m_canCmd   = m_pdsCmd->add_subcommand("can", "Manage CAN parameters of the PDS device");
-    m_canIdCmd = m_canCmd->add_subcommand("id", "Set the CAN ID of the PDS device");
+    m_infoCmd =
+        m_pdsCmd->add_subcommand("info", "Display debug info about PDS device")->needs(id_opt);
+
+    m_canCmd =
+        m_pdsCmd->add_subcommand("can", "Manage CAN parameters of the PDS device")->needs(id_opt);
+
+    m_canIdCmd = m_canCmd->add_subcommand("id", "Set the CAN ID of the PDS device")->needs(id_opt);
 
     m_canIdCmdOption = m_canIdCmd->add_option("<NEW_CAN_ID>", m_newCanId, "New CAN ID")->required();
 
@@ -47,74 +54,89 @@ PdsCli::PdsCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleBui
     m_canBaudCmdOption =
         m_canBaudCmd->add_option("<NEW_CAN_BAUD>", m_canBaudrate, "New CAN Baudrate")->required();
 
-    m_canTimeoutCmd = m_canCmd->add_subcommand(
-        "timeout", "Set the CAN timeout of the PDS device ( Or read if no args )");
+    m_canTimeoutCmd =
+        m_canCmd
+            ->add_subcommand("timeout",
+                             "Set the CAN timeout of the PDS device ( Or read if no args )")
+            ->needs(id_opt);
 
     m_canTimeoutCmdOption =
         m_canTimeoutCmd->add_option("<NEW_CAN_TIMEOUT>", m_canBaudrate, "New CAN Timeout");
 
     m_configSetupCmd =
-        m_pdsCmd->add_subcommand("setup_cfg", "Configure PDS device with the .cfg file");
+        m_pdsCmd->add_subcommand("setup_cfg", "Configure PDS device with the .cfg file")
+            ->needs(id_opt);
 
     m_configSetupCmd->add_option("<config_file>", m_cfgFilePath, "PDS configuration .cfg file.")
         ->required();
 
-    m_interactiveSetupCmd = m_pdsCmd->add_subcommand("setup_interactive", "Interactive setup");
+    m_interactiveSetupCmd =
+        m_pdsCmd->add_subcommand("setup_interactive", "Interactive setup")->needs(id_opt);
 
     m_configReadCmd =
-        m_pdsCmd->add_subcommand("read_cfg", "Read device configuration and save to file");
+        m_pdsCmd->add_subcommand("read_cfg", "Read device configuration and save to file")
+            ->needs(id_opt);
 
     m_configReadCmd->add_option("<config_file>", m_cfgFilePath, "PDS configuration .cfg file.")
         ->required();
 
     m_configSaveCmd =
-        m_pdsCmd->add_subcommand("save", "Store current configuration in device memory");
+        m_pdsCmd->add_subcommand("save", "Store current configuration in device memory")
+            ->needs(id_opt);
 
-    m_setCanIdCmd =
-        m_pdsCmd->add_subcommand("set_can_id", "Assign new FD CAN ID to the PDS device");
+    m_setCanIdCmd = m_pdsCmd->add_subcommand("set_can_id", "Assign new FD CAN ID to the PDS device")
+                        ->needs(id_opt);
 
     m_setCanIdCmd->add_option("<NEW_CAN_ID>", m_newCanId, "New CAN ID")->required();
 
     m_setCanBaudCmd =
-        m_pdsCmd->add_subcommand("set_can_baud", "Assign new FD CAN Baudrate to the PDS device");
+        m_pdsCmd->add_subcommand("set_can_baud", "Assign new FD CAN Baudrate to the PDS device")
+            ->needs(id_opt);
 
     m_setCanBaudCmd->add_option("<NEW_CAN_BAUD>", m_canBaudrate, "New CAN Baudrate")->required();
 
     m_setBatteryLevelCmd =
-        m_pdsCmd->add_subcommand("set_battery_level", "Set the battery voltage levels");
+        m_pdsCmd->add_subcommand("set_battery_level", "Set the battery voltage levels")
+            ->needs(id_opt);
 
     m_setBatteryLevelCmd->add_option("<level1>", m_batteryLevel1, "Battery voltage level 1")
         ->required();
     m_setBatteryLevelCmd->add_option("<level2>", m_batteryLevel2, "Battery voltage level 2")
         ->required();
 
-    m_setShutdownTimeCmd = m_pdsCmd->add_subcommand("set_shutdown_time", "Set the shutdown time");
+    m_setShutdownTimeCmd =
+        m_pdsCmd->add_subcommand("set_shutdown_time", "Set the shutdown time")->needs(id_opt);
 
     m_setShutdownTimeCmd->add_option("<time>", m_shutdownTime, "Shutdown time in ms")->required();
 
     m_ctrlSetBrCmd =
-        m_pdsCmd->add_subcommand("set_br", "Bind PS with the Brake Resistor at given Socket index");
+        m_pdsCmd->add_subcommand("set_br", "Bind PS with the Brake Resistor at given Socket index")
+            ->needs(id_opt);
     m_ctrlSetBrCmd->add_option("<socket_index>", m_brSocket, "Brake Resistor Socket index")
         ->required();
 
-    m_ctrlGetBrCmd = m_pdsCmd->add_subcommand("get_br", "Get the Brake Resistor Socket index");
+    m_ctrlGetBrCmd =
+        m_pdsCmd->add_subcommand("get_br", "Get the Brake Resistor Socket index")->needs(id_opt);
 
     m_ctrlSetBrTriggerCmd =
-        m_pdsCmd->add_subcommand("set_br_trigger", "Set the Brake Resistor Trigger Voltage");
+        m_pdsCmd->add_subcommand("set_br_trigger", "Set the Brake Resistor Trigger Voltage")
+            ->needs(id_opt);
 
     m_ctrlSetBrTriggerCmd->add_option(
         "<br_trigger>", m_brTrigger, "Brake Resistor Trigger Voltage");
 
     m_ctrlGetBrTriggerCmd =
-        m_pdsCmd->add_subcommand("get_br_trigger", "Get the Brake Resistor Trigger Voltage");
+        m_pdsCmd->add_subcommand("get_br_trigger", "Get the Brake Resistor Trigger Voltage")
+            ->needs(id_opt);
 
     m_ctrlGetBrTriggerCmd->add_option("<br_trigger>", m_brTrigger, "Brake Resistor Trigger Voltage")
         ->required();
 
-    m_disableCmd = m_pdsCmd->add_subcommand("disable", "Disable the PDS device");
+    m_disableCmd = m_pdsCmd->add_subcommand("disable", "Disable the PDS device")->needs(id_opt);
 
     // POWER STAGE commands set
-    m_powerStageCmd = m_pdsCmd->add_subcommand("ps", "Manage the Power Stage submodule");
+    m_powerStageCmd =
+        m_pdsCmd->add_subcommand("ps", "Manage the Power Stage submodule")->needs(id_opt);
 
     m_powerStageCmd
         ->add_option("<socket_index>", m_submoduleSocketNumber, "Submodule socket number")
@@ -180,7 +202,8 @@ PdsCli::PdsCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleBui
 
     // BRAKE RESISTOR commands set
 
-    m_brakeResistorCmd = m_pdsCmd->add_subcommand("br", "Manage the Brake Resistor submodule");
+    m_brakeResistorCmd =
+        m_pdsCmd->add_subcommand("br", "Manage the Brake Resistor submodule")->needs(id_opt);
 
     m_brakeResistorCmd
         ->add_option("<socket_index>", m_submoduleSocketNumber, "Submodule socket number")
@@ -202,7 +225,7 @@ PdsCli::PdsCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleBui
     // ISOLATED CONVERTER commands set
 
     m_isolatedConverterCmd =
-        m_pdsCmd->add_subcommand("ic", "Manage the Isolated Converter submodule");
+        m_pdsCmd->add_subcommand("ic", "Manage the Isolated Converter submodule")->needs(id_opt);
 
     m_isolatedConverterCmd
         ->add_option("<socket_index>", m_submoduleSocketNumber, "Submodule socket number")
@@ -297,6 +320,22 @@ void PdsCli::parse()
         if (m_infoCmd->parsed())
         {
             pdsSetupInfo();
+        }
+
+        else if (m_discovery->parsed())
+        {
+            auto candle = m_candleBuilder->build();
+            if (!candle.has_value())
+            {
+                m_log.error("Could not connect candle!");
+            }
+            auto ids = Pds::discoverPDS(candle.value());
+            if (ids.empty())
+                m_log.error("No PDS found on this datarate!");
+            for (const auto& id : ids)
+            {
+                m_log.success("Found PDS with ID %d", id);
+            }
         }
 
         else if (m_canCmd->parsed())
