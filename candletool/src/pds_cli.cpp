@@ -422,6 +422,10 @@ void PdsCli::parse()
                     m_log.warn("Setting CAN timeout is not implemented yet");
                 }
             }
+            else
+            {
+                m_log.error("No can change specified!");
+            }
         }
 
         else if (m_configSetupCmd->parsed())
@@ -692,9 +696,9 @@ void PdsCli::powerStageCmdParse(void)
         else
         {
             m_log.info("Status:");
-            m_log.info("\t* ENABLED           [ %s ]", psStatus.ENABLED ? "YES" : "NO");
-            m_log.info("\t* OVER_TEMPERATURE  [ %s ]", psStatus.OVER_TEMPERATURE ? "YES" : "NO");
-            m_log.info("\t* OVER_CURRENT      [ %s ]", psStatus.OVER_CURRENT ? "YES" : "NO");
+            m_log.info("  * ENABLED           [ %s ]", psStatus.ENABLED ? "YES" : "NO");
+            m_log.info("  * OVER_TEMPERATURE  [ %s ]", psStatus.OVER_TEMPERATURE ? "YES" : "NO");
+            m_log.info("  * OVER_CURRENT      [ %s ]", psStatus.OVER_CURRENT ? "YES" : "NO");
         }
 
         m_log.info("Measurements:");
@@ -704,21 +708,21 @@ void PdsCli::powerStageCmdParse(void)
             m_log.error("Power Stage get output voltage failed [ %s ]",
                         PdsModule::error2String(result));
         else
-            m_log.info("\t* Output voltage [ %0.2f ]", busVoltage / 1000.0f);
+            m_log.info("  * Output voltage [ %0.2f ]", busVoltage / 1000.0f);
 
         result = ps->getLoadCurrent(current);
         if (result != PdsModule::error_E::OK)
             m_log.error("Power Stage get load current failed [ %s ]",
                         PdsModule::error2String(result));
         else
-            m_log.info("\t* Load current [ %0.2f ]", current / 1000.0f);
+            m_log.info("  * Load current [ %0.2f ]", current / 1000.0f);
 
         result = ps->getTemperature(temperature);
         if (result != PdsModule::error_E::OK)
             m_log.error("Power Stage get temperature failed [ %s ]",
                         PdsModule::error2String(result));
         else
-            m_log.info("\t* Temperature [ %0.2f ]", temperature);
+            m_log.info("  * Temperature [ %0.2f ]", temperature);
 
         m_log.info("Configuration:");
 
@@ -726,20 +730,20 @@ void PdsCli::powerStageCmdParse(void)
         if (result != PdsModule::error_E::OK)
             m_log.error("Power Stage get OVC level failed [ %s ]", PdsModule::error2String(result));
         else
-            m_log.info("\t* OVC level [ %u ]", ovcLevel);
+            m_log.info("  * OVC level [ %u ]", ovcLevel);
 
         result = ps->getOcdDelay(ovcDelay);
         if (result != PdsModule::error_E::OK)
             m_log.error("Power Stage get OVC delay failed [ %s ]", PdsModule::error2String(result));
         else
-            m_log.info("\t* OVC delay [ %u ]", ovcDelay);
+            m_log.info("  * OVC delay [ %u ]", ovcDelay);
 
         result = ps->getTemperatureLimit(temperatureLimit);
         if (result != PdsModule::error_E::OK)
             m_log.error("Power Stage get temperature limit failed [ %s ]",
                         PdsModule::error2String(result));
         else
-            m_log.info("\t* Temperature limit [ %0.2f ]", temperatureLimit);
+            m_log.info("  * Temperature limit [ %0.2f ]", temperatureLimit);
 
         result = ps->getBindBrakeResistor(brSocket);
         if (result != PdsModule::error_E::OK)
@@ -748,9 +752,9 @@ void PdsCli::powerStageCmdParse(void)
         else
         {
             if (brSocket == socketIndex_E::UNASSIGNED)
-                m_log.info("\t* Brake resistor is not set");
+                m_log.info("  * Brake resistor is not set");
             else
-                m_log.info("\t* Brake resistor socket [ %u ]", (u8)brSocket);
+                m_log.info("  * Brake resistor socket [ %u ]", (u8)brSocket);
         }
 
         if (brSocket != socketIndex_E::UNASSIGNED)
@@ -760,7 +764,7 @@ void PdsCli::powerStageCmdParse(void)
                 m_log.error("Power Stage get brake resistor trigger voltage failed [ %s ]",
                             PdsModule::error2String(result));
             else
-                m_log.info("\t* Brake resistor trigger voltage [ %u ]", brTrigger);
+                m_log.info("  * Brake resistor trigger voltage [ %u ]", brTrigger);
         }
 
         result = ps->getAutostart(autoStart);
@@ -768,7 +772,7 @@ void PdsCli::powerStageCmdParse(void)
             m_log.error("Reading Power Stage autostart filed failed [ %s ]",
                         PdsModule::error2String(result));
         else
-            m_log.info("\t* Autostart [ %s ]", autoStart ? "ENABLED" : "DISABLED");
+            m_log.info("  * Autostart [ %s ]", autoStart ? "ENABLED" : "DISABLED");
     }
 
     else if (m_psEnableCmd->parsed())
@@ -995,8 +999,8 @@ void PdsCli::brakeResistorCmdParse(void)
         else
         {
             m_log.info("Status:");
-            m_log.info("\t* ENABLED           [ %s ]", brStatus.ENABLED ? "YES" : "NO");
-            m_log.info("\t* OVER_TEMPERATURE  [ %s ]", brStatus.OVER_TEMPERATURE ? "YES" : "NO");
+            m_log.info("  * ENABLED           [ %s ]", brStatus.ENABLED ? "YES" : "NO");
+            m_log.info("  * OVER_TEMPERATURE  [ %s ]", brStatus.OVER_TEMPERATURE ? "YES" : "NO");
         }
 
         m_log.info("Measurements:");
@@ -1005,7 +1009,7 @@ void PdsCli::brakeResistorCmdParse(void)
             m_log.error("Brake Resistor get temperature failed [ %s ]",
                         PdsModule::error2String(result));
         else
-            m_log.info("\t* Temperature [ %0.2f ]", temperature);
+            m_log.info("  * Temperature [ %0.2f ]", temperature);
 
         m_log.info("Configuration:");
         result = br->getTemperatureLimit(temperatureLimit);
@@ -1013,7 +1017,7 @@ void PdsCli::brakeResistorCmdParse(void)
             m_log.error("Brake Resistor get temperature limit failed [ %s ]",
                         PdsModule::error2String(result));
         else
-            m_log.info("\t* Temperature limit [ %0.2f ]", temperatureLimit);
+            m_log.info("  * Temperature limit [ %0.2f ]", temperatureLimit);
     }
 
     else if (m_brSetTempLimitCmd->parsed())
@@ -1107,8 +1111,8 @@ void PdsCli::isolatedConverterCmdParse(void)
         else
         {
             m_log.info("Status:");
-            m_log.info("\t* ENABLED           [ %s ]", icStatus.ENABLED ? "YES" : "NO");
-            m_log.info("\t* OVER_TEMPERATURE  [ %s ]", icStatus.OVER_TEMPERATURE ? "YES" : "NO");
+            m_log.info("  * ENABLED           [ %s ]", icStatus.ENABLED ? "YES" : "NO");
+            m_log.info("  * OVER_TEMPERATURE  [ %s ]", icStatus.OVER_TEMPERATURE ? "YES" : "NO");
         }
 
         m_log.info("Measurements:");
@@ -1118,21 +1122,21 @@ void PdsCli::isolatedConverterCmdParse(void)
             m_log.error("Isolated Converter get output voltage failed [ %s ]",
                         PdsModule::error2String(result));
         else
-            m_log.info("\t* Output voltage [ %0.2f ]", busVoltage / 1000.0f);
+            m_log.info("  * Output voltage [ %0.2f ]", busVoltage / 1000.0f);
 
         result = ic->getLoadCurrent(current);
         if (result != PdsModule::error_E::OK)
             m_log.error("Isolated Converter get load current failed [ %s ]",
                         PdsModule::error2String(result));
         else
-            m_log.info("\t* Load current [ %0.2f ]", current / 1000.0f);
+            m_log.info("  * Load current [ %0.2f ]", current / 1000.0f);
 
         result = ic->getTemperature(temperature);
         if (result != PdsModule::error_E::OK)
             m_log.error("Isolated Converter get temperature failed [ %s ]",
                         PdsModule::error2String(result));
         else
-            m_log.info("\t* Temperature [ %0.2f ]", temperature);
+            m_log.info("  * Temperature [ %0.2f ]", temperature);
 
         m_log.info("Configuration:");
 
@@ -1141,21 +1145,21 @@ void PdsCli::isolatedConverterCmdParse(void)
             m_log.error("Isolated Converter get OVC level failed [ %s ]",
                         PdsModule::error2String(result));
         else
-            m_log.info("\t* OVC level [ %u ]", ovcLevel);
+            m_log.info("  * OVC level [ %u ]", ovcLevel);
 
         result = ic->getOcdDelay(ovcDelay);
         if (result != PdsModule::error_E::OK)
             m_log.error("Isolated Converter get OVC delay failed [ %s ]",
                         PdsModule::error2String(result));
         else
-            m_log.info("\t* OVC delay [ %u ]", ovcDelay);
+            m_log.info("  * OVC delay [ %u ]", ovcDelay);
 
         result = ic->getTemperatureLimit(temperatureLimit);
         if (result != PdsModule::error_E::OK)
             m_log.error("Isolated Converter get temperature limit failed [ %s ]",
                         PdsModule::error2String(result));
         else
-            m_log.info("\t* Temperature limit [ %0.2f ]", temperatureLimit);
+            m_log.info("  * Temperature limit [ %0.2f ]", temperatureLimit);
     }
 
     else if (m_icEnableCmd->parsed())
@@ -1309,42 +1313,42 @@ void PdsCli::pdsSetupInfo()
     m_log.info("Power Distribution Module");
 
     m_log.info("Submodules:");
-    m_log.info("\t1 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket1));
-    m_log.info("\t2 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket2));
-    m_log.info("\t3 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket3));
-    m_log.info("\t4 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket4));
-    m_log.info("\t5 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket5));
-    m_log.info("\t6 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket6));
+    m_log.info("  1 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket1));
+    m_log.info("  2 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket2));
+    m_log.info("  3 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket3));
+    m_log.info("  4 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket4));
+    m_log.info("  5 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket5));
+    m_log.info("  6 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket6));
 
     m_log.info("PDS Status:");
 
-    m_log.info("\t* ENABLED           [ %s ]", pdsStatus.ENABLED ? "YES" : "NO");
-    m_log.info("\t* OVER_TEMPERATURE  [ %s ]", pdsStatus.OVER_TEMPERATURE ? "YES" : "NO");
-    // m_log.info("\t* OVER_CURRENT      [ %s ]", pdsStatus.OVER_CURRENT ? "YES" : "NO");
-    m_log.info("\t* STO_1             [ %s ]", pdsStatus.STO_1 ? "YES" : "NO");
-    m_log.info("\t* STO_2             [ %s ]", pdsStatus.STO_2 ? "YES" : "NO");
-    m_log.info("\t* FDCAN_TIMEOUT     [ %s ]", pdsStatus.FDCAN_TIMEOUT ? "YES" : "NO");
-    m_log.info("\t* SUBMODULE_1_ERROR [ %s ]", pdsStatus.SUBMODULE_1_ERROR ? "YES" : "NO");
-    m_log.info("\t* SUBMODULE_2_ERROR [ %s ]", pdsStatus.SUBMODULE_2_ERROR ? "YES" : "NO");
-    m_log.info("\t* SUBMODULE_3_ERROR [ %s ]", pdsStatus.SUBMODULE_3_ERROR ? "YES" : "NO");
-    m_log.info("\t* SUBMODULE_4_ERROR [ %s ]", pdsStatus.SUBMODULE_4_ERROR ? "YES" : "NO");
-    m_log.info("\t* SUBMODULE_5_ERROR [ %s ]", pdsStatus.SUBMODULE_5_ERROR ? "YES" : "NO");
-    m_log.info("\t* SUBMODULE_6_ERROR [ %s ]", pdsStatus.SUBMODULE_6_ERROR ? "YES" : "NO");
-    m_log.info("\t* CHARGER_DETECTED  [ %s ]", pdsStatus.CHARGER_DETECTED ? "YES" : "NO");
+    m_log.info("  * ENABLED           [ %s ]", pdsStatus.ENABLED ? "YES" : "NO");
+    m_log.info("  * OVER_TEMPERATURE  [ %s ]", pdsStatus.OVER_TEMPERATURE ? "YES" : "NO");
+    // m_log.info("  * OVER_CURRENT      [ %s ]", pdsStatus.OVER_CURRENT ? "YES" : "NO");
+    m_log.info("  * STO_1             [ %s ]", pdsStatus.STO_1 ? "YES" : "NO");
+    m_log.info("  * STO_2             [ %s ]", pdsStatus.STO_2 ? "YES" : "NO");
+    m_log.info("  * FDCAN_TIMEOUT     [ %s ]", pdsStatus.FDCAN_TIMEOUT ? "YES" : "NO");
+    m_log.info("  * SUBMODULE_1_ERROR [ %s ]", pdsStatus.SUBMODULE_1_ERROR ? "YES" : "NO");
+    m_log.info("  * SUBMODULE_2_ERROR [ %s ]", pdsStatus.SUBMODULE_2_ERROR ? "YES" : "NO");
+    m_log.info("  * SUBMODULE_3_ERROR [ %s ]", pdsStatus.SUBMODULE_3_ERROR ? "YES" : "NO");
+    m_log.info("  * SUBMODULE_4_ERROR [ %s ]", pdsStatus.SUBMODULE_4_ERROR ? "YES" : "NO");
+    m_log.info("  * SUBMODULE_5_ERROR [ %s ]", pdsStatus.SUBMODULE_5_ERROR ? "YES" : "NO");
+    m_log.info("  * SUBMODULE_6_ERROR [ %s ]", pdsStatus.SUBMODULE_6_ERROR ? "YES" : "NO");
+    m_log.info("  * CHARGER_DETECTED  [ %s ]", pdsStatus.CHARGER_DETECTED ? "YES" : "NO");
 
     m_log.info("---------------------------------");
 
     m_log.info("Config data:");
-    m_log.info("\t* shutdown time: [ %u mS ] ", shutdownTime);
-    m_log.info("\t* Battery level 1: [ %0.2f V ]", batteryLvl1 / 1000.0f);
-    m_log.info("\t* Battery level 2: [ %0.2f V ]", batteryLvl2 / 1000.0f);
+    m_log.info("  * shutdown time: [ %u mS ] ", shutdownTime);
+    m_log.info("  * Battery level 1: [ %0.2f V ]", batteryLvl1 / 1000.0f);
+    m_log.info("  * Battery level 2: [ %0.2f V ]", batteryLvl2 / 1000.0f);
 
     if (brSocket == socketIndex_E::UNASSIGNED)
-        m_log.info("\t* Brake resistor is not set");
+        m_log.info("  * Brake resistor is not set");
     else
     {
-        m_log.info("\t* Brake resistor socket [ %u ]", (u8)brSocket);
-        m_log.info("\t* Brake resistor trigger voltage [ %0.2f V ]", brTrigger / 1000.0f);
+        m_log.info("  * Brake resistor socket [ %u ]", (u8)brSocket);
+        m_log.info("  * Brake resistor trigger voltage [ %0.2f V ]", brTrigger / 1000.0f);
     }
 
     m_log.info("---------------------------------");
@@ -1372,18 +1376,17 @@ static void fillPsIni(PowerStage& ps, mINI::INIStructure& rIni, std::string sect
 
     rIni[sectionName][TYPE_INI_KEY] = PdsModule::mType2Str(moduleType_E::POWER_STAGE);
     rIni[sectionName][TEMP_LIMIT_INI_KEY] =
-        prettyFloatToString(temperatureLimit) + "\t; Temperature limit [ ^C ]";
+        prettyFloatToString(temperatureLimit) + "  ; Temperature limit [ ^C ]";
     rIni[sectionName][OCD_LEVEL_INI_KEY] =
-        prettyFloatToString(ocdLevel, true) + "\t\t; Over-current detection level [ mA ]";
+        prettyFloatToString(ocdLevel, true) + "  ; Over-current detection level [ mA ]";
     rIni[sectionName][OCD_DELAY_INI_KEY] =
-        prettyFloatToString(ocdDelay, true) + "\t\t; Over-current detection delay [ ms ]";
+        prettyFloatToString(ocdDelay, true) + "  ; Over-current detection delay [ ms ]";
     rIni[sectionName][BR_SOCKET_INI_KEY] =
         prettyFloatToString((uint8_t)brSocket, true) +
-        "\t\t\t; Socket index where corresponding Brake Resistor is connected";
+        "  ; Socket index where corresponding Brake Resistor is connected";
     rIni[sectionName][BR_TRIG_V_INI_KEY] =
-        prettyFloatToString(brTriggerVoltage, true) + "\t; Brake resistor trigger voltage [ mV ]";
-    rIni[sectionName][AUTOSTART_INI_KEY] =
-        std::string(autoStart ? "ON" : "OFF") + "\t\t\t; Autostart [ ON | OFF ]";
+        prettyFloatToString(brTriggerVoltage, true) + "  ; Brake resistor trigger voltage [ mV ]";
+    rIni[sectionName][AUTOSTART_INI_KEY] = std::string(autoStart ? "ON" : "OFF");
 }
 
 // Fill Brake resistor Ini structure
@@ -1395,7 +1398,7 @@ static void fillBrIni(BrakeResistor& br, mINI::INIStructure& rIni, std::string s
 
     rIni[sectionName][TYPE_INI_KEY] = PdsModule::mType2Str(moduleType_E::BRAKE_RESISTOR);
     rIni[sectionName][TEMP_LIMIT_INI_KEY] =
-        prettyFloatToString(temperatureLimit) + "\t; Temperature limit [ ^C ]";
+        prettyFloatToString(temperatureLimit) + "  ; Temperature limit [ ^C ]";
 }
 
 // Fill Isolated Converter Ini structure
@@ -1411,11 +1414,11 @@ static void fillIcIni(IsolatedConv& ic, mINI::INIStructure& rIni, std::string se
 
     rIni[sectionName][TYPE_INI_KEY] = PdsModule::mType2Str(moduleType_E::ISOLATED_CONVERTER);
     rIni[sectionName][TEMP_LIMIT_INI_KEY] =
-        prettyFloatToString(temperatureLimit) + "\t; Temperature limit [ ^C ]";
+        prettyFloatToString(temperatureLimit) + "  ; Temperature limit [ ^C ]";
     rIni[sectionName][OCD_LEVEL_INI_KEY] =
-        prettyFloatToString(ocdLevel, true) + "\t\t; Over-current detection level [ mA ]";
+        prettyFloatToString(ocdLevel, true) + "  ; Over-current detection level [ mA ]";
     rIni[sectionName][OCD_DELAY_INI_KEY] =
-        prettyFloatToString(ocdDelay, true) + "\t\t; Over-current detection delay [ ms ]";
+        prettyFloatToString(ocdDelay, true) + "  ; Over-current detection delay [ ms ]";
 }
 
 static void fullModuleIni(Pds&                pds,
@@ -1480,9 +1483,9 @@ std::optional<bool> parseBooleanIniField(std::string_view input)
     std::transform(
         lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return std::tolower(c); });
 
-    if (lower == "on")
+    if (lower == "on" || lower == "ON")
         return true;
-    if (lower == "off")
+    if (lower == "off" || lower == "OFF")
         return false;
 
     return std::nullopt;
@@ -1649,14 +1652,14 @@ void PdsCli::setupCtrlConfig(mINI::INIMap<std::string>& iniMap)
 
 void PdsCli::setupModuleCfg(moduleType_E type, socketIndex_E si, mINI::INIMap<std::string>& iniMap)
 {
+    auto pds = getPDS(m_canId);
+    if (pds == nullptr)
+    {
+        m_log.error("Could not initialize PDS!");
+        return;
+    }
     if (type == moduleType_E::POWER_STAGE)
     {
-        auto pds = getPDS(m_canId);
-        if (pds == nullptr)
-        {
-            m_log.error("Could not initialize PDS!");
-            return;
-        }
         auto powerStage = pds->attachPowerStage(si);
         if (powerStage == nullptr)
         {
@@ -1670,12 +1673,6 @@ void PdsCli::setupModuleCfg(moduleType_E type, socketIndex_E si, mINI::INIMap<st
 
     if (type == moduleType_E::ISOLATED_CONVERTER)
     {
-        auto pds = getPDS(m_canId);
-        if (pds == nullptr)
-        {
-            m_log.error("Could not initialize PDS!");
-            return;
-        }
         auto isolatedConverter = pds->attachIsolatedConverter(si);
         if (isolatedConverter == nullptr)
         {
@@ -1689,12 +1686,6 @@ void PdsCli::setupModuleCfg(moduleType_E type, socketIndex_E si, mINI::INIMap<st
 
     if (type == moduleType_E::BRAKE_RESISTOR)
     {
-        auto pds = getPDS(m_canId);
-        if (pds == nullptr)
-        {
-            m_log.error("Could not initialize PDS!");
-            return;
-        }
         auto brakeResistor = pds->attachBrakeResistor(si);
         if (brakeResistor == nullptr)
         {
@@ -1805,8 +1796,7 @@ void PdsCli::setupPsCfg(PowerStage& ps, mINI::INIMap<std::string>& iniMap)
     if (iniMap.has(AUTOSTART_INI_KEY))
     {
         m_log.debug("Autostart field found with value [ %s ]", iniMap[AUTOSTART_INI_KEY].c_str());
-        std::optional<bool> autostart =
-            parseBooleanIniField(std::string_view(iniMap[AUTOSTART_INI_KEY].c_str()));
+        std::optional<bool> autostart = parseBooleanIniField(iniMap[AUTOSTART_INI_KEY]);
         if (autostart.has_value())
         {
             m_log.debug("Autostart field found with value [ %s ]",
@@ -1821,7 +1811,7 @@ void PdsCli::setupPsCfg(PowerStage& ps, mINI::INIMap<std::string>& iniMap)
         else
         {
             m_log.error("Given Autostart [ %s ] is INVALID! Acceptable values are: ON, OFF",
-                        iniMap[AUTOSTART_INI_KEY]);
+                        iniMap[AUTOSTART_INI_KEY].c_str());
         }
     }
 }
@@ -2008,16 +1998,16 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
     readIni[CONTROL_BOARD_INI_SECTION][CAN_ID_INI_KEY]   = prettyFloatToString(m_canId, true);
     readIni[CONTROL_BOARD_INI_SECTION][CAN_BAUD_INI_KEY] = baudrateToString(pds->getCanBaudrate());
     readIni[CONTROL_BOARD_INI_SECTION][SHUTDOWN_TIME_INI_KEY] =
-        prettyFloatToString(shutDownTime, true) + "\t\t; Shutdown time [ ms ]";
+        prettyFloatToString(shutDownTime, true) + "  ; Shutdown time [ ms ]";
     readIni[CONTROL_BOARD_INI_SECTION][BATT_LVL_1_INI_KEY] =
-        prettyFloatToString(batLvl1, true) + "\t\t; Battery monitor lvl 1 [ mV ]";
+        prettyFloatToString(batLvl1, true) + "  ; Battery monitor lvl 1 [ mV ]";
     readIni[CONTROL_BOARD_INI_SECTION][BATT_LVL_2_INI_KEY] =
-        prettyFloatToString(batLvl2, true) + "\t\t; Battery monitor lvl 2 [ mV ]";
+        prettyFloatToString(batLvl2, true) + "  ; Battery monitor lvl 2 [ mV ]";
     readIni[CONTROL_BOARD_INI_SECTION][BR_SOCKET_INI_KEY] =
         prettyFloatToString((u8)brSocket, true) +
-        "\t\t; Socket index where corresponding Brake Resistor is connected";
+        "  ; Socket index where corresponding Brake Resistor is connected";
     readIni[CONTROL_BOARD_INI_SECTION][BR_TRIG_V_INI_KEY] =
-        prettyFloatToString(brTrigger, true) + "\t\t; Brake resistor trigger voltage [ mV ]";
+        prettyFloatToString(brTrigger, true) + "  ; Brake resistor trigger voltage [ mV ]";
 
     fullModuleIni(*pds, pdsModules.moduleTypeSocket1, readIni, socketIndex_E::SOCKET_1);
     fullModuleIni(*pds, pdsModules.moduleTypeSocket2, readIni, socketIndex_E::SOCKET_2);
@@ -2071,6 +2061,13 @@ std::unique_ptr<Pds, std::function<void(Pds*)>> PdsCli::getPDS(canId_t id)
     if (pds != nullptr)
     {
         pds->init(id);
+        version_ut dump;
+        auto       trueInit = pds->getFwVersion(dump);
+        if (trueInit != Pds::error_E::OK)
+        {
+            m_log.error("PDS init failed!");
+            return nullptr;
+        }
         m_log.info("PDS - Power Distribution System :: CAN ID [ %u ]", m_canId);
     }
     return pds;
