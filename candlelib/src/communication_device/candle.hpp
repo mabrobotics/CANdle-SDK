@@ -2,6 +2,7 @@
 
 #include <array>
 #include <memory>
+#include <optional>
 #include <string_view>
 #include <vector>
 #include <utility>
@@ -68,6 +69,8 @@ namespace mab
         /// @brief Reset candle device
         /// @return Error on failure
         candleTypes::Error_t reset();
+
+        std::optional<version_ut> getCandleVersion();
 
         /// @brief Command the application to reboot into a bootloader and await commands.
         /// @param usb initialized usb interface (bootloader only works via USB)

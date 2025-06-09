@@ -2,6 +2,7 @@
 #include <memory>
 #include "candle.hpp"
 #include "candle_bootloader.hpp"
+#include "candle_cli.hpp"
 #include "candle_types.hpp"
 #include "candletool.hpp"
 #include "configHelpers.hpp"
@@ -110,8 +111,9 @@ int main(int argc, char** argv)
     // of parsers
     candleBuilder->preBuildTask = preBuildTask;
 
-    MDCli  mdCli(&app, candleBuilder);
-    PdsCli pdsCli(app, candleBuilder);
+    CandleCli candleCli(&app, candleBuilder);
+    MDCli     mdCli(&app, candleBuilder);
+    PdsCli    pdsCli(app, candleBuilder);
 
     CLI11_PARSE(app, argc, argv);
     if (showCandleSDKVersion)
