@@ -61,9 +61,12 @@ int main(int argc, char** argv)
     // Verbosity
     uint32_t verbosityMode = 0;
     bool     silentMode{false};
+    bool     showCandleSDKVersion = false;
     app.add_flag("-v{1},--verbosity{1}", verbosityMode, "Verbose modes (1,2,3)")
         ->default_val(0)
         ->expected(0, 1);
+
+    app.add_flag("--version", showCandleSDKVersion, "Show software version");
 
     app.add_flag("-s,--silent", silentMode, "Silent mode")->default_val(0);
 
@@ -111,6 +114,10 @@ int main(int argc, char** argv)
     PdsCli pdsCli(app, candleBuilder);
 
     CLI11_PARSE(app, argc, argv);
+    if (showCandleSDKVersion)
+    {
+        std::cout << "CandleSDK version: " << CANDLESDK_VERSION << "\n";
+    }
 
     std::optional<mab::CANdleBaudrate_E> baudOpt = stringToBaudrate(cmd.baud);
     if (!baudOpt.has_value())
