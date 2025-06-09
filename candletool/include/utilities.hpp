@@ -7,6 +7,7 @@
 
 namespace mab
 {
+
     constexpr std::string_view MAB_LOGO_HEADER =
         "   ___     _     _  _      _   _         _____               _ \n"
         "  / __|   /_\\   | \\| |  __| | | |  ___  |_   _|  ___   ___  | |\n"
@@ -15,6 +16,7 @@ namespace mab
         "                                                               \n"
         "For more information please refer to the manual: "
         "\033[32mhttps://mabrobotics.pl/servos/manual\033[0m \n\n";
+
     std::string trim(const std::string_view s);
 
     class MABDescriptionFormatter : public CLI::Formatter
@@ -58,5 +60,4 @@ namespace mab
                                    : std::string(MAB_LOGO_HEADER);
         }
     };
-    // static std::shared_ptr<MABDescriptionFormatter> mabDescriptionFormatter;
 }  // namespace mab

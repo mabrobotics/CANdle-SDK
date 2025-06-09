@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <memory>
+#include <string>
 #include "candle.hpp"
 #include "candle_bootloader.hpp"
 #include "candle_cli.hpp"
@@ -64,12 +65,23 @@ int main(int argc, char** argv)
     bool     silentMode{false};
     bool     showCandleSDKVersion = false;
     app.add_flag("-v{1},--verbosity{1}", verbosityMode, "Verbose modes (1,2,3)")
-        ->default_val(0)
-        ->expected(0, 1);
+        ->expected(0, 1)
+        ->check(
+            [](const std::string& input) -> std::string
+            {
+                Logger::g_m_verbosity = Logger::Verbosity_E(std::stoi(input));
+                return std::string();
+            });
 
     app.add_flag("--version", showCandleSDKVersion, "Show software version");
 
-    app.add_flag("-s,--silent", silentMode, "Silent mode")->default_val(0);
+    app.add_flag("-s,--silent", silentMode, "Silent mode")
+        ->check(
+            [](const std::string& input) -> std::string
+            {
+                Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
+                return std::string();
+            });
 
     std::string logPath = "";
     app.add_flag("--log", logPath, "Redirect output to file")->default_val("")->expected(1);
@@ -140,14 +152,6 @@ int main(int argc, char** argv)
 
     // TODO: make use of busType and baudrate options when creating Candle object within CandleTool
     // Pds pds(cmd.id, candleTool.getCandle());
-
-    // set global verbosity for loggers
-    if (silentMode)
-        Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
-    else if (verbosityMode < static_cast<uint32_t>(Logger::Verbosity_E::SILENT))
-        Logger::g_m_verbosity = static_cast<Logger::Verbosity_E>(verbosityMode);
-    else
-        throw std::runtime_error("Verbosity outside of range");
 
     // redirect logger if asked for
     if (logPath != "")
