@@ -54,15 +54,6 @@ PdsCli::PdsCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleBui
     m_canBaudCmdOption =
         m_canBaudCmd->add_option("<NEW_CAN_BAUD>", m_canBaudrate, "New CAN Baudrate")->required();
 
-    m_canTimeoutCmd =
-        m_canCmd
-            ->add_subcommand("timeout",
-                             "Set the CAN timeout of the PDS device ( Or read if no args )")
-            ->needs(id_opt);
-
-    m_canTimeoutCmdOption =
-        m_canTimeoutCmd->add_option("<NEW_CAN_TIMEOUT>", m_canBaudrate, "New CAN Timeout");
-
     m_configSetupCmd =
         m_pdsCmd->add_subcommand("setup_cfg", "Configure PDS device with the .cfg file")
             ->needs(id_opt);
@@ -84,17 +75,6 @@ PdsCli::PdsCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleBui
         m_pdsCmd->add_subcommand("save", "Store current configuration in device memory")
             ->needs(id_opt);
 
-    m_setCanIdCmd = m_pdsCmd->add_subcommand("set_can_id", "Assign new FD CAN ID to the PDS device")
-                        ->needs(id_opt);
-
-    m_setCanIdCmd->add_option("<NEW_CAN_ID>", m_newCanId, "New CAN ID")->required();
-
-    m_setCanBaudCmd =
-        m_pdsCmd->add_subcommand("set_can_baud", "Assign new FD CAN Baudrate to the PDS device")
-            ->needs(id_opt);
-
-    m_setCanBaudCmd->add_option("<NEW_CAN_BAUD>", m_canBaudrate, "New CAN Baudrate")->required();
-
     m_setBatteryLevelCmd =
         m_pdsCmd->add_subcommand("set_battery_level", "Set the battery voltage levels")
             ->needs(id_opt);
@@ -110,7 +90,9 @@ PdsCli::PdsCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleBui
     m_setShutdownTimeCmd->add_option("<time>", m_shutdownTime, "Shutdown time in ms")->required();
 
     m_ctrlSetBrCmd =
-        m_pdsCmd->add_subcommand("set_br", "Bind PS with the Brake Resistor at given Socket index")
+        m_pdsCmd
+            ->add_subcommand(
+                "set_br", "Bind PS with the Brake Resistor at given Socket index (0 for unbound)")
             ->needs(id_opt);
     m_ctrlSetBrCmd->add_option("<socket_index>", m_brSocket, "Brake Resistor Socket index")
         ->required();
@@ -132,7 +114,7 @@ PdsCli::PdsCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleBui
     m_ctrlGetBrTriggerCmd->add_option("<br_trigger>", m_brTrigger, "Brake Resistor Trigger Voltage")
         ->required();
 
-    m_disableCmd = m_pdsCmd->add_subcommand("disable", "Disable the PDS device")->needs(id_opt);
+    m_disableCmd = m_pdsCmd->add_subcommand("disable", "Shutdown the PDS device")->needs(id_opt);
 
     // POWER STAGE commands set
     m_powerStageCmd =
@@ -409,19 +391,6 @@ void PdsCli::parse()
                     m_log.success("Current CAN Baudrate [ %s ]", m_canBaudrate.c_str());
                 }
             }
-            else if (m_canTimeoutCmd->parsed())
-            {
-                m_log.debug("CAN Timeout command parsed");
-                if (!m_canTimeoutCmdOption->empty())
-                {
-                    // TODO:
-                    m_log.warn("Setting CAN timeout is not implemented yet");
-                }
-                else
-                {
-                    m_log.warn("Setting CAN timeout is not implemented yet");
-                }
-            }
             else
             {
                 m_log.error("No can change specified!");
@@ -449,52 +418,6 @@ void PdsCli::parse()
             pdsStoreConfig();
         }
 
-        else if (m_setCanIdCmd->parsed())
-        {
-            if (!isCanIdValid(m_newCanId))
-            {
-                m_log.error("Given CAN ID ( %u ) is invalid. Acceptable range is [ %u - %u]",
-                            m_newCanId,
-                            CAN_MIN_ID,
-                            CAN_MAX_ID);
-                return;
-            }
-
-            auto pds = getPDS(m_canId);
-            if (pds == nullptr)
-            {
-                m_log.error("Could not initialize PDS!");
-                return;
-            }
-            result = pds->setCanId(m_newCanId);
-            if (result != PdsModule::error_E::OK)
-                m_log.error("Setting CAN ID failed [ %s ]", PdsModule::error2String(result));
-            else
-                m_log.success("New CAN ID set [ %u ]", m_newCanId);
-        }
-
-        else if (m_setCanBaudCmd->parsed())
-        {
-            std::optional<CANdleBaudrate_E> baudOpt = stringToBaudrate(m_canBaudrate);
-            if (!baudOpt.has_value())
-            {
-                m_log.error("Invalid baudrate: %s", m_canBaudrate.c_str());
-                return;
-            }
-
-            auto pds = getPDS(m_canId);
-            if (pds == nullptr)
-            {
-                m_log.error("Could not initialize PDS!");
-                return;
-            }
-            result = pds->setCanBaudrate(baudOpt.value());
-            if (result != PdsModule::error_E::OK)
-                m_log.error("Setting CAN baudrate failed [ %s ]", PdsModule::error2String(result));
-            else
-                m_log.success("New CAN baudrate set [ %s ]", m_canBaudrate.c_str());
-        }
-
         else if (m_powerStageCmd->parsed())
         {
             powerStageCmdParse();
@@ -516,6 +439,11 @@ void PdsCli::parse()
             if (pds == nullptr)
             {
                 m_log.error("Could not initialize PDS!");
+                return;
+            }
+            if (m_batteryLevel1 > m_batteryLevel2)
+            {
+                m_log.error("Battery level 1 mus be lower than battery level 2!");
                 return;
             }
             result = pds->setBatteryVoltageLevels(m_batteryLevel1, m_batteryLevel2);

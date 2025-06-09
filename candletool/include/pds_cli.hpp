@@ -37,16 +37,9 @@ class PdsCli
     CLI::App*    m_canBaudCmd       = nullptr;
     CLI::Option* m_canBaudCmdOption = nullptr;
 
-    CLI::App*    m_canTimeoutCmd       = nullptr;
-    CLI::Option* m_canTimeoutCmdOption = nullptr;
-
     // "clear" commands node
     CLI::App* m_clearCmd    = nullptr;
     CLI::App* m_clearAllCmd = nullptr;
-
-    // Deprecated can comands ( But still usable )
-    CLI::App* m_setCanIdCmd   = nullptr;
-    CLI::App* m_setCanBaudCmd = nullptr;
 
     CLI::App* m_setBatteryLevelCmd = nullptr;
     CLI::App* m_setShutdownTimeCmd = nullptr;
