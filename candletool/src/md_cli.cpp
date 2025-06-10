@@ -1083,6 +1083,37 @@ namespace mab
                     m_logger.error("MD flashing failed!");
                 }
             });
+        // Version
+        auto* version = mdCLi->add_subcommand("version", "Check version of the MD device.");
+
+        version->callback(
+            [this, candleBuilder, mdCanId]()
+            {
+                auto md = getMd(mdCanId, candleBuilder);
+                if (md == nullptr)
+                {
+                    m_logger.error("Coudl not connect to MD!");
+                    return;
+                }
+                MDRegisters_S regs;
+                if (md->readRegisters(regs.firmwareVersion, regs.legacyHardwareVersion) !=
+                    MD::Error_t::OK)
+                {
+                    m_logger.error("Could not read fw and hw versions!");
+                    return;
+                }
+                version_ut fwVersion;
+                fwVersion.i = regs.firmwareVersion.value;
+                m_logger.info("FW version: %d.%d.%d(%c)",
+                              fwVersion.s.major,
+                              fwVersion.s.minor,
+                              fwVersion.s.revision,
+                              fwVersion.s.tag);
+                m_logger.info("Legacy hardware version: %s",
+                              MDLegacyHwVersion_S::toReadable(regs.legacyHardwareVersion.value)
+                                  .value_or("Unknown")
+                                  .c_str());
+            });
     }
 
     std::unique_ptr<MD, std::function<void(MD*)>> MDCli::getMd(

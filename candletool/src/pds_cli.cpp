@@ -1,4 +1,5 @@
 #include "candle.hpp"
+#include "mab_types.hpp"
 #include "pds.hpp"
 #include "ui.hpp"
 #include "pds_cli.hpp"
@@ -1208,6 +1209,8 @@ void PdsCli::pdsSetupInfo()
     u32                       batteryLvl2   = 0;
     socketIndex_E             brSocket      = socketIndex_E::UNASSIGNED;
     u32                       brTrigger     = 0;
+    moduleVersion_E           ctrlBoardVersion;
+    version_ut                fwVersion;
 
     PdsModule::error_E result = pds->getStatus(pdsStatus);
     if (result != PdsModule::error_E::OK)
@@ -1230,6 +1233,14 @@ void PdsCli::pdsSetupInfo()
         m_log.error("Power Stage get brake resistor failed [ %s ]",
                     PdsModule::error2String(result));
 
+    result = pds->getFwVersion(fwVersion);
+    if (result != PdsModule::error_E::OK)
+        m_log.error("FW version read failed [ %s ]", PdsModule::error2String(result));
+
+    result = pds->getBoardVersion(ctrlBoardVersion);
+    if (result != PdsModule::error_E::OK)
+        m_log.error("HW version read failed [ %s ]", PdsModule::error2String(result));
+
     if (brSocket != socketIndex_E::UNASSIGNED)
     {
         result = pds->getBrakeResistorTriggerVoltage(brTrigger);
@@ -1239,6 +1250,12 @@ void PdsCli::pdsSetupInfo()
     }
 
     m_log.info("Power Distribution Module");
+    m_log.info("Firmware version: %d.%d.%d(%c)",
+               fwVersion.s.major,
+               fwVersion.s.minor,
+               fwVersion.s.revision,
+               fwVersion.s.tag);
+    m_log.info("CTRL board version: [%d]", ctrlBoardVersion);
 
     m_log.info("Submodules:");
     m_log.info("  1 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket1));
