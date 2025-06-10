@@ -1,7 +1,6 @@
 #include "candle.hpp"
 #include "mab_types.hpp"
 #include "pds.hpp"
-#include "ui.hpp"
 #include "pds_cli.hpp"
 #include "mab_def.hpp"
 #include "configHelpers.hpp"
@@ -1932,8 +1931,6 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
     else if (std::filesystem::path(configName).extension() == "")
         configName += ".cfg";
 
-    bool saveConfig = ui::getSaveConfigConfirmation(configName);
-
     // TODO: Consider error handling here ?
     pds->getShutdownTime(shutDownTime);
     pds->getBatteryVoltageLevels(batLvl1, batLvl2);
@@ -1963,10 +1960,7 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
 
     mINI::INIFile configFile(configName);
 
-    if (saveConfig)
-    {
-        configFile.write(readIni, true);
-    }
+    configFile.write(readIni, true);
 }
 
 void PdsCli::pdsStoreConfig(void)

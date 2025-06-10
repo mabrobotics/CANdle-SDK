@@ -15,7 +15,6 @@ add_subdirectory(3rd_party/CLI11)
 
 set(CANDLETOOL_SOURCES
 
-  src/candletool.cpp
   src/candle_cli.cpp
   src/canLoader.cpp
   src/md_cli.cpp
@@ -24,7 +23,6 @@ set(CANDLETOOL_SOURCES
   src/main.cpp
   src/pds_cli.cpp
   src/utilities.cpp
-  src/ui.cpp
 
 )
 

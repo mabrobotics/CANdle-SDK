@@ -7,6 +7,7 @@
 /*#include "candletool.hpp"*/
 #include "pds.hpp"
 #include "candle.hpp"
+#include "mini/ini.h"
 
 using namespace mab;
 class PdsCli

@@ -5,14 +5,12 @@
 #include "candle_bootloader.hpp"
 #include "candle_cli.hpp"
 #include "candle_types.hpp"
-#include "candletool.hpp"
 #include "configHelpers.hpp"
 #include "logger.hpp"
 #include "mabFileParser.hpp"
 #include "mab_crc.hpp"
 #include "mab_types.hpp"
 #include "md_cli.hpp"
-#include "ui.hpp"
 #include "CLI/CLI.hpp"
 #include "pds_cli.hpp"
 
@@ -23,6 +21,13 @@
 //   | (__   / _ \  | .` | / _` | | | / -_)   | |   / _ \ / _ \ | |
 //    \___| /_/ \_\ |_|\_| \__,_| |_| \___|   |_|   \___/ \___/ |_|
 //
+
+struct UserCommand
+{
+    std::string baud;
+    std::string bus;
+    std::string variant;
+};
 
 int main(int argc, char** argv)
 {
@@ -48,17 +53,6 @@ int main(int argc, char** argv)
     app.add_option("--device",
                    cmd.variant,
                    "For SPI: {path to kernel device endpoint} | For USB: {device serial number}");
-
-    // Update
-    auto* update       = app.add_subcommand("update", "Firmware update.");
-    auto* candleUpdate = update->add_subcommand("candle", "Update firmware on Candle device.");
-    auto* mdUpdate     = update->add_subcommand("md", "Update firmware on MD device.");
-    auto* pdsUpdate    = update->add_subcommand("pds", "Update firmware on PDS device.");
-
-    mdUpdate->add_option("<CAN_ID>", cmd.id, "CAN ID of the MD to interact with.")->required();
-    pdsUpdate->add_option("<CAN_ID>", cmd.id, "CAN ID of the PDS to interact with.")->required();
-    update->add_flag("-r", cmd.noReset, "Do not reset the device before updating firmware.");
-    update->add_option("-f,--file", cmd.firmwareFileName, "Path to the .mab file");
 
     // Verbosity
     uint32_t verbosityMode = 0;
@@ -112,7 +106,7 @@ int main(int argc, char** argv)
         }
 
         // Parsing baudrate
-        auto parsedBaudOpt = CandleTool::stringToBaud(cmd.baud);
+        auto parsedBaudOpt = stringToBaud(cmd.baud);
         if (parsedBaudOpt.has_value())
             *datarate = parsedBaudOpt.value();
         else
@@ -146,14 +140,6 @@ int main(int argc, char** argv)
 
     std::string busString = ini["communication"]["bus"];
 
-    // std::shared_ptr<mab::Candle> candle = nullptr;
-
-    // CLI11_PARSE(app, argc, argv);
-
-    // TODO: make use of busType and baudrate options when creating Candle object within CandleTool
-    // Pds pds(cmd.id, candleTool.getCandle());
-
-    // redirect logger if asked for
     if (logPath != "")
     {
         if (!Logger::setStream(logPath.c_str()))
@@ -162,56 +148,6 @@ int main(int argc, char** argv)
 
     if (app.count_all() == 1)
         std::cerr << app.help() << std::endl;
-
-    if (update->parsed())
-    {
-        if (cmd.firmwareFileName == "no_file")
-        {
-            std::cout << "No filename given!" << std::endl;
-            // Place holder for future feature :: Automatically detect hw version and download
-            // firmware from our release pages...
-            std::cout << "Fetching most recent firmware online [ Not implemented yet ... ]"
-                      << std::endl;
-        }
-        else
-        {
-            // std::cout << "using mab file [ " << cmd.firmwareFileName << " ]" << std::endl;
-        }
-
-        if (candleUpdate->parsed())
-        {
-            MabFileParser candleFirmware(cmd.firmwareFileName,
-                                         MabFileParser::TargetDevice_E::CANDLE);
-
-            auto candle_bootloader = attachCandleBootloader();
-            for (size_t i = 0; i < candleFirmware.m_fwEntry.size;
-                 i += CandleBootloader::PAGE_SIZE_STM32G474)
-            {
-                std::array<u8, CandleBootloader::PAGE_SIZE_STM32G474> page;
-                std::memcpy(page.data(), &candleFirmware.m_fwEntry.data->data()[i], page.size());
-                u32 crc = crc32(page.data(), page.size());
-                if (candle_bootloader->writePage(page, crc) != candleTypes::Error_t::OK)
-                {
-                    return EXIT_FAILURE;
-                    break;
-                }
-            }
-            return EXIT_SUCCESS;
-        }
-
-        if (mdUpdate->parsed())
-        {
-            // candleTool.updateMd(cmd.firmwareFileName, cmd.id, cmd.noReset);
-            // return EXIT_SUCCESS;
-        }
-
-        if (pdsUpdate->parsed())
-        {
-            std::cout << "Implementation needed!\n";
-            // candleTool.updatePds(pds, cmd.firmwareFileName, cmd.id, cmd.noReset); TODO
-            return EXIT_SUCCESS;
-        }
-    }
 
     pdsCli.parse();
 

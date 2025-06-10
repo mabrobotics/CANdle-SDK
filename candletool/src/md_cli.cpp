@@ -12,11 +12,11 @@
 #include "mab_types.hpp"
 #include "md_types.hpp"
 #include "candle_types.hpp"
-#include "candletool.hpp"
 #include "mabFileParser.hpp"
 #include "md_cfg_map.hpp"
 #include "utilities.hpp"
 #include "MDStatus.hpp"
+#include "mini/ini.h"
 
 /* ERROR COLORING NOTE: may not work on all terminals! */
 #define REDSTART    "\033[1;31m"
@@ -106,10 +106,10 @@ namespace mab
                 if (!canOptions.optionsMap.at("datarate")->empty())
                 {
                     // set new can datarate
-                    auto baudrate = CandleTool::stringToBaud(*canOptions.datarate);
+                    auto baudrate = stringToBaud(*canOptions.datarate);
                     if (baudrate.has_value())
                     {
-                        registers.canBaudrate = CandleTool::baudToInt(baudrate.value());
+                        registers.canBaudrate = baudToInt(baudrate.value());
                         canChanged            = true;
                     }
                     else
@@ -155,7 +155,7 @@ namespace mab
                     auto newCanId              = std::make_shared<canId_t>(registers.canID.value);
                     auto newCandleBuilder      = std::make_shared<CandleBuilder>();
                     newCandleBuilder->datarate = std::make_shared<CANdleBaudrate_E>(
-                        CandleTool::intToBaud(registers.canBaudrate.value)
+                        intToBaud(registers.canBaudrate.value)
                             .value_or(CANdleBaudrate_E::CAN_BAUD_1M));
                     newCandleBuilder->pathOrId = candleBuilder->pathOrId;
                     newCandleBuilder->busType  = candleBuilder->busType;
@@ -614,7 +614,7 @@ namespace mab
                 if (ids.empty())
                 {
                     m_logger.error("No MD found on the bus for baud %s",
-                                   CandleTool::datarateToString(*(candleBuilder->datarate))
+                                   datarateToString(*(candleBuilder->datarate))
                                        .value_or("NOT A DATARATE")
                                        .c_str());
                 }

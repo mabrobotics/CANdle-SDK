@@ -60,4 +60,66 @@ namespace mab
                                    : std::string(MAB_LOGO_HEADER);
         }
     };
+
+    // Baudrate helpers
+    inline static std::optional<mab::CANdleBaudrate_E> stringToBaud(const std::string_view baud)
+    {
+        if (baud == "1M")
+            return mab::CANdleBaudrate_E::CAN_BAUD_1M;
+        if (baud == "2M")
+            return mab::CANdleBaudrate_E::CAN_BAUD_2M;
+        if (baud == "5M")
+            return mab::CANdleBaudrate_E::CAN_BAUD_5M;
+        if (baud == "8M")
+            return mab::CANdleBaudrate_E::CAN_BAUD_8M;
+        return {};
+    }
+    inline static std::optional<mab::CANdleBaudrate_E> intToBaud(const u32 baud)
+    {
+        switch (baud)
+        {
+            case 1000000:
+                return mab::CANdleBaudrate_E::CAN_BAUD_1M;
+            case 2000000:
+                return mab::CANdleBaudrate_E::CAN_BAUD_2M;
+            case 5000000:
+                return mab::CANdleBaudrate_E::CAN_BAUD_5M;
+            case 8000000:
+                return mab::CANdleBaudrate_E::CAN_BAUD_8M;
+            default:
+                return {};
+        }
+    }
+    inline static std::optional<std::string> datarateToString(const mab::CANdleBaudrate_E baud)
+    {
+        switch (baud)
+        {
+            case mab::CANdleBaudrate_E::CAN_BAUD_1M:
+                return "1M";
+            case mab::CANdleBaudrate_E::CAN_BAUD_2M:
+                return "2M";
+            case mab::CANdleBaudrate_E::CAN_BAUD_5M:
+                return "5M";
+            case mab::CANdleBaudrate_E::CAN_BAUD_8M:
+                return "8M";
+            default:
+                return {};
+        }
+    }
+    inline static u32 baudToInt(const mab::CANdleBaudrate_E baud)
+    {
+        switch (baud)
+        {
+            case mab::CANdleBaudrate_E::CAN_BAUD_1M:
+                return 1000000;
+            case mab::CANdleBaudrate_E::CAN_BAUD_2M:
+                return 2000000;
+            case mab::CANdleBaudrate_E::CAN_BAUD_5M:
+                return 5000000;
+            case mab::CANdleBaudrate_E::CAN_BAUD_8M:
+                return 8000000;
+            default:
+                return 1000000;  // Default to 1M if unknown
+        }
+    }
 }  // namespace mab
