@@ -157,8 +157,8 @@ class Logger
     /// @return instance of the logger
     Logger& operator<<(std::ostream& (*manip)(std::ostream&))
     {
-        // if (getCurrentLevel() == LogLevel_E::SILENT)
-        //     return *this;
+        if (getCurrentLevel() == LogLevel_E::SILENT)
+            return *this;
 
         // Apply the manipulator to the internal stream
         m_internalStrBuffer << manip;
