@@ -30,6 +30,10 @@ class PdsCli
 
     CLI::App* m_discovery = nullptr;
 
+    // "update" commands
+    CLI::App*    m_updateCmd       = nullptr;
+    CLI::Option* m_updateCmdOption = nullptr;
+
     // "can" commands node
     CLI::App*    m_canCmd         = nullptr;
     CLI::App*    m_canIdCmd       = nullptr;
@@ -112,6 +116,10 @@ class PdsCli
     bool        m_autoStart     = false;  // Power stage auto start
 
     // Brake resistor commands
+
+    // "update" options
+    std::string m_mabFile  = "";
+    bool        m_recovery = false;
 
     std::string m_cfgFilePath           = "";
     u8          m_submoduleSocketNumber = 0;

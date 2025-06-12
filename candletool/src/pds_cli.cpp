@@ -1,4 +1,6 @@
+#include "canLoader.hpp"
 #include "candle.hpp"
+#include "mabFileParser.hpp"
 #include "mab_types.hpp"
 #include "pds.hpp"
 #include "pds_cli.hpp"
@@ -42,6 +44,15 @@ PdsCli::PdsCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleBui
 
     m_infoCmd =
         m_pdsCmd->add_subcommand("info", "Display debug info about PDS device")->needs(id_opt);
+
+    // "update" commands
+    m_updateCmd = m_pdsCmd->add_subcommand("update", "Update PDS device")->needs(id_opt);
+
+    m_updateCmdOption =
+        m_updateCmd->add_option("-f, --mabfile", m_mabFile, "Parameter to update")->required();
+
+    m_updateCmd->add_flag("-r,--recovery", m_recovery, "Recover from a failed update");
+    // end of "update"
 
     m_canCmd =
         m_pdsCmd->add_subcommand("can", "Manage CAN parameters of the PDS device")->needs(id_opt);
@@ -303,6 +314,49 @@ void PdsCli::parse()
         if (m_infoCmd->parsed())
         {
             pdsSetupInfo();
+        }
+
+        // "update"
+        else if (m_updateCmd->parsed())
+        {
+            m_log.info("Updating PDS...");
+            MabFileParser      mabFile(m_mabFile, MabFileParser::TargetDevice_E::PDS);
+            PdsModule::error_E result = PdsModule::error_E::OK;
+            auto               candle = m_candleBuilder->build();
+
+            if (!candle.has_value())
+            {
+                m_log.error("Could not connect candle!");
+                return;
+            }
+
+            if (!m_recovery)
+            {
+                m_log.debug("Resetting PDS...");
+                Pds pds(m_canId, candle.value());
+                result = pds.reboot();
+                if (result != PdsModule::error_E::OK)
+                {
+                    m_log.error("PDS Reset failed! [ %s ]", PdsModule::error2String(result));
+                    return;
+                }
+                else
+                {
+                    m_log.success("PDS Reset successful!");
+                }
+                m_log.debug("Waiting for PDS to boot...");
+                usleep(400'000);
+            }
+
+            CanLoader canLoader(candle.value(), &mabFile, m_canId);
+            if (canLoader.flashAndBoot())
+            {
+                m_log.success("Update complete for PDS @ %d", m_canId);
+            }
+            else
+            {
+                m_log.error("PDS flashing failed!");
+            }
         }
 
         else if (m_discovery->parsed())
