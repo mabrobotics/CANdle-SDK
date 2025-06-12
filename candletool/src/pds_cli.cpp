@@ -4,6 +4,7 @@
 #include "pds_cli.hpp"
 #include "mab_def.hpp"
 #include "configHelpers.hpp"
+#include "pds_types.hpp"
 
 /*
     PDS Ini fields keywords
@@ -1209,7 +1210,7 @@ void PdsCli::pdsSetupInfo()
     socketIndex_E             brSocket      = socketIndex_E::UNASSIGNED;
     u32                       brTrigger     = 0;
     moduleVersion_E           ctrlBoardVersion;
-    version_ut                fwVersion;
+    pdsFwMetadata_S           fwVersion;
 
     PdsModule::error_E result = pds->getStatus(pdsStatus);
     if (result != PdsModule::error_E::OK)
@@ -1232,7 +1233,7 @@ void PdsCli::pdsSetupInfo()
         m_log.error("Power Stage get brake resistor failed [ %s ]",
                     PdsModule::error2String(result));
 
-    result = pds->getFwVersion(fwVersion);
+    result = pds->getFwMetadata(fwVersion);
     if (result != PdsModule::error_E::OK)
         m_log.error("FW version read failed [ %s ]", PdsModule::error2String(result));
 
@@ -1249,12 +1250,13 @@ void PdsCli::pdsSetupInfo()
     }
 
     m_log.info("Power Distribution Module");
-    m_log.info("Firmware version: %d.%d.%d(%c)",
-               fwVersion.s.major,
-               fwVersion.s.minor,
-               fwVersion.s.revision,
-               fwVersion.s.tag);
     m_log.info("CTRL board version: [%d]", ctrlBoardVersion);
+
+    m_log.info("Firmware version: %u.%u.%u-%s",
+               fwVersion.version.s.major,
+               fwVersion.version.s.minor,
+               fwVersion.version.s.revision,
+               fwVersion.gitHash);
 
     m_log.info("Submodules:");
     m_log.info("  1 :: %s", mab::Pds::moduleTypeToString(pdsModules.moduleTypeSocket1));
@@ -2000,8 +2002,8 @@ std::unique_ptr<Pds, std::function<void(Pds*)>> PdsCli::getPDS(canId_t id)
     if (pds != nullptr)
     {
         pds->init(id);
-        version_ut dump;
-        auto       trueInit = pds->getFwVersion(dump);
+        u32  dump;
+        auto trueInit = pds->getBusVoltage(dump);
         if (trueInit != Pds::error_E::OK)
         {
             m_log.error("PDS init failed!");

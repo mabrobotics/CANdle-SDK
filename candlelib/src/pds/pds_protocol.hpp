@@ -30,9 +30,10 @@ namespace mab
 
         enum class commandCode_E : u8
         {
-            GET_MODULES         = 0x05,
+            // GET_MODULES         = 0x05,  // deprecated
             GET_MODULE_PROPERTY = 0x20,
-            SET_MODULE_PROPERTY = 0x21
+            SET_MODULE_PROPERTY = 0x21,
+            GET_FW_METADATA     = 0x22,
         };
 
         static const char* propertyError2String(propertyError_E error);
