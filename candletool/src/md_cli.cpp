@@ -1,5 +1,6 @@
 #include "md_cli.hpp"
 #include <cstdint>
+#include <ios>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -673,9 +674,8 @@ namespace mab
 
                 readableRegisters.forEachRegister(readReadableRegs);
 
-                // ui::printDriveInfoExtended(md, readableRegisters, printAll);
                 m_logger << std::fixed;
-                m_logger << "Drive " << mdCanId << ":" << std::endl;
+                m_logger << "Drive " << *mdCanId << ":" << std::endl;
                 m_logger << "- actuator name: " << readableRegisters.motorName.value << std::endl;
                 m_logger << "- CAN speed: " << readableRegisters.canBaudrate.value / 1000000 << " M"
                          << std::endl;
@@ -723,10 +723,10 @@ namespace mab
                          << std::endl;
                 m_logger << "- motor torque constant: " << std::setprecision(4)
                          << readableRegisters.motorKt.value << " Nm/A" << std::endl;
-                m_logger << "- d-axis resistance: " << std::setprecision(3)
-                         << readableRegisters.motorResistance.value << " Ohm" << std::endl;
-                m_logger << "- d-axis inductance: " << std::setprecision(6)
-                         << readableRegisters.motorInductance.value << " H" << std::endl;
+                m_logger << std::fixed << "- d-axis resistance: " << std::setprecision(3)
+                         << readableRegisters.motorResistance.value << " Ohm\n";
+                m_logger << std::fixed << "- d-axis inductance: " << std::setprecision(6)
+                         << readableRegisters.motorInductance.value << " H\n";
                 m_logger << "- torque bandwidth: " << readableRegisters.motorTorqueBandwidth.value
                          << " Hz" << std::endl;
                 m_logger << "- CAN watchdog: " << readableRegisters.canWatchdog.value << " ms"
@@ -780,9 +780,9 @@ namespace mab
                          << readableRegisters.mainEncoderVelocity.value << " rad/s" << std::endl;
                 m_logger << "- torque: " << std::setprecision(2)
                          << readableRegisters.motorTorque.value << " Nm" << std::endl;
-                m_logger << "- MOSFET temperature: " << std::setprecision(2)
+                m_logger << "- MOSFET temperature: " << std::fixed << std::setprecision(2)
                          << readableRegisters.mosfetTemperature.value << " *C" << std::endl;
-                m_logger << "- motor temperature: " << std::setprecision(2)
+                m_logger << "- motor temperature: " << std::fixed << std::setprecision(2)
                          << readableRegisters.motorTemperature.value << " *C" << std::endl;
                 m_logger << std::endl;
                 auto statusToString =
