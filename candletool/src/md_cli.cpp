@@ -46,7 +46,7 @@ namespace mab
         {
             throw std::runtime_error("MDCli arguments can not be nullptr!");
         }
-        auto*                          mdCLi   = rootCli->add_subcommand("md", "MD commands.");
+        auto* mdCLi = rootCli->add_subcommand("md", "MD commands.")->require_subcommand();
         const std::shared_ptr<canId_t> mdCanId = std::make_shared<canId_t>(100);
         auto*                          mdCanIdOption =
             mdCLi->add_option("-i,--id", *mdCanId, "CAN ID of the MD to interact with.");
