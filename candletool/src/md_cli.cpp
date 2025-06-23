@@ -296,7 +296,7 @@ namespace mab
                 {
                     m_logger.info("Starting aux encoder calibration...");
                     // get gear ratio
-                    if (md->readRegister(registers.motorGearRatio))
+                    if (md->readRegister(registers.motorGearRatio) != MD::Error_t::OK)
                     {
                         m_logger.error("Could not read gear ratio from MD!");
                         return;
@@ -690,8 +690,7 @@ namespace mab
                 m_logger << "- firmware version: v" << (int)firmwareVersion.s.major << "."
                          << (int)firmwareVersion.s.minor << "." << (int)firmwareVersion.s.revision
                          << "." << firmwareVersion.s.tag << std::endl;
-                m_logger << "- hardware version(legacy): "
-                         << "Not implemented yet" << std::endl;
+                m_logger << "- hardware version(legacy): " << "Not implemented yet" << std::endl;
                 m_logger << "- hardware type: "
                          << MDLegacyHwVersion_S::toReadable(
                                 readableRegisters.legacyHardwareVersion.value)

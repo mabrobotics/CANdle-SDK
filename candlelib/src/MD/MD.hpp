@@ -47,8 +47,9 @@ namespace mab
         std::optional<u32> m_timeout;
 
         /// @brief Possible errors present in this class
-        enum Error_t
+        enum class Error_t : u8
         {
+            UNKNOWN_ERROR,
             OK,
             REQUEST_INVALID,
             TRANSFER_FAILED,
@@ -438,6 +439,9 @@ namespace mab
                     return true;
                 case Error_t::TRANSFER_FAILED:
                     m_log.error("Transfer of CAN frame failed!");
+                    return true;
+                default:
+                    m_log.error("Unknown error!");
                     return true;
             }
             return true;
