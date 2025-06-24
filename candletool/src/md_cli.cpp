@@ -1267,6 +1267,24 @@ namespace mab
                     m_logger.success("Register %s value = %s", nameOfRegister.c_str(), value);
                     return true;
                 }
+                else if constexpr (std::is_same<std::decay_t<T>, f32*>::value)
+                {
+                    auto result = md.readRegisters(reg);
+                    if (result != MD::Error_t::OK)
+                    {
+                        m_logger.error("Failed to read register %d", regAdress);
+                        return false;
+                    }
+                    const f32* value   = reg.value;
+                    if (!registerStringValue.has_value())
+                        registerStringValue = "";
+                    for (int i = 0; i < 15; i++)
+                    {
+                        *registerStringValue += std::to_string(value[i]);
+                        *registerStringValue += ", ";
+                    }
+                    return true;
+                }
             }
             return false;
         };

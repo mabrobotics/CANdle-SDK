@@ -142,7 +142,16 @@
     MD_REG(motionStatus, u32, 0x810, RO)             \
     MD_REG(dcBusVoltage, f32, 0x811, RO)             \
     MD_REG(bootloaderFixed, u8, 0x812, RO)           \
-    MD_REG(miscStatus, u32, 0x813, RO)
+    MD_REG(miscStatus, u32, 0x813, RO)               \
+                                                     \
+    MD_REG(mapUseIq, bool, 0xEE00, RW)               \
+    MD_REG(mapUseId, bool, 0xEE01, RW)               \
+    MD_REG(mapVoltageValues, f32[5], 0xEE02, RW)     \
+    MD_REG(mapTorqueValues0, f32[15], 0xEE03, RW)    \
+    MD_REG(mapTorqueValues1, f32[2], 0xEE04, RW)     \
+    MD_REG(mapVelocityValues, f32[15], 0xEE05, RW)   \
+    MD_REG(mapSelectRow, u8[3], 0xEE0A, RW)          \
+    MD_REG(mapRowData, f32[15], 0xEE0B, RW)
 
 namespace mab
 {
@@ -278,7 +287,7 @@ namespace mab
             return *this;
         }
 
-        T* operator=(MDRegisterEntry_S& reg) const
+        const T* operator=(MDRegisterEntry_S& reg) const
         {
             return value;
         }

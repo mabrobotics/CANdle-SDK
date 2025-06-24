@@ -11,4 +11,6 @@ foreach(testsourcefile ${APP_SOURCES})
     target_link_libraries(${executable} pthread candle -static-libstdc++ -static-libgcc)
 endforeach(testsourcefile ${APP_SOURCES})
 
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/dqmap.csv DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/../)
+
 add_subdirectory(unit_test)

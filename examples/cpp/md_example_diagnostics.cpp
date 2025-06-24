@@ -18,7 +18,7 @@ int main()
 
     std::cout << "ID: " << mdId << "\n";
 
-    md.readRegisters(registerBuffer.motorName,
+   md.readRegisters(registerBuffer.motorName,
                      registerBuffer.canBaudrate,
                      registerBuffer.motorGearRatio,
                      registerBuffer.motorIMax);
