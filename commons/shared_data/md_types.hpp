@@ -277,7 +277,7 @@ namespace mab
             return *this;
         }
 
-        T* operator=(MDRegisterEntry_S& reg) const
+        const T* operator=(MDRegisterEntry_S& reg) const
         {
             return value;
         }
