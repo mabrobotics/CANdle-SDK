@@ -216,6 +216,8 @@ namespace mab
                     return "HW30";
                 case 5:
                     return "HD10";
+                case 0xB0:
+                    return "MD0004";
                 default:
                     return "UNKNOWN";
             }

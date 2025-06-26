@@ -42,3 +42,6 @@ wheelhouse
 *.exe
 *.out
 *.app
+
+# Misc
+*.csv#

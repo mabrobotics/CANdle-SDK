@@ -46,7 +46,7 @@ namespace mab
         {
             throw std::runtime_error("MDCli arguments can not be nullptr!");
         }
-        auto*                          mdCLi   = rootCli->add_subcommand("md", "MD commands.");
+        auto* mdCLi = rootCli->add_subcommand("md", "MD commands.")->require_subcommand();
         const std::shared_ptr<canId_t> mdCanId = std::make_shared<canId_t>(100);
         auto*                          mdCanIdOption =
             mdCLi->add_option("-i,--id", *mdCanId, "CAN ID of the MD to interact with.");
@@ -296,7 +296,7 @@ namespace mab
                 {
                     m_logger.info("Starting aux encoder calibration...");
                     // get gear ratio
-                    if (md->readRegister(registers.motorGearRatio))
+                    if (md->readRegister(registers.motorGearRatio) != MD::Error_t::OK)
                     {
                         m_logger.error("Could not read gear ratio from MD!");
                         return;
@@ -690,8 +690,7 @@ namespace mab
                 m_logger << "- firmware version: v" << (int)firmwareVersion.s.major << "."
                          << (int)firmwareVersion.s.minor << "." << (int)firmwareVersion.s.revision
                          << "." << firmwareVersion.s.tag << std::endl;
-                m_logger << "- hardware version(legacy): "
-                         << "Not implemented yet" << std::endl;
+                m_logger << "- hardware version(legacy): " << "Not implemented yet" << std::endl;
                 m_logger << "- hardware type: "
                          << MDLegacyHwVersion_S::toReadable(
                                 readableRegisters.legacyHardwareVersion.value)
@@ -961,6 +960,20 @@ namespace mab
                     resultBefore.c_str(),
                     resultAffter.c_str());
             });
+        // Reset
+        mdCLi->add_subcommand("reset", "Reboot the MD drive")
+            ->callback(
+                [this, candleBuilder, mdCanId]()
+                {
+                    auto md = getMd(mdCanId, candleBuilder);
+                    if (md == nullptr)
+                    {
+                        m_logger.error("Coudl not connect to MD!");
+                        return;
+                    }
+                    md->reset();
+                    m_logger.success("MD drive reset");
+                });
 
         // Test
         auto* test = mdCLi->add_subcommand("test", "Test the MD drive movement.")

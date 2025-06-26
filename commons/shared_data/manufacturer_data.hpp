@@ -18,6 +18,8 @@ namespace mab
         MD80HV         = 0x03,
         PDS            = 0x04,
 
+        MD0004 = 0xB0,
+
         UNKNOWN_DEVICE_2 = 0xA0,
         CANDLE           = 0xA1,
         CANDLE_HAT       = 0xA2
