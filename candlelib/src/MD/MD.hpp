@@ -47,8 +47,9 @@ namespace mab
         std::optional<u32> m_timeout;
 
         /// @brief Possible errors present in this class
-        enum Error_t
+        enum class Error_t : u8
         {
+            UNKNOWN_ERROR,
             OK,
             REQUEST_INVALID,
             TRANSFER_FAILED,
@@ -166,57 +167,51 @@ namespace mab
 
         /// @brief Request quick status update
         /// @return Quick Status map with bit positions as ids
-        std::pair<const std::unordered_map<const MDStatus::QuickStatusBits, MDStatus::StatusItem_S>,
+        std::pair<const std::unordered_map<MDStatus::QuickStatusBits, MDStatus::StatusItem_S>,
                   Error_t>
         getQuickStatus();
 
         /// @brief Request main encoder status
         /// @return Main encoder status map with bit positions as ids
-        std::pair<
-            const std::unordered_map<const MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
-            Error_t>
+        std::pair<const std::unordered_map<MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
+                  Error_t>
         getMainEncoderStatus();
 
         /// @brief Request output encoder status
         /// @return Output encoder status map with bit positions as ids
-        std::pair<
-            const std::unordered_map<const MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
-            Error_t>
+        std::pair<const std::unordered_map<MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
+                  Error_t>
         getOutputEncoderStatus();
 
         /// @brief Request calibration status
         /// @return Calibration status map with bit positions as ids
-        std::pair<
-            const std::unordered_map<const MDStatus::CalibrationStatusBits, MDStatus::StatusItem_S>,
-            Error_t>
+        std::pair<const std::unordered_map<MDStatus::CalibrationStatusBits, MDStatus::StatusItem_S>,
+                  Error_t>
         getCalibrationStatus();
 
         /// @brief Request bridge status
         /// @return Bridge status map with bit positions as ids
-        std::pair<
-            const std::unordered_map<const MDStatus::BridgeStatusBits, MDStatus::StatusItem_S>,
-            Error_t>
+        std::pair<const std::unordered_map<MDStatus::BridgeStatusBits, MDStatus::StatusItem_S>,
+                  Error_t>
         getBridgeStatus();
 
         /// @brief Request hardware status
         /// @return Hardware status map with bit positions as ids
-        std::pair<
-            const std::unordered_map<const MDStatus::HardwareStatusBits, MDStatus::StatusItem_S>,
-            Error_t>
+        std::pair<const std::unordered_map<MDStatus::HardwareStatusBits, MDStatus::StatusItem_S>,
+                  Error_t>
         getHardwareStatus();
 
         /// @brief Request communication status
         /// @return Communication status map with bit positions as ids
-        std::pair<const std::unordered_map<const MDStatus::CommunicationStatusBits,
-                                           MDStatus::StatusItem_S>,
-                  Error_t>
+        std::pair<
+            const std::unordered_map<MDStatus::CommunicationStatusBits, MDStatus::StatusItem_S>,
+            Error_t>
         getCommunicationStatus();
 
         /// @brief Request motion status
         /// @return Motion status map with bit positions as ids
-        std::pair<
-            const std::unordered_map<const MDStatus::MotionStatusBits, MDStatus::StatusItem_S>,
-            Error_t>
+        std::pair<const std::unordered_map<MDStatus::MotionStatusBits, MDStatus::StatusItem_S>,
+                  Error_t>
         getMotionStatus();
 
         /// @brief Request position of the MD
@@ -333,6 +328,11 @@ namespace mab
             auto payload = serializeMDRegisters(regs);
             frame.insert(frame.end(), payload.begin(), payload.end());
             auto readRegResult = transferCanFrame(frame, frame.size());
+            if (readRegResult.second != candleTypes::Error_t::OK)
+            {
+                m_log.error("Error while reading register!");
+                return Error_t::TRANSFER_FAILED;
+            }
             // TODO: for some reason MD sends first byte as 0x0, investigate
             //  if (readRegResult.first.at(0) == 0x41)
             //  {
@@ -421,6 +421,30 @@ namespace mab
                 m_log.error("Error in the register write response!");
                 return Error_t::TRANSFER_FAILED;
             }
+        }
+
+        /// @brief Helper method to handle md errors
+        /// @return true on failure, false on normal operation
+        inline bool isMDError(Error_t err)
+        {
+            switch (err)
+            {
+                case Error_t::OK:
+                    return false;
+                case Error_t::NOT_CONNECTED:
+                    m_log.error("MD not connected!");
+                    return true;
+                case Error_t::REQUEST_INVALID:
+                    m_log.error("Request is not valid!");
+                    return true;
+                case Error_t::TRANSFER_FAILED:
+                    m_log.error("Transfer of CAN frame failed!");
+                    return true;
+                default:
+                    m_log.error("Unknown error!");
+                    return true;
+            }
+            return true;
         }
 
         /// @brief Debugging method to test communication efficiency

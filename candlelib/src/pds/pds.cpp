@@ -1,4 +1,5 @@
 #include "pds.hpp"
+#include "pds_types.hpp"
 
 namespace mab
 {
@@ -150,7 +151,7 @@ namespace mab
             return PdsModule::error_E ::PROTOCOL_ERROR;
         }
 
-        size_t responseSize = (u8) * (transferResult.first.data() + 1);
+        // size_t responseSize = (u8) * (transferResult.first.data() + 1);
 
         memcpy(&metadata, transferResult.first.data() + 2, sizeof(pdsFwMetadata_S));
 
@@ -375,6 +376,48 @@ namespace mab
             default:
                 return "UNKNOWN_MODULE_TYPE";
         }
+    }
+
+    const std::vector<canId_t> Pds::discoverPDS(Candle* candle)
+    {
+        constexpr canId_t MIN_VAILID_ID = 10;     // ids less than that are reserved for special
+        constexpr canId_t MAX_VAILID_ID = 0x7FF;  // 11-bit value (standard can ID max)
+
+        Logger               log(Logger::ProgramLayer_E::TOP, "PDS_DISCOVERY");
+        std::vector<canId_t> ids;
+
+        if (candle == nullptr)
+        {
+            log.error("Candle is empty!");
+            return std::vector<canId_t>();
+        }
+
+        log.info("Looking for PDS");
+        pdsFwMetadata_S ver;
+
+        for (canId_t id = MIN_VAILID_ID; id < MAX_VAILID_ID; id++)
+        {
+            log.debug("Trying to bind PDS with id %d", id);
+            log.progress(float(id) / float(MAX_VAILID_ID));
+            // workaround for ping error spam
+            Logger::Verbosity_E prevVerbosity =
+                Logger::g_m_verbosity.value_or(Logger::Verbosity_E::VERBOSITY_1);
+            Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
+            Pds pds(id, candle);
+            if (pds.getFwMetadata(ver) == Pds::error_E::OK)
+                ids.push_back(id);
+
+            Logger::g_m_verbosity = prevVerbosity;
+        }
+        for (canId_t id : ids)
+        {
+            log.info("Discovered PDS device with ID: %d", id);
+        }
+        if (ids.size() > 0)
+            return ids;
+
+        log.warn("Have not found any PDS devices on the CAN bus!");
+        return ids;
     }
 
     u16 Pds::getCanId()

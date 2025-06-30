@@ -2,6 +2,9 @@
 
 #include <exception>
 #include <MD.hpp>
+#include <optional>
+#include "candle_types.hpp"
+#include "mab_types.hpp"
 
 namespace mab
 {
@@ -16,7 +19,6 @@ namespace mab
                    std::unique_ptr<mab::I_CommunicationInterface>&& bus)
         : m_canBaudrate(canBaudrate), m_bus(std::move(bus))
     {
-        m_log.warn("This is an experimental software, please use with caution!");
     }
 
     candleTypes::Error_t Candle::init()
@@ -66,6 +68,24 @@ namespace mab
             return candleTypes::Error_t::UNKNOWN_ERROR;
         }
         return candleTypes::Error_t::OK;
+    }
+    std::optional<version_ut> Candle::getCandleVersion()
+    {
+        auto buffer       = baudrateCommandFrame(m_canBaudrate);
+        auto baudResponse = busTransfer(&buffer, 6);
+        if (baudResponse != candleTypes::Error_t::OK || buffer.size() < 6)
+        {
+            return std::nullopt;
+        }
+        else
+        {
+            version_ut candleVersion;
+            candleVersion.s.tag      = buffer[2];
+            candleVersion.s.revision = buffer[3];
+            candleVersion.s.minor    = buffer[4];
+            candleVersion.s.major    = buffer[5];
+            return candleVersion;
+        }
     }
 
     candleTypes::Error_t Candle::busTransfer(std::vector<u8>* data,
