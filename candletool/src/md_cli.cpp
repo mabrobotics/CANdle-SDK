@@ -960,6 +960,20 @@ namespace mab
                     resultBefore.c_str(),
                     resultAffter.c_str());
             });
+        // Reset
+        mdCLi->add_subcommand("reset", "Reboot the MD drive")
+            ->callback(
+                [this, candleBuilder, mdCanId]()
+                {
+                    auto md = getMd(mdCanId, candleBuilder);
+                    if (md == nullptr)
+                    {
+                        m_logger.error("Coudl not connect to MD!");
+                        return;
+                    }
+                    md->reset();
+                    m_logger.success("MD drive reset");
+                });
 
         // Test
         auto* test = mdCLi->add_subcommand("test", "Test the MD drive movement.")
