@@ -10,6 +10,6 @@ cd $BUILD_DIRECTORY
 pwd
 cmake ../..
 make -j4
-cpack -G DEB -DCPACK_INSTALL_CMAKE_PROJECTS=ALL
+cpack -G DEB
 
 cd ${start_dir}
