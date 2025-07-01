@@ -74,9 +74,21 @@ set(CPACK_PACKAGE_VERSION_PATCH ${CANDLETOOL_VERSION_PATCH})
 set(CPACK_PACKAGE_VENDOR "MAB Robotics")
 set(CPACK_PACKAGE_DESCRIPTION "Console tool for MAB devices ecosystem configuration")
 
-if(WIN32)
 
-  set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL "ON")
+if(WIN32)
+    install(TARGETS candletool
+            RUNTIME
+            COMPONENT candletool)
+
+  install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/motors
+          DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
+          COMPONENT _configs)
+
+  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini
+          DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
+          PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ WORLD_WRITE
+          COMPONENT _configs)
+  set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
   set(CPACK_NSIS_MODIFY_PATH ON)
   target_link_libraries(
     candletool
