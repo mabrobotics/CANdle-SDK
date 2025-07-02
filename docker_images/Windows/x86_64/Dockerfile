@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM ubuntu:22.04
 CMD ["bash"]
 ARG DEBIAN_FRONTEND=noninteractive
 RUN /bin/sh -c "apt update"
