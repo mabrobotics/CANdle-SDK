@@ -112,7 +112,7 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE=Release -B build -G "Unix Makefiles" .
 
       - name: Build
-        run: cmake --build ./build
+        run: cmake --build ./build --parallel "$(nproc)"
 
       - name: Test
         run: ./launch/run_all_tests.sh
