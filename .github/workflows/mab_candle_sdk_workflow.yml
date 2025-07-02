@@ -9,7 +9,7 @@ on:
       - devel
 
 jobs:
-  build-candleSDK-linux:
+  build-candleSDK-linux-static:
     runs-on: ubuntu-22.04
     container:
       image: mabroboticsofficial/mab_build_environment
@@ -38,7 +38,7 @@ jobs:
           path: |
             build/*.deb
 
-  build-candleSDK-linux-arm64:
+  build-candleSDK-linux-arm64-static:
     runs-on: ubuntu-22.04
     container:
       image: mabroboticsofficial/mab_build_environment_arm64_cross-compile
@@ -67,7 +67,7 @@ jobs:
           path: |
             build/*.deb
 
-  build-candleSDK-linux-armhf:
+  build-candleSDK-linux-armhf-static:
     runs-on: ubuntu-22.04
     container:
       image: mabroboticsofficial/mab_build_environment_armhf_cross-compile
@@ -96,7 +96,30 @@ jobs:
           path: |
             build/*.deb
 
-  test-candleSDK-linux:
+  build-candleSDK-windows-static:
+    runs-on: ubuntu-22.04
+    container:
+      image: mabroboticsofficial/mab_build_environment_windows_cross-compile
+      options: --user root
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: "true"
+
+      - name: Build
+        run: |
+          ./launch/buildForWindows.sh
+
+      - name: Store artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Candletool-build-artifacts-windows
+          path: |
+            build/*.exe
+
+  test-candleSDK-linux-static:
     runs-on: ubuntu-22.04
     container:
       image: mabroboticsofficial/mab_build_environment
@@ -116,38 +139,3 @@ jobs:
 
       - name: Test
         run: ./launch/run_all_tests.sh
-
-  # release-candleSDK-linux:
-  #   runs-on: ubuntu-22.04
-  #   needs: build-candleSDK-linux
-
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v3
-
-  #     - name: Download .deb files artifact
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: Candletool-build-artifacts
-  #         path: ./release
-
-  #     - name: Create GitHub Release
-  #       id: create_release
-  #       uses: actions/create-release@v1
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #       with:
-  #         tag_name: superTag123
-  #         release_name: Release superTag123
-  #         draft: false
-  #         prerelease: false
-
-  #     - name: Upload .deb files to Release
-  #       uses: actions/upload-release-asset@v1
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #       with:
-  #         upload_url: ${{ steps.create_release.outputs.upload_url }}
-  #         asset_path: ./release/*.deb
-  #         asset_name: my-deb-file.deb
-  #         asset_content_type: application/octet-stream
