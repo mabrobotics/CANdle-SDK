@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - CS-29-create-main-release-scripts
   workflow_dispatch:
   pull_request:
     types: [assigned, opened, synchronize, reopened]
@@ -145,7 +146,10 @@ jobs:
         run: ./launch/run_all_tests.sh
 
   release:
-    if: ${{ github.ref == 'refs/heads/CS-29-create-main-release-scripts' }} #github.ref == 'refs/heads/main'
+    if: contains('
+      refs/heads/main
+      refs/heads/CS-29-create-main-release-scripts
+      ', github.ref)
     needs:
       - build-candleSDK-linux-static
       - build-candleSDK-linux-arm64-static
