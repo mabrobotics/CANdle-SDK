@@ -1,4 +1,4 @@
-FROM mabroboticsofficial/mab_build_environment:latest
+FROM mabroboticsofficial/mab_build_environment:v1
 
 RUN echo "deb [arch=armhf] http://ports.ubuntu.com/ jammy main multiverse universe" | sudo tee -a /etc/apt/sources.list
 RUN echo "deb [arch=armhf] http://ports.ubuntu.com/ jammy-security main multiverse universe" | sudo tee -a /etc/apt/sources.list

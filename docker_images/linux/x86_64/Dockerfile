@@ -19,5 +19,6 @@ RUN apt install -y cmake
 RUN apt install -y git
 RUN apt install -y build-essential
 RUN apt install -y libusb-1.0-0-dev
+RUN apt install -y sudo
 
 RUN git config --global --add safe.directory '*'
