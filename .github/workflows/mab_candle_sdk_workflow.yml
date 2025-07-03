@@ -2,6 +2,9 @@
 name: CANDLE_SDK_CI
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
   pull_request:
     types: [assigned, opened, synchronize, reopened]
@@ -142,7 +145,7 @@ jobs:
         run: ./launch/run_all_tests.sh
 
   release:
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/CS-29-create-main-release-scripts'
+    if: ${{ github.ref == 'refs/heads/CS-29-create-main-release-scripts' }} #github.ref == 'refs/heads/main'
     needs:
       - build-candleSDK-linux-static
       - build-candleSDK-linux-arm64-static
