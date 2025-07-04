@@ -103,3 +103,7 @@ add_subdirectory(CANdle-SDK) # added as a submodule
 add_executable(myCandleProject main.cpp)
 target_link_libraries(myCandleProject candle)
 ```
+
+## Documentation
+
+For more information check out our documentation page [here](https://mabrobotics.github.io/MD80-x-CANdle-Documentation/software_package/Software.html).
