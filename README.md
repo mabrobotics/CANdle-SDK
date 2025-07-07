@@ -49,11 +49,7 @@ Run:
 
 ### Cross-compile for Windows
 
-```
-sudo apt install  g++-mingw-w64-x86-64-posix
-```
-
-#### Usin Docker
+#### Using Docker
 
 ```
 ./launch/runDockerForWindows.sh
