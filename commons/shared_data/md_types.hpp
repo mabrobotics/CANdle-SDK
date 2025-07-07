@@ -148,9 +148,11 @@ namespace mab
 {
     enum class MdFrameId_E : u8
     {
-        FRAME_WRITE_REGISTER = 0x40,
-        FRAME_READ_REGISTER  = 0x41,
-        RESPONSE_DEFAULT     = 0xA0
+        WRITE_REGISTER_DEFAULT_RESPONSE = 0x40,
+        READ_REGISTER                   = 0x41,
+        WRITE_REGISTER                  = 0x42,
+        RESPONSE_DEFAULT                = 0xA0,
+        RESPONSE_ERROR                  = 0xA1
     };
 
     enum class RegisterAccessLevel_E : u8
