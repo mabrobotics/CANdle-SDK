@@ -406,7 +406,7 @@ namespace mab
             }
 
             std::vector<u8> frame;
-            frame.push_back((u8)MdFrameId_E::WRITE_REGISTER);
+            frame.push_back((u8)MdFrameId_E::WRITE_REGISTER_DEFAULT_RESPONSE);
             frame.push_back((u8)0x0);
             auto payload = serializeMDRegisters(regs);
             frame.insert(frame.end(), payload.begin(), payload.end());
