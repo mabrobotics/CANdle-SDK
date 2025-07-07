@@ -10,6 +10,6 @@ mkdir $BUILD_DIRECTORY -p
 cd $BUILD_DIRECTORY
 cmake ../../ -DPLATFORM="WIN"
 make -j4
-cpack -G NSIS -DCPACK_INSTALL_CMAKE_PROJECTS=ALL
+cpack -G NSIS
 
 cd ${start_dir}

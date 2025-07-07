@@ -1,4 +1,3 @@
-#include <asm-generic/errno-base.h>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <functional>
