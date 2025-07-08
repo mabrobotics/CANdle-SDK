@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+sudo udevadm control --reload-rules && sudo udevadm trigger
+
+echo "For more please refer to the manual: https://mabrobotics.pl/servos/manual"

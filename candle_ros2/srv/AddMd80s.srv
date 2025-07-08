@@ -1,0 +1,4 @@
+uint16[] drive_ids
+---
+bool[] drives_success
+uint16 total_number_of_drives

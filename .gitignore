@@ -1,8 +1,14 @@
-.vscode
+.zed
+
 build
 install
 log
 bin
+dist
+venv
+wheelhouse
+*.cache*
+*compile_commands.json
 
 # Prerequisites
 *.d

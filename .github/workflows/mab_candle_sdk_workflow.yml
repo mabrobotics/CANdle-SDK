@@ -1,0 +1,196 @@
+# MAB Robotics CANDLE SDK GitHub Actions workflow file
+name: CANDLE_SDK_CI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+  pull_request:
+    types: [assigned, opened, synchronize, reopened]
+    branches:
+      - main
+      - devel
+
+jobs:
+  build-candleSDK-linux-static:
+    runs-on: ubuntu-22.04
+    container:
+      image: mabroboticsofficial/mab_build_environment:v1
+      options: --user root
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: "true"
+
+      - name: CMake configure
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Release -B build -G "Unix Makefiles" .
+
+      - name: Build
+        run: cmake --build ./build -j$(nproc)
+
+      - name: Create .deb package
+        run: make -C ./build package
+
+      - name: Store artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Candletool-build-artifacts-x86_64
+          path: |
+            build/*.deb
+
+  build-candleSDK-linux-arm64-static:
+    runs-on: ubuntu-22.04
+    container:
+      image: mabroboticsofficial/mab_build_environment_arm64_cross-compile:v1
+      options: --user root
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: "true"
+
+      - name: CMake configure
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Release --toolchain ./cmake/linux.arm64.toolchain.cmake ./ -B build -G "Unix Makefiles" .
+
+      - name: Build
+        run: cmake --build ./build -j$(nproc)
+
+      - name: Create .deb package
+        run: make -C ./build package
+
+      - name: Store artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Candletool-build-artifacts-arm64
+          path: |
+            build/*.deb
+
+  build-candleSDK-linux-armhf-static:
+    runs-on: ubuntu-22.04
+    container:
+      image: mabroboticsofficial/mab_build_environment_armhf_cross-compile:v1
+      options: --user root
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: "true"
+
+      - name: CMake configure
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Release --toolchain ./cmake/linux.armhf.toolchain.cmake ./ -B build -G "Unix Makefiles" .
+
+      - name: Build
+        run: cmake --build ./build -j$(nproc)
+
+      - name: Create .deb package
+        run: make -C ./build package
+
+      - name: Store artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Candletool-build-artifacts-armhf
+          path: |
+            build/*.deb
+
+  build-candleSDK-windows-static:
+    runs-on: ubuntu-22.04
+    container:
+      image: mabroboticsofficial/mab_build_environment_windows_cross-compile:v1
+      options: --user root
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: "true"
+
+      - name: Build
+        run: |
+          ./launch/buildForWindows.sh
+
+      - name: Store artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Candletool-build-artifacts-windows
+          path: |
+            build/*.exe
+
+  test-candleSDK-linux-static:
+    runs-on: ubuntu-22.04
+    container:
+      image: mabroboticsofficial/mab_build_environment:v1
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: "true"
+
+      - name: CMake configure
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Release -B build -G "Unix Makefiles" .
+
+      - name: Build
+        run: cmake --build ./build --parallel "$(nproc)"
+
+      - name: Test
+        run: ./launch/run_all_tests.sh
+
+  release:
+    if: contains('
+      refs/heads/main
+      ', github.ref)
+    needs:
+      - build-candleSDK-linux-static
+      - build-candleSDK-linux-arm64-static
+      - build-candleSDK-linux-armhf-static
+      - build-candleSDK-windows-static
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Extract version from CMakeLists.txt
+        id: extract_version
+        run: |
+          MAJOR=$(grep -Po 'set\(CANDLESDK_VERSION_1\s+\K[0-9]+' CMakeLists.txt)
+          MINOR=$(grep -Po 'set\(CANDLESDK_VERSION_2\s+\K[0-9]+' CMakeLists.txt)
+          PATCH=$(grep -Po 'set\(CANDLESDK_VERSION_3\s+\K[0-9]+' CMakeLists.txt)
+          VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "VERSION=$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Get merge commit message
+        id: get_commit_message
+        run: |
+          MESSAGE=$(git log -1 --pretty=%B)
+          echo "commit_message<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$MESSAGE" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.extract_version.outputs.version }}
+          name: Release v${{ steps.extract_version.outputs.version }}
+          body: ${{ steps.get_commit_message.outputs.commit_message }}
+          draft: true
+          prerelease: false
+          files: |
+            artifacts/**/*
