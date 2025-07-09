@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/numpy.h>
@@ -51,7 +52,7 @@ namespace mab
             }
         };
 
-        mdRegisters.forEachRegister(mdRegisters, getReg);
+        mdRegisters.forEachRegister(getReg);
         if (!found)
         {
             log.error("Wrong name or type!");
@@ -83,7 +84,7 @@ namespace mab
             }
         };
 
-        mdRegisters.forEachRegister(mdRegisters, getReg);
+        mdRegisters.forEachRegister(getReg);
         if (!found)
         {
             log.error("Wrong name or type!");
@@ -115,7 +116,7 @@ namespace mab
             }
         };
 
-        mdRegisters.forEachRegister(mdRegisters, getReg);
+        mdRegisters.forEachRegister(getReg);
         if (!found)
         {
             log.error("Wrong name or type!");
@@ -153,7 +154,7 @@ namespace mab
             }
         };
 
-        mdRegisters.forEachRegister(mdRegisters, getReg);
+        mdRegisters.forEachRegister(getReg);
         if (!found)
         {
             log.error("Wrong name or type!");
