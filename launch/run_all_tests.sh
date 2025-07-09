@@ -1,2 +1,5 @@
 #!/bin/bash
-./build/ut_runners/*
+set -e  # exit on error
+for f in ./build/ut_runners/*; do
+  bash -c "$f"
+done
