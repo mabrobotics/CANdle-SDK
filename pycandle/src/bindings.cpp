@@ -94,6 +94,43 @@ namespace mab
     }
 
     template <typename T>
+    std::pair<py::array_t<T>, MD::Error_t> readRegArray(MD& md, const std::string& regName)
+    {
+        Logger log(Logger::ProgramLayer_E::TOP, "MD_READ_REG_ARRAY");
+
+        MDRegisters_S mdRegisters;
+        bool          found = false;
+
+        py::array_t<T> value;
+        MD::Error_t    err = MD::Error_t::OK;
+
+        auto getReg = [&]<typename R>(MDRegisterEntry_S<R>& reg)
+        {
+            if constexpr (std::is_array_v<R> && std::is_same_v<T, std::remove_extent_t<R>>)
+            {
+                if (reg.m_name == regName)
+                {
+                    found                         = true;
+                    constexpr size_t reg_elements = std::extent_v<R>;
+                    value                         = py::array_t<T>(reg_elements);
+
+                    md.readRegisters(reg);
+                    float* dest = static_cast<float*>(value.request().ptr);
+                    memcpy(dest, reg.value, reg_elements * sizeof(T));
+                }
+            }
+        };
+
+        mdRegisters.forEachRegister(getReg);
+        if (!found)
+        {
+            log.error("Wrong name or type!");
+            err = MD::Error_t::REQUEST_INVALID;
+        }
+        return std::make_pair(value, err);
+    }
+
+    template <typename T>
     MD::Error_t writeReg(MD& md, const std::string& regName, T value)
     {
         Logger log(Logger::ProgramLayer_E::TOP, "MD_WRITE_REG");
@@ -373,6 +410,12 @@ PYBIND11_MODULE(pyCandle, m)
           "Read a register from the MD device.");
     m.def("readRegisterString",
           &mab::readRegString,
+          py::arg("md"),
+          py::arg("regName"),
+          "Read a register from the MD device.",
+          py::return_value_policy::copy);
+    m.def("readRegisterArrayFloat",
+          &mab::readRegArray<float>,
           py::arg("md"),
           py::arg("regName"),
           "Read a register from the MD device.",
