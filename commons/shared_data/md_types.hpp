@@ -142,7 +142,10 @@
     MD_REG(motionStatus, u32, 0x810, RO)             \
     MD_REG(dcBusVoltage, f32, 0x811, RO)             \
     MD_REG(bootloaderFixed, u8, 0x812, RO)           \
-    MD_REG(miscStatus, u32, 0x813, RO)
+    MD_REG(miscStatus, u32, 0x813, RO)               \
+    MD_REG(uptimeUs, u32, 0x0814, RO)                \
+    MD_REG(uptimeMs, u32, 0x0815, RO)                \
+    MD_REG(msgCounter, u32, 0x0816, RO)
 
 namespace mab
 {
