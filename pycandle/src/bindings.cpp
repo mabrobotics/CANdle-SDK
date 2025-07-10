@@ -163,6 +163,56 @@ namespace mab
         return err;
     }
 
+    template <typename T>
+    MD::Error_t writeRegArray(MD&                                                       md,
+                              const std::string&                                        regName,
+                              py::array_t<T, py::array::c_style | py::array::forcecast> array)
+    {
+        Logger log(Logger::ProgramLayer_E::TOP, "MD_WRITE_REG");
+
+        if (array.ndim() != 1)
+        {
+            log.error("Array must be 1D!");
+            return MD::Error_t::REQUEST_INVALID;
+        }
+
+        MDRegisters_S mdRegisters;
+        bool          found = false;
+
+        MD::Error_t err = MD::Error_t::OK;
+
+        auto getReg = [&]<typename R>(MDRegisterEntry_S<R>& reg)
+        {
+            if constexpr (std::is_array_v<R> && std::is_same_v<T, std::remove_extent_t<R>>)
+            {
+                if (reg.m_name == regName)
+                {
+                    found                         = true;
+                    constexpr size_t reg_elements = std::extent_v<R>;
+                    if (array.size() != reg_elements)
+                    {
+                        log.error((std::string("Array size mismatch: expected ") +
+                                   std::to_string(reg_elements) + ", got " +
+                                   std::to_string(array.size()))
+                                      .c_str());
+                        err = MD::Error_t::REQUEST_INVALID;
+                        return;
+                    }
+                    std::memcpy(&reg.value, array.data(), array.size() * sizeof(T));
+                    md.writeRegisters(reg);
+                }
+            }
+        };
+
+        mdRegisters.forEachRegister(getReg);
+        if (!found)
+        {
+            log.error("Wrong name or type!");
+            err = MD::Error_t::REQUEST_INVALID;
+        }
+        return err;
+    }
+
 }  // namespace mab
 
 PYBIND11_MODULE(pyCandle, m)
@@ -223,8 +273,7 @@ PYBIND11_MODULE(pyCandle, m)
         .export_values();
 
     py::class_<mab::MD>(m, "MD")
-        .def(
-            py::init([](int canId, mab::Candle* candle) -> auto { return mab::MD(canId, candle); }))
+        .def(py::init([](int canId, mab::Candle* candle) -> auto{ return mab::MD(canId, candle); }))
         .def("init", &mab::MD::init, "Initialize the MD device. Returns an error if not connected.")
         .def("blink", &mab::MD::blink, "Blink the built-in LEDs.")
         .def("enable", &mab::MD::enable, "Enable PWM output of the drive.")
@@ -359,6 +408,12 @@ PYBIND11_MODULE(pyCandle, m)
           py::arg("regName"),
           py::arg("value"),
           "Write a register to the MD device.");
+    m.def("writeRegisterFloatArray",
+          &mab::writeRegArray<float>,
+          py::arg("md"),
+          py::arg("regName"),
+          py::arg("array"),
+          "Write a register array to the MD device.");
 
     // Logger
     py::enum_<Logger::Verbosity_E>(m, "Verbosity_E")
