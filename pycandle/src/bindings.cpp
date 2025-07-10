@@ -414,6 +414,12 @@ PYBIND11_MODULE(pyCandle, m)
           py::arg("regName"),
           py::arg("array"),
           "Write a register array to the MD device.");
+    m.def("writeRegisterU8Array",
+          &mab::writeRegArray<u8>,
+          py::arg("md"),
+          py::arg("regName"),
+          py::arg("array"),
+          "Write a register array to the MD device.");
 
     // Logger
     py::enum_<Logger::Verbosity_E>(m, "Verbosity_E")
