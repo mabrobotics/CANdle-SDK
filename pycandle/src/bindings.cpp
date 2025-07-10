@@ -414,8 +414,14 @@ PYBIND11_MODULE(pyCandle, m)
           py::arg("regName"),
           "Read a register from the MD device.",
           py::return_value_policy::copy);
-    m.def("readRegisterArrayFloat",
+    m.def("readRegisterFloatArray",
           &mab::readRegArray<float>,
+          py::arg("md"),
+          py::arg("regName"),
+          "Read a register from the MD device.",
+          py::return_value_policy::copy);
+    m.def("readRegisterU8Array",
+          &mab::readRegArray<u8>,
           py::arg("md"),
           py::arg("regName"),
           "Read a register from the MD device.",
