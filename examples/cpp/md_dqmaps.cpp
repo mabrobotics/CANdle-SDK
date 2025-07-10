@@ -96,10 +96,10 @@ int main(int argc, char** argv)
     fprintf(stderr, "Enable Maps? [y/n] ");
     if (fgetc(stdin) != 'y')
         return EXIT_SUCCESS;
-    regs.mapUseId = true;
-    regs.mapUseIq = true;
-    if (md.writeRegisters(regs.mapUseIq) != mab::MD::Error_t::OK ||
-        md.writeRegisters(regs.mapUseId) != mab::MD::Error_t::OK)
+    regs.iqControlMode = 1;
+    regs.idControlMode = 1;
+    if (md.writeRegisters(regs.iqControlMode) != mab::MD::Error_t::OK ||
+        md.writeRegisters(regs.idControlMode) != mab::MD::Error_t::OK)
         fprintf(stderr, "Failed to enable Maps!\n");
     return EXIT_FAILURE;
 }
