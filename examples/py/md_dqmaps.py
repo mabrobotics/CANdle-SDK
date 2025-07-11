@@ -64,10 +64,10 @@ def main():
     print(f"MD initialized with following status: {err}")
     
     if(
-        pc.writeRegisterFloatArray(md, "mapVoltageValues", voltages) != 1 or
-        pc.writeRegisterFloatArray(md, "mapTorqueValues0", torques[:15]) != 1 or
-        pc.writeRegisterFloatArray(md, "mapTorqueValues1", torques[-2:]) != 1 or
-        pc.writeRegisterFloatArray(md, "mapVelocityValues", velocities) != 1):
+        pc.writeRegisterFloatArray(md, "mapVoltageValues", voltages)  != pc.MD_Error_t.OK or
+        pc.writeRegisterFloatArray(md, "mapTorqueValues0", torques[:15])  != pc.MD_Error_t.OK or
+        pc.writeRegisterFloatArray(md, "mapTorqueValues1", torques[-2:])  != pc.MD_Error_t.OK or
+        pc.writeRegisterFloatArray(md, "mapVelocityValues", velocities)  != pc.MD_Error_t.OK):
         print("Failed to set up map!")
         sys.exit(1)
     
@@ -78,16 +78,16 @@ def main():
     for dq in range(2):
         for volt in range(nVoltage):
             for row in range(nRows):
-                if pc.writeRegisterU8Array(md, "mapSelectRow", np.array([dq, volt, row], dtype=np.uint8)) != 1:
+                if pc.writeRegisterU8Array(md, "mapSelectRow", np.array([dq, volt, row], dtype=np.uint8))  != pc.MD_Error_t.OK:
                     print(f"Failed to select row: dq={dq}, volt={volt}, row={row}", file=sys.stderr)
                     sys.exit(1)
 
-                if pc.writeRegisterFloatArray(md, "mapRowData", maps[dq, volt, row]) != 1:
+                if pc.writeRegisterFloatArray(md, "mapRowData", maps[dq, volt, row])  != pc.MD_Error_t.OK:
                     print(f"Failed to write mapRowData: dq={dq}, volt={volt}, row={row}", file=sys.stderr)
                     sys.exit(1)
 
                 readMapRowData, err = pc.readRegisterFloatArray(md, "mapRowData")
-                if err != 1:
+                if err  != pc.MD_Error_t.OK:
                     print(f"Failed to read mapRowData for verification: dq={dq}, volt={volt}, row={row}", file=sys.stderr)
                     sys.exit(1)
 
@@ -104,8 +104,8 @@ def main():
         sys.exit(0)
 
     if (
-        pc.writeRegisterU8(md, "iqControlMode", 1) != 1 or
-        pc.writeRegisterU8(md, "idControlMode", 1) != 1
+        pc.writeRegisterU8(md, "iqControlMode", 1)  != pc.MD_Error_t.OK or
+        pc.writeRegisterU8(md, "idControlMode", 1)  != pc.MD_Error_t.OK
     ):
         print("Failed to enable Maps!", file=sys.stderr)
         sys.exit(1) 
