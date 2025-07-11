@@ -115,7 +115,7 @@ namespace mab
                     value                         = py::array_t<T>(reg_elements);
 
                     md.readRegisters(reg);
-                    float* dest = static_cast<float*>(value.request().ptr);
+                    T* dest = static_cast<T*>(value.request().ptr);
                     memcpy(dest, reg.value, reg_elements * sizeof(T));
                 }
             }
