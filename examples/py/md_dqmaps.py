@@ -12,7 +12,6 @@ maps = np.zeros((2, nVoltage, nRows, nCols), dtype=np.float32)
 voltages = np.array([36, 42, 48, 54, 60], dtype=np.float32)
 torques = np.array([i for i in range(17)], dtype=np.float32)
 velocities = np.array([i * 5 for i in range(15)], dtype=np.float32)
-maps_s = np.array([36, 42, 48], dtype=np.uint8)
 
 def read_csv(filepath):
     with open(filepath, 'r') as fd:
@@ -42,8 +41,6 @@ def read_csv(filepath):
                     maps[dq][volt][row] = rpm_values
 
     return True
-
-
 
 def main():
     if len(sys.argv) != 2:
@@ -113,7 +110,5 @@ def main():
         print("Failed to enable Maps!", file=sys.stderr)
         sys.exit(1) 
     
-    
-
 if __name__=="__main__":
     main()
