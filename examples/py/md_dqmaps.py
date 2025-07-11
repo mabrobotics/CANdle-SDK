@@ -104,8 +104,8 @@ def main():
         sys.exit(0)
 
     if (
-        pc.writeRegisterU8(md, "iqControlMode", 1)  != pc.MD_Error_t.OK or
-        pc.writeRegisterU8(md, "idControlMode", 1)  != pc.MD_Error_t.OK
+        pc.writeRegisterU8(md, "iqControlMode", np.uint8(1))  != pc.MD_Error_t.OK or
+        pc.writeRegisterU8(md, "idControlMode", np.uint8(1))  != pc.MD_Error_t.OK
     ):
         print("Failed to enable Maps!", file=sys.stderr)
         sys.exit(1) 
