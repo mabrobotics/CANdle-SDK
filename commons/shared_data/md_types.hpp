@@ -153,7 +153,9 @@
     MD_REG(mapSelectRow, u8[3], 0xEE0A, RW)          \
     MD_REG(mapRowData, f32[15], 0xEE0B, RW)          \
     MD_REG(idDirect, f32, 0xEE0C, RW)                \
-    MD_REG(iqDirect, f32, 0xEE0D, RW)
+    MD_REG(iqDirect, f32, 0xEE0D, RW)                \
+    MD_REG(idTarget, f32, 0xEE0E, RO)                \
+    MD_REG(iqTarget, f32, 0xEE0F, RO)
 
 namespace mab
 {
