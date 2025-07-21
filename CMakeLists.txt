@@ -35,7 +35,7 @@ add_compile_options(
   -Wno-unused-parameter
   -Wno-missing-field-initializers)
 
-if(NOT DEFINED PLATFORM)
+if(NOT WIN32)
     add_compile_options(
   -Werror)
 endif()
