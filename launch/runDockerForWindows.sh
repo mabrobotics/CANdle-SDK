@@ -4,7 +4,7 @@ start_dir=$(pwd)
 base_dir="$(dirname "$(readlink -f "${BASH_SOURCE}")")"
 cd ${base_dir}
 
-image=mab_build_environment_windows_cross-compile:v1
+image=mabroboticsofficial/mab_build_environment_windows_cross-compile:v1
 
 docker image inspect ${image} &> /dev/null
 inspect=$?
