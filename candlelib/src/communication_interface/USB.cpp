@@ -140,6 +140,10 @@ namespace mab
             m_log.error(message.c_str());
             throw std::runtime_error(message);
         }
+        // printf("--------------data send------------");
+        // for (int i = 0; i <= (int)length; i++)
+        //     printf("0x%X    ", data[i]);
+        // printf("\n");
         return static_cast<libusb_error>(
             libusb_bulk_transfer(m_devHandle, m_outEndpointAddress, data, length, NULL, timeout));
     }
@@ -299,6 +303,78 @@ namespace mab
         return Error_t::OK;
     }
 
+    USB::Error_t USB::transferPDO(std::vector<u8> data, const u32 timeoutMs)
+    {
+        auto ret = transferPDO(data, timeoutMs, 0);
+        return ret.second;
+    }
+
+    std::pair<std::vector<u8>, USB::Error_t> USB::transferPDO(std::vector<u8> data,
+                                                              const u32       timeoutMs,
+                                                              const size_t expectedReceivedDataSize)
+    {
+        if (m_libusbDevice == nullptr)
+        {
+            m_Log.error("Device not connected!");
+            return std::pair(data, Error_t::NOT_CONNECTED);
+        }
+        if (data.size() > USB_MAX_BUFF_LEN)
+        {
+            m_Log.error("Data too long!");
+            return std::pair(data, Error_t::DATA_TOO_LONG);
+        }
+        if (data.size() == 0)
+        {
+            m_Log.error("Data empty!");
+            return std::pair(data, Error_t::DATA_EMPTY);
+        }
+        // This part forces libusb to perform at lesser latency due to usage of microframes
+        // TODO: This needs a rework because of the bootloader
+        // if (data.size() < 66)
+        // {
+        //     data.resize(66);
+        // }
+        libusb_error transmitError = m_libusbDevice->transmit(data.data(), data.size(), timeoutMs);
+        if (transmitError != libusb_error::LIBUSB_SUCCESS)
+        {
+            if (transmitError != libusb_error::LIBUSB_ERROR_TIMEOUT)
+            {
+                std::string err = translateLibusbError(transmitError);
+                // m_Log.error(err.c_str());  // silent mode for pdo
+                if (transmitError ==
+                    libusb_error::LIBUSB_ERROR_PIPE)  // pipe clogged and needs a reset
+                {
+                    m_libusbDevice->unclogInput();
+                }
+                return std::pair(data, Error_t::TRANSMITTER_ERROR);
+            }
+        }
+
+        if (expectedReceivedDataSize != 0)
+        {
+            std::vector<u8> recievedData;
+            recievedData.resize(expectedReceivedDataSize);
+            libusb_error receiveError =
+                m_libusbDevice->receive(recievedData.data(), recievedData.size(), timeoutMs);
+            if (receiveError != libusb_error::LIBUSB_SUCCESS)
+            {
+                if (receiveError != libusb_error::LIBUSB_ERROR_TIMEOUT)
+                {
+                    std::string err = translateLibusbError(receiveError);
+                    // m_Log.error(err.c_str());  // silent mode for pdo
+                    if (receiveError ==
+                        libusb_error::LIBUSB_ERROR_PIPE)  // pipe clogged and needs a reset
+                    {
+                        m_libusbDevice->unclogOutput();
+                    }
+                    return std::pair(data, Error_t::RECEIVER_ERROR);
+                }
+            }
+            return std::pair(recievedData, Error_t::OK);
+        }
+        return std::pair(data, Error_t::OK);
+    }
+
     USB::Error_t USB::transfer(std::vector<u8> data, const u32 timeoutMs)
     {
         auto ret = transfer(data, timeoutMs, 0);
@@ -334,7 +410,7 @@ namespace mab
         if (transmitError != libusb_error::LIBUSB_SUCCESS)
         {
             std::string err = translateLibusbError(transmitError);
-            m_Log.error(err.c_str());
+            m_Log.error(err.c_str());                              // silent mode for pdo
             if (transmitError == libusb_error::LIBUSB_ERROR_PIPE)  // pipe clogged and needs a reset
             {
                 m_libusbDevice->unclogInput();
@@ -351,7 +427,7 @@ namespace mab
             if (receiveError != libusb_error::LIBUSB_SUCCESS)
             {
                 std::string err = translateLibusbError(receiveError);
-                m_Log.error(err.c_str());
+                m_Log.error(err.c_str());  // silent mode for pdo
                 if (receiveError ==
                     libusb_error::LIBUSB_ERROR_PIPE)  // pipe clogged and needs a reset
                 {
@@ -363,4 +439,5 @@ namespace mab
         }
         return std::pair(data, Error_t::OK);
     }
+
 }  // namespace mab

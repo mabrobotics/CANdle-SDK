@@ -4,10 +4,10 @@ include(GNUInstallDirs)
 
 message(CMAKE_INSTALL_SYSCONFDIR: ${CMAKE_INSTALL_SYSCONFDIR})
 
-set(CANDLETOOL_VERSION_MAJOR ${CANDLESDK_VERSION_1})
-set(CANDLETOOL_VERSION_MINOR ${CANDLESDK_VERSION_2})
-set(CANDLETOOL_VERSION_PATCH ${CANDLESDK_VERSION_3})
-set(CANDLETOOL_VERSION_TAG "r")
+set(CANDLETOOL_VERSION_MAJOR 0)
+set(CANDLETOOL_VERSION_MINOR 9)
+set(CANDLETOOL_VERSION_PATCH 4)
+set(CANDLETOOL_VERSION_TAG "beta")
 
 set(CANDLETOOL_VERSION_FULL "${CANDLETOOL_VERSION_MAJOR}.${CANDLETOOL_VERSION_MINOR}.${CANDLETOOL_VERSION_PATCH}-${CANDLETOOL_VERSION_TAG}")
 
@@ -15,14 +15,16 @@ add_subdirectory(3rd_party/CLI11)
 
 set(CANDLETOOL_SOURCES
 
-  src/candle_cli.cpp
+  src/candletool.cpp
+  src/candletoolCO.cpp
   src/canLoader.cpp
-  src/md_cli.cpp
   src/mab_crc.cpp
   src/mabFileParser.cpp
   src/main.cpp
   src/pds_cli.cpp
   src/utilities.cpp
+  src/ui.cpp
+  src/OD.cpp
 
 )
 
@@ -73,29 +75,12 @@ set(CPACK_PACKAGE_VERSION_MINOR ${CANDLETOOL_VERSION_MINOR})
 set(CPACK_PACKAGE_VERSION_PATCH ${CANDLETOOL_VERSION_PATCH})
 set(CPACK_PACKAGE_VENDOR "MAB Robotics")
 set(CPACK_PACKAGE_DESCRIPTION "Console tool for MAB devices ecosystem configuration")
-set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE)
-set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_SOURCE_DIR}/README.md)
-set(CPACK_MONOLITHIC_INSTALL ON)
-
 
 if(WIN32)
-    install(TARGETS candletool
-            RUNTIME
-            COMPONENT candletool)
 
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/motors
-          DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
-          COMPONENT _configs)
-
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini
-          DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
-          PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ WORLD_WRITE
-          COMPONENT _configs)
-    set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
-    set(CPACK_NSIS_MODIFY_PATH ON)
-    set(CPACK_NSIS_MUI_ICON "${CMAKE_CURRENT_SOURCE_DIR}/MAB.ico")
-    set(CPACK_NSIS_MUI_UNIICON "${CMAKE_CURRENT_SOURCE_DIR}/MAB.ico")
-    target_link_libraries(
+  set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL "ON")
+  set(CPACK_NSIS_MODIFY_PATH ON)
+  target_link_libraries(
     candletool
     -static
     candle
@@ -106,42 +91,42 @@ if(WIN32)
 
 elseif(UNIX)
 
-    install(TARGETS candletool
+  install(TARGETS candletool
           RUNTIME
           COMPONENT candletool)
 
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/motors
+  install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/motors
           DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
           COMPONENT _configs)
 
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini
+  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini
           DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
           PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ WORLD_WRITE
           COMPONENT _configs)
 
-    set(CPACK_GENERATOR "DEB")
-    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "MAB Robotics <contact@mabrobotics.pl>")
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS libusb-1.0-0)
-    set(CPACK_DEBIAN_PACKAGE_VERSION)
+  set(CPACK_GENERATOR "DEB")
+  set(CPACK_DEBIAN_PACKAGE_MAINTAINER "MAB Robotics <contact@mabrobotics.pl>")
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS libusb-1.0-0)
+  set(CPACK_DEBIAN_PACKAGE_VERSION)
 
-    if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
+  if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
 
-        set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "arm64")
+    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "arm64")
 
-    elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "armhf")
+  elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "armhf")
 
-        set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "armhf")
+    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "armhf")
 
-    endif()
-    message(CPACK_DEBIAN_PACKAGE_ARCHITECTURE = ${CPACK_DEBIAN_PACKAGE_ARCHITECTURE})
+  endif()
+  message(CPACK_DEBIAN_PACKAGE_ARCHITECTURE = ${CPACK_DEBIAN_PACKAGE_ARCHITECTURE})
 
-    set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/template_package/postinst")
+  set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/template_package/postinst")
 
 
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/udev/rules.d/99-candletool.rules
+  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/udev/rules.d/99-candletool.rules
           DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/")
 
-    install(FILES "${PROJECT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini"
+  install(FILES "${PROJECT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini"
           DESTINATION "/etc/candletool/"
           PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
           WORLD_WRITE EXCLUDE_FROM_ALL)

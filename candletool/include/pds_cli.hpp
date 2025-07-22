@@ -1,38 +1,27 @@
 #pragma once
 
-#include <CLI/App.hpp>
 #include "CLI/CLI.hpp"
-#include "mab_types.hpp"
 #include "pds_types.hpp"
 /*#include "candletool.hpp"*/
 #include "pds.hpp"
-#include "candle.hpp"
-#include "mini/ini.h"
 
 using namespace mab;
 class PdsCli
 {
   public:
     PdsCli() = delete;
-    PdsCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleBuilder);
+    PdsCli(CLI::App& rootCli);
     ~PdsCli() = default;
 
-    void parse();
+    void parse(Pds* p_pds);
 
   private:
-    Logger                               m_log;
-    CLI::App&                            m_rootCli;
-    const std::shared_ptr<CandleBuilder> m_candleBuilder;
+    Logger    m_log;
+    CLI::App& m_rootCli;
 
     CLI::App* m_pdsCmd = nullptr;
 
     CLI::App* m_infoCmd = nullptr;
-
-    CLI::App* m_discovery = nullptr;
-
-    // "update" commands
-    CLI::App*    m_updateCmd       = nullptr;
-    CLI::Option* m_updateCmdOption = nullptr;
 
     // "can" commands node
     CLI::App*    m_canCmd         = nullptr;
@@ -42,9 +31,16 @@ class PdsCli
     CLI::App*    m_canBaudCmd       = nullptr;
     CLI::Option* m_canBaudCmdOption = nullptr;
 
+    CLI::App*    m_canTimeoutCmd       = nullptr;
+    CLI::Option* m_canTimeoutCmdOption = nullptr;
+
     // "clear" commands node
     CLI::App* m_clearCmd    = nullptr;
     CLI::App* m_clearAllCmd = nullptr;
+
+    // Deprecated can comands ( But still usable )
+    CLI::App* m_setCanIdCmd   = nullptr;
+    CLI::App* m_setCanBaudCmd = nullptr;
 
     CLI::App* m_setBatteryLevelCmd = nullptr;
     CLI::App* m_setShutdownTimeCmd = nullptr;
@@ -117,14 +113,10 @@ class PdsCli
 
     // Brake resistor commands
 
-    // "update" options
-    std::string m_mabFile  = "";
-    bool        m_recovery = false;
-
     std::string m_cfgFilePath           = "";
     u8          m_submoduleSocketNumber = 0;
 
-    std::unique_ptr<Pds, std::function<void(Pds*)>> getPDS(canId_t id);
+    Pds* mp_pds;
 
     socketIndex_E decodeSocketIndex(u8 numericSocketIndex);
 

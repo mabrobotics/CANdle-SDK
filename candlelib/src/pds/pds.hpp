@@ -5,7 +5,6 @@
 #include "candle.hpp"
 #include "logger.hpp"
 
-#include "mab_types.hpp"
 #include "pds_module.hpp"
 #include "power_stage.hpp"
 #include "brake_resistor.hpp"
@@ -37,8 +36,7 @@ namespace mab
             moduleType_E moduleTypeSocket6;
         };
 
-        Pds()          = delete;
-        virtual ~Pds() = default;
+        Pds() = delete;
 
         /**
          * @brief Construct a new Pds object
@@ -99,8 +97,6 @@ namespace mab
         error_E saveConfig(void);
 
         static const char* moduleTypeToString(moduleType_E type);
-
-        static const std::vector<canId_t> discoverPDS(Candle* candle);
 
       private:
         /**

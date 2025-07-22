@@ -1,5 +1,4 @@
 #pragma once
-#include <iomanip>
 #include <string>
 #include <cstdint>
 #include <mutex>
@@ -135,19 +134,22 @@ class Logger
         if (getCurrentLevel() == LogLevel_E::SILENT)
             return *this;
 
-        m_internalStrBuffer << value;
+        std::stringstream buffer;
+        buffer << value;
 
         constexpr char termination = *NEW_LINE;
         // Process buffer contents character by character
-        auto newlinePos = m_internalStrBuffer.str().find(termination);
-
-        if (newlinePos != std::string::npos)
+        for (auto& character : buffer.str())
         {
-            std::string temp = m_internalStrBuffer.str();
-            m_internalStrBuffer.str("");
-            // Remove all newline characters from the string
-            temp.erase(std::remove(temp.begin(), temp.end(), termination), temp.end());
-            info(temp.c_str());
+            if (character == termination)
+            {
+                info(m_internalStrBuffer.str().c_str());
+                m_internalStrBuffer.str("");
+            }
+            else
+            {
+                m_internalStrBuffer << character;
+            }
         }
         return *this;
     }
@@ -161,7 +163,7 @@ class Logger
             return *this;
 
         // Apply the manipulator to the internal stream
-        m_internalStrBuffer << manip;
+        manip(m_internalStrBuffer);
 
         // Check if the manipulator inserted a newline
         constexpr char newlineChar = *NEW_LINE;
@@ -177,6 +179,11 @@ class Logger
         }
 
         return *this;
+    }
+
+    inline bool isLevelEnabled(LogLevel_E wanted) const noexcept
+    {
+        return static_cast<uint8_t>(getCurrentLevel()) <= static_cast<uint8_t>(wanted);
     }
 
   private:

@@ -7,7 +7,8 @@ namespace mab
     {
         // TODO: add new hw struct support CS-36
         //  m_mdRegisters.hardwareType.value.deviceType = deviceType_E::UNKNOWN_DEVICE;
-        //  auto mfDataResult                           = readRegister(m_mdRegisters.hardwareType);
+        //  auto mfDataResult                           =
+        //  readRegister(m_mdRegisters.hardwareType);
 
         // if (mfDataresult == Error_t::OK)
         // {
@@ -64,6 +65,7 @@ namespace mab
 
         return MD::Error_t::OK;
     }
+
     MD::Error_t MD::disable()
     {
         m_mdRegisters.state = 64;
@@ -127,7 +129,7 @@ namespace mab
     MD::Error_t MD::setCurrentLimit(float currentLimit /*A*/)
     {
         m_mdRegisters.motorIMax = currentLimit;
-        if (writeRegisters(m_mdRegisters.motorIMax) != MD::Error_t::OK)
+        if (writeRegisters(m_mdRegisters.motorIMax))
         {
             m_log.error("Current limit setting failed!");
             return MD::Error_t::TRANSFER_FAILED;
@@ -139,7 +141,7 @@ namespace mab
     MD::Error_t MD::setTorqueBandwidth(u16 torqueBandwidth /*Hz*/)
     {
         m_mdRegisters.motorTorqueBandwidth = torqueBandwidth;
-        if (writeRegisters(m_mdRegisters.motorTorqueBandwidth) != MD::Error_t::OK)
+        if (writeRegisters(m_mdRegisters.motorTorqueBandwidth))
         {
             m_log.error("Torque bandwidth setting failed!");
             return MD::Error_t::TRANSFER_FAILED;
@@ -151,7 +153,7 @@ namespace mab
     MD::Error_t MD::setMotionMode(mab::MdMode_E mode)
     {
         m_mdRegisters.motionModeCommand = mode;
-        if (writeRegisters(m_mdRegisters.motionModeCommand) != MD::Error_t::OK)
+        if (writeRegisters(m_mdRegisters.motionModeCommand))
         {
             m_log.error("setting failed!");
             return MD::Error_t::TRANSFER_FAILED;
@@ -197,7 +199,7 @@ namespace mab
         if (writeRegisters(m_mdRegisters.motorPosPidKp,
                            m_mdRegisters.motorPosPidKi,
                            m_mdRegisters.motorPosPidKd,
-                           m_mdRegisters.motorPosPidWindup) != MD::Error_t::OK)
+                           m_mdRegisters.motorPosPidWindup))
         {
             m_log.error("Position PID setting failed!");
             return MD::Error_t::TRANSFER_FAILED;
@@ -219,7 +221,7 @@ namespace mab
         if (writeRegisters(m_mdRegisters.motorVelPidKp,
                            m_mdRegisters.motorVelPidKi,
                            m_mdRegisters.motorVelPidKd,
-                           m_mdRegisters.motorVelPidWindup) != MD::Error_t::OK)
+                           m_mdRegisters.motorVelPidWindup))
         {
             m_log.error("Velocity PID setting failed!");
             return MD::Error_t::TRANSFER_FAILED;
@@ -236,8 +238,7 @@ namespace mab
     {
         m_mdRegisters.motorImpPidKp = kp;
         m_mdRegisters.motorImpPidKd = kd;
-        if (writeRegisters(m_mdRegisters.motorImpPidKp, m_mdRegisters.motorImpPidKd) !=
-            MD::Error_t::OK)
+        if (writeRegisters(m_mdRegisters.motorImpPidKp, m_mdRegisters.motorImpPidKd))
         {
             m_log.error("Impedance control parameters setting failed!");
             return MD::Error_t::TRANSFER_FAILED;
@@ -249,7 +250,7 @@ namespace mab
     MD::Error_t MD::setMaxTorque(float maxTorque /*Nm*/)
     {
         m_mdRegisters.maxTorque = maxTorque;
-        if (writeRegisters(m_mdRegisters.maxTorque) != MD::Error_t::OK)
+        if (writeRegisters(m_mdRegisters.maxTorque))
         {
             m_log.error("Maximal torque setting failed!");
             return MD::Error_t::TRANSFER_FAILED;
@@ -261,7 +262,7 @@ namespace mab
     MD::Error_t MD::setProfileVelocity(float profileVelocity /*s^-1*/)
     {
         m_mdRegisters.profileVelocity = profileVelocity;
-        if (writeRegisters(m_mdRegisters.profileVelocity) != MD::Error_t::OK)
+        if (writeRegisters(m_mdRegisters.profileVelocity))
         {
             m_log.error("Velocity for profiles setting failed!");
             return MD::Error_t::TRANSFER_FAILED;
@@ -273,7 +274,7 @@ namespace mab
     MD::Error_t MD::setProfileAcceleration(float profileAcceleration /*s^-2*/)
     {
         m_mdRegisters.profileAcceleration = profileAcceleration;
-        if (writeRegisters(m_mdRegisters.profileAcceleration) != MD::Error_t::OK)
+        if (writeRegisters(m_mdRegisters.profileAcceleration))
         {
             m_log.error("Profile acceleration setting failed!");
             return MD::Error_t::TRANSFER_FAILED;
@@ -285,7 +286,7 @@ namespace mab
     MD::Error_t MD::setTargetPosition(float position /*rad*/)
     {
         m_mdRegisters.targetPosition = position;
-        if (writeRegisters(m_mdRegisters.targetPosition) != MD::Error_t::OK)
+        if (writeRegisters(m_mdRegisters.targetPosition))
         {
             m_log.error("Target position setting failed!");
             return MD::Error_t::TRANSFER_FAILED;
@@ -297,7 +298,7 @@ namespace mab
     MD::Error_t MD::setTargetVelocity(float velocity /*rad/s*/)
     {
         m_mdRegisters.targetVelocity = velocity;
-        if (writeRegisters(m_mdRegisters.targetVelocity) != MD::Error_t::OK)
+        if (writeRegisters(m_mdRegisters.targetVelocity))
         {
             m_log.error("Velocity target setting failed!");
             return MD::Error_t::TRANSFER_FAILED;
@@ -309,7 +310,7 @@ namespace mab
     MD::Error_t MD::setTargetTorque(float torque /*Nm*/)
     {
         m_mdRegisters.targetTorque = torque;
-        if (writeRegisters(m_mdRegisters.targetTorque) != MD::Error_t::OK)
+        if (writeRegisters(m_mdRegisters.targetTorque))
         {
             m_log.error("Torque target setting failed!");
             return MD::Error_t::TRANSFER_FAILED;
@@ -318,7 +319,7 @@ namespace mab
         return MD::Error_t::OK;
     }
 
-    std::pair<const std::unordered_map<MDStatus::QuickStatusBits, MDStatus::StatusItem_S>,
+    std::pair<const std::unordered_map<const MDStatus::QuickStatusBits, MDStatus::StatusItem_S>,
               MD::Error_t>
     MD::getQuickStatus()
     {
@@ -332,7 +333,7 @@ namespace mab
         return std::make_pair(m_status.quickStatus, result);
     }
 
-    std::pair<const std::unordered_map<MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
+    std::pair<const std::unordered_map<const MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
               MD::Error_t>
     MD::getMainEncoderStatus()
     {
@@ -346,7 +347,7 @@ namespace mab
         return std::make_pair(m_status.encoderStatus, result);
     }
 
-    std::pair<const std::unordered_map<MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
+    std::pair<const std::unordered_map<const MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
               MD::Error_t>
     MD::getOutputEncoderStatus()
     {
@@ -360,8 +361,9 @@ namespace mab
         return std::make_pair(m_status.encoderStatus, result);
     }
 
-    std::pair<const std::unordered_map<MDStatus::CalibrationStatusBits, MDStatus::StatusItem_S>,
-              MD::Error_t>
+    std::pair<
+        const std::unordered_map<const MDStatus::CalibrationStatusBits, MDStatus::StatusItem_S>,
+        MD::Error_t>
     MD::getCalibrationStatus()
     {
         auto result = readRegister(m_mdRegisters.calibrationStatus);
@@ -374,7 +376,7 @@ namespace mab
         return std::make_pair(m_status.calibrationStatus, result);
     }
 
-    std::pair<const std::unordered_map<MDStatus::BridgeStatusBits, MDStatus::StatusItem_S>,
+    std::pair<const std::unordered_map<const MDStatus::BridgeStatusBits, MDStatus::StatusItem_S>,
               MD::Error_t>
     MD::getBridgeStatus()
     {
@@ -388,7 +390,7 @@ namespace mab
         return std::make_pair(m_status.bridgeStatus, result);
     }
 
-    std::pair<const std::unordered_map<MDStatus::HardwareStatusBits, MDStatus::StatusItem_S>,
+    std::pair<const std::unordered_map<const MDStatus::HardwareStatusBits, MDStatus::StatusItem_S>,
               MD::Error_t>
     MD::getHardwareStatus()
     {
@@ -402,8 +404,9 @@ namespace mab
         return std::make_pair(m_status.hardwareStatus, result);
     }
 
-    std::pair<const std::unordered_map<MDStatus::CommunicationStatusBits, MDStatus::StatusItem_S>,
-              MD::Error_t>
+    std::pair<
+        const std::unordered_map<const MDStatus::CommunicationStatusBits, MDStatus::StatusItem_S>,
+        MD::Error_t>
     MD::getCommunicationStatus()
     {
         auto result = readRegister(m_mdRegisters.communicationStatus);
@@ -416,7 +419,7 @@ namespace mab
         return std::make_pair(m_status.communicationStatus, result);
     }
 
-    std::pair<const std::unordered_map<MDStatus::MotionStatusBits, MDStatus::StatusItem_S>,
+    std::pair<const std::unordered_map<const MDStatus::MotionStatusBits, MDStatus::StatusItem_S>,
               MD::Error_t>
     MD::getMotionStatus()
     {
@@ -496,7 +499,6 @@ namespace mab
         return std::make_pair(m_mdRegisters.motorTemperature.value, result);
     }
 
-    /// @brief This test should be performed with 1M datarate on CAN network
     void MD::testLatency()
     {
         u64 latencyTransmit = 0;  // us
@@ -536,8 +538,8 @@ namespace mab
 
     std::vector<canId_t> MD::discoverMDs(Candle* candle)
     {
-        constexpr canId_t MIN_VAILID_ID = 10;     // ids less than that are reserved for special
-        constexpr canId_t MAX_VAILID_ID = 0x7FF;  // 11-bit value (standard can ID max)
+        constexpr canId_t MIN_VALID_ID = 10;     // ids less than that are reserved for special
+        constexpr canId_t MAX_VALID_ID = 0x7FF;  // 11-bit value (standard can ID max)
 
         Logger               log(Logger::ProgramLayer_E::TOP, "MD_DISCOVERY");
         std::vector<canId_t> ids;
@@ -550,10 +552,10 @@ namespace mab
 
         log.info("Looking for MDs");
 
-        for (canId_t id = MIN_VAILID_ID; id < MAX_VAILID_ID; id++)
+        for (canId_t id = MIN_VALID_ID; id < MAX_VALID_ID; id++)
         {
             log.debug("Trying to bind MD with id %d", id);
-            log.progress(float(id) / float(MAX_VAILID_ID));
+            log.progress(float(id) / float(MAX_VALID_ID));
             // workaround for ping error spam
             Logger::Verbosity_E prevVerbosity =
                 Logger::g_m_verbosity.value_or(Logger::Verbosity_E::VERBOSITY_1);
@@ -574,4 +576,5 @@ namespace mab
         log.warn("Have not found any MD devices on the CAN bus!");
         return ids;
     }
+
 }  // namespace mab

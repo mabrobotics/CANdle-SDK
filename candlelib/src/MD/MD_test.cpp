@@ -1,3 +1,4 @@
+#include <asm-generic/errno-base.h>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <functional>
@@ -36,9 +37,7 @@ class MD_test : public ::testing::Test
 TEST_F(MD_test, checkROAccess)
 {
     mab::MDRegisters_S registers;
-    std::vector<u8>    mockReponse = {0x04,
-                                      0x01,
-                                      0x41,
+    std::vector<u8>    mockReponse = {0x00,
                                       0x00,
                                       (u8)(registers.auxEncoderPosition.m_regAddress),
                                       (u8)(registers.auxEncoderPosition.m_regAddress >> 8),
@@ -49,8 +48,7 @@ TEST_F(MD_test, checkROAccess)
 
     EXPECT_CALL(*m_debugBus, transfer(_, _, _))
         .Times(1)
-        .WillRepeatedly(
-            Return(std::make_pair(mockReponse, mab::I_CommunicationInterface::Error_t::OK)));
+        .WillOnce(Return(std::make_pair(mockReponse, mab::I_CommunicationInterface::Error_t::OK)));
 
     mab::MD md(100, m_candle);
 

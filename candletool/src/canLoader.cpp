@@ -22,6 +22,7 @@ namespace mab
 
     CanLoader::~CanLoader()
     {
+        mab::detachCandle(m_candle);
     }
 
     bool CanLoader::flashAndBoot()

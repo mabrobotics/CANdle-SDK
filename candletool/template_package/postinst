@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
-sudo udevadm control --reload-rules && sudo udevadm trigger
-
+echo "*********  CANDLESDK NOTE  *********"
+echo "Before first use please make sure the current user is added to the dialout group:"
+echo "sudo adduser <current user> dialout"
+echo "and perform a reboot."
+echo "************************************"
 echo "For more please refer to the manual: https://mabrobotics.pl/servos/manual"
+echo "************************************"
+
