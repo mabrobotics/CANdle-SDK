@@ -4,16 +4,6 @@ include(git_func.cmake)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-if(NOT DEFINED PLATFORM)
-    set(PLATFORM "native")
-    message("Compiling for native system")
-elseif("${PLATFORM}" STREQUAL "WIN")
-    message("Cross - compiling for Windows")
-    set(CMAKE_CXX_COMPILER /usr/bin/x86_64-w64-mingw32-g++-posix) #TODO: Convert this into toolchain file
-    set(CMAKE_C_COMPILER /usr/bin/x86_64-w64-mingw32-gcc-posix)
-    set(CMAKE_SYSTEM_NAME Windows)
-endif()
-
 set(CANDLESDK_VERSION_1 1)
 set(CANDLESDK_VERSION_2 0)
 set(CANDLESDK_VERSION_3 0)
@@ -36,7 +26,7 @@ add_compile_options(
   -Wno-unused-parameter
   -Wno-missing-field-initializers)
 
-if(NOT DEFINED PLATFORM)
+if(NOT WIN32)
     add_compile_options(
   -Werror)
 endif()
