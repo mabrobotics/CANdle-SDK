@@ -33,7 +33,8 @@ jobs:
       - name: Install libusb
         run: |
           sudo apt-get update
-          sudo apt-get install libusb-1.0.0-dev
+          sudo apt-get install yay
+          sudo yum -y install libusbx-devel && sudo yum -y install libusb-devel
 
       - name: Install CIBuildWheel
         run: python3 -m pip install cibuildwheel==3.1.1
