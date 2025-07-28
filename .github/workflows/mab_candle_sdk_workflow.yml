@@ -20,11 +20,12 @@ jobs:
       options: --user root
     
     steps:
+      - uses: actions/setup-python@v5
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: "true"
-          
+
       - name: Install CIBuildWheel
         run: python -m pip install cibuildwheel==3.1.1
 
