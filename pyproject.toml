@@ -8,6 +8,7 @@ requires = [
     "cibuildwheel",
     "libusb",
     "uv",
+    "venv",
 ]
 build-backend = "scikit_build_core.build"
 
