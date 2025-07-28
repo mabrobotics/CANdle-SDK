@@ -6,7 +6,8 @@ requires = [
     "make",
     "cmake",
     "cibuildwheel",
-    "libusb"
+    "libusb",
+    "uv"
 ]
 build-backend = "scikit_build_core.build"
 
