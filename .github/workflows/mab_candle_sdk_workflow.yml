@@ -20,6 +20,9 @@ jobs:
       options: --user root
     
     steps:
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v4
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
