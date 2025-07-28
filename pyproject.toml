@@ -44,7 +44,14 @@ PYTHON_BUILD = "ON"
 
 [tool.cibuildwheel]
 build-frontend = "build[uv]"
-skip = ["cp38-*", "cp39-*", "cp310-*", "cp-311-*", "*musllinux*"]
+skip = [
+    "cp38-*",
+    "cp39-*",
+    "cp310-*",
+    "cp311-win*",
+    "cp312-win*",
+    "*musllinux*",
+]
 linux.before-build = "yum -y install libusbx-devel && yum -y install libusb-devel"
 windows.archs = ["AMD64"]
 
