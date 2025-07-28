@@ -7,7 +7,7 @@ requires = [
     "cmake",
     "cibuildwheel",
     "libusb",
-    "uv"
+    "uv",
 ]
 build-backend = "scikit_build_core.build"
 
@@ -24,7 +24,6 @@ license = { file = "LICENSE.txt" }
 classifiers = [
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Natural Language :: English",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: C++",
@@ -36,7 +35,7 @@ classifiers = [
 [tool.scikit-build]
 build.verbose = true
 logging.level = "INFO"
-sdist.include = [".git","candlelib/third_party"]
+sdist.include = [".git", "candlelib/third_party"]
 cmake.build-type = "Release"
 install.strip = false
 
@@ -45,7 +44,7 @@ PYTHON_BUILD = "ON"
 
 [tool.cibuildwheel]
 build-frontend = "build[uv]"
-skip = ["cp38-*", "cp39-*", "cp310-*", "*musllinux*"]
+skip = ["cp38-*", "cp39-*", "cp310-*", "cp-311-*", "*musllinux*"]
 linux.before-build = "yum -y install libusbx-devel && yum -y install libusb-devel"
 windows.archs = ["AMD64"]
 
