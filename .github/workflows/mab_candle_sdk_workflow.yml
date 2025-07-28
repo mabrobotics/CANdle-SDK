@@ -17,24 +17,20 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Set up Docker
-        uses: docker/setup-docker-action@v4
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.13' 
+      
+      - name: Install libusb
+        run: |
+          sudo yum -y install libusbx-devel && sudo yum -y install libusb-devel
 
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: "true"
-      
-      - name: Install libusb
-        run: |
-          sudo apt-get update
-          sudo apt-get install yum
-          sudo yum -y install libusbx-devel && sudo yum -y install libusb-devel
 
       - name: Install CIBuildWheel
         run: python3 -m pip install cibuildwheel==3.1.1
