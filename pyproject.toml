@@ -14,7 +14,7 @@ build-backend = "scikit_build_core.build"
 name = "pyCandleMAB"
 version = "2.0.0"
 dependencies = ["cmake"]
-requires-python = ">= 3.7"
+requires-python = ">= 3.11"
 authors = [{ name = "MAB Robotics", email = "support@mabrobotics.pl" }]
 maintainers = [{ name = "MAB Robotics", email = "support@mabrobotics.pl" }]
 description = "Python package for controlling MD-based actuators"
@@ -23,11 +23,9 @@ license = { file = "LICENSE.txt" }
 classifiers = [
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Natural Language :: English",
-    "Programming Language :: Python :: 3.6",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: C++",
     "Intended Audience :: Science/Research",
     "Programming Language :: Python :: Implementation :: CPython",
@@ -46,7 +44,7 @@ PYTHON_BUILD = "ON"
 
 [tool.cibuildwheel]
 build-frontend = "build[uv]"
-skip = ["cp36-*", "cp37-*", "*musllinux*"]
+skip = ["cp38-*", "cp39-*", "cp310-*", "*musllinux*"]
 before-build = "yum -y install libusbx-devel && yum -y install libusb-devel"
 
 [[tool.cibuildwheel.overrides]]
