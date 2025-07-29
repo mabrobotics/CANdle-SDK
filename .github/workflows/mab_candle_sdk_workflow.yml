@@ -13,6 +13,38 @@ on:
       - devel
 
 jobs:
+  check-if-dev:
+    runs-on: ubuntu-latest
+    outputs:
+      is_dev: ${{ steps.set_output.outputs.is_dev }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version from pyproject.toml
+        id: set_output
+        run: |
+          version=$(grep '^version\s*=' pyproject.toml | sed -E "s/version\s*=\s*['\"](.*)['\"]/\\1/")
+          echo "Version found: $version"
+
+          if [[ "$version" == *"dev"* ]]; then
+            echo "Detected dev version"
+            echo "is_dev=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Not a dev version"
+            echo "is_dev=false" >> "$GITHUB_OUTPUT"
+          fi
+  pypi_test_release:
+    needs:
+      - check-version
+      - build-candleSDK-python-linux
+      - build-candleSDK-python-windows
+    if: needs.check-version.outputs.is_dev == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Placeholder
+        run: echo "This runs only on dev versions."
+
   build-candleSDK-python-linux:
     runs-on: ubuntu-latest
 
