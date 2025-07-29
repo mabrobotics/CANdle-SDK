@@ -42,8 +42,31 @@ jobs:
     if: needs.check-if-dev.outputs.is_dev == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Placeholder
-        run: echo "This runs only on dev versions."
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Linux wheel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: cibw-wheels-linux
+          path: dist/
+
+      - name: Download Windows wheel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: cibw-wheels-windows
+          path: dist/
+
+      - name: List wheels
+        run: ls -lh dist/
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install twine
+        run: python -m pip install --upgrade twine
 
   build-candleSDK-python-linux:
     runs-on: ubuntu-latest
