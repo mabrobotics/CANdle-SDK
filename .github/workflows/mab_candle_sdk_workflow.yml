@@ -36,10 +36,10 @@ jobs:
           fi
   pypi_test_release:
     needs:
-      - check-version
+      - check-if-dev
       - build-candleSDK-python-linux
       - build-candleSDK-python-windows
-    if: needs.check-version.outputs.is_dev == 'true'
+    if: needs.check-if-dev.outputs.is_dev == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Placeholder
