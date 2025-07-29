@@ -13,7 +13,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "pycandlelib"
-version = "1.0.0rc1"
+version = "1.0.0dev1"
 dependencies = ["cmake"]
 requires-python = ">= 3.10"
 authors = [{ name = "MAB Robotics", email = "support@mabrobotics.pl" }]
