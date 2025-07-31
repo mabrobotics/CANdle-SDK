@@ -51,6 +51,7 @@ jobs:
       - build-candleSDK-python-linux
       - build-candleSDK-python-windows
     runs-on: ubuntu-latest
+    if: ${{ needs.check-if-dev.outputs.has_version_tag == 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -81,16 +82,6 @@ jobs:
       - name: Build source distribution (sdist)
         run: |
           python -m build --sdist --outdir dist/
-
-      - name: Rename wheel with commit hash
-        run: |
-          for f in dist/*; do
-            commit_hash=${GITHUB_SHA::7}
-            new_name=$(echo "$f" | sed -E "s/^([^-]+)-([0-9a-zA-Z\.]+)-/\1-\2+${commit_hash}-/")
-            mv "$f" "$new_name"
-          done
-        env:
-          GITHUB_SHA: ${{ github.sha }}
 
       - name: Rename distribution files with commit hash
         run: |
