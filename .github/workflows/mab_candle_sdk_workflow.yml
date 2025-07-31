@@ -50,7 +50,6 @@ jobs:
       - check-if-dev
       - build-candleSDK-python-linux
       - build-candleSDK-python-windows
-    if: needs.check-if-dev.outputs.is_dev == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -82,6 +81,32 @@ jobs:
       - name: Build source distribution (sdist)
         run: |
           python -m build --sdist --outdir dist/
+
+      - name: Rename wheel with commit hash
+        run: |
+          for f in dist/*; do
+            commit_hash=${GITHUB_SHA::7}
+            new_name=$(echo "$f" | sed -E "s/^([^-]+)-([0-9a-zA-Z\.]+)-/\1-\2+${commit_hash}-/")
+            mv "$f" "$new_name"
+          done
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+
+      - name: Rename distribution files with commit hash
+        run: |
+          commit_hash=${GITHUB_SHA::7}
+          for f in dist/*; do
+            base=$(basename "$f")
+            if [[ "$base" =~ ^([^-]+)-([0-9a-zA-Z\.]+)(.*)$ ]]; then
+              name="${BASH_REMATCH[1]}"
+              version="${BASH_REMATCH[2]}"
+              rest="${BASH_REMATCH[3]}"
+              new_name="dist/${name}-${version}+${commit_hash}${rest}"
+              mv "$f" "$new_name"
+            fi
+          done
+        env:
+          GITHUB_SHA: ${{ github.sha }}
 
       - name: Publish to PyPI test
         env:
@@ -365,7 +390,7 @@ jobs:
         run: |
           python -m build --sdist --outdir dist/
 
-      - name: Publish to PyPI test
+      - name: Publish to PyPI
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.RELEASE_PYPI_API_TOKEN }}
