@@ -37,13 +37,15 @@ jobs:
             echo "is_dev=false" >> "$GITHUB_OUTPUT"
           fi
 
-          # Detect pre-release or build metadata (e.g., 1.2.3-rc1 or 1.2.3+meta)
-          if [[ "$version" =~ [^-+]+$ ]]; then
-            echo "Version is pure (no tag or metadata)"
-            echo "has_version_tag=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "Version has pre-release or build tag"
+          # Detect pre-release (e.g., 1.2.3.dev1)
+          dot_count=$(grep -o "\." <<< "$version" | wc -l)
+
+          if [[ "$dot_count" -eq 3 ]]; then
+            echo "Version has 3 periods"
             echo "has_version_tag=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Version has 2 or fewer periods"
+            echo "has_version_tag=false" >> "$GITHUB_OUTPUT"
           fi
   pypi_test_release:
     needs:
