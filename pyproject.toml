@@ -50,6 +50,7 @@ skip = [
     "cp310-win*",
     "cp311-win*",
     "cp312-win*",
+    "cp314-*",     # Temporarly disable timely builds
     "*musllinux*",
 ]
 linux.before-build = "yum -y install libusbx-devel && yum -y install libusb-devel"
