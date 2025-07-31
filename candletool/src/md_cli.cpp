@@ -1288,10 +1288,10 @@ namespace mab
                         m_logger.error("Failed to read register %d", regAdress);
                         return false;
                     }
-                    const f32* value   = reg.value;
+                    const f32* value = reg.value;
                     if (!registerStringValue.has_value())
                         registerStringValue = "";
-                    for (int i = 0; i < 15; i++)
+                    for (size_t i = 0; i < (sizeof(reg.value) / sizeof(reg.value[0])); i++)
                     {
                         *registerStringValue += std::to_string(value[i]);
                         *registerStringValue += ", ";
