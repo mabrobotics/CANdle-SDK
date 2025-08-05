@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -9,10 +8,17 @@
 #include <memory>
 #include <vector>
 
+#include "mab_types.hpp"
 #include "candle_types.hpp"
 #include "candle.hpp"
 #include "MD.hpp"
 #include "logger.hpp"
+#include "pds.hpp"
+#include "pds_types.hpp"
+#include "pds_properties.hpp"
+#include "brake_resistor.hpp"
+#include "power_stage.hpp"
+#include "isolated_converter.hpp"
 
 namespace py = pybind11;
 
@@ -373,4 +379,243 @@ PYBIND11_MODULE(pyCandle, m)
         "logVerbosity",
         [](Logger::Verbosity_E verbosity) { Logger::g_m_verbosity = verbosity; },
         py::arg("verbosity"));
+
+    // PDS Enums and Types
+    py::enum_<mab::PdsModule::error_E>(m, "PDS_Error_t")
+        .value("OK", mab::PdsModule::error_E::OK)
+        .value("INTERNAL_ERROR", mab::PdsModule::error_E::INTERNAL_ERROR)
+        .value("PROTOCOL_ERROR", mab::PdsModule::error_E::PROTOCOL_ERROR)
+        .value("COMMUNICATION_ERROR", mab::PdsModule::error_E::COMMUNICATION_ERROR)
+        .export_values();
+
+    py::enum_<mab::moduleType_E>(m, "moduleType_E")
+        .value("UNDEFINED", mab::moduleType_E::UNDEFINED)
+        .value("CONTROL_BOARD", mab::moduleType_E::CONTROL_BOARD)
+        .value("BRAKE_RESISTOR", mab::moduleType_E::BRAKE_RESISTOR)
+        .value("ISOLATED_CONVERTER", mab::moduleType_E::ISOLATED_CONVERTER)
+        .value("POWER_STAGE", mab::moduleType_E::POWER_STAGE)
+        .export_values();
+
+    py::enum_<mab::socketIndex_E>(m, "socketIndex_E")
+        .value("UNASSIGNED", mab::socketIndex_E::UNASSIGNED)
+        .value("SOCKET_1", mab::socketIndex_E::SOCKET_1)
+        .value("SOCKET_2", mab::socketIndex_E::SOCKET_2)
+        .value("SOCKET_3", mab::socketIndex_E::SOCKET_3)
+        .value("SOCKET_4", mab::socketIndex_E::SOCKET_4)
+        .value("SOCKET_5", mab::socketIndex_E::SOCKET_5)
+        .value("SOCKET_6", mab::socketIndex_E::SOCKET_6)
+        .export_values();
+
+    py::enum_<mab::moduleVersion_E>(m, "moduleVersion_E")
+        .value("UNKNOWN", mab::moduleVersion_E::UNKNOWN)
+        .value("V0_1", mab::moduleVersion_E::V0_1)
+        .value("V0_2", mab::moduleVersion_E::V0_2)
+        .value("V0_3", mab::moduleVersion_E::V0_3)
+        .export_values();
+
+    py::class_<mab::Pds::modulesSet_S>(m, "modulesSet_S")
+        .def(py::init<>())
+        .def_readwrite("moduleTypeSocket1", &mab::Pds::modulesSet_S::moduleTypeSocket1)
+        .def_readwrite("moduleTypeSocket2", &mab::Pds::modulesSet_S::moduleTypeSocket2)
+        .def_readwrite("moduleTypeSocket3", &mab::Pds::modulesSet_S::moduleTypeSocket3)
+        .def_readwrite("moduleTypeSocket4", &mab::Pds::modulesSet_S::moduleTypeSocket4)
+        .def_readwrite("moduleTypeSocket5", &mab::Pds::modulesSet_S::moduleTypeSocket5)
+        .def_readwrite("moduleTypeSocket6", &mab::Pds::modulesSet_S::moduleTypeSocket6);
+
+    py::class_<mab::pdsFwMetadata_S>(m, "pdsFwMetadata_S")
+        .def(py::init<>())
+        .def_readwrite("metadataStructVersion", &mab::pdsFwMetadata_S::metadataStructVersion)
+        .def_readwrite("version", &mab::pdsFwMetadata_S::version)
+        .def_property(
+            "gitHash",
+            [](const mab::pdsFwMetadata_S& s) { return std::string(s.gitHash, 8); },
+            [](mab::pdsFwMetadata_S& s, const std::string& value)
+            { std::strncpy(s.gitHash, value.c_str(), 8); });
+
+    py::class_<mab::controlBoardStatus_S>(m, "controlBoardStatus_S")
+        .def(py::init<>())
+        .def_readwrite("ENABLED", &mab::controlBoardStatus_S::ENABLED)
+        .def_readwrite("OVER_TEMPERATURE", &mab::controlBoardStatus_S::OVER_TEMPERATURE)
+        .def_readwrite("OVER_CURRENT", &mab::controlBoardStatus_S::OVER_CURRENT)
+        .def_readwrite("STO_1", &mab::controlBoardStatus_S::STO_1)
+        .def_readwrite("STO_2", &mab::controlBoardStatus_S::STO_2)
+        .def_readwrite("FDCAN_TIMEOUT", &mab::controlBoardStatus_S::FDCAN_TIMEOUT)
+        .def_readwrite("SUBMODULE_1_ERROR", &mab::controlBoardStatus_S::SUBMODULE_1_ERROR)
+        .def_readwrite("SUBMODULE_2_ERROR", &mab::controlBoardStatus_S::SUBMODULE_2_ERROR)
+        .def_readwrite("SUBMODULE_3_ERROR", &mab::controlBoardStatus_S::SUBMODULE_3_ERROR)
+        .def_readwrite("SUBMODULE_4_ERROR", &mab::controlBoardStatus_S::SUBMODULE_4_ERROR)
+        .def_readwrite("SUBMODULE_5_ERROR", &mab::controlBoardStatus_S::SUBMODULE_5_ERROR)
+        .def_readwrite("SUBMODULE_6_ERROR", &mab::controlBoardStatus_S::SUBMODULE_6_ERROR)
+        .def_readwrite("CHARGER_DETECTED", &mab::controlBoardStatus_S::CHARGER_DETECTED)
+        .def_readwrite("SHUTDOWN_SCHEDULED", &mab::controlBoardStatus_S::SHUTDOWN_SCHEDULED);
+
+    py::class_<mab::powerStageStatus_S>(m, "powerStageStatus_S")
+        .def(py::init<>())
+        .def_readwrite("ENABLED", &mab::powerStageStatus_S::ENABLED)
+        .def_readwrite("OVER_TEMPERATURE", &mab::powerStageStatus_S::OVER_TEMPERATURE)
+        .def_readwrite("OVER_CURRENT", &mab::powerStageStatus_S::OVER_CURRENT);
+
+    py::class_<mab::brakeResistorStatus_S>(m, "brakeResistorStatus_S")
+        .def(py::init<>())
+        .def_readwrite("ENABLED", &mab::brakeResistorStatus_S::ENABLED)
+        .def_readwrite("OVER_TEMPERATURE", &mab::brakeResistorStatus_S::OVER_TEMPERATURE);
+
+    py::class_<mab::isolatedConverterStatus_S>(m, "isolatedConverterStatus_S")
+        .def(py::init<>())
+        .def_readwrite("ENABLED", &mab::isolatedConverterStatus_S::ENABLED)
+        .def_readwrite("OVER_TEMPERATURE", &mab::isolatedConverterStatus_S::OVER_TEMPERATURE)
+        .def_readwrite("OVER_CURRENT", &mab::isolatedConverterStatus_S::OVER_CURRENT);
+
+    // PDS Module Classes
+    py::class_<mab::BrakeResistor>(m, "BrakeResistor")
+        .def("printModuleInfo", &mab::BrakeResistor::printModuleInfo)
+        .def("enable", &mab::BrakeResistor::enable)
+        .def("disable", &mab::BrakeResistor::disable)
+        .def("getStatus", &mab::BrakeResistor::getStatus)
+        .def("clearStatus", &mab::BrakeResistor::clearStatus)
+        .def("getEnabled", &mab::BrakeResistor::getEnabled)
+        .def("getTemperature", &mab::BrakeResistor::getTemperature)
+        .def("setTemperatureLimit",
+             &mab::BrakeResistor::setTemperatureLimit,
+             py::arg("temperatureLimit"))
+        .def("getTemperatureLimit", &mab::BrakeResistor::getTemperatureLimit);
+
+    py::class_<mab::PowerStage>(m, "PowerStage")
+        .def("printModuleInfo", &mab::PowerStage::printModuleInfo)
+        .def("enable", &mab::PowerStage::enable)
+        .def("disable", &mab::PowerStage::disable)
+        .def("getStatus", &mab::PowerStage::getStatus)
+        .def("clearStatus", &mab::PowerStage::clearStatus)
+        .def("getEnabled", &mab::PowerStage::getEnabled)
+        .def("bindBrakeResistor",
+             &mab::PowerStage::bindBrakeResistor,
+             py::arg("brakeResistorSocketIndex"))
+        .def("getBindBrakeResistor", &mab::PowerStage::getBindBrakeResistor)
+        .def("setBrakeResistorTriggerVoltage",
+             &mab::PowerStage::setBrakeResistorTriggerVoltage,
+             py::arg("brTriggerVoltage"))
+        .def("getBrakeResistorTriggerVoltage", &mab::PowerStage::getBrakeResistorTriggerVoltage)
+        .def("getOutputVoltage", &mab::PowerStage::getOutputVoltage)
+        .def("setAutostart", &mab::PowerStage::setAutostart, py::arg("autoStart"))
+        .def("getAutostart", &mab::PowerStage::getAutostart)
+        .def("getLoadCurrent", &mab::PowerStage::getLoadCurrent)
+        .def("getPower", &mab::PowerStage::getPower)
+        .def("getEnergy", &mab::PowerStage::getEnergy)
+        .def("getTemperature", &mab::PowerStage::getTemperature)
+        .def("setOcdLevel", &mab::PowerStage::setOcdLevel, py::arg("ocdLevel"))
+        .def("getOcdLevel", &mab::PowerStage::getOcdLevel)
+        .def("setOcdDelay", &mab::PowerStage::setOcdDelay, py::arg("ocdDelay"))
+        .def("getOcdDelay", &mab::PowerStage::getOcdDelay)
+        .def("setTemperatureLimit",
+             &mab::PowerStage::setTemperatureLimit,
+             py::arg("temperatureLimit"))
+        .def("getTemperatureLimit", &mab::PowerStage::getTemperatureLimit);
+
+    py::class_<mab::IsolatedConv>(m, "IsolatedConv")
+        .def("printModuleInfo", &mab::IsolatedConv::printModuleInfo)
+        .def("enable", &mab::IsolatedConv::enable)
+        .def("disable", &mab::IsolatedConv::disable)
+        .def("getStatus", &mab::IsolatedConv::getStatus)
+        .def("clearStatus", &mab::IsolatedConv::clearStatus)
+        .def("getEnabled", &mab::IsolatedConv::getEnabled)
+        .def("getOutputVoltage", &mab::IsolatedConv::getOutputVoltage)
+        .def("getLoadCurrent", &mab::IsolatedConv::getLoadCurrent)
+        .def("getPower", &mab::IsolatedConv::getPower)
+        .def("getEnergy", &mab::IsolatedConv::getEnergy)
+        .def("getTemperature", &mab::IsolatedConv::getTemperature)
+        .def("setOcdLevel", &mab::IsolatedConv::setOcdLevel, py::arg("ocdLevel"))
+        .def("getOcdLevel", &mab::IsolatedConv::getOcdLevel)
+        .def("setOcdDelay", &mab::IsolatedConv::setOcdDelay, py::arg("ocdDelay"))
+        .def("getOcdDelay", &mab::IsolatedConv::getOcdDelay)
+        .def("setTemperatureLimit",
+             &mab::IsolatedConv::setTemperatureLimit,
+             py::arg("temperatureLimit"))
+        .def("getTemperatureLimit", &mab::IsolatedConv::getTemperatureLimit);
+
+    // PDS Main Class
+    py::class_<mab::Pds>(m, "Pds")
+        .def(py::init([](int canId, mab::Candle* candle) -> auto
+                      { return mab::Pds(canId, candle); }))
+        .def("init", py::overload_cast<>(&mab::Pds::init), "Initialize the PDS device")
+        .def("init",
+             py::overload_cast<u16>(&mab::Pds::init),
+             "Initialize the PDS device with the provided ID")
+        .def("printModuleInfo",
+             &mab::Pds::printModuleInfo,
+             "Print information about connected modules")
+        .def("getFwMetadata", &mab::Pds::getFwMetadata, "Get firmware metadata")
+        .def("getModules", &mab::Pds::getModules, "Get information about connected modules")
+        .def("verifyModuleSocket",
+             &mab::Pds::verifyModuleSocket,
+             py::arg("type"),
+             py::arg("socket"),
+             "Verify if a module type is at a specific socket")
+        .def("attachBrakeResistor",
+             &mab::Pds::attachBrakeResistor,
+             py::arg("socket"),
+             py::return_value_policy::take_ownership,
+             "Attach a brake resistor module at the specified socket")
+        .def("attachPowerStage",
+             &mab::Pds::attachPowerStage,
+             py::arg("socket"),
+             py::return_value_policy::take_ownership,
+             "Attach a power stage module at the specified socket")
+        .def("attachIsolatedConverter",
+             &mab::Pds::attachIsolatedConverter,
+             py::arg("socket"),
+             py::return_value_policy::take_ownership,
+             "Attach an isolated converter module at the specified socket")
+        .def("getStatus", &mab::Pds::getStatus, "Get control board status")
+        .def("clearStatus", &mab::Pds::clearStatus, "Clear control board status")
+        .def("clearErrors", &mab::Pds::clearErrors, "Clear all errors")
+        .def("getCanId", &mab::Pds::getCanId, "Get CAN ID")
+        .def("setCanId", &mab::Pds::setCanId, py::arg("canId"), "Set CAN ID")
+        .def("getCanBaudrate", &mab::Pds::getCanBaudrate, "Get CAN baudrate")
+        .def(
+            "setCanBaudrate", &mab::Pds::setCanBaudrate, py::arg("canBaudrate"), "Set CAN baudrate")
+        .def("getBusVoltage", &mab::Pds::getBusVoltage, "Get bus voltage")
+        .def("getTemperature", &mab::Pds::getTemperature, "Get temperature")
+        .def("getTemperatureLimit", &mab::Pds::getTemperatureLimit, "Get temperature limit")
+        .def("setTemperatureLimit",
+             &mab::Pds::setTemperatureLimit,
+             py::arg("temperatureLimit"),
+             "Set temperature limit")
+        .def("getShutdownTime", &mab::Pds::getShutdownTime, "Get shutdown time")
+        .def("setShutdownTime",
+             &mab::Pds::setShutdownTime,
+             py::arg("shutdownTime"),
+             "Set shutdown time")
+        .def("getBatteryVoltageLevels",
+             &mab::Pds::getBatteryVoltageLevels,
+             "Get battery voltage levels")
+        .def("setBatteryVoltageLevels",
+             &mab::Pds::setBatteryVoltageLevels,
+             py::arg("batteryLvl1"),
+             py::arg("batteryLvl2"),
+             "Set battery voltage levels")
+        .def("bindBrakeResistor",
+             &mab::Pds::bindBrakeResistor,
+             py::arg("brakeResistorSocketIndex"),
+             "Bind brake resistor to socket")
+        .def("getBindBrakeResistor",
+             &mab::Pds::getBindBrakeResistor,
+             "Get bound brake resistor socket")
+        .def("setBrakeResistorTriggerVoltage",
+             &mab::Pds::setBrakeResistorTriggerVoltage,
+             py::arg("brTriggerVoltage"),
+             "Set brake resistor trigger voltage")
+        .def("getBrakeResistorTriggerVoltage",
+             &mab::Pds::getBrakeResistorTriggerVoltage,
+             "Get brake resistor trigger voltage")
+        .def("shutdown", &mab::Pds::shutdown, "Shutdown the PDS device")
+        .def("reboot", &mab::Pds::reboot, "Reboot the PDS device")
+        .def("saveConfig", &mab::Pds::saveConfig, "Save configuration to memory")
+        .def_static("moduleTypeToString",
+                    &mab::Pds::moduleTypeToString,
+                    py::arg("type"),
+                    "Convert module type to string")
+        .def_static("discoverPDS",
+                    &mab::Pds::discoverPDS,
+                    py::arg("candle"),
+                    "Discover PDS devices on the CAN bus");
 }
