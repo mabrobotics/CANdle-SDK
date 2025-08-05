@@ -18,6 +18,7 @@ jobs:
     outputs:
       is_dev: ${{ steps.set_output.outputs.is_dev }}
       has_version_tag: ${{ steps.set_output.outputs.has_version_tag }}
+      version_tag_same_as_in_cmake_lists: ${{ steps.set_output.outputs.version_tag_same_as_in_cmake_lists }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -25,8 +26,9 @@ jobs:
       - name: Extract version from pyproject.toml and check for version tag
         id: set_output
         run: |
+          # Extract version from pyproject.toml
           version=$(grep '^version\s*=' pyproject.toml | sed -E "s/version\s*=\s*['\"](.*)['\"]/\\1/")
-          echo "Version found: $version"
+          echo "Version found in pyproject.toml: $version"
 
           # Set is_dev if version contains 'dev'
           if [[ "$version" == *"dev"* ]]; then
@@ -37,15 +39,30 @@ jobs:
             echo "is_dev=false" >> "$GITHUB_OUTPUT"
           fi
 
-          # Detect pre-release (e.g., 1.2.3.dev1)
+          # Check if version has 3 periods (e.g., 1.2.3.dev0 => has version tag)
           dot_count=$(grep -o "\." <<< "$version" | wc -l)
-
           if [[ "$dot_count" -eq 3 ]]; then
             echo "Version has 3 periods"
             echo "has_version_tag=true" >> "$GITHUB_OUTPUT"
           else
             echo "Version has 2 or fewer periods"
             echo "has_version_tag=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Extract version components from CMakeLists.txt
+          v1=$(grep 'set(CANDLESDK_VERSION_1' CMakeLists.txt | sed -E 's/.* ([0-9]+).*/\1/')
+          v2=$(grep 'set(CANDLESDK_VERSION_2' CMakeLists.txt | sed -E 's/.* ([0-9]+).*/\1/')
+          v3=$(grep 'set(CANDLESDK_VERSION_3' CMakeLists.txt | sed -E 's/.* ([0-9]+).*/\1/')
+          cmake_version="${v1}.${v2}.${v3}"
+          echo "Version found in CMakeLists.txt: $cmake_version"
+
+          # Compare versions
+          if [[ "$version" == "$cmake_version" ]]; then
+            echo "Version matches"
+            echo "version_tag_same_as_in_cmake_lists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Version mismatch"
+            echo "version_tag_same_as_in_cmake_lists=false" >> "$GITHUB_OUTPUT"
           fi
   build-candleSDK-python-linux:
     runs-on: ubuntu-latest
@@ -257,6 +274,12 @@ jobs:
         if: needs.check-if-dev.outputs.has_version_tag == 'true'
         run: |
           echo "❌ Error: Version in pyproject.toml contains a tag or metadata. Pure main releases must be X.Y.Z only."
+          exit 1
+
+      - name: Fail if python is diffrent version than cmake
+        if: needs.check-if-dev.outputs.version_tag_same_as_in_cmake_lists == 'false'
+        run: |
+          echo "❌ Error: Python version is different than cmake version."
           exit 1
 
       - name: Checkout
