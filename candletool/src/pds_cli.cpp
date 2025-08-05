@@ -160,11 +160,11 @@ PdsCli::PdsCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleBui
     m_psGetOvcDelayCmd =
         m_powerStageCmd->add_subcommand("get_ovc_delay", "Get the Overcurrent Detection delay");
 
-    m_psGetTotalDeliveredEnergyCmd = m_powerStageCmd->add_subcommand(
-        "get_total_delivered_energy", "Get the total delivered energy");
+    m_psGetTotalDeliveredEnergyCmd =
+        m_powerStageCmd->add_subcommand("get_delivered_energy", "Get the delivered energy");
 
-    m_psResetEnergyDeliveredCmd = m_powerStageCmd->add_subcommand(
-        "reset_total_delivered_energy", "Reset the total delivered energy");
+    m_psResetEnergyDeliveredCmd =
+        m_powerStageCmd->add_subcommand("reset_delivered_energy", "Reset the delivered energy");
 
     m_psSetTempLimitCmd =
         m_powerStageCmd->add_subcommand("set_temp_limit", "Set the Temperature Limit");
@@ -720,7 +720,7 @@ void PdsCli::powerStageCmdParse(void)
             m_log.error("Power Stage get output voltage failed [ %s ]",
                         PdsModule::error2String(result));
         else
-            m_log.info("  * Total Delivered Energy [ %0.4f Wh]",
+            m_log.info("  * Delivered Energy [ %0.4f Wh]",
                        float(energy) / 3600.0f);  // Ws to Wh conversion
 
         m_log.info("Configuration:");
