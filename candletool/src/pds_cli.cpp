@@ -720,8 +720,8 @@ void PdsCli::powerStageCmdParse(void)
             m_log.error("Power Stage get output voltage failed [ %s ]",
                         PdsModule::error2String(result));
         else
-            m_log.info("  * Total Delivered Energy [ %0.4f mWh]",
-                       float(energy) / 3600.0f / 100.0f);  // 1/10Ws to mWh conversion
+            m_log.info("  * Total Delivered Energy [ %0.4f Wh]",
+                       float(energy) / 3600.0f);  // Ws to Wh conversion
 
         m_log.info("Configuration:");
 
