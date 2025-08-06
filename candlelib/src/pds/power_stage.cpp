@@ -134,7 +134,7 @@ namespace mab
     {
         return readModuleProperty(propertyId_E::LOAD_POWER, power);
     }
-    // TODO: change to float
+
     PdsModule::error_E PowerStage::getTotalDeliveredEnergy(u32& energy)
     {
         return readModuleProperty(propertyId_E::TOTAL_DELIVERED_ENERGY, energy);
