@@ -105,7 +105,7 @@ namespace mab
 
     PdsModule::error_E IsolatedConv::getEnergy(s32& energy)
     {
-        return readModuleProperty(propertyId_E::TOTAL_DELIVERED_ENERGY, energy);
+        return readModuleProperty(propertyId_E::DELIVERED_ENERGY, energy);
     }
 
     PdsModule::error_E IsolatedConv::getTemperature(f32& temperature)
