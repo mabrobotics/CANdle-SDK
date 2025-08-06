@@ -137,12 +137,12 @@ namespace mab
 
     PdsModule::error_E PowerStage::getTotalDeliveredEnergy(u32& energy)
     {
-        return readModuleProperty(propertyId_E::TOTAL_DELIVERED_ENERGY, energy);
+        return readModuleProperty(propertyId_E::DELIVERED_ENERGY, energy);
     }
 
     PdsModule::error_E PowerStage::resetEnergyDelivered(bool& reset)
     {
-        return writeModuleProperty(propertyId_E::RESET_TOTAL_DELIVERED_ENERGY, reset);
+        return writeModuleProperty(propertyId_E::RESET_DELIVERED_ENERGY, reset);
     }
 
     PdsModule::error_E PowerStage::getTemperature(f32& temperature)
