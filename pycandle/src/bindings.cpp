@@ -170,6 +170,273 @@ namespace mab
         return err;
     }
 
+    // PDS Wrapper Functions
+
+    // Pds class wrappers
+    std::pair<pdsFwMetadata_S, PdsModule::error_E> pdsFwMetadataWrapper(Pds& pds)
+    {
+        pdsFwMetadata_S    metadata;
+        PdsModule::error_E error = pds.getFwMetadata(metadata);
+        return std::make_pair(metadata, error);
+    }
+
+    std::pair<controlBoardStatus_S, PdsModule::error_E> pdsGetStatusWrapper(Pds& pds)
+    {
+        controlBoardStatus_S status;
+        PdsModule::error_E   error = pds.getStatus(status);
+        return std::make_pair(status, error);
+    }
+
+    std::pair<u32, PdsModule::error_E> pdsGetBusVoltageWrapper(Pds& pds)
+    {
+        u32                busVoltage;
+        PdsModule::error_E error = pds.getBusVoltage(busVoltage);
+        return std::make_pair(busVoltage, error);
+    }
+
+    std::pair<f32, PdsModule::error_E> pdsGetTemperatureWrapper(Pds& pds)
+    {
+        f32                temperature;
+        PdsModule::error_E error = pds.getTemperature(temperature);
+        return std::make_pair(temperature, error);
+    }
+
+    std::pair<f32, PdsModule::error_E> pdsGetTemperatureLimitWrapper(Pds& pds)
+    {
+        f32                temperatureLimit;
+        PdsModule::error_E error = pds.getTemperatureLimit(temperatureLimit);
+        return std::make_pair(temperatureLimit, error);
+    }
+
+    std::pair<u32, PdsModule::error_E> pdsGetShutdownTimeWrapper(Pds& pds)
+    {
+        u32                shutdownTime;
+        PdsModule::error_E error = pds.getShutdownTime(shutdownTime);
+        return std::make_pair(shutdownTime, error);
+    }
+
+    std::pair<std::pair<u32, u32>, PdsModule::error_E> pdsGetBatteryVoltageLevelsWrapper(Pds& pds)
+    {
+        u32                batteryLvl1, batteryLvl2;
+        PdsModule::error_E error = pds.getBatteryVoltageLevels(batteryLvl1, batteryLvl2);
+        return std::make_pair(std::make_pair(batteryLvl1, batteryLvl2), error);
+    }
+
+    std::pair<socketIndex_E, PdsModule::error_E> pdsGetBindBrakeResistorWrapper(Pds& pds)
+    {
+        socketIndex_E      brakeResistorSocketIndex;
+        PdsModule::error_E error = pds.getBindBrakeResistor(brakeResistorSocketIndex);
+        return std::make_pair(brakeResistorSocketIndex, error);
+    }
+
+    std::pair<u32, PdsModule::error_E> pdsGetBrakeResistorTriggerVoltageWrapper(Pds& pds)
+    {
+        u32                brTriggerVoltage;
+        PdsModule::error_E error = pds.getBrakeResistorTriggerVoltage(brTriggerVoltage);
+        return std::make_pair(brTriggerVoltage, error);
+    }
+
+    // PowerStage class wrappers
+    std::pair<powerStageStatus_S, PdsModule::error_E> powerStageGetStatusWrapper(
+        PowerStage& powerStage)
+    {
+        powerStageStatus_S status;
+        PdsModule::error_E error = powerStage.getStatus(status);
+        return std::make_pair(status, error);
+    }
+
+    std::pair<bool, PdsModule::error_E> powerStageGetEnabledWrapper(PowerStage& powerStage)
+    {
+        bool               enabled;
+        PdsModule::error_E error = powerStage.getEnabled(enabled);
+        return std::make_pair(enabled, error);
+    }
+
+    std::pair<socketIndex_E, PdsModule::error_E> powerStageGetBindBrakeResistorWrapper(
+        PowerStage& powerStage)
+    {
+        socketIndex_E      brakeResistorSocketIndex;
+        PdsModule::error_E error = powerStage.getBindBrakeResistor(brakeResistorSocketIndex);
+        return std::make_pair(brakeResistorSocketIndex, error);
+    }
+
+    std::pair<u32, PdsModule::error_E> powerStageGetBrakeResistorTriggerVoltageWrapper(
+        PowerStage& powerStage)
+    {
+        u32                brTriggerVoltage;
+        PdsModule::error_E error = powerStage.getBrakeResistorTriggerVoltage(brTriggerVoltage);
+        return std::make_pair(brTriggerVoltage, error);
+    }
+
+    std::pair<u32, PdsModule::error_E> powerStageGetOutputVoltageWrapper(PowerStage& powerStage)
+    {
+        u32                outputVoltage;
+        PdsModule::error_E error = powerStage.getOutputVoltage(outputVoltage);
+        return std::make_pair(outputVoltage, error);
+    }
+
+    std::pair<bool, PdsModule::error_E> powerStageGetAutostartWrapper(PowerStage& powerStage)
+    {
+        bool               autoStart;
+        PdsModule::error_E error = powerStage.getAutostart(autoStart);
+        return std::make_pair(autoStart, error);
+    }
+
+    std::pair<s32, PdsModule::error_E> powerStageGetLoadCurrentWrapper(PowerStage& powerStage)
+    {
+        s32                loadCurrent;
+        PdsModule::error_E error = powerStage.getLoadCurrent(loadCurrent);
+        return std::make_pair(loadCurrent, error);
+    }
+
+    std::pair<s32, PdsModule::error_E> powerStageGetPowerWrapper(PowerStage& powerStage)
+    {
+        s32                power;
+        PdsModule::error_E error = powerStage.getPower(power);
+        return std::make_pair(power, error);
+    }
+
+    std::pair<s32, PdsModule::error_E> powerStageGetEnergyWrapper(PowerStage& powerStage)
+    {
+        s32                energy;
+        PdsModule::error_E error = powerStage.getEnergy(energy);
+        return std::make_pair(energy, error);
+    }
+
+    std::pair<f32, PdsModule::error_E> powerStageGetTemperatureWrapper(PowerStage& powerStage)
+    {
+        f32                temperature;
+        PdsModule::error_E error = powerStage.getTemperature(temperature);
+        return std::make_pair(temperature, error);
+    }
+
+    std::pair<u32, PdsModule::error_E> powerStageGetOcdLevelWrapper(PowerStage& powerStage)
+    {
+        u32                ocdLevel;
+        PdsModule::error_E error = powerStage.getOcdLevel(ocdLevel);
+        return std::make_pair(ocdLevel, error);
+    }
+
+    std::pair<u32, PdsModule::error_E> powerStageGetOcdDelayWrapper(PowerStage& powerStage)
+    {
+        u32                ocdDelay;
+        PdsModule::error_E error = powerStage.getOcdDelay(ocdDelay);
+        return std::make_pair(ocdDelay, error);
+    }
+
+    std::pair<f32, PdsModule::error_E> powerStageGetTemperatureLimitWrapper(PowerStage& powerStage)
+    {
+        f32                temperatureLimit;
+        PdsModule::error_E error = powerStage.getTemperatureLimit(temperatureLimit);
+        return std::make_pair(temperatureLimit, error);
+    }
+
+    // BrakeResistor class wrappers
+    std::pair<brakeResistorStatus_S, PdsModule::error_E> brakeResistorGetStatusWrapper(
+        BrakeResistor& brakeResistor)
+    {
+        brakeResistorStatus_S status;
+        PdsModule::error_E    error = brakeResistor.getStatus(status);
+        return std::make_pair(status, error);
+    }
+
+    std::pair<bool, PdsModule::error_E> brakeResistorGetEnabledWrapper(BrakeResistor& brakeResistor)
+    {
+        bool               enabled;
+        PdsModule::error_E error = brakeResistor.getEnabled(enabled);
+        return std::make_pair(enabled, error);
+    }
+
+    std::pair<f32, PdsModule::error_E> brakeResistorGetTemperatureWrapper(
+        BrakeResistor& brakeResistor)
+    {
+        f32                temperature;
+        PdsModule::error_E error = brakeResistor.getTemperature(temperature);
+        return std::make_pair(temperature, error);
+    }
+
+    std::pair<f32, PdsModule::error_E> brakeResistorGetTemperatureLimitWrapper(
+        BrakeResistor& brakeResistor)
+    {
+        f32                temperatureLimit;
+        PdsModule::error_E error = brakeResistor.getTemperatureLimit(temperatureLimit);
+        return std::make_pair(temperatureLimit, error);
+    }
+
+    // IsolatedConv class wrappers
+    std::pair<isolatedConverterStatus_S, PdsModule::error_E> isolatedConvGetStatusWrapper(
+        IsolatedConv& isolatedConv)
+    {
+        isolatedConverterStatus_S status;
+        PdsModule::error_E        error = isolatedConv.getStatus(status);
+        return std::make_pair(status, error);
+    }
+
+    std::pair<bool, PdsModule::error_E> isolatedConvGetEnabledWrapper(IsolatedConv& isolatedConv)
+    {
+        bool               enabled;
+        PdsModule::error_E error = isolatedConv.getEnabled(enabled);
+        return std::make_pair(enabled, error);
+    }
+
+    std::pair<u32, PdsModule::error_E> isolatedConvGetOutputVoltageWrapper(
+        IsolatedConv& isolatedConv)
+    {
+        u32                outputVoltage;
+        PdsModule::error_E error = isolatedConv.getOutputVoltage(outputVoltage);
+        return std::make_pair(outputVoltage, error);
+    }
+
+    std::pair<s32, PdsModule::error_E> isolatedConvGetLoadCurrentWrapper(IsolatedConv& isolatedConv)
+    {
+        s32                loadCurrent;
+        PdsModule::error_E error = isolatedConv.getLoadCurrent(loadCurrent);
+        return std::make_pair(loadCurrent, error);
+    }
+
+    std::pair<s32, PdsModule::error_E> isolatedConvGetPowerWrapper(IsolatedConv& isolatedConv)
+    {
+        s32                power;
+        PdsModule::error_E error = isolatedConv.getPower(power);
+        return std::make_pair(power, error);
+    }
+
+    std::pair<s32, PdsModule::error_E> isolatedConvGetEnergyWrapper(IsolatedConv& isolatedConv)
+    {
+        s32                energy;
+        PdsModule::error_E error = isolatedConv.getEnergy(energy);
+        return std::make_pair(energy, error);
+    }
+
+    std::pair<f32, PdsModule::error_E> isolatedConvGetTemperatureWrapper(IsolatedConv& isolatedConv)
+    {
+        f32                temperature;
+        PdsModule::error_E error = isolatedConv.getTemperature(temperature);
+        return std::make_pair(temperature, error);
+    }
+
+    std::pair<u32, PdsModule::error_E> isolatedConvGetOcdLevelWrapper(IsolatedConv& isolatedConv)
+    {
+        u32                ocdLevel;
+        PdsModule::error_E error = isolatedConv.getOcdLevel(ocdLevel);
+        return std::make_pair(ocdLevel, error);
+    }
+
+    std::pair<u32, PdsModule::error_E> isolatedConvGetOcdDelayWrapper(IsolatedConv& isolatedConv)
+    {
+        u32                ocdDelay;
+        PdsModule::error_E error = isolatedConv.getOcdDelay(ocdDelay);
+        return std::make_pair(ocdDelay, error);
+    }
+
+    std::pair<f32, PdsModule::error_E> isolatedConvGetTemperatureLimitWrapper(
+        IsolatedConv& isolatedConv)
+    {
+        f32                temperatureLimit;
+        PdsModule::error_E error = isolatedConv.getTemperatureLimit(temperatureLimit);
+        return std::make_pair(temperatureLimit, error);
+    }
+
 }  // namespace mab
 
 PYBIND11_MODULE(pyCandle, m)
@@ -425,7 +692,22 @@ PYBIND11_MODULE(pyCandle, m)
 
     py::class_<mab::version_ut>(m, "version_ut")
         .def(py::init<>())
-        .def_readwrite("version", &mab::version_ut::s);
+        .def_property(
+            "minor",
+            [](mab::version_ut& self) -> u8 { return self.s.minor; },
+            [](mab::version_ut& self, u8 value) { self.s.minor = value; })
+        .def_property(
+            "major",
+            [](mab::version_ut& self) -> u8 { return self.s.major; },
+            [](mab::version_ut& self, u8 value) { self.s.major = value; })
+        .def_property(
+            "revision",
+            [](mab::version_ut& self) -> u8 { return self.s.revision; },
+            [](mab::version_ut& self, u8 value) { self.s.revision = value; })
+        .def_property(
+            "tag",
+            [](mab::version_ut& self) -> char { return self.s.tag; },
+            [](mab::version_ut& self, char value) { self.s.tag = value; });
 
     py::class_<mab::pdsFwMetadata_S>(m, "pdsFwMetadata_S")
         .def(py::init<>())
@@ -476,66 +758,67 @@ PYBIND11_MODULE(pyCandle, m)
         .def("printModuleInfo", &mab::BrakeResistor::printModuleInfo)
         .def("enable", &mab::BrakeResistor::enable)
         .def("disable", &mab::BrakeResistor::disable)
-        .def("getStatus", &mab::BrakeResistor::getStatus)
+        .def("getStatus", &mab::brakeResistorGetStatusWrapper)
         .def("clearStatus", &mab::BrakeResistor::clearStatus)
-        .def("getEnabled", &mab::BrakeResistor::getEnabled)
-        .def("getTemperature", &mab::BrakeResistor::getTemperature)
+        .def("getEnabled", &mab::brakeResistorGetEnabledWrapper)
+        .def("getTemperature", &mab::brakeResistorGetTemperatureWrapper)
         .def("setTemperatureLimit",
              &mab::BrakeResistor::setTemperatureLimit,
              py::arg("temperatureLimit"))
-        .def("getTemperatureLimit", &mab::BrakeResistor::getTemperatureLimit);
+        .def("getTemperatureLimit", &mab::brakeResistorGetTemperatureLimitWrapper);
 
     py::class_<mab::PowerStage>(m, "PowerStage")
         .def("printModuleInfo", &mab::PowerStage::printModuleInfo)
         .def("enable", &mab::PowerStage::enable)
         .def("disable", &mab::PowerStage::disable)
-        .def("getStatus", &mab::PowerStage::getStatus)
+        .def("getStatus", &mab::powerStageGetStatusWrapper)
         .def("clearStatus", &mab::PowerStage::clearStatus)
-        .def("getEnabled", &mab::PowerStage::getEnabled)
+        .def("getEnabled", &mab::powerStageGetEnabledWrapper)
         .def("bindBrakeResistor",
              &mab::PowerStage::bindBrakeResistor,
              py::arg("brakeResistorSocketIndex"))
-        .def("getBindBrakeResistor", &mab::PowerStage::getBindBrakeResistor)
+        .def("getBindBrakeResistor", &mab::powerStageGetBindBrakeResistorWrapper)
         .def("setBrakeResistorTriggerVoltage",
              &mab::PowerStage::setBrakeResistorTriggerVoltage,
              py::arg("brTriggerVoltage"))
-        .def("getBrakeResistorTriggerVoltage", &mab::PowerStage::getBrakeResistorTriggerVoltage)
-        .def("getOutputVoltage", &mab::PowerStage::getOutputVoltage)
+        .def("getBrakeResistorTriggerVoltage",
+             &mab::powerStageGetBrakeResistorTriggerVoltageWrapper)
+        .def("getOutputVoltage", &mab::powerStageGetOutputVoltageWrapper)
         .def("setAutostart", &mab::PowerStage::setAutostart, py::arg("autoStart"))
-        .def("getAutostart", &mab::PowerStage::getAutostart)
-        .def("getLoadCurrent", &mab::PowerStage::getLoadCurrent)
-        .def("getPower", &mab::PowerStage::getPower)
-        .def("getEnergy", &mab::PowerStage::getEnergy)
-        .def("getTemperature", &mab::PowerStage::getTemperature)
+        .def("getAutostart", &mab::powerStageGetAutostartWrapper)
+        .def("getLoadCurrent", &mab::powerStageGetLoadCurrentWrapper)
+        .def("getPower", &mab::powerStageGetPowerWrapper)
+        .def("getEnergy", &mab::powerStageGetEnergyWrapper)
+        .def("getTemperature", &mab::powerStageGetTemperatureWrapper)
         .def("setOcdLevel", &mab::PowerStage::setOcdLevel, py::arg("ocdLevel"))
-        .def("getOcdLevel", &mab::PowerStage::getOcdLevel)
+        .def("getOcdLevel", &mab::powerStageGetOcdLevelWrapper)
         .def("setOcdDelay", &mab::PowerStage::setOcdDelay, py::arg("ocdDelay"))
-        .def("getOcdDelay", &mab::PowerStage::getOcdDelay)
+        .def("getOcdDelay", &mab::powerStageGetOcdDelayWrapper)
         .def("setTemperatureLimit",
              &mab::PowerStage::setTemperatureLimit,
              py::arg("temperatureLimit"))
-        .def("getTemperatureLimit", &mab::PowerStage::getTemperatureLimit);
+        .def("getTemperatureLimit", &mab::powerStageGetTemperatureLimitWrapper);
 
     py::class_<mab::IsolatedConv>(m, "IsolatedConv")
         .def("printModuleInfo", &mab::IsolatedConv::printModuleInfo)
         .def("enable", &mab::IsolatedConv::enable)
         .def("disable", &mab::IsolatedConv::disable)
-        .def("getStatus", &mab::IsolatedConv::getStatus)
+        .def("getStatus", &mab::isolatedConvGetStatusWrapper)
         .def("clearStatus", &mab::IsolatedConv::clearStatus)
-        .def("getEnabled", &mab::IsolatedConv::getEnabled)
-        .def("getOutputVoltage", &mab::IsolatedConv::getOutputVoltage)
-        .def("getLoadCurrent", &mab::IsolatedConv::getLoadCurrent)
-        .def("getPower", &mab::IsolatedConv::getPower)
-        .def("getEnergy", &mab::IsolatedConv::getEnergy)
-        .def("getTemperature", &mab::IsolatedConv::getTemperature, py::arg("temperature"))
+        .def("getEnabled", &mab::isolatedConvGetEnabledWrapper)
+        .def("getOutputVoltage", &mab::isolatedConvGetOutputVoltageWrapper)
+        .def("getLoadCurrent", &mab::isolatedConvGetLoadCurrentWrapper)
+        .def("getPower", &mab::isolatedConvGetPowerWrapper)
+        .def("getEnergy", &mab::isolatedConvGetEnergyWrapper)
+        .def("getTemperature", &mab::isolatedConvGetTemperatureWrapper)
         .def("setOcdLevel", &mab::IsolatedConv::setOcdLevel, py::arg("ocdLevel"))
-        .def("getOcdLevel", &mab::IsolatedConv::getOcdLevel)
+        .def("getOcdLevel", &mab::isolatedConvGetOcdLevelWrapper)
         .def("setOcdDelay", &mab::IsolatedConv::setOcdDelay, py::arg("ocdDelay"))
-        .def("getOcdDelay", &mab::IsolatedConv::getOcdDelay)
+        .def("getOcdDelay", &mab::isolatedConvGetOcdDelayWrapper)
         .def("setTemperatureLimit",
              &mab::IsolatedConv::setTemperatureLimit,
              py::arg("temperatureLimit"))
-        .def("getTemperatureLimit", &mab::IsolatedConv::getTemperatureLimit);
+        .def("getTemperatureLimit", &mab::isolatedConvGetTemperatureLimitWrapper);
 
     // PDS Main Class
     py::class_<mab::Pds>(m, "Pds")
@@ -548,7 +831,7 @@ PYBIND11_MODULE(pyCandle, m)
         .def("printModuleInfo",
              &mab::Pds::printModuleInfo,
              "Print information about connected modules")
-        .def("getFwMetadata", &mab::Pds::getFwMetadata, "Get firmware metadata")
+        .def("getFwMetadata", &mab::pdsFwMetadataWrapper, "Get firmware metadata")
         .def("getModules", &mab::Pds::getModules, "Get information about connected modules")
         .def("verifyModuleSocket",
              &mab::Pds::verifyModuleSocket,
@@ -570,7 +853,7 @@ PYBIND11_MODULE(pyCandle, m)
              py::arg("socket"),
              py::return_value_policy::take_ownership,
              "Attach an isolated converter module at the specified socket")
-        .def("getStatus", &mab::Pds::getStatus, "Get control board status")
+        .def("getStatus", &mab::pdsGetStatusWrapper, "Get control board status")
         .def("clearStatus", &mab::Pds::clearStatus, "Clear control board status")
         .def("clearErrors", &mab::Pds::clearErrors, "Clear all errors")
         .def("getCanId", &mab::Pds::getCanId, "Get CAN ID")
@@ -578,20 +861,20 @@ PYBIND11_MODULE(pyCandle, m)
         .def("getCanBaudrate", &mab::Pds::getCanBaudrate, "Get CAN baudrate")
         .def(
             "setCanBaudrate", &mab::Pds::setCanBaudrate, py::arg("canBaudrate"), "Set CAN baudrate")
-        .def("getBusVoltage", &mab::Pds::getBusVoltage, "Get bus voltage")
-        .def("getTemperature", &mab::Pds::getTemperature, "Get temperature")
-        .def("getTemperatureLimit", &mab::Pds::getTemperatureLimit, "Get temperature limit")
+        .def("getBusVoltage", &mab::pdsGetBusVoltageWrapper, "Get bus voltage")
+        .def("getTemperature", &mab::pdsGetTemperatureWrapper)
+        .def("getTemperatureLimit", &mab::pdsGetTemperatureLimitWrapper, "Get temperature limit")
         .def("setTemperatureLimit",
              &mab::Pds::setTemperatureLimit,
              py::arg("temperatureLimit"),
              "Set temperature limit")
-        .def("getShutdownTime", &mab::Pds::getShutdownTime, "Get shutdown time")
+        .def("getShutdownTime", &mab::pdsGetShutdownTimeWrapper, "Get shutdown time")
         .def("setShutdownTime",
              &mab::Pds::setShutdownTime,
              py::arg("shutdownTime"),
              "Set shutdown time")
         .def("getBatteryVoltageLevels",
-             &mab::Pds::getBatteryVoltageLevels,
+             &mab::pdsGetBatteryVoltageLevelsWrapper,
              "Get battery voltage levels")
         .def("setBatteryVoltageLevels",
              &mab::Pds::setBatteryVoltageLevels,
@@ -603,14 +886,14 @@ PYBIND11_MODULE(pyCandle, m)
              py::arg("brakeResistorSocketIndex"),
              "Bind brake resistor to socket")
         .def("getBindBrakeResistor",
-             &mab::Pds::getBindBrakeResistor,
+             &mab::pdsGetBindBrakeResistorWrapper,
              "Get bound brake resistor socket")
         .def("setBrakeResistorTriggerVoltage",
              &mab::Pds::setBrakeResistorTriggerVoltage,
              py::arg("brTriggerVoltage"),
              "Set brake resistor trigger voltage")
         .def("getBrakeResistorTriggerVoltage",
-             &mab::Pds::getBrakeResistorTriggerVoltage,
+             &mab::pdsGetBrakeResistorTriggerVoltageWrapper,
              "Get brake resistor trigger voltage")
         .def("shutdown", &mab::Pds::shutdown, "Shutdown the PDS device")
         .def("reboot", &mab::Pds::reboot, "Reboot the PDS device")
