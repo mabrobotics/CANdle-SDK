@@ -89,7 +89,10 @@ namespace mab
          * @note Constructor is protected because even if this class has no pure virtual methods, it
             still should not be instantiated.
          */
-        PdsModule(socketIndex_E socket, moduleType_E type, Candle* p_candle, u16& canId);
+        PdsModule(socketIndex_E        socket,
+                  moduleType_E         type,
+                  Candle*              p_candle,
+                  std::shared_ptr<u16> canId);
 
         static constexpr Logger::ProgramLayer_E DEFAULT_PDS_MODULE_LOG_LAYER =
             Logger::ProgramLayer_E::LAYER_2;
@@ -108,7 +111,7 @@ namespace mab
 
         /* CAN ID of the parent PDS device. Assumed to be passed in a constructor from parent PDS
          * object */
-        u16& m_canId;
+        std::shared_ptr<u16> m_canId;
 
         // TODO: Now propertyID is single for all modules so it dont has to be templated
         template <typename dataValueT>
@@ -130,7 +133,7 @@ namespace mab
             message.addProperty(property);
 
             std::vector<u8> serializedMessage = message.serialize();
-            transferResult = mp_candle->transferCANFrame(m_canId, serializedMessage, 66U);
+            transferResult = mp_candle->transferCANFrame(*m_canId, serializedMessage, 66U);
 
             if (transferResult.second != mab::candleTypes::Error_t::OK)
             {
@@ -169,7 +172,7 @@ namespace mab
             message.addProperty(property, dataValue);
             std::vector<u8> serializedMessage = message.serialize();
 
-            transferResult = mp_candle->transferCANFrame(m_canId, serializedMessage, 66U);
+            transferResult = mp_candle->transferCANFrame(*m_canId, serializedMessage, 66U);
             if (transferResult.second != mab::candleTypes::Error_t::OK)
             {
                 m_log.error("Failed to transfer CAN frame");

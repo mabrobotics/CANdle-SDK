@@ -182,8 +182,8 @@ namespace mab
 
     std::pair<controlBoardStatus_S, PdsModule::error_E> pdsGetStatusWrapper(Pds& pds)
     {
-        controlBoardStatus_S status;
-        PdsModule::error_E   error = pds.getStatus(status);
+        controlBoardStatus_S status = {0};
+        PdsModule::error_E   error  = pds.getStatus(status);
         return std::make_pair(status, error);
     }
 
@@ -825,7 +825,7 @@ PYBIND11_MODULE(pyCandle, m)
         .def(py::init([](int canId, mab::Candle* candle) -> auto
                       { return mab::Pds(canId, candle); }))
         .def("init", py::overload_cast<>(&mab::Pds::init), "Initialize the PDS device")
-        .def("init",
+        .def("initWithNewId",
              py::overload_cast<u16>(&mab::Pds::init),
              "Initialize the PDS device with the provided ID")
         .def("printModuleInfo",

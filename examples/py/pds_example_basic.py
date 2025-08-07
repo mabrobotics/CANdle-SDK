@@ -129,7 +129,7 @@ class PDSExample:
             self.pds = pyCandle.Pds(can_id, self.candle)
 
             # Initialize the PDS device
-            result = self.pds.init(can_id)
+            result = self.pds.init()
 
             print("✓ Successfully connected to PDS device")
             return True

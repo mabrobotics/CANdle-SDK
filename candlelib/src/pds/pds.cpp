@@ -4,9 +4,12 @@
 namespace mab
 {
     Pds::Pds(u16 canId, Candle* p_candle)
-        : PdsModule(socketIndex_E::UNASSIGNED, moduleType_E::CONTROL_BOARD, p_candle, m_rootCanId),
+        : PdsModule(socketIndex_E::UNASSIGNED,
+                    moduleType_E::CONTROL_BOARD,
+                    p_candle,
+                    std::make_shared<u16>(canId)),
           mp_candle(p_candle),
-          m_rootCanId(canId)
+          m_rootCanId(std::make_shared<u16>(canId))
     {
         m_log.m_tag   = "PDS";
         m_log.m_layer = Logger::ProgramLayer_E::LAYER_2;
@@ -28,7 +31,7 @@ namespace mab
     }
     void Pds::init(u16 canId)
     {
-        m_canId = canId;
+        *m_canId = canId;
         init();
     }
 
@@ -76,7 +79,7 @@ namespace mab
 
         std::vector<u8> serializedMessage = message.serialize();
 
-        transferResult = mp_candle->transferCANFrame(m_canId, serializedMessage, 66U);
+        transferResult = mp_candle->transferCANFrame(*m_canId, serializedMessage, 66U);
         if (transferResult.second != mab::candleTypes::Error_t::OK)
         {
             m_log.error("Failed to transfer CAN frame");
@@ -135,7 +138,7 @@ namespace mab
         std::vector<u8> getFwMetadataMessage = {
             static_cast<u8>(PdsMessage::commandCode_E::GET_FW_METADATA)};
 
-        transferResult = mp_candle->transferCANFrame(m_canId, getFwMetadataMessage, 66U);
+        transferResult = mp_candle->transferCANFrame(*m_canId, getFwMetadataMessage, 66U);
 
         if (transferResult.second != mab::candleTypes::Error_t::OK)
         {
@@ -422,7 +425,7 @@ namespace mab
 
     u16 Pds::getCanId()
     {
-        return m_rootCanId;
+        return *m_rootCanId;
     }
 
     PdsModule::error_E Pds::setCanId(u16 canId)
@@ -431,7 +434,7 @@ namespace mab
         PdsModule::error_E result = PdsModule::error_E::OK;
         result                    = writeModuleProperty(propertyId_E::CAN_ID, canId);
         if (PdsModule::error_E::OK == result)
-            m_rootCanId = canId;
+            *m_rootCanId = canId;
 
         return result;
     }

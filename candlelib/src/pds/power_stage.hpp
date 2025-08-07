@@ -14,7 +14,7 @@ namespace mab
     {
       public:
         PowerStage() = delete;
-        PowerStage(socketIndex_E socket, Candle* p_candle, u16& canId);
+        PowerStage(socketIndex_E socket, Candle* p_candle, std::shared_ptr<u16> canId);
         ~PowerStage();
 
         void printModuleInfo(void) override;

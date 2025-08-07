@@ -3,7 +3,7 @@
 namespace mab
 {
 
-    PowerStage::PowerStage(socketIndex_E socket, Candle* p_candle, u16& canId)
+    PowerStage::PowerStage(socketIndex_E socket, Candle* p_candle, std::shared_ptr<u16> canId)
         : PdsModule(socket, moduleType_E::POWER_STAGE, p_candle, canId)
     {
         m_log.m_tag = "PS  :: " + std::to_string(static_cast<u8>(socket));
