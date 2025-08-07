@@ -71,6 +71,12 @@ class PDSExample:
             print(f"Error connecting to CANdle: {e}")
             return False
 
+    def disconnectCandle(self):
+        if self.candle:
+            # pyCandle.detachCandle(self.candle)
+            self.candle = None
+            print("✓ Successfully disconnected from CANdle device")
+
     def discover_pds_devices(self):
         """
         Discover PDS devices on the CAN bus.
@@ -137,11 +143,11 @@ class PDSExample:
             print("\n=== PDS Device Information ===")
 
             # Get firmware metadata
-            metadata = pyCandle.pdsFwMetadata_S()
-            result = self.pds.getFwMetadata(metadata)
+            fwMetadata = pyCandle.pdsFwMetadata_S()
+            result = self.pds.getFwMetadata(fwMetadata)
             if result == pyCandle.PDS_Error_t.OK:
-                print(f"Firmware version: {metadata.version}")
-                print(f"Git hash: {metadata.gitHash}")
+                print(f"Firmware version: {fwMetadata.version}")
+                print(f"Git hash: {fwMetadata.gitHash}")
             else:
                 print(f"Failed to get firmware metadata: {result}")
 
@@ -163,15 +169,15 @@ class PDSExample:
                 print(f"Failed to get status: {result}")
 
             # Get temperature and voltage
-            temperature = [0.0]  # Using list for reference parameter
+            temperature: float = 0.0
             result = self.pds.getTemperature(temperature)
             if result == pyCandle.PDS_Error_t.OK:
-                print(f"Temperature: {temperature[0]}°C")
+                print(f"Temperature: {temperature}°C")
 
-            bus_voltage = [0]  # Using list for reference parameter
+            bus_voltage = 0  # Using list for reference parameter
             result = self.pds.getBusVoltage(bus_voltage)
             if result == pyCandle.PDS_Error_t.OK:
-                print(f"Bus Voltage: {bus_voltage[0]}mV")
+                print(f"Bus Voltage: {bus_voltage}mV")
 
         except Exception as e:
             print(f"Error getting PDS info: {e}")
@@ -245,6 +251,33 @@ class PDSExample:
 
         except Exception as e:
             print(f"Error attaching modules: {e}")
+
+    def demonstarteIsolatedConverterUsage(self):
+        if not self.isolated_converters:
+            print("No isolated converters")
+            return
+
+        print("Isolated Converter Usage:")
+        for i, power_stage in enumerate(self.isolated_converters):
+            print(f"\nPower Stage {i+1}:")
+            converter.printModuleInfo()
+
+            print("\nIsolated Converter Status:")
+            status = pyCandle.isolatedConverterStatus_S()
+            result = converter.getStatus(status)
+            if result == pyCandle.PDS_Error_t.OK:
+                print(f"Enabled: {status.ENABLED}")
+                print(f"  Status - Over Temperature: {status.OVER_TEMPERATURE}")
+                print(f"  Status - Over Current: {status.OVER_CURRENT}")
+            else:
+                print(f"Error getting status: {result}")
+
+            temperature = 0.0
+            result = converter.getTemperature(temperature)
+            if result == pyCandle.PDS_Error_t.OK:
+                print(f"Temperature: {temperature}°C")
+            else:
+                print(f"Error getting temperature: {result}")
 
     def demonstrate_power_stage_usage(self):
         """
@@ -322,13 +355,9 @@ class PDSExample:
                     print(f"  Status - Over Temperature: {status.OVER_TEMPERATURE}")
 
                 # Get temperature
-                temperature = [0.0]
+                temperature = 0.0
                 if brake_resistor.getTemperature(temperature) == pyCandle.PDS_Error_t.OK:
-                    print(f"  Temperature: {temperature[0]}°C")
-
-                # Example configuration
-                print("  Example configuration commands (commented out for safety):")
-                print("  # brake_resistor.setTemperatureLimit(100.0)  # Set temperature limit")
+                    print(f"  Temperature: {temperature}°C")
 
         except Exception as e:
             print(f"Error demonstrating Brake Resistor usage: {e}")
@@ -366,11 +395,14 @@ class PDSExample:
         # Step 7: Demonstrate module usage
         self.demonstrate_power_stage_usage()
         self.demonstrate_brake_resistor_usage()
+        self.demonstarteIsolatedConverterUsage()
 
         print("\n" + "=" * 50)
         print("Example completed successfully!")
         print("This example showed basic PDS interaction patterns.")
         print("For production use, add proper error handling and safety checks.")
+
+        # self.disconnectCandle()
 
         return True
 
@@ -385,16 +417,7 @@ def main():
     # Create and run example
     example = PDSExample()
 
-    try:
-        success = example.run_example()
-        if not success:
-            print("Example failed to complete")
-            sys.exit(1)
-    except KeyboardInterrupt:
-        print("\nExample interrupted by user")
-    except Exception as e:
-        print(f"Unexpected error: {e}")
-        sys.exit(1)
+    example.run_example()
 
 
 if __name__ == "__main__":

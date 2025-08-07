@@ -14,6 +14,7 @@
 #include "MD.hpp"
 #include "logger.hpp"
 #include "pds.hpp"
+#include "pds_module.hpp"
 #include "pds_types.hpp"
 #include "pds_properties.hpp"
 #include "brake_resistor.hpp"
@@ -422,6 +423,10 @@ PYBIND11_MODULE(pyCandle, m)
         .def_readwrite("moduleTypeSocket5", &mab::Pds::modulesSet_S::moduleTypeSocket5)
         .def_readwrite("moduleTypeSocket6", &mab::Pds::modulesSet_S::moduleTypeSocket6);
 
+    py::class_<mab::version_ut>(m, "version_ut")
+        .def(py::init<>())
+        .def_readwrite("version", &mab::version_ut::s);
+
     py::class_<mab::pdsFwMetadata_S>(m, "pdsFwMetadata_S")
         .def(py::init<>())
         .def_readwrite("metadataStructVersion", &mab::pdsFwMetadata_S::metadataStructVersion)
@@ -522,7 +527,7 @@ PYBIND11_MODULE(pyCandle, m)
         .def("getLoadCurrent", &mab::IsolatedConv::getLoadCurrent)
         .def("getPower", &mab::IsolatedConv::getPower)
         .def("getEnergy", &mab::IsolatedConv::getEnergy)
-        .def("getTemperature", &mab::IsolatedConv::getTemperature)
+        .def("getTemperature", &mab::IsolatedConv::getTemperature, py::arg("temperature"))
         .def("setOcdLevel", &mab::IsolatedConv::setOcdLevel, py::arg("ocdLevel"))
         .def("getOcdLevel", &mab::IsolatedConv::getOcdLevel)
         .def("setOcdDelay", &mab::IsolatedConv::setOcdDelay, py::arg("ocdDelay"))
