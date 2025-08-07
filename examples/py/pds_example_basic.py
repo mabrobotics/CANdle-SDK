@@ -1,24 +1,6 @@
 #!/usr/bin/env python3
 """
-PDS (Power Distribution System) Example Script - Updated Version
-
-This script demonstrates how to use the updated PDS Python bindings with wrapper functions
-that return tuples instead of using reference parameters. It shows basic usage patterns for:
-- Connecting to PDS devices
-- Module discovery and management
-- Status monitoring
-- Configuration management
-- Working with different module types (Power Stage, Brake Resistor, Isolated Converter)
-
-Requirements:
-- CANdle device connected via USB
-- PDS device(s) connected to the CANdle
-- Python bindings built and available with updated wrapper functions
-
-Key Changes:
-- All getter methods now return (value, error) tuples instead of using reference parameters
-- Simplified error handling and value extraction
-- More Pythonic API usage
+PDS (Power Distribution System) Example Script
 """
 
 import sys
@@ -467,12 +449,6 @@ class PDSExample:
                 else:
                     print(f"  Error getting brake resistor binding: {result}")
 
-                # Example configuration (be careful with these!)
-                print("  Example configuration commands (commented out for safety):")
-                print("  # power_stage.setTemperatureLimit(85.0)  # Set temperature limit to 85°C")
-                print("  # power_stage.setOcdLevel(5000)          # Set overcurrent detection to 5A")
-                print("  # power_stage.setOcdDelay(1000)          # Set OCD delay to 1ms")
-
         except Exception as e:
             print(f"Error demonstrating Power Stage usage: {e}")
 
@@ -561,12 +537,6 @@ class PDSExample:
         self.demonstrate_isolated_converter_usage()
 
         print("\n" + "=" * 50)
-        print("Updated example completed successfully!")
-        print("This example showed the new Pythonic API with wrapper functions")
-        print("that return tuples (value, error) instead of using reference parameters.")
-        print("For production use, add proper error handling and safety checks.")
-
-        self.disconnect_candle()
 
         return True
 
@@ -587,8 +557,7 @@ def main():
         print("\nExample interrupted by user")
     except Exception as e:
         print(f"Example failed with error: {e}")
-    finally:
-        example.disconnect_candle()
+
 
 
 if __name__ == "__main__":
