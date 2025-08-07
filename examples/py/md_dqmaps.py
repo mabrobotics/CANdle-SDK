@@ -11,7 +11,7 @@ maps = np.zeros((2, nVoltage, nRows, nCols), dtype=np.float32)
 
 voltages = np.array([36, 42, 48, 54, 60], dtype=np.float32)
 torques = np.array([i for i in range(17)], dtype=np.float32)
-velocities = np.array([i * 5 for i in range(15)], dtype=np.float32)
+velocities = np.array([i * 20 for i in range(15)], dtype=np.float32)
 
 def read_csv(filepath):
     with open(filepath, 'r') as fd:

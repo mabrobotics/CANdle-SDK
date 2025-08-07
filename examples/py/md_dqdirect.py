@@ -13,8 +13,8 @@ pc.writeRegisterU8(md, "iqControlMode", 2)
 pc.writeRegisterU8(md, "idControlMode", 2)
 md.setMotionMode(pc.MotionMode_t.RAW_TORQUE)
 time.sleep(2)
-pc.writeRegisterU8(md, "idDirect", -0.25)
-pc.writeRegisterU8(md, "iqDirect", 1.0)
+pc.writeRegisterFloat(md, "idDirect", -0.25)
+pc.writeRegisterFloat(md, "iqDirect", 0.5)
 md.enable()
 
 while True:

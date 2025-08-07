@@ -17,7 +17,7 @@ md.setTargetTorque(0.)
 md.enable()
 
 while True:
-    velocity = md.getVelocity()[0];
+    velocity = md.getVelocity()[0] * 9.5492;    # rad/s to rpm
 
     id, err = pc.readRegisterFloat(md, "idTarget")
     iq, err = pc.readRegisterFloat(md, "iqTarget")
