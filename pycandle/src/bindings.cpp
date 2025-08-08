@@ -296,10 +296,10 @@ namespace mab
         return std::make_pair(power, error);
     }
 
-    std::pair<s32, PdsModule::error_E> powerStageGetEnergyWrapper(PowerStage& powerStage)
+    std::pair<u32, PdsModule::error_E> powerStageGetEnergyWrapper(PowerStage& powerStage)
     {
-        s32                energy;
-        PdsModule::error_E error = powerStage.getEnergy(energy);
+        u32                energy;
+        PdsModule::error_E error = powerStage.getTotalDeliveredEnergy(energy);
         return std::make_pair(energy, error);
     }
 
