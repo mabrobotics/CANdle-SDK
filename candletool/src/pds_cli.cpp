@@ -28,6 +28,7 @@ constexpr const char* OCD_DELAY_INI_KEY  = "OCD DELAY";
 constexpr const char* BR_SOCKET_INI_KEY  = "BR SOCKET";
 constexpr const char* BR_TRIG_V_INI_KEY  = "BR TRIGGER VOLTAGE";
 constexpr const char* AUTOSTART_INI_KEY  = "AUTOSTART";
+constexpr const char* ENERGY             = "ENERGY";
 
 PdsCli::PdsCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleBuilder)
     : m_rootCli(rootCli), m_candleBuilder(candleBuilder)
@@ -158,6 +159,12 @@ PdsCli::PdsCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleBui
 
     m_psGetOvcDelayCmd =
         m_powerStageCmd->add_subcommand("get_ovc_delay", "Get the Overcurrent Detection delay");
+
+    m_psGetTotalDeliveredEnergyCmd =
+        m_powerStageCmd->add_subcommand("get_delivered_energy", "Get the delivered energy");
+
+    m_psResetEnergyDeliveredCmd =
+        m_powerStageCmd->add_subcommand("reset_delivered_energy", "Reset the delivered energy");
 
     m_psSetTempLimitCmd =
         m_powerStageCmd->add_subcommand("set_temp_limit", "Set the Temperature Limit");
@@ -662,6 +669,7 @@ void PdsCli::powerStageCmdParse(void)
         u32                  ovcDelay         = 0;
         f32                  temperature      = 0.0f;
         f32                  temperatureLimit = 0.0f;
+        u32                  energy           = 0;
         socketIndex_E        brSocket         = socketIndex_E::UNASSIGNED;
         u32                  brTrigger        = 0;
         bool                 autoStart        = false;
@@ -691,14 +699,14 @@ void PdsCli::powerStageCmdParse(void)
             m_log.error("Power Stage get output voltage failed [ %s ]",
                         PdsModule::error2String(result));
         else
-            m_log.info("  * Output voltage [ %0.2f ]", busVoltage / 1000.0f);
+            m_log.info("  * Output voltage [ %0.2f V]", busVoltage / 1000.0f);
 
         result = ps->getLoadCurrent(current);
         if (result != PdsModule::error_E::OK)
             m_log.error("Power Stage get load current failed [ %s ]",
                         PdsModule::error2String(result));
         else
-            m_log.info("  * Load current [ %0.2f ]", current / 1000.0f);
+            m_log.info("  * Load current [ %0.2f A]", current / 1000.0f);
 
         result = ps->getTemperature(temperature);
         if (result != PdsModule::error_E::OK)
@@ -706,6 +714,14 @@ void PdsCli::powerStageCmdParse(void)
                         PdsModule::error2String(result));
         else
             m_log.info("  * Temperature [ %0.2f ]", temperature);
+
+        result = ps->getTotalDeliveredEnergy(energy);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Power Stage get output voltage failed [ %s ]",
+                        PdsModule::error2String(result));
+        else
+            m_log.info("  * Delivered Energy [ %0.4f Wh]",
+                       float(energy) / 3600.0f);  // Ws to Wh conversion
 
         m_log.info("Configuration:");
 
@@ -833,6 +849,14 @@ void PdsCli::powerStageCmdParse(void)
                         PdsModule::error2String(result));
         else
             m_log.info("Temperature limit [ %0.2f ]", tempLimit);
+    }
+    else if (m_psResetEnergyDeliveredCmd->parsed())
+    {
+        result = ps->resetEnergyDelivered(m_resetEnergy);
+        if (result != PdsModule::error_E::OK)
+            m_log.error("Reset failed[ %s ]", PdsModule::error2String(result));
+        else
+            m_log.info("Reset done");
     }
 
     else if (m_psSetBrCmd->parsed())
@@ -1366,6 +1390,7 @@ static void fillPsIni(PowerStage& ps, mINI::INIStructure& rIni, std::string sect
     u32           ocdDelay         = 0;
     f32           temperatureLimit = 0.0f;
     bool          autoStart        = false;
+    u32           energy           = 0;
 
     ps.getBindBrakeResistor(brSocket);
     ps.getBrakeResistorTriggerVoltage(brTriggerVoltage);
@@ -1373,6 +1398,7 @@ static void fillPsIni(PowerStage& ps, mINI::INIStructure& rIni, std::string sect
     ps.getOcdDelay(ocdDelay);
     ps.getTemperatureLimit(temperatureLimit);
     ps.getAutostart(autoStart);
+    ps.getTotalDeliveredEnergy(energy);
 
     rIni[sectionName][TYPE_INI_KEY] = PdsModule::mType2Str(moduleType_E::POWER_STAGE);
     rIni[sectionName][TEMP_LIMIT_INI_KEY] =
@@ -1387,6 +1413,7 @@ static void fillPsIni(PowerStage& ps, mINI::INIStructure& rIni, std::string sect
     rIni[sectionName][BR_TRIG_V_INI_KEY] =
         prettyFloatToString(brTriggerVoltage, true) + "  ; Brake resistor trigger voltage [ mV ]";
     rIni[sectionName][AUTOSTART_INI_KEY] = std::string(autoStart ? "ON" : "OFF");
+    rIni[sectionName][ENERGY] = prettyFloatToString(energy, true) + "  ; Energy delivered";
 }
 
 // Fill Brake resistor Ini structure

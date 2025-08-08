@@ -66,22 +66,24 @@ class PdsCli
     CLI::App* m_isolatedConverterCmd = nullptr;
 
     // Power stage commands
-    CLI::App* m_psInfoCmd         = nullptr;
-    CLI::App* m_psEnableCmd       = nullptr;
-    CLI::App* m_psDisableCmd      = nullptr;
-    CLI::App* m_psSetOvcLevelCmd  = nullptr;
-    CLI::App* m_psGetOvcLevelCmd  = nullptr;
-    CLI::App* m_psSetOvcDelayCmd  = nullptr;
-    CLI::App* m_psGetOvcDelayCmd  = nullptr;
-    CLI::App* m_psSetTempLimitCmd = nullptr;
-    CLI::App* m_psGetTempLimitCmd = nullptr;
-    CLI::App* m_psSetBrCmd        = nullptr;
-    CLI::App* m_psGetBrCmd        = nullptr;
-    CLI::App* m_psSetBrTriggerCmd = nullptr;
-    CLI::App* m_psGetBrTriggerCmd = nullptr;
-    CLI::App* m_psSetAutoStartCmd = nullptr;
-    CLI::App* m_psGetAutoStartCmd = nullptr;
-    CLI::App* m_psClearCmd        = nullptr;
+    CLI::App* m_psInfoCmd                    = nullptr;
+    CLI::App* m_psEnableCmd                  = nullptr;
+    CLI::App* m_psDisableCmd                 = nullptr;
+    CLI::App* m_psSetOvcLevelCmd             = nullptr;
+    CLI::App* m_psGetOvcLevelCmd             = nullptr;
+    CLI::App* m_psSetOvcDelayCmd             = nullptr;
+    CLI::App* m_psGetOvcDelayCmd             = nullptr;
+    CLI::App* m_psSetTempLimitCmd            = nullptr;
+    CLI::App* m_psGetTempLimitCmd            = nullptr;
+    CLI::App* m_psSetBrCmd                   = nullptr;
+    CLI::App* m_psGetBrCmd                   = nullptr;
+    CLI::App* m_psSetBrTriggerCmd            = nullptr;
+    CLI::App* m_psGetBrTriggerCmd            = nullptr;
+    CLI::App* m_psSetAutoStartCmd            = nullptr;
+    CLI::App* m_psGetAutoStartCmd            = nullptr;
+    CLI::App* m_psClearCmd                   = nullptr;
+    CLI::App* m_psGetTotalDeliveredEnergyCmd = nullptr;
+    CLI::App* m_psResetEnergyDeliveredCmd    = nullptr;
 
     // Brake resistor commands
     CLI::App* m_brInfoCmd         = nullptr;
@@ -114,6 +116,7 @@ class PdsCli
     u32         m_brSocket      = 0u;     // Brake resistor socket index
     u32         m_brTrigger     = 0u;     // Brake resistor trigger voltage in mV
     bool        m_autoStart     = false;  // Power stage auto start
+    bool        m_resetEnergy   = true;
 
     // Brake resistor commands
 

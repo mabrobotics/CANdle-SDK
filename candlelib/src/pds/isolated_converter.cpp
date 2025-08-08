@@ -13,7 +13,7 @@ namespace mab
 
     void IsolatedConv::printModuleInfo(void)
     {
-        isolatedConverterStatus_S status;
+        isolatedConverterStatus_S status{0};
         moduleVersion_E           hwVersion;
         float                     temperature      = 0.0f;
         float                     temperatureLimit = 0.0f;
@@ -105,7 +105,7 @@ namespace mab
 
     PdsModule::error_E IsolatedConv::getEnergy(s32& energy)
     {
-        return readModuleProperty(propertyId_E::TOTAL_DELIVERED_ENERGY, energy);
+        return readModuleProperty(propertyId_E::DELIVERED_ENERGY, energy);
     }
 
     PdsModule::error_E IsolatedConv::getTemperature(f32& temperature)

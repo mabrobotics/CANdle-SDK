@@ -17,7 +17,7 @@ namespace mab
 
     void PowerStage::printModuleInfo(void)
     {
-        powerStageStatus_S status;
+        powerStageStatus_S status{0};
         moduleVersion_E    hwVersion;
         float              temperature      = 0.0f;
         float              temperatureLimit = 0.0f;
@@ -25,6 +25,7 @@ namespace mab
         u32                voltage          = 0;
         u32                ocdLevel         = 0;
         u32                ocdDelay         = 0;
+        u32                energy           = 0;
 
         getBoardVersion(hwVersion);
         getStatus(status);
@@ -34,6 +35,7 @@ namespace mab
         getOutputVoltage(voltage);
         getOcdLevel(ocdLevel);
         getOcdDelay(ocdDelay);
+        getTotalDeliveredEnergy(energy);
 
         m_log.info("Module type: %s", mType2Str(m_type));
         m_log.info("Module version: %u", (u8)hwVersion);
@@ -44,6 +46,7 @@ namespace mab
         m_log.info("Module output voltage: %u", voltage);
         m_log.info("Module OCD level: %u", ocdLevel);
         m_log.info("Module OCD delay: %u", ocdDelay);
+        m_log.info("Energy deliverd: %d", energy);
     }
 
     PdsModule::error_E PowerStage::enable()
@@ -132,9 +135,14 @@ namespace mab
         return readModuleProperty(propertyId_E::LOAD_POWER, power);
     }
 
-    PdsModule::error_E PowerStage::getEnergy(s32& energy)
+    PdsModule::error_E PowerStage::getTotalDeliveredEnergy(u32& energy)
     {
-        return readModuleProperty(propertyId_E::TOTAL_DELIVERED_ENERGY, energy);
+        return readModuleProperty(propertyId_E::DELIVERED_ENERGY, energy);
+    }
+
+    PdsModule::error_E PowerStage::resetEnergyDelivered(bool& reset)
+    {
+        return writeModuleProperty(propertyId_E::RESET_DELIVERED_ENERGY, reset);
     }
 
     PdsModule::error_E PowerStage::getTemperature(f32& temperature)
