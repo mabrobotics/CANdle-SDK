@@ -8,7 +8,8 @@ import os
 import time
 
 # Add the build directory to the path to import pyCandle
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'build', 'pycandle'))
+sys.path.insert(0, os.path.join(
+    os.path.dirname(__file__), 'build', 'pycandle'))
 
 try:
     import pyCandle
@@ -25,14 +26,14 @@ class PDSExample:
     """
 
     def __init__(self):
-        self.candle = None
-        self.pds = None
         self.power_stages = []
         self.brake_resistors = []
         self.isolated_converters = []
+        self.pds = None
+        self.candle = None
 
     def connect_candle(self, baudrate=pyCandle.CANdleBaudrate_E.CAN_BAUD_1M,
-                      bus_type=pyCandle.busTypes_t.USB):
+                       bus_type=pyCandle.busTypes_t.USB):
         """
         Connect to a CANdle device.
 
@@ -44,7 +45,8 @@ class PDSExample:
             bool: True if successful, False otherwise
         """
         try:
-            print(f"Attempting to connect to CANdle with baudrate {baudrate} and bus type {bus_type}")
+            print(f"Attempting to connect to CANdle with baudrate {
+                  baudrate} and bus type {bus_type}")
             self.candle = pyCandle.attachCandle(baudrate, bus_type)
 
             if self.candle is None:
@@ -134,7 +136,8 @@ class PDSExample:
             # Get firmware metadata using wrapper function
             metadata, result = self.pds.getFwMetadata()
             if result == pyCandle.PDS_Error_t.OK:
-                print(f"Firmware version: {metadata.version.major}.{metadata.version.minor}.{metadata.version.revision}")
+                print(f"Firmware version: {metadata.version.major}.{
+                      metadata.version.minor}.{metadata.version.revision}")
                 print(f"Git hash: {metadata.gitHash}")
             else:
                 print(f"Failed to get firmware metadata: {result}")
@@ -211,12 +214,18 @@ class PDSExample:
             # Get module configuration
             modules = self.pds.getModules()
             print("Connected modules:")
-            print(f"  Socket 1: {pyCandle.Pds.moduleTypeToString(modules.moduleTypeSocket1)}")
-            print(f"  Socket 2: {pyCandle.Pds.moduleTypeToString(modules.moduleTypeSocket2)}")
-            print(f"  Socket 3: {pyCandle.Pds.moduleTypeToString(modules.moduleTypeSocket3)}")
-            print(f"  Socket 4: {pyCandle.Pds.moduleTypeToString(modules.moduleTypeSocket4)}")
-            print(f"  Socket 5: {pyCandle.Pds.moduleTypeToString(modules.moduleTypeSocket5)}")
-            print(f"  Socket 6: {pyCandle.Pds.moduleTypeToString(modules.moduleTypeSocket6)}")
+            print(f"  Socket 1: {pyCandle.Pds.moduleTypeToString(
+                modules.moduleTypeSocket1)}")
+            print(f"  Socket 2: {pyCandle.Pds.moduleTypeToString(
+                modules.moduleTypeSocket2)}")
+            print(f"  Socket 3: {pyCandle.Pds.moduleTypeToString(
+                modules.moduleTypeSocket3)}")
+            print(f"  Socket 4: {pyCandle.Pds.moduleTypeToString(
+                modules.moduleTypeSocket4)}")
+            print(f"  Socket 5: {pyCandle.Pds.moduleTypeToString(
+                modules.moduleTypeSocket5)}")
+            print(f"  Socket 6: {pyCandle.Pds.moduleTypeToString(
+                modules.moduleTypeSocket6)}")
 
             # Print module information
             self.pds.printModuleInfo()
@@ -224,20 +233,28 @@ class PDSExample:
         except Exception as e:
             print(f"Error discovering modules: {e}")
 
-    def attach_modules(self):
-        """
-        Attach to discovered modules and store references.
-        """
+    def attach_module(self, module_type, socket):
         if not self.pds:
             print("Error: PDS not connected")
             return
 
         try:
-            print("\n=== Attaching Modules ===")
+            print(f"\n=== Attaching Module {
+                  module_type} to Socket {socket} ===")
+            self.pds.attachModule(module_type, socket)
+            print(f"Module {module_type} attached to Socket {socket}")
+        except Exception as e:
+            print(f"Error attaching module {
+                  module_type} to Socket {socket}: {e}")
 
-            # Try to attach modules on each socket
+    def attach_modules(self):
+        """
+        Attach to discovered modules and store references.
+        """
+        try:
             for socket_num in range(1, 7):
-                socket = getattr(pyCandle.socketIndex_E, f'SOCKET_{socket_num}')
+                socket = getattr(pyCandle.socketIndex_E,
+                                 f'SOCKET_{socket_num}')
 
                 # Try Power Stage
                 if self.pds.verifyModuleSocket(pyCandle.moduleType_E.POWER_STAGE, socket):
@@ -251,19 +268,20 @@ class PDSExample:
                     brake_resistor = self.pds.attachBrakeResistor(socket)
                     if brake_resistor:
                         self.brake_resistors.append(brake_resistor)
-                        print(f"✓ Attached Brake Resistor at socket {socket_num}")
+                        print(f"✓ Attached Brake Resistor at socket {
+                              socket_num}")
 
                 # Try Isolated Converter
                 elif self.pds.verifyModuleSocket(pyCandle.moduleType_E.ISOLATED_CONVERTER, socket):
                     isolated_conv = self.pds.attachIsolatedConverter(socket)
                     if isolated_conv:
                         self.isolated_converters.append(isolated_conv)
-                        print(f"✓ Attached Isolated Converter at socket {socket_num}")
+                        print(f"✓ Attached Isolated Converter at socket {
+                              socket_num}")
 
             print(f"Total attached modules: {len(self.power_stages)} Power Stages, "
                   f"{len(self.brake_resistors)} Brake Resistors, "
                   f"{len(self.isolated_converters)} Isolated Converters")
-
         except Exception as e:
             print(f"Error attaching modules: {e}")
 
@@ -288,7 +306,8 @@ class PDSExample:
                 status, result = converter.getStatus()
                 if result == pyCandle.PDS_Error_t.OK:
                     print(f"  Status - Enabled: {status.ENABLED}")
-                    print(f"  Status - Over Temperature: {status.OVER_TEMPERATURE}")
+                    print(
+                        f"  Status - Over Temperature: {status.OVER_TEMPERATURE}")
                     print(f"  Status - Over Current: {status.OVER_CURRENT}")
                 else:
                     print(f"  Error getting status: {result}")
@@ -374,7 +393,8 @@ class PDSExample:
                 status, result = power_stage.getStatus()
                 if result == pyCandle.PDS_Error_t.OK:
                     print(f"  Status - Enabled: {status.ENABLED}")
-                    print(f"  Status - Over Temperature: {status.OVER_TEMPERATURE}")
+                    print(
+                        f"  Status - Over Temperature: {status.OVER_TEMPERATURE}")
                     print(f"  Status - Over Current: {status.OVER_CURRENT}")
                 else:
                     print(f"  Error getting status: {result}")
@@ -473,7 +493,8 @@ class PDSExample:
                 status, result = brake_resistor.getStatus()
                 if result == pyCandle.PDS_Error_t.OK:
                     print(f"  Status - Enabled: {status.ENABLED}")
-                    print(f"  Status - Over Temperature: {status.OVER_TEMPERATURE}")
+                    print(
+                        f"  Status - Over Temperature: {status.OVER_TEMPERATURE}")
                 else:
                     print(f"  Error getting status: {result}")
 
@@ -551,13 +572,7 @@ def main():
     # Create and run updated example
     example = PDSExample()
 
-    try:
-        example.run_example()
-    except KeyboardInterrupt:
-        print("\nExample interrupted by user")
-    except Exception as e:
-        print(f"Example failed with error: {e}")
-
+    example.run_example()
 
 
 if __name__ == "__main__":
