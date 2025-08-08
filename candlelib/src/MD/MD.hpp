@@ -7,7 +7,6 @@
 #include "candle_types.hpp"
 #include "MDStatus.hpp"
 #include "candle.hpp"
-#include "../../../candletool/include/OD.hpp"
 
 #include <cstring>
 
@@ -48,8 +47,9 @@ namespace mab
         std::optional<u32> m_timeout;
 
         /// @brief Possible errors present in this class
-        enum Error_t
+        enum class Error_t : u8
         {
+            UNKNOWN_ERROR,
             OK,
             REQUEST_INVALID,
             TRANSFER_FAILED,
@@ -89,11 +89,6 @@ namespace mab
         /// @brief Clear errors present in the driver
         /// @return
         Error_t clearErrors();
-
-        /// @brief Perform a encoder calibration
-        /// @param Main Main=1 if you want to perform the calibration on the main encoder
-        /// @param output output=1 if you want to perform the calibration on the output encoder
-        MD::Error_t encoderCalibration(bool Main, bool output);
 
         /// @brief Save configuration data to the memory
         /// @return
@@ -172,57 +167,51 @@ namespace mab
 
         /// @brief Request quick status update
         /// @return Quick Status map with bit positions as ids
-        std::pair<const std::unordered_map<const MDStatus::QuickStatusBits, MDStatus::StatusItem_S>,
+        std::pair<const std::unordered_map<MDStatus::QuickStatusBits, MDStatus::StatusItem_S>,
                   Error_t>
         getQuickStatus();
 
         /// @brief Request main encoder status
         /// @return Main encoder status map with bit positions as ids
-        std::pair<
-            const std::unordered_map<const MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
-            Error_t>
+        std::pair<const std::unordered_map<MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
+                  Error_t>
         getMainEncoderStatus();
 
         /// @brief Request output encoder status
         /// @return Output encoder status map with bit positions as ids
-        std::pair<
-            const std::unordered_map<const MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
-            Error_t>
+        std::pair<const std::unordered_map<MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
+                  Error_t>
         getOutputEncoderStatus();
 
         /// @brief Request calibration status
         /// @return Calibration status map with bit positions as ids
-        std::pair<
-            const std::unordered_map<const MDStatus::CalibrationStatusBits, MDStatus::StatusItem_S>,
-            Error_t>
+        std::pair<const std::unordered_map<MDStatus::CalibrationStatusBits, MDStatus::StatusItem_S>,
+                  Error_t>
         getCalibrationStatus();
 
         /// @brief Request bridge status
         /// @return Bridge status map with bit positions as ids
-        std::pair<
-            const std::unordered_map<const MDStatus::BridgeStatusBits, MDStatus::StatusItem_S>,
-            Error_t>
+        std::pair<const std::unordered_map<MDStatus::BridgeStatusBits, MDStatus::StatusItem_S>,
+                  Error_t>
         getBridgeStatus();
 
         /// @brief Request hardware status
         /// @return Hardware status map with bit positions as ids
-        std::pair<
-            const std::unordered_map<const MDStatus::HardwareStatusBits, MDStatus::StatusItem_S>,
-            Error_t>
+        std::pair<const std::unordered_map<MDStatus::HardwareStatusBits, MDStatus::StatusItem_S>,
+                  Error_t>
         getHardwareStatus();
 
         /// @brief Request communication status
         /// @return Communication status map with bit positions as ids
-        std::pair<const std::unordered_map<const MDStatus::CommunicationStatusBits,
-                                           MDStatus::StatusItem_S>,
-                  Error_t>
+        std::pair<
+            const std::unordered_map<MDStatus::CommunicationStatusBits, MDStatus::StatusItem_S>,
+            Error_t>
         getCommunicationStatus();
 
         /// @brief Request motion status
         /// @return Motion status map with bit positions as ids
-        std::pair<
-            const std::unordered_map<const MDStatus::MotionStatusBits, MDStatus::StatusItem_S>,
-            Error_t>
+        std::pair<const std::unordered_map<MDStatus::MotionStatusBits, MDStatus::StatusItem_S>,
+                  Error_t>
         getMotionStatus();
 
         /// @brief Request position of the MD
@@ -296,7 +285,7 @@ namespace mab
             return resultPair;
         }
 
-        /// @brief Read registers from the memory of the MD using canFD frame
+        /// @brief Read registers from the memory of the MD
         /// @tparam ...T Register entry underlying type (should be deducible)
         /// @param regs Tuple with register references intended to be read (overwritten by read)
         /// @return Error type on failure
@@ -335,22 +324,15 @@ namespace mab
             std::vector<u8> frame;
             frame.push_back((u8)MdFrameId_E::READ_REGISTER);
             frame.push_back((u8)0x0);
-
-            // std::cout << "----------Test----------" << std::endl;
-            // for (auto byte : frame)
-            //     std::cout << "0x" << std::hex << std::uppercase << (int)byte << " ";
-            // std::cout << std::dec << std::endl;
-
             // Add serialized register data to be read [LSB addr, MSB addr, payload-bytes...]
             auto payload = serializeMDRegisters(regs);
             frame.insert(frame.end(), payload.begin(), payload.end());
-
-            // std::cout << "----------Test----------" << std::endl;
-            // for (auto byte : frame)
-            //     std::cout << "0x" << std::hex << std::uppercase << (int)byte << " ";
-            // std::cout << std::dec << std::endl;
-
             auto readRegResult = transferCanFrame(frame, frame.size());
+            if (readRegResult.second != candleTypes::Error_t::OK)
+            {
+                m_log.error("Error while reading register!");
+                return Error_t::TRANSFER_FAILED;
+            }
             // TODO: for some reason MD sends first byte as 0x0, investigate
             //  if (readRegResult.first.at(0) == 0x41)
             //  {
@@ -375,7 +357,7 @@ namespace mab
             return Error_t::OK;
         }
 
-        /// @brief Write registers to MD memory using canFD frame
+        /// @brief Write registers to MD memory
         /// @tparam ...T Register entry underlying type (should be deducible)
         /// @param ...regs Registry references to be written to memory
         /// @return Error on failure
@@ -386,28 +368,18 @@ namespace mab
             return writeRegisters(tuple);
         }
 
-        /// @brief Write registers to MD memory using canFD frame
+        /// @brief Write registers to MD memory
         /// @tparam ...T Register entry underlying type (should be deducible)
         /// @param regs Tuple of register reference to be written
         /// @return Error on failure
         template <class... T>
         inline Error_t writeRegisters(std::tuple<MDRegisterEntry_S<T>&...>& regs)
         {
-            printf("Writing register...\n");
             m_log.debug("Writing register...");
-
             // Print registers names
-            // std::apply([&](auto&&... reg)
-            //            { ((m_log.debug("Register %s", reg.m_name.data())), ...); },
-            //            regs);
-            std::apply(
-                [&](auto&&... reg)
-                {
-                    ((m_log.debug("Register %s", reg.m_name.data()),
-                      std::cout << "Register " << reg.m_name << std::endl),
-                     ...);
-                },
-                regs);
+            std::apply([&](auto&&... reg)
+                       { ((m_log.debug("Register %s", reg.m_name.data())), ...); },
+                       regs);
 
             // Check has already been performed in the variadic template version if coming from
             // there Double-check here for direct tuple calls
@@ -434,25 +406,15 @@ namespace mab
             }
 
             std::vector<u8> frame;
-            frame.push_back((u8)MdFrameId_E::WRITE_REGISTER);
+            frame.push_back((u8)MdFrameId_E::WRITE_REGISTER_DEFAULT_RESPONSE);
             frame.push_back((u8)0x0);
             auto payload = serializeMDRegisters(regs);
-
             frame.insert(frame.end(), payload.begin(), payload.end());
             auto readRegResult = transferCanFrame(frame, DEFAULT_RESPONSE_SIZE);
 
-            // === Display of the CAN message in the terminal ===
-            std::cout << "CAN Frame => ID: 0x" << std::hex << std::uppercase
-                      << (int)MdFrameId_E::WRITE_REGISTER << ", DLC: " << std::dec << frame.size()
-                      << ", DATA: ";
-            for (auto byte : frame)
-                std::cout << "0x" << std::hex << std::uppercase << (int)byte << " ";
-            std::cout << std::dec << std::endl;
-
-            if (readRegResult.first.at(0) == 0xA0)
-            {
-                return Error_t::OK;
-            }
+            MdFrameId_E frameId = (MdFrameId_E)readRegResult.first.at(0);
+            if (frameId == MdFrameId_E::RESPONSE_DEFAULT || frameId == MdFrameId_E::WRITE_REGISTER)
+                return Error_t::OK; // TODO: Possible do smth with received data?
             else
             {
                 m_log.error("Error in the register write response!");
@@ -460,12 +422,33 @@ namespace mab
             }
         }
 
-        /// @brief averages the latency of 1000 commands
+        /// @brief Helper method to handle md errors
+        /// @return true on failure, false on normal operation
+        inline bool isMDError(Error_t err)
+        {
+            switch (err)
+            {
+                case Error_t::OK:
+                    return false;
+                case Error_t::NOT_CONNECTED:
+                    m_log.error("MD not connected!");
+                    return true;
+                case Error_t::REQUEST_INVALID:
+                    m_log.error("Request is not valid!");
+                    return true;
+                case Error_t::TRANSFER_FAILED:
+                    m_log.error("Transfer of CAN frame failed!");
+                    return true;
+                default:
+                    m_log.error("Unknown error!");
+                    return true;
+            }
+            return true;
+        }
+
+        /// @brief Debugging method to test communication efficiency
         void testLatency();
 
-        /// @brief try to communicate with canFD frame with all the possible id
-        /// @param candle
-        /// @return a vector with all id with a MD attach in canFD communication
         static std::vector<canId_t> discoverMDs(Candle* candle);
 
       private:

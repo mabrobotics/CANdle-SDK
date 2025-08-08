@@ -2,6 +2,8 @@
 
 #include <array>
 #include <memory>
+#include <optional>
+#include <string_view>
 #include <vector>
 #include <utility>
 #include <iomanip>
@@ -61,14 +63,6 @@ namespace mab
             const size_t          responseSize,
             const u32             timeoutMs = DEFAULT_CAN_TIMEOUT) const;
 
-        /// @brief Method for transfering CAN packets via CANdle device
-        /// @param canId Target CAN node ID
-        /// @param dataToSend Data to be transferred via CAN bus
-        /// @param responseSize Size of the expected device response (0 for not expecting a
-        /// response)
-        /// @param timeoutMs Time after which candle will stop waiting for node response in
-        /// miliseconds
-        /// @return
         const std::pair<std::vector<u8>, candleTypes::Error_t> transferCANPDOFrame(
             const canId_t         canId,
             const std::vector<u8> dataToSend,
@@ -81,6 +75,8 @@ namespace mab
         /// @brief Reset candle device
         /// @return Error on failure
         candleTypes::Error_t reset();
+
+        std::optional<version_ut> getCandleVersion();
 
         /// @brief Command the application to reboot into a bootloader and await commands.
         /// @param usb initialized usb interface (bootloader only works via USB)
@@ -99,13 +95,14 @@ namespace mab
 
         bool m_isInitialized = false;
 
+        candleTypes::Error_t busTransferPDO(std::vector<u8>* data,
+                                            size_t           responseLength = 0,
+                                            const u32 timeoutMs = DEFAULT_CAN_TIMEOUT + 1) const;
+
         candleTypes::Error_t busTransfer(std::vector<u8>* data,
                                          size_t           responseLength = 0,
                                          const u32 timeoutMs = DEFAULT_CAN_TIMEOUT + 1) const;
 
-        candleTypes::Error_t busTransferPDO(std::vector<u8>* data,
-                                            size_t           responseLength = 0,
-                                            const u32 timeoutMs = DEFAULT_CAN_TIMEOUT + 1) const;
         // TODO: this method is temporary and must be changed, must have some way for bus to check
         // functional connection
         candleTypes::Error_t legacyCheckConnection();
@@ -114,7 +111,6 @@ namespace mab
         {
             return std::array<u8, 2>({RESET, 0x0});
         }
-
         static constexpr std::array<u8, 2> enterBootloaderFrame()
         {
             return std::array<u8, 2>({ENTER_BOOTLOADER, 0x0});
@@ -197,4 +193,52 @@ namespace mab
         if (candle != nullptr)
             delete candle;
     }
+
+    class CandleBuilder
+    {
+        Logger m_logger = Logger(Logger::ProgramLayer_E::TOP, "CANDLE_BUILDER");
+
+      public:
+        CandleBuilder() = default;
+
+        std::shared_ptr<CANdleBaudrate_E>        datarate = nullptr;
+        std::shared_ptr<candleTypes::busTypes_t> busType  = nullptr;
+        std::optional<std::string_view>          pathOrId;
+
+        std::function<void()> preBuildTask = []() {};
+
+        std::optional<Candle*> build() const
+        {
+            preBuildTask();
+            if (datarate == nullptr || busType == nullptr)
+            {
+                m_logger.error("Parameters missing. Could create Candle.");
+                return {};
+            }
+            std::unique_ptr<I_CommunicationInterface> bus;
+            switch (*busType)
+            {
+                case candleTypes::busTypes_t::USB:
+                    bus = std::make_unique<mab::USB>(Candle::CANDLE_VID,
+                                                     Candle::CANDLE_PID,
+                                                     std::string(pathOrId.value_or(std::string())));
+                    if (bus->connect() != I_CommunicationInterface::Error_t::OK)
+                    {
+                        m_logger.error("Could not connect USB device!");
+                        return {};
+                    }
+                    break;
+                default:
+                    m_logger.error("Unimplemented bus type");
+                    return {};
+            }
+            Candle* candle = new Candle(*datarate, std::move(bus));
+            if (candle == nullptr || candle->init() != candleTypes::Error_t::OK)
+            {
+                m_logger.error("Could not initialize CANdle device!");
+                return {};
+            }
+            return candle;
+        }
+    };
 }  // namespace mab

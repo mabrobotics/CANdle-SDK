@@ -7,7 +7,7 @@
 #include "candle_types.hpp"
 #include "MDStatus.hpp"
 #include "candle.hpp"
-#include "../../../candletool/include/OD.hpp"
+#include "../../../candletool/objectDictionary/OD.hpp"
 
 #include <cstring>
 
@@ -22,10 +22,16 @@
 #include <string>
 #include <vector>
 #include <iomanip>
+#include <algorithm>
+
+/// @brief compare two strings in a case-insensitive manner
+/// @param a first string to compare
+/// @param b second string to compare
+/// @return true if the strings are equal, false otherwise
+bool caseInsensitiveEquals(const std::string& a, const std::string& b);
 
 namespace mab
 {
-    struct MDStatus;
     /// @brief Software representation of MD device on the can network
     class MDCO
     {
@@ -39,12 +45,6 @@ namespace mab
         /// @brief MD can node ID
         const canId_t m_canId;
 
-        /// @brief Helper buffer for interacting with MD registers
-        MDRegisters_S m_mdRegisters;
-
-        /// @brief Helper buffer for storing MD status information
-        MDStatus m_status;
-
         std::optional<u32> m_timeout;
 
         /// @brief Possible errors present in this class
@@ -53,7 +53,8 @@ namespace mab
             OK,
             REQUEST_INVALID,
             TRANSFER_FAILED,
-            NOT_CONNECTED
+            NOT_CONNECTED,
+            UNKNOWN_OBJECT
         };
 
         /// @brief Create MD object instance
@@ -84,6 +85,7 @@ namespace mab
                              u32 RatedCurrent,
                              u16 MaxTorque,
                              u32 RatedTorque);
+
         /// @brief Move to desired position
         /// @param targetPos desired position
         /// @param MaxSpeed maximum motor speed [RPM]
@@ -112,6 +114,20 @@ namespace mab
                        u32 MaxSpeed,
                        i32 DesiredSpeed);
 
+        /// @brief Move to desired position with impedance control
+        /// @param desiredSpeed desired speed [RPM]
+        /// @param targetPos desired position
+        /// @param kp proportional gain
+        /// @param kd derivative gain
+        /// @param torque torque to apply [mNM]
+        /// @param MaxSpeed maximum motor speed [RPM]
+        /// @param MaxCurrent Maximum current accepted by the motor [mA*RatedCurrent]
+        /// @param RatedCurrent Rated Current [mA]
+        /// @param MaxTorque Maximum torque accepted by the motor [mNM*RatedCurrent]
+        /// @param RatedTorque Rated torque [mNM]
+        /// @return Error_t indicating the result of the operation
+        /// @details This function sets the motor in impedance control mode and moves it to the
+        /// specified position with the given speed, gains, and torque.
         Error_t moveImpedance(i32 desiredSpeed,
                               i32 targetPos,
                               f32 kp,
@@ -174,12 +190,18 @@ namespace mab
         /// @param subindex subindex from the object dictionary where the user want to read the
         /// value
         /// @return Error on failure
-        inline Error_t ReadOpenRegisters(int index, short subindex)
+        inline Error_t ReadOpenRegisters(int index, short subindex, bool force = false)
         {
-            // printf("Writing Open register...\n");
-            m_log.debug("Read Open register...");
-            // cout << index << endl;
+            if (!force)
+            {
+                if (isReadable(index, subindex) != OK)
+                {
+                    m_log.error("Object 0x%04x:0x%02x is not Readable!", index, subindex);
+                    return Error_t::REQUEST_INVALID;
+                }
+            }
 
+            m_log.debug("Read Open register...");
             std::vector<u8> frame;
             frame.push_back(0x40);                // Command: initiate upload
             frame.push_back(((u8)index));         // Index LSB
@@ -247,16 +269,32 @@ namespace mab
             }
         }
 
-        Error_t WriteLongOpenRegisters(int index, short subindex, std::string& dataString)
+        /// @brief write a value in a can open register using SDO segmented can frame
+        /// @param name name of the object to write
+        /// @param data value to write
+        /// @param size size of the data to write (1,2,4)
+        /// @return Error on failure
+        Error_t WriteLongOpenRegisters(int                index,
+                                       short              subindex,
+                                       const std::string& dataString,
+                                       bool               force = false)
         {
+            if (!force)
+            {
+                if (isWritable(index, subindex) != OK)
+                {
+                    m_log.error("Object 0x%04x:0x%02x is not writable!", index, subindex);
+                    return Error_t::REQUEST_INVALID;
+                }
+            }
             std::string motorName = dataString;
 
             m_log.debug("Writing Motor Name to 0x2000:0x06 via segmented SDO...");
 
-            // 1. prepare data to send
-            std::vector<u8> data(20, 0x00);
-            std::memcpy(data.data(), motorName.data(), std::min<size_t>(motorName.size(), 20));
-
+            // 1. prepare data to send clip data to 20 bytes (Motor Name)
+            // std::vector<u8> data(20, 0x00);
+            // std::memcpy(data.data(), motorName.data(), std::min<size_t>(motorName.size(), 20));
+            std::vector<u8> data = std::vector<u8>(motorName.begin(), motorName.end());
             // 2. sending init message of segmented transfer
             std::vector<u8> initFrame = {0x21,  // CCS=1, E=1, S=1
                                          u8(index & 0xFF),
@@ -353,11 +391,16 @@ namespace mab
         /// @return Error on failure
         inline Error_t ReadLongOpenRegisters(int index, short subindex, std::vector<u8>& outData)
         {
-            // only for testing
-            // WriteMotorName();
+            // // only for testing
+            // // WriteMotorName();
+            if (isReadable(index, subindex) != OK)
+            {
+                m_log.error("Object 0x%04x:0x%02x is not readable!", index, subindex);
+                return Error_t::REQUEST_INVALID;
+            }
 
             constexpr size_t OFF = 2;  // can message offset
-            m_log.debug("Read Motor Name (0x2000:0x06) via segmented SDO…");
+            m_log.debug("Read Object (0x%lx:0x%x) via segmented SDO…", index, subindex);
 
             // ---------- 1) Initiation Request ----------
             std::vector<u8> initReq = {0x40,  // CCS=2: Initiate Upload
@@ -449,8 +492,17 @@ namespace mab
             }
 
             // ---------- 3) Display ----------
-            std::string motorName(outData.begin(), outData.end());
-            m_log.info("Data received (convert into string): '%s'", motorName.c_str());
+            if (DataSizeOfEdsObject(index, subindex) == 0)
+            {
+                // if data size is 0, we assume it is a string
+                std::string motorName(outData.begin(), outData.end());
+                m_log.info("Data received (convert into string): '%s'", motorName.c_str());
+            }
+            else
+            {
+                m_log.info("Data received: %s",
+                           std::string(outData.begin(), outData.end()).c_str());
+            }
 
             return Error_t::OK;
         }
@@ -459,9 +511,14 @@ namespace mab
         /// @param index index from the object dictionary where the user want to read the value
         /// @param subindex subindex from the object dictionary where the user want to read the
         /// value
-        /// @return the value contained in the register
+        /// @return the value contained in the register or -1 if error
         long GetValueFromOpenRegister(int index, short subindex)
         {
+            if (isReadable(index, subindex) != OK)
+            {
+                m_log.error("Object 0x%04x:0x%02x is not writable!", index, subindex);
+                return Error_t::REQUEST_INVALID;
+            }
             // printf("Writing Open register...\n");
             m_log.debug("Read Open register...");
             // cout << index << endl;
@@ -511,9 +568,41 @@ namespace mab
         /// @param subindex subindex from the object dictionary where the user want to write the
         /// value
         /// @return Error on failure
-        inline Error_t WriteOpenRegisters(int index, short subindex, long data, short size)
+        inline Error_t WriteOpenRegisters(
+            int index, short subindex, long data, short size = 0, bool force = false)
         {
-            m_log.debug("Writing Open register...");
+            if (!force)
+            {
+                if (isWritable(index, subindex) != OK)
+                {
+                    m_log.error("Object 0x%04x:0x%02x is not writable!", index, subindex);
+                    return Error_t::REQUEST_INVALID;
+                }
+            }
+
+            if (size == 0)
+            {
+                size = DataSizeOfEdsObject(index, subindex);
+                if (size == -1)
+                {
+                    m_log.error("Object 0x%04x:0x%02x has an unsupported size (%d)!",
+                                index,
+                                subindex,
+                                size);
+                    return Error_t::REQUEST_INVALID;
+                }
+                else if (size == 0 || size > 4)
+                {
+                    m_log.error(
+                        "Object 0x%04x:0x%02x has an unsupported size (%d), please use an "
+                        "Segmented transfer !",
+                        index,
+                        subindex,
+                        size);
+                    return Error_t::REQUEST_INVALID;
+                }
+            }
+
             std::vector<u8> frame;
             if (size == 1)
                 frame.push_back(0x2F);
@@ -540,6 +629,38 @@ namespace mab
                 m_log.error("Error in the register write response!");
                 return Error_t::TRANSFER_FAILED;
             }
+        }
+
+        /// @brief write a value in a can open register using SDO can frame
+        /// @param name name of the object to write
+        /// @param data value to write
+        /// @param size size of the data to write (1,2,4)
+        /// @return Error on failure
+        inline Error_t WriteOpenRegisters(const std::string& name,
+                                          u32                data,
+                                          u8                 size  = 0,
+                                          bool               force = false)
+        {
+            bool debug    = m_log.isLevelEnabled(Logger::LogLevel_E::DEBUG);
+            u32  index    = 0;
+            u8   subIndex = 0;
+            if (findObjectByName(name, index, subIndex) != OK)
+            {
+                m_log.error("%s not found in EDS file", name.c_str());
+                return Error_t::UNKNOWN_OBJECT;
+            }
+            if (!force)
+            {
+                if (isWritable(index, subIndex) != OK)
+                {
+                    m_log.error("Object 0x%04x:0x%02x is not writable!", index, subIndex);
+                    return Error_t::REQUEST_INVALID;
+                }
+            }
+            auto err = WriteOpenRegisters(index, subIndex, data, size);
+            if (debug)
+                m_log.debug("Error:%d\n", ReadOpenRegisters(index, subIndex));
+            return err;
         }
 
         /// @brief write a value in a can open register using PDO can frame
@@ -585,7 +706,51 @@ namespace mab
         /// @return a vector with all id with a MD attach in CANopen communication
         static std::vector<canId_t> discoverOpenMDs(Candle* candle);
 
+        /// @brief Return the size of the data of an EDS object
+        /// @param index Index of the object in the Object Dictionary
+        /// @param subIndex Subindex of the object in the Object Dictionary
+        /// @return Size of the data in bytes, or 0 if the object is a string or -1 if the object is
+        /// not found
+        u8 DataSizeOfEdsObject(const u32 index, const u8 subIndex);
+
+        /// @brief Display all information about the MD device
+        /// @details This function prints the all the actual register value, device type, and all
+        /// objects in the Object Dictionary.
+        void printAllInfo();
+
       private:
+        /// @brief Generate the Object Dictionary from the EDS file
+        /// @return A vector of edsObject representing the Object Dictionary
+        const std::vector<edsObject> ObjectDictionary =
+            generateObjectDictionary();  // Object dictionary generated from the EDS file
+
+        /// @brief Find an object in the Object Dictionary by its name
+        /// @param searchTerm name of the object to find
+        /// @param index Output parameter to store the found index
+        /// @param subIndex Output parameter to store the found subindex
+        /// @return Error_t indicating the result of the operation
+        /// @details If multiple objects with the same name are found, only the first one is
+        /// returned, and a warning is logged.
+        Error_t findObjectByName(const std::string& searchTerm, u32& index, u8& subIndex);
+
+        /// @brief Check if an object is writable
+        /// @param index Index of the object in the Object Dictionary
+        /// @param subIndex Subindex of the object in the Object Dictionary
+        /// @return Error_t indicating whether the object is writable or not
+        /// @details This function checks the Object Dictionary to determine if the specified object
+        /// is writable. If the object is not found or not writable, it returns an error.
+        /// If the object is writable, it returns OK.
+        Error_t isWritable(const u32 index, const u8 subIndex);
+
+        /// @brief Check if an object is readable
+        /// @param index Index of the object in the Object Dictionary
+        /// @param subIndex Subindex of the object in the Object Dictionary
+        /// @return Error_t indicating whether the object is readable or not
+        /// @details This function checks the Object Dictionary to determine if the specified object
+        /// is readable. If the object is not found or not readable, it returns an error.
+        /// If the object is readable, it returns OK.
+        Error_t isReadable(const u32 index, const u8 subIndex);
+
         const Candle* m_candle;
 
         inline const Candle* getCandle() const

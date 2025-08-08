@@ -2,6 +2,9 @@
 
 #include <exception>
 #include <MD.hpp>
+#include <optional>
+#include "candle_types.hpp"
+#include "mab_types.hpp"
 
 namespace mab
 {
@@ -16,7 +19,6 @@ namespace mab
                    std::unique_ptr<mab::I_CommunicationInterface>&& bus)
         : m_canBaudrate(canBaudrate), m_bus(std::move(bus))
     {
-        m_log.warn("This is an experimental software, please use with caution!");
     }
 
     candleTypes::Error_t Candle::init()
@@ -67,12 +69,29 @@ namespace mab
         }
         return candleTypes::Error_t::OK;
     }
+    std::optional<version_ut> Candle::getCandleVersion()
+    {
+        auto buffer       = baudrateCommandFrame(m_canBaudrate);
+        auto baudResponse = busTransfer(&buffer, 6);
+        if (baudResponse != candleTypes::Error_t::OK || buffer.size() < 6)
+        {
+            return std::nullopt;
+        }
+        else
+        {
+            version_ut candleVersion;
+            candleVersion.s.tag      = buffer[2];
+            candleVersion.s.revision = buffer[3];
+            candleVersion.s.minor    = buffer[4];
+            candleVersion.s.major    = buffer[5];
+            return candleVersion;
+        }
+    }
 
     candleTypes::Error_t Candle::busTransfer(std::vector<u8>* data,
                                              size_t           responseLength,
                                              const u32        timeoutMs) const
     {
-        // return candleTypes::Error_t::OK;
         if (data == nullptr)
         {
             m_log.error("Data vector broken!");
@@ -98,7 +117,7 @@ namespace mab
             data->clear();
             data->insert(data->begin(), result.first.begin(), result.first.end());
             // *data = result.first;
-            // cout << "Result second:" << result.second << endl;
+
             if (result.second)
                 return candleTypes::Error_t::UNKNOWN_ERROR;
         }
@@ -148,24 +167,6 @@ namespace mab
         const size_t          responseSize,
         const u32             timeoutMs) const
     {
-        // std::cout << "---- Send CAN Frame Info ----" << std::endl;
-        // std::cout << "CAN ID        : 0x" << std::hex << std::uppercase << std::setw(3)
-        //           << std::setfill('0') << (int)canId << std::dec << std::endl;
-
-        // std::cout << "DLC (Data Len): " << dataToSend.size() << std::endl;
-
-        // std::cout << "DATA          : ";
-        // for (const auto& byte : dataToSend)
-        // {
-        //     std::cout << "0x" << std::hex << std::uppercase << std::setw(2) << std::setfill('0')
-        //               << (int)byte << " ";
-        // }
-        // std::cout << std::dec << std::endl;
-
-        // std::cout << "Response Size : " << responseSize << std::endl;
-        // std::cout << "Timeout (ms)  : " << timeoutMs << std::endl;
-        // std::cout << "------------------------" << std::endl;
-
         candleTypes::Error_t communicationStatus = candleTypes::Error_t::OK;
 
         if (!m_isInitialized)
@@ -184,6 +185,35 @@ namespace mab
             return std::pair<std::vector<u8>, candleTypes::Error_t>(
                 dataToSend, candleTypes::Error_t::DATA_TOO_LONG);
         }
+
+        // auto buffer = std::vector<u8>(dataToSend);
+
+        // const auto candleCommandCANframe =
+        //     sendCanFrameHeader(dataToSend.size(), u16(canId), timeoutMs);
+
+        // buffer.insert(buffer.begin(), candleCommandCANframe.begin(),
+        // candleCommandCANframe.end());
+
+        // communicationStatus =
+        //     busTransfer(&buffer, responseSize + 2 /*response header size*/, timeoutMs + 1);
+
+        // if (buffer.at(1) != 0x01)
+        // {
+        //     m_log.error("CAN frame did not reach target device with id: %d!", canId);
+        //     return std::pair<std::vector<u8>, candleTypes::Error_t>(
+        //         dataToSend, candleTypes::Error_t::CAN_DEVICE_NOT_RESPONDING);
+        // }
+
+        // if (buffer.size() > 3)
+        //     buffer.erase(buffer.begin(), buffer.begin() + 2 /*response header size*/);
+
+        // auto response = buffer;
+
+        // m_log.debug("Expected received len: %d", responseSize);
+        // m_log.debug("RECEIVE");
+        // // frameDump(response);
+
+        // return std::pair<std::vector<u8>, candleTypes::Error_t>(response, communicationStatus);
 
         auto buffer = std::vector<u8>(dataToSend);
 

@@ -21,7 +21,6 @@
 #include "canLoader.hpp"
 #include "mab_types.hpp"
 #include "md_types.hpp"
-#include "ui.hpp"
 #include "configHelpers.hpp"
 #include "utilities.hpp"
 #include "utilities.hpp"
@@ -45,7 +44,7 @@ uint64_t get_time_us()
 
 CandleToolCO::CandleToolCO(const mab::CANdleBaudrate_E baud)
 {
-    log.m_tag   = "CANDLETOOL";
+    log.m_tag   = "CANDLETOOLco";
     log.m_layer = Logger::ProgramLayer_E::TOP;
     // log.info("CandleSDK Version: %s", mab::Candle::getVersion().c_str());
 
@@ -125,27 +124,27 @@ void CandleToolCO::configZero(u16 id)
     mdco.openZero();
 }
 
-void CandleToolCO::configCurrent(u16 id, f32 current)
-{
-    MD   md        = MD(id, m_candle);
-    auto connected = md.init();
-    if (connected != MD::Error_t::OK)
-    {
-        log.error("Could not connect MD with id %d", id);
-        return;
-    }
-    auto result = md.setCurrentLimit(current);
+// void CandleToolCO::configCurrent(u16 id, f32 current)
+// {
+//     MD   md        = MD(id, m_candle);
+//     auto connected = md.init();
+//     if (connected != MD::Error_t::OK)
+//     {
+//         log.error("Could not connect MD with id %d", id);
+//         return;
+//     }
+//     auto result = md.setCurrentLimit(current);
 
-    if (result != MD::Error_t::OK)
-    {
-        log.error("Failed to set max current for the driver with id %d!", id);
-    }
-    else
-    {
-        log.info("Max current set successfully!");
-    }
-    return;
-}
+//     if (result != MD::Error_t::OK)
+//     {
+//         log.error("Failed to set max current for the driver with id %d!", id);
+//     }
+//     else
+//     {
+//         log.info("Max current set successfully!");
+//     }
+//     return;
+// }
 
 void CandleToolCO::configBandwidth(u16 id, f32 bandwidth)
 {
@@ -155,85 +154,20 @@ void CandleToolCO::configBandwidth(u16 id, f32 bandwidth)
     mdco.CanOpenBandwidth(newBandwidth);
 }
 
-void CandleToolCO::configClear(u16 id)
-{
-    MDRegisters_S mdRegisters;
-    MD            md        = MD(id, m_candle);
-    auto          connected = md.init();
-    if (connected != MD::Error_t::OK)
-    {
-        log.error("Could not connect MD with id %d", id);
-        MDRegisters_S mdRegisters;
-        MD            md        = MD(id, m_candle);
-        auto          connected = md.init();
-        if (connected != MD::Error_t::OK)
-        {
-            log.error("Could not connect MD with id %d", id);
-            return;
-        }
-        mdRegisters.runRestoreFactoryConfig = 1;
-        auto result = md.writeRegisters(mdRegisters.runRestoreFactoryConfig);
-
-        if (result != MD::Error_t::OK)
-        {
-            log.error("Failed to clear config in the driver with id %d!", id);
-        }
-        else
-        {
-            log.info("Config cleared successful!");
-        }
-        return;
-    }
-    mdRegisters.runRestoreFactoryConfig = 1;
-    auto result                         = md.writeRegisters(mdRegisters.runRestoreFactoryConfig);
-
-    if (result != MD::Error_t::OK)
-    {
-        log.error("Failed to clear config in the driver with id %d!", id);
-    }
-    else
-    {
-        log.info("Config cleared successful!");
-    }
-    return;
-}
-
 void CandleToolCO::sendPdoSpeed(u16 id, i32 desiredSpeed)
 {
-    bool debug = log.isLevelEnabled(Logger::LogLevel_E::DEBUG);
-    MDCO md    = MDCO(id, m_candle);
+    MDCO md = MDCO(id, m_candle);
     log.info("Sending SDO for motor setup!");
-    md.WriteOpenRegisters(0x6073, 0, 500, 2);
-    if (debug)
-        log.debug("Error:%d\n", md.ReadOpenRegisters(0x6073, 0x00));
-    md.WriteOpenRegisters(0x6075, 0, 1000, 4);
-    if (debug)
-        log.debug("Error:%d\n", md.ReadOpenRegisters(0x6075, 0x00));
-
-    // Motor Max Speed
-    md.WriteOpenRegisters(0x6080, 0, 1000, 4);
-    if (debug)
-        log.debug("Error:%d\n", md.ReadOpenRegisters(0x6080, 0x00));
-
-    // Torques Max + rated
-    md.WriteOpenRegisters(0x6072, 0, 200, 2);
-    if (debug)
-        log.debug("Error:%d\n", md.ReadOpenRegisters(0x6072, 0x00));
-    md.WriteOpenRegisters(0x6076, 0, 1000, 4);
-    if (debug)
-        log.debug("Error:%d\n", md.ReadOpenRegisters(0x6076, 0x00));
-
-    // clear error
-    md.WriteOpenRegisters(0x6040, 0, 0x80, 2);
-    if (debug)
-        log.debug("Error:%d\n", md.ReadOpenRegisters(0x6041, 0x00));
-
-    // shutdown command
-    md.WriteOpenRegisters(0x6040, 0, 6, 2);
-    if (debug)
-        log.debug("Error:%d\n", md.ReadOpenRegisters(0x6041, 0x00));
+    md.WriteOpenRegisters("Max Current", 500, 2);
+    md.WriteOpenRegisters("Motor Rated Current", 1000, 4);
+    md.WriteOpenRegisters("Max Motor Speed", 200, 4);
+    md.WriteOpenRegisters("Motor Max Torque", 500, 2);
+    md.WriteOpenRegisters("Motor Rated Torque", 1000, 4);
+    md.WriteOpenRegisters("Modes Of Operation", 9, 1);
+    md.WriteOpenRegisters("Controlword", 0x80, 2);
+    md.WriteOpenRegisters("Controlword", 0x06, 2);
+    md.WriteOpenRegisters("Controlword", 15, 2);
     log.info("Sending PDO for speed loop control");
-
     std::vector<u8> frameSetup;
     frameSetup.push_back(0x0F);
     frameSetup.push_back(0x00);
@@ -247,9 +181,7 @@ void CandleToolCO::sendPdoSpeed(u16 id, i32 desiredSpeed)
     frameSpeed.push_back((u8)(desiredSpeed >> 16));
     frameSpeed.push_back((u8)(desiredSpeed >> 24));
     md.WriteOpenPDORegisters(0x500 + id, frameSpeed);
-
     usleep(5000000);
-
     if ((int)md.GetValueFromOpenRegister(0x606C, 0x00) <= desiredSpeed + 5 &&
         (int)md.GetValueFromOpenRegister(0x606C, 0x00) >= desiredSpeed - 5)
     {
@@ -259,56 +191,24 @@ void CandleToolCO::sendPdoSpeed(u16 id, i32 desiredSpeed)
     {
         log.error("Velocity Target not reached");
     }
-
-    md.WriteOpenRegisters(0x60FF, 0, 0, 4);
-
-    usleep(100000);
-
-    // shutdown command
-    md.WriteOpenRegisters(0x6040, 0, 6, 2);
-    if (debug)
-        log.debug("Error:%d\n", md.ReadOpenRegisters(0x6041, 0x00));
-
-    // idle
-    md.WriteOpenRegisters(0x6060, 0, 0, 1);
-    if (debug)
-        log.debug("Error:%d\n", md.ReadOpenRegisters(0x6061, 0x00));
+    md.WriteOpenRegisters("Motor Target Velocity", 0, 4);
+    md.WriteOpenRegisters("Controlword", 6, 2);
+    md.WriteOpenRegisters("Modes Of Operation", 0, 1);
 }
 
 void CandleToolCO::sendPdoPosition(u16 id, i32 DesiredPos)
 {
-    bool debug = log.isLevelEnabled(Logger::LogLevel_E::DEBUG);
-    MDCO md    = MDCO(id, m_candle);
+    MDCO md = MDCO(id, m_candle);
     log.info("Sending SDO for motor setup!");
-    md.WriteOpenRegisters(0x6073, 0, 500, 2);
-    if (debug)
-        log.debug("Error:%d\n", md.ReadOpenRegisters(0x6073, 0x00));
-    md.WriteOpenRegisters(0x6075, 0, 1000, 4);
-    if (debug)
-        log.debug("Error:%d\n", md.ReadOpenRegisters(0x6075, 0x00));
-
-    // Motor Max Speed
-    md.WriteOpenRegisters(0x6080, 0, 1000, 4);
-    if (debug)
-        log.debug("Error:%d\n", md.ReadOpenRegisters(0x6080, 0x00));
-
-    // Torques Max + rated
-    md.WriteOpenRegisters(0x6072, 0, 200, 2);
-    if (debug)
-        log.debug("Error:%d\n", md.ReadOpenRegisters(0x6072, 0x00));
-    md.WriteOpenRegisters(0x6076, 0, 1000, 4);
-    if (debug)
-        log.debug("Error:%d\n", md.ReadOpenRegisters(0x6076, 0x00));
-
-    // clear error
-    md.WriteOpenRegisters(0x6040, 0, 0x80, 2);
-    if (debug)
-        log.debug("Error:%d\n", md.ReadOpenRegisters(0x6041, 0x00));
-
-    // shutdown command
-    md.WriteOpenRegisters(0x6040, 0, 6, 2);
-    if (debug)
-        log.debug("Error:%d\n", md.ReadOpenRegisters(0x6041, 0x00));
+    md.WriteOpenRegisters("Max Current", 500, 2);
+    md.WriteOpenRegisters("Motor Rated Current", 1000, 4);
+    md.WriteOpenRegisters("Max Motor Speed", 200, 4);
+    md.WriteOpenRegisters("Motor Max Torque", 500, 2);
+    md.WriteOpenRegisters("Motor Rated Torque", 1000, 4);
+    md.WriteOpenRegisters("Modes Of Operation", 8, 1);
+    md.WriteOpenRegisters("Controlword", 0x80, 2);
+    md.WriteOpenRegisters("Controlword", 0x06, 2);
+    md.WriteOpenRegisters("Controlword", 15, 2);
 
     usleep(1000);
 
@@ -327,22 +227,22 @@ void CandleToolCO::sendPdoPosition(u16 id, i32 DesiredPos)
     framePosition.push_back((u8)(DesiredPos >> 16));
     framePosition.push_back((u8)(DesiredPos >> 24));
 
-    log.debug("position demande : %d\n", DesiredPos);
+    log.debug("position ask : %d\n", DesiredPos);
 
     time_t start = time(nullptr);
 
     while (time(nullptr) - start < 5 &&
-           !((int)md.GetValueFromOpenRegister(ODList[56].index, 0) > (DesiredPos - 100) &&
-             (int)md.GetValueFromOpenRegister(ODList[56].index, 0) < (DesiredPos + 100)))
+           !((int)md.GetValueFromOpenRegister(0x6064, 0) > (DesiredPos - 100) &&
+             (int)md.GetValueFromOpenRegister(0x6064, 0) < (DesiredPos + 100)))
     {
         md.WriteOpenPDORegisters(0x400 + id, framePosition);
         usleep(1000);
     }
 
-    log.debug("position actuel : %d\n", (int)md.GetValueFromOpenRegister(ODList[56].index, 0));
+    log.debug("position actual : %d\n", (int)md.GetValueFromOpenRegister(0x6064, 0));
 
-    if (((int)md.GetValueFromOpenRegister(ODList[56].index, 0) > (DesiredPos - 200) &&
-         (int)md.GetValueFromOpenRegister(ODList[56].index, 0) < (DesiredPos + 200)))
+    if (((int)md.GetValueFromOpenRegister(0x6064, 0) > (DesiredPos - 200) &&
+         (int)md.GetValueFromOpenRegister(0x6064, 0) < (DesiredPos + 200)))
     {
         log.success("Position reached in less than 5s");
     }
@@ -351,21 +251,56 @@ void CandleToolCO::sendPdoPosition(u16 id, i32 DesiredPos)
         log.error("Position not reached in less than 5s");
     }
 
-    // retour 0
-    // md.WriteOpenRegisters(0x607A, 0, 0, 4);
-    // if (debug)
-    //     log.debug("Error:%d\n", md.ReadOpenRegisters(0x607A, 0x00));
-    // usleep(100000);
+    md.WriteOpenRegisters("Controlword", 6, 2);
+    md.WriteOpenRegisters("Modes Of Operation", 0, 1);
+}
 
-    // shutdown command
-    md.WriteOpenRegisters(0x6040, 0, 6, 2);
-    if (debug)
-        log.debug("Error:%d\n", md.ReadOpenRegisters(0x6040, 0x00));
-
-    // idle
-    md.WriteOpenRegisters(0x6060, 0, 0, 1);
-    if (debug)
-        log.debug("Error:%d\n", md.ReadOpenRegisters(0x6060, 0x00));
+void CandleToolCO::SendCustomPdo(u16 id, const edsObject& Desiregister, u64 data)
+{
+    // TO DO: finish this
+    MDCO mdco = MDCO(id, m_candle);
+    // if the the index start with 0x1A00
+    if (Desiregister.index == (0x1600))
+    {
+        std::vector<u8> frame;
+        frame.push_back((u8)(data >> 8));
+        frame.push_back(data);
+        mdco.WriteOpenPDORegisters(0x200 + id, frame);
+    }
+    else if (Desiregister.index == (0x1601))
+    {
+        std::vector<u8> frame;
+        frame.push_back((u8)(data >> 16));
+        frame.push_back((u8)(data >> 8));
+        frame.push_back((u8)data);
+        mdco.WriteOpenPDORegisters(0x300 + id, frame);
+    }
+    else if (Desiregister.index == (0x1602))
+    {
+        std::vector<u8> frame;
+        frame.push_back((u8)(data >> 40));
+        frame.push_back((u8)(data >> 32));
+        frame.push_back((u8)(data >> 24));
+        frame.push_back((u8)(data >> 16));
+        frame.push_back((u8)(data >> 8));
+        frame.push_back((u8)data);
+        mdco.WriteOpenPDORegisters(0x400 + id, frame);
+    }
+    else if (Desiregister.index == (0x1603))
+    {
+        std::vector<u8> frame;
+        frame.push_back((u8)(data >> 40));
+        frame.push_back((u8)(data >> 32));
+        frame.push_back((u8)(data >> 24));
+        frame.push_back((u8)(data >> 16));
+        frame.push_back((u8)(data >> 8));
+        frame.push_back((u8)data);
+        mdco.WriteOpenPDORegisters(0x500 + id, frame);
+    }
+    else
+    {
+        log.error("Please enter a index between 0x1600 & 0x1603 (Transmit PDO)");
+    }
 }
 
 void CandleToolCO::setupCalibration(u16 id)
@@ -380,7 +315,6 @@ void CandleToolCO::setupCalibrationOutput(u16 id)
     mdco.encoderCalibration(0, 1);
 }
 
-// TODO: Variant of this method for PDS device
 std::string CandleToolCO::validateAndGetFinalConfigPath(const std::string& cfgPath)
 {
     std::string finalConfigPath        = cfgPath;
@@ -723,7 +657,7 @@ void CandleToolCO::heartbeatTest(u32 MasterId, u32 SlaveId, u32 HeartbeatTimeout
         return;
     }
 
-    md.WriteOpenRegisters(0x1016, 0x00, 0x1, 1);
+    // md.WriteOpenRegisters(0x1016, 0x00, 0x1, 1);
     md.WriteOpenRegisters(0x1016, 0x01, DataSlave, 4);
     mdproducer.SendCustomData(0x700 + MasterId, frame);
     usleep(HeartbeatTimeout);
@@ -744,6 +678,20 @@ void CandleToolCO::heartbeatTest(u32 MasterId, u32 SlaveId, u32 HeartbeatTimeout
     {
         log.error("The driver still in error mode");
     }
+}
+
+void CandleToolCO::SendSync(u16 id)
+{
+    MDCO            mdco(id, m_candle);
+    long            SyncMessageValue = mdco.GetValueFromOpenRegister(0x1005, 0x0);
+    std::vector<u8> data;
+    if (SyncMessageValue != -1)
+    {
+        mdco.WriteOpenPDORegisters((int)SyncMessageValue, data);
+        log.success("Sync message send with value:0x%x (default value is 0x80)", SyncMessageValue);
+    }
+    else
+        log.error("MD with ID:0x%x is not detected", SyncMessageValue);
 }
 
 void CandleToolCO::setupReadConfig(u16 id, const std::string& cfgName)
@@ -967,18 +915,7 @@ void CandleToolCO::setupInfo(u16 id, bool printAll)
     }
     else
     {
-        long nbError = mdco.ReadOpenRegisters(ODList[2].index, 0);
-        for (int i = 0; i <= 78; i++)
-        {
-            for (int j = 0; j < ODList[i].subIndex; j++)
-            {
-                if (i != 2)
-                    mdco.ReadOpenRegisters(ODList[i].index, j);
-                else if (nbError >= j)
-                    mdco.ReadOpenRegisters(ODList[i].index, j);
-                usleep(100);
-            }
-        }
+        mdco.printAllInfo();
     }
 }
 
@@ -1101,14 +1038,6 @@ void CandleToolCO::testEncoderMain(u16 id)
     mdco.testencoder(true, false);
 }
 
-void CandleToolCO::registerWrite(
-    u16 id, u16 regAdress, const std::string& value, u8 subIndex, u8 dataSize)
-{
-    MDCO          mdco(id, m_candle);
-    unsigned long data = strtoul((value.c_str()), nullptr, 16);
-    mdco.WriteOpenRegisters(regAdress, subIndex, data, dataSize);
-}
-
 void CandleToolCO::SDOsegmentedRead(u16 id, u16 reg, u8 subIndex)
 {
     MDCO            mdco(id, m_candle);
@@ -1122,92 +1051,106 @@ void CandleToolCO::SDOsegmentedWrite(u16 id, u16 reg, u8 subIndex, std::string& 
     mdco.WriteLongOpenRegisters(reg, subIndex, data);
 }
 
-void CandleToolCO::registerRead(u16 id, u16 regAdress, u8 subIndex)
+void CandleToolCO::registerRead(u16 id, u16 regAdress, u8 subIndex, bool force)
 {
-    MDCO mdco(id, m_candle);
-    mdco.ReadOpenRegisters(regAdress, subIndex);
-}
-
-void CandleToolCO::updateCandle(const std::string& mabFilePath)
-{
-    log.info("Performing Candle firmware update.");
-
-    MabFileParser candleFirmware(mabFilePath, MabFileParser::TargetDevice_E::CANDLE);
-
-    auto candle_bootloader = attachCandleBootloader();
-    for (size_t i = 0; i < candleFirmware.m_fwEntry.size;
-         i += CandleBootloader::PAGE_SIZE_STM32G474)
+    MDCO            mdco(id, m_candle);
+    std::vector<u8> data;
+    int             dataSize = mdco.DataSizeOfEdsObject(regAdress, subIndex);
+    if (!force)
     {
-        std::array<u8, CandleBootloader::PAGE_SIZE_STM32G474> page;
-        std::memcpy(page.data(), &candleFirmware.m_fwEntry.data->data()[i], page.size());
-        u32 crc = crc32(page.data(), page.size());
-        if (candle_bootloader->writePage(page, crc) != candleTypes::Error_t::OK)
+        if (dataSize == 1 || dataSize == 2 || dataSize == 4)
+            mdco.ReadOpenRegisters(regAdress, subIndex, force);
+        else if (dataSize == 8 || dataSize == 0)
+            mdco.ReadLongOpenRegisters(regAdress, subIndex, data);
+        else
         {
-            log.error("Candle flashing failed!");
-            break;
+            log.error("Unknown register size for register 0x%04X subindex %d", regAdress, subIndex);
         }
-    }
-}
-
-void CandleToolCO::updateMd(const std::string& mabFilePath, mab::canId_t canId, bool noReset)
-{
-    MabFileParser mabFile(mabFilePath, MabFileParser::TargetDevice_E::MD);
-
-    if (!noReset)
-    {
-        MD md(canId, m_candle);
-        if (md.init() != MD::Error_t::OK)
-        {
-            log.error("Could not communicate with MD device with ID %d", canId);
-            return;
-        }
-        md.reset();
-    }
-    usleep(300'000);
-    CanLoader canLoader(m_candle, &mabFile, canId);
-    if (canLoader.flashAndBoot())
-    {
-        log.success("Update complete for MD @ %d", canId);
     }
     else
-    {
-        log.error("MD flashing failed!");
-    }
+        mdco.ReadOpenRegisters(regAdress, subIndex, force);
 }
 
-void CandleToolCO::updatePds(Pds& pds, const std::string& mabFilePath, uint16_t canId, bool noReset)
+void CandleToolCO::registerWrite(
+    u16 id, u16 regAdress, const std::string& value, u8 subIndex, u8 dataSize, bool force)
 {
-    MabFileParser      mabFile(mabFilePath, MabFileParser::TargetDevice_E::PDS);
-    PdsModule::error_E result = PdsModule::error_E::OK;
-
-    log.warn("PDS Firmware update is under development and not yet available.");
-
-    if (!noReset)
+    MDCO mdco(id, m_candle);
+    // if no value is given, we read the value from the object dictionary
+    if (dataSize == 0)
     {
-        log.debug("Resetting PDS...");
-        result = pds.reboot();
-        if (result != PdsModule::error_E::OK)
+        if (force)
         {
-            log.error("PDS Reset failed! [ %s ]", PdsModule::error2String(result));
+            log.error("Please enter the data syze in bytes if you use the -f flag");
             return;
         }
         else
-        {
-            log.success("PDS Reset successful!");
-        }
+            dataSize = mdco.DataSizeOfEdsObject(regAdress, subIndex);
     }
-    log.debug("Waiting for PDS to boot...");
-    usleep(400000);
 
-    CanLoader canLoader(m_candle, &mabFile, canId);
-    if (canLoader.flashAndBoot())
+    if (dataSize == 1 || dataSize == 2 || dataSize == 4)
     {
-        log.success("Update complete for PDS @ %d", canId);
+        // we convert the string value to an unsigned long
+        unsigned long data = strtoul((value.c_str()), nullptr, 16);
+        // if the data size is 1, 2 or 4 bytes, we write the value
+        // to the object dictionary
+        mdco.WriteOpenRegisters(regAdress, subIndex, data, dataSize, force);
+        return;
+    }
+    else if (dataSize == 8)
+    {
+        // if data size is over bytes, we need a segmented transfer
+        mdco.WriteLongOpenRegisters(regAdress, subIndex, value, force);
+        return;
+    }
+    else if (dataSize == 0)
+    {
+        // if data size is 0, we assume it is a string
+        mdco.WriteLongOpenRegisters(regAdress, subIndex, value, force);
+        return;
     }
     else
     {
-        log.error("PDS flashing failed!");
+        // if the data size is -1, there is an error (e.g. wrong register or subindex)
+        log.error("Wrong/unknow data size");
+        return;
     }
+}
+
+void CandleToolCO::SendTime(uint16_t id)
+{
+    MDCO            mdco(id, m_candle);
+    time_t          now = time(NULL);
+    time_t          Begin;
+    struct tm       datetime = *localtime(&now);
+    int             diff;
+    long            TimeMessageId;
+    long            NumberOfMillis = 0;
+    long            NumberOfDays   = 0;
+    std::vector<u8> frame;
+    datetime.tm_year  = 84;
+    datetime.tm_mon   = 0;
+    datetime.tm_mday  = 1;
+    datetime.tm_hour  = 0;
+    datetime.tm_min   = 0;
+    datetime.tm_sec   = 0;
+    datetime.tm_isdst = -1;
+    Begin             = mktime(&datetime);
+    diff              = difftime(now, Begin);
+    NumberOfDays      = (diff / 86400);
+    datetime          = *localtime(&now);
+    NumberOfMillis =
+        (datetime.tm_hour * 3600000 + datetime.tm_sec * 1000 + datetime.tm_min * 60000);
+    log.info("The actual time according to your computer is: %s", asctime(&datetime));
+    log.info("Number of days since 1st January 1984: %d", NumberOfDays);
+    log.info("Number of millis since midnight: %d", NumberOfMillis);
+    TimeMessageId = mdco.GetValueFromOpenRegister(0x1012, 0x00);
+    frame.push_back((u8)NumberOfMillis);
+    frame.push_back((u8)(NumberOfMillis >> 8));
+    frame.push_back((u8)(NumberOfMillis >> 16));
+    frame.push_back((u8)((NumberOfMillis >> 24)));
+    frame.push_back((u8)(NumberOfDays));
+    frame.push_back((u8)(NumberOfDays >> 8));
+    mdco.WriteOpenPDORegisters(TimeMessageId, frame);
 }
 
 void CandleToolCO::blink(u16 id)
@@ -1224,7 +1167,7 @@ void CandleToolCO::blink(u16 id)
 void CandleToolCO::encoder(u16 id)
 {
     MDCO mdco(id, m_candle);
-    mdco.ReadOpenRegisters(ODList[56].index, 0);
+    mdco.ReadOpenRegisters(0x6064, 0);
 }
 
 void CandleToolCO::clearErrors(u16 id, const std::string& level)
@@ -1285,7 +1228,7 @@ bool CandleToolCO::getField(mINI::INIStructure& cfg,
         max   = strtof(ini["limit max"][field].c_str(), nullptr);
     }
 
-    if (ui::checkParamLimit(value, min, max))
+    if (checkParamLimit(value, min, max))
         return true;
     else
     {
@@ -1299,25 +1242,149 @@ bool CandleToolCO::getField(mINI::INIStructure& cfg,
     }
 }
 
-bool CandleToolCO::checkSetupError(u16 id)
+void CandleToolCO::edsLoad(const std::string& edsFilePath)
 {
-    MD md(id, m_candle);
-    if (md.init() != MD::Error_t::OK)
+    edsParser MyEdsParser;
+    MyEdsParser.load(edsFilePath);
+}
+
+void CandleToolCO::edsUnload()
+{
+    edsParser MyEdsParser;
+    MyEdsParser.unload();
+}
+
+void CandleToolCO::edsDisplay()
+{
+    edsParser MyEdsParser;
+    MyEdsParser.display();
+}
+
+void CandleToolCO::edsGenerateMarkdown()
+{
+    edsParser MyEdsParser;
+    MyEdsParser.generateMarkdown();
+}
+
+void CandleToolCO::edsGenerateHtml()
+{
+    edsParser MyEdsParser;
+    MyEdsParser.generateHtml();
+}
+
+void CandleToolCO::edsGenerateCpp()
+{
+    edsParser MyEdsParser;
+    MyEdsParser.generateCpp();
+}
+
+void CandleToolCO::edsGet(u32 index, u8 subindex)
+{
+    edsParser MyEdsParser;
+    MyEdsParser.get(index, subindex);
+}
+
+void CandleToolCO::edsFind(const std::string& research)
+{
+    edsParser MyEdsParser;
+    MyEdsParser.find(research);
+}
+
+void CandleToolCO::edsAddObject(const edsObject& obj)
+{
+    edsParser MyEdsParser;
+    MyEdsParser.addObject(obj);
+}
+
+void CandleToolCO::edsDeleteObject(u32 index, u8 subindex)
+{
+    edsParser MyEdsParser;
+    MyEdsParser.deleteObject(index, subindex);
+}
+
+void CandleToolCO::edsModifyCorrection(const edsObject& obj, u16 id, u8 subIndex)
+{
+    edsParser MyEdsParser;
+    MyEdsParser.modifyObject(obj, id, subIndex);
+}
+
+void CandleToolCO::SendNMT(u8 id, u8 command)
+{
+    MDCO            mdco(id, m_candle);
+    std::vector<u8> data;
+    data.push_back(command);
+    data.push_back(id);
+    mdco.WriteOpenPDORegisters(0x000, data);
+}
+
+void CandleToolCO::ReadHeartbeat(u16 id)
+{
+    // TODO: find a better way to do this, it seems to work but it's clearly not the best way to do
+    // it. A better way could be by implemented a listen mode on the USB.cpp file
+    uint32_t heartbeat_id = 0x700 + id;
+    log.info("Attente d'un heartbeat sur l'ID CAN 0x%03X...", heartbeat_id);
+    uint64_t             firstHeartbeatReveiceved = 0;
+    uint64_t             start_time               = get_time_us();
+    const uint64_t       timeout_us               = 5 * 1000000;  // 5 secondes
+    std::vector<uint8_t> frame;
+    frame.push_back(0);
+    std::vector<uint8_t>      response;
+    mab::candleTypes::Error_t error;
+    // if after 5 second no heartbeat receive then give the user an error(fail)
+    while (get_time_us() - start_time < timeout_us)
     {
-        return false;
+        // send Heartbeat Canopen frame with high frequencies
+        auto result = m_candle->transferCANPDOFrame(heartbeat_id, frame, 1, /*timeoutMs=*/10);
+        response    = result.first;
+        error       = result.second;
+        // if a correct message is received
+        if (error == mab::candleTypes::Error_t::OK && response.size() >= 3)
+        {
+            // if the message is a Heartbeat
+            if (response[0] == 0x04 && response[1] == 0x01 && response[2] == 0x05)
+            {
+                log.success("heartbeat reçu");
+                // if it's the first time we received an heartbeat
+                if (firstHeartbeatReveiceved == 0)
+                {
+                    firstHeartbeatReveiceved = get_time_us();
+                    result =
+                        m_candle->transferCANPDOFrame(heartbeat_id, frame, 1, /*timeoutMs=*/10);
+                    response = result.first;
+                    error    = result.second;
+                    // keep sending message until the last heartbeat diseapear on the bus
+                    while ((response.size() > 1 && response[1] == 0x01) &&
+                           (get_time_us() - start_time < timeout_us))
+                    {
+                        result =
+                            m_candle->transferCANPDOFrame(heartbeat_id, frame, 1, /*timeoutMs=*/10);
+                        response = result.first;
+                        error    = result.second;
+                        // if we lost communication with the MD
+                        if (error != mab::candleTypes::Error_t::OK || response.size() <= 1)
+                        {
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    // if it's the second heartbeat we receive, then we calcul the delta time and we
+                    // stop the function with a succes. the delta value is in [s] and should be
+                    // around the stock in the register
+                    log.success(
+                        "heartbeat received with in between time of %lfs",
+                        static_cast<double>(get_time_us() - firstHeartbeatReveiceved) / 1000000.0);
+                    return;
+                }
+            }
+        }
     }
-
-    bool setupError =
-        md.getCalibrationStatus().first.at(MDStatus::CalibrationStatusBits::ErrorSetup).m_set;
-
-    if (setupError)
-    {
-        log.error(
-            "Could not proceed due to %s. Please call candletool setup motor <ID> "
-            "<cfg> first.",
-            RED__("ERROR_SETUP"));
-        return true;
-    }
-
-    return false;
+    // if zero heartbeat message have been received then we log an error
+    if (firstHeartbeatReveiceved == 0)
+        log.error("Aucun heartbeat reçu après 5s.\n");
+    // if only one heartbeat has been received in the last 5s we quit with a success
+    else
+        log.success("One heartbeat has been received in the last 5s");
+    // log.info("Work in progress.\n");
 }

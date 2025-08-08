@@ -1,7 +1,155 @@
 #include "MDCO.hpp"
 
+bool caseInsensitiveEquals(const std::string& a, const std::string& b)
+{
+    if (a.size() != b.size())
+        return false;
+
+    for (size_t i = 0; i < a.size(); ++i)
+        if (tolower(a[i]) != tolower(b[i]))
+            return false;
+
+    return true;
+}
+
 namespace mab
 {
+
+    MDCO::Error_t MDCO::findObjectByName(const std::string& searchTerm, u32& index, u8& subIndex)
+    {
+        bool objectFound = false;
+        for (const edsObject& obj : this->ObjectDictionary)
+        {
+            if (caseInsensitiveEquals(obj.ParameterName, searchTerm))
+            {
+                index    = obj.index;
+                subIndex = obj.subIndex;
+                if (objectFound)
+                {
+                    m_log.warn(
+                        "Multiple objects found with name '%s'. Using the first one found.\n",
+                        searchTerm.c_str());
+                }
+                else
+                {
+                    m_log.debug("Object found: %s (0x%04X, subIndex: %d)\n",
+                                obj.ParameterName.c_str(),
+                                obj.index,
+                                obj.subIndex);
+                    objectFound = true;
+                }
+            }
+        }
+        if (objectFound)
+        {
+            return OK;
+        }
+
+        return UNKNOWN_OBJECT;
+    }
+
+    MDCO::Error_t MDCO::isWritable(const u32 index, const u8 subIndex)
+    {
+        for (const edsObject& obj : this->ObjectDictionary)
+        {
+            if (index == obj.index && subIndex == obj.subIndex)
+            {
+                if (obj.accessType.find('w') != std::string::npos ||
+                    obj.accessType.find('W') != std::string::npos)
+                {
+                    return MDCO::Error_t::OK;
+                }
+                else
+                {
+                    // m_log.error("Object 0x%04X subIndex %d is not writable.", index, subIndex);
+                    return MDCO::Error_t::REQUEST_INVALID;
+                }
+            }
+        }
+
+        return MDCO::Error_t::UNKNOWN_OBJECT;
+    }
+
+    MDCO::Error_t MDCO::isReadable(const u32 index, const u8 subIndex)
+    {
+        for (const edsObject& obj : this->ObjectDictionary)
+        {
+            if (index == obj.index && subIndex == obj.subIndex)
+            {
+                if (obj.accessType.find('r') != std::string::npos ||
+                    obj.accessType.find('R') != std::string::npos)
+                {
+                    return MDCO::Error_t::OK;
+                }
+                else
+                {
+                    // m_log.error("Object 0x%04X subIndex %d is not readable.", index, subIndex);
+                    return MDCO::Error_t::REQUEST_INVALID;
+                }
+            }
+        }
+
+        return MDCO::Error_t::UNKNOWN_OBJECT;
+    }
+
+    u8 MDCO::DataSizeOfEdsObject(const u32 index, const u8 subIndex)
+    {
+        for (const edsObject& obj : this->ObjectDictionary)
+        {
+            if (index == obj.index && subIndex == obj.subIndex)
+            {
+                if (obj.DataType == 0x0001 || obj.DataType == 0x0002 || obj.DataType == 0x0005)
+                {
+                    return 1;
+                }
+                else if (obj.DataType == 0x0003 || obj.DataType == 0x0006)
+                {
+                    return 2;
+                }
+                else if (obj.DataType == 0x0004 || obj.DataType == 0x0007 || obj.DataType == 0x0008)
+                {
+                    return 4;
+                }
+                else if (obj.DataType == 0x0011 || obj.DataType == 0x0015 || obj.DataType == 0x001B)
+                {
+                    return 8;
+                }
+                else if (obj.DataType == 0x0009 || obj.DataType == 0x000A ||
+                         obj.DataType == 0x000B || obj.DataType == 0x000F)
+                {
+                    return 0;  // String => size is variable and unknown
+                }
+            }
+        }
+
+        return -1;  // Invalid index or subindex
+    }
+
+    void MDCO::printAllInfo()
+    {
+        long value;
+        for (int i = 0; i < (int)ObjectDictionary.size(); i++)
+        {
+            value =
+                GetValueFromOpenRegister(ObjectDictionary[i].index, ObjectDictionary[i].subIndex);
+            if (value != -1)
+                m_log.info(
+                    "----------Object Name:%s----------\nindex:%X, sub-index:%X, Storage "
+                    "Location:%s, "
+                    "Data length(bytes):%d, Access:%s, PDO Mapping:%d, actual value(Raw data "
+                    "received):%lld\n"
+                    "-----------------------------------\n\n",
+                    ObjectDictionary[i].ParameterName.c_str(),
+                    ObjectDictionary[i].index,
+                    ObjectDictionary[i].subIndex,
+                    ObjectDictionary[i].StorageLocation.c_str(),
+                    DataSizeOfEdsObject(ObjectDictionary[i].index, ObjectDictionary[i].subIndex),
+                    ObjectDictionary[i].accessType.c_str(),
+                    ObjectDictionary[i].PDOMapping,
+                    value);
+        }
+    }
+
     void MDCO::movePositionAcc(i32 targetPos,
                                i32 accLimit,
                                i32 dccLimit,
@@ -11,83 +159,34 @@ namespace mab
                                u16 MaxTorque,
                                u32 RatedTorque)
     {
-        bool debug = m_log.isLevelEnabled(Logger::LogLevel_E::DEBUG);
-        usleep(1000);
-        // Max acceleration + Max Deceleration
-        WriteOpenRegisters(0x60C5, 0, 10000, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x60C5, 0x00));
-        WriteOpenRegisters(0x60C6, 0, 10000, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x60C6, 0x00));
-
-        // profile acceleration + profile Deceleration
-        WriteOpenRegisters(0x6083, 0, accLimit, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6083, 0x00));
-        WriteOpenRegisters(0x6084, 0, dccLimit, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6084, 0x00));
-
-        // Current Max + rated
-        WriteOpenRegisters(0x6073, 0, MaxCurrent, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6073, 0x00));
-        WriteOpenRegisters(0x6075, 0, RatedCurrent, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6075, 0x00));
-
-        // Motor Max Speed
-        WriteOpenRegisters(0x6080, 0, MaxSpeed, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6080, 0x00));
-
-        // Torques Max + rated
-        WriteOpenRegisters(0x6072, 0, MaxTorque, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6072, 0x00));
-        WriteOpenRegisters(0x6076, 0, RatedTorque, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6076, 0x00));
-
-        // cyclic sync velocity
-        WriteOpenRegisters(0x6060, 0, 1, 1);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6060, 0x00));
-
-        // clear error
-        WriteOpenRegisters(0x6040, 0, 0x80, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6040, 0x00));
-
-        // shutdown command
-        WriteOpenRegisters(0x6040, 0, 6, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6041, 0x00));
-
-        // operation enable command
-        WriteOpenRegisters(0x6040, 0, 15, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6041, 0x00));
-
+        WriteOpenRegisters("Motor Max Acceleration", 10000, 4);
+        WriteOpenRegisters("Motor Max Deceleration", 10000, 4);
+        WriteOpenRegisters("Motor Profile Acceleration", accLimit, 4);
+        WriteOpenRegisters("Motor Profile Deceleration", dccLimit, 4);
+        WriteOpenRegisters("Max Current", MaxCurrent, 2);
+        WriteOpenRegisters("Motor Rated Current", RatedCurrent, 4);
+        WriteOpenRegisters("Max Motor Speed", MaxSpeed, 4);
+        WriteOpenRegisters("Motor Max Torque", MaxTorque, 2);
+        WriteOpenRegisters("Motor Rated Torque", RatedTorque, 4);
+        WriteOpenRegisters("Modes Of Operation", 1, 1);
+        WriteOpenRegisters("Controlword", 0x80, 2);
+        WriteOpenRegisters("Controlword", 0x06, 2);
+        WriteOpenRegisters("Controlword", 15, 2);
         m_log.debug("position asked : %d\n", targetPos);
-
         time_t start = time(nullptr);
-
         while (time(nullptr) - start < 5 &&
-               !((int)GetValueFromOpenRegister(ODList[56].index, 0) > (targetPos - 100) &&
-                 (int)GetValueFromOpenRegister(ODList[56].index, 0) < (targetPos + 100)))
+               !((int)GetValueFromOpenRegister(0x6064, 0) > (targetPos - 100) &&
+                 (int)GetValueFromOpenRegister(0x6064, 0) < (targetPos + 100)))
         {
-            WriteOpenRegisters(0x607A, 0, targetPos, 4);
-            if (debug)
-                m_log.debug("Error:%d\n", ReadOpenRegisters(ODList[56].index, 0));
+            WriteOpenRegisters("Motor Target Position", targetPos, 4);
+
             usleep(10000);
         }
 
-        m_log.debug("actual position: %d\n", (int)GetValueFromOpenRegister(ODList[56].index, 0));
+        m_log.debug("actual position: %d\n", (int)GetValueFromOpenRegister(0x6064, 0));
 
-        if (((int)GetValueFromOpenRegister(ODList[56].index, 0) > (targetPos - 200) &&
-             (int)GetValueFromOpenRegister(ODList[56].index, 0) < (targetPos + 200)))
+        if (((int)GetValueFromOpenRegister(0x6064, 0) > (targetPos - 200) &&
+             (int)GetValueFromOpenRegister(0x6064, 0) < (targetPos + 200)))
         {
             m_log.success("Position reached in less than 5s");
         }
@@ -95,20 +194,9 @@ namespace mab
         {
             m_log.error("Position not reached in less than 5s");
         }
-
-        m_log.debug("actual position: %d\n", (int)GetValueFromOpenRegister(ODList[56].index, 0));
-
-        // shutdown command
-        WriteOpenRegisters(0x6040, 0, 6, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6041, 0x00));
-
-        // idle
-        WriteOpenRegisters(0x6060, 0, 0, 1);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6061, 0x00));
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(ODList[56].index, 0));
+        m_log.debug("actual position: %d\n", (int)GetValueFromOpenRegister(0x6064, 0));
+        WriteOpenRegisters("Controlword", 6, 2);
+        WriteOpenRegisters("Modes Of Operation", 0, 1);
     }
 
     void MDCO::movePosition(u16 MaxCurrent,
@@ -118,62 +206,27 @@ namespace mab
                             u32 MaxSpeed,
                             i32 DesiredPos)
     {
-        bool debug = m_log.isLevelEnabled(Logger::LogLevel_E::DEBUG);
-        usleep(1000);
-        // Current Max + rated
-        WriteOpenRegisters(0x6073, 0, MaxCurrent, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6073, 0x00));
-        WriteOpenRegisters(0x6075, 0, RatedCurrent, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6075, 0x00));
-        // Motor Max Speed
-        WriteOpenRegisters(0x6080, 0, MaxSpeed, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6080, 0x00));
-        // Torques Max + rated
-        WriteOpenRegisters(0x6072, 0, MaxTorque, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6072, 0x00));
-        WriteOpenRegisters(0x6076, 0, RatedTorque, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6076, 0x00));
-        // cyclic sync velocity
-        WriteOpenRegisters(0x6060, 0, 8, 1);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6060, 0x00));
-        // clear error
-        WriteOpenRegisters(0x6040, 0, 0x80, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6040, 0x00));
-        // shutdown command
-        WriteOpenRegisters(0x6040, 0, 6, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6040, 0x00));
-        // operation enable command
-        WriteOpenRegisters(0x6040, 0, 15, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6040, 0x00));
-
+        WriteOpenRegisters("Max Current", MaxCurrent);
+        WriteOpenRegisters("Motor Rated Current", RatedCurrent);
+        WriteOpenRegisters("Max Motor Speed", MaxSpeed);
+        WriteOpenRegisters("Motor Max Torque", MaxTorque);
+        WriteOpenRegisters("Motor Rated Torque", RatedTorque);
+        WriteOpenRegisters("Modes Of Operation", 8);
+        WriteOpenRegisters("Controlword", 0x80);
+        WriteOpenRegisters("Controlword", 0x06);
+        WriteOpenRegisters("Controlword", 15);
         m_log.debug("position asked : %d\n", DesiredPos);
-
         time_t start = time(nullptr);
-
         while (time(nullptr) - start < 5 &&
-               !((int)GetValueFromOpenRegister(ODList[56].index, 0) > (DesiredPos - 100) &&
-                 (int)GetValueFromOpenRegister(ODList[56].index, 0) < (DesiredPos + 100)))
+               !((int)GetValueFromOpenRegister(0x6064, 0) > (DesiredPos - 100) &&
+                 (int)GetValueFromOpenRegister(0x6064, 0) < (DesiredPos + 100)))
         {
-            //  target velocity
-            WriteOpenRegisters(0x607A, 0, DesiredPos, 4);
-            if (debug)
-                m_log.debug("Error:%d\n", ReadOpenRegisters(0x607A, 0x00));
+            WriteOpenRegisters("Motor Target Position", DesiredPos);
             usleep(10000);
         }
-
-        m_log.debug("actual position: %d\n", (int)GetValueFromOpenRegister(ODList[56].index, 0));
-
-        if (((int)GetValueFromOpenRegister(ODList[56].index, 0) > (DesiredPos - 200) &&
-             (int)GetValueFromOpenRegister(ODList[56].index, 0) < (DesiredPos + 200)))
+        m_log.debug("actual position: %d\n", (int)GetValueFromOpenRegister(0x6064, 0));
+        if (((int)GetValueFromOpenRegister(0x6064, 0) > (DesiredPos - 200) &&
+             (int)GetValueFromOpenRegister(0x6064, 0) < (DesiredPos + 200)))
         {
             m_log.success("Position reached in less than 5s");
         }
@@ -181,16 +234,8 @@ namespace mab
         {
             m_log.error("Position not reached in less than 5s");
         }
-
-        // shutdown command
-        WriteOpenRegisters(0x6040, 0, 6, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6040, 0x00));
-
-        // idle
-        WriteOpenRegisters(0x6060, 0, 0, 1);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6060, 0x00));
+        WriteOpenRegisters("Controlword", 6);
+        WriteOpenRegisters("Modes Of Operation", 0);
     }
 
     void MDCO::moveSpeed(u16 MaxCurrent,
@@ -200,63 +245,21 @@ namespace mab
                          u32 MaxSpeed,
                          i32 DesiredSpeed)
     {
-        bool debug = m_log.isLevelEnabled(Logger::LogLevel_E::DEBUG);
-
-        usleep(1000);
-        // Current Max + rated
-        WriteOpenRegisters(0x6073, 0, MaxCurrent, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6073, 0x00));
-
-        WriteOpenRegisters(0x6075, 0, RatedCurrent, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6075, 0x00));
-
-        // Motor Max Speed
-        WriteOpenRegisters(0x6080, 0, MaxSpeed, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6080, 0x00));
-
-        // Torques Max + rated
-        WriteOpenRegisters(0x6072, 0, MaxTorque, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6072, 0x00));
-        WriteOpenRegisters(0x6076, 0, RatedTorque, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6076, 0x00));
-
-        // cyclic sync velocity
-        WriteOpenRegisters(0x6060, 0, 9, 1);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6060, 0x00));
-
-        // clear error
-        WriteOpenRegisters(0x6040, 0, 0x80, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6040, 0x00));
-
-        // shutdown command
-        WriteOpenRegisters(0x6040, 0, 6, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6040, 0x00));
-
-        // operation enable command
-        WriteOpenRegisters(0x6040, 0, 15, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6040, 0x00));
-
+        WriteOpenRegisters("Max Current", MaxCurrent);
+        WriteOpenRegisters("Motor Rated Current", RatedCurrent);
+        WriteOpenRegisters("Max Motor Speed", MaxSpeed);
+        WriteOpenRegisters("Motor Max Torque", MaxTorque);
+        WriteOpenRegisters("Motor Rated Torque", RatedTorque);
+        WriteOpenRegisters("Modes Of Operation", 9);
+        WriteOpenRegisters("Controlword", 0x80);
+        WriteOpenRegisters("Controlword", 0x06);
+        WriteOpenRegisters("Controlword", 15);
         usleep(10000);
-
         time_t start = time(nullptr);
         while (time(nullptr) - start < 5)
         {
-            // target velocity
-            WriteOpenRegisters(0x60FF, 0, DesiredSpeed, 4);
-            if (debug)
-                m_log.debug("Error:%d\n", ReadOpenRegisters(0x606c, 0x00));
-            usleep(10000);
+            WriteOpenRegisters("Motor Target Velocity", DesiredSpeed);
         }
-
         if ((int)GetValueFromOpenRegister(0x606C, 0x00) <= DesiredSpeed + 5 &&
             (int)GetValueFromOpenRegister(0x606C, 0x00) >= DesiredSpeed - 5)
         {
@@ -266,20 +269,9 @@ namespace mab
         {
             m_log.error("Velocity Target not reached");
         }
-        WriteOpenRegisters(0x60FF, 0, 0, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x60FF, 0x00));
-        usleep(100000);
-
-        // shutdown command
-        WriteOpenRegisters(0x6040, 0, 6, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6040, 0x00));
-
-        // idle
-        WriteOpenRegisters(0x6060, 0, 0, 1);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6060, 0x00));
+        WriteOpenRegisters("Motor Target Velocity", 0);
+        WriteOpenRegisters("Controlword", 6);
+        WriteOpenRegisters("Modes Of Operation", 0);
     }
 
     MDCO::Error_t MDCO::moveImpedance(i32 desiredSpeed,
@@ -293,140 +285,54 @@ namespace mab
                                       u16 MaxTorque,
                                       u32 RatedTorque)
     {
-        bool debug = m_log.isLevelEnabled(Logger::LogLevel_E::DEBUG);
         usleep(1000);
-        // Current Max + rated
-        WriteOpenRegisters(0x6073, 0, MaxCurrent, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6073, 0x00));
-        WriteOpenRegisters(0x6075, 0, RatedCurrent, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6075, 0x00));
-
-        // Motor Max Speed
-        WriteOpenRegisters(0x6080, 0, MaxSpeed, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6080, 0x00));
-
-        // Torques Max + rated
-        WriteOpenRegisters(0x6072, 0, MaxTorque, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6072, 0x00));
-        WriteOpenRegisters(0x6076, 0, RatedTorque, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6076, 0x00));
-
-        // cyclic sync velocity
-        WriteOpenRegisters(0x6060, 0, 0xFD, 1);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6060, 0x00));
-
-        // clear error
-        WriteOpenRegisters(0x6040, 0, 0x80, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6040, 0x00));
-
-        // shutdown command
-        WriteOpenRegisters(0x6040, 0, 6, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6040, 0x00));
-
-        // operation enable command
-        WriteOpenRegisters(0x6040, 0, 15, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6040, 0x00));
-
-        // desired speed
-        WriteOpenRegisters(0x606B, 0x00, desiredSpeed, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x606B, 0x00));
-        // desired position
-        WriteOpenRegisters(0x6062, 0x00, targetPos, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6062, 0x00));
+        WriteOpenRegisters("Max Current", MaxCurrent);
+        WriteOpenRegisters("Motor Rated Current", RatedCurrent);
+        WriteOpenRegisters("Max Motor Speed", MaxSpeed);
+        WriteOpenRegisters("Motor Max Torque", MaxTorque);
+        WriteOpenRegisters("Motor Rated Torque", RatedTorque);
+        WriteOpenRegisters("Modes Of Operation", 0xFD);
+        WriteOpenRegisters("Controlword", 0x80);
+        WriteOpenRegisters("Controlword", 0x06);
+        WriteOpenRegisters("Controlword", 15);
+        WriteOpenRegisters("Target Velocity", desiredSpeed);
+        WriteOpenRegisters("Target Position", targetPos);
         // kp
         uint32_t kp_bits;
         memcpy(&kp_bits, &kp, sizeof(float));
-        WriteOpenRegisters(0x200C, 0x01, kp_bits, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x200C, 0x01));
-        // ReadOpenRegisters(0x200C, 01);
-
+        WriteOpenRegisters("Kp_impedance", kp_bits);
         // kd
         uint32_t kd_bits;
         memcpy(&kd_bits, &kd, sizeof(float));
-        WriteOpenRegisters(0x200C, 0x02, kd_bits, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x200C, 0x02));
-        // ReadOpenRegisters(0x200C, 2);
-
-        // torque
-        WriteOpenRegisters(0x6074, 0x00, torque, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6074, 0x00));
-
+        WriteOpenRegisters("Kd_impedance", kd_bits);
+        WriteOpenRegisters("Target Torque", torque);
         usleep(5000000);
-        WriteOpenRegisters(0x6074, 0x00, 0, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6074, 0x00));
-
-        // clear error
-        WriteOpenRegisters(0x6040, 0, 0x80, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6040, 0x00));
-
-        // shutdown command
-        WriteOpenRegisters(0x6040, 0, 6, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6040, 0x00));
-
-        // idle
-        WriteOpenRegisters(0x6060, 0, 0, 1);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6060, 0x00));
-
-        // operation enable command
-        WriteOpenRegisters(0x6040, 0, 15, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6040, 0x00));
-
+        WriteOpenRegisters("Target Torque", 0);
+        WriteOpenRegisters("Controlword", 0x80);
+        WriteOpenRegisters("Controlword", 0x06);
+        WriteOpenRegisters("Modes Of Operation", 0);
+        WriteOpenRegisters("Controlword", 15);
         return MDCO::Error_t::OK;
     }
 
     MDCO::Error_t MDCO::blinkOpenTest()
     {
-        bool debug = m_log.isLevelEnabled(Logger::LogLevel_E::DEBUG);
-        WriteOpenRegisters(0x6040, 0, 6, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6040, 0x00));
-        WriteOpenRegisters(0x6060, 0, 0xFE, 1);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6060, 0x00));
-        WriteOpenRegisters(0x2003, 1, 1, 1);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x2003, 0x00));
-
+        WriteOpenRegisters("Controlword", 0x06, 2);
+        WriteOpenRegisters("Modes Of Operation", 0xFE, 1);
+        WriteOpenRegisters("Blink LEDs", 1, 1);
         return MDCO::Error_t::OK;
     }
 
     MDCO::Error_t MDCO::OpenReset()
     {
-        bool debug = m_log.isLevelEnabled(Logger::LogLevel_E::DEBUG);
-        WriteOpenRegisters(0x6040, 0, 6, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6041, 0x00));
-        WriteOpenRegisters(0x6060, 0, 0xFE, 1);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6061, 0x00));
-        WriteOpenRegisters(0x2003, 2, 1, 1);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x2003, 0x00));
+        WriteOpenRegisters("Controlword", 0x06, 2);
+        WriteOpenRegisters("Modes Of Operation", 0xFE, 1);
+        WriteOpenRegisters("Reset Controller", 1, 1);
         return MDCO::Error_t::OK;
     }
 
     MDCO::Error_t MDCO::clearOpenErrors(int level)
     {
-        bool debug = m_log.isLevelEnabled(Logger::LogLevel_E::DEBUG);
         // restart node
         std::vector<u8> data;
         data.push_back(0x81);
@@ -436,22 +342,18 @@ namespace mab
         // wait for the node to restart
         usleep(5000000);
         // clearing error register
-        WriteOpenRegisters(0x6040, 0, 6, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6041, 0x00));
-        WriteOpenRegisters(0x6060, 0, 0xFF, 1);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6061, 0x00));
+        WriteOpenRegisters("Controlword", 0x06, 2);
+        WriteOpenRegisters("Modes Of Operation", 0xFF, 1);
         usleep(100000);
         if (level == 1)
-            return WriteOpenRegisters(0x2003, 0xb, 1, 1);
+            return WriteOpenRegisters("Clear Errors", 1, 1);
         if (level == 2)
-            return WriteOpenRegisters(0x2003, 0xc, 1, 1);
+            return WriteOpenRegisters("Clear Warnings", 1, 1);
         if (level == 3)
         {
-            if (!WriteOpenRegisters(0x2003, 0xb, 1, 1))
+            if (!WriteOpenRegisters("Clear Errors", 1, 1))
             {
-                return WriteOpenRegisters(0x2003, 0xb, 1, 1);
+                return WriteOpenRegisters("Clear Errors", 1, 1);
             }
             else
                 return MDCO::Error_t::TRANSFER_FAILED;
@@ -462,64 +364,36 @@ namespace mab
 
     MDCO::Error_t MDCO::newCanOpenConfig(long newID, long newBaud, int newwatchdog)
     {
-        bool debug = m_log.isLevelEnabled(Logger::LogLevel_E::DEBUG);
-        WriteOpenRegisters(0x2000, 0x0B, newBaud, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x2000, 0x0B));
-        WriteOpenRegisters(0x2000, 0x0A, newID, 4);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x2000, 0x0A));
-
+        WriteOpenRegisters("Can ID", newID, 4);
+        WriteOpenRegisters("Can Baudrate", newBaud, 4);
         if (newwatchdog != 0)
         {
-            WriteOpenRegisters(0x2000, 0x0C, newwatchdog, 2);
-            if (debug)
-                m_log.debug("Error:%d\n", ReadOpenRegisters(0x2000, 0x0C));
+            WriteOpenRegisters("Can Watchdog", newwatchdog, 2);
         }
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x2000, 0x0A));
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x2000, 0x0B));
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x2000, 0x0C));
         return MDCO::Error_t::OK;
     }
 
     MDCO::Error_t MDCO::CanOpenBandwidth(int newBandwidth)
     {
-        bool debug = m_log.isLevelEnabled(Logger::LogLevel_E::DEBUG);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x2000, 0x05));
-        WriteOpenRegisters(0x2000, 0x05, newBandwidth, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x2000, 0x05));
+        WriteOpenRegisters("Torque Bandwidth", newBandwidth, 2);
         return MDCO::Error_t::OK;
     }
 
     MDCO::Error_t MDCO::openSave()
     {
-        bool debug = m_log.isLevelEnabled(Logger::LogLevel_E::DEBUG);
-        WriteOpenRegisters(0x6040, 0, 6, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6041, 0x00));
-        WriteOpenRegisters(0X1010, 1, 0x65766173, 4);
-        m_log.debug("New values are save");
+        WriteOpenRegisters("Controlword", 0x06, 2);
+        WriteOpenRegisters("Save all parameters", 0x65766173, 4);
         return MDCO::Error_t::OK;
     }
 
     MDCO::Error_t MDCO::openZero()
     {
-        bool debug = m_log.isLevelEnabled(Logger::LogLevel_E::DEBUG);
-        WriteOpenRegisters(0x6040, 0, 6, 2);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6041, 0x00));
-        WriteOpenRegisters(0x6060, 0, 0xFE, 1);
-        if (debug)
-            m_log.debug("Error:%d\n", ReadOpenRegisters(0x6061, 0x00));
-        WriteOpenRegisters(0x2003, 5, 1, 1);
+        WriteOpenRegisters("Controlword", 0x06, 2);
+        WriteOpenRegisters("Modes Of Operation", 0xFE, 1);
+        WriteOpenRegisters("Set Zero", 1, 1);
 
-        if ((GetValueFromOpenRegister(ODList[56].index, 0) > -50) &&
-            (GetValueFromOpenRegister(ODList[56].index, 0) < 50))
+        if ((GetValueFromOpenRegister(0x6064, 0) > -50) &&
+            (GetValueFromOpenRegister(0x6064, 0) < 50))
         {
             m_log.success("Zero update");
             return MDCO::Error_t::OK;
@@ -533,23 +407,23 @@ namespace mab
 
     MDCO::Error_t MDCO::testencoder(bool Main, bool output)
     {
-        WriteOpenRegisters(0x6040, 0, 6, 2);
-        WriteOpenRegisters(0x6060, 0, 0xFE, 1);
+        WriteOpenRegisters("Controlword", 0x06, 2);
+        WriteOpenRegisters("Modes Of Operation", 0xFE, 1);
         if (Main)
-            WriteOpenRegisters(0x2003, 8, 1, 1);
+            WriteOpenRegisters("Test Main Encoder", 1, 1);
         if (output)
-            WriteOpenRegisters(0x2003, 7, 1, 1);
+            WriteOpenRegisters("Test Output Encoder", 1, 1);
         return MDCO::Error_t::OK;
     }
 
     MDCO::Error_t MDCO::encoderCalibration(bool Main, bool output)
     {
-        WriteOpenRegisters(0x6040, 0, 6, 2);
-        WriteOpenRegisters(0x6060, 0, 0xFE, 1);
+        WriteOpenRegisters("Controlword", 0x06, 2);
+        WriteOpenRegisters("Modes Of Operation", 0xFE, 1);
         if (Main)
-            WriteOpenRegisters(0x2003, 3, 1, 1);
+            WriteOpenRegisters("Run Calibration", 1, 1);
         if (output)
-            WriteOpenRegisters(0x2003, 4, 1, 1);
+            WriteOpenRegisters("Run Output Encoder Calibration", 1, 1);
         return MDCO::Error_t::OK;
     }
 
