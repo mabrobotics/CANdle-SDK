@@ -3,21 +3,7 @@
 PDS (Power Distribution System) Example Script
 """
 
-import sys
-import os
-import time
-
-# Add the build directory to the path to import pyCandle
-sys.path.insert(0, os.path.join(
-    os.path.dirname(__file__), 'build', 'pycandle'))
-
-try:
-    import pyCandle
-    print("Successfully imported pyCandle module")
-except ImportError as e:
-    print(f"Error: Failed to import pyCandle module: {e}")
-    print("Make sure the Python bindings are built and the build directory is correct.")
-    sys.exit(1)
+import pyCandle
 
 
 class PDSExample:
@@ -111,11 +97,7 @@ class PDSExample:
         try:
             print(f"Connecting to PDS device with CAN ID {can_id}")
             self.pds = pyCandle.Pds(can_id, self.candle)
-
-            # Initialize the PDS device
-            result = self.pds.init()
-
-            print("✓ Successfully connected to PDS device")
+            self.pds.init()
             return True
 
         except Exception as e:

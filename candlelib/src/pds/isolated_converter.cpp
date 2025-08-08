@@ -100,12 +100,16 @@ namespace mab
 
     PdsModule::error_E IsolatedConv::getPower(s32& power)
     {
-        return readModuleProperty(propertyId_E::LOAD_POWER, power);
+        // return readModuleProperty(propertyId_E::LOAD_POWER, power);
+        m_log.error("Power read is not implemented yet");
+        return PdsModule::error_E::INTERNAL_ERROR;  // Not implemented
     }
 
     PdsModule::error_E IsolatedConv::getEnergy(s32& energy)
     {
-        return readModuleProperty(propertyId_E::TOTAL_DELIVERED_ENERGY, energy);
+        // return readModuleProperty(propertyId_E::TOTAL_DELIVERED_ENERGY, energy);
+        m_log.error("Energy read is not implemented yet");
+        return PdsModule::error_E::INTERNAL_ERROR;  // Not implemented
     }
 
     PdsModule::error_E IsolatedConv::getTemperature(f32& temperature)
