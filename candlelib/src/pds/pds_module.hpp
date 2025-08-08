@@ -30,7 +30,8 @@ namespace mab
 
         };
 
-        PdsModule() = delete;
+        PdsModule()          = delete;
+        virtual ~PdsModule() = default;
 
         socketIndex_E getSocketIndex() const;
 

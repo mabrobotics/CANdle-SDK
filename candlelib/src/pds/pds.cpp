@@ -198,16 +198,16 @@ namespace mab
     {
         if (!m_brakeResistors.empty())
         {
-            for (auto module = m_brakeResistors.begin(); module != m_brakeResistors.end(); module++)
+            for (auto module : m_brakeResistors)
             {
-                if (*module == nullptr)
+                if (module == nullptr)
                 {
                     m_log.error("Brake resistor has some dangling pointers and will fail!");
                     return nullptr;
                 }
-                if ((*module)->getSocketIndex() == socket)
+                if (module->getSocketIndex() == socket)
                 {
-                    return *module;
+                    return module;
                 }
             }
             m_log.error("No brake resistor module connected to socket [ %u ]!",
@@ -224,16 +224,16 @@ namespace mab
     {
         if (!m_powerStages.empty())
         {
-            for (auto module = m_powerStages.begin(); module != m_powerStages.end(); module++)
+            for (auto module : m_powerStages)
             {
-                if (*module == nullptr)
+                if (module == nullptr)
                 {
                     m_log.error("Power stage has some dangling pointers and will fail!");
                     return nullptr;
                 }
-                if ((*module)->getSocketIndex() == socket)
+                if (module->getSocketIndex() == socket)
                 {
-                    return *module;
+                    return module;
                 }
             }
 
@@ -251,16 +251,16 @@ namespace mab
     {
         if (!m_IsolatedConvs.empty())
         {
-            for (auto module = m_IsolatedConvs.begin(); module != m_IsolatedConvs.end(); module++)
+            for (auto module : m_IsolatedConvs)
             {
-                if (*module == nullptr)
+                if (module == nullptr)
                 {
                     m_log.error("Isolated converter has some dangling pointers and will fail!");
                     return nullptr;
                 }
-                if ((*module)->getSocketIndex() == socket)
+                if (module->getSocketIndex() == socket)
                 {
-                    return *module;
+                    return module;
                 }
             }
 

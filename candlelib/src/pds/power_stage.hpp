@@ -10,12 +10,11 @@ namespace mab
      *       The idea is that PDS base class detects connected modules automatically and
      *
      */
-    class PowerStage : public PdsModule
+    class PowerStage final : public PdsModule
     {
       public:
         PowerStage() = delete;
         PowerStage(socketIndex_E socket, Candle* p_candle, std::shared_ptr<u16> canId);
-        ~PowerStage();
 
         void printModuleInfo(void) override;
 

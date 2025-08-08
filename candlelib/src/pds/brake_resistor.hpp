@@ -9,12 +9,11 @@ namespace mab
      * @note The instances of the PDS modules are not intended to be created by user manually!!!
      *       The idea is that PDS base class detects connected modules automatically and
      */
-    class BrakeResistor : public PdsModule
+    class BrakeResistor final : public PdsModule
     {
       public:
         BrakeResistor() = delete;
         BrakeResistor(socketIndex_E socket, Candle* p_candle, std::shared_ptr<u16> canId);
-        ~BrakeResistor() = default;
 
         virtual void printModuleInfo(void) override;
 

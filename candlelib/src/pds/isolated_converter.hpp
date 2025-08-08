@@ -10,12 +10,11 @@ namespace mab
      *       The idea is that PDS base class detects connected modules automatically and
      *
      */
-    class IsolatedConv : public PdsModule
+    class IsolatedConv final : public PdsModule
     {
       public:
         IsolatedConv() = delete;
         IsolatedConv(socketIndex_E socket, Candle* p_candle, std::shared_ptr<u16> canId);
-        ~IsolatedConv() = default;
 
         virtual void printModuleInfo(void) override;
 

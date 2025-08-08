@@ -10,11 +10,6 @@ namespace mab
         m_log.debug("Object created");
     }
 
-    PowerStage::~PowerStage()
-    {
-        // disable();
-    }
-
     void PowerStage::printModuleInfo(void)
     {
         powerStageStatus_S status{0};

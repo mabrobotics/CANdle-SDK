@@ -754,7 +754,7 @@ PYBIND11_MODULE(pyCandle, m)
         .def_readwrite("OVER_CURRENT", &mab::isolatedConverterStatus_S::OVER_CURRENT);
 
     // PDS Module Classes
-    py::class_<mab::BrakeResistor>(m, "BrakeResistor")
+    py::class_<mab::BrakeResistor, py::smart_holder>(m, "BrakeResistor")
         .def("printModuleInfo", &mab::BrakeResistor::printModuleInfo)
         .def("enable", &mab::BrakeResistor::enable)
         .def("disable", &mab::BrakeResistor::disable)
@@ -767,7 +767,7 @@ PYBIND11_MODULE(pyCandle, m)
              py::arg("temperatureLimit"))
         .def("getTemperatureLimit", &mab::brakeResistorGetTemperatureLimitWrapper);
 
-    py::class_<mab::PowerStage>(m, "PowerStage")
+    py::class_<mab::PowerStage, py::smart_holder>(m, "PowerStage")
         .def("printModuleInfo", &mab::PowerStage::printModuleInfo)
         .def("enable", &mab::PowerStage::enable)
         .def("disable", &mab::PowerStage::disable)
@@ -799,7 +799,7 @@ PYBIND11_MODULE(pyCandle, m)
              py::arg("temperatureLimit"))
         .def("getTemperatureLimit", &mab::powerStageGetTemperatureLimitWrapper);
 
-    py::class_<mab::IsolatedConv>(m, "IsolatedConv")
+    py::class_<mab::IsolatedConv, py::smart_holder>(m, "IsolatedConv")
         .def("printModuleInfo", &mab::IsolatedConv::printModuleInfo)
         .def("enable", &mab::IsolatedConv::enable)
         .def("disable", &mab::IsolatedConv::disable)
@@ -841,17 +841,15 @@ PYBIND11_MODULE(pyCandle, m)
         .def("attachBrakeResistor",
              &mab::Pds::attachBrakeResistor,
              py::arg("socket"),
-             py::return_value_policy::take_ownership,
+
              "Attach a brake resistor module at the specified socket")
         .def("attachPowerStage",
              &mab::Pds::attachPowerStage,
              py::arg("socket"),
-             py::return_value_policy::take_ownership,
              "Attach a power stage module at the specified socket")
         .def("attachIsolatedConverter",
              &mab::Pds::attachIsolatedConverter,
              py::arg("socket"),
-             py::return_value_policy::take_ownership,
              "Attach an isolated converter module at the specified socket")
         .def("getStatus", &mab::pdsGetStatusWrapper, "Get control board status")
         .def("clearStatus", &mab::Pds::clearStatus, "Clear control board status")
