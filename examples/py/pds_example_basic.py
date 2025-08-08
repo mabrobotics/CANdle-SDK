@@ -39,7 +39,7 @@ class PDSExample:
                 print("Failed to attach CANdle device")
                 return False
 
-            print("✓ Successfully connected to CANdle device")
+            print("Successfully connected to CANdle device")
             return True
 
         except Exception as e:
@@ -52,7 +52,7 @@ class PDSExample:
         """
         if self.candle:
             self.candle = None
-            print("✓ Successfully disconnected from CANdle device")
+            print("Successfully disconnected from CANdle device")
 
     def discover_pds_devices(self):
         """
@@ -70,7 +70,7 @@ class PDSExample:
             pds_ids = pyCandle.Pds.discoverPDS(self.candle)
 
             if pds_ids:
-                print(f"✓ Found {len(pds_ids)} PDS device(s): {pds_ids}")
+                print(f"Found {len(pds_ids)} PDS device(s): {pds_ids}")
             else:
                 print("No PDS devices found")
 
@@ -106,7 +106,7 @@ class PDSExample:
 
     def get_pds_info(self):
         """
-        Get basic information about the connected PDS device using updated wrapper functions.
+        Get basic information about the connected PDS device.
         """
         if not self.pds:
             print("Error: PDS not connected")
@@ -115,7 +115,7 @@ class PDSExample:
         try:
             print("\n=== PDS Device Information ===")
 
-            # Get firmware metadata using wrapper function
+            # Get firmware metadata
             metadata, result = self.pds.getFwMetadata()
             if result == pyCandle.PDS_Error_t.OK:
                 print(f"Firmware version: {metadata.version.major}.{
@@ -132,7 +132,7 @@ class PDSExample:
             baudrate = self.pds.getCanBaudrate()
             print(f"CAN Baudrate: {baudrate}")
 
-            # Get status using wrapper function
+            # Get status
             status, result = self.pds.getStatus()
             if result == pyCandle.PDS_Error_t.OK:
                 print(f"Status - Enabled: {status.ENABLED}")
@@ -143,35 +143,35 @@ class PDSExample:
             else:
                 print(f"Failed to get status: {result}")
 
-            # Get temperature using wrapper function
+            # Get temperature
             temperature, result = self.pds.getTemperature()
             if result == pyCandle.PDS_Error_t.OK:
                 print(f"Temperature: {temperature}°C")
             else:
                 print(f"Failed to get temperature: {result}")
 
-            # Get bus voltage using wrapper function
+            # Get bus voltage
             bus_voltage, result = self.pds.getBusVoltage()
             if result == pyCandle.PDS_Error_t.OK:
                 print(f"Bus Voltage: {bus_voltage}mV")
             else:
                 print(f"Failed to get bus voltage: {result}")
 
-            # Get temperature limit using wrapper function
+            # Get temperature limit
             temp_limit, result = self.pds.getTemperatureLimit()
             if result == pyCandle.PDS_Error_t.OK:
                 print(f"Temperature Limit: {temp_limit}°C")
             else:
                 print(f"Failed to get temperature limit: {result}")
 
-            # Get shutdown time using wrapper function
+            # Get shutdown time
             shutdown_time, result = self.pds.getShutdownTime()
             if result == pyCandle.PDS_Error_t.OK:
                 print(f"Shutdown Time: {shutdown_time}s")
             else:
                 print(f"Failed to get shutdown time: {result}")
 
-            # Get battery voltage levels using wrapper function
+            # Get battery voltage levels
             battery_levels, result = self.pds.getBatteryVoltageLevels()
             if result == pyCandle.PDS_Error_t.OK:
                 print(f"Battery Level 1: {battery_levels[0]}mV")
@@ -243,14 +243,14 @@ class PDSExample:
                     power_stage = self.pds.attachPowerStage(socket)
                     if power_stage:
                         self.power_stages.append(power_stage)
-                        print(f"✓ Attached Power Stage at socket {socket_num}")
+                        print(f"Attached Power Stage at socket {socket_num}")
 
                 # Try Brake Resistor
                 elif self.pds.verifyModuleSocket(pyCandle.moduleType_E.BRAKE_RESISTOR, socket):
                     brake_resistor = self.pds.attachBrakeResistor(socket)
                     if brake_resistor:
                         self.brake_resistors.append(brake_resistor)
-                        print(f"✓ Attached Brake Resistor at socket {
+                        print(f"Attached Brake Resistor at socket {
                               socket_num}")
 
                 # Try Isolated Converter
@@ -258,7 +258,7 @@ class PDSExample:
                     isolated_conv = self.pds.attachIsolatedConverter(socket)
                     if isolated_conv:
                         self.isolated_converters.append(isolated_conv)
-                        print(f"✓ Attached Isolated Converter at socket {
+                        print(f"Attached Isolated Converter at socket {
                               socket_num}")
 
             print(f"Total attached modules: {len(self.power_stages)} Power Stages, "
@@ -281,10 +281,45 @@ class PDSExample:
             for i, converter in enumerate(self.isolated_converters):
                 print(f"\nIsolated Converter {i+1}:")
 
-                # Print module info
-                converter.printModuleInfo()
+                # Disable output example
+                # result = converter.disable()
+                # if result == pyCandle.PDS_Error_t.OK:
+                #     print(f"  IC Disabled")
+                # else:
+                #     print(f"  Error disabling IC: {result}")
 
-                # Get status using wrapper function
+                # Enable output example
+                # result = converter.enable()
+                # if result == pyCandle.PDS_Error_t.OK:
+                #     print(f"  IC Enabled")
+                # else:
+                #     print(f"  Error enabling IC: {result}")
+
+                # Set Over-Current Detection (OCD) level in mA
+                # ocd_level = 4000  # 4A OCD level
+                # result = converter.setOcdLevel(ocd_level)
+                # if result == pyCandle.PDS_Error_t.OK:
+                #     print(f"  OCD Level set to {ocd_level} mA")
+                # else:
+                #     print(f"  Error setting OCD Level: {result}")
+
+                # Set Over-Current Detection delay in microseconds
+                # ocd_delay = 1000  # 1 ms delay
+                # result = converter.setOcdDelay(ocd_delay)
+                # if result == pyCandle.PDS_Error_t.OK:
+                #     print(f"  OCD Delay set to {ocd_delay} μs")
+                # else:
+                #     print(f"  Error setting OCD Delay: {result}")
+
+                # Set temperature limit in Celsius
+                # temp_limit = 70.0  # 70°C temperature limit
+                # result = converter.setTemperatureLimit(temp_limit)
+                # if result == pyCandle.PDS_Error_t.OK:
+                #     print(f"  Temperature limit set to {temp_limit}°C")
+                # else:
+                #     print(f"  Error setting temperature limit: {result}")
+
+                # Get status
                 status, result = converter.getStatus()
                 if result == pyCandle.PDS_Error_t.OK:
                     print(f"  Status - Enabled: {status.ENABLED}")
@@ -294,14 +329,14 @@ class PDSExample:
                 else:
                     print(f"  Error getting status: {result}")
 
-                # Get enabled state using wrapper function
+                # Get enabled state
                 enabled, result = converter.getEnabled()
                 if result == pyCandle.PDS_Error_t.OK:
                     print(f"  Enabled: {enabled}")
                 else:
                     print(f"  Error getting enabled state: {result}")
 
-                # Get measurements using wrapper functions
+                # Get measurementss
                 temperature, result = converter.getTemperature()
                 if result == pyCandle.PDS_Error_t.OK:
                     print(f"  Temperature: {temperature}°C")
@@ -320,19 +355,7 @@ class PDSExample:
                 else:
                     print(f"  Error getting load current: {result}")
 
-                power, result = converter.getPower()
-                if result == pyCandle.PDS_Error_t.OK:
-                    print(f"  Power: {power}mW")
-                else:
-                    print(f"  Error getting power: {result}")
-
-                energy, result = converter.getEnergy()
-                if result == pyCandle.PDS_Error_t.OK:
-                    print(f"  Energy: {energy}mWh")
-                else:
-                    print(f"  Error getting energy: {result}")
-
-                # Get configuration parameters using wrapper functions
+                # Get configuration parameterss
                 ocd_level, result = converter.getOcdLevel()
                 if result == pyCandle.PDS_Error_t.OK:
                     print(f"  OCD Level: {ocd_level}mA")
@@ -368,10 +391,68 @@ class PDSExample:
             for i, power_stage in enumerate(self.power_stages):
                 print(f"\nPower Stage {i+1}:")
 
-                # Print module info
-                power_stage.printModuleInfo()
+                # Enable/disable power stage
+                # result = power_stage.enable()
+                # if result == pyCandle.PDS_Error_t.OK:
+                #     print(f"  Power Stage enabled")
+                # else:
+                #     print(f"  Error enabling power stage: {result}")
 
-                # Get status using wrapper function
+                # result = power_stage.disable()
+                # if result == pyCandle.PDS_Error_t.OK:
+                #     print(f"  Power Stage disabled")
+                # else:
+                #     print(f"  Error disabling power stage: {result}")
+
+                # Set temperature limit in Celsius
+                # temp_limit = 90.0  # 90°C temperature limit
+                # result = power_stage.setTemperatureLimit(temp_limit)
+                # if result == pyCandle.PDS_Error_t.OK:
+                #     print(f"  Temperature limit set to {temp_limit}°C")
+                # else:
+                #     print(f"  Error setting temperature limit: {result}")
+
+                # Set Over-Current Detection (OCD) level in mA
+                # ocd_level = 25000  # 25A OCD level
+                # result = power_stage.setOcdLevel(ocd_level)
+                # if result == pyCandle.PDS_Error_t.OK:
+                #     print(f"  OCD Level set to {ocd_level} mA")
+                # else:
+                #     print(f"  Error setting OCD Level: {result}")
+
+                # Set Over-Current Detection delay in microseconds
+                # ocd_delay = 1000  # 1 ms delay
+                # result = power_stage.setOcdDelay(ocd_delay)
+                # if result == pyCandle.PDS_Error_t.OK:
+                #     print(f"  OCD Delay set to {ocd_delay} μs")
+                # else:
+                #     print(f"  Error setting OCD Delay: {result}")
+
+                # Set brake resistor trigger voltage in mV
+                # br_trigger_voltage = 30000  # 30V DC trigger voltage
+                # result = power_stage.setBrakeResistorTriggerVoltage(br_trigger_voltage)
+                # if result == pyCandle.PDS_Error_t.OK:
+                #     print(f"  Brake resistor trigger voltage set to {br_trigger_voltage} mV")
+                # else:
+                #     print(f"  Error setting brake resistor trigger voltage: {result}")
+
+                # Bind brake resistor to a socket
+                # brake_resistor_socket = pyCandle.socketIndex_E.SOCKET_3  # Example socket
+                # result = power_stage.bindBrakeResistor(brake_resistor_socket)
+                # if result == pyCandle.PDS_Error_t.OK:
+                #     print(f"  Brake resistor bound to socket {brake_resistor_socket}")
+                # else:
+                #     print(f"  Error binding brake resistor: {result}")
+
+                # Set autostart feature (will take effect after saving configuration)
+                # autostart = True
+                # result = power_stage.setAutostart(autostart)
+                # if result == pyCandle.PDS_Error_t.OK:
+                #     print(f"  Autostart set to {autostart}")
+                # else:
+                #     print(f"  Error setting autostart: {result}")
+
+                # Get status
                 status, result = power_stage.getStatus()
                 if result == pyCandle.PDS_Error_t.OK:
                     print(f"  Status - Enabled: {status.ENABLED}")
@@ -381,14 +462,14 @@ class PDSExample:
                 else:
                     print(f"  Error getting status: {result}")
 
-                # Get enabled state using wrapper function
+                # Get enabled state
                 enabled, result = power_stage.getEnabled()
                 if result == pyCandle.PDS_Error_t.OK:
                     print(f"  Enabled: {enabled}")
                 else:
                     print(f"  Error getting enabled state: {result}")
 
-                # Get measurements using wrapper functions
+                # Get measurements
                 temperature, result = power_stage.getTemperature()
                 if result == pyCandle.PDS_Error_t.OK:
                     print(f"  Temperature: {temperature}°C")
@@ -419,7 +500,7 @@ class PDSExample:
                 else:
                     print(f"  Error getting energy: {result}")
 
-                # Get configuration parameters using wrapper functions
+                # Get configuration parameters
                 autostart, result = power_stage.getAutostart()
                 if result == pyCandle.PDS_Error_t.OK:
                     print(f"  Autostart: {autostart}")
@@ -444,7 +525,7 @@ class PDSExample:
                 else:
                     print(f"  Error getting temperature limit: {result}")
 
-                # Get brake resistor binding using wrapper function
+                # Get brake resistor binding
                 brake_socket, result = power_stage.getBindBrakeResistor()
                 if result == pyCandle.PDS_Error_t.OK:
                     print(f"  Bound Brake Resistor Socket: {brake_socket}")
@@ -456,7 +537,7 @@ class PDSExample:
 
     def demonstrate_brake_resistor_usage(self):
         """
-        Demonstrate Brake Resistor module usage with updated wrapper functions.
+        Demonstrate Brake Resistor module usage
         """
         if not self.brake_resistors:
             print("No Brake Resistor modules available")
@@ -468,10 +549,28 @@ class PDSExample:
             for i, brake_resistor in enumerate(self.brake_resistors):
                 print(f"\nBrake Resistor {i+1}:")
 
-                # Print module info
-                brake_resistor.printModuleInfo()
+                # Enable/disable brake resistor
+                # result = brake_resistor.enable()
+                # if result == pyCandle.PDS_Error_t.OK:
+                #     print(f"  Brake Resistor enabled")
+                # else:
+                #     print(f"  Error enabling brake resistor: {result}")
 
-                # Get status using wrapper function
+                # result = brake_resistor.disable()
+                # if result == pyCandle.PDS_Error_t.OK:
+                #     print(f"  Brake Resistor disabled")
+                # else:
+                #     print(f"  Error disabling brake resistor: {result}")
+
+                # Set temperature limit in Celsius
+                # temp_limit = 90.0  # 90°C temperature limit
+                # result = brake_resistor.setTemperatureLimit(temp_limit)
+                # if result == pyCandle.PDS_Error_t.OK:
+                #     print(f"  Temperature limit set to {temp_limit}°C")
+                # else:
+                #     print(f"  Error setting temperature limit: {result}")
+
+                # Get status
                 status, result = brake_resistor.getStatus()
                 if result == pyCandle.PDS_Error_t.OK:
                     print(f"  Status - Enabled: {status.ENABLED}")
@@ -480,21 +579,21 @@ class PDSExample:
                 else:
                     print(f"  Error getting status: {result}")
 
-                # Get enabled state using wrapper function
+                # Get state
                 enabled, result = brake_resistor.getEnabled()
                 if result == pyCandle.PDS_Error_t.OK:
                     print(f"  Enabled: {enabled}")
                 else:
                     print(f"  Error getting enabled state: {result}")
 
-                # Get temperature using wrapper function
+                # Get temperature
                 temperature, result = brake_resistor.getTemperature()
                 if result == pyCandle.PDS_Error_t.OK:
                     print(f"  Temperature: {temperature}°C")
                 else:
                     print(f"  Error getting temperature: {result}")
 
-                # Get temperature limit using wrapper function
+                # Get temperature limit
                 temp_limit, result = brake_resistor.getTemperatureLimit()
                 if result == pyCandle.PDS_Error_t.OK:
                     print(f"  Temperature Limit: {temp_limit}°C")
@@ -534,7 +633,7 @@ class PDSExample:
         # Step 6: Attach to modules
         self.attach_modules()
 
-        # Step 7: Demonstrate module usage with updated wrapper functions
+        # Step 7: Demonstrate module usage
         self.demonstrate_power_stage_usage()
         self.demonstrate_brake_resistor_usage()
         self.demonstrate_isolated_converter_usage()
