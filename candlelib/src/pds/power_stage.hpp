@@ -119,7 +119,16 @@ namespace mab
          * @param energy
          * @return error_E
          */
-        error_E getEnergy(s32& energy);
+        error_E getTotalDeliveredEnergy(u32& energy);
+
+        /**
+         * @brief Reset the total Energy that was delivered by the Power Stage module
+         *
+         * @param reset
+         * @return error_E
+         */
+
+        error_E resetEnergyDelivered(bool& reset);
 
         /**
          * @brief Get the Temperature of the module
