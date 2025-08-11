@@ -109,8 +109,8 @@ namespace mab
          */
         Candle* mp_candle;
 
-        Logger   m_log;
-        uint16_t m_rootCanId = 0;
+        Logger               m_log;
+        std::shared_ptr<u16> m_rootCanId = 0;
 
         modulesSet_S m_modulesSet = {moduleType_E::UNDEFINED};
 

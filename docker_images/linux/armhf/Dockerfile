@@ -1,9 +1,9 @@
-FROM mabroboticsofficial/mab_build_environment:v1
+FROM mabroboticsofficial/mab_build_environment:v2
 
-RUN echo "deb [arch=armhf] http://ports.ubuntu.com/ jammy main multiverse universe" | sudo tee -a /etc/apt/sources.list
-RUN echo "deb [arch=armhf] http://ports.ubuntu.com/ jammy-security main multiverse universe" | sudo tee -a /etc/apt/sources.list
-RUN echo "deb [arch=armhf] http://ports.ubuntu.com/ jammy-backports main multiverse universe" | sudo tee -a /etc/apt/sources.list
-RUN echo "deb [arch=armhf] http://ports.ubuntu.com/ jammy-updates main multiverse universe" | sudo tee -a /etc/apt/sources.list
+RUN echo "deb [arch=armhf] http://ports.ubuntu.com/ noble main multiverse universe" | sudo tee -a /etc/apt/sources.list
+RUN echo "deb [arch=armhf] http://ports.ubuntu.com/ noble-security main multiverse universe" | sudo tee -a /etc/apt/sources.list
+RUN echo "deb [arch=armhf] http://ports.ubuntu.com/ noble-backports main multiverse universe" | sudo tee -a /etc/apt/sources.list
+RUN echo "deb [arch=armhf] http://ports.ubuntu.com/ noble-updates main multiverse universe" | sudo tee -a /etc/apt/sources.list
 
 # exit 0 because update will fail due to incomplete backport repository
 RUN sudo apt update ; exit 0
