@@ -13,6 +13,7 @@
 #include "logger.hpp"
 #include "I_communication_interface.hpp"
 #include "USB.hpp"
+#include "SPI.hpp"
 #include "mab_types.hpp"
 
 namespace mab
