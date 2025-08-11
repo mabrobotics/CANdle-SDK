@@ -53,7 +53,7 @@ namespace mab
                 if (reg.m_name == regName)
                 {
                     found = true;
-                    md.readRegisters(reg);
+                    err   = md.readRegisters(reg);
                     value = reg.value;
                 }
             }
@@ -85,7 +85,7 @@ namespace mab
                 if (reg.m_name == regName)
                 {
                     found = true;
-                    md.readRegisters(reg);
+                    err   = md.readRegisters(reg);
                     value = std::string(reg.value);
                 }
             }
@@ -118,7 +118,7 @@ namespace mab
                 {
                     found     = true;
                     reg.value = value;
-                    md.writeRegisters(reg);
+                    err       = md.writeRegisters(reg);
                 }
             }
         };
@@ -156,7 +156,7 @@ namespace mab
                     }
                     std::memset(reg.value, 0, sizeof(reg.value));
                     std::strncpy(reg.value, value.c_str(), sizeof(value.c_str()));
-                    md.writeRegisters(reg);
+                    err = md.writeRegisters(reg);
                 }
             }
         };
