@@ -41,6 +41,7 @@ install.strip = false
 
 [tool.scikit-build.cmake.define]
 PYTHON_BUILD = "ON"
+PYBIND11_FINDPYTHON = "OFF"
 
 [tool.cibuildwheel]
 build-frontend = "build[uv]"

@@ -14,7 +14,6 @@
 
 using namespace mab;
 
-constexpr u16 PDS_CAN_ID = 100;
 
 int main()
 {
