@@ -116,7 +116,7 @@ namespace mab
                        std::chrono::high_resolution_clock::now() - startTime)
                        .count() < timeoutMs * 1000)
             {
-                // std::this_thread::sleep_for(std::chrono::microseconds(POLL_INTERVAL_US));
+                // Try transfer - it only checks first byte for response
                 int err = ioctl(m_spiFileDescriptor, SPI_IOC_MESSAGE(1), &m_transferBuffer);
                 if (err < 0)
                 {
@@ -129,6 +129,7 @@ namespace mab
                     m_logger.info("Received data from SPI device");
                     m_transferBuffer.len    = receivedData.size() - 1;
                     m_transferBuffer.rx_buf = (std::size_t)(receivedData.data() + 1);
+                    // Perform the actual transfer (excluding the first byte which was sent earlier)
                     err = ioctl(m_spiFileDescriptor, SPI_IOC_MESSAGE(1), &m_transferBuffer);
                     if (err < 0)
                     {
@@ -136,11 +137,9 @@ namespace mab
                         return std::make_pair(receivedData,
                                               I_CommunicationInterface::Error_t::TRANSMITTER_ERROR);
                     }
-                    m_logger.info("Received data: %d bytes", receivedData.size());
                     // Check CRC
                     if (spiCRC.checkCrcBuf((char*)receivedData.data(), receivedData.size()))
                     {
-                        m_logger.info("CRC check passed");
                         // Remove CRC bytes from the received data
                         receivedData.resize(receivedData.size() - spiCRC.getCrcLen());
                         return std::make_pair(receivedData, I_CommunicationInterface::OK);
@@ -152,7 +151,6 @@ namespace mab
                                               I_CommunicationInterface::Error_t::RECEIVER_ERROR);
                     }
                 }
-                m_logger.debug("No data received, retrying...");
             }
             m_logger.error("Timeout while waiting for data from SPI device");
             return std::make_pair(receivedData, I_CommunicationInterface::Error_t::TIMEOUT);
