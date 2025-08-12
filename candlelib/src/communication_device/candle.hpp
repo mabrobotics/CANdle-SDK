@@ -225,7 +225,8 @@ namespace mab
                     }
                     break;
                 case mab::candleTypes::SPI:
-                    bus = std::make_unique<mab::SPI>(std::string(pathOrId.value_or(std::string())));
+                    bus = std::make_unique<mab::SPI>(
+                        std::string(pathOrId.value_or("/dev/spidev0.0")));
                     if (bus->connect() != I_CommunicationInterface::Error_t::OK)
                     {
                         m_logger.error("Could not connect USB device!");
