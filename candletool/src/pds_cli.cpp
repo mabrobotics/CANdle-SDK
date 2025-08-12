@@ -327,9 +327,9 @@ void PdsCli::parse()
         else if (m_updateCmd->parsed())
         {
             m_log.info("Updating PDS...");
-            MabFileParser      mabFile(m_mabFile, MabFileParser::TargetDevice_E::PDS);
-            PdsModule::error_E result = PdsModule::error_E::OK;
-            auto               candle = m_candleBuilder->build();
+            MabFileParser mabFile(m_mabFile, MabFileParser::TargetDevice_E::PDS);
+            // PdsModule::error_E result = PdsModule::error_E::OK;
+            auto candle = m_candleBuilder->build();
 
             if (!candle.has_value())
             {
@@ -362,7 +362,11 @@ void PdsCli::parse()
             }
             else
             {
+                Pds pds(m_canId, candle.value());
+                pds.isBootloaderError(true);
                 m_log.error("PDS flashing failed!");
+                usleep(2'000'000);
+                pds.isBootloaderError(false);
             }
         }
 
