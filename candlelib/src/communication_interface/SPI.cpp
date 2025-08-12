@@ -1,10 +1,10 @@
 
-#include <sys/poll.h>
 #ifndef WIN32
+#include <chrono>
+#include <thread>
 
 #include <linux/spi/spidev.h>
 #include <sys/ioctl.h>
-#include <poll.h>
 
 #include "I_communication_interface.hpp"
 #include "logger.hpp"
@@ -18,6 +18,7 @@ namespace mab
 
     I_CommunicationInterface::Error_t SPI::connect()
     {
+        m_logger.info("Connecting to SPI at %s", m_path.c_str());
         m_spiFileDescriptor = open(m_path.c_str(), O_RDWR);
         int err;  // for error handling
         if (m_spiFileDescriptor == -1)
@@ -25,19 +26,19 @@ namespace mab
             m_logger.error("Failed to find spidev at %s", m_path.c_str());
             return I_CommunicationInterface::Error_t::INITIALIZATION_ERROR;
         }
-        err = ioctl(m_spiFileDescriptor, SPI_IOC_WR_MODE, SPI_MODE_0);
+        err = ioctl(m_spiFileDescriptor, SPI_IOC_WR_MODE, &SPI_MODE);
         if (err != 0)
         {
-            m_logger.error("Failed to set SPI mode");
+            m_logger.error("Failed to set SPI mode with code %d", err);
             return I_CommunicationInterface::Error_t::INITIALIZATION_ERROR;
         }
-        err = ioctl(m_spiFileDescriptor, SPI_IOC_WR_BITS_PER_WORD, SPI_BITS_PER_WORD);
+        err = ioctl(m_spiFileDescriptor, SPI_IOC_WR_BITS_PER_WORD, &SPI_BITS_PER_WORD);
         if (err != 0)
         {
             m_logger.error("Failed to set SPI bits per word");
             return I_CommunicationInterface::Error_t::INITIALIZATION_ERROR;
         }
-        err = ioctl(m_spiFileDescriptor, SPI_IOC_WR_MAX_SPEED_HZ, SPI_SPEED);
+        err = ioctl(m_spiFileDescriptor, SPI_IOC_WR_MAX_SPEED_HZ, &SPI_SPEED);
         if (err != 0)
         {
             m_logger.error("Failed to set SPI speed");
@@ -67,8 +68,9 @@ namespace mab
     std::pair<std::vector<u8>, I_CommunicationInterface::Error_t> SPI::transfer(
         std::vector<u8> data, const u32 timeoutMs, const size_t expectedReceivedDataSize)
     {
-        std::vector<u8> receivedData(expectedReceivedDataSize, 0);
-        data.reserve(data.size() + 4);
+        std::vector<u8> receivedData(expectedReceivedDataSize + spiCRC.getCrcLen() /*CRC bytes*/,
+                                     0);
+        data.reserve(data.size() + spiCRC.getCrcLen());
         auto crc = spiCRC.calcCrc((char*)data.data(), data.size());
 
         // Assign the CRC bytes to the data vector
@@ -95,51 +97,65 @@ namespace mab
             return std::make_pair(receivedData,
                                   I_CommunicationInterface::Error_t::TRANSMITTER_ERROR);
         }
+        else
+        {
+            m_logger.info("SPI transfer successful!");
+        }
 
         if (expectedReceivedDataSize > 0)
         {
-            struct pollfd pfd = {0};
-            pfd.fd            = m_spiFileDescriptor;
-            pfd.events        = POLLIN;
-            int err           = poll(&pfd, 1, timeoutMs);
-            if (err < 0)
+            data.clear();
+            data.resize(receivedData.size(), 0);
+            m_transferBuffer.len    = 1;
+            m_transferBuffer.tx_buf = (std::size_t)data.data();
+            m_transferBuffer.rx_buf = (std::size_t)receivedData.data();
+
+            std::chrono::high_resolution_clock::time_point startTime =
+                std::chrono::high_resolution_clock::now();
+            while (std::chrono::duration_cast<std::chrono::microseconds>(
+                       std::chrono::high_resolution_clock::now() - startTime)
+                       .count() < timeoutMs * 1000)
             {
-                m_logger.error("SPI receive failed!");
-                return std::make_pair(receivedData,
-                                      I_CommunicationInterface::Error_t::RECEIVER_ERROR);
-            }
-            else if (err == 0)
-            {
-                m_logger.error("SPI receive timeout!");
-                return std::make_pair(receivedData, I_CommunicationInterface::Error_t::TIMEOUT);
-            }
-            else if (pfd.revents & POLLIN)
-            {
-                ssize_t bytesRead =
-                    read(m_spiFileDescriptor, receivedData.data(), expectedReceivedDataSize);
-                if (bytesRead < 0)
+                // std::this_thread::sleep_for(std::chrono::microseconds(POLL_INTERVAL_US));
+                int err = ioctl(m_spiFileDescriptor, SPI_IOC_MESSAGE(1), &m_transferBuffer);
+                if (err < 0)
                 {
-                    m_logger.error("SPI read failed!");
+                    m_logger.error("SPI transfer failed!");
                     return std::make_pair(receivedData,
-                                          I_CommunicationInterface::Error_t::RECEIVER_ERROR);
+                                          I_CommunicationInterface::Error_t::TRANSMITTER_ERROR);
                 }
-                else if (bytesRead != (ssize_t)expectedReceivedDataSize)
+                if (receivedData[0] != 0)
                 {
-                    m_logger.error("SPI read incomplete!");
-                    return std::make_pair(receivedData,
-                                          I_CommunicationInterface::Error_t::DATA_EMPTY);
+                    m_logger.info("Received data from SPI device");
+                    m_transferBuffer.len    = receivedData.size() - 1;
+                    m_transferBuffer.rx_buf = (std::size_t)(receivedData.data() + 1);
+                    err = ioctl(m_spiFileDescriptor, SPI_IOC_MESSAGE(1), &m_transferBuffer);
+                    if (err < 0)
+                    {
+                        m_logger.error("SPI transfer failed!");
+                        return std::make_pair(receivedData,
+                                              I_CommunicationInterface::Error_t::TRANSMITTER_ERROR);
+                    }
+                    m_logger.info("Received data: %d bytes", receivedData.size());
+                    // Check CRC
+                    if (spiCRC.checkCrcBuf((char*)receivedData.data(), receivedData.size()))
+                    {
+                        m_logger.info("CRC check passed");
+                        // Remove CRC bytes from the received data
+                        receivedData.resize(receivedData.size() - spiCRC.getCrcLen());
+                        return std::make_pair(receivedData, I_CommunicationInterface::OK);
+                    }
+                    else
+                    {
+                        m_logger.error("CRC check failed");
+                        return std::make_pair(receivedData,
+                                              I_CommunicationInterface::Error_t::RECEIVER_ERROR);
+                    }
                 }
-                else
-                {
-                    m_logger.info("SPI read successful!");
-                }
+                m_logger.debug("No data received, retrying...");
             }
-            else
-            {
-                m_logger.error("Undefined polling state");
-                return std::make_pair(receivedData,
-                                      I_CommunicationInterface::Error_t::UNKNOWN_ERROR);
-            }
+            m_logger.error("Timeout while waiting for data from SPI device");
+            return std::make_pair(receivedData, I_CommunicationInterface::Error_t::TIMEOUT);
         }
 
         return std::make_pair(receivedData, I_CommunicationInterface::OK);

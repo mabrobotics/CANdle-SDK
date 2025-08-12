@@ -1,6 +1,6 @@
 #pragma once
-#include <chrono>
 #ifndef WIN32
+#include <chrono>
 
 #include <fcntl.h>
 #include <linux/ioctl.h>
