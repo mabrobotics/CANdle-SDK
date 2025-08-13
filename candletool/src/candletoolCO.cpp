@@ -3,9 +3,6 @@
 #include <algorithm>
 #include <any>
 #include <cstdint>
-#include <algorithm>
-#include <any>
-#include <cstdint>
 #include <numeric>
 #include <unistd.h>
 #include <string>
@@ -15,23 +12,14 @@
 #include <vector>
 
 #include "MDStatus.hpp"
-#include "mab_types.hpp"
-#include "md_types.hpp"
-#include "MDStatus.hpp"
 #include "canLoader.hpp"
 #include "mab_types.hpp"
-#include "md_types.hpp"
 #include "configHelpers.hpp"
 #include "utilities.hpp"
-#include "utilities.hpp"
-
 #include "mabFileParser.hpp"
 #include "candle_bootloader.hpp"
-#include "candle.hpp"
 #include "I_communication_interface.hpp"
 #include "mab_crc.hpp"
-
-#include "pds.hpp"
 
 using namespace mab;
 
@@ -123,28 +111,6 @@ void CandleToolCO::configZero(u16 id)
 
     mdco.openZero();
 }
-
-// void CandleToolCO::configCurrent(u16 id, f32 current)
-// {
-//     MD   md        = MD(id, m_candle);
-//     auto connected = md.init();
-//     if (connected != MD::Error_t::OK)
-//     {
-//         log.error("Could not connect MD with id %d", id);
-//         return;
-//     }
-//     auto result = md.setCurrentLimit(current);
-
-//     if (result != MD::Error_t::OK)
-//     {
-//         log.error("Failed to set max current for the driver with id %d!", id);
-//     }
-//     else
-//     {
-//         log.info("Max current set successfully!");
-//     }
-//     return;
-// }
 
 void CandleToolCO::configBandwidth(u16 id, f32 bandwidth)
 {
@@ -402,12 +368,12 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
     int         motor_torquebandwidth = 0;  // 0x2000 0x05 u16
     int         motor_shutdowntemp    = 0;  // 0x2000 0x07 u8
 
-    int limits_maxtorque       = 0;  // not usefull because it's not save after motor shutdown
-    int limits_maxvelocity     = 0;  // not usefull because it's not save after motor shutdown
-    int limits_maxposition     = 0;  // not usefull because it's not save after motor shutdown
-    int limits_minposition     = 0;  // not usefull because it's not save after motor shutdown
-    int limits_maxacceleration = 0;  // not usefull because it's not save after motor shutdown
-    int limits_maxdeceleration = 0;  // not usefull because it's not save after motor shutdown
+    float limits_maxtorque       = 0;  // not usefull because it's not save after motor shutdown
+    int   limits_maxvelocity     = 0;  // not usefull because it's not save after motor shutdown
+    int   limits_maxposition     = 0;  // not usefull because it's not save after motor shutdown
+    int   limits_minposition     = 0;  // not usefull because it's not save after motor shutdown
+    int   limits_maxacceleration = 0;  // not usefull because it's not save after motor shutdown
+    int   limits_maxdeceleration = 0;  // not usefull because it's not save after motor shutdown
 
     int profile_acceleration = 0;  // not usefull because it's not save after motor shutdown
     int profile_deceleration = 0;  // not usefull because it's not save after motor shutdown
@@ -480,7 +446,7 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
             motor_shutdowntemp = std::stoi(right);
 
         else if (fullkey == "limits_maxtorque")
-            limits_maxtorque = std::stoi(right);
+            limits_maxtorque = std::stod(right);
         else if (fullkey == "limits_maxvelocity")
             limits_maxvelocity = std::stoi(right);
         else if (fullkey == "limits_maxposition")
@@ -489,8 +455,6 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
             limits_minposition = std::stoi(right);
         else if (fullkey == "limits_maxacceleration")
             limits_maxacceleration = std::stoi(right);
-        else if (fullkey == "limits_maxdeceleration")
-            limits_maxdeceleration = std::stoi(right);
 
         else if (fullkey == "profile_acceleration")
             profile_acceleration = std::stoi(right);
@@ -505,20 +469,20 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
             outputencoder_outputencodermode = std::stoi(right);
 
         else if (fullkey == "positionpid_kp")
-            positionpid_kp = std::stoi(right);
+            positionpid_kp = std::stod(right);
         else if (fullkey == "positionpid_ki")
             positionpid_ki = std::stod(right);
         else if (fullkey == "positionpid_kd")
-            positionpid_kd = std::stoi(right);
+            positionpid_kd = std::stod(right);
         else if (fullkey == "positionpid_windup")
-            positionpid_windup = std::stoi(right);
+            positionpid_windup = std::stod(right);
 
         else if (fullkey == "velocitypid_kp")
-            velocitypid_kp = std::stoi(right);
+            velocitypid_kp = std::stod(right);
         else if (fullkey == "velocitypid_ki")
             velocitypid_ki = std::stod(right);
         else if (fullkey == "velocitypid_kd")
-            velocitypid_kd = std::stoi(right);
+            velocitypid_kd = std::stod(right);
         else if (fullkey == "velocitypid_windup")
             velocitypid_windup = std::stod(right);
 
@@ -590,6 +554,15 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
     mdco.WriteOpenRegisters(0x2000, 0x05, motor_torquebandwidth, 2);
     mdco.WriteOpenRegisters(0x2000, 0x07, motor_shutdowntemp, 1);
     mdco.WriteOpenRegisters(0x2005, 0x03, outputencoder_outputencodermode, 1);
+    mdco.WriteOpenRegisters(0x607D, 0x01, limits_minposition);
+    mdco.WriteOpenRegisters(0x607D, 0x02, limits_maxposition);
+    mdco.WriteOpenRegisters(0x6076, 0x00, 1000);
+    mdco.WriteOpenRegisters(0x6072, 0x00, (long)(1000 * limits_maxtorque));
+    mdco.WriteOpenRegisters(0x6075, 0x00, 1000);
+    mdco.WriteOpenRegisters(0x6073, 0x00, (long)(1000 * motor_maxcurrent));
+    mdco.WriteOpenRegisters(0x6080, 0x00, limits_maxvelocity);
+    mdco.WriteOpenRegisters(0x60C5, 0x00, limits_maxacceleration);
+    mdco.WriteOpenRegisters(0x60C6, 0x00, limits_maxdeceleration);
     uint32_t positionpid_kp_as_long;
     std::memcpy(&positionpid_kp_as_long, &positionpid_kp, sizeof(float));
     mdco.WriteOpenRegisters(0x2002, 0x01, positionpid_kp_as_long, 4);
@@ -729,22 +702,25 @@ void CandleToolCO::setupReadConfig(u16 id, const std::string& cfgName)
       section [limits]
     ────────────────────────────*/
     float limits_max_torque;
-    raw_data = mdco.GetValueFromOpenRegister(0x2007, 0x01);
-    std::memcpy(&limits_max_torque, &raw_data, sizeof(float));
+    if (mdco.GetValueFromOpenRegister(0x6076, 0x00))
+    {
+        limits_max_torque = mdco.GetValueFromOpenRegister(0x6072, 0x00) /
+                            mdco.GetValueFromOpenRegister(0x6076, 0x00);
+    }
     float limits_max_velocity;
-    raw_data = mdco.GetValueFromOpenRegister(0x2007, 0x04);
+    raw_data = (float)mdco.GetValueFromOpenRegister(0x6080, 0x00);
     std::memcpy(&limits_max_velocity, &raw_data, sizeof(float));
     float limits_max_position;
-    raw_data = mdco.GetValueFromOpenRegister(0x2007, 0x05);
+    raw_data = (float)mdco.GetValueFromOpenRegister(0x607D, 0x02);
     std::memcpy(&limits_max_position, &raw_data, sizeof(float));
     float limits_min_position;
-    raw_data = mdco.GetValueFromOpenRegister(0x2007, 0x06);
+    raw_data = (float)mdco.GetValueFromOpenRegister(0x607D, 0x01);
     std::memcpy(&limits_min_position, &raw_data, sizeof(float));
     float limits_max_acceleration;
-    raw_data = mdco.GetValueFromOpenRegister(0x2007, 0x02);
+    raw_data = (float)mdco.GetValueFromOpenRegister(0x60C5, 0x00);
     std::memcpy(&limits_max_acceleration, &raw_data, sizeof(float));
     float limits_max_deceleration;
-    raw_data = mdco.GetValueFromOpenRegister(0x2007, 0x03);
+    raw_data = (float)mdco.GetValueFromOpenRegister(0x60C6, 0x00);
     std::memcpy(&limits_max_deceleration, &raw_data, sizeof(float));
 
     /*────────────────────────────

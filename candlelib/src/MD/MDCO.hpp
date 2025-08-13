@@ -219,7 +219,7 @@ namespace mab
             // data display
 
             std::cout << " ---- Received CAN Frame Info ----" << endl;
-            uint8_t cmd = response[2];
+            uint8_t cmd = response[0];
 
             if ((cmd & 0xF0) != 0x40)
             {
@@ -237,8 +237,8 @@ namespace mab
                 // cout << (int)n << endl;
 
                 // Index et Subindex
-                uint16_t index    = response[4] << 8 | response[3];
-                uint8_t  subindex = response[5];
+                uint16_t index    = response[2] << 8 | response[1];
+                uint8_t  subindex = response[3];
 
                 // data display
                 std::cout << "Index      : 0x" << std::hex << std::setw(4) << std::setfill('0')
@@ -252,7 +252,7 @@ namespace mab
                 for (int i = dataLen - 1; i >= 0; --i)
                 {
                     std::cout << std::hex << std::setw(2) << std::setfill('0')
-                              << (int)response[6 + i];
+                              << (int)response[4 + i];
                 }
                 cout << endl << "------------------------" << endl;
             }
@@ -314,7 +314,7 @@ namespace mab
                 return Error_t::TRANSFER_FAILED;
             }
 
-            constexpr size_t OFF = 2;  // Offset CAN response header
+            constexpr size_t OFF = 0;  // Offset CAN response header
             if (initResponse.size() < OFF + 1 || (initResponse[OFF] & 0xE0) != 0x60)
             {
                 m_log.error("Unexpected response to initiate download (expected 0x60).");
@@ -538,14 +538,14 @@ namespace mab
             long answerValue = 0;
             for (int i = 0; i <= 4; i++)
             {
-                answerValue += (((long)response[6 + i]) << (8 * i));
+                answerValue += (((long)response[4 + i]) << (8 * i));
                 // cout << "answerValue:" << answerValue << "au rang" << i << endl;
             }
 
             // cout << "answerValue:" << answerValue << endl;
 
             // data display
-            uint8_t cmd = response[2];
+            uint8_t cmd = response[0];
 
             if ((cmd & 0xF0) != 0x40)
             {

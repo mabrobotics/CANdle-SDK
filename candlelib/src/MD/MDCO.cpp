@@ -464,7 +464,7 @@ namespace mab
             MDCO md(id, candle);
             auto [response, error] = md.transferCanOpenFrame(0x600 + id, frame, frame.size());
 
-            if (response[6] == 0x92)
+            if (response[4] == 0x92)
                 ids.push_back(id);
 
             Logger::g_m_verbosity = prevVerbosity;

@@ -129,7 +129,7 @@ namespace mab
                      rootCli
                          ->add_option("register",
                                       *registerAddressOrName,
-                                      "Name or adress (must start with 0x and be in hex) of a "
+                                      "Name or address (must start with 0x and be in hex) of a "
                                       "register to interact with")
                          ->required()}};
             }
@@ -174,7 +174,7 @@ namespace mab
                      rootCli->add_option("path", *pathToMabFile, "Path to .mab file")->required()},
                     {"recovery",
                      rootCli->add_flag(
-                         "-r,--recovery", *recovery, "Driver recovery affter failed flashing")}};
+                         "-r,--recovery", *recovery, "Driver recovery after failed flashing")}};
             }
             const std::shared_ptr<bool>         recovery;
             const std::shared_ptr<std::string>  pathToMabFile;

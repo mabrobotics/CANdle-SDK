@@ -60,7 +60,7 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 md->blink();
@@ -82,7 +82,7 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 MDRegisters_S registers;
@@ -164,7 +164,7 @@ namespace mab
                     md                         = getMd(newCanId, newCandleBuilder);
                     if (md == nullptr)
                     {
-                        m_logger.error("Coudl not connect to MD!");
+                        m_logger.error("Could not connect to MD!");
                         return;
                     }
                     // Save the new can parameters to the MD
@@ -203,7 +203,7 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 MDRegisters_S registers;
@@ -419,7 +419,7 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 MDRegisters_S registers;
@@ -463,7 +463,7 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
 
@@ -515,7 +515,7 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
 
@@ -580,7 +580,7 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 MDRegisters_S registers;
@@ -597,7 +597,7 @@ namespace mab
         auto* discover = mdCLi
                              ->add_subcommand("discover",
                                               "Discover MD drives on the"
-                                              "network.")
+                                              " network.")
                              ->excludes(mdCanIdOption);
 
         discover->callback(
@@ -638,7 +638,7 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 if (md->save() != MD::Error_t::OK)
@@ -862,7 +862,7 @@ namespace mab
                 std::string registerStr = *(regReadOptions.registerAddressOrName);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 if (std::string("0x").compare(registerStr.substr(0, 2)) == 0)
@@ -914,7 +914,7 @@ namespace mab
                 std::string registerStr  = *(registerWriteOption.registerAddressOrName);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 if (std::string("0x").compare(registerStr.substr(0, 2)) == 0)
@@ -968,7 +968,7 @@ namespace mab
                     auto md = getMd(mdCanId, candleBuilder);
                     if (md == nullptr)
                     {
-                        m_logger.error("Coudl not connect to MD!");
+                        m_logger.error("Could not connect to MD!");
                         return;
                     }
                     md->reset();
@@ -992,7 +992,7 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 if (md->isMDError(md->setTargetPosition(*absoluteTestOptions.target)))
@@ -1027,7 +1027,7 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 if (*relativeTestOptions.target > 10.0f)
@@ -1105,7 +1105,7 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 MDRegisters_S regs;

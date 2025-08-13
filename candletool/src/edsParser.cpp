@@ -1,4 +1,6 @@
 #include "edsParser.hpp"
+#include "configHelpers.hpp"
+#include "mini/ini.h"
 
 // Utility
 std::string toLower(const std::string& s)
@@ -208,6 +210,10 @@ edsParser::~edsParser()
 
 Error_t edsParser::load(const std::string& edsFilePath)
 {
+    mINI::INIFile      file(mab::getCandletoolConfigPath());
+    mINI::INIStructure ini;
+    file.read(ini);
+
     namespace fs = std::filesystem;
 
     if (!fs::exists(edsFilePath))
@@ -216,40 +222,31 @@ Error_t edsParser::load(const std::string& edsFilePath)
         return INVALID_PATH;
     }
 
-    fs::path edsFolder = "./eds";
-    if (!fs::exists(edsFolder))
+    std::ifstream in(edsFilePath);
+    if (!in.is_open())
     {
-        try
-        {
-            fs::create_directories(edsFolder);
-        }
-        catch (const fs::filesystem_error& e)
-        {
-            log.error("Failed to create directory './eds': %s", e.what());
-            return INVALID_PATH;
-        }
-    }
-
-    fs::path      edsPathFile = edsFolder / "eds_path.txt";
-    std::ofstream out(edsPathFile);
-    if (!out)
-    {
-        log.error("Error : impossible to write EDS PATH to %s", edsPathFile.string().c_str());
+        log.error("Impossible to open the file containing the EDS file: %s", edsFilePath.c_str());
         return INVALID_PATH;
     }
 
-    m_edsFilePath = edsFilePath;
+    std::string line;
+    std::getline(in, line);
+    in.close();
 
-    if (isValid() != OK)
+    // cleaning (we removed spaces, tabs, and newlines)
+    line.erase(0, line.find_first_not_of("\t\r\n"));
+    line.erase(line.find_last_not_of("\t\r\n") + 1);
+
+    if (line.empty())
     {
-        log.error("EDS file is not valid: %s", edsFilePath.c_str());
-        return INVALID_FILE;
+        log.error("eds_path.txt file empty or invalid.");
+        return INVALID_PATH;
     }
 
-    out << edsFilePath;
-    out.close();
-
-    std::cout << "EDS loaded: " << edsFilePath << std::endl;
+    // Modifier et réécrire
+    ini["eds"]["path"] = edsFilePath;
+    file.write(ini);
+    log.success("EDS loaded:%s", edsFilePath.c_str());
     return OK;
 }
 
@@ -839,7 +836,11 @@ Error_t edsParser::find(const std::string& searchTerm)
 
 Error_t edsParser::addObject(const edsObject& obj)
 {
-    this->updateFilePath();
+    if (this->updateFilePath() != OK)
+    {
+        log.error("Impossible to upload the EDS path.\n");
+        return INVALID_PATH;
+    }
 
     std::ifstream in(m_edsFilePath);
     if (!in)
@@ -1186,7 +1187,12 @@ Error_t edsParser::modifyObject(const edsObject& obj, u32 index, u8 subindex)
 
 Error_t edsParser::updateFilePath()
 {
-    const std::string pathFile = "./eds/eds_path.txt";
+    // const std::string pathFile = "./eds/eds_path.txt";
+    mINI::INIFile      file(mab::getCandletoolConfigPath());
+    mINI::INIStructure ini;
+    file.read(ini);
+
+    const std::string pathFile = ini["eds"]["path"];
 
     std::ifstream in(pathFile);
     if (!in.is_open())
@@ -1209,7 +1215,8 @@ Error_t edsParser::updateFilePath()
         return INVALID_PATH;
     }
 
-    m_edsFilePath = line;
+    m_edsFilePath = pathFile;
+    // m_edsFilePath = line;
     log.info("EDS path update from the eds_path.txt file : %s\n", m_edsFilePath.c_str());
 
     return OK;
