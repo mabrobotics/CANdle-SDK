@@ -1,17 +1,5 @@
 #include "MDCO.hpp"
 
-bool caseInsensitiveEquals(const std::string& a, const std::string& b)
-{
-    if (a.size() != b.size())
-        return false;
-
-    for (size_t i = 0; i < a.size(); ++i)
-        if (tolower(a[i]) != tolower(b[i]))
-            return false;
-
-    return true;
-}
-
 namespace mab
 {
 
@@ -20,23 +8,35 @@ namespace mab
         bool objectFound = false;
         for (const edsObject& obj : this->ObjectDictionary)
         {
-            if (caseInsensitiveEquals(obj.ParameterName, searchTerm))
+            if (obj.ParameterName.size() == searchTerm.size())
             {
-                index    = obj.index;
-                subIndex = obj.subIndex;
-                if (objectFound)
+                bool equal = true;
+                for (size_t i = 0; i < obj.ParameterName.size(); ++i)
                 {
-                    m_log.warn(
-                        "Multiple objects found with name '%s'. Using the first one found.\n",
-                        searchTerm.c_str());
+                    if (tolower(obj.ParameterName[i]) != tolower(searchTerm[i]))
+                    {
+                        equal = false;
+                        break;
+                    }
                 }
-                else
+                if (equal)
                 {
-                    m_log.debug("Object found: %s (0x%04X, subIndex: %d)\n",
-                                obj.ParameterName.c_str(),
-                                obj.index,
-                                obj.subIndex);
-                    objectFound = true;
+                    index    = obj.index;
+                    subIndex = obj.subIndex;
+                    if (objectFound)
+                    {
+                        m_log.warn(
+                            "Multiple objects found with name '%s'. Using the first one found.\n",
+                            searchTerm.c_str());
+                    }
+                    else
+                    {
+                        m_log.debug("Object found: %s (0x%04X, subIndex: %d)\n",
+                                    obj.ParameterName.c_str(),
+                                    obj.index,
+                                    obj.subIndex);
+                        objectFound = true;
+                    }
                 }
             }
         }

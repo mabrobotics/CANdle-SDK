@@ -222,25 +222,6 @@ namespace mab
         // frameDump(response);
 
         return std::pair<std::vector<u8>, candleTypes::Error_t>(response, communicationStatus);
-
-        // auto buffer = std::vector<u8>(dataToSend);
-
-        // const auto candleCommandCANframe =
-        //     sendCanFrameHeader(dataToSend.size(), u16(canId), timeoutMs);
-
-        // buffer.insert(buffer.begin(), candleCommandCANframe.begin(),
-        // candleCommandCANframe.end());
-
-        // communicationStatus =
-        //     busTransfer(&buffer, responseSize + 2 /*response header size*/, timeoutMs + 1);
-
-        // auto response = buffer;
-
-        // m_log.debug("Expected received len: %d", responseSize);
-        // m_log.debug("RECEIVE");
-        // // frameDump(response);
-
-        // return std::pair<std::vector<u8>, candleTypes::Error_t>(response, communicationStatus);
     }
 
     const std::pair<std::vector<u8>, candleTypes::Error_t> Candle::transferCANPDOFrame(

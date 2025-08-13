@@ -24,12 +24,6 @@
 #include <iomanip>
 #include <algorithm>
 
-/// @brief compare two strings in a case-insensitive manner
-/// @param a first string to compare
-/// @param b second string to compare
-/// @return true if the strings are equal, false otherwise
-bool caseInsensitiveEquals(const std::string& a, const std::string& b);
-
 namespace mab
 {
     /// @brief Software representation of MD device on the can network
