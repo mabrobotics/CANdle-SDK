@@ -713,6 +713,8 @@ namespace mab
         void printAllInfo();
 
       private:
+        const Candle* m_candle;
+
         /// @brief Generate the Object Dictionary from the EDS file
         /// @return A vector of edsObject representing the Object Dictionary
         const std::vector<edsObject> ObjectDictionary =
@@ -744,8 +746,6 @@ namespace mab
         /// is readable. If the object is not found or not readable, it returns an error.
         /// If the object is readable, it returns OK.
         Error_t isReadable(const u32 index, const u8 subIndex);
-
-        const Candle* m_candle;
 
         inline const Candle* getCandle() const
         {
