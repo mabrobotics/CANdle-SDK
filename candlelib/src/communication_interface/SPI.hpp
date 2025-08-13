@@ -66,16 +66,19 @@ namespace mab
         virtual Error_t connect() override
         {
             m_logger.error("SPI not implemented on windows!");
+            return Error_t::INITIALIZATION_ERROR;
         }
 
         virtual Error_t disconnect() override
         {
             m_logger.error("SPI not implemented on windows!");
+            return Error_t::INITIALIZATION_ERROR;
         }
 
         virtual Error_t transfer(std::vector<u8> data, const u32 timeoutMs) override
         {
             m_logger.error("SPI not implemented on windows!");
+            return Error_t::INITIALIZATION_ERROR;
         }
 
         virtual std::pair<std::vector<u8>, Error_t> transfer(
@@ -84,6 +87,7 @@ namespace mab
             const size_t    expectedReceivedDataSize) override
         {
             m_logger.error("SPI not implemented on windows!");
+            return std::make_pair(std::vector<u8>(), Error_t::INITIALIZATION_ERROR);
         }
 
       private:
