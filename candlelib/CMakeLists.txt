@@ -126,7 +126,7 @@ target_include_directories(candle_bootloader_test PRIVATE
 target_link_libraries(candle_bootloader_test PRIVATE logger shared_data candle)
 
 
-add_unit_test_executable(usb_v2_test src/communication_interface/SPI_test.cpp)
+add_unit_test_executable(usb_v2_test src/communication_interface/USB_test.cpp)
 target_sources(usb_v2_test PRIVATE src/communication_interface/USB.cpp)
 target_include_directories(usb_v2_test PRIVATE
   include
