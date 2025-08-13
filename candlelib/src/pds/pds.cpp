@@ -329,6 +329,19 @@ namespace mab
         statusClearWord |= (u32)statusBits_E::FDCAN_TIMEOUT;
         return writeModuleProperty(propertyId_E::STATUS_CLEAR, statusClearWord);
     }
+    PdsModule::error_E Pds::isBootloaderError(bool isBootloaderError)
+    {
+        u32 statusErrorWord = 0;
+        if (isBootloaderError)
+        {
+            statusErrorWord |= (u32)statusBits_E::BOOTLOADER_ERROR;
+            return writeModuleProperty(propertyId_E::STATUS_ERROR, statusErrorWord);
+        }
+        else
+        {
+            return writeModuleProperty(propertyId_E::STATUS_ERROR, statusErrorWord);
+        }
+    }
 
     PdsModule::error_E Pds::getBusVoltage(u32& busVoltage)
     {
