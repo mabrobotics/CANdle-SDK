@@ -50,7 +50,7 @@ namespace mab
     };
 }  // namespace mab
 
-#elif
+#else
 
 namespace mab
 {
