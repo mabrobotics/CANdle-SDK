@@ -40,10 +40,6 @@ struct UserCommandCO
     edsObject   edsObj;  // used for EDS parser
 };
 
-/// @brief return the number of millis since 1st january 1970
-/// @return the number of millis since 1st january 1970
-uint64_t get_time_us();
-
 class CandleToolCO
 {
   public:
@@ -362,7 +358,7 @@ class CandleToolCO
                   std::string         category,
                   std::string         field,
                   T&                  value);
-    
+
     template <class T>
     bool checkParamLimit(T value, T min, T max)
     {

@@ -23,13 +23,6 @@
 
 using namespace mab;
 
-uint64_t get_time_us()
-{
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return tv.tv_sec * 1000000ULL + tv.tv_usec;
-}
-
 CandleToolCO::CandleToolCO(const mab::CANdleBaudrate_E baud)
 {
     log.m_tag   = "CANDLETOOLco";
@@ -135,11 +128,13 @@ void CandleToolCO::sendPdoSpeed(u16 id, i32 desiredSpeed)
     md.writeOpenRegisters("Controlword", 15, 2);
     log.info("Sending PDO for speed loop control");
     std::vector<u8> frameSetup;
+    frameSetup.reserve(3);
     frameSetup.push_back(0x0F);
     frameSetup.push_back(0x00);
     frameSetup.push_back(0x09);
     md.writeOpenPDORegisters(0x300 + id, frameSetup);
     std::vector<u8> frameSpeed;
+    frameSpeed.reserve(6);
     frameSpeed.push_back(0x0F);
     frameSpeed.push_back(0x00);
     frameSpeed.push_back((u8)(desiredSpeed));
@@ -147,7 +142,11 @@ void CandleToolCO::sendPdoSpeed(u16 id, i32 desiredSpeed)
     frameSpeed.push_back((u8)(desiredSpeed >> 16));
     frameSpeed.push_back((u8)(desiredSpeed >> 24));
     md.writeOpenPDORegisters(0x500 + id, frameSpeed);
-    usleep(5000000);
+    auto start   = std::chrono::steady_clock::now();
+    auto timeout = std::chrono::seconds((5));
+    while (std::chrono::steady_clock::now() - start < timeout)
+    {
+    }
     if ((int)md.getValueFromOpenRegister(0x606C, 0x00) <= desiredSpeed + 5 &&
         (int)md.getValueFromOpenRegister(0x606C, 0x00) >= desiredSpeed - 5)
     {
@@ -176,16 +175,19 @@ void CandleToolCO::sendPdoPosition(u16 id, i32 DesiredPos)
     md.writeOpenRegisters("Controlword", 0x06, 2);
     md.writeOpenRegisters("Controlword", 15, 2);
 
-    usleep(1000);
+    auto start   = std::chrono::steady_clock::now();
+    auto timeout = std::chrono::seconds((1));
 
     log.info("Sending PDO for speed loop control");
 
     std::vector<u8> frameSetup;
+    frameSetup.reserve(3);
     frameSetup.push_back(0x0F);
     frameSetup.push_back(0x00);
     frameSetup.push_back(0x08);
     md.writeOpenPDORegisters(0x300 + id, frameSetup);
     std::vector<u8> framePosition;
+    framePosition.reserve(3);
     framePosition.push_back(0x0F);
     framePosition.push_back(0x00);
     framePosition.push_back((u8)(DesiredPos));
@@ -195,14 +197,21 @@ void CandleToolCO::sendPdoPosition(u16 id, i32 DesiredPos)
 
     log.debug("position ask : %d\n", DesiredPos);
 
-    time_t start = time(nullptr);
+    start           = std::chrono::steady_clock::now();
+    auto lastSend   = start;
+    timeout         = std::chrono::seconds(5);
+    auto sendPeriod = std::chrono::milliseconds(10);
 
-    while (time(nullptr) - start < 5 &&
+    while (std::chrono::steady_clock::now() - start < timeout &&
            !((int)md.getValueFromOpenRegister(0x6064, 0) > (DesiredPos - 100) &&
              (int)md.getValueFromOpenRegister(0x6064, 0) < (DesiredPos + 100)))
     {
-        md.writeOpenPDORegisters(0x400 + id, framePosition);
-        usleep(1000);
+        auto now = std::chrono::steady_clock::now();
+        if (now - lastSend >= sendPeriod)
+        {
+            md.writeOpenRegisters("Motor Target Position", DesiredPos, 4);
+            lastSend = now;
+        }
     }
 
     log.debug("position actual : %d\n", (int)md.getValueFromOpenRegister(0x6064, 0));
@@ -229,6 +238,7 @@ void CandleToolCO::SendCustomPdo(u16 id, const edsObject& Desiregister, u64 data
     if (Desiregister.index == (0x1600))
     {
         std::vector<u8> frame;
+        frame.reserve(2);
         frame.push_back((u8)(data >> 8));
         frame.push_back(data);
         mdco.writeOpenPDORegisters(0x200 + id, frame);
@@ -236,6 +246,7 @@ void CandleToolCO::SendCustomPdo(u16 id, const edsObject& Desiregister, u64 data
     else if (Desiregister.index == (0x1601))
     {
         std::vector<u8> frame;
+        frame.reserve(3);
         frame.push_back((u8)(data >> 16));
         frame.push_back((u8)(data >> 8));
         frame.push_back((u8)data);
@@ -244,6 +255,7 @@ void CandleToolCO::SendCustomPdo(u16 id, const edsObject& Desiregister, u64 data
     else if (Desiregister.index == (0x1602))
     {
         std::vector<u8> frame;
+        frame.reserve(6);
         frame.push_back((u8)(data >> 40));
         frame.push_back((u8)(data >> 32));
         frame.push_back((u8)(data >> 24));
@@ -255,6 +267,7 @@ void CandleToolCO::SendCustomPdo(u16 id, const edsObject& Desiregister, u64 data
     else if (Desiregister.index == (0x1603))
     {
         std::vector<u8> frame;
+        frame.reserve(6);
         frame.push_back((u8)(data >> 40));
         frame.push_back((u8)(data >> 32));
         frame.push_back((u8)(data >> 24));
@@ -636,14 +649,23 @@ void CandleToolCO::heartbeatTest(u32 MasterId, u32 SlaveId, u32 HeartbeatTimeout
     // md.writeOpenRegisters(0x1016, 0x00, 0x1, 1);
     md.writeOpenRegisters(0x1016, 0x01, DataSlave, 4);
     mdproducer.sendCustomData(0x700 + MasterId, frame);
-    usleep(HeartbeatTimeout);
+    auto start   = std::chrono::steady_clock::now();
+    auto timeout = std::chrono::milliseconds((HeartbeatTimeout / 100));
+    while (std::chrono::steady_clock::now() - start < timeout)
+    {
+    }
+    // verify if error state before Hearbeattimeout
     if (md.getValueFromOpenRegister(0x1001, 0) != 0)
     {
         log.error("The driver enter fault mode before the Heartbeat timeout");
         return;
     }
-    usleep(2000 * HeartbeatTimeout);
-
+    start   = std::chrono::steady_clock::now();
+    timeout = std::chrono::milliseconds((HeartbeatTimeout * 2));
+    while (std::chrono::steady_clock::now() - start < timeout)
+    {
+    }
+    // verify if error state after Hearbeattimeout
     if (md.getValueFromOpenRegister(0x1001, 0) != 0)
     {
         log.success("The driver enter fault mode after the Heartbeat timeout");
@@ -986,28 +1008,32 @@ void CandleToolCO::testMoveImpedance(u16 id,
 
 void CandleToolCO::testLatency(u16 id)
 {
-    MDCO     md(id, m_candle);
-    uint64_t latence_totale = 0;
-    bool     testOk         = true;
+    MDCO md(id, m_candle);
+    u64  latence_totale = 0;
+    bool testOk         = true;
 
     for (int i = 0; i < 100; ++i)
     {
-        uint64_t start_time = get_time_us();
+        auto start = std::chrono::steady_clock::now();
 
         if (md.readOpenRegisters(0x1000, 0) != MDCO::Error_t::OK)
         {
             testOk = false;
         }
-        uint64_t end_time = get_time_us();
-        latence_totale += (end_time - start_time);
+
+        auto end   = std::chrono::steady_clock::now();
+        auto duree = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+        latence_totale += static_cast<u64>(duree);
     }
+
     if (testOk)
     {
-        uint64_t moyenne = latence_totale / 100;
+        u64 moyenne = latence_totale / 100;
         log.info("---------------Latence---------------\n");
         log.info("Total: %lu µs\n", latence_totale);
-        log.info("Result (average of 10000 attempts): %lu µs\n", moyenne);
+        log.info("Result (average of 100 attempts): %lu µs\n", moyenne);
     }
+
     else
     {
         log.error("MD driver not answering");
@@ -1106,38 +1132,50 @@ void CandleToolCO::registerWrite(
 
 void CandleToolCO::SendTime(uint16_t id)
 {
-    MDCO            mdco(id, m_candle);
-    time_t          now = time(NULL);
-    time_t          Begin;
-    struct tm       datetime = *localtime(&now);
-    int             diff;
-    long            TimeMessageId;
-    long            NumberOfMillis = 0;
-    long            NumberOfDays   = 0;
+    MDCO mdco(id, m_candle);
+
+    auto now = std::chrono::system_clock::now();
+
+    std::tm epoch_tm  = {};
+    epoch_tm.tm_year  = 84;
+    epoch_tm.tm_mon   = 0;
+    epoch_tm.tm_mday  = 1;
+    epoch_tm.tm_hour  = 0;
+    epoch_tm.tm_min   = 0;
+    epoch_tm.tm_sec   = 0;
+    epoch_tm.tm_isdst = -1;
+
+    auto        epoch_time_t = std::mktime(&epoch_tm);
+    auto        epoch_tp     = std::chrono::system_clock::from_time_t(epoch_time_t);
+    auto        days_since  = std::chrono::duration_cast<std::chrono::days>(now - epoch_tp).count();
+    std::time_t now_time_t  = std::chrono::system_clock::to_time_t(now);
+    std::tm     local_tm    = *std::localtime(&now_time_t);
+    std::tm     midnight_tm = local_tm;
+
+    midnight_tm.tm_hour = 0;
+    midnight_tm.tm_min  = 0;
+    midnight_tm.tm_sec  = 0;
+
+    auto midnight_time_t       = std::mktime(&midnight_tm);
+    auto midnight_tp           = std::chrono::system_clock::from_time_t(midnight_time_t);
+    long millis_since_midnight = static_cast<long>(
+        std::chrono::duration_cast<std::chrono::milliseconds>(now - midnight_tp).count());
+
+    log.info("The actual time according to your computer is: %s", std::asctime(&local_tm));
+    log.info("Number of days since 1st January 1984: %ld", days_since);
+    log.info("Number of millis since midnight: %ld", millis_since_midnight);
+
+    long TimeMessageId = mdco.getValueFromOpenRegister(0x1012, 0x00);
+
     std::vector<u8> frame;
-    datetime.tm_year  = 84;
-    datetime.tm_mon   = 0;
-    datetime.tm_mday  = 1;
-    datetime.tm_hour  = 0;
-    datetime.tm_min   = 0;
-    datetime.tm_sec   = 0;
-    datetime.tm_isdst = -1;
-    Begin             = mktime(&datetime);
-    diff              = difftime(now, Begin);
-    NumberOfDays      = (diff / 86400);
-    datetime          = *localtime(&now);
-    NumberOfMillis =
-        (datetime.tm_hour * 3600000 + datetime.tm_sec * 1000 + datetime.tm_min * 60000);
-    log.info("The actual time according to your computer is: %s", asctime(&datetime));
-    log.info("Number of days since 1st January 1984: %d", NumberOfDays);
-    log.info("Number of millis since midnight: %d", NumberOfMillis);
-    TimeMessageId = mdco.getValueFromOpenRegister(0x1012, 0x00);
-    frame.push_back((u8)NumberOfMillis);
-    frame.push_back((u8)(NumberOfMillis >> 8));
-    frame.push_back((u8)(NumberOfMillis >> 16));
-    frame.push_back((u8)((NumberOfMillis >> 24)));
-    frame.push_back((u8)(NumberOfDays));
-    frame.push_back((u8)(NumberOfDays >> 8));
+    frame.reserve(6);
+    frame.push_back((u8)millis_since_midnight);
+    frame.push_back((u8)(millis_since_midnight >> 8));
+    frame.push_back((u8)(millis_since_midnight >> 16));
+    frame.push_back((u8)(millis_since_midnight >> 24));
+    frame.push_back((u8)(days_since));
+    frame.push_back((u8)(days_since >> 8));
+
     mdco.writeOpenPDORegisters(TimeMessageId, frame);
 }
 
@@ -1300,6 +1338,7 @@ void CandleToolCO::SendNMT(u8 id, u8 command)
 {
     MDCO            mdco(id, m_candle);
     std::vector<u8> data;
+    data.reserve(2);
     data.push_back(command);
     data.push_back(id);
     mdco.writeOpenPDORegisters(0x000, data);
@@ -1310,21 +1349,28 @@ void CandleToolCO::ReadHeartbeat(u16 id)
     // TODO: find a better way to do this, it seems to work but it's clearly not the best way to do
     // it. A better way could be by implemented a listen mode on the USB.cpp file
     uint32_t heartbeat_id = 0x700 + id;
-    log.info("Waiting for an heartbeat message with can id 0x%03X...", heartbeat_id);
-    uint64_t             firstHeartbeatReveiceved = 0;
-    uint64_t             start_time               = get_time_us();
-    const uint64_t       timeout_us               = 5 * 1000000;  // 5 secondes
+    log.info("Waiting for a heartbeat message with can id 0x%03X...", heartbeat_id);
+
     std::vector<uint8_t> frame;
+    frame.reserve(1);
     frame.push_back(0);
+
     std::vector<uint8_t>      response;
     mab::candleTypes::Error_t error;
-    // if after 5 second no heartbeat receive then give the user an error(fail)
-    while (get_time_us() - start_time < timeout_us)
+
+    uint64_t firstHeartbeatReceived = 0;
+
+    // Chrono setup
+    auto start_time = std::chrono::steady_clock::now();
+    auto timeout    = std::chrono::seconds(5);
+
+    while (std::chrono::steady_clock::now() - start_time < timeout)
     {
-        // send Heartbeat Canopen frame with high frequencies
+        // send Heartbeat CANopen frame with high frequency
         auto result = m_candle->transferCANPDOFrame(heartbeat_id, frame, 1, /*timeoutMs=*/10);
         response    = result.first;
         error       = result.second;
+
         // if a correct message is received
         if (error == mab::candleTypes::Error_t::OK && response.size() >= 3)
         {
@@ -1332,47 +1378,54 @@ void CandleToolCO::ReadHeartbeat(u16 id)
             if (response[0] == 0x04 && response[1] == 0x01 && response[2] == 0x05)
             {
                 log.success("heartbeat reçu");
-                // if it's the first time we received an heartbeat
-                if (firstHeartbeatReveiceved == 0)
+
+                auto now_us = std::chrono::duration_cast<std::chrono::microseconds>(
+                                  std::chrono::steady_clock::now() - start_time)
+                                  .count();
+
+                // first heartbeat
+                if (firstHeartbeatReceived == 0)
                 {
-                    firstHeartbeatReveiceved = get_time_us();
+                    firstHeartbeatReceived = now_us;
+
                     result =
                         m_candle->transferCANPDOFrame(heartbeat_id, frame, 1, /*timeoutMs=*/10);
                     response = result.first;
                     error    = result.second;
-                    // keep sending message until the last heartbeat diseapear on the bus
+
+                    // keep sending message until the last heartbeat disappears on the bus
                     while ((response.size() > 1 && response[1] == 0x01) &&
-                           (get_time_us() - start_time < timeout_us))
+                           (std::chrono::steady_clock::now() - start_time < timeout))
                     {
                         result =
                             m_candle->transferCANPDOFrame(heartbeat_id, frame, 1, /*timeoutMs=*/10);
                         response = result.first;
                         error    = result.second;
+
                         // if we lost communication with the MD
                         if (error != mab::candleTypes::Error_t::OK || response.size() <= 1)
-                        {
                             break;
-                        }
                     }
                 }
                 else
                 {
-                    // if it's the second heartbeat we receive, then we calcul the delta time and we
-                    // stop the function with a succes. the delta value is in [s] and should be
-                    // around the stock in the register
-                    log.success(
-                        "heartbeat received with in between time of %lfs",
-                        static_cast<double>(get_time_us() - firstHeartbeatReveiceved) / 1000000.0);
+                    // second heartbeat — calcul du delta
+                    auto delta_us = std::chrono::duration_cast<std::chrono::microseconds>(
+                                        std::chrono::steady_clock::now() - start_time)
+                                        .count() -
+                                    firstHeartbeatReceived;
+
+                    log.success("heartbeat received with in between time of %.6lf s",
+                                static_cast<double>(delta_us) / 1'000'000.0);
                     return;
                 }
             }
         }
     }
-    // if zero heartbeat message have been received then we log an error
-    if (firstHeartbeatReveiceved == 0)
+
+    // timeout conditions
+    if (firstHeartbeatReceived == 0)
         log.error("No heartbeat has been received after 5s.\n");
-    // if only one heartbeat has been received in the last 5s we quit with a success
     else
         log.success("One heartbeat has been received in the last 5s");
-    // log.info("Work in progress.\n");
 }

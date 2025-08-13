@@ -23,6 +23,7 @@
 #include <vector>
 #include <iomanip>
 #include <algorithm>
+#include <chrono>
 
 namespace mab
 {
@@ -173,6 +174,7 @@ namespace mab
 
             m_log.debug("Read Open register...");
             std::vector<u8> frame;
+            frame.reserve(8);
             frame.push_back(0x40);                // Command: initiate upload
             frame.push_back(((u8)index));         // Index LSB
             frame.push_back(((u8)(index >> 8)));  // Index MSB
@@ -484,6 +486,7 @@ namespace mab
             m_log.debug("Read Open register...");
 
             std::vector<u8> frame;
+            frame.reserve(8);
             frame.push_back(0x40);                // Command: initiate upload
             frame.push_back(((u8)index));         // Index LSB
             frame.push_back(((u8)(index >> 8)));  // Index MSB
@@ -562,6 +565,7 @@ namespace mab
             }
 
             std::vector<u8> frame;
+            frame.reserve(8);
             if (size == 1)
                 frame.push_back(0x2F);
             if (size == 2)

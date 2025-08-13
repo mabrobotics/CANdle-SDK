@@ -165,15 +165,21 @@ namespace mab
         writeOpenRegisters("Controlword", 0x80, 2);
         writeOpenRegisters("Controlword", 0x06, 2);
         writeOpenRegisters("Controlword", 15, 2);
-        m_log.debug("position asked : %d\n", targetPos);
-        time_t start = time(nullptr);
-        while (time(nullptr) - start < 5 &&
+        auto start      = std::chrono::steady_clock::now();
+        auto lastSend   = start;
+        auto timeout    = std::chrono::seconds(5);
+        auto sendPeriod = std::chrono::milliseconds(10);
+
+        while (std::chrono::steady_clock::now() - start < timeout &&
                !((i16)getValueFromOpenRegister(0x6064, 0) > (targetPos - 100) &&
                  (i16)getValueFromOpenRegister(0x6064, 0) < (targetPos + 100)))
         {
-            writeOpenRegisters("Motor Target Position", targetPos, 4);
-
-            usleep(10000);
+            auto now = std::chrono::steady_clock::now();
+            if (now - lastSend >= sendPeriod)
+            {
+                writeOpenRegisters("Motor Target Position", targetPos, 4);
+                lastSend = now;
+            }
         }
 
         m_log.debug("actual position: %d\n", (i16)getValueFromOpenRegister(0x6064, 0));
@@ -203,14 +209,21 @@ namespace mab
         writeOpenRegisters("Controlword", 0x80);
         writeOpenRegisters("Controlword", 0x06);
         writeOpenRegisters("Controlword", 15);
-        m_log.debug("position asked : %d\n", DesiredPos);
-        time_t start = time(nullptr);
-        while (time(nullptr) - start < 5 &&
+        auto start      = std::chrono::steady_clock::now();
+        auto lastSend   = start;
+        auto timeout    = std::chrono::seconds(5);
+        auto sendPeriod = std::chrono::milliseconds(10);
+
+        while (std::chrono::steady_clock::now() - start < timeout &&
                !((i16)getValueFromOpenRegister(0x6064, 0) > (DesiredPos - 100) &&
                  (i16)getValueFromOpenRegister(0x6064, 0) < (DesiredPos + 100)))
         {
-            writeOpenRegisters("Motor Target Position", DesiredPos);
-            usleep(10000);
+            auto now = std::chrono::steady_clock::now();
+            if (now - lastSend >= sendPeriod)
+            {
+                writeOpenRegisters("Motor Target Position", DesiredPos, 4);
+                lastSend = now;
+            }
         }
         m_log.debug("actual position: %d\n", (i16)getValueFromOpenRegister(0x6064, 0));
         if (((i16)getValueFromOpenRegister(0x6064, 0) > (DesiredPos - 200) &&
@@ -237,12 +250,22 @@ namespace mab
         writeOpenRegisters("Controlword", 0x80);
         writeOpenRegisters("Controlword", 0x06);
         writeOpenRegisters("Controlword", 15);
-        usleep(10000);
-        time_t start = time(nullptr);
-        while (time(nullptr) - start < 5)
+
+        auto start      = std::chrono::steady_clock::now();
+        auto lastSend   = start;
+        auto timeout    = std::chrono::seconds(5);
+        auto sendPeriod = std::chrono::milliseconds(10);
+
+        while (std::chrono::steady_clock::now() - start < timeout)
         {
-            writeOpenRegisters("Motor Target Velocity", DesiredSpeed);
+            auto now = std::chrono::steady_clock::now();
+            if (now - lastSend >= sendPeriod)
+            {
+                writeOpenRegisters("Motor Target Velocity", DesiredSpeed);
+                lastSend = now;
+            }
         }
+
         if ((i16)getValueFromOpenRegister(0x606C, 0x00) <= DesiredSpeed + 5 &&
             (i16)getValueFromOpenRegister(0x606C, 0x00) >= DesiredSpeed - 5)
         {
@@ -260,7 +283,11 @@ namespace mab
     MDCO::Error_t MDCO::moveImpedance(
         i32 desiredSpeed, i32 targetPos, f32 kp, f32 kd, i16 torque, moveParameter param)
     {
-        usleep(1000);
+        auto start   = std::chrono::steady_clock::now();
+        auto timeout = std::chrono::milliseconds((1));
+        while (std::chrono::steady_clock::now() - start < timeout)
+        {
+        }
         writeOpenRegisters("Max Current", param.MaxCurrent);
         writeOpenRegisters("Motor Rated Current", param.RatedCurrent);
         writeOpenRegisters("Max Motor Speed", param.MaxSpeed);
@@ -281,7 +308,11 @@ namespace mab
         memcpy(&kd_bits, &kd, sizeof(float));
         writeOpenRegisters("Kd_impedance", kd_bits);
         writeOpenRegisters("Target Torque", torque);
-        usleep(5000000);
+        start   = std::chrono::steady_clock::now();
+        timeout = std::chrono::seconds((5));
+        while (std::chrono::steady_clock::now() - start < timeout)
+        {
+        }
         writeOpenRegisters("Target Torque", 0);
         writeOpenRegisters("Controlword", 0x80);
         writeOpenRegisters("Controlword", 0x06);
@@ -310,16 +341,25 @@ namespace mab
     {
         // restart node
         std::vector<u8> data;
+        data.reserve(2);
         data.push_back(0x81);
         data.push_back(m_canId);
         writeOpenPDORegisters(0x000, data);
         m_log.debug("waiting the node %d to restart\n", m_canId);
         // wait for the node to restart
-        usleep(5000000);
+        auto start   = std::chrono::steady_clock::now();
+        auto timeout = std::chrono::milliseconds((5000));
+        while (std::chrono::steady_clock::now() - start < timeout)
+        {
+        }
         // clearing error register
         writeOpenRegisters("Controlword", 0x06, 2);
         writeOpenRegisters("Modes Of Operation", 0xFF, 1);
-        usleep(100000);
+        start   = std::chrono::steady_clock::now();
+        timeout = std::chrono::milliseconds((100));
+        while (std::chrono::steady_clock::now() - start < timeout)
+        {
+        }
         if (level == 1)
             return writeOpenRegisters("Clear Errors", 1, 1);
         if (level == 2)
@@ -408,6 +448,7 @@ namespace mab
         constexpr canId_t MAX_VALID_ID = 0x7F;  // 0x600-0x580
 
         std::vector<u8> frame;
+        frame.reserve(8);
         frame.push_back(0x40);  // Command: initiate upload
         frame.push_back(0x00);  // Index LSB
         frame.push_back(0x10);  // Index MSB
