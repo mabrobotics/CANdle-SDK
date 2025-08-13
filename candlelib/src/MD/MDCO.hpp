@@ -42,6 +42,7 @@ namespace mab
     class MDCO
     {
         static constexpr size_t DEFAULT_RESPONSE_SIZE = 23;
+        static constexpr u16    SDO_REQUEST_BASE      = 0x600;
 
         Logger m_log;
 
@@ -182,7 +183,8 @@ namespace mab
             frame.push_back(0x00);
 
             //  message sending via transferCanFrame
-            auto [response, error] = transferCanOpenFrame(0x600 + m_canId, frame, frame.size());
+            auto [response, error] =
+                transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, frame, frame.size());
 
             // data display
 
@@ -272,7 +274,7 @@ namespace mab
                                          u8(data.size() >> 24)};
 
             auto [initResponse, initError] =
-                transferCanOpenFrame(0x600 + m_canId, initFrame, initFrame.size());
+                transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, initFrame, initFrame.size());
 
             if (initError != mab::candleTypes::Error_t::OK)
             {
@@ -319,8 +321,8 @@ namespace mab
                     segmentFrame.push_back(0x00);
                 }
 
-                auto [segResponse, segError] =
-                    transferCanOpenFrame(0x600 + m_canId, segmentFrame, segmentFrame.size());
+                auto [segResponse, segError] = transferCanOpenFrame(
+                    SDO_REQUEST_BASE + m_canId, segmentFrame, segmentFrame.size());
 
                 if (segError != mab::candleTypes::Error_t::OK)
                 {
@@ -379,7 +381,7 @@ namespace mab
                                        0x00};
 
             auto [rspInit, errInit] =
-                transferCanOpenFrame(0x600 + m_canId, initReq, initReq.size());
+                transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, initReq, initReq.size());
             if (errInit != mab::candleTypes::Error_t::OK || rspInit.size() < OFF + 8)
             {
                 m_log.error("Failed to initiate SDO read.");
@@ -418,7 +420,7 @@ namespace mab
                     std::vector<u8> segReq = {
                         u8(0x60 | (toggle ? 0x10 : 0x00)), 0, 0, 0, 0, 0, 0, 0};
                     auto [rspSeg, errSeg] =
-                        transferCanOpenFrame(0x600 + m_canId, segReq, segReq.size());
+                        transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, segReq, segReq.size());
 
                     if (errSeg != mab::candleTypes::Error_t::OK || rspSeg.size() < OFF + 1)
                     {
@@ -497,7 +499,8 @@ namespace mab
             frame.push_back(0x00);
             frame.push_back(0x00);
 
-            auto [response, error] = transferCanOpenFrame(0x600 + m_canId, frame, frame.size());
+            auto [response, error] =
+                transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, frame, frame.size());
 
             long answerValue = 0;
             for (int i = 0; i <= 4; i++)
@@ -579,7 +582,8 @@ namespace mab
             frame.push_back((u8)(data >> 16));
             frame.push_back((u8)(data >> 24));
 
-            auto [response, error] = transferCanOpenFrame(0x600 + m_canId, frame, frame.size());
+            auto [response, error] =
+                transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, frame, frame.size());
 
             if (error == mab::candleTypes::Error_t::OK)
             {
