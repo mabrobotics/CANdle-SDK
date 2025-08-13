@@ -127,8 +127,8 @@ namespace mab
 
     void MDCO::printAllInfo()
     {
-        long value;
-        for (int i = 0; i < (int)ObjectDictionary.size(); i++)
+        i32 value;
+        for (i16 i = 0; i < (i16)ObjectDictionary.size(); i++)
         {
             value =
                 getValueFromOpenRegister(ObjectDictionary[i].index, ObjectDictionary[i].subIndex);
@@ -168,18 +168,18 @@ namespace mab
         m_log.debug("position asked : %d\n", targetPos);
         time_t start = time(nullptr);
         while (time(nullptr) - start < 5 &&
-               !((int)getValueFromOpenRegister(0x6064, 0) > (targetPos - 100) &&
-                 (int)getValueFromOpenRegister(0x6064, 0) < (targetPos + 100)))
+               !((i16)getValueFromOpenRegister(0x6064, 0) > (targetPos - 100) &&
+                 (i16)getValueFromOpenRegister(0x6064, 0) < (targetPos + 100)))
         {
             writeOpenRegisters("Motor Target Position", targetPos, 4);
 
             usleep(10000);
         }
 
-        m_log.debug("actual position: %d\n", (int)getValueFromOpenRegister(0x6064, 0));
+        m_log.debug("actual position: %d\n", (i16)getValueFromOpenRegister(0x6064, 0));
 
-        if (((int)getValueFromOpenRegister(0x6064, 0) > (targetPos - 200) &&
-             (int)getValueFromOpenRegister(0x6064, 0) < (targetPos + 200)))
+        if (((i16)getValueFromOpenRegister(0x6064, 0) > (targetPos - 200) &&
+             (i16)getValueFromOpenRegister(0x6064, 0) < (targetPos + 200)))
         {
             m_log.success("Position reached in less than 5s");
         }
@@ -187,7 +187,7 @@ namespace mab
         {
             m_log.error("Position not reached in less than 5s");
         }
-        m_log.debug("actual position: %d\n", (int)getValueFromOpenRegister(0x6064, 0));
+        m_log.debug("actual position: %d\n", (i16)getValueFromOpenRegister(0x6064, 0));
         writeOpenRegisters("Controlword", 6, 2);
         writeOpenRegisters("Modes Of Operation", 0, 1);
     }
@@ -206,15 +206,15 @@ namespace mab
         m_log.debug("position asked : %d\n", DesiredPos);
         time_t start = time(nullptr);
         while (time(nullptr) - start < 5 &&
-               !((int)getValueFromOpenRegister(0x6064, 0) > (DesiredPos - 100) &&
-                 (int)getValueFromOpenRegister(0x6064, 0) < (DesiredPos + 100)))
+               !((i16)getValueFromOpenRegister(0x6064, 0) > (DesiredPos - 100) &&
+                 (i16)getValueFromOpenRegister(0x6064, 0) < (DesiredPos + 100)))
         {
             writeOpenRegisters("Motor Target Position", DesiredPos);
             usleep(10000);
         }
-        m_log.debug("actual position: %d\n", (int)getValueFromOpenRegister(0x6064, 0));
-        if (((int)getValueFromOpenRegister(0x6064, 0) > (DesiredPos - 200) &&
-             (int)getValueFromOpenRegister(0x6064, 0) < (DesiredPos + 200)))
+        m_log.debug("actual position: %d\n", (i16)getValueFromOpenRegister(0x6064, 0));
+        if (((i16)getValueFromOpenRegister(0x6064, 0) > (DesiredPos - 200) &&
+             (i16)getValueFromOpenRegister(0x6064, 0) < (DesiredPos + 200)))
         {
             m_log.success("Position reached in less than 5s");
         }
@@ -243,8 +243,8 @@ namespace mab
         {
             writeOpenRegisters("Motor Target Velocity", DesiredSpeed);
         }
-        if ((int)getValueFromOpenRegister(0x606C, 0x00) <= DesiredSpeed + 5 &&
-            (int)getValueFromOpenRegister(0x606C, 0x00) >= DesiredSpeed - 5)
+        if ((i16)getValueFromOpenRegister(0x606C, 0x00) <= DesiredSpeed + 5 &&
+            (i16)getValueFromOpenRegister(0x606C, 0x00) >= DesiredSpeed - 5)
         {
             m_log.success("Velocity Target reached with +/- 5RPM");
         }
@@ -273,11 +273,11 @@ namespace mab
         writeOpenRegisters("Target Velocity", desiredSpeed);
         writeOpenRegisters("Target Position", targetPos);
         // kp
-        uint32_t kp_bits;
+        u32 kp_bits;
         memcpy(&kp_bits, &kp, sizeof(float));
         writeOpenRegisters("Kp_impedance", kp_bits);
         // kd
-        uint32_t kd_bits;
+        u32 kd_bits;
         memcpy(&kd_bits, &kd, sizeof(float));
         writeOpenRegisters("Kd_impedance", kd_bits);
         writeOpenRegisters("Target Torque", torque);
@@ -306,7 +306,7 @@ namespace mab
         return MDCO::Error_t::OK;
     }
 
-    MDCO::Error_t MDCO::clearOpenErrors(int level)
+    MDCO::Error_t MDCO::clearOpenErrors(i16 level)
     {
         // restart node
         std::vector<u8> data;
@@ -337,7 +337,7 @@ namespace mab
             return MDCO::Error_t::REQUEST_INVALID;
     }
 
-    MDCO::Error_t MDCO::newCanOpenConfig(long newID, long newBaud, int newwatchdog)
+    MDCO::Error_t MDCO::newCanOpenConfig(i32 newID, i32 newBaud, i16 newwatchdog)
     {
         writeOpenRegisters("Can ID", newID, 4);
         writeOpenRegisters("Can Baudrate", newBaud, 4);
@@ -348,7 +348,7 @@ namespace mab
         return MDCO::Error_t::OK;
     }
 
-    MDCO::Error_t MDCO::canOpenBandwidth(int newBandwidth)
+    MDCO::Error_t MDCO::canOpenBandwidth(i16 newBandwidth)
     {
         writeOpenRegisters("Torque Bandwidth", newBandwidth, 2);
         return MDCO::Error_t::OK;

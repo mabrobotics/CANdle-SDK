@@ -123,13 +123,13 @@ namespace mab
         /// @brief Clear errors present in the driver
         /// @param level 1 => clear error, 2 => clear warning, 3 => clear both
         /// @return
-        Error_t clearOpenErrors(int level);
+        Error_t clearOpenErrors(i16 level);
 
         /// @brief Change CANopen config the command need to be save before shutoff the motors
         /// @param newID new id of the motor
         /// @param newBaud new baudRate
         /// @param newwatchdog new watchdog
-        Error_t newCanOpenConfig(long newID, long newBaud, int newwatchdog);
+        Error_t newCanOpenConfig(i32 newID, i32 newBaud, i16 newwatchdog);
 
         /// @brief Perform a encoder test
         /// @param Main Main=1 if you want to perform the test on the main encoder
@@ -145,7 +145,7 @@ namespace mab
         /// before shuting off the motors
         /// @param newBandwidth new value for the bandwidth {50-2500}[Hz]
         /// @return
-        Error_t canOpenBandwidth(int newBandwidth);
+        Error_t canOpenBandwidth(i16 newBandwidth);
 
         /// @brief Save configuration data to the memory
         /// @return
@@ -160,7 +160,7 @@ namespace mab
         /// @param subindex subindex from the object dictionary where the user want to read the
         /// value
         /// @return Error on failure
-        inline Error_t readOpenRegisters(int index, short subindex, bool force = false)
+        inline Error_t readOpenRegisters(i16 index, short subindex, bool force = false)
         {
             if (!force)
             {
@@ -189,7 +189,7 @@ namespace mab
             // data display
 
             std::cout << " ---- Received CAN Frame Info ----" << endl;
-            uint8_t cmd = response[0];
+            u8 cmd = response[0];
 
             if ((cmd & 0xF0) != 0x40)
             {
@@ -201,26 +201,26 @@ namespace mab
                 // FLAGS Extraction
                 // bool    expedited     = cmd & 0x02;
                 // bool    sizeIndicated = cmd & 0x01;
-                uint8_t n       = (cmd & 0x0C) >> 2;  // bits 1-0
-                uint8_t dataLen = 4 - n;
+                u8 n       = (cmd & 0x0C) >> 2;  // bits 1-0
+                u8 dataLen = 4 - n;
 
                 // Index et Subindex
-                uint16_t index    = response[2] << 8 | response[1];
-                uint8_t  subindex = response[3];
+                u16 index    = response[2] << 8 | response[1];
+                u8  subindex = response[3];
 
                 // data display
                 std::cout << "Index      : 0x" << std::hex << std::setw(4) << std::setfill('0')
                           << index << std::endl;
 
                 std::cout << "Subindex   : 0x" << std::hex << std::setw(2) << std::setfill('0')
-                          << (int)subindex << std::endl;
+                          << (i16)subindex << std::endl;
 
-                std::cout << "Data (" << std::dec << (int)dataLen << " byte(s)): 0x";
+                std::cout << "Data (" << std::dec << (i16)dataLen << " byte(s)): 0x";
 
-                for (int i = dataLen - 1; i >= 0; --i)
+                for (i16 i = dataLen - 1; i >= 0; --i)
                 {
                     std::cout << std::hex << std::setw(2) << std::setfill('0')
-                              << (int)response[4 + i];
+                              << (i16)response[4 + i];
                 }
                 cout << endl << "------------------------" << endl;
             }
@@ -242,7 +242,7 @@ namespace mab
         /// @param data value to write
         /// @param size size of the data to write (1,2,4)
         /// @return Error on failure
-        Error_t writeLongOpenRegisters(int                index,
+        Error_t writeLongOpenRegisters(i16                index,
                                        short              subindex,
                                        const std::string& dataString,
                                        bool               force = false)
@@ -357,7 +357,7 @@ namespace mab
         /// @param subindex subindex from the object dictionary where the user want to read the
         /// value
         /// @return Error on failure
-        inline Error_t readLongOpenRegisters(int index, short subindex, std::vector<u8>& outData)
+        inline Error_t readLongOpenRegisters(i16 index, short subindex, std::vector<u8>& outData)
         {
             // // only for testing
             // // WriteMotorName();
@@ -480,7 +480,7 @@ namespace mab
         /// @param subindex subindex from the object dictionary where the user want to read the
         /// value
         /// @return the value contained in the register or -1 if error
-        long getValueFromOpenRegister(int index, short subindex)
+        i32 getValueFromOpenRegister(i16 index, short subindex)
         {
             if (isReadable(index, subindex) != OK)
             {
@@ -502,14 +502,14 @@ namespace mab
             auto [response, error] =
                 transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, frame, frame.size());
 
-            long answerValue = 0;
-            for (int i = 0; i <= 4; i++)
+            i32 answerValue = 0;
+            for (i16 i = 0; i <= 4; i++)
             {
-                answerValue += (((long)response[4 + i]) << (8 * i));
+                answerValue += (((i32)response[4 + i]) << (8 * i));
             }
 
             // data display
-            uint8_t cmd = response[0];
+            u8 cmd = response[0];
 
             if ((cmd & 0xF0) != 0x40)
             {
@@ -533,7 +533,7 @@ namespace mab
         /// value
         /// @return Error on failure
         inline Error_t writeOpenRegisters(
-            int index, short subindex, long data, short size = 0, bool force = false)
+            i16 index, short subindex, i32 data, short size = 0, bool force = false)
         {
             if (!force)
             {
@@ -633,7 +633,7 @@ namespace mab
         /// @param subindex subindex from the object dictionary where the user want to write the
         /// value
         /// @return Error on failure
-        inline Error_t writeOpenPDORegisters(int index, std::vector<u8> data)
+        inline Error_t writeOpenPDORegisters(i16 index, std::vector<u8> data)
         {
             m_log.debug("Writing Open Pdo register...");
 
@@ -656,7 +656,7 @@ namespace mab
         /// @param subindex subindex from the object dictionary where the user want to write the
         /// value
         /// @return Error on failure
-        inline Error_t sendCustomData(int index, std::vector<u8> data)
+        inline Error_t sendCustomData(i16 index, std::vector<u8> data)
         {
             m_log.debug("Writing Custom data...");
             transferCanOpenFrameNoRespondExpected(index, data, data.size());
@@ -747,7 +747,7 @@ namespace mab
         }
 
         inline std::pair<std::vector<u8>, mab::candleTypes::Error_t> transferCanOpenFrame(
-            int Id, std::vector<u8> frameToSend, size_t responseSize) const
+            i16 Id, std::vector<u8> frameToSend, size_t responseSize) const
         {
             if (m_candle == nullptr)
             {
@@ -765,7 +765,7 @@ namespace mab
         }
 
         inline std::pair<std::vector<u8>, mab::candleTypes::Error_t>
-        transferCanOpenFrameNoRespondExpected(int             Id,
+        transferCanOpenFrameNoRespondExpected(i16             Id,
                                               std::vector<u8> frameToSend,
                                               size_t          responseSize) const
         {
