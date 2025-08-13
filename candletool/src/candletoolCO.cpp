@@ -903,10 +903,15 @@ void CandleToolCO::testMove(u16 id,
                             u16 MaxTorque,
                             u32 RatedTorque)
 {
-    MDCO mdco = MDCO(id, m_candle);
-
-    long DesiredPosition = (long)(targetPosition);
-    mdco.movePosition(MaxCurrent, RatedCurrent, MaxTorque, RatedTorque, MaxSpeed, DesiredPosition);
+    MDCO          mdco            = MDCO(id, m_candle);
+    long          DesiredPosition = (long)(targetPosition);
+    moveParameter param;
+    param.MaxSpeed     = MaxSpeed;
+    param.MaxCurrent   = MaxCurrent;
+    param.RatedCurrent = RatedCurrent;
+    param.MaxTorque    = MaxTorque;
+    param.RatedTorque  = RatedTorque;
+    mdco.movePosition(param, DesiredPosition);
 }
 
 void CandleToolCO::testMoveAbsolute(u16 id,
@@ -921,18 +926,19 @@ void CandleToolCO::testMoveAbsolute(u16 id,
 {
     MDCO mdco = MDCO(id, m_candle);
 
-    long desiredPos       = ((long)targetPos);
-    long MaxSpeed         = ((long)velLimit);
-    long MaxAcceleration  = ((long)accLimit);
-    long MaxDecceleration = ((long)dccLimit);
-    mdco.movePositionAcc(desiredPos,
-                         MaxAcceleration,
-                         MaxDecceleration,
-                         MaxSpeed,
-                         MaxCurrent,
-                         RatedCurrent,
-                         MaxTorque,
-                         RatedTorque);
+    long          desiredPos       = ((long)targetPos);
+    long          MaxSpeed         = ((long)velLimit);
+    long          MaxAcceleration  = ((long)accLimit);
+    long          MaxDecceleration = ((long)dccLimit);
+    moveParameter param;
+    param.accLimit     = MaxAcceleration;
+    param.dccLimit     = MaxDecceleration;
+    param.MaxSpeed     = MaxSpeed;
+    param.MaxCurrent   = MaxCurrent;
+    param.RatedCurrent = RatedCurrent;
+    param.MaxTorque    = MaxTorque;
+    param.RatedTorque  = RatedTorque;
+    mdco.movePositionAcc(desiredPos, param);
 }
 
 void CandleToolCO::testMoveSpeed(u16 id,
@@ -943,8 +949,14 @@ void CandleToolCO::testMoveSpeed(u16 id,
                                  u32 MaxSpeed,
                                  i32 DesiredSpeed)
 {
-    mab::MDCO md(id, m_candle);
-    md.moveSpeed(MaxCurrent, RatedCurrent, MaxTorque, RatedTorque, MaxSpeed, DesiredSpeed);
+    mab::MDCO     md(id, m_candle);
+    moveParameter param;
+    param.MaxSpeed     = MaxSpeed;
+    param.MaxCurrent   = MaxCurrent;
+    param.RatedCurrent = RatedCurrent;
+    param.MaxTorque    = MaxTorque;
+    param.RatedTorque  = RatedTorque;
+    md.moveSpeed(param, DesiredSpeed);
 }
 
 void CandleToolCO::testMoveImpedance(u16 id,
@@ -959,17 +971,14 @@ void CandleToolCO::testMoveImpedance(u16 id,
                                      u16 MaxTorque,
                                      u32 RatedTorque)
 {
-    mab::MDCO md(id, m_candle);
-    md.moveImpedance(desiredSpeed,
-                     targetPos,
-                     kp,
-                     kd,
-                     torque,
-                     MaxSpeed,
-                     MaxCurrent,
-                     RatedCurrent,
-                     MaxTorque,
-                     RatedTorque);
+    mab::MDCO     md(id, m_candle);
+    moveParameter param;
+    param.MaxSpeed     = MaxSpeed;
+    param.MaxCurrent   = MaxCurrent;
+    param.RatedCurrent = RatedCurrent;
+    param.MaxTorque    = MaxTorque;
+    param.RatedTorque  = RatedTorque;
+    md.moveImpedance(desiredSpeed, targetPos, kp, kd, torque, param);
 }
 
 void CandleToolCO::testLatency(u16 id)

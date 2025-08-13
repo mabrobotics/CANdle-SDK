@@ -150,24 +150,17 @@ namespace mab
         }
     }
 
-    void MDCO::movePositionAcc(i32 targetPos,
-                               i32 accLimit,
-                               i32 dccLimit,
-                               u32 MaxSpeed,
-                               u16 MaxCurrent,
-                               u32 RatedCurrent,
-                               u16 MaxTorque,
-                               u32 RatedTorque)
+    void MDCO::movePositionAcc(i32 targetPos, moveParameter param)
     {
         WriteOpenRegisters("Motor Max Acceleration", 10000, 4);
         WriteOpenRegisters("Motor Max Deceleration", 10000, 4);
-        WriteOpenRegisters("Motor Profile Acceleration", accLimit, 4);
-        WriteOpenRegisters("Motor Profile Deceleration", dccLimit, 4);
-        WriteOpenRegisters("Max Current", MaxCurrent, 2);
-        WriteOpenRegisters("Motor Rated Current", RatedCurrent, 4);
-        WriteOpenRegisters("Max Motor Speed", MaxSpeed, 4);
-        WriteOpenRegisters("Motor Max Torque", MaxTorque, 2);
-        WriteOpenRegisters("Motor Rated Torque", RatedTorque, 4);
+        WriteOpenRegisters("Motor Profile Acceleration", param.accLimit, 4);
+        WriteOpenRegisters("Motor Profile Deceleration", param.dccLimit, 4);
+        WriteOpenRegisters("Max Current", param.MaxCurrent, 2);
+        WriteOpenRegisters("Motor Rated Current", param.RatedCurrent, 4);
+        WriteOpenRegisters("Max Motor Speed", param.MaxSpeed, 4);
+        WriteOpenRegisters("Motor Max Torque", param.MaxTorque, 2);
+        WriteOpenRegisters("Motor Rated Torque", param.RatedTorque, 4);
         WriteOpenRegisters("Modes Of Operation", 1, 1);
         WriteOpenRegisters("Controlword", 0x80, 2);
         WriteOpenRegisters("Controlword", 0x06, 2);
@@ -199,18 +192,13 @@ namespace mab
         WriteOpenRegisters("Modes Of Operation", 0, 1);
     }
 
-    void MDCO::movePosition(u16 MaxCurrent,
-                            u32 RatedCurrent,
-                            u16 MaxTorque,
-                            u32 RatedTorque,
-                            u32 MaxSpeed,
-                            i32 DesiredPos)
+    void MDCO::movePosition(moveParameter param, i32 DesiredPos)
     {
-        WriteOpenRegisters("Max Current", MaxCurrent);
-        WriteOpenRegisters("Motor Rated Current", RatedCurrent);
-        WriteOpenRegisters("Max Motor Speed", MaxSpeed);
-        WriteOpenRegisters("Motor Max Torque", MaxTorque);
-        WriteOpenRegisters("Motor Rated Torque", RatedTorque);
+        WriteOpenRegisters("Max Current", param.MaxCurrent);
+        WriteOpenRegisters("Motor Rated Current", param.RatedCurrent);
+        WriteOpenRegisters("Max Motor Speed", param.MaxSpeed);
+        WriteOpenRegisters("Motor Max Torque", param.MaxTorque);
+        WriteOpenRegisters("Motor Rated Torque", param.RatedTorque);
         WriteOpenRegisters("Modes Of Operation", 8);
         WriteOpenRegisters("Controlword", 0x80);
         WriteOpenRegisters("Controlword", 0x06);
@@ -238,18 +226,13 @@ namespace mab
         WriteOpenRegisters("Modes Of Operation", 0);
     }
 
-    void MDCO::moveSpeed(u16 MaxCurrent,
-                         u32 RatedCurrent,
-                         u16 MaxTorque,
-                         u32 RatedTorque,
-                         u32 MaxSpeed,
-                         i32 DesiredSpeed)
+    void MDCO::moveSpeed(moveParameter param, i32 DesiredSpeed)
     {
-        WriteOpenRegisters("Max Current", MaxCurrent);
-        WriteOpenRegisters("Motor Rated Current", RatedCurrent);
-        WriteOpenRegisters("Max Motor Speed", MaxSpeed);
-        WriteOpenRegisters("Motor Max Torque", MaxTorque);
-        WriteOpenRegisters("Motor Rated Torque", RatedTorque);
+        WriteOpenRegisters("Max Current", param.MaxCurrent);
+        WriteOpenRegisters("Motor Rated Current", param.RatedCurrent);
+        WriteOpenRegisters("Max Motor Speed", param.MaxSpeed);
+        WriteOpenRegisters("Motor Max Torque", param.MaxTorque);
+        WriteOpenRegisters("Motor Rated Torque", param.RatedTorque);
         WriteOpenRegisters("Modes Of Operation", 9);
         WriteOpenRegisters("Controlword", 0x80);
         WriteOpenRegisters("Controlword", 0x06);
@@ -274,23 +257,15 @@ namespace mab
         WriteOpenRegisters("Modes Of Operation", 0);
     }
 
-    MDCO::Error_t MDCO::moveImpedance(i32 desiredSpeed,
-                                      i32 targetPos,
-                                      f32 kp,
-                                      f32 kd,
-                                      i16 torque,
-                                      u32 MaxSpeed,
-                                      u16 MaxCurrent,
-                                      u32 RatedCurrent,
-                                      u16 MaxTorque,
-                                      u32 RatedTorque)
+    MDCO::Error_t MDCO::moveImpedance(
+        i32 desiredSpeed, i32 targetPos, f32 kp, f32 kd, i16 torque, moveParameter param)
     {
         usleep(1000);
-        WriteOpenRegisters("Max Current", MaxCurrent);
-        WriteOpenRegisters("Motor Rated Current", RatedCurrent);
-        WriteOpenRegisters("Max Motor Speed", MaxSpeed);
-        WriteOpenRegisters("Motor Max Torque", MaxTorque);
-        WriteOpenRegisters("Motor Rated Torque", RatedTorque);
+        WriteOpenRegisters("Max Current", param.MaxCurrent);
+        WriteOpenRegisters("Motor Rated Current", param.RatedCurrent);
+        WriteOpenRegisters("Max Motor Speed", param.MaxSpeed);
+        WriteOpenRegisters("Motor Max Torque", param.MaxTorque);
+        WriteOpenRegisters("Motor Rated Torque", param.RatedTorque);
         WriteOpenRegisters("Modes Of Operation", 0xFD);
         WriteOpenRegisters("Controlword", 0x80);
         WriteOpenRegisters("Controlword", 0x06);

@@ -26,6 +26,18 @@
 
 namespace mab
 {
+
+    struct moveParameter
+    {
+        u32 MaxSpeed     = 0x0000;
+        u16 MaxCurrent   = 0x00;
+        u32 RatedCurrent = 0x0000;
+        u16 MaxTorque    = 0x00;
+        u32 RatedTorque  = 0x0000;
+        i32 accLimit     = 0x0000;
+        i32 dccLimit     = 0x0000;
+    };
+
     /// @brief Software representation of MD device on the can network
     class MDCO
     {
@@ -66,47 +78,21 @@ namespace mab
         /// @param targetPos desired position
         /// @param accLimit acceleration limit [RPM/s]
         /// @param dccLimit decelaration limit [RPM/s]
-        /// @param MaxSpeed maximum motor speed [RPM]
-        /// @param MaxCurrent Maximum current accepted by the motor [mA*RatedCurrent]
-        /// @param RatedCurrent Rated Current [mA]
-        /// @param MaxTorque Maximum torque accepted by the motor [mNM*RatedCurrent]
-        /// @param RatedTorque Rated torque [mNM]
-        void movePositionAcc(i32 targetPos,
-                             i32 accLimit,
-                             i32 dccLimit,
-                             u32 MaxSpeed,
-                             u16 MaxCurrent,
-                             u32 RatedCurrent,
-                             u16 MaxTorque,
-                             u32 RatedTorque);
+        /// @param moveParameter fix the limit parameter of the movement (max current, torque,
+        /// etc.).
+        void movePositionAcc(i32 targetPos, moveParameter param);
 
         /// @brief Move to desired position
-        /// @param targetPos desired position
-        /// @param MaxSpeed maximum motor speed [RPM]
-        /// @param MaxCurrent Maximum current accepted by the motor [mA*RatedCurrent]
-        /// @param RatedCurrent Rated Current [mA]
-        /// @param MaxTorque Maximum torque accepted by the motor [mNM*RatedCurrent]
-        /// @param RatedTorque Rated torque [mNM]
-        void movePosition(u16 MaxCurrent,
-                          u32 RatedCurrent,
-                          u16 MaxTorque,
-                          u32 RatedTorque,
-                          u32 MaxSpeed,
-                          i32 DesiredPos);
+        /// @param DesiredPos desired position
+        /// @param moveParameter fix the limit parameter of the movement (max current, torque,
+        /// etc.).
+        void movePosition(moveParameter param, i32 DesiredPos);
 
         /// @brief Move to desired speed
         /// @param DesiredSpeed desired speed [RPM]
-        /// @param MaxSpeed maximum motor speed [RPM] (must be superior than DesiredSpeed)
-        /// @param MaxCurrent Maximum current accepted by the motor [mA*RatedCurrent]
-        /// @param RatedCurrent Rated Current [mA]
-        /// @param MaxTorque Maximum torque accepted by the motor [mNM*RatedCurrent]
-        /// @param RatedTorque Rated torque [mNM]
-        void moveSpeed(u16 MaxCurrent,
-                       u32 RatedCurrent,
-                       u16 MaxTorque,
-                       u32 RatedTorque,
-                       u32 MaxSpeed,
-                       i32 DesiredSpeed);
+        /// @param moveParameter fix the limit parameter of the movement (max current, torque,
+        /// etc.).
+        void moveSpeed(moveParameter param, i32 DesiredSpeed);
 
         /// @brief Move to desired position with impedance control
         /// @param desiredSpeed desired speed [RPM]
@@ -114,24 +100,13 @@ namespace mab
         /// @param kp proportional gain
         /// @param kd derivative gain
         /// @param torque torque to apply [mNM]
-        /// @param MaxSpeed maximum motor speed [RPM]
-        /// @param MaxCurrent Maximum current accepted by the motor [mA*RatedCurrent]
-        /// @param RatedCurrent Rated Current [mA]
-        /// @param MaxTorque Maximum torque accepted by the motor [mNM*RatedCurrent]
-        /// @param RatedTorque Rated torque [mNM]
+        /// @param moveParameter fix the limit parameter of the movement (max current, torque,
+        /// etc.).
         /// @return Error_t indicating the result of the operation
         /// @details This function sets the motor in impedance control mode and moves it to the
         /// specified position with the given speed, gains, and torque.
-        Error_t moveImpedance(i32 desiredSpeed,
-                              i32 targetPos,
-                              f32 kp,
-                              f32 kd,
-                              i16 torque,
-                              u32 MaxSpeed,
-                              u16 MaxCurrent,
-                              u32 RatedCurrent,
-                              u16 MaxTorque,
-                              u32 RatedTorque);
+        Error_t moveImpedance(
+            i32 desiredSpeed, i32 targetPos, f32 kp, f32 kd, i16 torque, moveParameter param);
 
         /// @brief Check communication with MD device
         /// @return Error if not connected
