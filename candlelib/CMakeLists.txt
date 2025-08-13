@@ -38,12 +38,16 @@ message(
     "\nCANDLE_BUILD_SHARED: ${CANDLE_BUILD_SHARED}\nCANDLE_BUILD_STATIC: ${CANDLE_BUILD_STATIC}"
 )
 
+if(UNIX)
+  set(UNIX_ONLY_SOURCES src/communication_interface/SPI.cpp)
+endif()
+
 target_sources(candle PRIVATE
   src/crc.cpp
   src/can_bootloader/can_bootloader.cpp
   src/communication_device/candle.cpp
   src/communication_device/candle_bootloader.cpp
-  src/communication_interface/SPI.cpp
+  ${UNIX_ONLY_SOURCES}
   src/communication_interface/USB.cpp
   src/MD/MD.cpp
   src/pds/pds.cpp

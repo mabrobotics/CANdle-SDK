@@ -50,4 +50,45 @@ namespace mab
     };
 }  // namespace mab
 
+#elif
+
+namespace mab
+{
+    class SPI final : public I_CommunicationInterface
+    {
+      public:
+        SPI(const std::string_view path = "/dev/spidev0.0")
+        {
+            m_logger.error("SPI not implemented on windows!");
+        }
+        virtual ~SPI() override {};
+
+        virtual Error_t connect() override
+        {
+            m_logger.error("SPI not implemented on windows!");
+        }
+
+        virtual Error_t disconnect() override
+        {
+            m_logger.error("SPI not implemented on windows!");
+        }
+
+        virtual Error_t transfer(std::vector<u8> data, const u32 timeoutMs) override
+        {
+            m_logger.error("SPI not implemented on windows!");
+        }
+
+        virtual std::pair<std::vector<u8>, Error_t> transfer(
+            std::vector<u8> data,
+            const u32       timeoutMs,
+            const size_t    expectedReceivedDataSize) override
+        {
+            m_logger.error("SPI not implemented on windows!");
+        }
+
+      private:
+        Logger m_logger = Logger(Logger::ProgramLayer_E::BOTTOM, "SPI");
+    };
+}  // namespace mab
+
 #endif  // WIN32
