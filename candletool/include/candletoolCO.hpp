@@ -368,6 +368,4 @@ class CandleToolCO
             return false;
         return true;
     }
-
-    bool checkSetupError(u16 id);
 };
