@@ -502,47 +502,50 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
     }
     infile.close();
 
-    std::cout << " ---------- value read from config file ---------- " << std::endl;
-    std::cout << "motor_name = " << motor_name << '\n'
-              << "motor_polepairs = " << motor_polepairs << '\n'
-              << "motor_kv = " << motor_kv << '\n'
-              << "motor_torqueconstant = " << motor_torqueconstant << '\n'
-              << "motor_gearratio = " << motor_gearratio << '\n'
-              << "motor_maxcurrent = " << motor_maxcurrent << '\n'
-              << "motor_torquebandwidth = " << motor_torquebandwidth << '\n'
-              << "motor_shutdowntemp = " << motor_shutdowntemp << "\n\n"
+    std::stringstream ss;
 
-              << "limits_maxtorque = " << limits_maxtorque << '\n'
-              << "limits_maxvelocity = " << limits_maxvelocity << '\n'
-              << "limits_maxposition = " << limits_maxposition << '\n'
-              << "limits_minposition = " << limits_minposition << '\n'
-              << "limits_maxacceleration = " << limits_maxacceleration << '\n'
-              << "limits_maxdeceleration = " << limits_maxdeceleration << "\n\n"
+    ss << " ---------- value read from config file ---------- " << '\n';
+    ss << "motor_name = " << motor_name << '\n'
+       << "motor_polepairs = " << motor_polepairs << '\n'
+       << "motor_kv = " << motor_kv << '\n'
+       << "motor_torqueconstant = " << motor_torqueconstant << '\n'
+       << "motor_gearratio = " << motor_gearratio << '\n'
+       << "motor_maxcurrent = " << motor_maxcurrent << '\n'
+       << "motor_torquebandwidth = " << motor_torquebandwidth << '\n'
+       << "motor_shutdowntemp = " << motor_shutdowntemp << "\n\n"
 
-              << "profile_acceleration = " << profile_acceleration << '\n'
-              << "profile_deceleration = " << profile_deceleration << '\n'
-              << "profile_velocity = " << profile_velocity << "\n\n"
+       << "limits_maxtorque = " << limits_maxtorque << '\n'
+       << "limits_maxvelocity = " << limits_maxvelocity << '\n'
+       << "limits_maxposition = " << limits_maxposition << '\n'
+       << "limits_minposition = " << limits_minposition << '\n'
+       << "limits_maxacceleration = " << limits_maxacceleration << '\n'
+       << "limits_maxdeceleration = " << limits_maxdeceleration << "\n\n"
 
-              << "outputencoder_outputencoder = " << outputencoder_outputencoder << '\n'
-              << "outputencoder_outputencodermode = " << outputencoder_outputencodermode << "\n\n"
+       << "profile_acceleration = " << profile_acceleration << '\n'
+       << "profile_deceleration = " << profile_deceleration << '\n'
+       << "profile_velocity = " << profile_velocity << "\n\n"
 
-              << "positionpid_kp = " << positionpid_kp << '\n'
-              << "positionpid_ki = " << positionpid_ki << '\n'
-              << "positionpid_kd = " << positionpid_kd << '\n'
-              << "positionpid_windup = " << positionpid_windup << "\n\n"
+       << "outputencoder_outputencoder = " << outputencoder_outputencoder << '\n'
+       << "outputencoder_outputencodermode = " << outputencoder_outputencodermode << "\n\n"
 
-              << "velocitypid_kp = " << velocitypid_kp << '\n'
-              << "velocitypid_ki = " << velocitypid_ki << '\n'
-              << "velocitypid_kd = " << velocitypid_kd << '\n'
-              << "velocitypid_windup = " << velocitypid_windup << "\n\n"
+       << "positionpid_kp = " << positionpid_kp << '\n'
+       << "positionpid_ki = " << positionpid_ki << '\n'
+       << "positionpid_kd = " << positionpid_kd << '\n'
+       << "positionpid_windup = " << positionpid_windup << "\n\n"
 
-              << "impedancepd_kp = " << impedancepd_kp << '\n'
-              << "impedancepd_kd = " << impedancepd_kd << "\n\n"
+       << "velocitypid_kp = " << velocitypid_kp << '\n'
+       << "velocitypid_ki = " << velocitypid_ki << '\n'
+       << "velocitypid_kd = " << velocitypid_kd << '\n'
+       << "velocitypid_windup = " << velocitypid_windup << "\n\n"
 
-              << "homing_mode = " << homing_mode << '\n'
-              << "homing_maxtravel = " << homing_maxtravel << '\n'
-              << "homing_maxtorque = " << homing_maxtorque << '\n'
-              << "homing_maxvelocity = " << homing_maxvelocity << '\n';
+       << "impedancepd_kp = " << impedancepd_kp << '\n'
+       << "impedancepd_kd = " << impedancepd_kd << "\n\n"
+
+       << "homing_mode = " << homing_mode << '\n'
+       << "homing_maxtravel = " << homing_maxtravel << '\n'
+       << "homing_maxtorque = " << homing_maxtorque << '\n'
+       << "homing_maxvelocity = " << homing_maxvelocity << '\n';
+    log.info("%s\n", ss.str().c_str());
     mdco.writeLongOpenRegisters(0x2000, 0x06, motor_name);
     mdco.writeOpenRegisters(0x2000, 0x01, motor_polepairs, 4);
     uint32_t motor_torqueconstant_as_long;

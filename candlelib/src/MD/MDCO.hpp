@@ -187,14 +187,14 @@ namespace mab
                 transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, frame, frame.size());
 
             // data display
+            std::stringstream ss;
 
-            std::cout << " ---- Received CAN Frame Info ----" << endl;
+            ss << "\n\n ---- Received CAN Frame Info ----" << "\n";
             u8 cmd = response[0];
 
             if ((cmd & 0xF0) != 0x40)
             {
-                std::cout << "Frame not recognized as an SDO Upload Expedited response."
-                          << std::endl;
+                ss << "Frame not recognized as an SDO Upload Expedited response." << "\n";
             }
             else
             {
@@ -209,23 +209,22 @@ namespace mab
                 u8  subindex = response[3];
 
                 // data display
-                std::cout << "Index      : 0x" << std::hex << std::setw(4) << std::setfill('0')
-                          << index << std::endl;
+                ss << "Index      : 0x" << std::hex << std::setw(4) << std::setfill('0') << index
+                   << "\n";
 
-                std::cout << "Subindex   : 0x" << std::hex << std::setw(2) << std::setfill('0')
-                          << (i16)subindex << std::endl;
+                ss << "Subindex   : 0x" << std::hex << std::setw(2) << std::setfill('0')
+                   << (i16)subindex << "\n";
 
-                std::cout << "Data (" << std::dec << (i16)dataLen << " byte(s)): 0x";
+                ss << "Data (" << std::dec << (i16)dataLen << " byte(s)): 0x";
 
                 for (i16 i = dataLen - 1; i >= 0; --i)
                 {
-                    std::cout << std::hex << std::setw(2) << std::setfill('0')
-                              << (i16)response[4 + i];
+                    ss << std::hex << std::setw(2) << std::setfill('0') << (i16)response[4 + i];
                 }
-                cout << endl << "------------------------" << endl;
+                ss << "\n" << "------------------------" << "\n";
+                m_log.info("%s\n", ss.str().c_str());
             }
 
-            std::cout << std::endl;
             if (error == mab::candleTypes::Error_t::OK)
             {
                 return Error_t::OK;
@@ -282,8 +281,7 @@ namespace mab
                 return Error_t::TRANSFER_FAILED;
             }
 
-            constexpr size_t OFF = 0;  // Offset CAN response header
-            if (initResponse.size() < OFF + 1 || (initResponse[OFF] & 0xE0) != 0x60)
+            if (initResponse.size() < 1 || (initResponse[0] & 0xE0) != 0x60)
             {
                 m_log.error("Unexpected response to initiate download (expected 0x60).");
                 return Error_t::TRANSFER_FAILED;
@@ -331,13 +329,13 @@ namespace mab
                 }
 
                 // Check server response: must be 0x20 | toggle
-                if (segResponse.size() < OFF + 1 || (segResponse[OFF] & 0xE0) != 0x20)
+                if (segResponse.size() < 1 || (segResponse[0] & 0xE0) != 0x20)
                 {
                     m_log.error("Malformed segment ACK.");
                     return Error_t::TRANSFER_FAILED;
                 }
 
-                if ((segResponse[OFF] & 0x10) != (toggle << 4))
+                if ((segResponse[0] & 0x10) != (toggle << 4))
                 {
                     m_log.error("Unexpected toggle bit, corrupted transfer.");
                     return Error_t::TRANSFER_FAILED;
@@ -367,7 +365,6 @@ namespace mab
                 return Error_t::REQUEST_INVALID;
             }
 
-            constexpr size_t OFF = 2;  // can message offset
             m_log.debug("Read Object (0x%lx:0x%x) via segmented SDO…", index, subindex);
 
             // ---------- 1) Initiation Request ----------
@@ -381,14 +378,14 @@ namespace mab
                                        0x00};
 
             auto [rspInit, errInit] =
-                transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, initReq, initReq.size());
-            if (errInit != mab::candleTypes::Error_t::OK || rspInit.size() < OFF + 8)
+                transferCanOpenFrame(0x600 + m_canId, initReq, initReq.size());
+            if (errInit != mab::candleTypes::Error_t::OK || rspInit.size() < 8)
             {
                 m_log.error("Failed to initiate SDO read.");
                 return Error_t::TRANSFER_FAILED;
             }
 
-            u8   cmd         = rspInit[OFF];
+            u8   cmd         = rspInit[0];
             bool isExpedited = cmd & 0x02;
             bool hasSize     = cmd & 0x01;
 
@@ -398,8 +395,7 @@ namespace mab
                 u8 n   = ((cmd >> 2) & 0x03);  // number of used bytes
                 u8 len = 4 - n;
 
-                outData.insert(
-                    outData.end(), rspInit.begin() + OFF + 4, rspInit.begin() + OFF + 4 + len);
+                outData.insert(outData.end(), rspInit.begin() + 4, rspInit.begin() + 4 + len);
             }
             else
             {
@@ -407,8 +403,8 @@ namespace mab
                 u32 totalLen = 0;
                 if (hasSize)
                 {
-                    totalLen = rspInit[OFF + 4] | (rspInit[OFF + 5] << 8) |
-                               (rspInit[OFF + 6] << 16) | (rspInit[OFF + 7] << 24);
+                    totalLen =
+                        rspInit[4] | (rspInit[5] << 8) | (rspInit[6] << 16) | (rspInit[7] << 24);
                     outData.reserve(totalLen);
                 }
 
@@ -422,13 +418,13 @@ namespace mab
                     auto [rspSeg, errSeg] =
                         transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, segReq, segReq.size());
 
-                    if (errSeg != mab::candleTypes::Error_t::OK || rspSeg.size() < OFF + 1)
+                    if (errSeg != mab::candleTypes::Error_t::OK || rspSeg.size() < 1)
                     {
                         m_log.error("Error segment reading");
                         return Error_t::TRANSFER_FAILED;
                     }
 
-                    u8 segCmd = rspSeg[OFF];
+                    u8 segCmd = rspSeg[0];
                     if ((segCmd & 0x10) != (toggle ? 0x10 : 0x00))
                     {
                         m_log.error("Bit toggle didn't expected, corrupt transfer.");
@@ -439,15 +435,13 @@ namespace mab
                     u8   unused  = (segCmd >> 1) & 0x07;
                     u8   dataLen = 7 - unused;
 
-                    if (rspSeg.size() < OFF + 1 + dataLen)
+                    if ((i16)rspSeg.size() < (1 + dataLen))
                     {
                         m_log.error("Incomplete data in the segment.");
                         return Error_t::TRANSFER_FAILED;
                     }
 
-                    outData.insert(outData.end(),
-                                   rspSeg.begin() + OFF + 1,
-                                   rspSeg.begin() + OFF + 1 + dataLen);
+                    outData.insert(outData.end(), rspSeg.begin() + 1, rspSeg.begin() + 1 + dataLen);
                     finished = last;
                     toggle   = !toggle;
                 }
@@ -513,7 +507,7 @@ namespace mab
 
             if ((cmd & 0xF0) != 0x40)
             {
-                std::cout << "Frame not recognized as an SDO Upload Expedited response." << endl;
+                m_log.error("Frame not recognized as an SDO Upload Expedited response.");
                 return -1;
             }
             if (error == mab::candleTypes::Error_t::OK)
