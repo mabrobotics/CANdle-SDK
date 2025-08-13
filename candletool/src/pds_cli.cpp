@@ -327,9 +327,9 @@ void PdsCli::parse()
         else if (m_updateCmd->parsed())
         {
             m_log.info("Updating PDS...");
-            MabFileParser mabFile(m_mabFile, MabFileParser::TargetDevice_E::PDS);
-            // PdsModule::error_E result = PdsModule::error_E::OK;
-            auto candle = m_candleBuilder->build();
+            MabFileParser      mabFile(m_mabFile, MabFileParser::TargetDevice_E::PDS);
+            PdsModule::error_E result = PdsModule::error_E::OK;
+            auto               candle = m_candleBuilder->build();
 
             if (!candle.has_value())
             {

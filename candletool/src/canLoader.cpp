@@ -68,7 +68,7 @@ namespace mab
         // Transfering fw
         for (size_t i = 0; i <= appSize; i += CanBootloader::TRANSFER_SIZE)
         {
-            m_log.progress(((float)i + CanBootloader::TRANSFER_SIZE) / ((float)appSize));
+            m_log.progress(((float)i) / ((float)appSize));
 
             std::span<u8, CanBootloader::TRANSFER_SIZE> chunk =
                 firmware.subspan(i)
