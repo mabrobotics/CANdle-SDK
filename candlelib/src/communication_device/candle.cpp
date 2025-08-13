@@ -154,8 +154,6 @@ namespace mab
 
             data->clear();
             data->insert(data->begin(), result.first.begin(), result.first.end());
-            // *data = result.first;
-            // cout << "Result second:" << result.second << endl;
             if (result.second)
                 return candleTypes::Error_t::UNKNOWN_ERROR;
         }
@@ -196,21 +194,6 @@ namespace mab
 
         communicationStatus =
             busTransfer(&buffer, responseSize + 2 /*response header size*/, timeoutMs + 1);
-
-        // for (auto byte : buffer)
-        // {
-        //     cout << "0x" << std::hex << static_cast<int>(byte) << "\t";
-        // }
-        // cout << endl;
-        // this part doesn't work with CANopen SDO because the server doesn't response to the
-        // client with the same ID
-        // (0x600+ID & 0x580+ID)
-        // if (buffer.at(1) != 0x01)
-        // {
-        //     m_log.error("CAN frame did not reach target device with id: %d!", canId);
-        //     return std::pair<std::vector<u8>, candleTypes::Error_t>(
-        //         dataToSend, candleTypes::Error_t::CAN_DEVICE_NOT_RESPONDING);
-        // }
 
         if (buffer.size() > 3)
             buffer.erase(buffer.begin(), buffer.begin() + 2 /*response header size*/);

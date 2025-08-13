@@ -92,7 +92,7 @@ namespace mab
         return MDCO::Error_t::UNKNOWN_OBJECT;
     }
 
-    u8 MDCO::DataSizeOfEdsObject(const u32 index, const u8 subIndex)
+    u8 MDCO::dataSizeOfEdsObject(const u32 index, const u8 subIndex)
     {
         for (const edsObject& obj : this->ObjectDictionary)
         {
@@ -131,7 +131,7 @@ namespace mab
         for (int i = 0; i < (int)ObjectDictionary.size(); i++)
         {
             value =
-                GetValueFromOpenRegister(ObjectDictionary[i].index, ObjectDictionary[i].subIndex);
+                getValueFromOpenRegister(ObjectDictionary[i].index, ObjectDictionary[i].subIndex);
             if (value != -1)
                 m_log.info(
                     "----------Object Name:%s----------\nindex:%X, sub-index:%X, Storage "
@@ -143,7 +143,7 @@ namespace mab
                     ObjectDictionary[i].index,
                     ObjectDictionary[i].subIndex,
                     ObjectDictionary[i].StorageLocation.c_str(),
-                    DataSizeOfEdsObject(ObjectDictionary[i].index, ObjectDictionary[i].subIndex),
+                    dataSizeOfEdsObject(ObjectDictionary[i].index, ObjectDictionary[i].subIndex),
                     ObjectDictionary[i].accessType.c_str(),
                     ObjectDictionary[i].PDOMapping,
                     value);
@@ -152,34 +152,34 @@ namespace mab
 
     void MDCO::movePositionAcc(i32 targetPos, moveParameter param)
     {
-        WriteOpenRegisters("Motor Max Acceleration", 10000, 4);
-        WriteOpenRegisters("Motor Max Deceleration", 10000, 4);
-        WriteOpenRegisters("Motor Profile Acceleration", param.accLimit, 4);
-        WriteOpenRegisters("Motor Profile Deceleration", param.dccLimit, 4);
-        WriteOpenRegisters("Max Current", param.MaxCurrent, 2);
-        WriteOpenRegisters("Motor Rated Current", param.RatedCurrent, 4);
-        WriteOpenRegisters("Max Motor Speed", param.MaxSpeed, 4);
-        WriteOpenRegisters("Motor Max Torque", param.MaxTorque, 2);
-        WriteOpenRegisters("Motor Rated Torque", param.RatedTorque, 4);
-        WriteOpenRegisters("Modes Of Operation", 1, 1);
-        WriteOpenRegisters("Controlword", 0x80, 2);
-        WriteOpenRegisters("Controlword", 0x06, 2);
-        WriteOpenRegisters("Controlword", 15, 2);
+        writeOpenRegisters("Motor Max Acceleration", 10000, 4);
+        writeOpenRegisters("Motor Max Deceleration", 10000, 4);
+        writeOpenRegisters("Motor Profile Acceleration", param.accLimit, 4);
+        writeOpenRegisters("Motor Profile Deceleration", param.dccLimit, 4);
+        writeOpenRegisters("Max Current", param.MaxCurrent, 2);
+        writeOpenRegisters("Motor Rated Current", param.RatedCurrent, 4);
+        writeOpenRegisters("Max Motor Speed", param.MaxSpeed, 4);
+        writeOpenRegisters("Motor Max Torque", param.MaxTorque, 2);
+        writeOpenRegisters("Motor Rated Torque", param.RatedTorque, 4);
+        writeOpenRegisters("Modes Of Operation", 1, 1);
+        writeOpenRegisters("Controlword", 0x80, 2);
+        writeOpenRegisters("Controlword", 0x06, 2);
+        writeOpenRegisters("Controlword", 15, 2);
         m_log.debug("position asked : %d\n", targetPos);
         time_t start = time(nullptr);
         while (time(nullptr) - start < 5 &&
-               !((int)GetValueFromOpenRegister(0x6064, 0) > (targetPos - 100) &&
-                 (int)GetValueFromOpenRegister(0x6064, 0) < (targetPos + 100)))
+               !((int)getValueFromOpenRegister(0x6064, 0) > (targetPos - 100) &&
+                 (int)getValueFromOpenRegister(0x6064, 0) < (targetPos + 100)))
         {
-            WriteOpenRegisters("Motor Target Position", targetPos, 4);
+            writeOpenRegisters("Motor Target Position", targetPos, 4);
 
             usleep(10000);
         }
 
-        m_log.debug("actual position: %d\n", (int)GetValueFromOpenRegister(0x6064, 0));
+        m_log.debug("actual position: %d\n", (int)getValueFromOpenRegister(0x6064, 0));
 
-        if (((int)GetValueFromOpenRegister(0x6064, 0) > (targetPos - 200) &&
-             (int)GetValueFromOpenRegister(0x6064, 0) < (targetPos + 200)))
+        if (((int)getValueFromOpenRegister(0x6064, 0) > (targetPos - 200) &&
+             (int)getValueFromOpenRegister(0x6064, 0) < (targetPos + 200)))
         {
             m_log.success("Position reached in less than 5s");
         }
@@ -187,34 +187,34 @@ namespace mab
         {
             m_log.error("Position not reached in less than 5s");
         }
-        m_log.debug("actual position: %d\n", (int)GetValueFromOpenRegister(0x6064, 0));
-        WriteOpenRegisters("Controlword", 6, 2);
-        WriteOpenRegisters("Modes Of Operation", 0, 1);
+        m_log.debug("actual position: %d\n", (int)getValueFromOpenRegister(0x6064, 0));
+        writeOpenRegisters("Controlword", 6, 2);
+        writeOpenRegisters("Modes Of Operation", 0, 1);
     }
 
     void MDCO::movePosition(moveParameter param, i32 DesiredPos)
     {
-        WriteOpenRegisters("Max Current", param.MaxCurrent);
-        WriteOpenRegisters("Motor Rated Current", param.RatedCurrent);
-        WriteOpenRegisters("Max Motor Speed", param.MaxSpeed);
-        WriteOpenRegisters("Motor Max Torque", param.MaxTorque);
-        WriteOpenRegisters("Motor Rated Torque", param.RatedTorque);
-        WriteOpenRegisters("Modes Of Operation", 8);
-        WriteOpenRegisters("Controlword", 0x80);
-        WriteOpenRegisters("Controlword", 0x06);
-        WriteOpenRegisters("Controlword", 15);
+        writeOpenRegisters("Max Current", param.MaxCurrent);
+        writeOpenRegisters("Motor Rated Current", param.RatedCurrent);
+        writeOpenRegisters("Max Motor Speed", param.MaxSpeed);
+        writeOpenRegisters("Motor Max Torque", param.MaxTorque);
+        writeOpenRegisters("Motor Rated Torque", param.RatedTorque);
+        writeOpenRegisters("Modes Of Operation", 8);
+        writeOpenRegisters("Controlword", 0x80);
+        writeOpenRegisters("Controlword", 0x06);
+        writeOpenRegisters("Controlword", 15);
         m_log.debug("position asked : %d\n", DesiredPos);
         time_t start = time(nullptr);
         while (time(nullptr) - start < 5 &&
-               !((int)GetValueFromOpenRegister(0x6064, 0) > (DesiredPos - 100) &&
-                 (int)GetValueFromOpenRegister(0x6064, 0) < (DesiredPos + 100)))
+               !((int)getValueFromOpenRegister(0x6064, 0) > (DesiredPos - 100) &&
+                 (int)getValueFromOpenRegister(0x6064, 0) < (DesiredPos + 100)))
         {
-            WriteOpenRegisters("Motor Target Position", DesiredPos);
+            writeOpenRegisters("Motor Target Position", DesiredPos);
             usleep(10000);
         }
-        m_log.debug("actual position: %d\n", (int)GetValueFromOpenRegister(0x6064, 0));
-        if (((int)GetValueFromOpenRegister(0x6064, 0) > (DesiredPos - 200) &&
-             (int)GetValueFromOpenRegister(0x6064, 0) < (DesiredPos + 200)))
+        m_log.debug("actual position: %d\n", (int)getValueFromOpenRegister(0x6064, 0));
+        if (((int)getValueFromOpenRegister(0x6064, 0) > (DesiredPos - 200) &&
+             (int)getValueFromOpenRegister(0x6064, 0) < (DesiredPos + 200)))
         {
             m_log.success("Position reached in less than 5s");
         }
@@ -222,29 +222,29 @@ namespace mab
         {
             m_log.error("Position not reached in less than 5s");
         }
-        WriteOpenRegisters("Controlword", 6);
-        WriteOpenRegisters("Modes Of Operation", 0);
+        writeOpenRegisters("Controlword", 6);
+        writeOpenRegisters("Modes Of Operation", 0);
     }
 
     void MDCO::moveSpeed(moveParameter param, i32 DesiredSpeed)
     {
-        WriteOpenRegisters("Max Current", param.MaxCurrent);
-        WriteOpenRegisters("Motor Rated Current", param.RatedCurrent);
-        WriteOpenRegisters("Max Motor Speed", param.MaxSpeed);
-        WriteOpenRegisters("Motor Max Torque", param.MaxTorque);
-        WriteOpenRegisters("Motor Rated Torque", param.RatedTorque);
-        WriteOpenRegisters("Modes Of Operation", 9);
-        WriteOpenRegisters("Controlword", 0x80);
-        WriteOpenRegisters("Controlword", 0x06);
-        WriteOpenRegisters("Controlword", 15);
+        writeOpenRegisters("Max Current", param.MaxCurrent);
+        writeOpenRegisters("Motor Rated Current", param.RatedCurrent);
+        writeOpenRegisters("Max Motor Speed", param.MaxSpeed);
+        writeOpenRegisters("Motor Max Torque", param.MaxTorque);
+        writeOpenRegisters("Motor Rated Torque", param.RatedTorque);
+        writeOpenRegisters("Modes Of Operation", 9);
+        writeOpenRegisters("Controlword", 0x80);
+        writeOpenRegisters("Controlword", 0x06);
+        writeOpenRegisters("Controlword", 15);
         usleep(10000);
         time_t start = time(nullptr);
         while (time(nullptr) - start < 5)
         {
-            WriteOpenRegisters("Motor Target Velocity", DesiredSpeed);
+            writeOpenRegisters("Motor Target Velocity", DesiredSpeed);
         }
-        if ((int)GetValueFromOpenRegister(0x606C, 0x00) <= DesiredSpeed + 5 &&
-            (int)GetValueFromOpenRegister(0x606C, 0x00) >= DesiredSpeed - 5)
+        if ((int)getValueFromOpenRegister(0x606C, 0x00) <= DesiredSpeed + 5 &&
+            (int)getValueFromOpenRegister(0x606C, 0x00) >= DesiredSpeed - 5)
         {
             m_log.success("Velocity Target reached with +/- 5RPM");
         }
@@ -252,57 +252,57 @@ namespace mab
         {
             m_log.error("Velocity Target not reached");
         }
-        WriteOpenRegisters("Motor Target Velocity", 0);
-        WriteOpenRegisters("Controlword", 6);
-        WriteOpenRegisters("Modes Of Operation", 0);
+        writeOpenRegisters("Motor Target Velocity", 0);
+        writeOpenRegisters("Controlword", 6);
+        writeOpenRegisters("Modes Of Operation", 0);
     }
 
     MDCO::Error_t MDCO::moveImpedance(
         i32 desiredSpeed, i32 targetPos, f32 kp, f32 kd, i16 torque, moveParameter param)
     {
         usleep(1000);
-        WriteOpenRegisters("Max Current", param.MaxCurrent);
-        WriteOpenRegisters("Motor Rated Current", param.RatedCurrent);
-        WriteOpenRegisters("Max Motor Speed", param.MaxSpeed);
-        WriteOpenRegisters("Motor Max Torque", param.MaxTorque);
-        WriteOpenRegisters("Motor Rated Torque", param.RatedTorque);
-        WriteOpenRegisters("Modes Of Operation", 0xFD);
-        WriteOpenRegisters("Controlword", 0x80);
-        WriteOpenRegisters("Controlword", 0x06);
-        WriteOpenRegisters("Controlword", 15);
-        WriteOpenRegisters("Target Velocity", desiredSpeed);
-        WriteOpenRegisters("Target Position", targetPos);
+        writeOpenRegisters("Max Current", param.MaxCurrent);
+        writeOpenRegisters("Motor Rated Current", param.RatedCurrent);
+        writeOpenRegisters("Max Motor Speed", param.MaxSpeed);
+        writeOpenRegisters("Motor Max Torque", param.MaxTorque);
+        writeOpenRegisters("Motor Rated Torque", param.RatedTorque);
+        writeOpenRegisters("Modes Of Operation", 0xFD);
+        writeOpenRegisters("Controlword", 0x80);
+        writeOpenRegisters("Controlword", 0x06);
+        writeOpenRegisters("Controlword", 15);
+        writeOpenRegisters("Target Velocity", desiredSpeed);
+        writeOpenRegisters("Target Position", targetPos);
         // kp
         uint32_t kp_bits;
         memcpy(&kp_bits, &kp, sizeof(float));
-        WriteOpenRegisters("Kp_impedance", kp_bits);
+        writeOpenRegisters("Kp_impedance", kp_bits);
         // kd
         uint32_t kd_bits;
         memcpy(&kd_bits, &kd, sizeof(float));
-        WriteOpenRegisters("Kd_impedance", kd_bits);
-        WriteOpenRegisters("Target Torque", torque);
+        writeOpenRegisters("Kd_impedance", kd_bits);
+        writeOpenRegisters("Target Torque", torque);
         usleep(5000000);
-        WriteOpenRegisters("Target Torque", 0);
-        WriteOpenRegisters("Controlword", 0x80);
-        WriteOpenRegisters("Controlword", 0x06);
-        WriteOpenRegisters("Modes Of Operation", 0);
-        WriteOpenRegisters("Controlword", 15);
+        writeOpenRegisters("Target Torque", 0);
+        writeOpenRegisters("Controlword", 0x80);
+        writeOpenRegisters("Controlword", 0x06);
+        writeOpenRegisters("Modes Of Operation", 0);
+        writeOpenRegisters("Controlword", 15);
         return MDCO::Error_t::OK;
     }
 
     MDCO::Error_t MDCO::blinkOpenTest()
     {
-        WriteOpenRegisters("Controlword", 0x06, 2);
-        WriteOpenRegisters("Modes Of Operation", 0xFE, 1);
-        WriteOpenRegisters("Blink LEDs", 1, 1);
+        writeOpenRegisters("Controlword", 0x06, 2);
+        writeOpenRegisters("Modes Of Operation", 0xFE, 1);
+        writeOpenRegisters("Blink LEDs", 1, 1);
         return MDCO::Error_t::OK;
     }
 
-    MDCO::Error_t MDCO::OpenReset()
+    MDCO::Error_t MDCO::openReset()
     {
-        WriteOpenRegisters("Controlword", 0x06, 2);
-        WriteOpenRegisters("Modes Of Operation", 0xFE, 1);
-        WriteOpenRegisters("Reset Controller", 1, 1);
+        writeOpenRegisters("Controlword", 0x06, 2);
+        writeOpenRegisters("Modes Of Operation", 0xFE, 1);
+        writeOpenRegisters("Reset Controller", 1, 1);
         return MDCO::Error_t::OK;
     }
 
@@ -312,23 +312,23 @@ namespace mab
         std::vector<u8> data;
         data.push_back(0x81);
         data.push_back(m_canId);
-        WriteOpenPDORegisters(0x000, data);
+        writeOpenPDORegisters(0x000, data);
         m_log.debug("waiting the node %d to restart\n", m_canId);
         // wait for the node to restart
         usleep(5000000);
         // clearing error register
-        WriteOpenRegisters("Controlword", 0x06, 2);
-        WriteOpenRegisters("Modes Of Operation", 0xFF, 1);
+        writeOpenRegisters("Controlword", 0x06, 2);
+        writeOpenRegisters("Modes Of Operation", 0xFF, 1);
         usleep(100000);
         if (level == 1)
-            return WriteOpenRegisters("Clear Errors", 1, 1);
+            return writeOpenRegisters("Clear Errors", 1, 1);
         if (level == 2)
-            return WriteOpenRegisters("Clear Warnings", 1, 1);
+            return writeOpenRegisters("Clear Warnings", 1, 1);
         if (level == 3)
         {
-            if (!WriteOpenRegisters("Clear Errors", 1, 1))
+            if (!writeOpenRegisters("Clear Errors", 1, 1))
             {
-                return WriteOpenRegisters("Clear Errors", 1, 1);
+                return writeOpenRegisters("Clear Errors", 1, 1);
             }
             else
                 return MDCO::Error_t::TRANSFER_FAILED;
@@ -339,36 +339,36 @@ namespace mab
 
     MDCO::Error_t MDCO::newCanOpenConfig(long newID, long newBaud, int newwatchdog)
     {
-        WriteOpenRegisters("Can ID", newID, 4);
-        WriteOpenRegisters("Can Baudrate", newBaud, 4);
+        writeOpenRegisters("Can ID", newID, 4);
+        writeOpenRegisters("Can Baudrate", newBaud, 4);
         if (newwatchdog != 0)
         {
-            WriteOpenRegisters("Can Watchdog", newwatchdog, 2);
+            writeOpenRegisters("Can Watchdog", newwatchdog, 2);
         }
         return MDCO::Error_t::OK;
     }
 
-    MDCO::Error_t MDCO::CanOpenBandwidth(int newBandwidth)
+    MDCO::Error_t MDCO::canOpenBandwidth(int newBandwidth)
     {
-        WriteOpenRegisters("Torque Bandwidth", newBandwidth, 2);
+        writeOpenRegisters("Torque Bandwidth", newBandwidth, 2);
         return MDCO::Error_t::OK;
     }
 
     MDCO::Error_t MDCO::openSave()
     {
-        WriteOpenRegisters("Controlword", 0x06, 2);
-        WriteOpenRegisters("Save all parameters", 0x65766173, 4);
+        writeOpenRegisters("Controlword", 0x06, 2);
+        writeOpenRegisters("Save all parameters", 0x65766173, 4);
         return MDCO::Error_t::OK;
     }
 
     MDCO::Error_t MDCO::openZero()
     {
-        WriteOpenRegisters("Controlword", 0x06, 2);
-        WriteOpenRegisters("Modes Of Operation", 0xFE, 1);
-        WriteOpenRegisters("Set Zero", 1, 1);
+        writeOpenRegisters("Controlword", 0x06, 2);
+        writeOpenRegisters("Modes Of Operation", 0xFE, 1);
+        writeOpenRegisters("Set Zero", 1, 1);
 
-        if ((GetValueFromOpenRegister(0x6064, 0) > -50) &&
-            (GetValueFromOpenRegister(0x6064, 0) < 50))
+        if ((getValueFromOpenRegister(0x6064, 0) > -50) &&
+            (getValueFromOpenRegister(0x6064, 0) < 50))
         {
             m_log.success("Zero update");
             return MDCO::Error_t::OK;
@@ -380,25 +380,25 @@ namespace mab
         }
     }
 
-    MDCO::Error_t MDCO::testencoder(bool Main, bool output)
+    MDCO::Error_t MDCO::testEncoder(bool Main, bool output)
     {
-        WriteOpenRegisters("Controlword", 0x06, 2);
-        WriteOpenRegisters("Modes Of Operation", 0xFE, 1);
+        writeOpenRegisters("Controlword", 0x06, 2);
+        writeOpenRegisters("Modes Of Operation", 0xFE, 1);
         if (Main)
-            WriteOpenRegisters("Test Main Encoder", 1, 1);
+            writeOpenRegisters("Test Main Encoder", 1, 1);
         if (output)
-            WriteOpenRegisters("Test Output Encoder", 1, 1);
+            writeOpenRegisters("Test Output Encoder", 1, 1);
         return MDCO::Error_t::OK;
     }
 
     MDCO::Error_t MDCO::encoderCalibration(bool Main, bool output)
     {
-        WriteOpenRegisters("Controlword", 0x06, 2);
-        WriteOpenRegisters("Modes Of Operation", 0xFE, 1);
+        writeOpenRegisters("Controlword", 0x06, 2);
+        writeOpenRegisters("Modes Of Operation", 0xFE, 1);
         if (Main)
-            WriteOpenRegisters("Run Calibration", 1, 1);
+            writeOpenRegisters("Run Calibration", 1, 1);
         if (output)
-            WriteOpenRegisters("Run Output Encoder Calibration", 1, 1);
+            writeOpenRegisters("Run Output Encoder Calibration", 1, 1);
         return MDCO::Error_t::OK;
     }
 

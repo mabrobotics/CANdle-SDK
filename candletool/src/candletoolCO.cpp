@@ -117,28 +117,28 @@ void CandleToolCO::configBandwidth(u16 id, f32 bandwidth)
     MDCO mdco = MDCO(id, m_candle);
 
     u16 newBandwidth = ((u16)bandwidth);
-    mdco.CanOpenBandwidth(newBandwidth);
+    mdco.canOpenBandwidth(newBandwidth);
 }
 
 void CandleToolCO::sendPdoSpeed(u16 id, i32 desiredSpeed)
 {
     MDCO md = MDCO(id, m_candle);
     log.info("Sending SDO for motor setup!");
-    md.WriteOpenRegisters("Max Current", 500, 2);
-    md.WriteOpenRegisters("Motor Rated Current", 1000, 4);
-    md.WriteOpenRegisters("Max Motor Speed", 200, 4);
-    md.WriteOpenRegisters("Motor Max Torque", 500, 2);
-    md.WriteOpenRegisters("Motor Rated Torque", 1000, 4);
-    md.WriteOpenRegisters("Modes Of Operation", 9, 1);
-    md.WriteOpenRegisters("Controlword", 0x80, 2);
-    md.WriteOpenRegisters("Controlword", 0x06, 2);
-    md.WriteOpenRegisters("Controlword", 15, 2);
+    md.writeOpenRegisters("Max Current", 500, 2);
+    md.writeOpenRegisters("Motor Rated Current", 1000, 4);
+    md.writeOpenRegisters("Max Motor Speed", 200, 4);
+    md.writeOpenRegisters("Motor Max Torque", 500, 2);
+    md.writeOpenRegisters("Motor Rated Torque", 1000, 4);
+    md.writeOpenRegisters("Modes Of Operation", 9, 1);
+    md.writeOpenRegisters("Controlword", 0x80, 2);
+    md.writeOpenRegisters("Controlword", 0x06, 2);
+    md.writeOpenRegisters("Controlword", 15, 2);
     log.info("Sending PDO for speed loop control");
     std::vector<u8> frameSetup;
     frameSetup.push_back(0x0F);
     frameSetup.push_back(0x00);
     frameSetup.push_back(0x09);
-    md.WriteOpenPDORegisters(0x300 + id, frameSetup);
+    md.writeOpenPDORegisters(0x300 + id, frameSetup);
     std::vector<u8> frameSpeed;
     frameSpeed.push_back(0x0F);
     frameSpeed.push_back(0x00);
@@ -146,10 +146,10 @@ void CandleToolCO::sendPdoSpeed(u16 id, i32 desiredSpeed)
     frameSpeed.push_back((u8)(desiredSpeed >> 8));
     frameSpeed.push_back((u8)(desiredSpeed >> 16));
     frameSpeed.push_back((u8)(desiredSpeed >> 24));
-    md.WriteOpenPDORegisters(0x500 + id, frameSpeed);
+    md.writeOpenPDORegisters(0x500 + id, frameSpeed);
     usleep(5000000);
-    if ((int)md.GetValueFromOpenRegister(0x606C, 0x00) <= desiredSpeed + 5 &&
-        (int)md.GetValueFromOpenRegister(0x606C, 0x00) >= desiredSpeed - 5)
+    if ((int)md.getValueFromOpenRegister(0x606C, 0x00) <= desiredSpeed + 5 &&
+        (int)md.getValueFromOpenRegister(0x606C, 0x00) >= desiredSpeed - 5)
     {
         log.success("Velocity Target reached with +/- 5RPM");
     }
@@ -157,24 +157,24 @@ void CandleToolCO::sendPdoSpeed(u16 id, i32 desiredSpeed)
     {
         log.error("Velocity Target not reached");
     }
-    md.WriteOpenRegisters("Motor Target Velocity", 0, 4);
-    md.WriteOpenRegisters("Controlword", 6, 2);
-    md.WriteOpenRegisters("Modes Of Operation", 0, 1);
+    md.writeOpenRegisters("Motor Target Velocity", 0, 4);
+    md.writeOpenRegisters("Controlword", 6, 2);
+    md.writeOpenRegisters("Modes Of Operation", 0, 1);
 }
 
 void CandleToolCO::sendPdoPosition(u16 id, i32 DesiredPos)
 {
     MDCO md = MDCO(id, m_candle);
     log.info("Sending SDO for motor setup!");
-    md.WriteOpenRegisters("Max Current", 500, 2);
-    md.WriteOpenRegisters("Motor Rated Current", 1000, 4);
-    md.WriteOpenRegisters("Max Motor Speed", 200, 4);
-    md.WriteOpenRegisters("Motor Max Torque", 500, 2);
-    md.WriteOpenRegisters("Motor Rated Torque", 1000, 4);
-    md.WriteOpenRegisters("Modes Of Operation", 8, 1);
-    md.WriteOpenRegisters("Controlword", 0x80, 2);
-    md.WriteOpenRegisters("Controlword", 0x06, 2);
-    md.WriteOpenRegisters("Controlword", 15, 2);
+    md.writeOpenRegisters("Max Current", 500, 2);
+    md.writeOpenRegisters("Motor Rated Current", 1000, 4);
+    md.writeOpenRegisters("Max Motor Speed", 200, 4);
+    md.writeOpenRegisters("Motor Max Torque", 500, 2);
+    md.writeOpenRegisters("Motor Rated Torque", 1000, 4);
+    md.writeOpenRegisters("Modes Of Operation", 8, 1);
+    md.writeOpenRegisters("Controlword", 0x80, 2);
+    md.writeOpenRegisters("Controlword", 0x06, 2);
+    md.writeOpenRegisters("Controlword", 15, 2);
 
     usleep(1000);
 
@@ -184,7 +184,7 @@ void CandleToolCO::sendPdoPosition(u16 id, i32 DesiredPos)
     frameSetup.push_back(0x0F);
     frameSetup.push_back(0x00);
     frameSetup.push_back(0x08);
-    md.WriteOpenPDORegisters(0x300 + id, frameSetup);
+    md.writeOpenPDORegisters(0x300 + id, frameSetup);
     std::vector<u8> framePosition;
     framePosition.push_back(0x0F);
     framePosition.push_back(0x00);
@@ -198,17 +198,17 @@ void CandleToolCO::sendPdoPosition(u16 id, i32 DesiredPos)
     time_t start = time(nullptr);
 
     while (time(nullptr) - start < 5 &&
-           !((int)md.GetValueFromOpenRegister(0x6064, 0) > (DesiredPos - 100) &&
-             (int)md.GetValueFromOpenRegister(0x6064, 0) < (DesiredPos + 100)))
+           !((int)md.getValueFromOpenRegister(0x6064, 0) > (DesiredPos - 100) &&
+             (int)md.getValueFromOpenRegister(0x6064, 0) < (DesiredPos + 100)))
     {
-        md.WriteOpenPDORegisters(0x400 + id, framePosition);
+        md.writeOpenPDORegisters(0x400 + id, framePosition);
         usleep(1000);
     }
 
-    log.debug("position actual : %d\n", (int)md.GetValueFromOpenRegister(0x6064, 0));
+    log.debug("position actual : %d\n", (int)md.getValueFromOpenRegister(0x6064, 0));
 
-    if (((int)md.GetValueFromOpenRegister(0x6064, 0) > (DesiredPos - 200) &&
-         (int)md.GetValueFromOpenRegister(0x6064, 0) < (DesiredPos + 200)))
+    if (((int)md.getValueFromOpenRegister(0x6064, 0) > (DesiredPos - 200) &&
+         (int)md.getValueFromOpenRegister(0x6064, 0) < (DesiredPos + 200)))
     {
         log.success("Position reached in less than 5s");
     }
@@ -217,8 +217,8 @@ void CandleToolCO::sendPdoPosition(u16 id, i32 DesiredPos)
         log.error("Position not reached in less than 5s");
     }
 
-    md.WriteOpenRegisters("Controlword", 6, 2);
-    md.WriteOpenRegisters("Modes Of Operation", 0, 1);
+    md.writeOpenRegisters("Controlword", 6, 2);
+    md.writeOpenRegisters("Modes Of Operation", 0, 1);
 }
 
 void CandleToolCO::SendCustomPdo(u16 id, const edsObject& Desiregister, u64 data)
@@ -231,7 +231,7 @@ void CandleToolCO::SendCustomPdo(u16 id, const edsObject& Desiregister, u64 data
         std::vector<u8> frame;
         frame.push_back((u8)(data >> 8));
         frame.push_back(data);
-        mdco.WriteOpenPDORegisters(0x200 + id, frame);
+        mdco.writeOpenPDORegisters(0x200 + id, frame);
     }
     else if (Desiregister.index == (0x1601))
     {
@@ -239,7 +239,7 @@ void CandleToolCO::SendCustomPdo(u16 id, const edsObject& Desiregister, u64 data
         frame.push_back((u8)(data >> 16));
         frame.push_back((u8)(data >> 8));
         frame.push_back((u8)data);
-        mdco.WriteOpenPDORegisters(0x300 + id, frame);
+        mdco.writeOpenPDORegisters(0x300 + id, frame);
     }
     else if (Desiregister.index == (0x1602))
     {
@@ -250,7 +250,7 @@ void CandleToolCO::SendCustomPdo(u16 id, const edsObject& Desiregister, u64 data
         frame.push_back((u8)(data >> 16));
         frame.push_back((u8)(data >> 8));
         frame.push_back((u8)data);
-        mdco.WriteOpenPDORegisters(0x400 + id, frame);
+        mdco.writeOpenPDORegisters(0x400 + id, frame);
     }
     else if (Desiregister.index == (0x1603))
     {
@@ -261,7 +261,7 @@ void CandleToolCO::SendCustomPdo(u16 id, const edsObject& Desiregister, u64 data
         frame.push_back((u8)(data >> 16));
         frame.push_back((u8)(data >> 8));
         frame.push_back((u8)data);
-        mdco.WriteOpenPDORegisters(0x500 + id, frame);
+        mdco.writeOpenPDORegisters(0x500 + id, frame);
     }
     else
     {
@@ -543,56 +543,56 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
               << "homing_maxtravel = " << homing_maxtravel << '\n'
               << "homing_maxtorque = " << homing_maxtorque << '\n'
               << "homing_maxvelocity = " << homing_maxvelocity << '\n';
-    mdco.WriteLongOpenRegisters(0x2000, 0x06, motor_name);
-    mdco.WriteOpenRegisters(0x2000, 0x01, motor_polepairs, 4);
+    mdco.writeLongOpenRegisters(0x2000, 0x06, motor_name);
+    mdco.writeOpenRegisters(0x2000, 0x01, motor_polepairs, 4);
     uint32_t motor_torqueconstant_as_long;
     std::memcpy(&motor_torqueconstant_as_long, &motor_torqueconstant, sizeof(float));
-    mdco.WriteOpenRegisters(0x2000, 0x02, motor_torqueconstant_as_long, 4);
+    mdco.writeOpenRegisters(0x2000, 0x02, motor_torqueconstant_as_long, 4);
     uint32_t motor_gearratio_as_long;
     std::memcpy(&motor_gearratio_as_long, &motor_gearratio, sizeof(float));
-    mdco.WriteOpenRegisters(0x2000, 0x08, motor_gearratio_as_long, 4);
-    mdco.WriteOpenRegisters(0x2000, 0x05, motor_torquebandwidth, 2);
-    mdco.WriteOpenRegisters(0x2000, 0x07, motor_shutdowntemp, 1);
-    mdco.WriteOpenRegisters(0x2005, 0x03, outputencoder_outputencodermode, 1);
-    mdco.WriteOpenRegisters(0x607D, 0x01, limits_minposition);
-    mdco.WriteOpenRegisters(0x607D, 0x02, limits_maxposition);
-    mdco.WriteOpenRegisters(0x6076, 0x00, 1000);
-    mdco.WriteOpenRegisters(0x6072, 0x00, (long)(1000 * limits_maxtorque));
-    mdco.WriteOpenRegisters(0x6075, 0x00, 1000);
-    mdco.WriteOpenRegisters(0x6073, 0x00, (long)(1000 * motor_maxcurrent));
-    mdco.WriteOpenRegisters(0x6080, 0x00, limits_maxvelocity);
-    mdco.WriteOpenRegisters(0x60C5, 0x00, limits_maxacceleration);
-    mdco.WriteOpenRegisters(0x60C6, 0x00, limits_maxdeceleration);
+    mdco.writeOpenRegisters(0x2000, 0x08, motor_gearratio_as_long, 4);
+    mdco.writeOpenRegisters(0x2000, 0x05, motor_torquebandwidth, 2);
+    mdco.writeOpenRegisters(0x2000, 0x07, motor_shutdowntemp, 1);
+    mdco.writeOpenRegisters(0x2005, 0x03, outputencoder_outputencodermode, 1);
+    mdco.writeOpenRegisters(0x607D, 0x01, limits_minposition);
+    mdco.writeOpenRegisters(0x607D, 0x02, limits_maxposition);
+    mdco.writeOpenRegisters(0x6076, 0x00, 1000);
+    mdco.writeOpenRegisters(0x6072, 0x00, (long)(1000 * limits_maxtorque));
+    mdco.writeOpenRegisters(0x6075, 0x00, 1000);
+    mdco.writeOpenRegisters(0x6073, 0x00, (long)(1000 * motor_maxcurrent));
+    mdco.writeOpenRegisters(0x6080, 0x00, limits_maxvelocity);
+    mdco.writeOpenRegisters(0x60C5, 0x00, limits_maxacceleration);
+    mdco.writeOpenRegisters(0x60C6, 0x00, limits_maxdeceleration);
     uint32_t positionpid_kp_as_long;
     std::memcpy(&positionpid_kp_as_long, &positionpid_kp, sizeof(float));
-    mdco.WriteOpenRegisters(0x2002, 0x01, positionpid_kp_as_long, 4);
+    mdco.writeOpenRegisters(0x2002, 0x01, positionpid_kp_as_long, 4);
     uint32_t positionpid_ki_as_long;
     std::memcpy(&positionpid_ki_as_long, &positionpid_ki, sizeof(float));
-    mdco.WriteOpenRegisters(0x2002, 0x02, positionpid_ki_as_long, 4);
+    mdco.writeOpenRegisters(0x2002, 0x02, positionpid_ki_as_long, 4);
     uint32_t positionpid_kd_as_long;
     std::memcpy(&positionpid_kd_as_long, &positionpid_kd, sizeof(float));
-    mdco.WriteOpenRegisters(0x2002, 0x03, positionpid_kd_as_long, 4);
+    mdco.writeOpenRegisters(0x2002, 0x03, positionpid_kd_as_long, 4);
     uint32_t positionpid_windup_as_long;
     std::memcpy(&positionpid_windup_as_long, &positionpid_windup, sizeof(float));
-    mdco.WriteOpenRegisters(0x2002, 0x04, positionpid_windup_as_long, 4);
+    mdco.writeOpenRegisters(0x2002, 0x04, positionpid_windup_as_long, 4);
     uint32_t velocitypid_kp_as_long;
     std::memcpy(&velocitypid_kp_as_long, &velocitypid_kp, sizeof(float));
-    mdco.WriteOpenRegisters(0x2001, 0x01, velocitypid_kp_as_long, 4);
+    mdco.writeOpenRegisters(0x2001, 0x01, velocitypid_kp_as_long, 4);
     uint32_t velocitypid_ki_as_long;
     std::memcpy(&velocitypid_ki_as_long, &velocitypid_ki, sizeof(float));
-    mdco.WriteOpenRegisters(0x2001, 0x02, velocitypid_ki_as_long, 4);
+    mdco.writeOpenRegisters(0x2001, 0x02, velocitypid_ki_as_long, 4);
     uint32_t velocitypid_kd_as_long;
     std::memcpy(&velocitypid_kd_as_long, &velocitypid_kd, sizeof(float));
-    mdco.WriteOpenRegisters(0x2001, 0x03, velocitypid_kd_as_long, 4);
+    mdco.writeOpenRegisters(0x2001, 0x03, velocitypid_kd_as_long, 4);
     uint32_t velocitypid_windup_as_long;
     std::memcpy(&velocitypid_windup_as_long, &velocitypid_windup, sizeof(float));
-    mdco.WriteOpenRegisters(0x2001, 0x04, velocitypid_windup_as_long, 4);
+    mdco.writeOpenRegisters(0x2001, 0x04, velocitypid_windup_as_long, 4);
     uint32_t impedancepd_kp_as_long;
     std::memcpy(&impedancepd_kp_as_long, &impedancepd_kp, sizeof(float));
-    mdco.WriteOpenRegisters(0x200C, 0x01, impedancepd_kp, 4);
+    mdco.writeOpenRegisters(0x200C, 0x01, impedancepd_kp, 4);
     uint32_t impedancepd_kd_as_long;
     std::memcpy(&impedancepd_kd_as_long, &impedancepd_kd, sizeof(float));
-    mdco.WriteOpenRegisters(0x200C, 0x02, impedancepd_kd, 4);
+    mdco.writeOpenRegisters(0x200C, 0x02, impedancepd_kd, 4);
 }
 
 std::string CandleToolCO::clean(std::string s)
@@ -623,31 +623,31 @@ void CandleToolCO::heartbeatTest(u32 MasterId, u32 SlaveId, u32 HeartbeatTimeout
     u8   bytes3 = ((u8)(HeartbeatTimeout >> 8));
     u8   bytes4 = ((u8)(HeartbeatTimeout));
     DataSlave   = bytes4 + (bytes3 << 8) + (bytes2 << 16) + (bytes1 << 24);
-    mdproducer.SendCustomData(0x700 + MasterId, frame);
-    if (md.GetValueFromOpenRegister(0x1003, 0x00) != 00)
+    mdproducer.sendCustomData(0x700 + MasterId, frame);
+    if (md.getValueFromOpenRegister(0x1003, 0x00) != 00)
     {
         log.error("The Driver is in fault state before testing the hearbeat");
         return;
     }
 
-    // md.WriteOpenRegisters(0x1016, 0x00, 0x1, 1);
-    md.WriteOpenRegisters(0x1016, 0x01, DataSlave, 4);
-    mdproducer.SendCustomData(0x700 + MasterId, frame);
+    // md.writeOpenRegisters(0x1016, 0x00, 0x1, 1);
+    md.writeOpenRegisters(0x1016, 0x01, DataSlave, 4);
+    mdproducer.sendCustomData(0x700 + MasterId, frame);
     usleep(HeartbeatTimeout);
-    if (md.GetValueFromOpenRegister(0x1001, 0) != 0)
+    if (md.getValueFromOpenRegister(0x1001, 0) != 0)
     {
         log.error("The driver enter fault mode before the Heartbeat timeout");
         return;
     }
     usleep(2000 * HeartbeatTimeout);
 
-    if (md.GetValueFromOpenRegister(0x1001, 0) != 0)
+    if (md.getValueFromOpenRegister(0x1001, 0) != 0)
     {
         log.success("The driver enter fault mode after the Heartbeat timeout");
         return;
     }
-    mdproducer.SendCustomData(0x700 + MasterId, frame);
-    if (md.GetValueFromOpenRegister(0x1001, 0) != 0)
+    mdproducer.sendCustomData(0x700 + MasterId, frame);
+    if (md.getValueFromOpenRegister(0x1001, 0) != 0)
     {
         log.error("The driver still in error mode");
     }
@@ -656,11 +656,11 @@ void CandleToolCO::heartbeatTest(u32 MasterId, u32 SlaveId, u32 HeartbeatTimeout
 void CandleToolCO::SendSync(u16 id)
 {
     MDCO            mdco(id, m_candle);
-    long            SyncMessageValue = mdco.GetValueFromOpenRegister(0x1005, 0x0);
+    long            SyncMessageValue = mdco.getValueFromOpenRegister(0x1005, 0x0);
     std::vector<u8> data;
     if (SyncMessageValue != -1)
     {
-        mdco.WriteOpenPDORegisters((int)SyncMessageValue, data);
+        mdco.writeOpenPDORegisters((int)SyncMessageValue, data);
         log.success("Sync message send with value:0x%x (default value is 0x80)", SyncMessageValue);
     }
     else
@@ -680,112 +680,112 @@ void CandleToolCO::setupReadConfig(u16 id, const std::string& cfgName)
       VARIABLES  –  section [motor]
     ────────────────────────────*/
     std::vector<u8> motor_name;
-    mdco.ReadLongOpenRegisters(0x2000, 0x06, motor_name);
+    mdco.readLongOpenRegisters(0x2000, 0x06, motor_name);
     int   motor_kv         = 100;
-    u32   motor_pole_pairs = mdco.GetValueFromOpenRegister(0x2000, 0x01);
+    u32   motor_pole_pairs = mdco.getValueFromOpenRegister(0x2000, 0x01);
     float motor_torque_constant;
-    raw_data = (float)mdco.GetValueFromOpenRegister(0x2000, 0x02);
+    raw_data = (float)mdco.getValueFromOpenRegister(0x2000, 0x02);
     std::memcpy(&motor_torque_constant, &raw_data, sizeof(float));
-    raw_data = (float)mdco.GetValueFromOpenRegister(0x2000, 0x08);
+    raw_data = (float)mdco.getValueFromOpenRegister(0x2000, 0x08);
     float motor_gear_ratio;
     std::memcpy(&motor_gear_ratio, &raw_data, sizeof(float));
     float motor_max_current = 0;
-    if (mdco.GetValueFromOpenRegister(0x6075, 0x00))
+    if (mdco.getValueFromOpenRegister(0x6075, 0x00))
     {
-        motor_max_current = mdco.GetValueFromOpenRegister(0x6073, 0x00) /
-                            mdco.GetValueFromOpenRegister(0x6075, 0x00);
+        motor_max_current = mdco.getValueFromOpenRegister(0x6073, 0x00) /
+                            mdco.getValueFromOpenRegister(0x6075, 0x00);
     }
-    u16 motor_torque_bandwidth = mdco.GetValueFromOpenRegister(0x2000, 0x05);
-    u32 motor_shutdown_temp    = mdco.GetValueFromOpenRegister(0x2000, 0x07);
+    u16 motor_torque_bandwidth = mdco.getValueFromOpenRegister(0x2000, 0x05);
+    u32 motor_shutdown_temp    = mdco.getValueFromOpenRegister(0x2000, 0x07);
 
     /*────────────────────────────
       section [limits]
     ────────────────────────────*/
     float limits_max_torque;
-    if (mdco.GetValueFromOpenRegister(0x6076, 0x00))
+    if (mdco.getValueFromOpenRegister(0x6076, 0x00))
     {
-        limits_max_torque = mdco.GetValueFromOpenRegister(0x6072, 0x00) /
-                            mdco.GetValueFromOpenRegister(0x6076, 0x00);
+        limits_max_torque = mdco.getValueFromOpenRegister(0x6072, 0x00) /
+                            mdco.getValueFromOpenRegister(0x6076, 0x00);
     }
     float limits_max_velocity;
-    raw_data = (float)mdco.GetValueFromOpenRegister(0x6080, 0x00);
+    raw_data = (float)mdco.getValueFromOpenRegister(0x6080, 0x00);
     std::memcpy(&limits_max_velocity, &raw_data, sizeof(float));
     float limits_max_position;
-    raw_data = (float)mdco.GetValueFromOpenRegister(0x607D, 0x02);
+    raw_data = (float)mdco.getValueFromOpenRegister(0x607D, 0x02);
     std::memcpy(&limits_max_position, &raw_data, sizeof(float));
     float limits_min_position;
-    raw_data = (float)mdco.GetValueFromOpenRegister(0x607D, 0x01);
+    raw_data = (float)mdco.getValueFromOpenRegister(0x607D, 0x01);
     std::memcpy(&limits_min_position, &raw_data, sizeof(float));
     float limits_max_acceleration;
-    raw_data = (float)mdco.GetValueFromOpenRegister(0x60C5, 0x00);
+    raw_data = (float)mdco.getValueFromOpenRegister(0x60C5, 0x00);
     std::memcpy(&limits_max_acceleration, &raw_data, sizeof(float));
     float limits_max_deceleration;
-    raw_data = (float)mdco.GetValueFromOpenRegister(0x60C6, 0x00);
+    raw_data = (float)mdco.getValueFromOpenRegister(0x60C6, 0x00);
     std::memcpy(&limits_max_deceleration, &raw_data, sizeof(float));
 
     /*────────────────────────────
       section [profile]
     ────────────────────────────*/
     float profile_acceleration;
-    raw_data = mdco.GetValueFromOpenRegister(0x2008, 0x04);
+    raw_data = mdco.getValueFromOpenRegister(0x2008, 0x04);
     std::memcpy(&profile_acceleration, &raw_data, sizeof(float));
     float profile_deceleration;
-    raw_data = mdco.GetValueFromOpenRegister(0x2008, 0x05);
+    raw_data = mdco.getValueFromOpenRegister(0x2008, 0x05);
     std::memcpy(&profile_deceleration, &raw_data, sizeof(float));
     float profile_velocity;
-    raw_data = mdco.GetValueFromOpenRegister(0x2008, 0x03);
+    raw_data = mdco.getValueFromOpenRegister(0x2008, 0x03);
     std::memcpy(&profile_velocity, &raw_data, sizeof(float));
 
     /*────────────────────────────
       section [output encoder]
     ────────────────────────────*/
     short output_encoder;
-    raw_data = mdco.GetValueFromOpenRegister(0x2005, 0x01);
+    raw_data = mdco.getValueFromOpenRegister(0x2005, 0x01);
     std::memcpy(&output_encoder, &raw_data, sizeof(short));
     short output_encoder_mode;
-    raw_data = mdco.GetValueFromOpenRegister(0x2005, 0x03);
+    raw_data = mdco.getValueFromOpenRegister(0x2005, 0x03);
     std::memcpy(&output_encoder_mode, &raw_data, sizeof(short));
 
     /*────────────────────────────
       section [position pid]
     ────────────────────────────*/
     float pos_kp;
-    raw_data = mdco.GetValueFromOpenRegister(0x2002, 0x01);
+    raw_data = mdco.getValueFromOpenRegister(0x2002, 0x01);
     std::memcpy(&pos_kp, &raw_data, sizeof(float));
     float pos_ki;
-    raw_data = mdco.GetValueFromOpenRegister(0x2002, 0x02);
+    raw_data = mdco.getValueFromOpenRegister(0x2002, 0x02);
     std::memcpy(&pos_ki, &raw_data, sizeof(float));
     float pos_kd;
-    raw_data = mdco.GetValueFromOpenRegister(0x2002, 0x03);
+    raw_data = mdco.getValueFromOpenRegister(0x2002, 0x03);
     std::memcpy(&pos_kd, &raw_data, sizeof(float));
     float pos_windup;
-    raw_data = mdco.GetValueFromOpenRegister(0x2002, 0x04);
+    raw_data = mdco.getValueFromOpenRegister(0x2002, 0x04);
     std::memcpy(&pos_windup, &raw_data, sizeof(float));
 
     /*────────────────────────────
       section [velocity pid]
     ────────────────────────────*/
     float vel_kp;
-    raw_data = mdco.GetValueFromOpenRegister(0x2001, 0x01);
+    raw_data = mdco.getValueFromOpenRegister(0x2001, 0x01);
     std::memcpy(&vel_kp, &raw_data, sizeof(float));
     float vel_ki;
-    raw_data = mdco.GetValueFromOpenRegister(0x2001, 0x02);
+    raw_data = mdco.getValueFromOpenRegister(0x2001, 0x02);
     std::memcpy(&vel_ki, &raw_data, sizeof(float));
     float vel_kd;
-    raw_data = mdco.GetValueFromOpenRegister(0x2001, 0x03);
+    raw_data = mdco.getValueFromOpenRegister(0x2001, 0x03);
     std::memcpy(&vel_kd, &raw_data, sizeof(float));
     float vel_windup;
-    raw_data = mdco.GetValueFromOpenRegister(0x2001, 0x04);
+    raw_data = mdco.getValueFromOpenRegister(0x2001, 0x04);
     std::memcpy(&vel_windup, &raw_data, sizeof(float));
 
     /*────────────────────────────
       section [impedance pd]
     ────────────────────────────*/
     float imp_kp;
-    raw_data = mdco.GetValueFromOpenRegister(0x200C, 0x01);
+    raw_data = mdco.getValueFromOpenRegister(0x200C, 0x01);
     std::memcpy(&imp_kp, &raw_data, sizeof(float));
     float imp_kd;
-    raw_data = mdco.GetValueFromOpenRegister(0x200C, 0x02);
+    raw_data = mdco.getValueFromOpenRegister(0x200C, 0x02);
     std::memcpy(&imp_kd, &raw_data, sizeof(float));
 
     /*────────────────────────────
@@ -874,9 +874,9 @@ void CandleToolCO::setupInfo(u16 id, bool printAll)
 
     if (!printAll)
     {
-        long devicetype = mdco.GetValueFromOpenRegister(0x1000, 0);
+        long devicetype = mdco.getValueFromOpenRegister(0x1000, 0);
         log.info("Device type:", devicetype);
-        long int    hexValue = mdco.GetValueFromOpenRegister(0x1008, 0);
+        long int    hexValue = mdco.getValueFromOpenRegister(0x1008, 0);
         std::string motorName;
         for (int i = 0; i <= 3; i++)
         {
@@ -884,9 +884,9 @@ void CandleToolCO::setupInfo(u16 id, bool printAll)
             motorName += c;
         }
         log.info("Manufacturer Device Name: %s", motorName.c_str());
-        long Firmware = mdco.GetValueFromOpenRegister(0x200A, 3);
+        long Firmware = mdco.getValueFromOpenRegister(0x200A, 3);
         log.info("Firmware version: %li", Firmware);
-        long Bootloder = mdco.GetValueFromOpenRegister(0x200B, 4);
+        long Bootloder = mdco.getValueFromOpenRegister(0x200B, 4);
         log.info("Bootloder version: %li", Bootloder);
     }
     else
@@ -991,7 +991,7 @@ void CandleToolCO::testLatency(u16 id)
     {
         uint64_t start_time = get_time_us();
 
-        if (md.ReadOpenRegisters(0x1000, 0) != MDCO::Error_t::OK)
+        if (md.readOpenRegisters(0x1000, 0) != MDCO::Error_t::OK)
         {
             testOk = false;
         }
@@ -1014,46 +1014,46 @@ void CandleToolCO::testLatency(u16 id)
 void CandleToolCO::testEncoderOutput(u16 id)
 {
     MDCO mdco(id, m_candle);
-    mdco.testencoder(false, true);
+    mdco.testEncoder(false, true);
 }
 
 void CandleToolCO::testEncoderMain(u16 id)
 {
     MDCO mdco(id, m_candle);
-    mdco.testencoder(true, false);
+    mdco.testEncoder(true, false);
 }
 
 void CandleToolCO::SDOsegmentedRead(u16 id, u16 reg, u8 subIndex)
 {
     MDCO            mdco(id, m_candle);
     std::vector<u8> data;
-    mdco.ReadLongOpenRegisters(reg, subIndex, data);
+    mdco.readLongOpenRegisters(reg, subIndex, data);
 }
 
 void CandleToolCO::SDOsegmentedWrite(u16 id, u16 reg, u8 subIndex, std::string& data)
 {
     MDCO mdco(id, m_candle);
-    mdco.WriteLongOpenRegisters(reg, subIndex, data);
+    mdco.writeLongOpenRegisters(reg, subIndex, data);
 }
 
 void CandleToolCO::registerRead(u16 id, u16 regAdress, u8 subIndex, bool force)
 {
     MDCO            mdco(id, m_candle);
     std::vector<u8> data;
-    int             dataSize = mdco.DataSizeOfEdsObject(regAdress, subIndex);
+    int             dataSize = mdco.dataSizeOfEdsObject(regAdress, subIndex);
     if (!force)
     {
         if (dataSize == 1 || dataSize == 2 || dataSize == 4)
-            mdco.ReadOpenRegisters(regAdress, subIndex, force);
+            mdco.readOpenRegisters(regAdress, subIndex, force);
         else if (dataSize == 8 || dataSize == 0)
-            mdco.ReadLongOpenRegisters(regAdress, subIndex, data);
+            mdco.readLongOpenRegisters(regAdress, subIndex, data);
         else
         {
             log.error("Unknown register size for register 0x%04X subindex %d", regAdress, subIndex);
         }
     }
     else
-        mdco.ReadOpenRegisters(regAdress, subIndex, force);
+        mdco.readOpenRegisters(regAdress, subIndex, force);
 }
 
 void CandleToolCO::registerWrite(
@@ -1069,7 +1069,7 @@ void CandleToolCO::registerWrite(
             return;
         }
         else
-            dataSize = mdco.DataSizeOfEdsObject(regAdress, subIndex);
+            dataSize = mdco.dataSizeOfEdsObject(regAdress, subIndex);
     }
 
     if (dataSize == 1 || dataSize == 2 || dataSize == 4)
@@ -1078,19 +1078,19 @@ void CandleToolCO::registerWrite(
         unsigned long data = strtoul((value.c_str()), nullptr, 16);
         // if the data size is 1, 2 or 4 bytes, we write the value
         // to the object dictionary
-        mdco.WriteOpenRegisters(regAdress, subIndex, data, dataSize, force);
+        mdco.writeOpenRegisters(regAdress, subIndex, data, dataSize, force);
         return;
     }
     else if (dataSize == 8)
     {
         // if data size is over bytes, we need a segmented transfer
-        mdco.WriteLongOpenRegisters(regAdress, subIndex, value, force);
+        mdco.writeLongOpenRegisters(regAdress, subIndex, value, force);
         return;
     }
     else if (dataSize == 0)
     {
         // if data size is 0, we assume it is a string
-        mdco.WriteLongOpenRegisters(regAdress, subIndex, value, force);
+        mdco.writeLongOpenRegisters(regAdress, subIndex, value, force);
         return;
     }
     else
@@ -1128,14 +1128,14 @@ void CandleToolCO::SendTime(uint16_t id)
     log.info("The actual time according to your computer is: %s", asctime(&datetime));
     log.info("Number of days since 1st January 1984: %d", NumberOfDays);
     log.info("Number of millis since midnight: %d", NumberOfMillis);
-    TimeMessageId = mdco.GetValueFromOpenRegister(0x1012, 0x00);
+    TimeMessageId = mdco.getValueFromOpenRegister(0x1012, 0x00);
     frame.push_back((u8)NumberOfMillis);
     frame.push_back((u8)(NumberOfMillis >> 8));
     frame.push_back((u8)(NumberOfMillis >> 16));
     frame.push_back((u8)((NumberOfMillis >> 24)));
     frame.push_back((u8)(NumberOfDays));
     frame.push_back((u8)(NumberOfDays >> 8));
-    mdco.WriteOpenPDORegisters(TimeMessageId, frame);
+    mdco.writeOpenPDORegisters(TimeMessageId, frame);
 }
 
 void CandleToolCO::blink(u16 id)
@@ -1152,7 +1152,7 @@ void CandleToolCO::blink(u16 id)
 void CandleToolCO::encoder(u16 id)
 {
     MDCO mdco(id, m_candle);
-    mdco.ReadOpenRegisters(0x6064, 0);
+    mdco.readOpenRegisters(0x6064, 0);
 }
 
 void CandleToolCO::clearErrors(u16 id, const std::string& level)
@@ -1173,7 +1173,7 @@ void CandleToolCO::clearErrors(u16 id, const std::string& level)
 void CandleToolCO::reset(u16 id)
 {
     MDCO mdco(id, m_candle);
-    mdco.OpenReset();
+    mdco.openReset();
 }
 
 u8 CandleToolCO::getNumericParamFromList(std::string& param, const std::vector<std::string>& list)
@@ -1299,7 +1299,7 @@ void CandleToolCO::SendNMT(u8 id, u8 command)
     std::vector<u8> data;
     data.push_back(command);
     data.push_back(id);
-    mdco.WriteOpenPDORegisters(0x000, data);
+    mdco.writeOpenPDORegisters(0x000, data);
 }
 
 void CandleToolCO::ReadHeartbeat(u16 id)
@@ -1307,7 +1307,7 @@ void CandleToolCO::ReadHeartbeat(u16 id)
     // TODO: find a better way to do this, it seems to work but it's clearly not the best way to do
     // it. A better way could be by implemented a listen mode on the USB.cpp file
     uint32_t heartbeat_id = 0x700 + id;
-    log.info("Attente d'un heartbeat sur l'ID CAN 0x%03X...", heartbeat_id);
+    log.info("Waiting for an heartbeat message with can id 0x%03X...", heartbeat_id);
     uint64_t             firstHeartbeatReveiceved = 0;
     uint64_t             start_time               = get_time_us();
     const uint64_t       timeout_us               = 5 * 1000000;  // 5 secondes
@@ -1367,7 +1367,7 @@ void CandleToolCO::ReadHeartbeat(u16 id)
     }
     // if zero heartbeat message have been received then we log an error
     if (firstHeartbeatReveiceved == 0)
-        log.error("Aucun heartbeat reçu après 5s.\n");
+        log.error("No heartbeat has been received after 5s.\n");
     // if only one heartbeat has been received in the last 5s we quit with a success
     else
         log.success("One heartbeat has been received in the last 5s");

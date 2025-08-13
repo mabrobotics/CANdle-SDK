@@ -20,7 +20,7 @@ class MdcoCli
     Logger    m_log;
     CLI::App& m_rootCli;
 
-    // Sous-commandes principales
+    //  principal subcommands
     CLI::App* mdco           = nullptr;
     CLI::App* blinkco        = nullptr;
     CLI::App* clearco        = nullptr;
@@ -39,13 +39,13 @@ class MdcoCli
     CLI::App* timeStamp      = nullptr;
     CLI::App* eds            = nullptr;
 
-    // Sous-commandes de configco
+    // configco subcommands
     CLI::App* configBandco = nullptr;
     CLI::App* configCanco  = nullptr;
     CLI::App* configSaveco = nullptr;
     CLI::App* configZeroco = nullptr;
 
-    // Sous-commandes de eds
+    // eds subcommands
     CLI::App* edsLoad             = nullptr;
     CLI::App* edsUnload           = nullptr;
     CLI::App* edsDisplay          = nullptr;
@@ -60,7 +60,7 @@ class MdcoCli
     CLI::App* edsModifyDel        = nullptr;
     CLI::App* edsModifyCorrection = nullptr;
 
-    // Sous-commandes de nmt
+    // nmt subcommands
     CLI::App* nmtRead               = nullptr;
     CLI::App* nmtOperational        = nullptr;
     CLI::App* nmtStop               = nullptr;
@@ -68,16 +68,16 @@ class MdcoCli
     CLI::App* nmtResetNode          = nullptr;
     CLI::App* nmtResetCommunication = nullptr;
 
-    // Sous-commandes de register
+    // register subcommands
     CLI::App* regReadco  = nullptr;
     CLI::App* regWriteco = nullptr;
 
-    // Sous-commandes de pdoTestco
+    // pdoTestco subcommands
     CLI::App* PdoSpeedco    = nullptr;
     CLI::App* PdoPositionco = nullptr;
     CLI::App* PdoCustomco   = nullptr;
 
-    // Sous-commandes de setupco
+    // setupco subcommands
     CLI::App*    setupCalibco       = nullptr;
     CLI::App*    setupCalibOutco    = nullptr;
     CLI::App*    setupInfoco        = nullptr;
@@ -85,11 +85,11 @@ class MdcoCli
     CLI::App*    setupReadCfgco     = nullptr;
     CLI::Option* setupInfoAllFlagco = nullptr;
 
-    // Sous-commandes de SDOsegmentedco
+    // SDOsegmentedco subcommands
     CLI::App* SDOsegmentedReadco  = nullptr;
     CLI::App* SDOsegmentedWriteco = nullptr;
 
-    // Sous-commandes de testco
+    // testco subcommands
     CLI::App* testEncoderco     = nullptr;
     CLI::App* testEncoderMainco = nullptr;
     CLI::App* testEncoderOutco  = nullptr;
@@ -99,6 +99,4 @@ class MdcoCli
     CLI::App* testMoveRelco     = nullptr;
     CLI::App* testMoveSpeedco   = nullptr;
     CLI::App* testImpedanceco   = nullptr;
-
-    // Ajoute ici les propriétés/options nécessaires pour chaque commande
 };

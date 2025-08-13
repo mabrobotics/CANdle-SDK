@@ -117,7 +117,7 @@ namespace mab
 
         /// @brief Reset the driver with CANopen command
         /// @return
-        Error_t OpenReset();
+        Error_t openReset();
 
         /// @brief Clear errors present in the driver
         /// @param level 1 => clear error, 2 => clear warning, 3 => clear both
@@ -133,7 +133,7 @@ namespace mab
         /// @brief Perform a encoder test
         /// @param Main Main=1 if you want to perform the test on the main encoder
         /// @param output output=1 if you want to perform the test on the output encoder
-        Error_t testencoder(bool Main, bool output);
+        Error_t testEncoder(bool Main, bool output);
 
         /// @brief Perform a encoder calibration
         /// @param Main Main=1 if you want to perform the calibration on the main encoder
@@ -144,7 +144,7 @@ namespace mab
         /// before shuting off the motors
         /// @param newBandwidth new value for the bandwidth {50-2500}[Hz]
         /// @return
-        Error_t CanOpenBandwidth(int newBandwidth);
+        Error_t canOpenBandwidth(int newBandwidth);
 
         /// @brief Save configuration data to the memory
         /// @return
@@ -159,7 +159,7 @@ namespace mab
         /// @param subindex subindex from the object dictionary where the user want to read the
         /// value
         /// @return Error on failure
-        inline Error_t ReadOpenRegisters(int index, short subindex, bool force = false)
+        inline Error_t readOpenRegisters(int index, short subindex, bool force = false)
         {
             if (!force)
             {
@@ -181,7 +181,6 @@ namespace mab
             frame.push_back(0x00);
             frame.push_back(0x00);
 
-            // std::cout << "size de frame: " << frame.size() << std::endl;
             //  message sending via transferCanFrame
             auto [response, error] = transferCanOpenFrame(0x600 + m_canId, frame, frame.size());
 
@@ -197,13 +196,11 @@ namespace mab
             }
             else
             {
-                // cout << (int)cmd << endl;
                 // FLAGS Extraction
                 // bool    expedited     = cmd & 0x02;
                 // bool    sizeIndicated = cmd & 0x01;
                 uint8_t n       = (cmd & 0x0C) >> 2;  // bits 1-0
                 uint8_t dataLen = 4 - n;
-                // cout << (int)n << endl;
 
                 // Index et Subindex
                 uint16_t index    = response[2] << 8 | response[1];
@@ -243,7 +240,7 @@ namespace mab
         /// @param data value to write
         /// @param size size of the data to write (1,2,4)
         /// @return Error on failure
-        Error_t WriteLongOpenRegisters(int                index,
+        Error_t writeLongOpenRegisters(int                index,
                                        short              subindex,
                                        const std::string& dataString,
                                        bool               force = false)
@@ -358,7 +355,7 @@ namespace mab
         /// @param subindex subindex from the object dictionary where the user want to read the
         /// value
         /// @return Error on failure
-        inline Error_t ReadLongOpenRegisters(int index, short subindex, std::vector<u8>& outData)
+        inline Error_t readLongOpenRegisters(int index, short subindex, std::vector<u8>& outData)
         {
             // // only for testing
             // // WriteMotorName();
@@ -461,7 +458,7 @@ namespace mab
             }
 
             // ---------- 3) Display ----------
-            if (DataSizeOfEdsObject(index, subindex) == 0)
+            if (dataSizeOfEdsObject(index, subindex) == 0)
             {
                 // if data size is 0, we assume it is a string
                 std::string motorName(outData.begin(), outData.end());
@@ -481,16 +478,14 @@ namespace mab
         /// @param subindex subindex from the object dictionary where the user want to read the
         /// value
         /// @return the value contained in the register or -1 if error
-        long GetValueFromOpenRegister(int index, short subindex)
+        long getValueFromOpenRegister(int index, short subindex)
         {
             if (isReadable(index, subindex) != OK)
             {
                 m_log.error("Object 0x%04x:0x%02x is not writable!", index, subindex);
                 return Error_t::REQUEST_INVALID;
             }
-            // printf("Writing Open register...\n");
             m_log.debug("Read Open register...");
-            // cout << index << endl;
 
             std::vector<u8> frame;
             frame.push_back(0x40);                // Command: initiate upload
@@ -508,10 +503,7 @@ namespace mab
             for (int i = 0; i <= 4; i++)
             {
                 answerValue += (((long)response[4 + i]) << (8 * i));
-                // cout << "answerValue:" << answerValue << "au rang" << i << endl;
             }
-
-            // cout << "answerValue:" << answerValue << endl;
 
             // data display
             uint8_t cmd = response[0];
@@ -537,7 +529,7 @@ namespace mab
         /// @param subindex subindex from the object dictionary where the user want to write the
         /// value
         /// @return Error on failure
-        inline Error_t WriteOpenRegisters(
+        inline Error_t writeOpenRegisters(
             int index, short subindex, long data, short size = 0, bool force = false)
         {
             if (!force)
@@ -551,7 +543,7 @@ namespace mab
 
             if (size == 0)
             {
-                size = DataSizeOfEdsObject(index, subindex);
+                size = dataSizeOfEdsObject(index, subindex);
                 if (size == -1)
                 {
                     m_log.error("Object 0x%04x:0x%02x has an unsupported size (%d)!",
@@ -605,7 +597,7 @@ namespace mab
         /// @param data value to write
         /// @param size size of the data to write (1,2,4)
         /// @return Error on failure
-        inline Error_t WriteOpenRegisters(const std::string& name,
+        inline Error_t writeOpenRegisters(const std::string& name,
                                           u32                data,
                                           u8                 size  = 0,
                                           bool               force = false)
@@ -626,9 +618,9 @@ namespace mab
                     return Error_t::REQUEST_INVALID;
                 }
             }
-            auto err = WriteOpenRegisters(index, subIndex, data, size);
+            auto err = writeOpenRegisters(index, subIndex, data, size);
             if (debug)
-                m_log.debug("Error:%d\n", ReadOpenRegisters(index, subIndex));
+                m_log.debug("Error:%d\n", readOpenRegisters(index, subIndex));
             return err;
         }
 
@@ -637,7 +629,7 @@ namespace mab
         /// @param subindex subindex from the object dictionary where the user want to write the
         /// value
         /// @return Error on failure
-        inline Error_t WriteOpenPDORegisters(int index, std::vector<u8> data)
+        inline Error_t writeOpenPDORegisters(int index, std::vector<u8> data)
         {
             m_log.debug("Writing Open Pdo register...");
 
@@ -660,7 +652,7 @@ namespace mab
         /// @param subindex subindex from the object dictionary where the user want to write the
         /// value
         /// @return Error on failure
-        inline Error_t SendCustomData(int index, std::vector<u8> data)
+        inline Error_t sendCustomData(int index, std::vector<u8> data)
         {
             m_log.debug("Writing Custom data...");
             transferCanOpenFrameNoRespondExpected(index, data, data.size());
@@ -680,7 +672,7 @@ namespace mab
         /// @param subIndex Subindex of the object in the Object Dictionary
         /// @return Size of the data in bytes, or 0 if the object is a string or -1 if the object is
         /// not found
-        u8 DataSizeOfEdsObject(const u32 index, const u8 subIndex);
+        u8 dataSizeOfEdsObject(const u32 index, const u8 subIndex);
 
         /// @brief Display all information about the MD device
         /// @details This function prints the all the actual register value, device type, and all
