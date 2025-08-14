@@ -88,7 +88,7 @@ namespace mab
         void sendPdoPosition(u16 id, i32 desiredSpeed);
 
         /// @brief Send a custom pdo to the MD
-        /// @param id ID of the motor to send the messsage
+        /// @param id ID of the motor to send the message
         /// @param Desiregister the desire PDO register (0x1600/0x1601/0x1602/0x1603)
         /// @param data data to send (little endian)
         void SendCustomPdo(u16 id, const edsObject& Desiregister, u64 data);
@@ -118,32 +118,18 @@ namespace mab
         /// @brief reach a target position as fast as possible
         /// @param id The CAN ID of the device to move
         /// @param targetPosition The target position in encoder increments to reach
-        /// @param MaxSpeed The maximum speed in RPM to reach the target position
-        /// @param MaxCurrent The maximum current in mA to use
-        /// @param RatedCurrent The rated current in mA of the motor
-        /// @param MaxTorque The maximum torque in mNM to use
-        /// @param RatedTorque The rated torque in mNM of the motor
+        /// @param param struct containing all the parameters needed to configure the motor
         void testMove(u16 id, f32 targetPosition, moveParameter param);
 
         /// @brief reach a target position with acceleration and deceleration limits
         /// @param id The CAN ID of the device to move
         /// @param targetPos The target position in encoder increments to reach
-        /// @param accLimit The acceleration limit in RPM/s
-        /// @param dccLimit The deceleration limit in RPM/s
-        /// @param velLimit The maximum speed in RPM to reach the target position
-        /// @param MaxCurrent The maximum current in mA to use
-        /// @param RatedCurrent The rated current in mA of the motor
-        /// @param MaxTorque The maximum torque in mNM to use
-        /// @param RatedTorque The rated torque in mNM of the motor
+        /// @param param struct containing all the parameters needed to configure the motor
         void testMoveAbsolute(u16 id, i32 targetPos, moveParameter param);
 
         /// @brief Move the device to a target speed
         /// @param id The CAN ID of the device to move
-        /// @param MaxCurrent The maximum current in mA to use
-        /// @param RatedCurrent The rated current in mA of the motor
-        /// @param MaxTorque The maximum torque in mNM to use
-        /// @param RatedTorque The rated torque in mNM of the motor
-        /// @param MaxSpeed The maximum speed in RPM to reach the target speed
+        /// @param param struct containing all the parameters needed to configure the motor
         /// @param DesiredSpeed The desired speed in RPM to set
         void testMoveSpeed(u16 id, moveParameter param, i32 DesiredSpeed);
 
@@ -151,14 +137,7 @@ namespace mab
         /// @param id The CAN ID of the device to move
         /// @param desiredSpeed The desired speed in RPM to set
         /// @param targetPos The target position in encoder increments to reach
-        /// @param kp The proportional gain to use
-        /// @param kd The derivative gain to use
-        /// @param torque The torque to apply in mNM
-        /// @param MaxSpeed The maximum speed in RPM to reach the target position
-        /// @param MaxCurrent The maximum current in mA to use
-        /// @param RatedCurrent The rated current in mA of the motor
-        /// @param MaxTorque The maximum torque in mNM to use
-        /// @param RatedTorque The rated torque in mNM of the motor
+        /// @param param struct containing all the parameters needed to configure the motor
         void testMoveImpedance(u16 id, i32 desiredSpeed, f32 targetPos, moveParameter param);
 
         /// @brief Test the latency of the device
@@ -184,6 +163,7 @@ namespace mab
 
         /// @brief restart and clear the status of the device
         /// @param id The CAN ID of the device to read the status
+        /// @param level 1 => clear error, 2 => clear warning, 3 => clear both
         void clearErrors(u16 id, const std::string& level);
 
         /// @brief Reset the device
@@ -196,6 +176,7 @@ namespace mab
         /// @param value The value to write to the register
         /// @param subIndex The sub-index of the register to write to
         /// @param dataSize The size of the data to write
+        /// @param force if =1 send without OD verification
         void registerWrite(
             u16 id, u16 reg, const std::string& value, u8 subIndex, u8 dataSize, bool force);
 
@@ -216,6 +197,7 @@ namespace mab
         /// @param id The CAN ID of the device to read the value
         /// @param reg The register to read the value from
         /// @param subIndex The sub-index of the register to read from
+        /// @param force if =1 send without OD verification
         void registerRead(u16 id, u16 reg, u8 subIndex, bool force);
 
         // /// @brief delete all space and all capital letter in the s string

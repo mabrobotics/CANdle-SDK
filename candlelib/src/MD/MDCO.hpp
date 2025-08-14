@@ -28,6 +28,7 @@
 namespace mab
 {
 
+    /// @brief Parameters for the move operation
     struct moveParameter
     {
         u32 MaxSpeed     = 220;
@@ -43,6 +44,7 @@ namespace mab
         u16 torqueff     = 0x00;
     };
 
+    /// @brief Modes of operation for the MD device cf. 0x6060 in the CANopen object dictionary
     enum ModesOfOperation
     {
         Impedance          = (u8)-3,
@@ -91,23 +93,37 @@ namespace mab
             m_log.m_tag = tag.str();
         }
 
+        /// @brief use SDO message in order to send all value needed to configure the motor for
+        /// moving
+        /// @param param struct containing all the parameters needed to configure the motor
+        /// @return error_t indicating the result of the operation
         Error_t setProfileParameters(moveParameter param);
 
+        /// @brief Enable the driver with the specified mode of operation
+        /// @param mode Mode of operation to set cf 0x6060 in the CANopen object dictionary
+        /// @return Error_t indicating the result of the operation
         Error_t enableDriver(ModesOfOperation mode);
 
+        /// @brief Disable the driver
+        /// @return Error_t indicating the result of the operation
         Error_t disableDriver();
 
         /// @brief Move to desired position
         /// @param DesiredPos desired position
+        /// @note The motor need to have the profile parameters set & a mode of operation set before
+        /// calling this function
         void movePosition(i32 DesiredPos);
 
         /// @brief Move to desired speed
         /// @param DesiredSpeed desired speed [RPM]
+        /// @note The motor need to have the profile parameters set & a mode of operation set before
+        /// calling this function
         void moveSpeed(i32 DesiredSpeed);
 
         /// @brief Move to desired position with impedance control
         /// @param desiredSpeed desired speed [RPM]
         /// @param targetPos desired position
+        /// @param param struct containing all the parameters needed to configure the motor
         /// @return Error_t indicating the result of the operation
         /// @details This function sets the motor in impedance control mode and moves it to the
         /// specified position with the given speed, gains, and torque.
@@ -121,44 +137,49 @@ namespace mab
         Error_t blinkOpenTest();
 
         /// @brief Reset the driver with CANopen command
-        /// @return
+        /// @return Error_t indicating the result of the operation
         Error_t openReset();
 
         /// @brief Clear errors present in the driver
         /// @param level 1 => clear error, 2 => clear warning, 3 => clear both
-        /// @return
+        /// @return Error_t indicating the result of the operation
         Error_t clearOpenErrors(i16 level);
 
         /// @brief Change CANopen config the command need to be save before shutoff the motors
         /// @param newID new id of the motor
         /// @param newBaud new baudRate
         /// @param newwatchdog new watchdog
+        /// @return Error_t indicating the result of the operation
         Error_t newCanOpenConfig(i32 newID, i32 newBaud, i16 newwatchdog);
 
         /// @brief Perform a encoder test
         /// @param Main Main=1 if you want to perform the test on the main encoder
         /// @param output output=1 if you want to perform the test on the output encoder
+        /// @return Error_t indicating the result of the operation
         Error_t testEncoder(bool Main, bool output);
 
         /// @brief Perform a encoder calibration
         /// @param Main Main=1 if you want to perform the calibration on the main encoder
         /// @param output output=1 if you want to perform the calibration on the output encoder
+        /// @return Error_t indicating the result of the operation
         Error_t encoderCalibration(bool Main, bool output);
 
         /// @brief change the torque bandwidth with CANopen comand, modification must be saved
         /// before shuting off the motors
         /// @param newBandwidth new value for the bandwidth {50-2500}[Hz]
-        /// @return
+        /// @return Error_t indicating the result of the operation
         Error_t canOpenBandwidth(i16 newBandwidth);
 
-        Error_t testHearbeat();
+        /// @brief test the heartbeat of the MD device give time between two heartbeat
+        /// @return Error_t indicating the result of the operation
+        Error_t testHeartbeat();
 
         /// @brief Save configuration data to the memory
-        /// @return
+        /// @return Error_t indicating the result of the operation
         Error_t openSave();
 
         /// @brief Zero out the position of the encoder
-        /// @return
+        /// @return Error_t indicating the result of the operation
         Error_t openZero();
 
         /// @brief read a value from a can open register using SDO can frame

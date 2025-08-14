@@ -1270,5 +1270,5 @@ void CandleToolCO::SendNMT(u8 id, u8 command)
 void CandleToolCO::ReadHeartbeat(u16 id)
 {
     MDCO mdco(id, m_candle);
-    mdco.testHearbeat();
+    mdco.testHeartbeat();
 }

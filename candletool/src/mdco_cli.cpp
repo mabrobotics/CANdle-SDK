@@ -698,8 +698,3 @@ void MdcoCli::parse(mab::CANdleBaudrate_E baud)
         }
     }
 }
-
-bool MdcoCli::mdcoParse()
-{
-    return mdco->parsed();
-}

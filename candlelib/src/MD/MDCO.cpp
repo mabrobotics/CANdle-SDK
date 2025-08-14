@@ -330,7 +330,7 @@ namespace mab
         return MDCO::Error_t::OK;
     }
 
-    MDCO::Error_t MDCO::testHearbeat()
+    MDCO::Error_t MDCO::testHeartbeat()
     {
         // TODO: find a better way to do this, it seems to work but it's clearly not the best way to
         // do it. A better way could be by implemented a listen mode on the USB.cpp file

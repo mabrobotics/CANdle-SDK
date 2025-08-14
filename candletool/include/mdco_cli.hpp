@@ -13,8 +13,9 @@ class MdcoCli
     MdcoCli(CLI::App& rootCli);
     ~MdcoCli() = default;
 
+    /// @brief Parse the command line arguments for the MDCO CLI
+    /// @param baud The baud rate for the CANdle device
     void parse(mab::CANdleBaudrate_E baud);
-    bool mdcoParse();
 
   private:
     Logger    m_log;
