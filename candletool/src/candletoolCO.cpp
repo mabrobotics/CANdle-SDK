@@ -734,91 +734,91 @@ void CandleToolCO::setupReadConfig(u16 id, const std::string& cfgName)
     /*────────────────────────────
       section [limits]
     ────────────────────────────*/
-    float limits_max_torque;
+    float limits_max_torque = 0.0f;
     if (mdco.getValueFromOpenRegister(0x6076, 0x00))
     {
         limits_max_torque = mdco.getValueFromOpenRegister(0x6072, 0x00) /
                             mdco.getValueFromOpenRegister(0x6076, 0x00);
     }
-    float limits_max_velocity;
-    raw_data = (float)mdco.getValueFromOpenRegister(0x6080, 0x00);
+    float limits_max_velocity = 0.0f;
+    raw_data                  = (float)mdco.getValueFromOpenRegister(0x6080, 0x00);
     std::memcpy(&limits_max_velocity, &raw_data, sizeof(float));
-    float limits_max_position;
-    raw_data = (float)mdco.getValueFromOpenRegister(0x607D, 0x02);
+    float limits_max_position = 0.0f;
+    raw_data                  = (float)mdco.getValueFromOpenRegister(0x607D, 0x02);
     std::memcpy(&limits_max_position, &raw_data, sizeof(float));
-    float limits_min_position;
-    raw_data = (float)mdco.getValueFromOpenRegister(0x607D, 0x01);
+    float limits_min_position = 0.0f;
+    raw_data                  = (float)mdco.getValueFromOpenRegister(0x607D, 0x01);
     std::memcpy(&limits_min_position, &raw_data, sizeof(float));
-    float limits_max_acceleration;
-    raw_data = (float)mdco.getValueFromOpenRegister(0x60C5, 0x00);
+    float limits_max_acceleration = 0.0f;
+    raw_data                      = (float)mdco.getValueFromOpenRegister(0x60C5, 0x00);
     std::memcpy(&limits_max_acceleration, &raw_data, sizeof(float));
-    float limits_max_deceleration;
-    raw_data = (float)mdco.getValueFromOpenRegister(0x60C6, 0x00);
+    float limits_max_deceleration = 0.0f;
+    raw_data                      = (float)mdco.getValueFromOpenRegister(0x60C6, 0x00);
     std::memcpy(&limits_max_deceleration, &raw_data, sizeof(float));
 
     /*────────────────────────────
       section [profile]
     ────────────────────────────*/
-    float profile_acceleration;
-    raw_data = mdco.getValueFromOpenRegister(0x2008, 0x04);
+    float profile_acceleration = 0.0f;
+    raw_data                   = mdco.getValueFromOpenRegister(0x2008, 0x04);
     std::memcpy(&profile_acceleration, &raw_data, sizeof(float));
-    float profile_deceleration;
-    raw_data = mdco.getValueFromOpenRegister(0x2008, 0x05);
+    float profile_deceleration = 0.0f;
+    raw_data                   = mdco.getValueFromOpenRegister(0x2008, 0x05);
     std::memcpy(&profile_deceleration, &raw_data, sizeof(float));
-    float profile_velocity;
-    raw_data = mdco.getValueFromOpenRegister(0x2008, 0x03);
+    float profile_velocity = 0.0f;
+    raw_data               = mdco.getValueFromOpenRegister(0x2008, 0x03);
     std::memcpy(&profile_velocity, &raw_data, sizeof(float));
 
     /*────────────────────────────
       section [output encoder]
     ────────────────────────────*/
-    short output_encoder;
-    raw_data = mdco.getValueFromOpenRegister(0x2005, 0x01);
+    short output_encoder = 0;
+    raw_data             = mdco.getValueFromOpenRegister(0x2005, 0x01);
     std::memcpy(&output_encoder, &raw_data, sizeof(short));
-    short output_encoder_mode;
-    raw_data = mdco.getValueFromOpenRegister(0x2005, 0x03);
+    short output_encoder_mode = 0;
+    raw_data                  = mdco.getValueFromOpenRegister(0x2005, 0x03);
     std::memcpy(&output_encoder_mode, &raw_data, sizeof(short));
 
     /*────────────────────────────
       section [position pid]
     ────────────────────────────*/
-    float pos_kp;
-    raw_data = mdco.getValueFromOpenRegister(0x2002, 0x01);
+    float pos_kp = 0.0f;
+    raw_data     = mdco.getValueFromOpenRegister(0x2002, 0x01);
     std::memcpy(&pos_kp, &raw_data, sizeof(float));
-    float pos_ki;
-    raw_data = mdco.getValueFromOpenRegister(0x2002, 0x02);
+    float pos_ki = 0.0f;
+    raw_data     = mdco.getValueFromOpenRegister(0x2002, 0x02);
     std::memcpy(&pos_ki, &raw_data, sizeof(float));
-    float pos_kd;
-    raw_data = mdco.getValueFromOpenRegister(0x2002, 0x03);
+    float pos_kd = 0.0f;
+    raw_data     = mdco.getValueFromOpenRegister(0x2002, 0x03);
     std::memcpy(&pos_kd, &raw_data, sizeof(float));
-    float pos_windup;
-    raw_data = mdco.getValueFromOpenRegister(0x2002, 0x04);
+    float pos_windup = 0.0f;
+    raw_data         = mdco.getValueFromOpenRegister(0x2002, 0x04);
     std::memcpy(&pos_windup, &raw_data, sizeof(float));
 
     /*────────────────────────────
       section [velocity pid]
     ────────────────────────────*/
-    float vel_kp;
-    raw_data = mdco.getValueFromOpenRegister(0x2001, 0x01);
+    float vel_kp = 0.0f;
+    raw_data     = mdco.getValueFromOpenRegister(0x2001, 0x01);
     std::memcpy(&vel_kp, &raw_data, sizeof(float));
-    float vel_ki;
-    raw_data = mdco.getValueFromOpenRegister(0x2001, 0x02);
+    float vel_ki = 0.0f;
+    raw_data     = mdco.getValueFromOpenRegister(0x2001, 0x02);
     std::memcpy(&vel_ki, &raw_data, sizeof(float));
-    float vel_kd;
-    raw_data = mdco.getValueFromOpenRegister(0x2001, 0x03);
+    float vel_kd = 0.0f;
+    raw_data     = mdco.getValueFromOpenRegister(0x2001, 0x03);
     std::memcpy(&vel_kd, &raw_data, sizeof(float));
-    float vel_windup;
-    raw_data = mdco.getValueFromOpenRegister(0x2001, 0x04);
+    float vel_windup = 0.0f;
+    raw_data         = mdco.getValueFromOpenRegister(0x2001, 0x04);
     std::memcpy(&vel_windup, &raw_data, sizeof(float));
 
     /*────────────────────────────
       section [impedance pd]
     ────────────────────────────*/
-    float imp_kp;
-    raw_data = mdco.getValueFromOpenRegister(0x200C, 0x01);
+    float imp_kp = 0.0f;
+    raw_data     = mdco.getValueFromOpenRegister(0x200C, 0x01);
     std::memcpy(&imp_kp, &raw_data, sizeof(float));
-    float imp_kd;
-    raw_data = mdco.getValueFromOpenRegister(0x200C, 0x02);
+    float imp_kd = 0.0f;
+    raw_data     = mdco.getValueFromOpenRegister(0x200C, 0x02);
     std::memcpy(&imp_kd, &raw_data, sizeof(float));
 
     /*────────────────────────────
