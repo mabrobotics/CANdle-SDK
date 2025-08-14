@@ -200,10 +200,9 @@ namespace mab
         /// @param force if =1 send without OD verification
         void registerRead(u16 id, u16 reg, u8 subIndex, bool force);
 
-        // /// @brief delete all space and all capital letter in the s string
-        // /// @param s the string we need to clean
-        // /// @return the cleaned string
-        std::string clean(std::string s);
+        /// @brief delete all space and all capital letter in the s string
+        /// @param s the string we need to clean
+        void clean(std::string& s);
 
         /// @brief Perform a heartbeat test between two devices
         /// @param MasterId The CAN ID of the master device

@@ -427,7 +427,8 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
             continue;
         if (line.front() == '[' && line.back() == ']')
         {
-            section = clean(line.substr(1, line.size() - 2));
+            section = line.substr(1, line.size() - 2);
+            clean(section);
             continue;
         }
         std::istringstream iss(line);
@@ -436,8 +437,8 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
             continue;
         if (!std::getline(iss, right))
             continue;
-        left  = clean(left);
-        right = clean(right);
+        clean(left);
+        clean(right);
 
         std::string fullkey = section.empty() ? left : section + "_" + left;
         if (fullkey == "motor_name")
@@ -610,26 +611,23 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
     mdco.writeOpenRegisters(0x200C, 0x02, impedancepd_kd, 4);
 }
 
-std::string CandleToolCO::clean(std::string s)
+void CandleToolCO::clean(std::string& s)
 {
-    std::string out;
-    out.reserve(s.size());  // éviter les reallocations
-
-    bool seenNonSpace = false;
-    for (unsigned char c : s)
+    size_t write_pos    = 0;
+    bool   seenNonSpace = false;
+    for (size_t read_pos = 0; read_pos < s.size(); ++read_pos)
     {
+        unsigned char c = s[read_pos];
         if (std::isspace(c))
         {
             if (!seenNonSpace)
-                continue;  // skip leading space
-            continue;      // skip all spaces (both internal & trailing in this logic)
+                continue;  // skip leading spaces
+            continue;      // skip all spaces (internal & trailing)
         }
-        seenNonSpace = true;
-        out.push_back(static_cast<char>(std::tolower(c)));
+        seenNonSpace   = true;
+        s[write_pos++] = std::tolower(c);
     }
-
-    s.swap(out);
-    return s;
+    s.resize(write_pos);
 }
 
 void CandleToolCO::heartbeatTest(u32 MasterId, u32 SlaveId, u32 HeartbeatTimeout)
