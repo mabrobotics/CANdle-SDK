@@ -63,12 +63,6 @@ namespace mab
             const size_t          responseSize,
             const u32             timeoutMs = DEFAULT_CAN_TIMEOUT) const;
 
-        const std::pair<std::vector<u8>, candleTypes::Error_t> transferCANPDOFrame(
-            const canId_t         canId,
-            const std::vector<u8> dataToSend,
-            const size_t          responseSize,
-            const u32             timeoutMs = DEFAULT_CAN_TIMEOUT) const;
-
         /// @brief Initialize candle
         candleTypes::Error_t init();
 
