@@ -8,6 +8,24 @@ if(PYTHON_BUILD)
   set(CANDLE_BUILD_STATIC ON)
 endif()
 
+# LIBWDI build
+
+if(WIN32)
+
+  set(LIBWDI_PATH ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libwdi/libwdi)
+  set(LIBWDI_SOURCES ${LIBWDI_PATH}/embedder.c
+                     ${LIBWDI_PATH}/installer.c
+                     ${LIBWDI_PATH}/libwdi_dlg.c
+                     ${LIBWDI_PATH}/libwdi.c
+                     ${LIBWDI_PATH}/pki.c
+                     ${LIBWDI_PATH}/vid_data.c
+                     )
+  set(LIBWDI_INCLUDES ${LIBWDI_PATH})
+  add_library(libwdi ${LIBWDI_SOURCES})
+  target_include_directories(${LIBWDI_INCLUDES})
+
+endif()
+
 
 if(UNIX)
   set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
