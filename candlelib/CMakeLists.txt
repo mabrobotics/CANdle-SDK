@@ -22,7 +22,7 @@ if(WIN32)
                      )
   set(LIBWDI_INCLUDES ${LIBWDI_PATH})
   add_library(libwdi ${LIBWDI_SOURCES})
-  target_include_directories(${LIBWDI_INCLUDES})
+  target_include_directories(libwdi ${LIBWDI_INCLUDES})
 
 endif()
 
