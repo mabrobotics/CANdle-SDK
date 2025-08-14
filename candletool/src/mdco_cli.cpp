@@ -351,34 +351,36 @@ MdcoCli::MdcoCli(CLI::App& rootCli) : m_rootCli(rootCli)
         ->required();
     testMoveAbsco->add_option("<CAN_ID>", cmdCANopen.id, "CAN ID of the MD to interact with.")
         ->required();
-    testMoveAbsco->add_option("<ABS_POS>", cmdCANopen.pos, "Absolute position to reach [rad].")
+    testMoveAbsco
+        ->add_option("<ABS_POS>", cmdCANopen.desiredPos, "Absolute position to reach [rad].")
         ->required();
-    testMoveAbsco->add_option("MaxVelocity", cmdCANopen.vel, "Profile max velocity [rad/s].");
     testMoveAbsco->add_option(
-        "MaxAcceleration", cmdCANopen.acc, "Profile max acceleration [rad/s^2].");
+        "MaxVelocity", cmdCANopen.param.MaxSpeed, "Profile max velocity [rad/s].");
     testMoveAbsco->add_option(
-        "MaxDeceleration", cmdCANopen.dcc, "Profile max deceleration [rad/s^2].");
+        "MaxAcceleration", cmdCANopen.param.accLimit, "Profile max acceleration [rad/s^2].");
+    testMoveAbsco->add_option(
+        "MaxDeceleration", cmdCANopen.param.dccLimit, "Profile max deceleration [rad/s^2].");
     testMoveAbsco->add_option(
         "MaxCurrent",
-        cmdCANopen.maxCurrent,
+        cmdCANopen.param.MaxCurrent,
         "Configures the maximum allowed phase current in the motor. The value is "
         "expressed in permille of rated current. Example: rated current of the motor "
         "is 15A, and the maximum is 30A. The Max Current object should equal to 2000.");
     testMoveAbsco->add_option(
         "RatedCurrent",
-        cmdCANopen.ratedCurrent,
+        cmdCANopen.param.RatedCurrent,
         "Configures the maximum allowed torque in the motor. The value is expressed "
         "in permille of rated torque. Example: rated torque of the motor is 1Nm, and "
         "the maximum is 2Nm. The Max Torque object should equal to 2000.");
     testMoveAbsco->add_option(
         "MaxTorque",
-        cmdCANopen.maxTorque,
+        cmdCANopen.param.MaxTorque,
         "Configures the maximum allowed phase current in the motor. The value is "
         "expressed in permille of rated current. Example: rated current of the motor "
         "is 15A, and the maximum is 30A. The Max Current object should equal to 2000.");
     testMoveAbsco->add_option(
         "RatedTorque",
-        cmdCANopen.ratedTorque,
+        cmdCANopen.param.RatedTorque,
         "Configures the motor rated torque expressed in mNm. This object is a "
         "reference for parameters such as 0x6072 Max Torque. The value should be "
         "taken from the motor's datasheet.");
@@ -387,37 +389,37 @@ MdcoCli::MdcoCli(CLI::App& rootCli) : m_rootCli(rootCli)
         ->required();
     testMoveRelco
         ->add_option("<REL_POS>",
-                     cmdCANopen.pos,
+                     cmdCANopen.desiredPos,
                      "Relative position to reach.<0x0, "
                      "0xFFFFFFFF>[inc] ")
         ->required();
 
     testMoveRelco->add_option(
         "MaxSpeed",
-        cmdCANopen.MaxSpeed,
+        cmdCANopen.param.MaxSpeed,
         "Configures the target velocity for the profile position mode. If this value is "
         "greater than 0x6080 Max Motor Speed, it will be limited to Max Motor Speed.");
     testMoveRelco->add_option(
         "MaxCurrent",
-        cmdCANopen.maxCurrent,
+        cmdCANopen.param.MaxCurrent,
         "Configures the maximum allowed phase current in the motor. The value is "
         "expressed in permille of rated current. Example: rated current of the motor "
         "is 15A, and the maximum is 30A. The Max Current object should equal to 2000.");
     testMoveRelco->add_option(
         "RatedCurrent",
-        cmdCANopen.ratedCurrent,
+        cmdCANopen.param.RatedCurrent,
         "Configures the maximum allowed torque in the motor. The value is expressed "
         "in permille of rated torque. Example: rated torque of the motor is 1Nm, and "
         "the maximum is 2Nm. The Max Torque object should equal to 2000.");
     testMoveRelco->add_option(
         "MaxTorque",
-        cmdCANopen.maxTorque,
+        cmdCANopen.param.MaxTorque,
         "Configures the maximum allowed phase current in the motor. The value is "
         "expressed in permille of rated current. Example: rated current of the motor "
         "is 15A, and the maximum is 30A. The Max Current object should equal to 2000.");
     testMoveRelco->add_option(
         "RatedTorque",
-        cmdCANopen.ratedTorque,
+        cmdCANopen.param.RatedTorque,
         "Configures the motor rated torque expressed in mNm. This object is a "
         "reference for parameters such as 0x6072 Max Torque. The value should be "
         "taken from the motor's datasheet.");
@@ -431,31 +433,31 @@ MdcoCli::MdcoCli(CLI::App& rootCli) : m_rootCli(rootCli)
         ->required();
     testMoveSpeedco->add_option(
         "MaxCurrent",
-        cmdCANopen.maxCurrent,
+        cmdCANopen.param.MaxCurrent,
         "Configures the maximum allowed phase current in the motor. The value is "
         "expressed in permille of rated current. Example: rated current of the motor "
         "is 15A, and the maximum is 30A. The Max Current object should equal to 2000.");
     testMoveSpeedco->add_option(
         "RatedCurrent",
-        cmdCANopen.ratedCurrent,
+        cmdCANopen.param.RatedCurrent,
         "Configures the maximum allowed torque in the motor. The value is expressed "
         "in permille of rated torque. Example: rated torque of the motor is 1Nm, and "
         "the maximum is 2Nm. The Max Torque object should equal to 2000.");
     testMoveSpeedco->add_option(
         "MaxTorque",
-        cmdCANopen.maxTorque,
+        cmdCANopen.param.MaxTorque,
         "Configures the maximum allowed phase current in the motor. The value is "
         "expressed in permille of rated current. Example: rated current of the motor "
         "is 15A, and the maximum is 30A. The Max Current object should equal to 2000.");
     testMoveSpeedco->add_option(
         "RatedTorque",
-        cmdCANopen.ratedTorque,
+        cmdCANopen.param.RatedTorque,
         "Configures the motor rated torque expressed in mNm. This object is a "
         "reference for parameters such as 0x6072 Max Torque. The value should be "
         "taken from the motor's datasheet.");
     testMoveSpeedco->add_option(
         "MaxSpeed",
-        cmdCANopen.MaxSpeed,
+        cmdCANopen.param.MaxSpeed,
         "Configures the target velocity for the profile position mode. If this value is "
         "greater than 0x6080 Max Motor Speed, it will be limited to Max Motor Speed.");
     testImpedanceco->add_option("<CAN_ID>", cmdCANopen.id, "CAN ID of the MD to interact with.")
@@ -467,39 +469,39 @@ MdcoCli::MdcoCli(CLI::App& rootCli) : m_rootCli(rootCli)
         ->required();
     testImpedanceco
         ->add_option("<REL_POS>",
-                     cmdCANopen.pos,
+                     cmdCANopen.desiredPos,
                      "Relative position to reach. <0x0, "
                      "0xFFFFFFFF>[inc].")
         ->required();
-    testImpedanceco->add_option("<KP>", cmdCANopen.kp, "Position gain.")->required();
-    testImpedanceco->add_option("<KD>", cmdCANopen.kd, "Velocity gain.")->required();
-    testImpedanceco->add_option("<TORQUE_FF>", cmdCANopen.torque, "Torque FF.")->required();
+    testImpedanceco->add_option("<KP>", cmdCANopen.param.kp, "Position gain.")->required();
+    testImpedanceco->add_option("<KD>", cmdCANopen.param.kd, "Velocity gain.")->required();
+    testImpedanceco->add_option("<TORQUE_FF>", cmdCANopen.param.torqueff, "Torque FF.")->required();
     testImpedanceco->add_option(
         "MaxSpeed",
-        cmdCANopen.MaxSpeed,
+        cmdCANopen.param.MaxSpeed,
         "Configures the target velocity for the profile position mode. If this value is "
         "greater than 0x6080 Max Motor Speed, it will be limited to Max Motor Speed.");
     testImpedanceco->add_option(
         "MaxCurrent",
-        cmdCANopen.maxCurrent,
+        cmdCANopen.param.MaxCurrent,
         "Configures the maximum allowed phase current in the motor. The value is "
         "expressed in permille of rated current. Example: rated current of the motor "
         "is 15A, and the maximum is 30A. The Max Current object should equal to 2000.");
     testImpedanceco->add_option(
         "RatedCurrent",
-        cmdCANopen.ratedCurrent,
+        cmdCANopen.param.RatedCurrent,
         "Configures the maximum allowed torque in the motor. The value is expressed "
         "in permille of rated torque. Example: rated torque of the motor is 1Nm, and "
         "the maximum is 2Nm. The Max Torque object should equal to 2000.");
     testImpedanceco->add_option(
         "MaxTorque",
-        cmdCANopen.maxTorque,
+        cmdCANopen.param.MaxTorque,
         "Configures the maximum allowed phase current in the motor. The value is "
         "expressed in permille of rated current. Example: rated current of the motor "
         "is 15A, and the maximum is 30A. The Max Current object should equal to 2000.");
     testImpedanceco->add_option(
         "RatedTorque",
-        cmdCANopen.ratedTorque,
+        cmdCANopen.param.RatedTorque,
         "Configures the motor rated torque expressed in mNm. This object is a "
         "reference for parameters such as 0x6072 Max Torque. The value should be "
         "taken from the motor's datasheet.");
@@ -651,47 +653,25 @@ void MdcoCli::parse(mab::CANdleBaudrate_E baud)
                 candleToolCO.testEncoderOutput(cmdCANopen.id);
             if (testLatencyco->parsed())
                 candleToolCO.testLatency(cmdCANopen.id);
-            if (testMoveAbsco->parsed())
+            if (testMoveco->parsed())
             {
-                candleToolCO.testMoveAbsolute(cmdCANopen.id,
-                                              cmdCANopen.pos,
-                                              cmdCANopen.vel,
-                                              cmdCANopen.acc,
-                                              cmdCANopen.dcc,
-                                              cmdCANopen.maxCurrent,
-                                              cmdCANopen.ratedCurrent,
-                                              cmdCANopen.maxTorque,
-                                              cmdCANopen.ratedTorque);
-            }
-            if (testMoveRelco->parsed())
-                candleToolCO.testMove(cmdCANopen.id,
-                                      cmdCANopen.pos,
-                                      cmdCANopen.MaxSpeed,
-                                      cmdCANopen.maxCurrent,
-                                      cmdCANopen.ratedCurrent,
-                                      cmdCANopen.maxTorque,
-                                      cmdCANopen.ratedTorque);
+                if (testMoveAbsco->parsed())
+                {
+                    candleToolCO.testMoveAbsolute(
+                        cmdCANopen.id, cmdCANopen.desiredPos, cmdCANopen.param);
+                }
+                if (testMoveRelco->parsed())
+                    candleToolCO.testMove(cmdCANopen.id, cmdCANopen.desiredPos, cmdCANopen.param);
 
-            if (testMoveSpeedco->parsed())
-                candleToolCO.testMoveSpeed(cmdCANopen.id,
-                                           cmdCANopen.maxCurrent,
-                                           cmdCANopen.ratedCurrent,
-                                           cmdCANopen.maxTorque,
-                                           cmdCANopen.ratedTorque,
-                                           cmdCANopen.MaxSpeed,
-                                           cmdCANopen.desiredSpeed);
-            if (testImpedanceco->parsed())
-                candleToolCO.testMoveImpedance(cmdCANopen.id,
-                                               cmdCANopen.desiredSpeed,
-                                               cmdCANopen.pos,
-                                               cmdCANopen.kp,
-                                               cmdCANopen.kd,
-                                               cmdCANopen.torque,
-                                               cmdCANopen.MaxSpeed,
-                                               cmdCANopen.maxCurrent,
-                                               cmdCANopen.ratedCurrent,
-                                               cmdCANopen.maxTorque,
-                                               cmdCANopen.ratedTorque);
+                if (testMoveSpeedco->parsed())
+                    candleToolCO.testMoveSpeed(
+                        cmdCANopen.id, cmdCANopen.param, cmdCANopen.desiredSpeed);
+                if (testImpedanceco->parsed())
+                    candleToolCO.testMoveImpedance(cmdCANopen.id,
+                                                   cmdCANopen.desiredSpeed,
+                                                   cmdCANopen.desiredPos,
+                                                   cmdCANopen.param);
+            }
         }
         if (heartbeatco->parsed())
         {

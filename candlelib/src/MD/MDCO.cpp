@@ -150,65 +150,37 @@ namespace mab
         }
     }
 
-    void MDCO::movePositionAcc(i32 targetPos, moveParameter param)
+    MDCO::Error_t MDCO::setProfileParameters(moveParameter param)
     {
-        writeOpenRegisters("Motor Max Acceleration", 10000, 4);
-        writeOpenRegisters("Motor Max Deceleration", 10000, 4);
-        writeOpenRegisters("Motor Profile Acceleration", param.accLimit, 4);
-        writeOpenRegisters("Motor Profile Deceleration", param.dccLimit, 4);
-        writeOpenRegisters("Max Current", param.MaxCurrent, 2);
-        writeOpenRegisters("Motor Rated Current", param.RatedCurrent, 4);
-        writeOpenRegisters("Max Motor Speed", param.MaxSpeed, 4);
-        writeOpenRegisters("Motor Max Torque", param.MaxTorque, 2);
-        writeOpenRegisters("Motor Rated Torque", param.RatedTorque, 4);
-        writeOpenRegisters("Modes Of Operation", 1, 1);
-        writeOpenRegisters("Controlword", 0x80, 2);
-        writeOpenRegisters("Controlword", 0x06, 2);
-        writeOpenRegisters("Controlword", 15, 2);
-        auto start      = std::chrono::steady_clock::now();
-        auto lastSend   = start;
-        auto timeout    = std::chrono::seconds(5);
-        auto sendPeriod = std::chrono::milliseconds(10);
-
-        while (std::chrono::steady_clock::now() - start < timeout &&
-               !((i16)getValueFromOpenRegister(0x6064, 0) > (targetPos - 100) &&
-                 (i16)getValueFromOpenRegister(0x6064, 0) < (targetPos + 100)))
-        {
-            auto now = std::chrono::steady_clock::now();
-            if (now - lastSend >= sendPeriod)
-            {
-                writeOpenRegisters("Motor Target Position", targetPos, 4);
-                lastSend = now;
-            }
-        }
-
-        m_log.debug("actual position: %d\n", (i16)getValueFromOpenRegister(0x6064, 0));
-
-        if (((i16)getValueFromOpenRegister(0x6064, 0) > (targetPos - 200) &&
-             (i16)getValueFromOpenRegister(0x6064, 0) < (targetPos + 200)))
-        {
-            m_log.success("Position reached in less than 5s");
-        }
-        else
-        {
-            m_log.error("Position not reached in less than 5s");
-        }
-        m_log.debug("actual position: %d\n", (i16)getValueFromOpenRegister(0x6064, 0));
-        writeOpenRegisters("Controlword", 6, 2);
-        writeOpenRegisters("Modes Of Operation", 0, 1);
-    }
-
-    void MDCO::movePosition(moveParameter param, i32 DesiredPos)
-    {
+        writeOpenRegisters("Motor Max Acceleration", param.accLimit);
+        writeOpenRegisters("Motor Max Deceleration", param.dccLimit);
         writeOpenRegisters("Max Current", param.MaxCurrent);
         writeOpenRegisters("Motor Rated Current", param.RatedCurrent);
         writeOpenRegisters("Max Motor Speed", param.MaxSpeed);
         writeOpenRegisters("Motor Max Torque", param.MaxTorque);
         writeOpenRegisters("Motor Rated Torque", param.RatedTorque);
-        writeOpenRegisters("Modes Of Operation", 8);
-        writeOpenRegisters("Controlword", 0x80);
-        writeOpenRegisters("Controlword", 0x06);
-        writeOpenRegisters("Controlword", 15);
+        return OK;
+    }
+
+    MDCO::Error_t MDCO::enableDriver(ModesOfOperation mode)
+    {
+        writeOpenRegisters("Modes Of Operation", mode, 1);
+        writeOpenRegisters("Controlword", 0x80, 2);
+        writeOpenRegisters("Controlword", 0x06, 2);
+        writeOpenRegisters("Controlword", 15, 2);
+        return OK;
+    }
+
+    MDCO::Error_t MDCO::disableDriver()
+    {
+        writeOpenRegisters("Motor Target Velocity", 0);
+        writeOpenRegisters("Controlword", 6);
+        writeOpenRegisters("Modes Of Operation", 0);
+        return OK;
+    }
+
+    void MDCO::movePosition(i32 DesiredPos)
+    {
         auto start      = std::chrono::steady_clock::now();
         auto lastSend   = start;
         auto timeout    = std::chrono::seconds(5);
@@ -235,22 +207,10 @@ namespace mab
         {
             m_log.error("Position not reached in less than 5s");
         }
-        writeOpenRegisters("Controlword", 6);
-        writeOpenRegisters("Modes Of Operation", 0);
     }
 
-    void MDCO::moveSpeed(moveParameter param, i32 DesiredSpeed)
+    void MDCO::moveSpeed(i32 DesiredSpeed)
     {
-        writeOpenRegisters("Max Current", param.MaxCurrent);
-        writeOpenRegisters("Motor Rated Current", param.RatedCurrent);
-        writeOpenRegisters("Max Motor Speed", param.MaxSpeed);
-        writeOpenRegisters("Motor Max Torque", param.MaxTorque);
-        writeOpenRegisters("Motor Rated Torque", param.RatedTorque);
-        writeOpenRegisters("Modes Of Operation", 9);
-        writeOpenRegisters("Controlword", 0x80);
-        writeOpenRegisters("Controlword", 0x06);
-        writeOpenRegisters("Controlword", 15);
-
         auto start      = std::chrono::steady_clock::now();
         auto lastSend   = start;
         auto timeout    = std::chrono::seconds(5);
@@ -275,49 +235,25 @@ namespace mab
         {
             m_log.error("Velocity Target not reached");
         }
-        writeOpenRegisters("Motor Target Velocity", 0);
-        writeOpenRegisters("Controlword", 6);
-        writeOpenRegisters("Modes Of Operation", 0);
     }
 
-    MDCO::Error_t MDCO::moveImpedance(
-        i32 desiredSpeed, i32 targetPos, f32 kp, f32 kd, i16 torque, moveParameter param)
+    MDCO::Error_t MDCO::moveImpedance(i32 desiredSpeed, i32 targetPos, moveParameter param)
     {
-        auto start   = std::chrono::steady_clock::now();
-        auto timeout = std::chrono::milliseconds((1));
-        while (std::chrono::steady_clock::now() - start < timeout)
-        {
-        }
-        writeOpenRegisters("Max Current", param.MaxCurrent);
-        writeOpenRegisters("Motor Rated Current", param.RatedCurrent);
-        writeOpenRegisters("Max Motor Speed", param.MaxSpeed);
-        writeOpenRegisters("Motor Max Torque", param.MaxTorque);
-        writeOpenRegisters("Motor Rated Torque", param.RatedTorque);
-        writeOpenRegisters("Modes Of Operation", 0xFD);
-        writeOpenRegisters("Controlword", 0x80);
-        writeOpenRegisters("Controlword", 0x06);
-        writeOpenRegisters("Controlword", 15);
-        writeOpenRegisters("Target Velocity", desiredSpeed);
-        writeOpenRegisters("Target Position", targetPos);
         // kp
         u32 kp_bits;
-        memcpy(&kp_bits, &kp, sizeof(float));
+        memcpy(&kp_bits, &(param.kp), sizeof(float));
         writeOpenRegisters("Kp_impedance", kp_bits);
         // kd
         u32 kd_bits;
-        memcpy(&kd_bits, &kd, sizeof(float));
+        memcpy(&kd_bits, &(param.kd), sizeof(float));
         writeOpenRegisters("Kd_impedance", kd_bits);
-        writeOpenRegisters("Target Torque", torque);
-        start   = std::chrono::steady_clock::now();
-        timeout = std::chrono::seconds((5));
+        writeOpenRegisters("Target Torque", param.torqueff);
+        auto start   = std::chrono::steady_clock::now();
+        auto timeout = std::chrono::seconds((5));
         while (std::chrono::steady_clock::now() - start < timeout)
         {
         }
         writeOpenRegisters("Target Torque", 0);
-        writeOpenRegisters("Controlword", 0x80);
-        writeOpenRegisters("Controlword", 0x06);
-        writeOpenRegisters("Modes Of Operation", 0);
-        writeOpenRegisters("Controlword", 15);
         return MDCO::Error_t::OK;
     }
 

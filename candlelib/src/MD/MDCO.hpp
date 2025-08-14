@@ -30,13 +30,28 @@ namespace mab
 
     struct moveParameter
     {
-        u32 MaxSpeed     = 0x0000;
-        u16 MaxCurrent   = 0x00;
-        u32 RatedCurrent = 0x0000;
-        u16 MaxTorque    = 0x00;
-        u32 RatedTorque  = 0x0000;
-        i32 accLimit     = 0x0000;
-        i32 dccLimit     = 0x0000;
+        u32 MaxSpeed     = 220;
+        u16 MaxCurrent   = 500;
+        u32 RatedCurrent = 1000;
+        u16 MaxTorque    = 500;
+        u32 RatedTorque  = 1000;
+        i32 accLimit     = 1000;
+        i32 dccLimit     = 1000;
+        f32 kp           = 1.0;
+        f32 kd           = 0.0;
+        f32 ki           = 0.0;
+        u16 torqueff     = 0x00;
+    };
+
+    enum ModesOfOperation
+    {
+        Impedance          = (u8)-3,
+        Service            = (u8)-2,
+        Idle               = (u8)0,
+        ProfilePosition    = (u8)1,
+        ProfileVelocity    = (u8)3,
+        CyclicSyncPosition = (u8)8,
+        CyclicSyncVelocity = (u8)9,
     };
 
     /// @brief Software representation of MD device on the can network
@@ -76,39 +91,27 @@ namespace mab
             m_log.m_tag = tag.str();
         }
 
-        /// @brief Move to desired position within the acceleration,deceleration constraint
-        /// @param targetPos desired position
-        /// @param accLimit acceleration limit [RPM/s]
-        /// @param dccLimit decelaration limit [RPM/s]
-        /// @param moveParameter fix the limit parameter of the movement (max current, torque,
-        /// etc.).
-        void movePositionAcc(i32 targetPos, moveParameter param);
+        Error_t setProfileParameters(moveParameter param);
+
+        Error_t enableDriver(ModesOfOperation mode);
+
+        Error_t disableDriver();
 
         /// @brief Move to desired position
         /// @param DesiredPos desired position
-        /// @param moveParameter fix the limit parameter of the movement (max current, torque,
-        /// etc.).
-        void movePosition(moveParameter param, i32 DesiredPos);
+        void movePosition(i32 DesiredPos);
 
         /// @brief Move to desired speed
         /// @param DesiredSpeed desired speed [RPM]
-        /// @param moveParameter fix the limit parameter of the movement (max current, torque,
-        /// etc.).
-        void moveSpeed(moveParameter param, i32 DesiredSpeed);
+        void moveSpeed(i32 DesiredSpeed);
 
         /// @brief Move to desired position with impedance control
         /// @param desiredSpeed desired speed [RPM]
         /// @param targetPos desired position
-        /// @param kp proportional gain
-        /// @param kd derivative gain
-        /// @param torque torque to apply [mNM]
-        /// @param moveParameter fix the limit parameter of the movement (max current, torque,
-        /// etc.).
         /// @return Error_t indicating the result of the operation
         /// @details This function sets the motor in impedance control mode and moves it to the
         /// specified position with the given speed, gains, and torque.
-        Error_t moveImpedance(
-            i32 desiredSpeed, i32 targetPos, f32 kp, f32 kd, i16 torque, moveParameter param);
+        Error_t moveImpedance(i32 desiredSpeed, i32 targetPos, moveParameter param);
 
         /// @brief Check communication with MD device
         /// @return Error if not connected

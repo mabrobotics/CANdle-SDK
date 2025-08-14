@@ -117,15 +117,16 @@ void CandleToolCO::sendPdoSpeed(u16 id, i32 desiredSpeed)
 {
     MDCO md = MDCO(id, m_candle);
     log.info("Sending SDO for motor setup!");
-    md.writeOpenRegisters("Max Current", 500, 2);
-    md.writeOpenRegisters("Motor Rated Current", 1000, 4);
-    md.writeOpenRegisters("Max Motor Speed", 200, 4);
-    md.writeOpenRegisters("Motor Max Torque", 500, 2);
-    md.writeOpenRegisters("Motor Rated Torque", 1000, 4);
-    md.writeOpenRegisters("Modes Of Operation", 9, 1);
-    md.writeOpenRegisters("Controlword", 0x80, 2);
-    md.writeOpenRegisters("Controlword", 0x06, 2);
-    md.writeOpenRegisters("Controlword", 15, 2);
+
+    moveParameter param;
+    param.MaxCurrent   = 500;
+    param.MaxTorque    = 500;
+    param.RatedTorque  = 1000;
+    param.RatedCurrent = 1000;
+    param.MaxSpeed     = 200;
+    md.setProfileParameters(param);
+    md.enableDriver(CyclicSyncVelocity);
+
     log.info("Sending PDO for speed loop control");
     std::vector<u8> frameSetup;
     frameSetup.reserve(3);
@@ -133,6 +134,7 @@ void CandleToolCO::sendPdoSpeed(u16 id, i32 desiredSpeed)
     frameSetup.push_back(0x00);
     frameSetup.push_back(0x09);
     md.writeOpenPDORegisters(0x300 + id, frameSetup);
+
     std::vector<u8> frameSpeed;
     frameSpeed.reserve(6);
     frameSpeed.push_back(0x0F);
@@ -141,6 +143,7 @@ void CandleToolCO::sendPdoSpeed(u16 id, i32 desiredSpeed)
     frameSpeed.push_back((u8)(desiredSpeed >> 8));
     frameSpeed.push_back((u8)(desiredSpeed >> 16));
     frameSpeed.push_back((u8)(desiredSpeed >> 24));
+
     md.writeOpenPDORegisters(0x500 + id, frameSpeed);
     auto start   = std::chrono::steady_clock::now();
     auto timeout = std::chrono::seconds((5));
@@ -156,24 +159,21 @@ void CandleToolCO::sendPdoSpeed(u16 id, i32 desiredSpeed)
     {
         log.error("Velocity Target not reached");
     }
-    md.writeOpenRegisters("Motor Target Velocity", 0, 4);
-    md.writeOpenRegisters("Controlword", 6, 2);
-    md.writeOpenRegisters("Modes Of Operation", 0, 1);
+    md.disableDriver();
 }
 
 void CandleToolCO::sendPdoPosition(u16 id, i32 DesiredPos)
 {
     MDCO md = MDCO(id, m_candle);
     log.info("Sending SDO for motor setup!");
-    md.writeOpenRegisters("Max Current", 500, 2);
-    md.writeOpenRegisters("Motor Rated Current", 1000, 4);
-    md.writeOpenRegisters("Max Motor Speed", 200, 4);
-    md.writeOpenRegisters("Motor Max Torque", 500, 2);
-    md.writeOpenRegisters("Motor Rated Torque", 1000, 4);
-    md.writeOpenRegisters("Modes Of Operation", 8, 1);
-    md.writeOpenRegisters("Controlword", 0x80, 2);
-    md.writeOpenRegisters("Controlword", 0x06, 2);
-    md.writeOpenRegisters("Controlword", 15, 2);
+    moveParameter param;
+    param.MaxCurrent   = 500;
+    param.MaxTorque    = 500;
+    param.RatedTorque  = 1000;
+    param.RatedCurrent = 1000;
+    param.MaxSpeed     = 200;
+    md.setProfileParameters(param);
+    md.enableDriver(CyclicSyncPosition);
 
     auto start   = std::chrono::steady_clock::now();
     auto timeout = std::chrono::seconds((1));
@@ -226,8 +226,7 @@ void CandleToolCO::sendPdoPosition(u16 id, i32 DesiredPos)
         log.error("Position not reached in less than 5s");
     }
 
-    md.writeOpenRegisters("Controlword", 6, 2);
-    md.writeOpenRegisters("Modes Of Operation", 0, 1);
+    md.disableDriver();
 }
 
 void CandleToolCO::SendCustomPdo(u16 id, const edsObject& Desiregister, u64 data)
@@ -613,12 +612,23 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
 
 std::string CandleToolCO::clean(std::string s)
 {
-    auto notSpace = [](unsigned char c) { return !std::isspace(c); };
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(), notSpace));
-    s.erase(std::find_if(s.rbegin(), s.rend(), notSpace).base(), s.end());
-    std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::tolower(c); });
-    s.erase(std::remove_if(s.begin(), s.end(), [](unsigned char c) { return std::isspace(c); }),
-            s.end());
+    std::string out;
+    out.reserve(s.size());  // éviter les reallocations
+
+    bool seenNonSpace = false;
+    for (unsigned char c : s)
+    {
+        if (std::isspace(c))
+        {
+            if (!seenNonSpace)
+                continue;  // skip leading space
+            continue;      // skip all spaces (both internal & trailing in this logic)
+        }
+        seenNonSpace = true;
+        out.push_back(static_cast<char>(std::tolower(c)));
+    }
+
+    s.swap(out);
     return s;
 }
 
@@ -920,90 +930,42 @@ void CandleToolCO::setupInfo(u16 id, bool printAll)
     }
 }
 
-void CandleToolCO::testMove(u16 id,
-                            f32 targetPosition,
-                            u32 MaxSpeed,
-                            u16 MaxCurrent,
-                            u32 RatedCurrent,
-                            u16 MaxTorque,
-                            u32 RatedTorque)
+void CandleToolCO::testMove(u16 id, f32 targetPosition, moveParameter param)
 {
-    MDCO          mdco            = MDCO(id, m_candle);
-    long          DesiredPosition = (long)(targetPosition);
-    moveParameter param;
-    param.MaxSpeed     = MaxSpeed;
-    param.MaxCurrent   = MaxCurrent;
-    param.RatedCurrent = RatedCurrent;
-    param.MaxTorque    = MaxTorque;
-    param.RatedTorque  = RatedTorque;
-    mdco.movePosition(param, DesiredPosition);
+    MDCO mdco            = MDCO(id, m_candle);
+    long DesiredPosition = (long)(targetPosition);
+    mdco.setProfileParameters(param);
+    mdco.enableDriver(CyclicSyncPosition);
+    mdco.movePosition(DesiredPosition);
+    mdco.disableDriver();
 }
 
-void CandleToolCO::testMoveAbsolute(u16 id,
-                                    f32 targetPos,
-                                    f32 velLimit,
-                                    f32 accLimit,
-                                    f32 dccLimit,
-                                    u16 MaxCurrent,
-                                    u32 RatedCurrent,
-                                    u16 MaxTorque,
-                                    u32 RatedTorque)
+void CandleToolCO::testMoveAbsolute(u16 id, i32 targetPos, moveParameter param)
 {
-    MDCO mdco = MDCO(id, m_candle);
-
-    long          desiredPos       = ((long)targetPos);
-    long          MaxSpeed         = ((long)velLimit);
-    long          MaxAcceleration  = ((long)accLimit);
-    long          MaxDecceleration = ((long)dccLimit);
-    moveParameter param;
-    param.accLimit     = MaxAcceleration;
-    param.dccLimit     = MaxDecceleration;
-    param.MaxSpeed     = MaxSpeed;
-    param.MaxCurrent   = MaxCurrent;
-    param.RatedCurrent = RatedCurrent;
-    param.MaxTorque    = MaxTorque;
-    param.RatedTorque  = RatedTorque;
-    mdco.movePositionAcc(desiredPos, param);
+    MDCO mdco       = MDCO(id, m_candle);
+    long desiredPos = ((long)targetPos);
+    mdco.setProfileParameters(param);
+    mdco.enableDriver(ProfilePosition);
+    mdco.movePosition(desiredPos);
+    mdco.disableDriver();
 }
 
-void CandleToolCO::testMoveSpeed(u16 id,
-                                 u16 MaxCurrent,
-                                 u32 RatedCurrent,
-                                 u16 MaxTorque,
-                                 u32 RatedTorque,
-                                 u32 MaxSpeed,
-                                 i32 DesiredSpeed)
+void CandleToolCO::testMoveSpeed(u16 id, moveParameter param, i32 DesiredSpeed)
 {
-    mab::MDCO     md(id, m_candle);
-    moveParameter param;
-    param.MaxSpeed     = MaxSpeed;
-    param.MaxCurrent   = MaxCurrent;
-    param.RatedCurrent = RatedCurrent;
-    param.MaxTorque    = MaxTorque;
-    param.RatedTorque  = RatedTorque;
-    md.moveSpeed(param, DesiredSpeed);
+    mab::MDCO mdco(id, m_candle);
+    mdco.setProfileParameters(param);
+    mdco.enableDriver(CyclicSyncVelocity);
+    mdco.moveSpeed(DesiredSpeed);
+    mdco.disableDriver();
 }
 
-void CandleToolCO::testMoveImpedance(u16 id,
-                                     i32 desiredSpeed,
-                                     f32 targetPos,
-                                     f32 kp,
-                                     f32 kd,
-                                     i16 torque,
-                                     u32 MaxSpeed,
-                                     u16 MaxCurrent,
-                                     u32 RatedCurrent,
-                                     u16 MaxTorque,
-                                     u32 RatedTorque)
+void CandleToolCO::testMoveImpedance(u16 id, i32 desiredSpeed, f32 targetPos, moveParameter param)
 {
-    mab::MDCO     md(id, m_candle);
-    moveParameter param;
-    param.MaxSpeed     = MaxSpeed;
-    param.MaxCurrent   = MaxCurrent;
-    param.RatedCurrent = RatedCurrent;
-    param.MaxTorque    = MaxTorque;
-    param.RatedTorque  = RatedTorque;
-    md.moveImpedance(desiredSpeed, targetPos, kp, kd, torque, param);
+    mab::MDCO mdco(id, m_candle);
+    mdco.setProfileParameters(param);
+    mdco.enableDriver(Impedance);
+    mdco.moveImpedance(desiredSpeed, targetPos, param);
+    mdco.disableDriver();
 }
 
 void CandleToolCO::testLatency(u16 id)
@@ -1227,45 +1189,6 @@ u8 CandleToolCO::getNumericParamFromList(std::string& param, const std::vector<s
         i++;
     }
     return 0;
-}
-
-/* gets field only if the value is within bounds form the ini file */
-template <class T>
-bool CandleToolCO::getField(mINI::INIStructure& cfg,
-                            mINI::INIStructure& ini,
-                            std::string         category,
-                            std::string         field,
-                            T&                  value)
-{
-    T min = 0;
-    T max = 0;
-
-    if (std::is_same<T, std::uint16_t>::value || std::is_same<T, std::uint8_t>::value ||
-        std::is_same<T, std::int8_t>::value || std::is_same<T, std::uint32_t>::value)
-    {
-        value = atoi(cfg[category][field].c_str());
-        min   = atoi(ini["limit min"][field].c_str());
-        max   = atoi(ini["limit max"][field].c_str());
-    }
-    else if (std::is_same<T, std::float_t>::value)
-    {
-        value = strtof(cfg[category][field].c_str(), nullptr);
-        min   = strtof(ini["limit min"][field].c_str(), nullptr);
-        max   = strtof(ini["limit max"][field].c_str(), nullptr);
-    }
-
-    if (checkParamLimit(value, min, max))
-        return true;
-    else
-    {
-        log.error("Parameter [%s][%s] is out of bounds! Min: %.3f, max:%.3f, value: %.3f",
-                  category.c_str(),
-                  field.c_str(),
-                  (f32)min,
-                  (f32)max,
-                  (f32)value);
-        return false;
-    }
 }
 
 void CandleToolCO::edsLoad(const std::string& edsFilePath)

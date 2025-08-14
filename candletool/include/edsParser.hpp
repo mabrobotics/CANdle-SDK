@@ -136,8 +136,10 @@ class edsParser
     Error_t modifyObject(const edsObject& obj, u32 index, u8 subindex);
 
   private:
-    Logger      log;
+    Logger log;
+
     std::string m_edsFilePath;
+
     /// @brief Update the file path from the eds_path.txt file
     /// @return Error_t indicating the result of the operation
     Error_t updateFilePath();
