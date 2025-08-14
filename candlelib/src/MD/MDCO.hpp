@@ -151,6 +151,8 @@ namespace mab
         /// @return
         Error_t canOpenBandwidth(i16 newBandwidth);
 
+        Error_t testHearbeat();
+
         /// @brief Save configuration data to the memory
         /// @return
         Error_t openSave();
@@ -729,24 +731,6 @@ namespace mab
             return nullptr;
         }
 
-        inline std::pair<std::vector<u8>, mab::candleTypes::Error_t> transferCanFrame(
-            std::vector<u8> frameToSend, size_t responseSize) const
-        {
-            if (m_candle == nullptr)
-            {
-                m_log.error("Candle empty!");
-                return {{}, candleTypes::Error_t::DEVICE_NOT_CONNECTED};
-            }
-            auto result = getCandle()->transferCANFrame(
-                m_canId, frameToSend, responseSize, m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
-
-            if (result.second != candleTypes::Error_t::OK)
-            {
-                m_log.error("Error while transfering CAN frame!");
-            }
-            return result;
-        }
-
         inline std::pair<std::vector<u8>, mab::candleTypes::Error_t> transferCanOpenFrame(
             i16 Id, std::vector<u8> frameToSend, size_t responseSize) const
         {
@@ -756,7 +740,7 @@ namespace mab
                 return {{}, candleTypes::Error_t::DEVICE_NOT_CONNECTED};
             }
             auto result = getCandle()->transferCANFrame(
-                Id, frameToSend, responseSize, 10 * m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
+                Id, frameToSend, responseSize, m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
 
             if (result.second != candleTypes::Error_t::OK)
             {
@@ -768,18 +752,36 @@ namespace mab
         inline std::pair<std::vector<u8>, mab::candleTypes::Error_t>
         transferCanOpenFrameNoRespondExpected(i16             Id,
                                               std::vector<u8> frameToSend,
-                                              size_t          responseSize) const
+                                              size_t          responseSize,
+                                              u32             timeout = 0) const
         {
             if (m_candle == nullptr)
             {
                 m_log.error("Candle empty!");
                 return {{}, candleTypes::Error_t::DEVICE_NOT_CONNECTED};
             }
-            auto result = getCandle()->transferCANPDOFrame(
-                Id, frameToSend, responseSize, 10 * m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
-            result.second = candleTypes::Error_t::OK;
 
-            return result;
+            std::optional<Logger::Verbosity_E> levelBeforePDO = m_log.g_m_verbosity;
+
+            m_log.g_m_verbosity = Logger::Verbosity_E::SILENT;
+
+            if (timeout == 0)
+            {
+                auto result = getCandle()->transferCANFrame(
+                    Id, frameToSend, responseSize, 10 * m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
+                result.second       = candleTypes::Error_t::OK;
+                m_log.g_m_verbosity = levelBeforePDO;
+
+                return result;
+            }
+            else
+            {
+                auto result = getCandle()->transferCANFrame(Id, frameToSend, responseSize, timeout);
+                result.second       = candleTypes::Error_t::OK;
+                m_log.g_m_verbosity = levelBeforePDO;
+
+                return result;
+            }
         }
     };
 

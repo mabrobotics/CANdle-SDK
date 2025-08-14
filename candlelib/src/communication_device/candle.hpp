@@ -95,10 +95,6 @@ namespace mab
 
         bool m_isInitialized = false;
 
-        candleTypes::Error_t busTransferPDO(std::vector<u8>* data,
-                                            size_t           responseLength = 0,
-                                            const u32 timeoutMs = DEFAULT_CAN_TIMEOUT + 1) const;
-
         candleTypes::Error_t busTransfer(std::vector<u8>* data,
                                          size_t           responseLength = 0,
                                          const u32 timeoutMs = DEFAULT_CAN_TIMEOUT + 1) const;

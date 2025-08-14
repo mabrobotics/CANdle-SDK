@@ -22,10 +22,11 @@ namespace mab
             RECEIVER_ERROR,
             UNKNOWN_ERROR,
             DATA_TOO_LONG,
-            DATA_EMPTY
+            DATA_EMPTY,
+            TIMEOUT
         };
 
-        virtual ~I_CommunicationInterface() {};
+        virtual ~I_CommunicationInterface() = default;
 
         /// @brief Method to claim communication interface and enable communication
         /// @return Error on failure, OK on success
@@ -48,21 +49,6 @@ namespace mab
         /// @return Data from the device and possible errors. If error_t != OK than data's content
         /// is UB.
         virtual std::pair<std::vector<u8>, Error_t> transfer(
-            std::vector<u8> data, const u32 timeoutMs, const size_t expectedReceivedDataSize) = 0;
-
-        /// @brief Method to exchange data through interface
-        /// @param data Data to send to the device
-        /// @param timeoutMs Wait time for the response
-        /// @return Error on failure, OK on success
-        virtual Error_t transferPDO(std::vector<u8> data, const u32 timeoutMs) = 0;
-
-        /// @brief Method to exchange data through interface
-        /// @param data Data to send to the device
-        /// @param timeoutMs Wait time for the response
-        /// @param expectedReceivedDataSize Size of the response
-        /// @return Data from the device and possible errors. If error_t != OK than data's content
-        /// is UB.
-        virtual std::pair<std::vector<u8>, Error_t> transferPDO(
             std::vector<u8> data, const u32 timeoutMs, const size_t expectedReceivedDataSize) = 0;
     };
 }  // namespace mab

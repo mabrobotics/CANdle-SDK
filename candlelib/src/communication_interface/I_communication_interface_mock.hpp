@@ -17,12 +17,4 @@ class MockBus : public mab::I_CommunicationInterface
                 transfer,
                 (std::vector<u8> data, const u32 timeoutMs, const size_t expectedReceivedDataSize),
                 (override));
-    MOCK_METHOD(I_CommunicationInterface::Error_t,
-                transferPDO,
-                (std::vector<u8> data, const u32 timeoutMs),
-                (override));
-    MOCK_METHOD((std::pair<std::vector<u8>, I_CommunicationInterface::Error_t>),
-                transferPDO,
-                (std::vector<u8> data, const u32 timeoutMs, const size_t expectedReceivedDataSize),
-                (override));
 };

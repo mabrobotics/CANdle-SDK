@@ -125,41 +125,6 @@ namespace mab
         return candleTypes::Error_t::OK;
     }
 
-    candleTypes::Error_t Candle::busTransferPDO(std::vector<u8>* data,
-                                                size_t           responseLength,
-                                                const u32        timeoutMs) const
-    {
-        // return candleTypes::Error_t::OK;
-        if (data == nullptr)
-        {
-            m_log.error("Data vector broken!");
-            return candleTypes::Error_t::DATA_EMPTY;
-        }
-        if (data->size() == 0)
-        {
-            m_log.error("Data empty!");
-            return candleTypes::Error_t::DATA_EMPTY;
-        }
-
-        if (responseLength == 0)
-        {
-            I_CommunicationInterface::Error_t comError = m_bus->transferPDO(*data, timeoutMs);
-            if (comError)
-                return candleTypes::Error_t::UNKNOWN_ERROR;
-        }
-        else
-        {
-            std::pair<std::vector<u8>, I_CommunicationInterface::Error_t> result =
-                m_bus->transferPDO(*data, timeoutMs, responseLength);
-
-            data->clear();
-            data->insert(data->begin(), result.first.begin(), result.first.end());
-            if (result.second)
-                return candleTypes::Error_t::UNKNOWN_ERROR;
-        }
-        return candleTypes::Error_t::OK;
-    }
-
     const std::pair<std::vector<u8>, candleTypes::Error_t> Candle::transferCANFrame(
         const canId_t         canId,
         const std::vector<u8> dataToSend,
@@ -197,50 +162,6 @@ namespace mab
 
         if (buffer.size() > 3)
             buffer.erase(buffer.begin(), buffer.begin() + 2 /*response header size*/);
-
-        auto response = buffer;
-
-        m_log.debug("Expected received len: %d", responseSize);
-        m_log.debug("RECEIVE");
-        // frameDump(response);
-
-        return std::pair<std::vector<u8>, candleTypes::Error_t>(response, communicationStatus);
-    }
-
-    const std::pair<std::vector<u8>, candleTypes::Error_t> Candle::transferCANPDOFrame(
-        const canId_t         canId,
-        const std::vector<u8> dataToSend,
-        const size_t          responseSize,
-        const u32             timeoutMs) const
-    {
-        candleTypes::Error_t communicationStatus = candleTypes::Error_t::OK;
-
-        if (!m_isInitialized)
-            return std::pair<std::vector<u8>, candleTypes::Error_t>(
-                dataToSend, candleTypes::Error_t::UNINITIALIZED);
-        if (communicationStatus != candleTypes::Error_t::OK)
-            return std::pair<std::vector<u8>, candleTypes::Error_t>(dataToSend,
-                                                                    communicationStatus);
-
-        m_log.debug("SEND");
-        // frameDump(dataToSend);  // can be enabled for in depth debugging
-
-        if (dataToSend.size() > 64)
-        {
-            m_log.error("CAN frame too long!");
-            return std::pair<std::vector<u8>, candleTypes::Error_t>(
-                dataToSend, candleTypes::Error_t::DATA_TOO_LONG);
-        }
-
-        auto buffer = std::vector<u8>(dataToSend);
-
-        const auto candleCommandCANframe =
-            sendCanFrameHeader(dataToSend.size(), u16(canId), timeoutMs);
-
-        buffer.insert(buffer.begin(), candleCommandCANframe.begin(), candleCommandCANframe.end());
-
-        communicationStatus =
-            busTransferPDO(&buffer, responseSize + 2 /*response header size*/, timeoutMs + 1);
 
         auto response = buffer;
 

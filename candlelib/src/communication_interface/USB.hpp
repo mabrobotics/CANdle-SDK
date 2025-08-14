@@ -93,10 +93,5 @@ namespace mab
             std::vector<u8> data,
             const u32       timeoutMs,
             const size_t    expectedReceivedDataSize) override;
-        Error_t transferPDO(std::vector<u8> data, const u32 timeoutMs) override;
-        std::pair<std::vector<u8>, Error_t> transferPDO(
-            std::vector<u8> data,
-            const u32       timeoutMs,
-            const size_t    expectedReceivedDataSize) override;
     };
 }  // namespace mab

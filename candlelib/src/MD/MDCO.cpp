@@ -330,6 +330,95 @@ namespace mab
         return MDCO::Error_t::OK;
     }
 
+    MDCO::Error_t MDCO::testHearbeat()
+    {
+        // TODO: find a better way to do this, it seems to work but it's clearly not the best way to
+        // do it. A better way could be by implemented a listen mode on the USB.cpp file
+        uint32_t heartbeat_id = 0x700 + (uint32_t)this->m_canId;
+
+        m_log.info("Waiting for a heartbeat message with can id 0x%03X...", heartbeat_id);
+
+        std::vector<uint8_t> frame;
+        frame.reserve(1);
+        frame.push_back(0);
+
+        std::vector<uint8_t>      response;
+        mab::candleTypes::Error_t error;
+
+        uint64_t firstHeartbeatReceived = 0;
+
+        // Chrono setup
+        auto start_time = std::chrono::steady_clock::now();
+        auto timeout    = std::chrono::seconds(5);
+
+        while (std::chrono::steady_clock::now() - start_time < timeout)
+        {
+            // send Heartbeat CANopen frame with high frequency
+            auto result =
+                transferCanOpenFrameNoRespondExpected(heartbeat_id, frame, 1, /*timeoutMs=*/10);
+            response = result.first;
+            error    = result.second;
+
+            // if a correct message is received
+            if (error == mab::candleTypes::Error_t::OK && response.size() >= 3)
+            {
+                // if the message is a Heartbeat
+                if (response[0] == 0x04 && response[1] == 0x01 && response[2] == 0x05)
+                {
+                    m_log.success("heartbeat reçu");
+
+                    auto now_us = std::chrono::duration_cast<std::chrono::microseconds>(
+                                      std::chrono::steady_clock::now() - start_time)
+                                      .count();
+
+                    // first heartbeat
+                    if (firstHeartbeatReceived == 0)
+                    {
+                        firstHeartbeatReceived = now_us;
+
+                        result = transferCanOpenFrameNoRespondExpected(
+                            heartbeat_id, frame, 1, /*timeoutMs=*/10);
+                        response = result.first;
+                        error    = result.second;
+
+                        // keep sending message until the last heartbeat disappears on the bus
+                        while ((response.size() > 1 && response[1] == 0x01) &&
+                               (std::chrono::steady_clock::now() - start_time < timeout))
+                        {
+                            result = transferCanOpenFrameNoRespondExpected(
+                                heartbeat_id, frame, 1, /*timeoutMs=*/10);
+                            response = result.first;
+                            error    = result.second;
+
+                            // if we lost communication with the MD
+                            if (error != mab::candleTypes::Error_t::OK || response.size() <= 1)
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        // second heartbeat — calcul du delta
+                        auto delta_us = std::chrono::duration_cast<std::chrono::microseconds>(
+                                            std::chrono::steady_clock::now() - start_time)
+                                            .count() -
+                                        firstHeartbeatReceived;
+
+                        m_log.success("heartbeat received with in between time of %.6lf s",
+                                      static_cast<double>(delta_us) / 1'000'000.0);
+                        return OK;
+                    }
+                }
+            }
+        }
+
+        // timeout conditions
+        if (firstHeartbeatReceived == 0)
+            m_log.error("No heartbeat has been received after 5s.\n");
+        else
+            m_log.success("One heartbeat has been received in the last 5s");
+        return OK;
+    }
+
     MDCO::Error_t MDCO::openSave()
     {
         writeOpenRegisters("Controlword", 0x06, 2);
