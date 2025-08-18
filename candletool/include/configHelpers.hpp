@@ -1,8 +1,10 @@
 #include <string>
 #include <filesystem>
 #include "mab_types.hpp"
-
 #include "mini/ini.h"
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 namespace mab
 {
@@ -14,8 +16,7 @@ namespace mab
         GetModuleFileName(NULL, path, 256);
         return std::filesystem::path(path).remove_filename().string() + std::string("config\\");
 #else
-        // return std::string("/etc/candletool/config/");
-        return std::string("config/");
+        return std::string("/etc/candletool/config/");
 #endif
     }
 

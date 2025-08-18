@@ -140,10 +140,6 @@ namespace mab
             m_log.error(message.c_str());
             throw std::runtime_error(message);
         }
-        // printf("--------------data send------------");
-        // for (int i = 0; i <= (int)length; i++)
-        //     printf("0x%X    ", data[i]);
-        // printf("\n");
         return static_cast<libusb_error>(
             libusb_bulk_transfer(m_devHandle, m_outEndpointAddress, data, length, NULL, timeout));
     }
@@ -338,7 +334,7 @@ namespace mab
         if (transmitError != libusb_error::LIBUSB_SUCCESS)
         {
             std::string err = translateLibusbError(transmitError);
-            m_Log.error(err.c_str());                              // silent mode for pdo
+            m_Log.error(err.c_str());
             if (transmitError == libusb_error::LIBUSB_ERROR_PIPE)  // pipe clogged and needs a reset
             {
                 m_libusbDevice->unclogInput();
@@ -355,7 +351,7 @@ namespace mab
             if (receiveError != libusb_error::LIBUSB_SUCCESS)
             {
                 std::string err = translateLibusbError(receiveError);
-                m_Log.error(err.c_str());  // silent mode for pdo
+                m_Log.error(err.c_str());
                 if (receiveError ==
                     libusb_error::LIBUSB_ERROR_PIPE)  // pipe clogged and needs a reset
                 {
@@ -367,5 +363,4 @@ namespace mab
         }
         return std::pair(data, Error_t::OK);
     }
-
 }  // namespace mab

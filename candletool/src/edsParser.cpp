@@ -243,7 +243,7 @@ Error_t edsParser::load(const std::string& edsFilePath)
         return INVALID_PATH;
     }
 
-    // Modifier et réécrire
+    // Modify & Rewrite
     ini["eds"]["path"] = edsFilePath;
     file.write(ini);
     log.success("EDS loaded:%s", edsFilePath.c_str());
@@ -359,6 +359,21 @@ Error_t edsParser::generateMarkdown()
         return INVALID_PATH;
     }
 
+    // Check and create the ./eds folder if necessary
+    namespace fs = std::filesystem;
+    if (!fs::exists("./eds"))
+    {
+        try
+        {
+            fs::create_directories("./eds");
+        }
+        catch (const std::exception& e)
+        {
+            log.error("Error : impossible de créer le dossier ./eds : %s\n", e.what());
+            return INVALID_PATH;
+        }
+    }
+
     std::ofstream mdFile("./eds/eds_parsed.md");
     if (!mdFile)
     {
@@ -452,6 +467,21 @@ Error_t edsParser::generateHtml()
     {
         log.error("Error : impossible to open the EDS file for HTML generation.\n");
         return INVALID_PATH;
+    }
+
+    // Check and create the ./eds folder if necessary
+    namespace fs = std::filesystem;
+    if (!fs::exists("./eds"))
+    {
+        try
+        {
+            fs::create_directories("./eds");
+        }
+        catch (const std::exception& e)
+        {
+            log.error("Error : impossible de créer le dossier ./eds : %s\n", e.what());
+            return INVALID_PATH;
+        }
     }
 
     std::ofstream htmlFile("./eds/eds_parsed.html");
@@ -1187,7 +1217,6 @@ Error_t edsParser::modifyObject(const edsObject& obj, u32 index, u8 subindex)
 
 Error_t edsParser::updateFilePath()
 {
-    // const std::string pathFile = "./eds/eds_path.txt";
     mINI::INIFile      file(mab::getCandletoolConfigPath());
     mINI::INIStructure ini;
     file.read(ini);

@@ -7,4 +7,3 @@
 [submodule "candletool/3rd_party/CLI11"]
 	path = candletool/3rd_party/CLI11
 	url = https://github.com/CLIUtils/CLI11.git
-
