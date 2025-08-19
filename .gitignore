@@ -3,7 +3,6 @@
 build
 install
 log
-bin
 dist
 venv
 wheelhouse
@@ -42,3 +41,7 @@ wheelhouse
 *.exe
 *.out
 *.app
+
+# Libwdi automake files
+*~
+embedder

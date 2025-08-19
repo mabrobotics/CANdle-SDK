@@ -15,7 +15,10 @@
 // /usr/include/libusb-1.0/libusb.h:52:33: error: ISO C++ forbids zero-size array
 // ‘dev_capability_data’ [-Werror=pedantic]
 //   52 | #define ZERO_SIZED_ARRAY        0       /* [0] - non-standard, but usually working code */
-#include <libusb.h>
+#include "libusb.h"
+#ifdef WIN32
+// #include "libwdi.h"
+#endif
 #pragma GCC diagnostic pop
 
 namespace mab

@@ -10,19 +10,6 @@ endif()
 
 # LIBWDI build
 
-if(WIN32)
-
-  set(LIBWDI_PATH ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libwdi/libwdi)
-  set(LIBWDI_SOURCES
-      ${LIBWDI_PATH}/embedder.c ${LIBWDI_PATH}/installer.c
-      ${LIBWDI_PATH}/libwdi_dlg.c ${LIBWDI_PATH}/libwdi.c ${LIBWDI_PATH}/pki.c
-      ${LIBWDI_PATH}/vid_data.c)
-  set(LIBWDI_INCLUDES ${LIBWDI_PATH})
-  add_library(libwdi ${LIBWDI_SOURCES})
-  target_include_directories(libwdi PRIVATE ${LIBWDI_INCLUDES})
-
-endif()
-
 if(UNIX)
   set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
   include(${CMAKE_MODULE_PATH}/Findlibusb.cmake)
@@ -35,6 +22,40 @@ if(WIN32)
       ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/lib/windows/libusb-1.0.a)
   set(LIBUSB_INCLUDE_DIR
       ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/inc/libusb-1.0)
+
+  include(ExternalProject)
+
+  set(LIBWDI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libwdi)
+  set(LIBUSB0_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/libusb0-win)
+  set(LIBWDI_CONFIGURE_ARGS
+      --disable-shared --disable-32bit --enable-log
+      --with-libusb0=${LIBUSB0_DIR} --host=x86_64-w64-mingw32)
+
+  ExternalProject_Add(
+    libwdi_ext
+    BUILD_ALWAYS TRUE
+    SOURCE_DIR ${LIBWDI_DIR}
+    CONFIGURE_COMMAND cd ${LIBWDI_DIR} && CC_FOR_BUILD=gcc && ./bootstrap.sh &&
+                      ./configure ${LIBWDI_CONFIGURE_ARGS}
+    BUILD_COMMAND cd ${LIBWDI_DIR} && make clean && CC_FOR_BUILD=gcc && make
+    INSTALL_COMMAND echo "Skipping install step for libwdi. Build artifacts: "
+                    && ls -al ${LIBWDI_DIR}/libwdi/.libs/
+    BUILD_BYPRODUCTS ${LIBWDI_DIR}/.libs/libwdi.a)
+  # Expose paths for consumers
+  set(LIBWDI_INCLUDE_DIR
+      ${LIBWDI_DIR}/libwdi
+      CACHE INTERNAL "libwdi include dir")
+  set(LIBWDI_LIB
+      ${LIBWDI_DIR}/libwdi/.libs/libwdi.a
+      CACHE INTERNAL "libwdi libraries dir")
+
+  add_library(libwdi STATIC IMPORTED GLOBAL)
+  set_target_properties(
+    libwdi PROPERTIES IMPORTED_LOCATION ${LIBWDI_DIR}/libwdi/.libs/libwdi.a
+                      INTERFACE_INCLUDE_DIRECTORIES ${LIBWDI_DIR}/libwdi)
+  # Ensure libwdi target is only available *after* the external project has
+  # built
+  add_dependencies(libwdi libwdi_ext)
 endif()
 
 if(CANDLE_BUILD_STATIC)
@@ -84,13 +105,21 @@ target_include_directories(
          ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_device
          ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_interface
          ${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger
-         ${LIBUSB_INCLUDE_DIR})
-target_include_directories(candle SYSTEM PRIVATE ${LIBUSB_INCLUDE_DIR})
+         ${LIBUSB_INCLUDE_DIR}
+         ${LIBWDI_DIR})
+target_include_directories(candle SYSTEM PRIVATE ${LIBUSB_INCLUDE_DIR}
+                                                 ${LIBWDI_DIR})
 if(UNIX)
   target_link_libraries(candle shared_data logger pthread ${LIBUSB_LIBRARY})
 else()
-  target_link_libraries(candle shared_data logger pthread
-                        ${LIBUSB_WINDOWS_STATIC} -static)
+  target_link_libraries(
+    candle
+    shared_data
+    logger
+    pthread
+    ${LIBUSB_WINDOWS_STATIC}
+    libwdi
+    -static)
 
 endif()
 target_compile_options(candle PRIVATE -Wall -Wextra -Wpedantic)

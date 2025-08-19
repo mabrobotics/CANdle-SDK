@@ -212,7 +212,7 @@ jobs:
   build-candleSDK-windows-static:
     runs-on: ubuntu-24.04
     container:
-      image: mabroboticsofficial/mab_build_environment_windows_cross-compile:v2
+      image: mabroboticsofficial/mab_build_environment_windows_cross-compile:v3
       options: --user root
 
     steps:
