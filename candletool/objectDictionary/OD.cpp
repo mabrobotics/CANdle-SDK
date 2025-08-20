@@ -1,6 +1,8 @@
 #include "OD.hpp"
 
-std::vector<edsObject> generateObjectDictionary()
+using namespace mab;
+
+std::vector<edsObject> mab::generateObjectDictionary()
 {
     std::vector<edsObject> list;
     list.push_back(
@@ -347,9 +349,9 @@ std::vector<edsObject> generateObjectDictionary()
     list.push_back(edsObject{0x2002, 0x3, "Kd_position", 0x7, "RAM", 0x8, "rw", true, 0x0});
     list.push_back(
         edsObject{0x2002, 0x4, "Integral Limit_position", 0x7, "RAM", 0x8, "rw", false, 0x0});
-    list.push_back(edsObject{0x2003, 0x0, "System Command", 0x9, "RAM", 0x0, "RO", false, 0x0});
     list.push_back(
         edsObject{0x2003, 0x0, "Highest sub-index supported", 0x7, "RAM", 0x5, "ro", false, 0xd});
+    list.push_back(edsObject{0x2003, 0x0, "System Command", 0x9, "RAM", 0x0, "RO", false, 0x0});
     list.push_back(edsObject{0x2003, 0x1, "Blink LEDs", 0x7, "RAM", 0x1, "rw", false, 0x0});
     list.push_back(edsObject{0x2003, 0x2, "Reset Controller", 0x7, "RAM", 0x1, "rw", false, 0x0});
     list.push_back(edsObject{0x2003, 0x3, "Run Calibration", 0x7, "RAM", 0x1, "rw", false, 0x0});
@@ -381,9 +383,9 @@ std::vector<edsObject> generateObjectDictionary()
     list.push_back(edsObject{0x2004, 0x7, "Motion Status", 0x7, "RAM", 0x7, "rw", false, 0x0});
     list.push_back(
         edsObject{0x2004, 0x8, "Communication Status", 0x7, "RAM", 0x7, "rw", false, 0x0});
+    list.push_back(edsObject{0x2005, 0x0, "Output Encoder", 0x9, "RAM", 0x0, "RO", false, 0x0});
     list.push_back(
         edsObject{0x2005, 0x0, "Highest sub-index supported", 0x7, "RAM", 0x5, "ro", false, 0x5});
-    list.push_back(edsObject{0x2005, 0x0, "Output Encoder", 0x9, "RAM", 0x0, "RO", false, 0x0});
     list.push_back(edsObject{0x2005, 0x1, "Type", 0x7, "RAM", 0x5, "rw", false, 0x0});
     list.push_back(edsObject{0x2005, 0x2, "Calibration Mode", 0x7, "RAM", 0x5, "rw", false, 0x0});
     list.push_back(edsObject{0x2005, 0x3, "Mode", 0x7, "RAM", 0x5, "rw", false, 0x0});
@@ -394,9 +396,9 @@ std::vector<edsObject> generateObjectDictionary()
         edsObject{0x2006, 0x0, "Highest sub-index supported", 0x7, "RAM", 0x5, "ro", false, 0x2});
     list.push_back(edsObject{0x2006, 0x1, "Motor Temperature", 0x7, "RAM", 0x8, "ro", true, 0x0});
     list.push_back(edsObject{0x2006, 0x2, "Mosfet Temperature", 0x7, "RAM", 0x8, "ro", true, 0x0});
+    list.push_back(edsObject{0x2007, 0x0, "Limits", 0x9, "RAM", 0x0, "RO", false, 0x0});
     list.push_back(
         edsObject{0x2007, 0x0, "Highest sub-index supported", 0x7, "RAM", 0x5, "ro", false, 0x6});
-    list.push_back(edsObject{0x2007, 0x0, "Limits", 0x9, "RAM", 0x0, "RO", false, 0x0});
     list.push_back(edsObject{0x2007, 0x1, "Max Torque", 0x7, "RAM", 0x8, "rw", false, 0x0});
     list.push_back(edsObject{0x2007, 0x2, "Max Acceleration", 0x7, "RAM", 0x8, "rw", false, 0x0});
     list.push_back(edsObject{0x2007, 0x3, "Max Deceleration", 0x7, "RAM", 0x8, "rw", false, 0x0});
@@ -458,7 +460,7 @@ std::vector<edsObject> generateObjectDictionary()
     list.push_back(
         edsObject{0x6061, 0x0, "Modes Of Operation Display", 0x7, "RAM", 0x2, "ro", true, 0x0});
     list.push_back(
-        edsObject{0x6062, 0x0, "Position Demand Value", 0x7, "RAM", 0x4, "ro", false, 0x0});
+        edsObject{0x6062, 0x0, "Position Demand Value", 0x7, "RAM", 0x4, "rw", false, 0x0});
     list.push_back(edsObject{0x6064, 0x0, "Position Value", 0x7, "RAM", 0x4, "ro", true, 0x0});
     list.push_back(edsObject{0x6067, 0x0, "Position Window", 0x7, "RAM", 0x7, "rw", false, 0x0});
     list.push_back(

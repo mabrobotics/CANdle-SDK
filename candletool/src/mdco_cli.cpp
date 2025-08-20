@@ -82,9 +82,15 @@ MdcoCli::MdcoCli(CLI::App& rootCli) : m_rootCli(rootCli)
 
     edsLoad->add_option("<EDS_FILE>", cmdCANopen.value, "Path to the .eds file to analyze.")
         ->required();
-    edsGenMd   = edsGen->add_subcommand("md", "Generate .md file from .eds file.");
+    edsGenMd = edsGen->add_subcommand("md", "Generate .md file from .eds file.");
+    edsGenMd->add_option(
+        "<PATH>", cmdCANopen.cfgPath, "Path where the user want to generate the md file");
     edsGenHtml = edsGen->add_subcommand("html", "Generate .html file from .eds file.");
-    edsGencpp  = edsGen->add_subcommand("cpp", "Generate .cpp & .hpp file from .eds file.");
+    edsGenHtml->add_option(
+        "<PATH>", cmdCANopen.cfgPath, "Path where the user want to generate the html file");
+    edsGencpp = edsGen->add_subcommand("cpp", "Generate .cpp & .hpp file from .eds file.");
+    edsGencpp->add_option(
+        "<PATH>", cmdCANopen.cfgPath, "Path where the user want to generate the cpp & hpp file");
     edsGet->add_option("<INDEX>", cmdCANopen.id, "Index of the object to get.")->required();
     edsGet->add_option("<SUBINDEX>", cmdCANopen.subReg, "Subindex of the object to get.")
         ->required();
@@ -548,11 +554,11 @@ void MdcoCli::parse(mab::CANdleBaudrate_E baud)
             if (edsGen->parsed())
             {
                 if (edsGenMd->parsed())
-                    candleToolCO.edsGenerateMarkdown();  // generate .md file
+                    candleToolCO.edsGenerateMarkdown(cmdCANopen.cfgPath);  // generate .md file
                 if (edsGenHtml->parsed())
-                    candleToolCO.edsGenerateHtml();  // generate .html file
+                    candleToolCO.edsGenerateHtml(cmdCANopen.cfgPath);  // generate .html file
                 if (edsGencpp->parsed())
-                    candleToolCO.edsGenerateCpp();  // generate .cpp file
+                    candleToolCO.edsGenerateCpp(cmdCANopen.cfgPath);  // generate .cpp file
             }
             if (edsGet->parsed())
             {
@@ -698,3 +704,4 @@ void MdcoCli::parse(mab::CANdleBaudrate_E baud)
         }
     }
 }
+

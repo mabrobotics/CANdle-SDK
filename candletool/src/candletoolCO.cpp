@@ -1207,22 +1207,22 @@ void CandleToolCO::edsDisplay()
     MyEdsParser.display();
 }
 
-void CandleToolCO::edsGenerateMarkdown()
+void CandleToolCO::edsGenerateMarkdown(const std::string& path)
 {
     edsParser MyEdsParser;
-    MyEdsParser.generateMarkdown();
+    MyEdsParser.generateMarkdown(path);
 }
 
-void CandleToolCO::edsGenerateHtml()
+void CandleToolCO::edsGenerateHtml(const std::string& path)
 {
     edsParser MyEdsParser;
-    MyEdsParser.generateHtml();
+    MyEdsParser.generateHtml(path);
 }
 
-void CandleToolCO::edsGenerateCpp()
+void CandleToolCO::edsGenerateCpp(const std::string& path)
 {
     edsParser MyEdsParser;
-    MyEdsParser.generateCpp();
+    MyEdsParser.generateCpp(path);
 }
 
 void CandleToolCO::edsGet(u32 index, u8 subindex)
@@ -1270,3 +1270,4 @@ void CandleToolCO::ReadHeartbeat(u16 id)
     MDCO mdco(id, m_candle);
     mdco.testHeartbeat();
 }
+

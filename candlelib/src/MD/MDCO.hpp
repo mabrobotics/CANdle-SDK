@@ -41,7 +41,7 @@ namespace mab
         f32 kp           = 1.0;
         f32 kd           = 0.0;
         f32 ki           = 0.0;
-        u16 torqueff     = 0x00;
+        i16 torqueff     = 0x00;
     };
 
     /// @brief Modes of operation for the MD device cf. 0x6060 in the CANopen object dictionary

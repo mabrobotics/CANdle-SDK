@@ -1663,7 +1663,7 @@ ParameterName=Position Demand Value
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0004
-AccessType=ro
+AccessType=rw
 DefaultValue=0
 PDOMapping=0
 

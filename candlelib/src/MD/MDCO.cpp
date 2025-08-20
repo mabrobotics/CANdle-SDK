@@ -247,13 +247,15 @@ namespace mab
         u32 kd_bits;
         memcpy(&kd_bits, &(param.kd), sizeof(float));
         writeOpenRegisters("Kd_impedance", kd_bits);
-        writeOpenRegisters("Target Torque", param.torqueff);
+        writeOpenRegisters("Position Demand Value", targetPos);
+        writeOpenRegisters("Velocity Demand Value", desiredSpeed);
+        writeOpenRegisters("Torque Demand Value", param.torqueff);
         auto start   = std::chrono::steady_clock::now();
         auto timeout = std::chrono::seconds((5));
         while (std::chrono::steady_clock::now() - start < timeout)
         {
         }
-        writeOpenRegisters("Target Torque", 0);
+        writeOpenRegisters("Torque Demand Value", 0);
         return MDCO::Error_t::OK;
     }
 
@@ -521,3 +523,4 @@ namespace mab
         return ids;
     }
 }  // namespace mab
+

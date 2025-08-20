@@ -233,15 +233,15 @@ namespace mab
         void edsDisplay();
 
         /// @brief Generate a markdown file from the loaded EDS file
-        void edsGenerateMarkdown();
+        void edsGenerateMarkdown(const std::string& path = "");
 
         /// @brief Generate an HTML file from the loaded EDS file
-        void edsGenerateHtml();
+        void edsGenerateHtml(const std::string& path = "");
 
         /// @brief Generate a C++ header and source file from the loaded EDS file
         /// @note The generated files can be included in the candletool project by switching the
         /// file OD.cpp & OD.hpp with generates ones.
-        void edsGenerateCpp();
+        void edsGenerateCpp(const std::string& path = "");
 
         /// @brief search for an object in the EDS file
         /// @param index The index of the object to search for

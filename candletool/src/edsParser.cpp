@@ -2,8 +2,10 @@
 #include "configHelpers.hpp"
 #include "mini/ini.h"
 
+using namespace mab;
+
 // Utility
-std::string toLower(const std::string& s)
+std::string mab::toLower(const std::string& s)
 {
     std::string out = s;
     std::transform(out.begin(), out.end(), out.begin(), ::tolower);
@@ -151,7 +153,7 @@ void updateObjectTypeSection(std::map<std::string, std::string>& sectionMap,
     sectionMap[sectionName] = out.str();
 }
 
-std::string getObjectTypeName(const std::string& hex)
+std::string mab::getObjectTypeName(const std::string& hex)
 {
     if (hex == "0x7")
         return "VAR";
@@ -162,7 +164,7 @@ std::string getObjectTypeName(const std::string& hex)
     return hex;  // fallback
 }
 
-std::string getDataTypeName(const std::string& hex)
+std::string mab::getDataTypeName(const std::string& hex)
 {
     if (hex == "0x0001")
         return "BOOLEAN";
@@ -195,13 +197,6 @@ std::string getDataTypeName(const std::string& hex)
     if (hex == "0x000F")
         return "DOMAIN";
     return hex;  // fallback
-}
-
-edsParser::edsParser()
-{
-    m_edsFilePath = "";
-    log.m_tag     = "CANDLETOOLco";
-    log.m_layer   = Logger::ProgramLayer_E::LAYER_2;
 }
 
 edsParser::~edsParser()
@@ -264,8 +259,7 @@ Error_t edsParser::isValid()
         return INVALID_FILE;
     if (!hasValidDataTypes())
         return INVALID_FILE;
-
-    std::cout << "The EDS file is correct.\n";
+    log.success("The EDS file is correct.");
     return OK;
 }
 
@@ -319,6 +313,8 @@ Error_t edsParser::unload()
 
 Error_t edsParser::display()
 {
+    std::stringstream ss;
+
     // update the path since the eds_path.txt file
     Error_t pathResult = this->updateFilePath();
     if (pathResult != OK)
@@ -334,21 +330,23 @@ Error_t edsParser::display()
         return INVALID_PATH;
     }
 
-    std::cout << "\n--- Content of " << m_edsFilePath << "---\n";
+    ss << "\n--- Content of " << m_edsFilePath << "---\n";
 
     std::string line;
     while (std::getline(edsFile, line))
     {
-        std::cout << line << std::endl;
+        ss << line << std::endl;
     }
 
     edsFile.close();
-    std::cout << "--- End of EDS file ---\n";
+    ss << "--- End of EDS file ---\n";
+
+    log.success("%s", ss.str().c_str());
 
     return OK;
 }
 
-Error_t edsParser::generateMarkdown()
+Error_t edsParser::generateMarkdown(const std::string& path)
 {
     this->updateFilePath();
 
@@ -359,22 +357,28 @@ Error_t edsParser::generateMarkdown()
         return INVALID_PATH;
     }
 
-    // Check and create the ./eds folder if necessary
-    namespace fs = std::filesystem;
-    if (!fs::exists("./eds"))
+    std::string defaultPath = "./eds/eds_parsed.md";
+    if (path != "")
+        defaultPath = path;
+    else
     {
-        try
+        // Check and create the ./eds folder if necessary
+        namespace fs = std::filesystem;
+        if (!fs::exists("./eds"))
         {
-            fs::create_directories("./eds");
-        }
-        catch (const std::exception& e)
-        {
-            log.error("Error : impossible de créer le dossier ./eds : %s\n", e.what());
-            return INVALID_PATH;
+            try
+            {
+                fs::create_directories("./eds");
+            }
+            catch (const std::exception& e)
+            {
+                log.error("Error : impossible to create ./eds directory: %s\n", e.what());
+                return INVALID_PATH;
+            }
         }
     }
 
-    std::ofstream mdFile("./eds/eds_parsed.md");
+    std::ofstream mdFile(defaultPath);
     if (!mdFile)
     {
         log.error("Error : impossible to create Markdown file.\n");
@@ -453,12 +457,11 @@ Error_t edsParser::generateMarkdown()
     flushSection();
     edsFile.close();
     mdFile.close();
-
-    std::cout << "Markdown file generate : ./eds/eds_parsed.md\n";
+    log.success("Markdown file generate : %s", defaultPath.c_str());
     return OK;
 }
 
-Error_t edsParser::generateHtml()
+Error_t edsParser::generateHtml(const std::string& path)
 {
     this->updateFilePath();
 
@@ -468,23 +471,29 @@ Error_t edsParser::generateHtml()
         log.error("Error : impossible to open the EDS file for HTML generation.\n");
         return INVALID_PATH;
     }
-
-    // Check and create the ./eds folder if necessary
-    namespace fs = std::filesystem;
-    if (!fs::exists("./eds"))
+    std::string defaultPath = "./eds/eds_parsed.html";
+    if (path != "")
+        defaultPath = path;
+    else
     {
-        try
+        // Check and create the ./eds folder if necessary
+        namespace fs = std::filesystem;
+        if (!fs::exists("./eds"))
         {
-            fs::create_directories("./eds");
-        }
-        catch (const std::exception& e)
-        {
-            log.error("Error : impossible de créer le dossier ./eds : %s\n", e.what());
-            return INVALID_PATH;
+            try
+            {
+                fs::create_directories("./eds");
+            }
+            catch (const std::exception& e)
+            {
+                log.error("Error : impossible to create the ./eds folder: %s\n", e.what());
+                return INVALID_PATH;
+            }
         }
     }
 
-    std::ofstream htmlFile("./eds/eds_parsed.html");
+    std::ofstream htmlFile(defaultPath);
+
     if (!htmlFile)
     {
         log.error("Error : impossible to create the HTML file.\n");
@@ -582,11 +591,11 @@ Error_t edsParser::generateHtml()
     edsFile.close();
     htmlFile.close();
 
-    std::cout << "HTML file generate : ./eds/eds_parsed.html\n";
+    log.success("HTML file generate :%s", defaultPath.c_str());
     return OK;
 }
 
-Error_t edsParser::generateCpp()
+Error_t edsParser::generateCpp(const std::string& path)
 {
     this->updateFilePath();
 
@@ -596,6 +605,10 @@ Error_t edsParser::generateCpp()
         log.error("Impossible to open EDS file.\n");
         return INVALID_PATH;
     }
+
+    std::string defaultPath = "../../candletool/objectDictionary/";
+    if (path != "")
+        defaultPath = path;
 
     std::vector<edsObject> objects;
     edsObject              current;
@@ -647,18 +660,22 @@ Error_t edsParser::generateCpp()
               { return (a.index < b.index) || (a.index == b.index && a.subIndex < b.subIndex); });
 
     // Write header file
-    std::ofstream hpp("../../candletool/objectDictionary/OD.hpp");
+    std::ofstream hpp((defaultPath + "OD.hpp"));
     hpp << "#pragma once\n";
     hpp << "#include <vector>\n";
     hpp << "#include \"../include/edsParser.hpp\"\n\n";
+    hpp << "namespace mab\n";
+    hpp << "{\n";
     hpp << "std::vector<edsObject> generateObjectDictionary();\n";
+    hpp << "}\n";
     hpp << "// This file is auto-generated from EDS file.\n";
     hpp.close();
 
     // Write cpp file
-    std::ofstream cpp("../../candletool/objectDictionary/OD.cpp");
+    std::ofstream cpp(defaultPath + "OD.cpp");
     cpp << "#include \"OD.hpp\"\n\n";
-    cpp << "std::vector<edsObject> generateObjectDictionary() {\n";
+    cpp << "using namespace mab;\n\n";
+    cpp << "std::vector<edsObject> mab::generateObjectDictionary() {\n";
     cpp << "   std::vector<edsObject> list;\n";
 
     for (const auto& obj : objects)
@@ -680,7 +697,7 @@ Error_t edsParser::generateCpp()
     cpp << "}\n";
     cpp.close();
 
-    std::cout << " OD.hpp et OD.cpp File generate.\n";
+    log.success("OD.hpp et OD.cpp File generate.");
     return OK;
 }
 
@@ -714,10 +731,12 @@ Error_t edsParser::get(u32 index, u8 subindex)
     bool        sectionFound = false;
     bool        wantAllSubs  = (subindex == 0x00);
 
-    std::cout << "--- Reading for index 0x" << std::hex << index;
+    std::stringstream ss;
+
+    ss << "--- Reading for index 0x" << std::hex << index;
     if (!wantAllSubs)
-        std::cout << "subindex 0x" << std::hex << static_cast<int>(subindex);
-    std::cout << "---\n";
+        ss << "subindex 0x" << std::hex << static_cast<int>(subindex);
+    ss << "---\n";
 
     while (std::getline(edsFile, line))
     {
@@ -742,7 +761,7 @@ Error_t edsParser::get(u32 index, u8 subindex)
                 {
                     inSection    = true;
                     sectionFound = true;
-                    std::cout << line << std::endl;
+                    ss << line << std::endl;
                 }
             }
             else
@@ -752,7 +771,7 @@ Error_t edsParser::get(u32 index, u8 subindex)
                 {
                     inSection    = true;
                     sectionFound = true;
-                    std::cout << line << std::endl;
+                    ss << line << std::endl;
                 }
             }
             continue;
@@ -760,10 +779,10 @@ Error_t edsParser::get(u32 index, u8 subindex)
 
         if (inSection)
         {
-            std::cout << line << std::endl;
+            ss << line << std::endl;
         }
     }
-
+    log.info("%s\n", ss.str().c_str());
     edsFile.close();
 
     if (!sectionFound)
@@ -773,8 +792,7 @@ Error_t edsParser::get(u32 index, u8 subindex)
                  (wantAllSubs ? "" : ("sub" + std::to_string(subindex)).c_str()));
         return INVALID_INDEX;
     }
-
-    std::cout << "--- End of reading ---\n";
+    log.info("--- End of reading ---");
     return OK;
 }
 
@@ -798,10 +816,12 @@ Error_t edsParser::find(const std::string& searchTerm)
     std::string              currentSection;
     std::vector<std::string> sectionLines;
     bool                     matchFound = false;
+    std::stringstream        ss;
 
     while (std::getline(edsFile, line))
     {
         std::string trimmed = line;
+
         trimmed.erase(0, trimmed.find_first_not_of("\t\r\n"));
         trimmed.erase(trimmed.find_last_not_of("\t\r\n") + 1);
 
@@ -818,10 +838,10 @@ Error_t edsParser::find(const std::string& searchTerm)
                 {
                     if (toLower(l).find(lowerSearch) != std::string::npos)
                     {
-                        std::cout << "--- corresponding Section  : " << currentSection << "---\n";
+                        ss << "--- corresponding Section  : " << currentSection << "---\n";
                         for (const auto& sl : sectionLines)
-                            std::cout << sl << "\n";
-                        std::cout << "--- Fin de section ---\n\n";
+                            ss << sl << "\n";
+                        ss << "--- Fin de section ---\n\n";
                         matchFound = true;
                         break;
                     }
@@ -845,15 +865,18 @@ Error_t edsParser::find(const std::string& searchTerm)
         {
             if (toLower(l).find(lowerSearch) != std::string::npos)
             {
-                std::cout << "--- Corresponding section : " << currentSection << "---\n";
+                ss << "--- Corresponding section : " << currentSection << "---\n";
                 for (const auto& sl : sectionLines)
-                    std::cout << sl << "\n";
-                std::cout << "--- Fin de section ---\n\n";
+                    ss << sl << "\n";
+                ss << "--- Fin de section ---\n\n";
                 matchFound = true;
                 break;
             }
         }
     }
+
+    log.info("%s\n", ss.str().c_str());
+    edsFile.close();
 
     if (!matchFound)
     {
@@ -918,9 +941,11 @@ Error_t edsParser::addObject(const edsObject& obj)
 
     if (objectExists)
     {
-        std::string response;
-        std::cout << "The object [" << targetSection
-                  << "] is already existing. Do you want to overwrite it ? (y/n): ";
+        std::string       response;
+        std::stringstream ss;
+        ss << "The object [" << targetSection
+           << "] is already existing. Do you want to overwrite it ? (y/n): ";
+        log.info("%s\n", ss.str().c_str());
         std::getline(std::cin, response);
         if (response != "y" && response != "Y")
             return UNKNOWN_ERROR;
@@ -934,7 +959,14 @@ Error_t edsParser::addObject(const edsObject& obj)
     newSection << "ObjectType=0x" << std::hex << (int)obj.ObjectType << "\n";
     if (!obj.StorageLocation.empty())
         newSection << ";StorageLocation=" << obj.StorageLocation << "\n";
-    newSection << "DataType=0x" << std::hex << obj.DataType << "\n";
+    if (obj.DataType > 0x0 && obj.DataType < 0x10)
+        newSection << "DataType=0x000" << std::hex << obj.DataType << "\n";
+    else if (obj.DataType > 0xF && obj.DataType < 0x100)
+        newSection << "DataType=0x00" << std::hex << obj.DataType << "\n";
+    else if (obj.DataType > 0xFF && obj.DataType < 0x1000)
+        newSection << "DataType=0x0" << std::hex << obj.DataType << "\n";
+    else
+        newSection << "DataType=0x" << std::hex << obj.DataType << "\n";
     newSection << "AccessType=" << obj.accessType << "\n";
     newSection << "DefaultValue=0x" << std::hex << obj.defaultValue << "\n";
     newSection << "PDOMapping=" << (obj.PDOMapping ? "1" : "0") << "\n\n";
@@ -1053,7 +1085,7 @@ Error_t edsParser::addObject(const edsObject& obj)
     for (const std::string& l : lines)
         out << l << "\n";
 
-    std::cout << "\u2705 Object add/modify success : [" << targetSection << "]\n";
+    log.success("Object add/modify success : [%s]\n", targetSection.c_str());
     return OK;
 }
 
@@ -1064,7 +1096,7 @@ Error_t edsParser::deleteObject(u32 index, u8 subindex)
     std::ifstream inFile(m_edsFilePath);
     if (!inFile)
     {
-        log.error("Error : impossible to open the EDS file.\n");
+        log.error("Error : impossible to open the EDS file.");
         return INVALID_PATH;
     }
 
@@ -1086,7 +1118,7 @@ Error_t edsParser::deleteObject(u32 index, u8 subindex)
 
     if (!std::regex_search(content, match, sectionRegex))
     {
-        log.warn("No section[%s] found in the EDS file.\n", sectionID);
+        log.warn("No section[%s] found in the EDS file.", sectionID);
         return UNKNOWN_ERROR;
     }
 
@@ -1095,20 +1127,21 @@ Error_t edsParser::deleteObject(u32 index, u8 subindex)
     std::ofstream outFile(m_edsFilePath);
     if (!outFile)
     {
-        log.error("Error : impossible to write in the EDS file.\n");
+        log.error("Error : impossible to write in the EDS file.");
         return INVALID_PATH;
     }
 
     outFile << content;
     outFile.close();
-
-    std::cout << "Section [" << sectionID << "] delete success.\n";
+    log.success("Section [%s] delete success.", sectionID);
     return OK;
 }
 
 Error_t edsParser::modifyObject(const edsObject& obj, u32 index, u8 subindex)
 {
     this->updateFilePath();
+
+    std::stringstream ss;
 
     // Delete the old section if existing
     Error_t delStatus = this->deleteObject(index, subindex);
@@ -1118,8 +1151,8 @@ Error_t edsParser::modifyObject(const edsObject& obj, u32 index, u8 subindex)
         return delStatus;
     }
 
-    // if it's RPDO we need verify if the new oject (fit) into the PDO (using predefined index in
-    // the CiA 301)
+    // if it's RPDO we need verify if the new oject (fit) into the PDO (using predefined index
+    // in the CiA 301)
     if ((obj.index == 0x1600 || obj.index == 0x1601 || obj.index == 0x1602 ||
          obj.index == 0x1603) &&
         (obj.subIndex <= 8))
@@ -1207,10 +1240,12 @@ Error_t edsParser::modifyObject(const edsObject& obj, u32 index, u8 subindex)
         return addStatus;
     }
 
-    std::cout << "object [0x" << std::hex << obj.index;
+    ss << "object [0x" << std::hex << obj.index;
     if (obj.subIndex != 0)
-        std::cout << "::" << std::hex << (int)obj.subIndex;
-    std::cout << "] modified success.\n";
+        ss << "::" << std::hex << (int)obj.subIndex;
+    ss << "] modified success.\n";
+
+    log.success("%s", ss.str().c_str());
 
     return OK;
 }
@@ -1246,7 +1281,7 @@ Error_t edsParser::updateFilePath()
 
     m_edsFilePath = pathFile;
     // m_edsFilePath = line;
-    log.info("EDS path update from the eds_path.txt file : %s\n", m_edsFilePath.c_str());
+    log.info("EDS path update from the eds_path.txt file : %s", m_edsFilePath.c_str());
 
     return OK;
 }
@@ -1392,3 +1427,4 @@ bool edsParser::hasValidDataTypes()
 
     return true;
 }
+
