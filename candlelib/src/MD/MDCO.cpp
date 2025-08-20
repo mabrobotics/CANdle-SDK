@@ -365,7 +365,7 @@ namespace mab
                 // if the message is a Heartbeat
                 if (response[0] == 0x04 && response[1] == 0x01 && response[2] == 0x05)
                 {
-                    m_log.success("heartbeat reçu");
+                    m_log.success("heartbeat received");
 
                     auto now_us = std::chrono::duration_cast<std::chrono::microseconds>(
                                       std::chrono::steady_clock::now() - start_time)
@@ -397,7 +397,7 @@ namespace mab
                     }
                     else
                     {
-                        // second heartbeat — calcul du delta
+                        // second heartbeat — calculating delta time
                         auto delta_us = std::chrono::duration_cast<std::chrono::microseconds>(
                                             std::chrono::steady_clock::now() - start_time)
                                             .count() -
