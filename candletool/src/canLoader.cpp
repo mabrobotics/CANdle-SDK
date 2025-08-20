@@ -68,7 +68,8 @@ namespace mab
         // Transfering fw
         for (size_t i = 0; i <= appSize; i += CanBootloader::TRANSFER_SIZE)
         {
-            m_log.progress((float)i / (float)appSize);
+            m_log.progress(((float)i) / ((float)appSize));
+
             std::span<u8, CanBootloader::TRANSFER_SIZE> chunk =
                 firmware.subspan(i)
                     .first<CanBootloader::TRANSFER_SIZE>();  // Take a chunk of data from firmware
@@ -79,6 +80,7 @@ namespace mab
                 return false;
             }
         }
+        m_log.progress(1.0);  // Transfering finish indication
 
         // Transfering metadata about firmware
         if (bootloader.transferMetadata(true, firmwareSHA256) != CanBootloader::Error_t::OK)

@@ -13,6 +13,7 @@
 #include "logger.hpp"
 #include "I_communication_interface.hpp"
 #include "USB.hpp"
+#include "SPI.hpp"
 #include "mab_types.hpp"
 
 namespace mab
@@ -170,6 +171,11 @@ namespace mab
                 if (bus->connect() != mab::I_CommunicationInterface::Error_t::OK)
                     throw std::runtime_error("Could not connect USB device!");
                 return attachCandle(baudrate, std::move(bus));
+            case candleTypes::busTypes_t::SPI:
+                bus = std::make_unique<mab::SPI>();
+                if (bus->connect() != mab::I_CommunicationInterface::Error_t::OK)
+                    throw std::runtime_error("Could not connect SPI device!");
+                return attachCandle(baudrate, std::move(bus));
             default:
                 throw std::runtime_error("Wrong communication interface provided!");
                 return {};
@@ -212,6 +218,15 @@ namespace mab
                     bus = std::make_unique<mab::USB>(Candle::CANDLE_VID,
                                                      Candle::CANDLE_PID,
                                                      std::string(pathOrId.value_or(std::string())));
+                    if (bus->connect() != I_CommunicationInterface::Error_t::OK)
+                    {
+                        m_logger.error("Could not connect USB device!");
+                        return {};
+                    }
+                    break;
+                case mab::candleTypes::SPI:
+                    bus = std::make_unique<mab::SPI>(
+                        std::string(pathOrId.value_or("/dev/spidev0.0")));
                     if (bus->connect() != I_CommunicationInterface::Error_t::OK)
                     {
                         m_logger.error("Could not connect USB device!");
