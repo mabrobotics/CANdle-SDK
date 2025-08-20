@@ -22,10 +22,11 @@ namespace mab
             RECEIVER_ERROR,
             UNKNOWN_ERROR,
             DATA_TOO_LONG,
-            DATA_EMPTY
+            DATA_EMPTY,
+            TIMEOUT
         };
 
-        virtual ~I_CommunicationInterface(){};
+        virtual ~I_CommunicationInterface() = default;
 
         /// @brief Method to claim communication interface and enable communication
         /// @return Error on failure, OK on success

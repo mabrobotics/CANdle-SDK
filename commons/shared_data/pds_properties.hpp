@@ -23,33 +23,34 @@ namespace mab
     enum class propertyId_E : u8
     {
 
-        STATUS_WORD              = 0x00,
-        STATUS_CLEAR             = 0x01,
-        ENABLE                   = 0x02,
-        TEMPERATURE              = 0x03,
-        TEMPERATURE_LIMIT        = 0x04,
-        BUS_VOLTAGE              = 0x05,
-        AUTOSTART                = 0x06,
-        LOAD_CURRENT             = 0x10,
-        LOAD_POWER               = 0x11,
-        TOTAL_DELIVERED_ENERGY   = 0x12,
-        TOTAL_RECUPERATED_ENERGY = 0x13,
-        CAN_ID                   = 0x20,
-        CAN_BAUDRATE             = 0x21,
-        SOCKET_1_MODULE          = 0x22,
-        SOCKET_2_MODULE          = 0x23,
-        SOCKET_3_MODULE          = 0x24,
-        SOCKET_4_MODULE          = 0x25,
-        SOCKET_5_MODULE          = 0x26,
-        SOCKET_6_MODULE          = 0x27,
-        SHUTDOWN_TIME            = 0x28,
-        BATTERY_VOLTAGE_L1       = 0x29,
-        BATTERY_VOLTAGE_L2       = 0x2A,
-        BR_SOCKET_INDEX          = 0x30,
-        BR_TRIGGER_VOLTAGE       = 0x31,
-        OCD_LEVEL                = 0x40,
-        OCD_DELAY                = 0x41,
-
+        STATUS_WORD            = 0x00,
+        STATUS_CLEAR           = 0x01,
+        ENABLE                 = 0x02,
+        TEMPERATURE            = 0x03,
+        TEMPERATURE_LIMIT      = 0x04,
+        BUS_VOLTAGE            = 0x05,
+        AUTOSTART              = 0x06,
+        LOAD_CURRENT           = 0x10,
+        LOAD_POWER             = 0x11,
+        DELIVERED_ENERGY       = 0x12,
+        RECUPERATED_ENERGY     = 0x13,
+        CAN_ID                 = 0x20,
+        CAN_BAUDRATE           = 0x21,
+        SOCKET_1_MODULE        = 0x22,
+        SOCKET_2_MODULE        = 0x23,
+        SOCKET_3_MODULE        = 0x24,
+        SOCKET_4_MODULE        = 0x25,
+        SOCKET_5_MODULE        = 0x26,
+        SOCKET_6_MODULE        = 0x27,
+        SHUTDOWN_TIME          = 0x28,
+        BATTERY_VOLTAGE_L1     = 0x29,
+        BATTERY_VOLTAGE_L2     = 0x2A,
+        BR_SOCKET_INDEX        = 0x30,
+        BR_TRIGGER_VOLTAGE     = 0x31,
+        OCD_LEVEL              = 0x40,
+        OCD_DELAY              = 0x41,
+        RESET_DELIVERED_ENERGY = 0x42,
+        STATUS_ERROR           = 0x43,
         /* ... */
 
         HW_VERSION = 0xFD,
@@ -74,7 +75,7 @@ namespace mab
         ENABLED          = (1 << 0),
         OVER_TEMPERATURE = (1 << 1),
         OVER_CURRENT     = (1 << 2),
-
+        BOOTLOADER_ERROR = (1 << 3),
         /*...*/
 
         STO_1              = (1 << 10),
@@ -93,9 +94,10 @@ namespace mab
 
     };
 
-    constexpr std::array<std::pair<propertyId_E, size_t>, 29> propertiesSizeArray = {
+    constexpr std::array<std::pair<propertyId_E, size_t>, 31> propertiesSizeArray = {
         std::make_pair(propertyId_E::STATUS_WORD, sizeof(u32)),
         std::make_pair(propertyId_E::STATUS_CLEAR, sizeof(u32)),
+        std::make_pair(propertyId_E::STATUS_ERROR, sizeof(u32)),
         std::make_pair(propertyId_E::ENABLE, sizeof(bool)),
         std::make_pair(propertyId_E::TEMPERATURE, sizeof(f32)),
         std::make_pair(propertyId_E::TEMPERATURE_LIMIT, sizeof(f32)),
@@ -103,8 +105,9 @@ namespace mab
         std::make_pair(propertyId_E::AUTOSTART, sizeof(bool)),
         std::make_pair(propertyId_E::LOAD_CURRENT, sizeof(s32)),
         std::make_pair(propertyId_E::LOAD_POWER, sizeof(u32)),
-        std::make_pair(propertyId_E::TOTAL_DELIVERED_ENERGY, sizeof(u32)),
-        std::make_pair(propertyId_E::TOTAL_RECUPERATED_ENERGY, sizeof(u32)),
+        std::make_pair(propertyId_E::DELIVERED_ENERGY, sizeof(u32)),
+        std::make_pair(propertyId_E::RECUPERATED_ENERGY, sizeof(u32)),
+        std::make_pair(propertyId_E::RESET_DELIVERED_ENERGY, sizeof(bool)),
         std::make_pair(propertyId_E::CAN_ID, sizeof(u16)),
         std::make_pair(propertyId_E::CAN_BAUDRATE, sizeof(u8)),
         std::make_pair(propertyId_E::SOCKET_1_MODULE, sizeof(u8)),
@@ -157,7 +160,6 @@ namespace mab
         bool SUBMODULE_6_ERROR;
         bool CHARGER_DETECTED;
         bool SHUTDOWN_SCHEDULED;
-
         /*...*/
     };
 

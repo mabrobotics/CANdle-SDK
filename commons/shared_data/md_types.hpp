@@ -8,6 +8,7 @@
 #include <string>
 #include <string_view>
 #include <functional>
+#include <type_traits>
 #include <utility>
 #include <tuple>
 #include <vector>
@@ -176,7 +177,7 @@ namespace mab
     struct MDRegisterEntry_S
     {
       public:
-        T value;
+        T value{};
 
         const RegisterAccessLevel_E m_accessLevel;
         const u16                   m_regAddress;
@@ -244,7 +245,10 @@ namespace mab
 
         void clear()
         {
-            memset(&value, 0, sizeof(value));
+            if constexpr (std::is_class_v<T>)
+                value = T();
+            else
+                memset(&value, 0, sizeof(value));
         }
     };
     template <typename T, size_t N>
