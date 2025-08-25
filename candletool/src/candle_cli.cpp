@@ -3,6 +3,10 @@
 #include "candle_bootloader.hpp"
 #include "mab_crc.hpp"
 
+#ifdef WIN32
+#include <windows.h>
+#endif
+
 namespace mab
 {
     CandleCli::CandleCli(CLI::App*                                  rootCli,
@@ -62,5 +66,49 @@ namespace mab
                               versionOpt.value().s.revision,
                               versionOpt.value().s.tag);
             });
+#ifdef WIN32
+
+        auto* driver = candleCli->add_subcommand("driver", "Install CANdle USB driver.");
+        driver->callback(
+            [this]()
+            {
+                m_logger.info("Installing CANdle USB driver...");
+
+                const char* exeName = "candlesdk-win-driver.exe";
+                char        fullPath[MAX_PATH];
+
+                DWORD resultSearch = SearchPathA(NULL, exeName, NULL, MAX_PATH, fullPath, NULL);
+                if (resultSearch == 0 || resultSearch > MAX_PATH)
+                {
+                    m_logger.error(
+                        "Could not find %s in PATH! Did you enable it during installation? If not "
+                        "go to your installation folder and manually run candlesdk-win-driver.exe "
+                        "as administrator.",
+                        exeName);
+                    exit(1);
+                }
+                m_logger.info("Found driver installer at %s", fullPath);
+
+                // Inline extraction of directory from full path
+                std::string fullPathStr(fullPath);
+                size_t      lastSlash = fullPathStr.find_last_of("\\/");
+                std::string dirPath =
+                    (lastSlash == std::string::npos) ? "." : fullPathStr.substr(0, lastSlash);
+
+                HINSTANCE result = ShellExecuteA(NULL,             // no parent window
+                                                 "runas",          // causes UAC elevation prompt
+                                                 fullPath,         // program to run
+                                                 NULL,             // arguments
+                                                 dirPath.c_str(),  // working directory
+                                                 SW_NORMAL         // show window
+                );
+
+                if ((INT_PTR)result <= 32)
+                {
+                    m_logger.error("Failed to launch process. Error code: %u", (INT_PTR)result);
+                }
+                m_logger.info("Driver installation process launched. Code %u", (INT_PTR)result);
+            });
+#endif
     }
 }  // namespace mab
