@@ -1,0 +1,809 @@
+#pragma once
+
+#include "mab_types.hpp"
+#include "md_types.hpp"
+#include "logger.hpp"
+#include "manufacturer_data.hpp"
+#include "candle_types.hpp"
+#include "MDStatus.hpp"
+#include "candle.hpp"
+#include "../../../candletool/objectDictionary/OD.hpp"
+
+#include <cstring>
+
+#include <array>
+#include <queue>
+#include <type_traits>
+#include <utility>
+#include <functional>
+#include <tuple>
+#include <map>
+#include <unordered_map>
+#include <string>
+#include <vector>
+#include <iomanip>
+#include <algorithm>
+#include <chrono>
+
+namespace mab
+{
+
+    /// @brief Parameters for the move operation
+    struct moveParameter
+    {
+        u32 MaxSpeed     = 220;
+        u16 MaxCurrent   = 500;
+        u32 RatedCurrent = 1000;
+        u16 MaxTorque    = 500;
+        u32 RatedTorque  = 1000;
+        i32 accLimit     = 1000;
+        i32 dccLimit     = 1000;
+        f32 kp           = 1.0;
+        f32 kd           = 0.0;
+        f32 ki           = 0.0;
+        i16 torqueff     = 0x00;
+    };
+
+    /// @brief Modes of operation for the MD device cf. 0x6060 in the CANopen object dictionary
+    enum ModesOfOperation
+    {
+        Impedance          = (u8)-3,
+        Service            = (u8)-2,
+        Idle               = (u8)0,
+        ProfilePosition    = (u8)1,
+        ProfileVelocity    = (u8)3,
+        CyclicSyncPosition = (u8)8,
+        CyclicSyncVelocity = (u8)9,
+    };
+
+    /// @brief Software representation of MD device on the can network
+    class MDCO
+    {
+        static constexpr size_t DEFAULT_RESPONSE_SIZE = 23;
+        static constexpr u16    SDO_REQUEST_BASE      = 0x600;
+
+        Logger m_log;
+
+        manufacturerData_S m_mfData;
+
+      public:
+        /// @brief MD can node ID
+        const canId_t m_canId;
+
+        std::optional<u32> m_timeout;
+
+        /// @brief Possible errors present in this class
+        enum Error_t
+        {
+            OK,
+            REQUEST_INVALID,
+            TRANSFER_FAILED,
+            NOT_CONNECTED,
+            UNKNOWN_OBJECT
+        };
+
+        /// @brief Create MD object instance
+        /// @param canId can node id of MD
+        /// @param transferCANFrame
+        MDCO(canId_t canId, Candle* candle) : m_canId(canId), m_candle(candle)
+        {
+            m_log.m_layer = Logger::ProgramLayer_E::TOP;
+            std::stringstream tag;
+            tag << "MD" << std::setfill('0') << std::setw(4) << m_canId;
+            m_log.m_tag = tag.str();
+        }
+
+        /// @brief use SDO message in order to send all value needed to configure the motor for
+        /// moving
+        /// @param param struct containing all the parameters needed to configure the motor
+        /// @return error_t indicating the result of the operation
+        Error_t setProfileParameters(moveParameter param);
+
+        /// @brief Enable the driver with the specified mode of operation
+        /// @param mode Mode of operation to set cf 0x6060 in the CANopen object dictionary
+        /// @return Error_t indicating the result of the operation
+        Error_t enableDriver(ModesOfOperation mode);
+
+        /// @brief Disable the driver
+        /// @return Error_t indicating the result of the operation
+        Error_t disableDriver();
+
+        /// @brief Move to desired position
+        /// @param DesiredPos desired position
+        /// @note The motor need to have the profile parameters set & a mode of operation set before
+        /// calling this function
+        void movePosition(i32 DesiredPos);
+
+        /// @brief Move to desired speed
+        /// @param DesiredSpeed desired speed [RPM]
+        /// @note The motor need to have the profile parameters set & a mode of operation set before
+        /// calling this function
+        void moveSpeed(i32 DesiredSpeed);
+
+        /// @brief Move to desired position with impedance control
+        /// @param desiredSpeed desired speed [RPM]
+        /// @param targetPos desired position
+        /// @param param struct containing all the parameters needed to configure the motor
+        /// @return Error_t indicating the result of the operation
+        /// @details This function sets the motor in impedance control mode and moves it to the
+        /// specified position with the given speed, gains, and torque.
+        Error_t moveImpedance(i32 desiredSpeed, i32 targetPos, moveParameter param);
+
+        /// @brief Check communication with MD device
+        /// @return Error if not connected
+        Error_t init();
+
+        /// @brief Blink the built-in LEDs with CANopen command
+        Error_t blinkOpenTest();
+
+        /// @brief Reset the driver with CANopen command
+        /// @return Error_t indicating the result of the operation
+        Error_t openReset();
+
+        /// @brief Clear errors present in the driver
+        /// @param level 1 => clear error, 2 => clear warning, 3 => clear both
+        /// @return Error_t indicating the result of the operation
+        Error_t clearOpenErrors(i16 level);
+
+        /// @brief Change CANopen config the command need to be save before shutoff the motors
+        /// @param newID new id of the motor
+        /// @param newBaud new baudRate
+        /// @param newwatchdog new watchdog
+        /// @return Error_t indicating the result of the operation
+        Error_t newCanOpenConfig(i32 newID, i32 newBaud, i16 newwatchdog);
+
+        /// @brief Perform a encoder test
+        /// @param Main Main=1 if you want to perform the test on the main encoder
+        /// @param output output=1 if you want to perform the test on the output encoder
+        /// @return Error_t indicating the result of the operation
+        Error_t testEncoder(bool Main, bool output);
+
+        /// @brief Perform a encoder calibration
+        /// @param Main Main=1 if you want to perform the calibration on the main encoder
+        /// @param output output=1 if you want to perform the calibration on the output encoder
+        /// @return Error_t indicating the result of the operation
+        Error_t encoderCalibration(bool Main, bool output);
+
+        /// @brief change the torque bandwidth with CANopen comand, modification must be saved
+        /// before shuting off the motors
+        /// @param newBandwidth new value for the bandwidth {50-2500}[Hz]
+        /// @return Error_t indicating the result of the operation
+        Error_t canOpenBandwidth(i16 newBandwidth);
+
+        /// @brief test the heartbeat of the MD device give time between two heartbeat
+        /// @return Error_t indicating the result of the operation
+        Error_t testHeartbeat();
+
+        /// @brief Save configuration data to the memory
+        /// @return Error_t indicating the result of the operation
+        Error_t openSave();
+
+        /// @brief Zero out the position of the encoder
+        /// @return Error_t indicating the result of the operation
+        Error_t openZero();
+
+        /// @brief read a value from a can open register using SDO can frame
+        /// @param index index from the object dictionary where the user want to read the value
+        /// @param subindex subindex from the object dictionary where the user want to read the
+        /// value
+        /// @return Error on failure
+        inline Error_t readOpenRegisters(i16 index, short subindex, bool force = false)
+        {
+            if (!force)
+            {
+                if (isReadable(index, subindex) != OK)
+                {
+                    m_log.error("Object 0x%04x:0x%02x is not Readable!", index, subindex);
+                    return Error_t::REQUEST_INVALID;
+                }
+            }
+
+            m_log.debug("Read Open register...");
+            std::vector<u8> frame;
+            frame.reserve(8);
+            frame.push_back(0x40);                // Command: initiate upload
+            frame.push_back(((u8)index));         // Index LSB
+            frame.push_back(((u8)(index >> 8)));  // Index MSB
+            frame.push_back(subindex);            // Subindex
+            frame.push_back(0x00);                // Padding
+            frame.push_back(0x00);
+            frame.push_back(0x00);
+            frame.push_back(0x00);
+
+            //  message sending via transferCanFrame
+            auto [response, error] =
+                transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, frame, frame.size());
+
+            // data display
+            std::stringstream ss;
+
+            ss << "\n\n ---- Received CAN Frame Info ----" << "\n";
+            u8 cmd = response[0];
+
+            if ((cmd & 0xF0) != 0x40)
+            {
+                ss << "Frame not recognized as an SDO Upload Expedited response." << "\n";
+            }
+            else
+            {
+                // FLAGS Extraction
+                // bool    expedited     = cmd & 0x02;
+                // bool    sizeIndicated = cmd & 0x01;
+                u8 n       = (cmd & 0x0C) >> 2;  // bits 1-0
+                u8 dataLen = 4 - n;
+
+                // Index et Subindex
+                u16 index    = response[2] << 8 | response[1];
+                u8  subindex = response[3];
+
+                // data display
+                ss << "Index      : 0x" << std::hex << std::setw(4) << std::setfill('0') << index
+                   << "\n";
+
+                ss << "Subindex   : 0x" << std::hex << std::setw(2) << std::setfill('0')
+                   << (i16)subindex << "\n";
+
+                ss << "Data (" << std::dec << (i16)dataLen << " byte(s)): 0x";
+
+                for (i16 i = dataLen - 1; i >= 0; --i)
+                {
+                    ss << std::hex << std::setw(2) << std::setfill('0') << (i16)response[4 + i];
+                }
+                ss << "\n" << "------------------------" << "\n";
+                m_log.info("%s\n", ss.str().c_str());
+            }
+
+            if (error == mab::candleTypes::Error_t::OK)
+            {
+                return Error_t::OK;
+            }
+            else
+            {
+                m_log.error("Error in the register write response!");
+                return Error_t::TRANSFER_FAILED;
+            }
+        }
+
+        /// @brief write a value in a can open register using SDO segmented can frame
+        /// @param name name of the object to write
+        /// @param data value to write
+        /// @param size size of the data to write (1,2,4)
+        /// @return Error on failure
+        Error_t writeLongOpenRegisters(i16                index,
+                                       short              subindex,
+                                       const std::string& dataString,
+                                       bool               force = false)
+        {
+            if (!force)
+            {
+                if (isWritable(index, subindex) != OK)
+                {
+                    m_log.error("Object 0x%04x:0x%02x is not writable!", index, subindex);
+                    return Error_t::REQUEST_INVALID;
+                }
+            }
+            std::string motorName = dataString;
+
+            m_log.debug("Writing Motor Name to 0x2000:0x06 via segmented SDO...");
+
+            // 1. prepare data to send clip data to 20 bytes (Motor Name)
+            // std::vector<u8> data(20, 0x00);
+            // std::memcpy(data.data(), motorName.data(), std::min<size_t>(motorName.size(), 20));
+            std::vector<u8> data = std::vector<u8>(motorName.begin(), motorName.end());
+            // 2. sending init message of segmented transfer
+            std::vector<u8> initFrame = {0x21,  // CCS=1, E=1, S=1
+                                         u8(index & 0xFF),
+                                         u8(index >> 8),
+                                         u8(subindex),
+                                         u8(data.size() >> 0),
+                                         u8(data.size() >> 8),
+                                         u8(data.size() >> 16),
+                                         u8(data.size() >> 24)};
+
+            auto [initResponse, initError] =
+                transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, initFrame, initFrame.size());
+
+            if (initError != mab::candleTypes::Error_t::OK)
+            {
+                m_log.error("Failed to initiate segmented SDO download.");
+                return Error_t::TRANSFER_FAILED;
+            }
+
+            if (initResponse.size() < 1 || (initResponse[0] & 0xE0) != 0x60)
+            {
+                m_log.error("Unexpected response to initiate download (expected 0x60).");
+                return Error_t::TRANSFER_FAILED;
+            }
+
+            // 3. sending data segments
+            size_t offset = 0;
+            u8     toggle = 0;
+
+            while (offset < data.size())
+            {
+                std::vector<u8> segmentFrame;
+
+                size_t remaining     = data.size() - offset;
+                size_t segmentLength = std::min<size_t>(7, remaining);
+                u8     emptyBytes    = 7 - segmentLength;
+                bool   lastSegment   = (segmentLength == remaining);
+
+                u8 cmdByte = 0x00;
+                cmdByte |= (toggle & 0x01) << 4;         // bit 4: toggle
+                cmdByte |= (emptyBytes & 0x07) << 1;     // bits 3:1: empty bytes
+                cmdByte |= (lastSegment ? 0x01 : 0x00);  // bit 0: C (last segment)
+
+                segmentFrame.push_back(cmdByte);
+
+                // segments data
+                for (size_t i = 0; i < segmentLength; ++i)
+                {
+                    segmentFrame.push_back(data[offset + i]);
+                }
+
+                // padding with zeros if needed
+                for (size_t i = segmentLength; i < 7; ++i)
+                {
+                    segmentFrame.push_back(0x00);
+                }
+
+                auto [segResponse, segError] = transferCanOpenFrame(
+                    SDO_REQUEST_BASE + m_canId, segmentFrame, segmentFrame.size());
+
+                if (segError != mab::candleTypes::Error_t::OK)
+                {
+                    m_log.error("Segmented transfer failed at offset {}", offset);
+                    return Error_t::TRANSFER_FAILED;
+                }
+
+                // Check server response: must be 0x20 | toggle
+                if (segResponse.size() < 1 || (segResponse[0] & 0xE0) != 0x20)
+                {
+                    m_log.error("Malformed segment ACK.");
+                    return Error_t::TRANSFER_FAILED;
+                }
+
+                if ((segResponse[0] & 0x10) != (toggle << 4))
+                {
+                    m_log.error("Unexpected toggle bit, corrupted transfer.");
+                    return Error_t::TRANSFER_FAILED;
+                }
+
+                offset += segmentLength;
+                toggle ^= 0x01;
+            }
+
+            m_log.debug("Motor Name successfully written.");
+            return Error_t::OK;
+        }
+
+        /// @brief read a value from a can open register using SDO segmented transfer can frame (if
+        /// data > 4 bit)
+        /// @param index index from the object dictionary where the user want to read the value
+        /// @param subindex subindex from the object dictionary where the user want to read the
+        /// value
+        /// @return Error on failure
+        inline Error_t readLongOpenRegisters(i16 index, short subindex, std::vector<u8>& outData)
+        {
+            // // only for testing
+            // // WriteMotorName();
+            if (isReadable(index, subindex) != OK)
+            {
+                m_log.error("Object 0x%04x:0x%02x is not readable!", index, subindex);
+                return Error_t::REQUEST_INVALID;
+            }
+
+            m_log.debug("Read Object (0x%lx:0x%x) via segmented SDO…", index, subindex);
+
+            // ---------- 1) Initiation Request ----------
+            std::vector<u8> initReq = {0x40,  // CCS=2: Initiate Upload
+                                       u8(index & 0xFF),
+                                       u8(index >> 8),
+                                       u8(subindex),
+                                       0x00,
+                                       0x00,
+                                       0x00,
+                                       0x00};
+
+            auto [rspInit, errInit] =
+                transferCanOpenFrame(0x600 + m_canId, initReq, initReq.size());
+            if (errInit != mab::candleTypes::Error_t::OK || rspInit.size() < 8)
+            {
+                m_log.error("Failed to initiate SDO read.");
+                return Error_t::TRANSFER_FAILED;
+            }
+
+            u8   cmd         = rspInit[0];
+            bool isExpedited = cmd & 0x02;
+            bool hasSize     = cmd & 0x01;
+
+            if (isExpedited)
+            {
+                m_log.warn("Data received in expedited mode, probably ≤ 4 bytes.");
+                u8 n   = ((cmd >> 2) & 0x03);  // number of used bytes
+                u8 len = 4 - n;
+
+                outData.insert(outData.end(), rspInit.begin() + 4, rspInit.begin() + 4 + len);
+            }
+            else
+            {
+                // ---------- 2) Segmented reading ----------
+                u32 totalLen = 0;
+                if (hasSize)
+                {
+                    totalLen =
+                        rspInit[4] | (rspInit[5] << 8) | (rspInit[6] << 16) | (rspInit[7] << 24);
+                    outData.reserve(totalLen);
+                }
+
+                bool toggle   = false;
+                bool finished = false;
+
+                while (!finished)
+                {
+                    std::vector<u8> segReq = {
+                        u8(0x60 | (toggle ? 0x10 : 0x00)), 0, 0, 0, 0, 0, 0, 0};
+                    auto [rspSeg, errSeg] =
+                        transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, segReq, segReq.size());
+
+                    if (errSeg != mab::candleTypes::Error_t::OK || rspSeg.size() < 1)
+                    {
+                        m_log.error("Error segment reading");
+                        return Error_t::TRANSFER_FAILED;
+                    }
+
+                    u8 segCmd = rspSeg[0];
+                    if ((segCmd & 0x10) != (toggle ? 0x10 : 0x00))
+                    {
+                        m_log.error("Bit toggle didn't expected, corrupt transfer.");
+                        return Error_t::TRANSFER_FAILED;
+                    }
+
+                    bool last    = segCmd & 0x01;
+                    u8   unused  = (segCmd >> 1) & 0x07;
+                    u8   dataLen = 7 - unused;
+
+                    if ((i16)rspSeg.size() < (1 + dataLen))
+                    {
+                        m_log.error("Incomplete data in the segment.");
+                        return Error_t::TRANSFER_FAILED;
+                    }
+
+                    outData.insert(outData.end(), rspSeg.begin() + 1, rspSeg.begin() + 1 + dataLen);
+                    finished = last;
+                    toggle   = !toggle;
+                }
+
+                if (hasSize && outData.size() != totalLen)
+                {
+                    m_log.warn(
+                        "Size of data read (%d) ≠ size announced (%d)", outData.size(), totalLen);
+                }
+            }
+
+            // ---------- 3) Display ----------
+            if (dataSizeOfEdsObject(index, subindex) == 0)
+            {
+                // if data size is 0, we assume it is a string
+                std::string motorName(outData.begin(), outData.end());
+                m_log.info("Data received (convert into string): '%s'", motorName.c_str());
+            }
+            else
+            {
+                m_log.info("Data received: %s",
+                           std::string(outData.begin(), outData.end()).c_str());
+            }
+
+            return Error_t::OK;
+        }
+
+        /// @brief return a value from a can open register using SDO can frame
+        /// @param index index from the object dictionary where the user want to read the value
+        /// @param subindex subindex from the object dictionary where the user want to read the
+        /// value
+        /// @return the value contained in the register or -1 if error
+        i32 getValueFromOpenRegister(i16 index, short subindex)
+        {
+            if (isReadable(index, subindex) != OK)
+            {
+                m_log.error("Object 0x%04x:0x%02x is not writable!", index, subindex);
+                return Error_t::REQUEST_INVALID;
+            }
+            m_log.debug("Read Open register...");
+
+            std::vector<u8> frame;
+            frame.reserve(8);
+            frame.push_back(0x40);                // Command: initiate upload
+            frame.push_back(((u8)index));         // Index LSB
+            frame.push_back(((u8)(index >> 8)));  // Index MSB
+            frame.push_back(subindex);            // Subindex
+            frame.push_back(0x00);                // Padding
+            frame.push_back(0x00);
+            frame.push_back(0x00);
+            frame.push_back(0x00);
+
+            auto [response, error] =
+                transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, frame, frame.size());
+
+            i32 answerValue = 0;
+            for (i16 i = 0; i <= 4; i++)
+            {
+                answerValue += (((i32)response[4 + i]) << (8 * i));
+            }
+
+            // data display
+            u8 cmd = response[0];
+
+            if ((cmd & 0xF0) != 0x40)
+            {
+                m_log.error("Frame not recognized as an SDO Upload Expedited response.");
+                return -1;
+            }
+            if (error == mab::candleTypes::Error_t::OK)
+            {
+                return answerValue;
+            }
+            else
+            {
+                m_log.error("Error in the register write response!");
+                return -1;
+            }
+        }
+
+        /// @brief write a value in a can open register using SDO can frame
+        /// @param index index from the object dictionary where the user want to write the value
+        /// @param subindex subindex from the object dictionary where the user want to write the
+        /// value
+        /// @return Error on failure
+        inline Error_t writeOpenRegisters(
+            i16 index, short subindex, i32 data, short size = 0, bool force = false)
+        {
+            if (!force)
+            {
+                if (isWritable(index, subindex) != OK)
+                {
+                    m_log.error("Object 0x%04x:0x%02x is not writable!", index, subindex);
+                    return Error_t::REQUEST_INVALID;
+                }
+            }
+
+            if (size == 0)
+            {
+                size = dataSizeOfEdsObject(index, subindex);
+                if (size == -1)
+                {
+                    m_log.error("Object 0x%04x:0x%02x has an unsupported size (%d)!",
+                                index,
+                                subindex,
+                                size);
+                    return Error_t::REQUEST_INVALID;
+                }
+                else if (size == 0 || size > 4)
+                {
+                    m_log.error(
+                        "Object 0x%04x:0x%02x has an unsupported size (%d), please use an "
+                        "Segmented transfer !",
+                        index,
+                        subindex,
+                        size);
+                    return Error_t::REQUEST_INVALID;
+                }
+            }
+
+            std::vector<u8> frame;
+            frame.reserve(8);
+            if (size == 1)
+                frame.push_back(0x2F);
+            if (size == 2)
+                frame.push_back(0x2B);
+            if (size == 4)
+                frame.push_back(0x23);
+            frame.push_back(((u8)index));         // Index LSB
+            frame.push_back(((u8)(index >> 8)));  // Index MSB
+            frame.push_back(subindex);            // Subindex
+            frame.push_back((u8)data);            // data
+            frame.push_back((u8)(data >> 8));
+            frame.push_back((u8)(data >> 16));
+            frame.push_back((u8)(data >> 24));
+
+            auto [response, error] =
+                transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, frame, frame.size());
+
+            if (error == mab::candleTypes::Error_t::OK)
+            {
+                return Error_t::OK;
+            }
+            else
+            {
+                m_log.error("Error in the register write response!");
+                return Error_t::TRANSFER_FAILED;
+            }
+        }
+
+        /// @brief write a value in a can open register using SDO can frame
+        /// @param name name of the object to write
+        /// @param data value to write
+        /// @param size size of the data to write (1,2,4)
+        /// @return Error on failure
+        inline Error_t writeOpenRegisters(const std::string& name,
+                                          u32                data,
+                                          u8                 size  = 0,
+                                          bool               force = false)
+        {
+            bool debug    = m_log.isLevelEnabled(Logger::LogLevel_E::DEBUG);
+            u32  index    = 0;
+            u8   subIndex = 0;
+            if (findObjectByName(name, index, subIndex) != OK)
+            {
+                m_log.error("%s not found in EDS file", name.c_str());
+                return Error_t::UNKNOWN_OBJECT;
+            }
+            if (!force)
+            {
+                if (isWritable(index, subIndex) != OK)
+                {
+                    m_log.error("Object 0x%04x:0x%02x is not writable!", index, subIndex);
+                    return Error_t::REQUEST_INVALID;
+                }
+            }
+            auto err = writeOpenRegisters(index, subIndex, data, size);
+            if (debug)
+                m_log.debug("Error:%d\n", readOpenRegisters(index, subIndex));
+            return err;
+        }
+
+        /// @brief write a value in a can open register using PDO can frame
+        /// @param index id of pdo to send (200/300/400/500 + node_id)
+        /// @param subindex subindex from the object dictionary where the user want to write the
+        /// value
+        /// @return Error on failure
+        inline Error_t writeOpenPDORegisters(i16 index, std::vector<u8> data)
+        {
+            m_log.debug("Writing Open Pdo register...");
+
+            auto [response, error] =
+                transferCanOpenFrameNoRespondExpected(index, data, data.size());
+
+            if (error == mab::candleTypes::Error_t::OK)
+            {
+                return Error_t::OK;
+            }
+            else
+            {
+                m_log.error("Error in the register write response!");
+                return Error_t::TRANSFER_FAILED;
+            }
+        }
+
+        /// @brief write a value in a can open register using PDO can frame
+        /// @param index id of pdo to send (200/300/400/500 + node_id)
+        /// @param subindex subindex from the object dictionary where the user want to write the
+        /// value
+        /// @return Error on failure
+        inline Error_t sendCustomData(i16 index, std::vector<u8> data)
+        {
+            m_log.debug("Writing Custom data...");
+            transferCanOpenFrameNoRespondExpected(index, data, data.size());
+            return Error_t::OK;
+        }
+
+        /// @brief averages the latency of 1000 commands
+        void testLatency();
+
+        /// @brief try to communicate with canOpen frame (SDO) with all the possible id
+        /// @param candle
+        /// @return a vector with all id with a MD attach in CANopen communication
+        static std::vector<canId_t> discoverOpenMDs(Candle* candle);
+
+        /// @brief Return the size of the data of an EDS object
+        /// @param index Index of the object in the Object Dictionary
+        /// @param subIndex Subindex of the object in the Object Dictionary
+        /// @return Size of the data in bytes, or 0 if the object is a string or -1 if the object is
+        /// not found
+        u8 dataSizeOfEdsObject(const u32 index, const u8 subIndex);
+
+        /// @brief Display all information about the MD device
+        /// @details This function prints the all the actual register value, device type, and all
+        /// objects in the Object Dictionary.
+        void printAllInfo();
+
+      private:
+        const Candle* m_candle;
+
+        /// @brief Generate the Object Dictionary from the EDS file
+        /// @return A vector of edsObject representing the Object Dictionary
+        const std::vector<edsObject> ObjectDictionary =
+            generateObjectDictionary();  // Object dictionary generated from the EDS file
+
+        /// @brief Find an object in the Object Dictionary by its name
+        /// @param searchTerm name of the object to find
+        /// @param index Output parameter to store the found index
+        /// @param subIndex Output parameter to store the found subindex
+        /// @return Error_t indicating the result of the operation
+        /// @details If multiple objects with the same name are found, only the first one is
+        /// returned, and a warning is logged.
+        Error_t findObjectByName(const std::string& searchTerm, u32& index, u8& subIndex);
+
+        /// @brief Check if an object is writable
+        /// @param index Index of the object in the Object Dictionary
+        /// @param subIndex Subindex of the object in the Object Dictionary
+        /// @return Error_t indicating whether the object is writable or not
+        /// @details This function checks the Object Dictionary to determine if the specified object
+        /// is writable. If the object is not found or not writable, it returns an error.
+        /// If the object is writable, it returns OK.
+        Error_t isWritable(const u32 index, const u8 subIndex);
+
+        /// @brief Check if an object is readable
+        /// @param index Index of the object in the Object Dictionary
+        /// @param subIndex Subindex of the object in the Object Dictionary
+        /// @return Error_t indicating whether the object is readable or not
+        /// @details This function checks the Object Dictionary to determine if the specified object
+        /// is readable. If the object is not found or not readable, it returns an error.
+        /// If the object is readable, it returns OK.
+        Error_t isReadable(const u32 index, const u8 subIndex);
+
+        inline const Candle* getCandle() const
+        {
+            if (m_candle != nullptr)
+            {
+                return m_candle;
+            }
+            m_log.error("Candle device empty!");
+            return nullptr;
+        }
+
+        inline std::pair<std::vector<u8>, mab::candleTypes::Error_t> transferCanOpenFrame(
+            i16 Id, std::vector<u8> frameToSend, size_t responseSize) const
+        {
+            if (m_candle == nullptr)
+            {
+                m_log.error("Candle empty!");
+                return {{}, candleTypes::Error_t::DEVICE_NOT_CONNECTED};
+            }
+            auto result = getCandle()->transferCANFrame(
+                Id, frameToSend, responseSize, m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
+
+            if (result.second != candleTypes::Error_t::OK)
+            {
+                m_log.error("Error while transfering CAN frame!");
+            }
+            return result;
+        }
+
+        inline std::pair<std::vector<u8>, mab::candleTypes::Error_t>
+        transferCanOpenFrameNoRespondExpected(i16             Id,
+                                              std::vector<u8> frameToSend,
+                                              size_t          responseSize,
+                                              u32             timeout = 0) const
+        {
+            if (m_candle == nullptr)
+            {
+                m_log.error("Candle empty!");
+                return {{}, candleTypes::Error_t::DEVICE_NOT_CONNECTED};
+            }
+
+            std::optional<Logger::Verbosity_E> levelBeforePDO = m_log.g_m_verbosity;
+
+            m_log.g_m_verbosity = Logger::Verbosity_E::SILENT;
+
+            if (timeout == 0)
+            {
+                auto result = getCandle()->transferCANFrame(
+                    Id, frameToSend, responseSize, 10 * m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
+                result.second       = candleTypes::Error_t::OK;
+                m_log.g_m_verbosity = levelBeforePDO;
+
+                return result;
+            }
+            else
+            {
+                auto result = getCandle()->transferCANFrame(Id, frameToSend, responseSize, timeout);
+                result.second       = candleTypes::Error_t::OK;
+                m_log.g_m_verbosity = levelBeforePDO;
+
+                return result;
+            }
+        }
+    };
+
+}  // namespace mab

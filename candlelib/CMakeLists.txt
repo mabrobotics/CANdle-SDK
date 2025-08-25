@@ -50,6 +50,7 @@ target_sources(candle PRIVATE
   ${UNIX_ONLY_SOURCES}
   src/communication_interface/USB.cpp
   src/MD/MD.cpp
+  src/MD/MDCO.cpp
   src/pds/pds.cpp
   src/pds/pds_module.cpp
   src/pds/pds_protocol.cpp

@@ -17,12 +17,16 @@ set(CANDLETOOL_SOURCES
 
   src/candle_cli.cpp
   src/canLoader.cpp
+  src/candletoolCO.cpp
   src/md_cli.cpp
   src/mab_crc.cpp
   src/mabFileParser.cpp
   src/main.cpp
   src/pds_cli.cpp
   src/utilities.cpp
+  objectDictionary/OD.cpp
+  src/edsParser.cpp
+  src/mdco_cli.cpp
 
 )
 
