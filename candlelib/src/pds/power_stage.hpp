@@ -10,12 +10,11 @@ namespace mab
      *       The idea is that PDS base class detects connected modules automatically and
      *
      */
-    class PowerStage : public PdsModule
+    class PowerStage final : public PdsModule
     {
       public:
         PowerStage() = delete;
-        PowerStage(socketIndex_E socket, Candle* p_candle, u16& canId);
-        ~PowerStage();
+        PowerStage(socketIndex_E socket, Candle* p_candle, std::shared_ptr<u16> canId);
 
         void printModuleInfo(void) override;
 
@@ -120,7 +119,16 @@ namespace mab
          * @param energy
          * @return error_E
          */
-        error_E getEnergy(s32& energy);
+        error_E getTotalDeliveredEnergy(u32& energy);
+
+        /**
+         * @brief Reset the total Energy that was delivered by the Power Stage module
+         *
+         * @param reset
+         * @return error_E
+         */
+
+        error_E resetEnergyDelivered(bool& reset);
 
         /**
          * @brief Get the Temperature of the module

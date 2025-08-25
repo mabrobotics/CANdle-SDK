@@ -908,10 +908,12 @@ namespace mab
             [this, candleBuilder, mdCanId, registerWriteOption]()
             {
                 auto        md           = getMd(mdCanId, candleBuilder);
-                std::string resultBefore = "Failed to read";
-                std::string resultAffter = "Failed to read";
+                std::string resultBefore = "0";
+                std::string resultAffter = "0";
                 u16         address      = 0x0;
                 std::string registerStr  = *(registerWriteOption.registerAddressOrName);
+                bool        isWriteOnly  = false;
+
                 if (md == nullptr)
                 {
                     m_logger.error("Coudl not connect to MD!");
@@ -919,9 +921,22 @@ namespace mab
                 }
                 if (std::string("0x").compare(registerStr.substr(0, 2)) == 0)
                 {
+                    MDRegisters_S regs;
                     address = std::stoll(registerStr, nullptr, 16);
-                    if (address != 0x0)
+                    // Is write-only check
+                    auto isWriteOnlyFunc = [&]<typename T>(MDRegisterEntry_S<T> reg)
+                    {
+                        if (reg.m_regAddress == address)
+                        {
+                            isWriteOnly = reg.m_accessLevel == RegisterAccessLevel_E::WO;
+                        }
+                    };
+                    regs.forEachRegister(isWriteOnlyFunc);
+
+                    if (address != 0x0 && !isWriteOnly)
                         resultBefore = registerRead(*md, address).value_or(resultBefore);
+                    else if (address != 0x0 && isWriteOnly)
+                        m_logger.info("Skipping read check for read-only variable...");
                     else
                     {
                         m_logger.error("Could not find provided register!");
@@ -934,13 +949,19 @@ namespace mab
                     auto          findAddressByName = [&]<typename T>(MDRegisterEntry_S<T> reg)
                     {
                         if (registerStr.compare(reg.m_name) == 0)
-                            address = reg.m_regAddress;
+                        {
+                            address     = reg.m_regAddress;
+                            isWriteOnly = reg.m_accessLevel == RegisterAccessLevel_E::WO;
+                        }
                     };
                     regs.forEachRegister(findAddressByName);
-                    if (address != 0x0)
+                    if (address != 0x0 && !isWriteOnly)
                     {
+                        m_logger.info("Is RO - %u", isWriteOnly);
                         resultBefore = registerRead(*md, address).value_or(resultBefore);
                     }
+                    else if (address != 0x0 && isWriteOnly)
+                        m_logger.debug("Skipping read check for read-only variable...");
                     else
                     {
                         m_logger.error("Could not find provided register!");
@@ -951,14 +972,22 @@ namespace mab
                 {
                     m_logger.error("Could not parse value to the MD register!");
                 }
-                resultAffter = registerRead(*md, address).value_or("Failed to read");
-                m_logger.success(
-                    "Written value to the register %s which had a value of %s, and now has a "
-                    "value "
-                    "of %s",
-                    registerStr.c_str(),
-                    resultBefore.c_str(),
-                    resultAffter.c_str());
+                if (!isWriteOnly)
+                {
+                    resultAffter = registerRead(*md, address).value_or("Failed to read");
+                    m_logger.success(
+                        "Written value to the register %s which had a value of %s, and now has a "
+                        "value "
+                        "of %s",
+                        registerStr.c_str(),
+                        resultBefore.c_str(),
+                        resultAffter.c_str());
+                }
+                else
+                {
+                    m_logger.debug("Skipping read check for read-only variable...");
+                    m_logger.success("Writen value to write-only register %s", registerStr.c_str());
+                }
             });
         // Reset
         mdCLi->add_subcommand("reset", "Reboot the MD drive")

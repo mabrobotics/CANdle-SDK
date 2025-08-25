@@ -92,12 +92,14 @@ int main(int argc, char** argv)
         Logger log(Logger::ProgramLayer_E::TOP, "CANDLE_PREBUILD");
         log.debug("Running candle pre-build CLI parsing task...");
         // Parsing bus type
-        if (cmd.bus.find("USB" != 0))
+        if (cmd.bus.find("USB") != std::string::npos)
         {
+            log.debug("Using USB bus");
             *busType = candleTypes::busTypes_t::USB;
         }
-        else if (cmd.bus.find("SPI" != 0))
+        else if (cmd.bus.find("SPI") != std::string::npos)
         {
+            log.debug("Using SPI bus");
             *busType = candleTypes::busTypes_t::SPI;
         }
         else

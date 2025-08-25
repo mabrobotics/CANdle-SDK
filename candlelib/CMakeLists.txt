@@ -38,12 +38,16 @@ message(
     "\nCANDLE_BUILD_SHARED: ${CANDLE_BUILD_SHARED}\nCANDLE_BUILD_STATIC: ${CANDLE_BUILD_STATIC}"
 )
 
+if(UNIX)
+  set(UNIX_ONLY_SOURCES src/communication_interface/SPI.cpp)
+endif()
+
 target_sources(candle PRIVATE
   src/crc.cpp
   src/can_bootloader/can_bootloader.cpp
   src/communication_device/candle.cpp
   src/communication_device/candle_bootloader.cpp
-  src/communication_interface/SPI.cpp
+  ${UNIX_ONLY_SOURCES}
   src/communication_interface/USB.cpp
   src/MD/MD.cpp
   src/pds/pds.cpp
@@ -122,7 +126,7 @@ target_include_directories(candle_bootloader_test PRIVATE
 target_link_libraries(candle_bootloader_test PRIVATE logger shared_data candle)
 
 
-add_unit_test_executable(usb_v2_test src/communication_interface/SPI_test.cpp)
+add_unit_test_executable(usb_v2_test src/communication_interface/USB_test.cpp)
 target_sources(usb_v2_test PRIVATE src/communication_interface/USB.cpp)
 target_include_directories(usb_v2_test PRIVATE
   include
@@ -130,14 +134,15 @@ target_include_directories(usb_v2_test PRIVATE
 )
 target_link_libraries(usb_v2_test PRIVATE logger shared_data candle)
 
-add_unit_test_executable(spi_v2_test src/communication_interface/SPI_test.cpp)
-target_sources(spi_v2_test PRIVATE  src/communication_interface/SPI.cpp)
-target_include_directories(spi_v2_test PRIVATE
-  include
-  src/communication_interface/
-)
-target_link_libraries(spi_v2_test PRIVATE logger shared_data candle)
-
+if(UNIX)
+  add_unit_test_executable(spi_v2_test src/communication_interface/SPI_test.cpp)
+  target_sources(spi_v2_test PRIVATE  src/communication_interface/SPI.cpp)
+  target_include_directories(spi_v2_test PRIVATE
+    include
+    src/communication_interface/
+  )
+  target_link_libraries(spi_v2_test PRIVATE logger shared_data candle)
+endif()
 
 add_unit_test_executable(md_v2_test src/MD/MD_test.cpp)
 target_sources(md_v2_test PRIVATE  src/MD/MD.cpp)

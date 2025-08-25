@@ -61,7 +61,7 @@ namespace mab
     // TODO: those should be args
     static constexpr int IN_ENDPOINT  = 0x81;  ///< CANdle USB input endpoint address.
     static constexpr int OUT_ENDPOINT = 0x01;  ///< CANdle USB output endpoint address.
-    class USB : public I_CommunicationInterface
+    class USB            final : public I_CommunicationInterface
     {
       private:
         Logger m_Log = Logger(Logger::ProgramLayer_E::BOTTOM, "USB");

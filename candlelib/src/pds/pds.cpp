@@ -4,9 +4,12 @@
 namespace mab
 {
     Pds::Pds(u16 canId, Candle* p_candle)
-        : PdsModule(socketIndex_E::UNASSIGNED, moduleType_E::CONTROL_BOARD, p_candle, m_rootCanId),
+        : PdsModule(socketIndex_E::UNASSIGNED,
+                    moduleType_E::CONTROL_BOARD,
+                    p_candle,
+                    std::make_shared<u16>(canId)),
           mp_candle(p_candle),
-          m_rootCanId(canId)
+          m_rootCanId(std::make_shared<u16>(canId))
     {
         m_log.m_tag   = "PDS";
         m_log.m_layer = Logger::ProgramLayer_E::LAYER_2;
@@ -28,7 +31,7 @@ namespace mab
     }
     void Pds::init(u16 canId)
     {
-        m_canId = canId;
+        *m_canId = canId;
         init();
     }
 
@@ -76,7 +79,7 @@ namespace mab
 
         std::vector<u8> serializedMessage = message.serialize();
 
-        transferResult = mp_candle->transferCANFrame(m_canId, serializedMessage, 66U);
+        transferResult = mp_candle->transferCANFrame(*m_canId, serializedMessage, 66U);
         if (transferResult.second != mab::candleTypes::Error_t::OK)
         {
             m_log.error("Failed to transfer CAN frame");
@@ -135,7 +138,7 @@ namespace mab
         std::vector<u8> getFwMetadataMessage = {
             static_cast<u8>(PdsMessage::commandCode_E::GET_FW_METADATA)};
 
-        transferResult = mp_candle->transferCANFrame(m_canId, getFwMetadataMessage, 66U);
+        transferResult = mp_candle->transferCANFrame(*m_canId, getFwMetadataMessage, 66U);
 
         if (transferResult.second != mab::candleTypes::Error_t::OK)
         {
@@ -195,16 +198,16 @@ namespace mab
     {
         if (!m_brakeResistors.empty())
         {
-            for (auto module = m_brakeResistors.begin(); module != m_brakeResistors.end(); module++)
+            for (auto module : m_brakeResistors)
             {
-                if (*module == nullptr)
+                if (module == nullptr)
                 {
                     m_log.error("Brake resistor has some dangling pointers and will fail!");
                     return nullptr;
                 }
-                if ((*module)->getSocketIndex() == socket)
+                if (module->getSocketIndex() == socket)
                 {
-                    return *module;
+                    return module;
                 }
             }
             m_log.error("No brake resistor module connected to socket [ %u ]!",
@@ -221,16 +224,16 @@ namespace mab
     {
         if (!m_powerStages.empty())
         {
-            for (auto module = m_powerStages.begin(); module != m_powerStages.end(); module++)
+            for (auto module : m_powerStages)
             {
-                if (*module == nullptr)
+                if (module == nullptr)
                 {
                     m_log.error("Power stage has some dangling pointers and will fail!");
                     return nullptr;
                 }
-                if ((*module)->getSocketIndex() == socket)
+                if (module->getSocketIndex() == socket)
                 {
-                    return *module;
+                    return module;
                 }
             }
 
@@ -248,16 +251,16 @@ namespace mab
     {
         if (!m_IsolatedConvs.empty())
         {
-            for (auto module = m_IsolatedConvs.begin(); module != m_IsolatedConvs.end(); module++)
+            for (auto module : m_IsolatedConvs)
             {
-                if (*module == nullptr)
+                if (module == nullptr)
                 {
                     m_log.error("Isolated converter has some dangling pointers and will fail!");
                     return nullptr;
                 }
-                if ((*module)->getSocketIndex() == socket)
+                if (module->getSocketIndex() == socket)
                 {
-                    return *module;
+                    return module;
                 }
             }
 
@@ -325,6 +328,19 @@ namespace mab
         statusClearWord |= (u32)statusBits_E::OVER_TEMPERATURE;
         statusClearWord |= (u32)statusBits_E::FDCAN_TIMEOUT;
         return writeModuleProperty(propertyId_E::STATUS_CLEAR, statusClearWord);
+    }
+    PdsModule::error_E Pds::isBootloaderError(bool isBootloaderError)
+    {
+        u32 statusErrorWord = 0;
+        if (isBootloaderError)
+        {
+            statusErrorWord |= (u32)statusBits_E::BOOTLOADER_ERROR;
+            return writeModuleProperty(propertyId_E::STATUS_ERROR, statusErrorWord);
+        }
+        else
+        {
+            return writeModuleProperty(propertyId_E::STATUS_ERROR, statusErrorWord);
+        }
     }
 
     PdsModule::error_E Pds::getBusVoltage(u32& busVoltage)
@@ -422,7 +438,7 @@ namespace mab
 
     u16 Pds::getCanId()
     {
-        return m_rootCanId;
+        return *m_rootCanId;
     }
 
     PdsModule::error_E Pds::setCanId(u16 canId)
@@ -431,7 +447,7 @@ namespace mab
         PdsModule::error_E result = PdsModule::error_E::OK;
         result                    = writeModuleProperty(propertyId_E::CAN_ID, canId);
         if (PdsModule::error_E::OK == result)
-            m_rootCanId = canId;
+            *m_rootCanId = canId;
 
         return result;
     }
