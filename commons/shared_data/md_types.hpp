@@ -147,6 +147,9 @@
 
 namespace mab
 {
+    constexpr u32 MDCanIdMin = 10;
+    constexpr u32 MDCanIdMax = 2000;
+
     enum class MdFrameId_E : u8
     {
         WRITE_REGISTER_DEFAULT_RESPONSE = 0x40,
