@@ -1,6 +1,19 @@
 #include <USB.hpp>
 #include <cstring>
 #include <string>
+#ifdef WIN32
+#define NO_DRIVER_EXTENDED_HELPER_MESSAGE                                    \
+    "No such device (it may have been disconnected). "                       \
+    "If you are on Windows please make sure you have installed the driver. " \
+    "You can do it by running \"candletool candle driver\" command. "
+#define NOT_SUPPORTED_EXTENDED_HELPER_MESSAGE                                \
+    "Windows kernel related issue occurred. "                                \
+    "If you are on Windows please make sure you have installed the driver. " \
+    "You can do it by running \"candletool candle driver\" command. "
+#else
+#define NO_DRIVER_EXTENDED_HELPER_MESSAGE     "No such device (it may have been disconnected)"
+#define NOT_SUPPORTED_EXTENDED_HELPER_MESSAGE "Windows kernel related issue occurred."
+#endif
 
 namespace mab
 {
@@ -21,7 +34,7 @@ namespace mab
             case LIBUSB_ERROR_IO:
                 return "Success (no error)";
             case LIBUSB_ERROR_NO_DEVICE:
-                return "No such device (it may have been disconnected)";
+                return NO_DRIVER_EXTENDED_HELPER_MESSAGE;
             case LIBUSB_ERROR_NO_MEM:
                 return "Insufficient memory.";
             case LIBUSB_ERROR_NOT_FOUND:
@@ -33,7 +46,7 @@ namespace mab
             case LIBUSB_ERROR_PIPE:
                 return "Control request not supported by the device";
             case LIBUSB_ERROR_NOT_SUPPORTED:
-                return "Windows kernel related issue ocurred";
+                return NOT_SUPPORTED_EXTENDED_HELPER_MESSAGE;
             case LIBUSB_ERROR_TIMEOUT:
                 return "Timed out";
             default:
