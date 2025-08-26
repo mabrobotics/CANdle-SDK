@@ -36,15 +36,9 @@ CandleToolCO::CandleToolCO(const mab::CANdleBaudrate_E baud)
     std::string& device = ini["communication"]["device"];
     busString           = ini["communication"]["bus"];
 
-    // if (busString == "SPI")
-    // {
-    //     bus = nullptr;  // TODO: placeholder
-    // }
-    // else if (busString == "USB")
     bus = std::make_unique<USB>(Candle::CANDLE_VID, Candle::CANDLE_PID, device);
 
     m_candle = attachCandle(baud, std::move(bus));
-    // TODO: move this to be more stateless and be able to start w/o candle attached
 }
 
 CandleToolCO::~CandleToolCO()
@@ -56,9 +50,6 @@ void CandleToolCO::ping(const std::string& variant)
 {
     if (variant == "all")
     {
-        // TODO: implement all variant later, change string variant to enum to avoid undefined
-        log.error("Not implemented");
-        // TODO: implement all variant later, change string variant to enum to avoid undefined
         log.error("Not implemented");
         return;
     }
@@ -74,39 +65,57 @@ void CandleToolCO::ping(const std::string& variant)
 void CandleToolCO::configCan(
     u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination)
 {
-    MDRegisters_S mdRegisters;
-    MDCO          mdco = MDCO(id, m_candle);
-
+    MDCO mdco = MDCO(id, m_candle);
     long newbaud;
     if (baud == "1M")
         newbaud = 1000000;
     else if (baud == "500K")
         newbaud = 500000;
     else
+    {
         log.error("Invalid baudrate for CANopen, only 1M and 500K is supported");
-    mdco.newCanOpenConfig(newId, newbaud, termination);
+        return;
+    }
+    MDCO::Error_t err = mdco.newCanOpenConfig(newId, newbaud, termination);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting CANopen config");
+        return;
+    }
 }
 
 void CandleToolCO::configSave(u16 id)
 {
-    MDCO mdco = MDCO(id, m_candle);
-
-    mdco.openSave();
+    MDCO          mdco = MDCO(id, m_candle);
+    MDCO::Error_t err  = mdco.openSave();
+    if (err != MDCO::OK)
+    {
+        log.error("Error saving config");
+        return;
+    }
 }
 
 void CandleToolCO::configZero(u16 id)
 {
-    MDCO mdco = MDCO(id, m_candle);
-
-    mdco.openZero();
+    MDCO          mdco = MDCO(id, m_candle);
+    MDCO::Error_t err  = mdco.openZero();
+    if (err != MDCO::OK)
+    {
+        log.error("Error zeroing");
+        return;
+    }
 }
 
 void CandleToolCO::configBandwidth(u16 id, f32 bandwidth)
 {
-    MDCO mdco = MDCO(id, m_candle);
-
-    u16 newBandwidth = ((u16)bandwidth);
-    mdco.canOpenBandwidth(newBandwidth);
+    MDCO          mdco         = MDCO(id, m_candle);
+    u16           newBandwidth = ((u16)bandwidth);
+    MDCO::Error_t err          = mdco.canOpenBandwidth(newBandwidth);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting bandwidth");
+        return;
+    }
 }
 
 void CandleToolCO::sendPdoSpeed(u16 id, i32 desiredSpeed)
@@ -120,8 +129,18 @@ void CandleToolCO::sendPdoSpeed(u16 id, i32 desiredSpeed)
     param.RatedTorque  = 1000;
     param.RatedCurrent = 1000;
     param.MaxSpeed     = 200;
-    md.setProfileParameters(param);
-    md.enableDriver(CyclicSyncVelocity);
+    MDCO::Error_t err  = md.setProfileParameters(param);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting profile parameters");
+        return;
+    }
+    err = md.enableDriver(CyclicSyncVelocity);
+    if (err != MDCO::OK)
+    {
+        log.error("Error enabling driver");
+        return;
+    }
 
     log.info("Sending PDO for speed loop control");
     std::vector<u8> frameSetup = {0x0F, 0x00, 0x09};
@@ -148,7 +167,12 @@ void CandleToolCO::sendPdoSpeed(u16 id, i32 desiredSpeed)
     {
         log.error("Velocity Target not reached");
     }
-    md.disableDriver();
+    err = md.disableDriver();
+    if (err != MDCO::OK)
+    {
+        log.error("Error disabling driver");
+        return;
+    }
 }
 
 void CandleToolCO::sendPdoPosition(u16 id, i32 DesiredPos)
@@ -161,8 +185,18 @@ void CandleToolCO::sendPdoPosition(u16 id, i32 DesiredPos)
     param.RatedTorque  = 1000;
     param.RatedCurrent = 1000;
     param.MaxSpeed     = 200;
-    md.setProfileParameters(param);
-    md.enableDriver(CyclicSyncPosition);
+    MDCO::Error_t err  = md.setProfileParameters(param);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting profile parameters");
+        return;
+    }
+    err = md.enableDriver(CyclicSyncPosition);
+    if (err != MDCO::OK)
+    {
+        log.error("Error enabling driver");
+        return;
+    }
 
     auto start   = std::chrono::steady_clock::now();
     auto timeout = std::chrono::seconds((1));
@@ -184,7 +218,7 @@ void CandleToolCO::sendPdoPosition(u16 id, i32 DesiredPos)
     start           = std::chrono::steady_clock::now();
     auto lastSend   = start;
     timeout         = std::chrono::seconds(5);
-    auto sendPeriod = std::chrono::milliseconds(10);
+    auto sendPeriod = std::chrono::milliseconds(100);
 
     while (std::chrono::steady_clock::now() - start < timeout &&
            !((int)md.getValueFromOpenRegister(0x6064, 0) > (DesiredPos - 100) &&
@@ -193,7 +227,12 @@ void CandleToolCO::sendPdoPosition(u16 id, i32 DesiredPos)
         auto now = std::chrono::steady_clock::now();
         if (now - lastSend >= sendPeriod)
         {
-            md.writeOpenRegisters("Motor Target Position", DesiredPos, 4);
+            MDCO::Error_t err = md.writeOpenRegisters("Motor Target Position", DesiredPos, 4);
+            if (err != MDCO::OK)
+            {
+                log.error("Error setting Motor Target Position");
+                return;
+            }
             lastSend = now;
         }
     }
@@ -210,23 +249,37 @@ void CandleToolCO::sendPdoPosition(u16 id, i32 DesiredPos)
         log.error("Position not reached in less than 5s");
     }
 
-    md.disableDriver();
+    err = md.disableDriver();
+    if (err != MDCO::OK)
+    {
+        log.error("Error disabling driver");
+        return;
+    }
 }
 
 void CandleToolCO::SendCustomPdo(u16 id, const edsObject& Desiregister, u64 data)
 {
-    // TO DO: finish this
-    MDCO mdco = MDCO(id, m_candle);
-    // if the the index start with 0x1A00
+    MDCO          mdco = MDCO(id, m_candle);
+    MDCO::Error_t err;
     if (Desiregister.index == (0x1600))
     {
         std::vector<u8> frame = {(u8)(data >> 8), (u8)(data)};
-        mdco.writeOpenPDORegisters(0x200 + id, frame);
+        err                   = mdco.writeOpenPDORegisters(0x200 + id, frame);
+        if (err != MDCO::OK)
+        {
+            log.error("Error sending custom PDO 0x1600");
+            return;
+        }
     }
     else if (Desiregister.index == (0x1601))
     {
         std::vector<u8> frame = {(u8)(data >> 16), (u8)(data >> 8), (u8)(data)};
-        mdco.writeOpenPDORegisters(0x300 + id, frame);
+        err                   = mdco.writeOpenPDORegisters(0x300 + id, frame);
+        if (err != MDCO::OK)
+        {
+            log.error("Error sending custom PDO 0x1601");
+            return;
+        }
     }
     else if (Desiregister.index == (0x1602))
     {
@@ -236,7 +289,12 @@ void CandleToolCO::SendCustomPdo(u16 id, const edsObject& Desiregister, u64 data
                                  (u8)(data >> 16),
                                  (u8)(data >> 8),
                                  (u8)(data)};
-        mdco.writeOpenPDORegisters(0x400 + id, frame);
+        err                   = mdco.writeOpenPDORegisters(0x400 + id, frame);
+        if (err != MDCO::OK)
+        {
+            log.error("Error sending custom PDO 0x1602");
+            return;
+        }
     }
     else if (Desiregister.index == (0x1603))
     {
@@ -246,24 +304,40 @@ void CandleToolCO::SendCustomPdo(u16 id, const edsObject& Desiregister, u64 data
                                  (u8)(data >> 16),
                                  (u8)(data >> 8),
                                  (u8)(data)};
-        mdco.writeOpenPDORegisters(0x500 + id, frame);
+        err                   = mdco.writeOpenPDORegisters(0x500 + id, frame);
+        if (err != MDCO::OK)
+        {
+            log.error("Error sending custom PDO 0x1603");
+            return;
+        }
     }
     else
     {
         log.error("Please enter a index between 0x1600 & 0x1603 (Transmit PDO)");
+        return;
     }
 }
 
 void CandleToolCO::setupCalibration(u16 id)
 {
-    MDCO mdco = MDCO(id, m_candle);
-    mdco.encoderCalibration(1, 0);
+    MDCO          mdco = MDCO(id, m_candle);
+    MDCO::Error_t err  = mdco.encoderCalibration(1, 0);
+    if (err != MDCO::OK)
+    {
+        log.error("Error running main encoder calibration");
+        return;
+    }
 }
 
 void CandleToolCO::setupCalibrationOutput(u16 id)
 {
-    MDCO mdco = MDCO(id, m_candle);
-    mdco.encoderCalibration(0, 1);
+    MDCO          mdco = MDCO(id, m_candle);
+    MDCO::Error_t err  = mdco.encoderCalibration(0, 1);
+    if (err != MDCO::OK)
+    {
+        log.error("Error running output encoder calibration");
+        return;
+    }
 }
 
 std::string CandleToolCO::validateAndGetFinalConfigPath(const std::string& cfgPath)
@@ -348,12 +422,12 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
     mab::MDCO mdco = MDCO(id, m_candle);
 
     std::string motor_name            = "";
-    int         motor_polepairs       = 0;    // 0x2000 0x01 u32
-    int         motor_kv              = 0;    // no object refered to kv
-    float       motor_torqueconstant  = 0.0;  // 0x2000 0x02 f32
-    float       motor_gearratio       = 0.0;  // 0x2000 0x08 f32
-    int         motor_torquebandwidth = 0;    // 0x2000 0x05 u16
-    int         motor_shutdowntemp    = 0;    // 0x2000 0x07 u8
+    int         motor_polepairs       = 0;
+    int         motor_kv              = 0;
+    float       motor_torqueconstant  = 0.0;
+    float       motor_gearratio       = 0.0;
+    int         motor_torquebandwidth = 0;
+    int         motor_shutdowntemp    = 0;
 
     int limits_ratedtorque     = 0;
     int limits_maxtorque       = 0;
@@ -365,25 +439,25 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
     int limits_maxacceleration = 0;
     int limits_maxdeceleration = 0;
 
-    int profile_acceleration = 0;  // not usefull because it's not save after motor shutdown
-    int profile_deceleration = 0;  // not usefull because it's not save after motor shutdown
-    int profile_velocity     = 0;  // not usefull because it's not save after motor shutdown
+    int profile_acceleration = 0;
+    int profile_deceleration = 0;
+    int profile_velocity     = 0;
 
-    int outputencoder_outputencoder     = 0;  // ?
-    int outputencoder_outputencodermode = 0;  // 0x2005 0x03 u8
+    int outputencoder_outputencoder     = 0;
+    int outputencoder_outputencodermode = 0;
 
-    float positionpid_kp     = 0.0;  // 0x2002 0x01 f32
-    float positionpid_ki     = 0.0;  // 0x2002 0x02 f32
-    float positionpid_kd     = 0.0;  // 0x2002 0x03 f32
-    float positionpid_windup = 0.0;  // 0x2002 0x04 f32
+    float positionpid_kp     = 0.0;
+    float positionpid_ki     = 0.0;
+    float positionpid_kd     = 0.0;
+    float positionpid_windup = 0.0;
 
-    float velocitypid_kp     = 0.0;  // 0x2001 0x01 f32
-    float velocitypid_ki     = 0.0;  // 0x2001 0x02 f32
-    float velocitypid_kd     = 0.0;  // 0x2001 0x03 f32
-    float velocitypid_windup = 0.0;  // 0x2001 0x04 f32
+    float velocitypid_kp     = 0.0;
+    float velocitypid_ki     = 0.0;
+    float velocitypid_kd     = 0.0;
+    float velocitypid_windup = 0.0;
 
-    float impedancepd_kp = 0.0;  // 0x200C 0x01 f32
-    float impedancepd_kd = 0.0;  // 0x200C 0x02 f32
+    float impedancepd_kp = 0.0;
+    float impedancepd_kd = 0.0;
 
     std::ifstream infile(finalConfigPath);
 
@@ -525,56 +599,188 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
        << "impedancepd_kd = " << impedancepd_kd << "\n\n";
 
     log.info("%s\n", ss.str().c_str());
-    mdco.writeLongOpenRegisters(0x2000, 0x06, motor_name);
-    mdco.writeOpenRegisters(0x2000, 0x01, motor_polepairs, 4);
+
+    MDCO::Error_t err;
+    err = mdco.writeLongOpenRegisters(0x2000, 0x06, motor_name);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting motor_name");
+        return;
+    }
+    err = mdco.writeOpenRegisters(0x2000, 0x01, motor_polepairs, 4);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting motor_polepairs");
+        return;
+    }
     uint32_t motor_torqueconstant_as_long;
     std::memcpy(&motor_torqueconstant_as_long, &motor_torqueconstant, sizeof(float));
-    mdco.writeOpenRegisters(0x2000, 0x02, motor_torqueconstant_as_long, 4);
+    err = mdco.writeOpenRegisters(0x2000, 0x02, motor_torqueconstant_as_long, 4);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting motor_torqueconstant");
+        return;
+    }
     uint32_t motor_gearratio_as_long;
     std::memcpy(&motor_gearratio_as_long, &motor_gearratio, sizeof(float));
-    mdco.writeOpenRegisters(0x2000, 0x08, motor_gearratio_as_long, 4);
-    mdco.writeOpenRegisters(0x2000, 0x05, motor_torquebandwidth, 2);
-    mdco.writeOpenRegisters(0x2000, 0x07, motor_shutdowntemp, 1);
-    mdco.writeOpenRegisters(0x2005, 0x03, outputencoder_outputencodermode, 1);
-    mdco.writeOpenRegisters(0x607D, 0x01, limits_minposition);
-    mdco.writeOpenRegisters(0x607D, 0x02, limits_maxposition);
-    mdco.writeOpenRegisters(0x6076, 0x00, 1000);
-    mdco.writeOpenRegisters(0x6072, 0x00, limits_maxtorque);
-    mdco.writeOpenRegisters(0x6075, 0x00, 1000);
-    mdco.writeOpenRegisters(0x6073, 0x00, limits_maxcurrent);
-    mdco.writeOpenRegisters(0x6080, 0x00, limits_maxvelocity);
-    mdco.writeOpenRegisters(0x60C5, 0x00, limits_maxacceleration);
-    mdco.writeOpenRegisters(0x60C6, 0x00, limits_maxdeceleration);
+    err = mdco.writeOpenRegisters(0x2000, 0x08, motor_gearratio_as_long, 4);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting motor_gearratio");
+        return;
+    }
+    err = mdco.writeOpenRegisters(0x2000, 0x05, motor_torquebandwidth, 2);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting motor_torquebandwidth");
+        return;
+    }
+    err = mdco.writeOpenRegisters(0x2000, 0x07, motor_shutdowntemp, 1);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting motor_shutdowntemp");
+        return;
+    }
+    err = mdco.writeOpenRegisters(0x2005, 0x03, outputencoder_outputencodermode, 1);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting outputencoder_outputencodermode");
+        return;
+    }
+    err = mdco.writeOpenRegisters(0x607D, 0x01, limits_minposition);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting limits_minposition");
+        return;
+    }
+    err = mdco.writeOpenRegisters(0x607D, 0x02, limits_maxposition);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting limits_maxposition");
+        return;
+    }
+    err = mdco.writeOpenRegisters(0x6076, 0x00, 1000);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting limits_ratedtorque");
+        return;
+    }
+    err = mdco.writeOpenRegisters(0x6072, 0x00, limits_maxtorque);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting limits_maxtorque");
+        return;
+    }
+    err = mdco.writeOpenRegisters(0x6075, 0x00, 1000);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting limits_ratedcurrent");
+        return;
+    }
+    err = mdco.writeOpenRegisters(0x6073, 0x00, limits_maxcurrent);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting limits_maxcurrent");
+        return;
+    }
+    err = mdco.writeOpenRegisters(0x6080, 0x00, limits_maxvelocity);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting limits_maxvelocity");
+        return;
+    }
+    err = mdco.writeOpenRegisters(0x60C5, 0x00, limits_maxacceleration);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting limits_maxacceleration");
+        return;
+    }
+    err = mdco.writeOpenRegisters(0x60C6, 0x00, limits_maxdeceleration);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting limits_maxdeceleration");
+        return;
+    }
     uint32_t positionpid_kp_as_long;
     std::memcpy(&positionpid_kp_as_long, &positionpid_kp, sizeof(float));
-    mdco.writeOpenRegisters(0x2002, 0x01, positionpid_kp_as_long, 4);
+    err = mdco.writeOpenRegisters(0x2002, 0x01, positionpid_kp_as_long, 4);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting positionpid_kp");
+        return;
+    }
     uint32_t positionpid_ki_as_long;
     std::memcpy(&positionpid_ki_as_long, &positionpid_ki, sizeof(float));
-    mdco.writeOpenRegisters(0x2002, 0x02, positionpid_ki_as_long, 4);
+    err = mdco.writeOpenRegisters(0x2002, 0x02, positionpid_ki_as_long, 4);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting positionpid_ki");
+        return;
+    }
     uint32_t positionpid_kd_as_long;
     std::memcpy(&positionpid_kd_as_long, &positionpid_kd, sizeof(float));
-    mdco.writeOpenRegisters(0x2002, 0x03, positionpid_kd_as_long, 4);
+    err = mdco.writeOpenRegisters(0x2002, 0x03, positionpid_kd_as_long, 4);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting positionpid_kd");
+        return;
+    }
     uint32_t positionpid_windup_as_long;
     std::memcpy(&positionpid_windup_as_long, &positionpid_windup, sizeof(float));
-    mdco.writeOpenRegisters(0x2002, 0x04, positionpid_windup_as_long, 4);
+    err = mdco.writeOpenRegisters(0x2002, 0x04, positionpid_windup_as_long, 4);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting positionpid_windup");
+        return;
+    }
     uint32_t velocitypid_kp_as_long;
     std::memcpy(&velocitypid_kp_as_long, &velocitypid_kp, sizeof(float));
-    mdco.writeOpenRegisters(0x2001, 0x01, velocitypid_kp_as_long, 4);
+    err = mdco.writeOpenRegisters(0x2001, 0x01, velocitypid_kp_as_long, 4);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting velocitypid_kp");
+        return;
+    }
     uint32_t velocitypid_ki_as_long;
     std::memcpy(&velocitypid_ki_as_long, &velocitypid_ki, sizeof(float));
-    mdco.writeOpenRegisters(0x2001, 0x02, velocitypid_ki_as_long, 4);
+    err = mdco.writeOpenRegisters(0x2001, 0x02, velocitypid_ki_as_long, 4);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting velocitypid_ki");
+        return;
+    }
     uint32_t velocitypid_kd_as_long;
     std::memcpy(&velocitypid_kd_as_long, &velocitypid_kd, sizeof(float));
-    mdco.writeOpenRegisters(0x2001, 0x03, velocitypid_kd_as_long, 4);
+    err = mdco.writeOpenRegisters(0x2001, 0x03, velocitypid_kd_as_long, 4);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting velocitypid_kd");
+        return;
+    }
     uint32_t velocitypid_windup_as_long;
     std::memcpy(&velocitypid_windup_as_long, &velocitypid_windup, sizeof(float));
-    mdco.writeOpenRegisters(0x2001, 0x04, velocitypid_windup_as_long, 4);
+    err = mdco.writeOpenRegisters(0x2001, 0x04, velocitypid_windup_as_long, 4);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting velocitypid_windup");
+        return;
+    }
     uint32_t impedancepd_kp_as_long;
     std::memcpy(&impedancepd_kp_as_long, &impedancepd_kp, sizeof(float));
-    mdco.writeOpenRegisters(0x200C, 0x01, impedancepd_kp, 4);
+    err = mdco.writeOpenRegisters(0x200C, 0x01, impedancepd_kp, 4);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting impedancepd_kp");
+        return;
+    }
     uint32_t impedancepd_kd_as_long;
     std::memcpy(&impedancepd_kd_as_long, &impedancepd_kd, sizeof(float));
-    mdco.writeOpenRegisters(0x200C, 0x02, impedancepd_kd, 4);
+    err = mdco.writeOpenRegisters(0x200C, 0x02, impedancepd_kd, 4);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting impedancepd_kd");
+        return;
+    }
 }
 
 void CandleToolCO::clean(std::string& s)
@@ -655,9 +861,15 @@ void CandleToolCO::SendSync(u16 id)
     MDCO            mdco(id, m_candle);
     long            SyncMessageValue = mdco.getValueFromOpenRegister(0x1005, 0x0);
     std::vector<u8> data;
+    MDCO::Error_t   err;
     if (SyncMessageValue != -1)
     {
-        mdco.writeOpenPDORegisters((int)SyncMessageValue, data);
+        err = mdco.writeOpenPDORegisters((int)SyncMessageValue, data);
+        if (err != MDCO::OK)
+        {
+            log.error("Error sending sync message");
+            return;
+        }
         log.success("Sync message send with value:0x%x (default value is 0x80)", SyncMessageValue);
     }
     else
@@ -864,40 +1076,113 @@ void CandleToolCO::setupInfo(u16 id, bool printAll)
 
 void CandleToolCO::testMove(u16 id, f32 targetPosition, moveParameter& param)
 {
-    MDCO mdco            = MDCO(id, m_candle);
+    MDCO mdco(id, m_candle);
     long DesiredPosition = (long)(targetPosition);
-    mdco.setProfileParameters(param);
-    mdco.enableDriver(CyclicSyncPosition);
+
+    MDCO::Error_t err;
+    err = mdco.setProfileParameters(param);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting profile parameters");
+        return;
+    }
+    err = mdco.enableDriver(CyclicSyncPosition);
+    if (err != MDCO::OK)
+    {
+        log.error("Error enabling driver");
+        return;
+    }
     mdco.movePosition(DesiredPosition);
-    mdco.disableDriver();
+    err = mdco.disableDriver();
+    if (err != MDCO::OK)
+    {
+        log.error("Error disabling driver");
+        return;
+    }
 }
 
 void CandleToolCO::testMoveAbsolute(u16 id, i32 targetPos, moveParameter& param)
 {
-    MDCO mdco       = MDCO(id, m_candle);
+    MDCO mdco(id, m_candle);
     long desiredPos = ((long)targetPos);
-    mdco.setProfileParameters(param);
-    mdco.enableDriver(ProfilePosition);
+
+    MDCO::Error_t err;
+    err = mdco.setProfileParameters(param);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting profile parameters");
+        return;
+    }
+    err = mdco.enableDriver(ProfilePosition);
+    if (err != MDCO::OK)
+    {
+        log.error("Error enabling driver");
+        return;
+    }
     mdco.movePosition(desiredPos);
-    mdco.disableDriver();
+    err = mdco.disableDriver();
+    if (err != MDCO::OK)
+    {
+        log.error("Error disabling driver");
+        return;
+    }
 }
 
 void CandleToolCO::testMoveSpeed(u16 id, moveParameter& param, i32 DesiredSpeed)
 {
-    mab::MDCO mdco(id, m_candle);
-    mdco.setProfileParameters(param);
-    mdco.enableDriver(CyclicSyncVelocity);
+    MDCO mdco(id, m_candle);
+
+    MDCO::Error_t err;
+    err = mdco.setProfileParameters(param);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting profile parameters");
+        return;
+    }
+    err = mdco.enableDriver(CyclicSyncVelocity);
+    if (err != MDCO::OK)
+    {
+        log.error("Error enabling driver");
+        return;
+    }
     mdco.moveSpeed(DesiredSpeed);
-    mdco.disableDriver();
+    err = mdco.disableDriver();
+    if (err != MDCO::OK)
+    {
+        log.error("Error disabling driver");
+        return;
+    }
 }
 
 void CandleToolCO::testMoveImpedance(u16 id, i32 desiredSpeed, f32 targetPos, moveParameter& param)
 {
-    mab::MDCO mdco(id, m_candle);
-    mdco.setProfileParameters(param);
-    mdco.enableDriver(Impedance);
-    mdco.moveImpedance(desiredSpeed, targetPos, param);
-    mdco.disableDriver();
+    MDCO mdco(id, m_candle);
+
+    MDCO::Error_t err;
+    err = mdco.setProfileParameters(param);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting profile parameters");
+        return;
+    }
+    err = mdco.enableDriver(Impedance);
+    if (err != MDCO::OK)
+    {
+        log.error("Error enabling driver");
+        return;
+    }
+    err = mdco.moveImpedance(desiredSpeed, targetPos, param, 5000);
+    if (err != MDCO::OK)
+    {
+        log.error("Error moving impedance");
+        return;
+    }
+    err = mdco.disableDriver();
+    if (err != MDCO::OK)
+    {
+        log.error("Error disabling driver");
+        return;
+    }
 }
 
 void CandleToolCO::testLatency(u16 id)
@@ -936,27 +1221,47 @@ void CandleToolCO::testLatency(u16 id)
 
 void CandleToolCO::testEncoderOutput(u16 id)
 {
-    MDCO mdco(id, m_candle);
-    mdco.testEncoder(false, true);
+    MDCO          mdco(id, m_candle);
+    MDCO::Error_t err = mdco.testEncoder(false, true);
+    if (err != MDCO::OK)
+    {
+        log.error("Error running output encoder test");
+        return;
+    }
 }
 
 void CandleToolCO::testEncoderMain(u16 id)
 {
-    MDCO mdco(id, m_candle);
-    mdco.testEncoder(true, false);
+    MDCO          mdco(id, m_candle);
+    MDCO::Error_t err = mdco.testEncoder(true, false);
+    if (err != MDCO::OK)
+    {
+        log.error("Error running main encoder test");
+        return;
+    }
 }
 
 void CandleToolCO::SDOsegmentedRead(u16 id, u16 reg, u8 subIndex)
 {
     MDCO            mdco(id, m_candle);
     std::vector<u8> data;
-    mdco.readLongOpenRegisters(reg, subIndex, data);
+    MDCO::Error_t   err = mdco.readLongOpenRegisters(reg, subIndex, data);
+    if (err != MDCO::OK)
+    {
+        log.error("Error reading segmented SDO 0x%04X subindex %d", reg, subIndex);
+        return;
+    }
 }
 
 void CandleToolCO::SDOsegmentedWrite(u16 id, u16 reg, u8 subIndex, std::string& data)
 {
-    MDCO mdco(id, m_candle);
-    mdco.writeLongOpenRegisters(reg, subIndex, data);
+    MDCO          mdco(id, m_candle);
+    MDCO::Error_t err = mdco.writeLongOpenRegisters(reg, subIndex, data);
+    if (err != MDCO::OK)
+    {
+        log.error("Error writing segmented SDO 0x%04X subindex %d", reg, subIndex);
+        return;
+    }
 }
 
 void CandleToolCO::registerRead(u16 id, u16 regAdress, u8 subIndex, bool force)
@@ -982,7 +1287,8 @@ void CandleToolCO::registerRead(u16 id, u16 regAdress, u8 subIndex, bool force)
 void CandleToolCO::registerWrite(
     u16 id, u16 regAdress, const std::string& value, u8 subIndex, u8 dataSize, bool force)
 {
-    MDCO mdco(id, m_candle);
+    MDCO          mdco(id, m_candle);
+    MDCO::Error_t err;
     // if no value is given, we read the value from the object dictionary
     if (dataSize == 0)
     {
@@ -997,28 +1303,37 @@ void CandleToolCO::registerWrite(
 
     if (dataSize == 1 || dataSize == 2 || dataSize == 4)
     {
-        // we convert the string value to an unsigned long
         unsigned long data = strtoul((value.c_str()), nullptr, 16);
-        // if the data size is 1, 2 or 4 bytes, we write the value
-        // to the object dictionary
-        mdco.writeOpenRegisters(regAdress, subIndex, data, dataSize, force);
+        err                = mdco.writeOpenRegisters(regAdress, subIndex, data, dataSize, force);
+        if (err != MDCO::OK)
+        {
+            log.error("Error writing register 0x%04X subindex %d", regAdress, subIndex);
+            return;
+        }
         return;
     }
     else if (dataSize == 8)
     {
-        // if data size is over bytes, we need a segmented transfer
-        mdco.writeLongOpenRegisters(regAdress, subIndex, value, force);
+        err = mdco.writeLongOpenRegisters(regAdress, subIndex, value, force);
+        if (err != MDCO::OK)
+        {
+            log.error("Error writing long register 0x%04X subindex %d", regAdress, subIndex);
+            return;
+        }
         return;
     }
     else if (dataSize == 0)
     {
-        // if data size is 0, we assume it is a string
-        mdco.writeLongOpenRegisters(regAdress, subIndex, value, force);
+        err = mdco.writeLongOpenRegisters(regAdress, subIndex, value, force);
+        if (err != MDCO::OK)
+        {
+            log.error("Error writing string register 0x%04X subindex %d", regAdress, subIndex);
+            return;
+        }
         return;
     }
     else
     {
-        // if the data size is -1, there is an error (e.g. wrong register or subindex)
         log.error("Wrong/unknow data size");
         return;
     }
@@ -1070,9 +1385,13 @@ void CandleToolCO::SendTime(uint16_t id)
         ((u8)(days_since >> 8)),
     };
 
-    mdco.writeOpenPDORegisters(TimeMessageId, frame);
+    MDCO::Error_t err = mdco.writeOpenPDORegisters(TimeMessageId, frame);
+    if (err != MDCO::OK)
+    {
+        log.error("Error sending time message");
+        return;
+    }
 }
-
 void CandleToolCO::blink(u16 id)
 {
     MDCO mdco(id, m_candle);
@@ -1086,29 +1405,47 @@ void CandleToolCO::blink(u16 id)
 
 void CandleToolCO::encoder(u16 id)
 {
-    MDCO mdco(id, m_candle);
-    mdco.readOpenRegisters(0x6064, 0);
+    MDCO          mdco(id, m_candle);
+    MDCO::Error_t err = mdco.readOpenRegisters(0x6064, 0);
+    if (err != MDCO::OK)
+    {
+        log.error("Error reading encoder value");
+        return;
+    }
 }
 
 void CandleToolCO::clearErrors(u16 id, const std::string& level)
 {
     MDCO mdco(id, m_candle);
-
     log.info("envoie en canOpen clear error \n");
+    MDCO::Error_t err = MDCO::OK;
     if (level == "error")
-        mdco.clearOpenErrors(1);
+        err = mdco.clearOpenErrors(1);
     else if (level == "warning")
-        mdco.clearOpenErrors(2);
+        err = mdco.clearOpenErrors(2);
     else if (level == "all")
-        mdco.clearOpenErrors(2);
+        err = mdco.clearOpenErrors(3);
     else
+    {
         log.error("Unknown command");
+        return;
+    }
+    if (err != MDCO::OK)
+    {
+        log.error("Error clearing errors (%s)", level.c_str());
+        return;
+    }
 }
 
 void CandleToolCO::reset(u16 id)
 {
-    MDCO mdco(id, m_candle);
-    mdco.openReset();
+    MDCO          mdco(id, m_candle);
+    MDCO::Error_t err = mdco.openReset();
+    if (err != MDCO::OK)
+    {
+        log.error("Error resetting MD device with ID %d", id);
+        return;
+    }
 }
 
 u8 CandleToolCO::getNumericParamFromList(std::string& param, const std::vector<std::string>& list)
@@ -1193,11 +1530,20 @@ void CandleToolCO::SendNMT(u8 id, u8 command)
 {
     MDCO            mdco(id, m_candle);
     std::vector<u8> data = {command, id};
-    mdco.writeOpenPDORegisters(0x000, data);
+    MDCO::Error_t   err  = mdco.writeOpenPDORegisters(0x000, data);
+    if (err != MDCO::OK)
+    {
+        log.error("Error sending NMT command %d to node %d", command, id);
+        return;
+    }
 }
-
 void CandleToolCO::ReadHeartbeat(u16 id)
 {
-    MDCO mdco(id, m_candle);
-    mdco.testHeartbeat();
+    MDCO          mdco(id, m_candle);
+    MDCO::Error_t err = mdco.testHeartbeat();
+    if (err != MDCO::OK)
+    {
+        log.error("Error reading heartbeat for node %d", id);
+        return;
+    }
 }

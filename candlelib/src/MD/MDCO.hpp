@@ -227,6 +227,7 @@ namespace mab
             if ((cmd & 0xF0) != 0x40)
             {
                 ss << "Frame not recognized as an SDO Upload Expedited response." << "\n";
+                return Error_t::TRANSFER_FAILED;
             }
             else
             {

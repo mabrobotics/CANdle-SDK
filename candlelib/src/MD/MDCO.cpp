@@ -150,30 +150,103 @@ namespace mab
 
     MDCO::Error_t MDCO::setProfileParameters(moveParameter& param)
     {
-        writeOpenRegisters("Motor Max Acceleration", param.accLimit);
-        writeOpenRegisters("Motor Max Deceleration", param.dccLimit);
-        writeOpenRegisters("Max Current", param.MaxCurrent);
-        writeOpenRegisters("Motor Rated Current", param.RatedCurrent);
-        writeOpenRegisters("Max Motor Speed", param.MaxSpeed);
-        writeOpenRegisters("Motor Max Torque", param.MaxTorque);
-        writeOpenRegisters("Motor Rated Torque", param.RatedTorque);
+        Error_t err;
+        err = writeOpenRegisters("Motor Max Acceleration", param.accLimit);
+        if (err != OK)
+        {
+            m_log.error("Error setting Max Acceleration");
+            return err;
+        }
+        err = writeOpenRegisters("Motor Max Deceleration", param.dccLimit);
+        if (err != OK)
+        {
+            m_log.error("Error setting Max Deceleration");
+            return err;
+        }
+        err = writeOpenRegisters("Max Current", param.MaxCurrent);
+        if (err != OK)
+        {
+            m_log.error("Error setting Max Current");
+            return err;
+        }
+        err = writeOpenRegisters("Motor Rated Current", param.RatedCurrent);
+        if (err != OK)
+        {
+            m_log.error("Error setting Rated Current");
+            return err;
+        }
+        err = writeOpenRegisters("Max Motor Speed", param.MaxSpeed);
+        if (err != OK)
+        {
+            m_log.error("Error setting Max Motor Speed");
+            return err;
+        }
+        err = writeOpenRegisters("Motor Max Torque", param.MaxTorque);
+        if (err != OK)
+        {
+            m_log.error("Error setting Max Torque");
+            return err;
+        }
+        err = writeOpenRegisters("Motor Rated Torque", param.RatedTorque);
+        if (err != OK)
+        {
+            m_log.error("Error setting Rated Torque");
+            return err;
+        }
         return OK;
     }
 
     MDCO::Error_t MDCO::enableDriver(ModesOfOperation mode)
     {
-        writeOpenRegisters("Modes Of Operation", mode, 1);
-        writeOpenRegisters("Controlword", 0x80, 2);
-        writeOpenRegisters("Controlword", 0x06, 2);
-        writeOpenRegisters("Controlword", 15, 2);
+        Error_t err;
+        err = writeOpenRegisters("Modes Of Operation", mode, 1);
+        if (err != OK)
+        {
+            m_log.error("Error setting Mode of Operation");
+            return err;
+        }
+        err = writeOpenRegisters("Controlword", 0x80, 2);
+        if (err != OK)
+        {
+            m_log.error("Error setting Controlword to 0x80");
+            return err;
+        }
+        err = writeOpenRegisters("Controlword", 0x06, 2);
+        if (err != OK)
+        {
+            m_log.error("Error setting Controlword to 0x06");
+            return err;
+        }
+        err = writeOpenRegisters("Controlword", 15, 2);
+        if (err != OK)
+        {
+            m_log.error("Error setting Controlword to 15");
+            return err;
+        }
         return OK;
     }
 
     MDCO::Error_t MDCO::disableDriver()
     {
-        writeOpenRegisters("Motor Target Velocity", 0);
-        writeOpenRegisters("Controlword", 6);
-        writeOpenRegisters("Modes Of Operation", 0);
+        Error_t err;
+        err = writeOpenRegisters("Motor Target Velocity", 0);
+        if (err != OK)
+        {
+            m_log.error("Error setting Motor Target Velocity to 0");
+            return err;
+        }
+        err = writeOpenRegisters("Controlword", 6);
+        if (err != OK)
+        {
+            m_log.error("Error setting Controlword to 6");
+            return err;
+        }
+        err = writeOpenRegisters("Modes Of Operation", 0);
+        if (err != OK)
+        {
+            m_log.error("Error setting Modes Of Operation to 0");
+            return err;
+        }
         return OK;
     }
 
@@ -191,7 +264,12 @@ namespace mab
             auto now = std::chrono::steady_clock::now();
             if (now - lastSend >= sendPeriod)
             {
-                writeOpenRegisters("Motor Target Position", DesiredPos, 4);
+                Error_t err = writeOpenRegisters("Motor Target Position", DesiredPos, 4);
+                if (err != OK)
+                {
+                    m_log.error("Error setting Motor Target Position");
+                    return;
+                }
                 lastSend = now;
             }
         }
@@ -219,7 +297,12 @@ namespace mab
             auto now = std::chrono::steady_clock::now();
             if (now - lastSend >= sendPeriod)
             {
-                writeOpenRegisters("Motor Target Velocity", DesiredSpeed);
+                Error_t err = writeOpenRegisters("Motor Target Velocity", DesiredSpeed);
+                if (err != OK)
+                {
+                    m_log.error("Error setting Motor Target Velocity");
+                    return;
+                }
                 lastSend = now;
             }
         }
@@ -240,39 +323,102 @@ namespace mab
                                       moveParameter& param,
                                       i16            timeoutMillis)
     {
+        Error_t err;
         // kp
         u32 kp_bits;
         memcpy(&kp_bits, &(param.kp), sizeof(float));
-        writeOpenRegisters("Kp_impedance", kp_bits);
+        err = writeOpenRegisters("Kp_impedance", kp_bits);
+        if (err != OK)
+        {
+            m_log.error("Error setting Kp_impedance");
+            return err;
+        }
         // kd
         u32 kd_bits;
         memcpy(&kd_bits, &(param.kd), sizeof(float));
-        writeOpenRegisters("Kd_impedance", kd_bits);
-        writeOpenRegisters("Position Demand Value", targetPos);
-        writeOpenRegisters("Velocity Demand Value", desiredSpeed);
-        writeOpenRegisters("Torque Demand Value", param.torqueff);
+        err = writeOpenRegisters("Kd_impedance", kd_bits);
+        if (err != OK)
+        {
+            m_log.error("Error setting Kd_impedance");
+            return err;
+        }
+        err = writeOpenRegisters("Position Demand Value", targetPos);
+        if (err != OK)
+        {
+            m_log.error("Error setting Position Demand Value");
+            return err;
+        }
+        err = writeOpenRegisters("Velocity Demand Value", desiredSpeed);
+        if (err != OK)
+        {
+            m_log.error("Error setting Velocity Demand Value");
+            return err;
+        }
+        err = writeOpenRegisters("Torque Demand Value", param.torqueff);
+        if (err != OK)
+        {
+            m_log.error("Error setting Torque Demand Value");
+            return err;
+        }
         auto start   = std::chrono::steady_clock::now();
         auto timeout = std::chrono::milliseconds((timeoutMillis));
         while (std::chrono::steady_clock::now() - start < timeout)
         {
         }
-        writeOpenRegisters("Torque Demand Value", 0);
+        err = writeOpenRegisters("Torque Demand Value", 0);
+        if (err != OK)
+        {
+            m_log.error("Error resetting Torque Demand Value");
+            return err;
+        }
         return MDCO::Error_t::OK;
     }
 
     MDCO::Error_t MDCO::blinkOpenTest()
     {
-        writeOpenRegisters("Controlword", 0x06, 2);
-        writeOpenRegisters("Modes Of Operation", 0xFE, 1);
-        writeOpenRegisters("Blink LEDs", 1, 1);
+        Error_t err;
+        err = writeOpenRegisters("Controlword", 0x06, 2);
+        if (err != OK)
+        {
+            m_log.error("Error setting Controlword");
+            return err;
+        }
+        err = writeOpenRegisters("Modes Of Operation", 0xFE, 1);
+        if (err != OK)
+        {
+            m_log.error("Error setting Modes Of Operation");
+            return err;
+        }
+        err = writeOpenRegisters("Blink LEDs", 1, 1);
+        if (err != OK)
+        {
+            m_log.error("Error setting Blink LEDs");
+            return err;
+        }
         return MDCO::Error_t::OK;
     }
 
     MDCO::Error_t MDCO::openReset()
     {
-        writeOpenRegisters("Controlword", 0x06, 2);
-        writeOpenRegisters("Modes Of Operation", 0xFE, 1);
-        writeOpenRegisters("Reset Controller", 1, 1);
+        Error_t err;
+        err = writeOpenRegisters("Controlword", 0x06, 2);
+        if (err != OK)
+        {
+            m_log.error("Error setting Controlword");
+            return err;
+        }
+        err = writeOpenRegisters("Modes Of Operation", 0xFE, 1);
+        if (err != OK)
+        {
+            m_log.error("Error setting Modes Of Operation");
+            return err;
+        }
+        err = writeOpenRegisters("Reset Controller", 1, 1);
+        if (err != OK)
+        {
+            m_log.error("Error setting Reset Controller");
+            return err;
+        }
         return MDCO::Error_t::OK;
     }
 
@@ -290,8 +436,19 @@ namespace mab
         {
         }
         // clearing error register
-        writeOpenRegisters("Controlword", 0x06, 2);
-        writeOpenRegisters("Modes Of Operation", 0xFF, 1);
+        Error_t err;
+        err = writeOpenRegisters("Controlword", 0x06, 2);
+        if (err != OK)
+        {
+            m_log.error("Error setting Controlword");
+            return err;
+        }
+        err = writeOpenRegisters("Modes Of Operation", 0xFF, 1);
+        if (err != OK)
+        {
+            m_log.error("Error setting Modes Of Operation");
+            return err;
+        }
         start   = std::chrono::steady_clock::now();
         timeout = std::chrono::milliseconds((100));
         while (std::chrono::steady_clock::now() - start < timeout)
@@ -303,9 +460,10 @@ namespace mab
             return writeOpenRegisters("Clear Warnings", 1, 1);
         if (level == 3)
         {
-            if (!writeOpenRegisters("Clear Errors", 1, 1))
+            err = writeOpenRegisters("Clear Errors", 1, 1);
+            if (err == OK)
             {
-                return writeOpenRegisters("Clear Errors", 1, 1);
+                return err;
             }
             else
                 return MDCO::Error_t::TRANSFER_FAILED;
@@ -316,25 +474,44 @@ namespace mab
 
     MDCO::Error_t MDCO::newCanOpenConfig(i32 newID, i32 newBaud, i16 newwatchdog)
     {
-        writeOpenRegisters("Can ID", newID, 4);
-        writeOpenRegisters("Can Baudrate", newBaud, 4);
+        Error_t err;
+        err = writeOpenRegisters("Can ID", newID, 4);
+        if (err != OK)
+        {
+            m_log.error("Error setting Can ID");
+            return err;
+        }
+        err = writeOpenRegisters("Can Baudrate", newBaud, 4);
+        if (err != OK)
+        {
+            m_log.error("Error setting Can Baudrate");
+            return err;
+        }
         if (newwatchdog != 0)
         {
-            writeOpenRegisters("Can Watchdog", newwatchdog, 2);
+            err = writeOpenRegisters("Can Watchdog", newwatchdog, 2);
+            if (err != OK)
+            {
+                m_log.error("Error setting Can Watchdog");
+                return err;
+            }
         }
         return MDCO::Error_t::OK;
     }
 
     MDCO::Error_t MDCO::canOpenBandwidth(i16 newBandwidth)
     {
-        writeOpenRegisters("Torque Bandwidth", newBandwidth, 2);
+        Error_t err = writeOpenRegisters("Torque Bandwidth", newBandwidth, 2);
+        if (err != OK)
+        {
+            m_log.error("Error setting Torque Bandwidth");
+            return err;
+        }
         return MDCO::Error_t::OK;
     }
 
     MDCO::Error_t MDCO::testHeartbeat()
     {
-        // TODO: find a better way to do this, it seems to work but it's clearly not the best way to
-        // do it. A better way could be by implemented a listen mode on the USB.cpp file
         uint32_t heartbeat_id = 0x700 + (uint32_t)this->m_canId;
 
         m_log.info("Waiting for a heartbeat message with can id 0x%03X...", heartbeat_id);
@@ -420,16 +597,43 @@ namespace mab
 
     MDCO::Error_t MDCO::openSave()
     {
-        writeOpenRegisters("Controlword", 0x06, 2);
-        writeOpenRegisters("Save all parameters", 0x65766173, 4);
+        Error_t err;
+        err = writeOpenRegisters("Controlword", 0x06, 2);
+        if (err != OK)
+        {
+            m_log.error("Error setting Controlword for openSave");
+            return err;
+        }
+        err = writeOpenRegisters("Save all parameters", 0x65766173, 4);
+        if (err != OK)
+        {
+            m_log.error("Error saving all parameters");
+            return err;
+        }
         return MDCO::Error_t::OK;
     }
 
     MDCO::Error_t MDCO::openZero()
     {
-        writeOpenRegisters("Controlword", 0x06, 2);
-        writeOpenRegisters("Modes Of Operation", 0xFE, 1);
-        writeOpenRegisters("Set Zero", 1, 1);
+        Error_t err;
+        err = writeOpenRegisters("Controlword", 0x06, 2);
+        if (err != OK)
+        {
+            m_log.error("Error setting Controlword for openZero");
+            return err;
+        }
+        err = writeOpenRegisters("Modes Of Operation", 0xFE, 1);
+        if (err != OK)
+        {
+            m_log.error("Error setting Modes Of Operation for openZero");
+            return err;
+        }
+        err = writeOpenRegisters("Set Zero", 1, 1);
+        if (err != OK)
+        {
+            m_log.error("Error setting Set Zero");
+            return err;
+        }
 
         if ((getValueFromOpenRegister(0x6064, 0) > -50) &&
             (getValueFromOpenRegister(0x6064, 0) < 50))
@@ -440,29 +644,79 @@ namespace mab
         else
         {
             m_log.error("Zero not update");
-            return MDCO::Error_t::OK;
+            return MDCO::Error_t::TRANSFER_FAILED;
         }
     }
 
     MDCO::Error_t MDCO::testEncoder(bool Main, bool output)
     {
-        writeOpenRegisters("Controlword", 0x06, 2);
-        writeOpenRegisters("Modes Of Operation", 0xFE, 1);
+        Error_t err;
+        err = writeOpenRegisters("Controlword", 0x06, 2);
+        if (err != OK)
+        {
+            m_log.error("Error setting Controlword for testEncoder");
+            return err;
+        }
+        err = writeOpenRegisters("Modes Of Operation", 0xFE, 1);
+        if (err != OK)
+        {
+            m_log.error("Error setting Modes Of Operation for testEncoder");
+            return err;
+        }
         if (Main)
-            writeOpenRegisters("Test Main Encoder", 1, 1);
+        {
+            err = writeOpenRegisters("Test Main Encoder", 1, 1);
+            if (err != OK)
+            {
+                m_log.error("Error setting Test Main Encoder");
+                return err;
+            }
+        }
         if (output)
-            writeOpenRegisters("Test Output Encoder", 1, 1);
+        {
+            err = writeOpenRegisters("Test Output Encoder", 1, 1);
+            if (err != OK)
+            {
+                m_log.error("Error setting Test Output Encoder");
+                return err;
+            }
+        }
         return MDCO::Error_t::OK;
     }
 
     MDCO::Error_t MDCO::encoderCalibration(bool Main, bool output)
     {
-        writeOpenRegisters("Controlword", 0x06, 2);
-        writeOpenRegisters("Modes Of Operation", 0xFE, 1);
+        Error_t err;
+        err = writeOpenRegisters("Controlword", 0x06, 2);
+        if (err != OK)
+        {
+            m_log.error("Error setting Controlword for encoderCalibration");
+            return err;
+        }
+        err = writeOpenRegisters("Modes Of Operation", 0xFE, 1);
+        if (err != OK)
+        {
+            m_log.error("Error setting Modes Of Operation for encoderCalibration");
+            return err;
+        }
         if (Main)
-            writeOpenRegisters("Run Calibration", 1, 1);
+        {
+            err = writeOpenRegisters("Run Calibration", 1, 1);
+            if (err != OK)
+            {
+                m_log.error("Error setting Run Calibration");
+                return err;
+            }
+        }
         if (output)
-            writeOpenRegisters("Run Output Encoder Calibration", 1, 1);
+        {
+            err = writeOpenRegisters("Run Output Encoder Calibration", 1, 1);
+            if (err != OK)
+            {
+                m_log.error("Error setting Run Output Encoder Calibration");
+                return err;
+            }
+        }
         return MDCO::Error_t::OK;
     }
 
