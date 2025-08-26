@@ -148,7 +148,7 @@ namespace mab
         }
     }
 
-    MDCO::Error_t MDCO::setProfileParameters(moveParameter param)
+    MDCO::Error_t MDCO::setProfileParameters(moveParameter& param)
     {
         writeOpenRegisters("Motor Max Acceleration", param.accLimit);
         writeOpenRegisters("Motor Max Deceleration", param.dccLimit);
@@ -235,7 +235,7 @@ namespace mab
         }
     }
 
-    MDCO::Error_t MDCO::moveImpedance(i32 desiredSpeed, i32 targetPos, moveParameter param)
+    MDCO::Error_t MDCO::moveImpedance(i32 desiredSpeed, i32 targetPos, moveParameter& param)
     {
         // kp
         u32 kp_bits;

@@ -894,7 +894,7 @@ void CandleToolCO::setupInfo(u16 id, bool printAll)
     }
 }
 
-void CandleToolCO::testMove(u16 id, f32 targetPosition, moveParameter param)
+void CandleToolCO::testMove(u16 id, f32 targetPosition, moveParameter& param)
 {
     MDCO mdco            = MDCO(id, m_candle);
     long DesiredPosition = (long)(targetPosition);
@@ -904,7 +904,7 @@ void CandleToolCO::testMove(u16 id, f32 targetPosition, moveParameter param)
     mdco.disableDriver();
 }
 
-void CandleToolCO::testMoveAbsolute(u16 id, i32 targetPos, moveParameter param)
+void CandleToolCO::testMoveAbsolute(u16 id, i32 targetPos, moveParameter& param)
 {
     MDCO mdco       = MDCO(id, m_candle);
     long desiredPos = ((long)targetPos);
@@ -914,7 +914,7 @@ void CandleToolCO::testMoveAbsolute(u16 id, i32 targetPos, moveParameter param)
     mdco.disableDriver();
 }
 
-void CandleToolCO::testMoveSpeed(u16 id, moveParameter param, i32 DesiredSpeed)
+void CandleToolCO::testMoveSpeed(u16 id, moveParameter& param, i32 DesiredSpeed)
 {
     mab::MDCO mdco(id, m_candle);
     mdco.setProfileParameters(param);
@@ -923,7 +923,7 @@ void CandleToolCO::testMoveSpeed(u16 id, moveParameter param, i32 DesiredSpeed)
     mdco.disableDriver();
 }
 
-void CandleToolCO::testMoveImpedance(u16 id, i32 desiredSpeed, f32 targetPos, moveParameter param)
+void CandleToolCO::testMoveImpedance(u16 id, i32 desiredSpeed, f32 targetPos, moveParameter& param)
 {
     mab::MDCO mdco(id, m_candle);
     mdco.setProfileParameters(param);

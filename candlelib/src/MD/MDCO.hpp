@@ -97,7 +97,7 @@ namespace mab
         /// moving
         /// @param param struct containing all the parameters needed to configure the motor
         /// @return error_t indicating the result of the operation
-        Error_t setProfileParameters(moveParameter param);
+        Error_t setProfileParameters(moveParameter& param);
 
         /// @brief Enable the driver with the specified mode of operation
         /// @param mode Mode of operation to set cf 0x6060 in the CANopen object dictionary
@@ -127,7 +127,7 @@ namespace mab
         /// @return Error_t indicating the result of the operation
         /// @details This function sets the motor in impedance control mode and moves it to the
         /// specified position with the given speed, gains, and torque.
-        Error_t moveImpedance(i32 desiredSpeed, i32 targetPos, moveParameter param);
+        Error_t moveImpedance(i32 desiredSpeed, i32 targetPos, moveParameter& param);
 
         /// @brief Check communication with MD device
         /// @return Error if not connected

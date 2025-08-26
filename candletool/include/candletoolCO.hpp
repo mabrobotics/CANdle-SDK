@@ -117,26 +117,26 @@ namespace mab
         /// @param id The CAN ID of the device to move
         /// @param targetPosition The target position in encoder increments to reach
         /// @param param struct containing all the parameters needed to configure the motor
-        void testMove(u16 id, f32 targetPosition, moveParameter param);
+        void testMove(u16 id, f32 targetPosition, moveParameter& param);
 
         /// @brief reach a target position with acceleration and deceleration limits
         /// @param id The CAN ID of the device to move
         /// @param targetPos The target position in encoder increments to reach
         /// @param param struct containing all the parameters needed to configure the motor
-        void testMoveAbsolute(u16 id, i32 targetPos, moveParameter param);
+        void testMoveAbsolute(u16 id, i32 targetPos, moveParameter& param);
 
         /// @brief Move the device to a target speed
         /// @param id The CAN ID of the device to move
         /// @param param struct containing all the parameters needed to configure the motor
         /// @param DesiredSpeed The desired speed in RPM to set
-        void testMoveSpeed(u16 id, moveParameter param, i32 DesiredSpeed);
+        void testMoveSpeed(u16 id, moveParameter& param, i32 DesiredSpeed);
 
         /// @brief Move the device to a target position with impedance control
         /// @param id The CAN ID of the device to move
         /// @param desiredSpeed The desired speed in RPM to set
         /// @param targetPos The target position in encoder increments to reach
         /// @param param struct containing all the parameters needed to configure the motor
-        void testMoveImpedance(u16 id, i32 desiredSpeed, f32 targetPos, moveParameter param);
+        void testMoveImpedance(u16 id, i32 desiredSpeed, f32 targetPos, moveParameter& param);
 
         /// @brief Test the latency of the device
         /// @param id The CAN ID of the device to test
