@@ -24,7 +24,7 @@
 
 struct UserCommand
 {
-    std::string baud;
+    std::string data;
     std::string bus;
     std::string variant;
 };
@@ -42,7 +42,7 @@ int main(int argc, char** argv)
     UserCommand cmd;
 
     app.add_option("-d,--datarate",
-                   cmd.baud,
+                   cmd.data,
                    "Select FD CAN Datarate CANdleTOOL will use for communication.")
         ->default_val("1M")
         ->check(CLI::IsMember({"1M", "2M", "5M", "8M"}))
@@ -108,9 +108,9 @@ int main(int argc, char** argv)
         }
 
         // Parsing datarate
-        auto parsedBaudOpt = stringToData(cmd.baud);
-        if (parsedBaudOpt.has_value())
-            *datarate = parsedBaudOpt.value();
+        auto parsedDataOpt = stringToData(cmd.data);
+        if (parsedDataOpt.has_value())
+            *datarate = parsedDataOpt.value();
         else
             log.error("Parsing of the datarate failed!");
     };
@@ -129,10 +129,10 @@ int main(int argc, char** argv)
         std::cout << "CandleSDK version: " << CANDLESDK_VERSION << "\n";
     }
 
-    std::optional<mab::CANdleDatarate_E> baudOpt = stringToData(cmd.baud);
-    if (!baudOpt.has_value())
+    std::optional<mab::CANdleDatarate_E> dataOpt = stringToData(cmd.data);
+    if (!dataOpt.has_value())
     {
-        std::cerr << "Invalid datarate: " << cmd.baud << std::endl;
+        std::cerr << "Invalid datarate: " << cmd.data << std::endl;
         return EXIT_FAILURE;
     }
 

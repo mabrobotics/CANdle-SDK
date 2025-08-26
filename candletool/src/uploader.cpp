@@ -38,8 +38,8 @@ namespace mab
         if (directly == false)
             pLoader->resetDevice();
 
-        // Bootloader always communicates with 1M baud
-        m_candle.configCandleBaudrate(mab::CANdleDatarate_E::CAN_DATARATE_1M);
+        // Bootloader always communicates with 1M data
+        m_candle.configCandleDatarate(mab::CANdleDatarate_E::CAN_DATARATE_1M);
 
         m_log.debug("Entering bootloader");
         if (I_Loader::Error_E::OK != pLoader->enterBootloader())

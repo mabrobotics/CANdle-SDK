@@ -39,8 +39,8 @@ class PdsCli
     CLI::App*    m_canIdCmd       = nullptr;
     CLI::Option* m_canIdCmdOption = nullptr;
 
-    CLI::App*    m_canBaudCmd       = nullptr;
-    CLI::Option* m_canBaudCmdOption = nullptr;
+    CLI::App*    m_canDataCmd       = nullptr;
+    CLI::Option* m_canDataCmdOption = nullptr;
 
     // "clear" commands node
     CLI::App* m_clearCmd    = nullptr;
