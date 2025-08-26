@@ -704,4 +704,3 @@ void MdcoCli::parse(mab::CANdleBaudrate_E baud)
         }
     }
 }
-

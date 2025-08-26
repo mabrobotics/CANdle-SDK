@@ -7,7 +7,7 @@
 #include "candle_types.hpp"
 #include "MDStatus.hpp"
 #include "candle.hpp"
-#include "../../../candletool/objectDictionary/OD.hpp"
+#include "OD.hpp"
 
 #include <cstring>
 

@@ -14,7 +14,6 @@
 #include "MDStatus.hpp"
 #include "canLoader.hpp"
 #include "mab_types.hpp"
-#include "configHelpers.hpp"
 #include "utilities.hpp"
 #include "mabFileParser.hpp"
 #include "candle_bootloader.hpp"
@@ -315,15 +314,18 @@ std::string CandleToolCO::validateAndGetFinalConfigPath(const std::string& cfgPa
         log.warn("Valid file must have .cfg extension, and size of < 1MB");
         exit(1);
     }
-    if (!fileExists(getDefaultConfigPath()))
+    std::string defaultConfigPath =
+        finalConfigPath.substr(0, finalConfigPath.find_last_of('/') + 1) + "default.cfg";
+
+    if (!fileExists(defaultConfigPath))
     {
-        log.warn("No default config found at expected location \"%s\"",
-                 getDefaultConfigPath().c_str());
+        log.warn("No default config found at expected location \"%s\"", defaultConfigPath.c_str());
         log.warn("Cannot check completeness of the config file. Proceed with upload? [y/n]");
         if (!getConfirmation())
             exit(0);
     }
-    if (fileExists(getDefaultConfigPath()) && !isConfigComplete(finalConfigPath))
+
+    if (fileExists(defaultConfigPath) && !isCanOpenConfigComplete(finalConfigPath))
     {
         log.m_layer = Logger::ProgramLayer_E::TOP;
         log.error("\"%s\" is incomplete.", finalConfigPath.c_str());
@@ -371,21 +373,23 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
     file.read(ini);
     mab::MDCO mdco = MDCO(id, m_candle);
 
-    std::string motor_name           = "";   // impossible without segmented transfert
-    int         motor_polepairs      = 0;    // 0x2000 0x01 u32
-    int         motor_kv             = 0;    // no object refered to kv
-    float       motor_torqueconstant = 0.0;  // 0x2000 0x02 f32
-    float       motor_gearratio      = 0.0;  // 0x2000 0x08 f32
-    int         motor_maxcurrent     = 0;  // not usefull because it's not save after motor shutdown
-    int         motor_torquebandwidth = 0;  // 0x2000 0x05 u16
-    int         motor_shutdowntemp    = 0;  // 0x2000 0x07 u8
+    std::string motor_name            = "";
+    int         motor_polepairs       = 0;    // 0x2000 0x01 u32
+    int         motor_kv              = 0;    // no object refered to kv
+    float       motor_torqueconstant  = 0.0;  // 0x2000 0x02 f32
+    float       motor_gearratio       = 0.0;  // 0x2000 0x08 f32
+    int         motor_torquebandwidth = 0;    // 0x2000 0x05 u16
+    int         motor_shutdowntemp    = 0;    // 0x2000 0x07 u8
 
-    float limits_maxtorque       = 0;  // not usefull because it's not save after motor shutdown
-    int   limits_maxvelocity     = 0;  // not usefull because it's not save after motor shutdown
-    int   limits_maxposition     = 0;  // not usefull because it's not save after motor shutdown
-    int   limits_minposition     = 0;  // not usefull because it's not save after motor shutdown
-    int   limits_maxacceleration = 0;  // not usefull because it's not save after motor shutdown
-    int   limits_maxdeceleration = 0;  // not usefull because it's not save after motor shutdown
+    int limits_ratedtorque     = 0;
+    int limits_maxtorque       = 0;
+    int limits_ratedcurrent    = 0;
+    int limits_maxcurrent      = 0;
+    int limits_maxvelocity     = 0;
+    int limits_maxposition     = 0;
+    int limits_minposition     = 0;
+    int limits_maxacceleration = 0;
+    int limits_maxdeceleration = 0;
 
     int profile_acceleration = 0;  // not usefull because it's not save after motor shutdown
     int profile_deceleration = 0;  // not usefull because it's not save after motor shutdown
@@ -407,10 +411,10 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
     float impedancepd_kp = 0.0;  // 0x200C 0x01 f32
     float impedancepd_kd = 0.0;  // 0x200C 0x02 f32
 
-    std::string homing_mode        = "";  // cf 0x2004 0x06 u32 => hard
-    float       homing_maxtravel   = 0.0;
-    float       homing_maxtorque   = 0.0;
-    float       homing_maxvelocity = 0.0;
+    // std::string homing_mode        = "";  // cf 0x2004 0x06 u32 => hard
+    // float       homing_maxtravel   = 0.0;
+    // float       homing_maxtorque   = 0.0;
+    // float       homing_maxvelocity = 0.0;
 
     std::ifstream infile(finalConfigPath);
 
@@ -451,15 +455,19 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
             motor_torqueconstant = std::stod(right);
         else if (fullkey == "motor_gearratio")
             motor_gearratio = std::stod(right);
-        else if (fullkey == "motor_maxcurrent")
-            motor_maxcurrent = std::stoi(right);
         else if (fullkey == "motor_torquebandwidth")
             motor_torquebandwidth = std::stoi(right);
         else if (fullkey == "motor_shutdowntemp")
             motor_shutdowntemp = std::stoi(right);
 
+        else if (fullkey == "limits_ratedtorque")
+            limits_ratedtorque = std::stoi(right);
         else if (fullkey == "limits_maxtorque")
-            limits_maxtorque = std::stod(right);
+            limits_maxtorque = std::stoi(right);
+        else if (fullkey == "limits_ratedcurrent")
+            limits_ratedcurrent = std::stoi(right);
+        else if (fullkey == "limits_maxcurrent")
+            limits_maxcurrent = std::stoi(right);
         else if (fullkey == "limits_maxvelocity")
             limits_maxvelocity = std::stoi(right);
         else if (fullkey == "limits_maxposition")
@@ -504,14 +512,14 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
         else if (fullkey == "impedancepd_kd")
             impedancepd_kd = std::stod(right);
 
-        else if (fullkey == "homing_mode")
-            homing_mode = right;
-        else if (fullkey == "homing_maxtravel")
-            homing_maxtravel = std::stod(right);
-        else if (fullkey == "homing_maxtorque")
-            homing_maxtorque = std::stod(right);
-        else if (fullkey == "homing_maxvelocity")
-            homing_maxvelocity = std::stod(right);
+        // else if (fullkey == "homing_mode")
+        //     homing_mode = right;
+        // else if (fullkey == "homing_maxtravel")
+        //     homing_maxtravel = std::stod(right);
+        // else if (fullkey == "homing_maxtorque")
+        //     homing_maxtorque = std::stod(right);
+        // else if (fullkey == "homing_maxvelocity")
+        //     homing_maxvelocity = std::stod(right);
     }
     infile.close();
 
@@ -523,11 +531,13 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
        << "motor_kv = " << motor_kv << '\n'
        << "motor_torqueconstant = " << motor_torqueconstant << '\n'
        << "motor_gearratio = " << motor_gearratio << '\n'
-       << "motor_maxcurrent = " << motor_maxcurrent << '\n'
        << "motor_torquebandwidth = " << motor_torquebandwidth << '\n'
        << "motor_shutdowntemp = " << motor_shutdowntemp << "\n\n"
 
+       << "limits_ratedtorque = " << limits_ratedtorque << '\n'
        << "limits_maxtorque = " << limits_maxtorque << '\n'
+       << "limits_ratedcurrent = " << limits_ratedcurrent << '\n'
+       << "limits_maxcurrent = " << limits_maxcurrent << '\n'
        << "limits_maxvelocity = " << limits_maxvelocity << '\n'
        << "limits_maxposition = " << limits_maxposition << '\n'
        << "limits_minposition = " << limits_minposition << '\n'
@@ -552,12 +562,12 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
        << "velocitypid_windup = " << velocitypid_windup << "\n\n"
 
        << "impedancepd_kp = " << impedancepd_kp << '\n'
-       << "impedancepd_kd = " << impedancepd_kd << "\n\n"
+       << "impedancepd_kd = " << impedancepd_kd << "\n\n";
 
-       << "homing_mode = " << homing_mode << '\n'
-       << "homing_maxtravel = " << homing_maxtravel << '\n'
-       << "homing_maxtorque = " << homing_maxtorque << '\n'
-       << "homing_maxvelocity = " << homing_maxvelocity << '\n';
+    //    << "homing_mode = " << homing_mode << '\n'
+    //    << "homing_maxtravel = " << homing_maxtravel << '\n'
+    //    << "homing_maxtorque = " << homing_maxtorque << '\n'
+    //    << "homing_maxvelocity = " << homing_maxvelocity << '\n';
     log.info("%s\n", ss.str().c_str());
     mdco.writeLongOpenRegisters(0x2000, 0x06, motor_name);
     mdco.writeOpenRegisters(0x2000, 0x01, motor_polepairs, 4);
@@ -573,9 +583,9 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
     mdco.writeOpenRegisters(0x607D, 0x01, limits_minposition);
     mdco.writeOpenRegisters(0x607D, 0x02, limits_maxposition);
     mdco.writeOpenRegisters(0x6076, 0x00, 1000);
-    mdco.writeOpenRegisters(0x6072, 0x00, (long)(1000 * limits_maxtorque));
+    mdco.writeOpenRegisters(0x6072, 0x00, limits_maxtorque);
     mdco.writeOpenRegisters(0x6075, 0x00, 1000);
-    mdco.writeOpenRegisters(0x6073, 0x00, (long)(1000 * motor_maxcurrent));
+    mdco.writeOpenRegisters(0x6073, 0x00, limits_maxcurrent);
     mdco.writeOpenRegisters(0x6080, 0x00, limits_maxvelocity);
     mdco.writeOpenRegisters(0x60C5, 0x00, limits_maxacceleration);
     mdco.writeOpenRegisters(0x60C6, 0x00, limits_maxdeceleration);
@@ -1270,4 +1280,3 @@ void CandleToolCO::ReadHeartbeat(u16 id)
     MDCO mdco(id, m_candle);
     mdco.testHeartbeat();
 }
-

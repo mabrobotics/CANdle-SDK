@@ -1427,4 +1427,3 @@ bool edsParser::hasValidDataTypes()
 
     return true;
 }
-

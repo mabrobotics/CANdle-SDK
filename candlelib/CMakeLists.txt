@@ -66,6 +66,8 @@ target_include_directories(candle PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_device
   ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_interface
   ${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger
+  ${CMAKE_CURRENT_SOURCE_DIR}/../candletool/include  
+  ${CMAKE_CURRENT_SOURCE_DIR}/../candletool/objectDictionary 
   ${LIBUSB_INCLUDE_DIR}
   )
 target_include_directories(candle SYSTEM PRIVATE ${LIBUSB_INCLUDE_DIR})

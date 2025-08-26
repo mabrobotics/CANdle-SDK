@@ -40,8 +40,9 @@ target_link_libraries(candletool candle logger)
 target_include_directories(candletool PUBLIC
 
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/objectDictionary 
     ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src
-
+    
 )
 
 target_compile_options(candletool PRIVATE -g)
