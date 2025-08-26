@@ -700,7 +700,7 @@ namespace mab
         /// @param subIndex Subindex of the object in the Object Dictionary
         /// @return Size of the data in bytes, or 0 if the object is a string or -1 if the object is
         /// not found
-        u8 dataSizeOfEdsObject(const u32 index, const u8 subIndex);
+        i8 dataSizeOfEdsObject(const u32 index, const u8 subIndex);
 
         /// @brief Display all information about the MD device
         /// @details This function prints the all the actual register value, device type, and all

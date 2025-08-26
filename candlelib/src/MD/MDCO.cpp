@@ -90,7 +90,7 @@ namespace mab
         return MDCO::Error_t::UNKNOWN_OBJECT;
     }
 
-    u8 MDCO::dataSizeOfEdsObject(const u32 index, const u8 subIndex)
+    i8 MDCO::dataSizeOfEdsObject(const u32 index, const u8 subIndex)
     {
         for (const edsObject& obj : this->ObjectDictionary)
         {
