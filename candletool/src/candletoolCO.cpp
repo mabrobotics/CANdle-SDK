@@ -126,22 +126,15 @@ void CandleToolCO::sendPdoSpeed(u16 id, i32 desiredSpeed)
     md.enableDriver(CyclicSyncVelocity);
 
     log.info("Sending PDO for speed loop control");
-    std::vector<u8> frameSetup;
-    frameSetup.reserve(3);
-    frameSetup.push_back(0x0F);
-    frameSetup.push_back(0x00);
-    frameSetup.push_back(0x09);
+    std::vector<u8> frameSetup = {0x0F, 0x00, 0x09};
     md.writeOpenPDORegisters(0x300 + id, frameSetup);
 
-    std::vector<u8> frameSpeed;
-    frameSpeed.reserve(6);
-    frameSpeed.push_back(0x0F);
-    frameSpeed.push_back(0x00);
-    frameSpeed.push_back((u8)(desiredSpeed));
-    frameSpeed.push_back((u8)(desiredSpeed >> 8));
-    frameSpeed.push_back((u8)(desiredSpeed >> 16));
-    frameSpeed.push_back((u8)(desiredSpeed >> 24));
-
+    std::vector<u8> frameSpeed = {0x0F,
+                                  0x00,
+                                  (u8)(desiredSpeed),
+                                  (u8)(desiredSpeed >> 8),
+                                  (u8)(desiredSpeed >> 16),
+                                  (u8)(desiredSpeed >> 24)};
     md.writeOpenPDORegisters(0x500 + id, frameSpeed);
     auto start   = std::chrono::steady_clock::now();
     auto timeout = std::chrono::seconds((5));
@@ -178,20 +171,15 @@ void CandleToolCO::sendPdoPosition(u16 id, i32 DesiredPos)
 
     log.info("Sending PDO for speed loop control");
 
-    std::vector<u8> frameSetup;
-    frameSetup.reserve(3);
-    frameSetup.push_back(0x0F);
-    frameSetup.push_back(0x00);
-    frameSetup.push_back(0x08);
+    std::vector<u8> frameSetup = {0x0F, 0x00, 0x08};
     md.writeOpenPDORegisters(0x300 + id, frameSetup);
-    std::vector<u8> framePosition;
-    framePosition.reserve(3);
-    framePosition.push_back(0x0F);
-    framePosition.push_back(0x00);
-    framePosition.push_back((u8)(DesiredPos));
-    framePosition.push_back((u8)(DesiredPos >> 8));
-    framePosition.push_back((u8)(DesiredPos >> 16));
-    framePosition.push_back((u8)(DesiredPos >> 24));
+    std::vector<u8> framePosition = {0x0F,
+                                     0x00,
+                                     (u8)(DesiredPos),
+                                     (u8)(DesiredPos >> 8),
+                                     (u8)(DesiredPos >> 16),
+                                     (u8)(DesiredPos >> 24)};
+    md.writeOpenPDORegisters(0x400 + id, framePosition);
 
     log.debug("position ask : %d\n", DesiredPos);
 
@@ -234,43 +222,32 @@ void CandleToolCO::SendCustomPdo(u16 id, const edsObject& Desiregister, u64 data
     // if the the index start with 0x1A00
     if (Desiregister.index == (0x1600))
     {
-        std::vector<u8> frame;
-        frame.reserve(2);
-        frame.push_back((u8)(data >> 8));
-        frame.push_back(data);
+        std::vector<u8> frame = {(u8)(data >> 8), (u8)(data)};
         mdco.writeOpenPDORegisters(0x200 + id, frame);
     }
     else if (Desiregister.index == (0x1601))
     {
-        std::vector<u8> frame;
-        frame.reserve(3);
-        frame.push_back((u8)(data >> 16));
-        frame.push_back((u8)(data >> 8));
-        frame.push_back((u8)data);
+        std::vector<u8> frame = {(u8)(data >> 16), (u8)(data >> 8), (u8)(data)};
         mdco.writeOpenPDORegisters(0x300 + id, frame);
     }
     else if (Desiregister.index == (0x1602))
     {
-        std::vector<u8> frame;
-        frame.reserve(6);
-        frame.push_back((u8)(data >> 40));
-        frame.push_back((u8)(data >> 32));
-        frame.push_back((u8)(data >> 24));
-        frame.push_back((u8)(data >> 16));
-        frame.push_back((u8)(data >> 8));
-        frame.push_back((u8)data);
+        std::vector<u8> frame = {(u8)(data >> 40),
+                                 (u8)(data >> 32),
+                                 (u8)(data >> 24),
+                                 (u8)(data >> 16),
+                                 (u8)(data >> 8),
+                                 (u8)(data)};
         mdco.writeOpenPDORegisters(0x400 + id, frame);
     }
     else if (Desiregister.index == (0x1603))
     {
-        std::vector<u8> frame;
-        frame.reserve(6);
-        frame.push_back((u8)(data >> 40));
-        frame.push_back((u8)(data >> 32));
-        frame.push_back((u8)(data >> 24));
-        frame.push_back((u8)(data >> 16));
-        frame.push_back((u8)(data >> 8));
-        frame.push_back((u8)data);
+        std::vector<u8> frame = {(u8)(data >> 40),
+                                 (u8)(data >> 32),
+                                 (u8)(data >> 24),
+                                 (u8)(data >> 16),
+                                 (u8)(data >> 8),
+                                 (u8)(data)};
         mdco.writeOpenPDORegisters(0x500 + id, frame);
     }
     else
@@ -630,14 +607,13 @@ void CandleToolCO::heartbeatTest(u32 MasterId, u32 SlaveId, u32 HeartbeatTimeout
     }
     MDCO            md         = MDCO(SlaveId, m_candle);
     MDCO            mdproducer = MDCO(MasterId, m_candle);
-    std::vector<u8> frame;
-    frame.push_back(0x05);
-    long DataSlave;
-    u8   bytes1 = ((u8)(MasterId >> 8));
-    u8   bytes2 = ((u8)(MasterId));
-    u8   bytes3 = ((u8)(HeartbeatTimeout >> 8));
-    u8   bytes4 = ((u8)(HeartbeatTimeout));
-    DataSlave   = bytes4 + (bytes3 << 8) + (bytes2 << 16) + (bytes1 << 24);
+    std::vector<u8> frame      = {0x05};
+    long            DataSlave;
+    u8              bytes1 = ((u8)(MasterId >> 8));
+    u8              bytes2 = ((u8)(MasterId));
+    u8              bytes3 = ((u8)(HeartbeatTimeout >> 8));
+    u8              bytes4 = ((u8)(HeartbeatTimeout));
+    DataSlave              = bytes4 + (bytes3 << 8) + (bytes2 << 16) + (bytes1 << 24);
     mdproducer.sendCustomData(0x700 + MasterId, frame);
     if (md.getValueFromOpenRegister(0x1003, 0x00) != 00)
     {
@@ -1117,14 +1093,14 @@ void CandleToolCO::SendTime(uint16_t id)
 
     long TimeMessageId = mdco.getValueFromOpenRegister(0x1012, 0x00);
 
-    std::vector<u8> frame;
-    frame.reserve(6);
-    frame.push_back((u8)millis_since_midnight);
-    frame.push_back((u8)(millis_since_midnight >> 8));
-    frame.push_back((u8)(millis_since_midnight >> 16));
-    frame.push_back((u8)(millis_since_midnight >> 24));
-    frame.push_back((u8)(days_since));
-    frame.push_back((u8)(days_since >> 8));
+    std::vector<u8> frame = {
+        ((u8)millis_since_midnight),
+        ((u8)(millis_since_midnight >> 8)),
+        ((u8)(millis_since_midnight >> 16)),
+        ((u8)(millis_since_midnight >> 24)),
+        ((u8)days_since),
+        ((u8)(days_since >> 8)),
+    };
 
     mdco.writeOpenPDORegisters(TimeMessageId, frame);
 }
@@ -1248,10 +1224,7 @@ void CandleToolCO::edsModifyCorrection(const edsObject& obj, u16 id, u8 subIndex
 void CandleToolCO::SendNMT(u8 id, u8 command)
 {
     MDCO            mdco(id, m_candle);
-    std::vector<u8> data;
-    data.reserve(2);
-    data.push_back(command);
-    data.push_back(id);
+    std::vector<u8> data = {command, id};
     mdco.writeOpenPDORegisters(0x000, data);
 }
 

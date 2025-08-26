@@ -276,10 +276,8 @@ namespace mab
     MDCO::Error_t MDCO::clearOpenErrors(i16 level)
     {
         // restart node
-        std::vector<u8> data;
-        data.reserve(2);
-        data.push_back(0x81);
-        data.push_back(m_canId);
+        std::vector<u8> data = {0x81, (u8)m_canId};
+
         writeOpenPDORegisters(0x000, data);
         m_log.debug("waiting the node %d to restart\n", m_canId);
         // wait for the node to restart
@@ -338,9 +336,7 @@ namespace mab
 
         m_log.info("Waiting for a heartbeat message with can id 0x%03X...", heartbeat_id);
 
-        std::vector<uint8_t> frame;
-        frame.reserve(1);
-        frame.push_back(0);
+        std::vector<u8> frame = {0x00};
 
         std::vector<uint8_t>      response;
         mab::candleTypes::Error_t error;
@@ -472,16 +468,16 @@ namespace mab
         constexpr canId_t MIN_VALID_ID = 0x01;  // ids less than that are reserved for special
         constexpr canId_t MAX_VALID_ID = 0x7F;  // 0x600-0x580
 
-        std::vector<u8> frame;
-        frame.reserve(8);
-        frame.push_back(0x40);  // Command: initiate upload
-        frame.push_back(0x00);  // Index LSB
-        frame.push_back(0x10);  // Index MSB
-        frame.push_back(0x00);  // Subindex
-        frame.push_back(0x00);  // Padding
-        frame.push_back(0x00);
-        frame.push_back(0x00);
-        frame.push_back(0x00);
+        std::vector<u8> frame = {
+            0x40,  // Command: initiate upload
+            0x00,  // Index LSB
+            0x10,  // Index MSB
+            0,     // Subindex
+            0,     // Padding
+            0,
+            0,
+            0,
+        };
 
         Logger               log(Logger::ProgramLayer_E::TOP, "MD_DISCOVERY");
         std::vector<canId_t> ids;

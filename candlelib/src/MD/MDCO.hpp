@@ -188,7 +188,7 @@ namespace mab
         /// value
         /// @param force if true, skip the check if the object is readable
         /// @return Error on failure
-        inline Error_t readOpenRegisters(i16 index, short subindex, bool force = false)
+        inline Error_t readOpenRegisters(i16 index, u8 subindex, bool force = false)
         {
             if (!force)
             {
@@ -200,16 +200,16 @@ namespace mab
             }
 
             m_log.debug("Read Open register...");
-            std::vector<u8> frame;
-            frame.reserve(8);
-            frame.push_back(0x40);                // Command: initiate upload
-            frame.push_back(((u8)index));         // Index LSB
-            frame.push_back(((u8)(index >> 8)));  // Index MSB
-            frame.push_back(subindex);            // Subindex
-            frame.push_back(0x00);                // Padding
-            frame.push_back(0x00);
-            frame.push_back(0x00);
-            frame.push_back(0x00);
+            std::vector<u8> frame = {
+                0x40,
+                ((u8)index),
+                ((u8)(index >> 8)),
+                subindex,
+                0,
+                0,
+                0,
+                0,
+            };
 
             //  message sending via transferCanFrame
             auto [response, error] =
@@ -500,7 +500,7 @@ namespace mab
         /// @param subindex subindex from the object dictionary where the user want to read the
         /// value
         /// @return the value contained in the register or -1 if error
-        i32 getValueFromOpenRegister(i16 index, short subindex)
+        i32 getValueFromOpenRegister(i16 index, u8 subindex)
         {
             if (isReadable(index, subindex) != OK)
             {
@@ -509,16 +509,16 @@ namespace mab
             }
             m_log.debug("Read Open register...");
 
-            std::vector<u8> frame;
-            frame.reserve(8);
-            frame.push_back(0x40);                // Command: initiate upload
-            frame.push_back(((u8)index));         // Index LSB
-            frame.push_back(((u8)(index >> 8)));  // Index MSB
-            frame.push_back(subindex);            // Subindex
-            frame.push_back(0x00);                // Padding
-            frame.push_back(0x00);
-            frame.push_back(0x00);
-            frame.push_back(0x00);
+            std::vector<u8> frame = {
+                0x40,
+                ((u8)index),
+                ((u8)(index >> 8)),
+                subindex,
+                0,
+                0,
+                0,
+                0,
+            };
 
             auto [response, error] =
                 transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, frame, frame.size());
