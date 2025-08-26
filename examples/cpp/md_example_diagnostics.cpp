@@ -3,8 +3,8 @@
 
 int main()
 {
-    auto candle =
-        mab::attachCandle(mab::CANdleBaudrate_E::CAN_BAUD_1M, mab::candleTypes::busTypes_t::USB);
+    auto candle = mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M,
+                                    mab::candleTypes::busTypes_t::USB);
 
     constexpr mab::canId_t mdId = 100;
 
@@ -19,18 +19,18 @@ int main()
     std::cout << "ID: " << mdId << "\n";
 
     md.readRegisters(registerBuffer.motorName,
-                     registerBuffer.canBaudrate,
+                     registerBuffer.canDatarate,
                      registerBuffer.motorGearRatio,
                      registerBuffer.motorIMax);
 
-    std::string canBaudrateString = registerBuffer.canBaudrate.value == 1'000'000   ? "1M\n"
-                                    : registerBuffer.canBaudrate.value == 2'000'000 ? "2M\n"
-                                    : registerBuffer.canBaudrate.value == 5'000'000 ? "5M\n"
-                                    : registerBuffer.canBaudrate.value == 8'000'000 ? "8M\n"
+    std::string canDatarateString = registerBuffer.canDatarate.value == 1'000'000   ? "1M\n"
+                                    : registerBuffer.canDatarate.value == 2'000'000 ? "2M\n"
+                                    : registerBuffer.canDatarate.value == 5'000'000 ? "5M\n"
+                                    : registerBuffer.canDatarate.value == 8'000'000 ? "8M\n"
                                                                                     : "UNKNOWN\n";
 
     std::cout << "Motor name: " << std::string(registerBuffer.motorName.value) << "\n"
-              << "CAN baudrate: " << canBaudrateString
+              << "CAN datarate: " << canDatarateString
               << "Motor gear ratio: " << registerBuffer.motorGearRatio.value << "\n"
               << "Motor max current: " << registerBuffer.motorIMax.value;
 

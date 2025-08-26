@@ -25,7 +25,7 @@ class MD_test : public ::testing::Test
         Logger::g_m_verbosity          = Logger::Verbosity_E::SILENT;
         m_bus                          = std::make_unique<MockBus>();
         m_debugBus                     = m_bus.get();
-        m_candle                       = mab::attachCandle(mab::CAN_BAUD_1M, std::move(m_bus));
+        m_candle                       = mab::attachCandle(mab::CAN_DATARATE_1M, std::move(m_bus));
     }
     void TearDown() override
     {

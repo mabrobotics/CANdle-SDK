@@ -8,7 +8,7 @@ This document provides concise documentation for the Motion Drive (MD) Python bi
 import pyCandle
 
 # Connect to CANdle and create MD instance
-candle = pyCandle.attachCandle(pyCandle.CANdleBaudrate_E.CAN_BAUD_1M, pyCandle.busTypes_t.USB)
+candle = pyCandle.attachCandle(pyCandle.CANdleDatarate_E.CAN_DATARATE_1M, pyCandle.busTypes_t.USB)
 md = pyCandle.MD(can_id, candle)
 result = md.init()
 ```

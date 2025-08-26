@@ -110,7 +110,7 @@
             "args": [
                 "pds",
                 "100",
-                "set_can_baud",
+                "set_CAN_DATARATE",
                 "2X"
             ],
             "stopAtEntry": true,

@@ -82,7 +82,7 @@ int main(int argc, char** argv)
 
     auto candleBuilder = std::make_shared<CandleBuilder>();
     auto busType       = std::make_shared<candleTypes::busTypes_t>(candleTypes::busTypes_t::USB);
-    auto datarate      = std::make_shared<CANdleBaudrate_E>(CANdleBaudrate_E::CAN_BAUD_1M);
+    auto datarate      = std::make_shared<CANdleDatarate_E>(CANdleDatarate_E::CAN_DATARATE_1M);
 
     candleBuilder->busType  = busType;
     candleBuilder->datarate = datarate;
@@ -107,8 +107,8 @@ int main(int argc, char** argv)
             log.error("Specified bus is not valid!");
         }
 
-        // Parsing baudrate
-        auto parsedBaudOpt = stringToBaud(cmd.baud);
+        // Parsing datarate
+        auto parsedBaudOpt = stringToData(cmd.baud);
         if (parsedBaudOpt.has_value())
             *datarate = parsedBaudOpt.value();
         else
@@ -129,10 +129,10 @@ int main(int argc, char** argv)
         std::cout << "CandleSDK version: " << CANDLESDK_VERSION << "\n";
     }
 
-    std::optional<mab::CANdleBaudrate_E> baudOpt = stringToBaudrate(cmd.baud);
+    std::optional<mab::CANdleDatarate_E> baudOpt = stringToData(cmd.baud);
     if (!baudOpt.has_value())
     {
-        std::cerr << "Invalid baudrate: " << cmd.baud << std::endl;
+        std::cerr << "Invalid datarate: " << cmd.baud << std::endl;
         return EXIT_FAILURE;
     }
 

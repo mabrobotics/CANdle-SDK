@@ -452,14 +452,14 @@ namespace mab
         return result;
     }
 
-    CANdleBaudrate_E Pds::getCanBaudrate(void)
+    CANdleDatarate_E Pds::getCanDatarate(void)
     {
-        return mp_candle->m_canBaudrate;
+        return mp_candle->m_canDatarate;
     }
 
-    PdsModule::error_E Pds::setCanBaudrate(CANdleBaudrate_E canBaudrate)
+    PdsModule::error_E Pds::setCanDatarate(CANdleDatarate_E canDatarate)
     {
-        return writeModuleProperty(propertyId_E::CAN_BAUDRATE, canBaudrate);
+        return writeModuleProperty(propertyId_E::CAN_DATARATERATE, canDatarate);
     }
 
     PdsModule::error_E Pds::getTemperatureLimit(f32& temperatureLimit)
