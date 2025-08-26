@@ -14,6 +14,7 @@ set(CANDLETOOL_VERSION_FULL
 )
 
 add_subdirectory(3rd_party/CLI11)
+add_subdirectory(3rd_party/openssl-cmake)
 
 set(CANDLETOOL_SOURCES
     src/candle_cli.cpp
@@ -46,7 +47,7 @@ target_compile_definitions(
           CANDLETOOL_VREVISION=${CANDLETOOL_VERSION_PATCH}
           CANDLETOOL_VTAG=${CANDLETOOL_VERSION_TAG})
 
-target_link_libraries(candletool CLI11)
+target_link_libraries(candletool CLI11 ssl crypto)
 
 # add_unit_test_executable(pds_cli_test tests/pds_cli_test.cpp)
 # target_include_directories(pds_cli_test PRIVATE include)
