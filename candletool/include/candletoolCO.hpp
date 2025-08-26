@@ -66,11 +66,6 @@ namespace mab
         /// @param id The CAN ID of the device to set the zero position
         void configZero(u16 id);
 
-        /// @brief Set the maximum current for the device
-        /// @param id The CAN ID of the device to configure
-        /// @param current The maximum current in Amps to set
-        void configCurrent(u16 id, f32 current);
-
         /// @brief Set the torque bandwidth of the device
         /// @param id The CAN ID of the device to configure
         /// @param bandwidth The desired torque bandwidth in Hz
@@ -104,6 +99,8 @@ namespace mab
 
         /// @brief Setup the md with a specific configuration file
         /// @param id The CAN ID of the device to setup
+        /// @param cfgPath The path to the configuration file
+        /// @param force if =1 send without verification
         void setupMotor(u16 id, const std::string& cfgPath, bool force);
 
         /// @brief Display the info of the md
@@ -234,12 +231,15 @@ namespace mab
         void edsDisplay();
 
         /// @brief Generate a markdown file from the loaded EDS file
+        /// @param path The path to save the generated markdown file
         void edsGenerateMarkdown(const std::string& path = "");
 
         /// @brief Generate an HTML file from the loaded EDS file
+        /// @param path The path to save the generated HTML file
         void edsGenerateHtml(const std::string& path = "");
 
         /// @brief Generate a C++ header and source file from the loaded EDS file
+        /// @param path The path to save the generated C++ files
         /// @note The generated files can be included in the candletool project by switching the
         /// file OD.cpp & OD.hpp with generates ones.
         void edsGenerateCpp(const std::string& path = "");

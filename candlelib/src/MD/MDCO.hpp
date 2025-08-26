@@ -84,7 +84,7 @@ namespace mab
 
         /// @brief Create MD object instance
         /// @param canId can node id of MD
-        /// @param transferCANFrame
+        /// @param candle pointer to candle instance used for communication
         MDCO(canId_t canId, Candle* candle) : m_canId(canId), m_candle(candle)
         {
             m_log.m_layer = Logger::ProgramLayer_E::TOP;
@@ -186,6 +186,7 @@ namespace mab
         /// @param index index from the object dictionary where the user want to read the value
         /// @param subindex subindex from the object dictionary where the user want to read the
         /// value
+        /// @param force if true, skip the check if the object is readable
         /// @return Error on failure
         inline Error_t readOpenRegisters(i16 index, short subindex, bool force = false)
         {
@@ -265,9 +266,11 @@ namespace mab
         }
 
         /// @brief write a value in a can open register using SDO segmented can frame
-        /// @param name name of the object to write
-        /// @param data value to write
-        /// @param size size of the data to write (1,2,4)
+        /// @param index index from the object dictionary where the user want to write the value
+        /// @param subindex subindex from the object dictionary where the user want to write the
+        /// value
+        /// @param dataString string containing the data to write
+        /// @param force if true, skip the check if the object is writable
         /// @return Error on failure
         Error_t writeLongOpenRegisters(i16                index,
                                        short              subindex,
@@ -382,6 +385,7 @@ namespace mab
         /// @param index index from the object dictionary where the user want to read the value
         /// @param subindex subindex from the object dictionary where the user want to read the
         /// value
+        /// @param outData vector where the data will be stored
         /// @return Error on failure
         inline Error_t readLongOpenRegisters(i16 index, short subindex, std::vector<u8>& outData)
         {
@@ -554,6 +558,9 @@ namespace mab
         /// @param index index from the object dictionary where the user want to write the value
         /// @param subindex subindex from the object dictionary where the user want to write the
         /// value
+        /// @param data value to write
+        /// @param size size of the data to write (1,2,4)
+        /// @param force if true, skip the check if the object is writable
         /// @return Error on failure
         inline Error_t writeOpenRegisters(
             i16 index, short subindex, i32 data, short size = 0, bool force = false)
@@ -624,6 +631,7 @@ namespace mab
         /// @param name name of the object to write
         /// @param data value to write
         /// @param size size of the data to write (1,2,4)
+        /// @param force if true, skip the check if the object is writable
         /// @return Error on failure
         inline Error_t writeOpenRegisters(const std::string& name,
                                           u32                data,
@@ -654,8 +662,7 @@ namespace mab
 
         /// @brief write a value in a can open register using PDO can frame
         /// @param index id of pdo to send (200/300/400/500 + node_id)
-        /// @param subindex subindex from the object dictionary where the user want to write the
-        /// value
+        /// @param data value to write
         /// @return Error on failure
         inline Error_t writeOpenPDORegisters(i16 index, std::vector<u8> data)
         {
@@ -677,8 +684,7 @@ namespace mab
 
         /// @brief write a value in a can open register using PDO can frame
         /// @param index id of pdo to send (200/300/400/500 + node_id)
-        /// @param subindex subindex from the object dictionary where the user want to write the
-        /// value
+        /// @param data value to write
         /// @return Error on failure
         inline Error_t sendCustomData(i16 index, std::vector<u8> data)
         {
