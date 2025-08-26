@@ -26,7 +26,6 @@ CandleToolCO::CandleToolCO(const mab::CANdleBaudrate_E baud)
 {
     log.m_tag   = "CANDLETOOLco";
     log.m_layer = Logger::ProgramLayer_E::TOP;
-    // log.info("CandleSDK Version: %s", mab::Candle::getVersion().c_str());
 
     std::unique_ptr<I_CommunicationInterface> bus;
 
@@ -411,11 +410,6 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
     float impedancepd_kp = 0.0;  // 0x200C 0x01 f32
     float impedancepd_kd = 0.0;  // 0x200C 0x02 f32
 
-    // std::string homing_mode        = "";  // cf 0x2004 0x06 u32 => hard
-    // float       homing_maxtravel   = 0.0;
-    // float       homing_maxtorque   = 0.0;
-    // float       homing_maxvelocity = 0.0;
-
     std::ifstream infile(finalConfigPath);
 
     if (!infile.is_open())
@@ -511,15 +505,6 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
             impedancepd_kp = std::stod(right);
         else if (fullkey == "impedancepd_kd")
             impedancepd_kd = std::stod(right);
-
-        // else if (fullkey == "homing_mode")
-        //     homing_mode = right;
-        // else if (fullkey == "homing_maxtravel")
-        //     homing_maxtravel = std::stod(right);
-        // else if (fullkey == "homing_maxtorque")
-        //     homing_maxtorque = std::stod(right);
-        // else if (fullkey == "homing_maxvelocity")
-        //     homing_maxvelocity = std::stod(right);
     }
     infile.close();
 
@@ -564,10 +549,6 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
        << "impedancepd_kp = " << impedancepd_kp << '\n'
        << "impedancepd_kd = " << impedancepd_kd << "\n\n";
 
-    //    << "homing_mode = " << homing_mode << '\n'
-    //    << "homing_maxtravel = " << homing_maxtravel << '\n'
-    //    << "homing_maxtorque = " << homing_maxtorque << '\n'
-    //    << "homing_maxvelocity = " << homing_maxvelocity << '\n';
     log.info("%s\n", ss.str().c_str());
     mdco.writeLongOpenRegisters(0x2000, 0x06, motor_name);
     mdco.writeOpenRegisters(0x2000, 0x01, motor_polepairs, 4);
@@ -664,7 +645,6 @@ void CandleToolCO::heartbeatTest(u32 MasterId, u32 SlaveId, u32 HeartbeatTimeout
         return;
     }
 
-    // md.writeOpenRegisters(0x1016, 0x00, 0x1, 1);
     md.writeOpenRegisters(0x1016, 0x01, DataSlave, 4);
     mdproducer.sendCustomData(0x700 + MasterId, frame);
     auto start   = std::chrono::steady_clock::now();

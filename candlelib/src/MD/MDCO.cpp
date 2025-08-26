@@ -61,7 +61,6 @@ namespace mab
                 }
                 else
                 {
-                    // m_log.error("Object 0x%04X subIndex %d is not writable.", index, subIndex);
                     return MDCO::Error_t::REQUEST_INVALID;
                 }
             }
@@ -83,7 +82,6 @@ namespace mab
                 }
                 else
                 {
-                    // m_log.error("Object 0x%04X subIndex %d is not readable.", index, subIndex);
                     return MDCO::Error_t::REQUEST_INVALID;
                 }
             }

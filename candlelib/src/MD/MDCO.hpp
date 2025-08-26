@@ -228,8 +228,6 @@ namespace mab
             else
             {
                 // FLAGS Extraction
-                // bool    expedited     = cmd & 0x02;
-                // bool    sizeIndicated = cmd & 0x01;
                 u8 n       = (cmd & 0x0C) >> 2;  // bits 1-0
                 u8 dataLen = 4 - n;
 
@@ -290,8 +288,6 @@ namespace mab
             m_log.debug("Writing Motor Name to 0x2000:0x06 via segmented SDO...");
 
             // 1. prepare data to send clip data to 20 bytes (Motor Name)
-            // std::vector<u8> data(20, 0x00);
-            // std::memcpy(data.data(), motorName.data(), std::min<size_t>(motorName.size(), 20));
             std::vector<u8> data = std::vector<u8>(motorName.begin(), motorName.end());
             // 2. sending init message of segmented transfer
             std::vector<u8> initFrame = {0x21,  // CCS=1, E=1, S=1
@@ -389,8 +385,6 @@ namespace mab
         /// @return Error on failure
         inline Error_t readLongOpenRegisters(i16 index, short subindex, std::vector<u8>& outData)
         {
-            // // only for testing
-            // // WriteMotorName();
             if (isReadable(index, subindex) != OK)
             {
                 m_log.error("Object 0x%04x:0x%02x is not readable!", index, subindex);

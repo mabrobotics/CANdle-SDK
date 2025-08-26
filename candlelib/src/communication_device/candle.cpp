@@ -159,13 +159,6 @@ namespace mab
         communicationStatus =
             busTransfer(&buffer, responseSize + 2 /*response header size*/, timeoutMs + 1);
 
-        // if (buffer.at(1) != 0x01)
-        // {
-        //     m_log.error("CAN frame did not reach target device with id: %d!", canId);
-        //     return std::pair<std::vector<u8>, candleTypes::Error_t>(
-        //         dataToSend, candleTypes::Error_t::CAN_DEVICE_NOT_RESPONDING);
-        // }
-
         if (buffer.size() > 3)
             buffer.erase(buffer.begin(), buffer.begin() + 2 /*response header size*/);
 
