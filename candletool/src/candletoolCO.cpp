@@ -80,12 +80,8 @@ void CandleToolCO::configCan(
     long newbaud;
     if (baud == "1M")
         newbaud = 1;
-    if (baud == "2M")
-        newbaud = 2;
-    if (baud == "5M")
-        newbaud = 5;
-    if (baud == "8M")
-        newbaud = 8;
+    else
+        log.error("Invalid baudrate for CANopen, only 1M is supported");
     mdco.newCanOpenConfig(newId, newbaud, termination);
 }
 
@@ -694,19 +690,14 @@ void CandleToolCO::setupReadConfig(u16 id, const std::string& cfgName)
     /*────────────────────────────
       section [limits]
     ────────────────────────────*/
-    u16 limits_max_current   = mdco.getValueFromOpenRegister(0x6073, 0x00);
-    u32 limits_rated_current = mdco.getValueFromOpenRegister(0x6075, 0x00);
-    u16 limits_max_torque    = mdco.getValueFromOpenRegister(0x6072, 0x00);
-    u32 limits_rated_torque  = mdco.getValueFromOpenRegister(0x6076, 0x00);
-
-    u32 limits_max_velocity = mdco.getValueFromOpenRegister(0x6080, 0x00);
-
-    u32 limits_max_position = mdco.getValueFromOpenRegister(0x607D, 0x02);
-
-    u32 limits_min_position = mdco.getValueFromOpenRegister(0x607D, 0x01);
-
+    u16 limits_max_current      = mdco.getValueFromOpenRegister(0x6073, 0x00);
+    u32 limits_rated_current    = mdco.getValueFromOpenRegister(0x6075, 0x00);
+    u16 limits_max_torque       = mdco.getValueFromOpenRegister(0x6072, 0x00);
+    u32 limits_rated_torque     = mdco.getValueFromOpenRegister(0x6076, 0x00);
+    u32 limits_max_velocity     = mdco.getValueFromOpenRegister(0x6080, 0x00);
+    u32 limits_max_position     = mdco.getValueFromOpenRegister(0x607D, 0x02);
+    u32 limits_min_position     = mdco.getValueFromOpenRegister(0x607D, 0x01);
     u32 limits_max_acceleration = mdco.getValueFromOpenRegister(0x60C5, 0x00);
-
     u32 limits_max_deceleration = mdco.getValueFromOpenRegister(0x60C6, 0x00);
 
     /*────────────────────────────
