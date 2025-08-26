@@ -2,13 +2,13 @@
 #include <cstring>
 #include <string>
 #ifdef WIN32
-#define NO_DRIVER_EXTENDED_HELPER_MESSAGE                                    \
-    "No such device (it may have been disconnected). "                       \
-    "If you are on Windows please make sure you have installed the driver. " \
+#define NO_DRIVER_EXTENDED_HELPER_MESSAGE              \
+    "No such device (it may have been disconnected). " \
+    "Please make sure you have installed the driver. " \
     "You can do it by running \"candletool candle driver\" command. "
-#define NOT_SUPPORTED_EXTENDED_HELPER_MESSAGE                                \
-    "Windows kernel related issue occurred. "                                \
-    "If you are on Windows please make sure you have installed the driver. " \
+#define NOT_SUPPORTED_EXTENDED_HELPER_MESSAGE          \
+    "Windows kernel related issue occurred. "          \
+    "Please make sure you have installed the driver. " \
     "You can do it by running \"candletool candle driver\" command. "
 #else
 #define NO_DRIVER_EXTENDED_HELPER_MESSAGE     "No such device (it may have been disconnected)"
