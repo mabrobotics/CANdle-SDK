@@ -13,8 +13,13 @@ set(CANDLETOOL_VERSION_FULL
     "${CANDLETOOL_VERSION_MAJOR}.${CANDLETOOL_VERSION_MINOR}.${CANDLETOOL_VERSION_PATCH}-${CANDLETOOL_VERSION_TAG}"
 )
 
+# Adding dependencies
 add_subdirectory(3rd_party/CLI11)
 add_subdirectory(3rd_party/openssl-cmake)
+
+# set(OPENSSL_ROOT_DIR ${OPENSSL_PREFIX}) set(OPENSSL_CRYPTO_LIBRARY crypto)
+# set(OPENSSL_SSL_LIBRARY ssl) set(OPENSSL_FOUND TRUE) set(CMAKE_USE_OPENSSL ON)
+# set(CMAKE_USE_LIBSSH2 OFF) add_subdirectory(3rd_party/curl)
 
 set(JSON_BuildTests
     OFF
