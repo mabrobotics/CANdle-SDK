@@ -19,14 +19,14 @@ int main()
     std::cout << "ID: " << mdId << "\n";
 
     md.readRegisters(registerBuffer.motorName,
-                     registerBuffer.canDatarate,
+                     registerBuffer.canBaudrate,
                      registerBuffer.motorGearRatio,
                      registerBuffer.motorIMax);
 
-    std::string canDatarateString = registerBuffer.canDatarate.value == 1'000'000   ? "1M\n"
-                                    : registerBuffer.canDatarate.value == 2'000'000 ? "2M\n"
-                                    : registerBuffer.canDatarate.value == 5'000'000 ? "5M\n"
-                                    : registerBuffer.canDatarate.value == 8'000'000 ? "8M\n"
+    std::string canDatarateString = registerBuffer.canBaudrate.value == 1'000'000   ? "1M\n"
+                                    : registerBuffer.canBaudrate.value == 2'000'000 ? "2M\n"
+                                    : registerBuffer.canBaudrate.value == 5'000'000 ? "5M\n"
+                                    : registerBuffer.canBaudrate.value == 8'000'000 ? "8M\n"
                                                                                     : "UNKNOWN\n";
 
     std::cout << "Motor name: " << std::string(registerBuffer.motorName.value) << "\n"

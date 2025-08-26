@@ -89,7 +89,7 @@ namespace mab
                 MDRegisters_S registers;
                 // download current config from md
                 if (md->readRegisters(registers.canID,
-                                      registers.canDatarate,
+                                      registers.canBaudrate,
                                       registers.canWatchdog) != MD::Error_t::OK)
 
                 {
@@ -111,7 +111,7 @@ namespace mab
                     auto datarate = stringToData(*canOptions.datarate);
                     if (datarate.has_value())
                     {
-                        registers.canDatarate = dataToInt(datarate.value());
+                        registers.canBaudrate = dataToInt(datarate.value());
                         canChanged            = true;
                     }
                     else
@@ -139,10 +139,10 @@ namespace mab
 
                 m_logger.info("New id: %d, datarate: %d, timeout: %d ms",
                               registers.canID.value,
-                              registers.canDatarate.value,
+                              registers.canBaudrate.value,
                               registers.canWatchdog.value);
                 if (md->writeRegisters(registers.canID,
-                                       registers.canDatarate,
+                                       registers.canBaudrate,
                                        registers.canWatchdog,
                                        registers.runCanReinit) != MD::Error_t::OK)
                 {
@@ -157,7 +157,7 @@ namespace mab
                     auto newCanId              = std::make_shared<canId_t>(registers.canID.value);
                     auto newCandleBuilder      = std::make_shared<CandleBuilder>();
                     newCandleBuilder->datarate = std::make_shared<CANdleDatarate_E>(
-                        intToData(registers.canDatarate.value)
+                        intToData(registers.canBaudrate.value)
                             .value_or(CANdleDatarate_E::CAN_DATARATE_1M));
                     newCandleBuilder->pathOrId = candleBuilder->pathOrId;
                     newCandleBuilder->busType  = candleBuilder->busType;
@@ -678,7 +678,7 @@ namespace mab
                 m_logger << std::fixed;
                 m_logger << "Drive " << *mdCanId << ":" << std::endl;
                 m_logger << "- actuator name: " << readableRegisters.motorName.value << std::endl;
-                m_logger << "- CAN speed: " << readableRegisters.canDatarate.value / 1000000 << " M"
+                m_logger << "- CAN speed: " << readableRegisters.canBaudrate.value / 1000000 << " M"
                          << std::endl;
                 m_logger << "- CAN termination resistor: "
                          << ((readableRegisters.canTermination.value == true) ? "enabled"

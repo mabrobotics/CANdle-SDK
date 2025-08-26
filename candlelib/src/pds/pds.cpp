@@ -459,7 +459,7 @@ namespace mab
 
     PdsModule::error_E Pds::setCanDatarate(CANdleDatarate_E canDatarate)
     {
-        return writeModuleProperty(propertyId_E::CAN_DATARATERATE, canDatarate);
+        return writeModuleProperty(propertyId_E::CAN_BAUDRATE, canDatarate);
     }
 
     PdsModule::error_E Pds::getTemperatureLimit(f32& temperatureLimit)
