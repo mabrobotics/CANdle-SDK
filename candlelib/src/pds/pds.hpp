@@ -52,8 +52,8 @@ namespace mab
 
         void printModuleInfo(void);
 
-        void init(void);
-        void init(u16 canId);
+        PdsModule::error_E init(void);
+        void               init(u16 canId);
 
         error_E      getFwMetadata(pdsFwMetadata_S& metadata) const;
         modulesSet_S getModules(void);
