@@ -245,7 +245,7 @@ jobs:
 
       - name: CMake configure
         run: |
-          cmake -DCMAKE_BUILD_TYPE=Release -B build -G "Unix Makefiles" .
+          cmake -DCMAKE_BUILD_TYPE=Release -DMAKE_TESTS=ON -B build -G "Unix Makefiles" .
 
       - name: Build
         run: cmake --build ./build --parallel "$(nproc)"
