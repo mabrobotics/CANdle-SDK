@@ -177,11 +177,11 @@ namespace mab
         return OK;
     }
 
-    void MDCO::movePosition(i32 DesiredPos)
+    void MDCO::movePosition(i32 DesiredPos, i16 timeoutMillis)
     {
         auto start      = std::chrono::steady_clock::now();
         auto lastSend   = start;
-        auto timeout    = std::chrono::seconds(5);
+        auto timeout    = std::chrono::milliseconds(timeoutMillis);
         auto sendPeriod = std::chrono::milliseconds(10);
 
         while (std::chrono::steady_clock::now() - start < timeout &&
@@ -207,11 +207,11 @@ namespace mab
         }
     }
 
-    void MDCO::moveSpeed(i32 DesiredSpeed)
+    void MDCO::moveSpeed(i32 DesiredSpeed, i16 timeoutMillis)
     {
         auto start      = std::chrono::steady_clock::now();
         auto lastSend   = start;
-        auto timeout    = std::chrono::seconds(5);
+        auto timeout    = std::chrono::milliseconds(timeoutMillis);
         auto sendPeriod = std::chrono::milliseconds(10);
 
         while (std::chrono::steady_clock::now() - start < timeout)
@@ -235,7 +235,10 @@ namespace mab
         }
     }
 
-    MDCO::Error_t MDCO::moveImpedance(i32 desiredSpeed, i32 targetPos, moveParameter& param)
+    MDCO::Error_t MDCO::moveImpedance(i32            desiredSpeed,
+                                      i32            targetPos,
+                                      moveParameter& param,
+                                      i16            timeoutMillis)
     {
         // kp
         u32 kp_bits;
@@ -249,7 +252,7 @@ namespace mab
         writeOpenRegisters("Velocity Demand Value", desiredSpeed);
         writeOpenRegisters("Torque Demand Value", param.torqueff);
         auto start   = std::chrono::steady_clock::now();
-        auto timeout = std::chrono::seconds((5));
+        auto timeout = std::chrono::milliseconds((timeoutMillis));
         while (std::chrono::steady_clock::now() - start < timeout)
         {
         }

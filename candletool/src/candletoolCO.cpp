@@ -79,9 +79,11 @@ void CandleToolCO::configCan(
 
     long newbaud;
     if (baud == "1M")
-        newbaud = 1;
+        newbaud = 1000000;
+    else if (baud == "500K")
+        newbaud = 500000;
     else
-        log.error("Invalid baudrate for CANopen, only 1M is supported");
+        log.error("Invalid baudrate for CANopen, only 1M and 500K is supported");
     mdco.newCanOpenConfig(newId, newbaud, termination);
 }
 

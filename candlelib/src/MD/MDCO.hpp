@@ -112,13 +112,13 @@ namespace mab
         /// @param DesiredPos desired position
         /// @note The motor need to have the profile parameters set & a mode of operation set before
         /// calling this function
-        void movePosition(i32 DesiredPos);
+        void movePosition(i32 DesiredPos, i16 timeoutMillis = 5000);
 
         /// @brief Move to desired speed
         /// @param DesiredSpeed desired speed [RPM]
         /// @note The motor need to have the profile parameters set & a mode of operation set before
         /// calling this function
-        void moveSpeed(i32 DesiredSpeed);
+        void moveSpeed(i32 DesiredSpeed, i16 timeoutMillis = 5000);
 
         /// @brief Move to desired position with impedance control
         /// @param desiredSpeed desired speed [RPM]
@@ -127,7 +127,10 @@ namespace mab
         /// @return Error_t indicating the result of the operation
         /// @details This function sets the motor in impedance control mode and moves it to the
         /// specified position with the given speed, gains, and torque.
-        Error_t moveImpedance(i32 desiredSpeed, i32 targetPos, moveParameter& param);
+        Error_t moveImpedance(i32            desiredSpeed,
+                              i32            targetPos,
+                              moveParameter& param,
+                              i16            timeoutMillis = 5000);
 
         /// @brief Check communication with MD device
         /// @return Error if not connected
