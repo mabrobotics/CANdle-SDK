@@ -688,51 +688,38 @@ void CandleToolCO::setupReadConfig(u16 id, const std::string& cfgName)
     raw_data = (float)mdco.getValueFromOpenRegister(0x2000, 0x08);
     float motor_gear_ratio;
     std::memcpy(&motor_gear_ratio, &raw_data, sizeof(float));
-    float motor_max_current = 0;
-    if (mdco.getValueFromOpenRegister(0x6075, 0x00))
-    {
-        motor_max_current = mdco.getValueFromOpenRegister(0x6073, 0x00) /
-                            mdco.getValueFromOpenRegister(0x6075, 0x00);
-    }
     u16 motor_torque_bandwidth = mdco.getValueFromOpenRegister(0x2000, 0x05);
     u32 motor_shutdown_temp    = mdco.getValueFromOpenRegister(0x2000, 0x07);
 
     /*────────────────────────────
       section [limits]
     ────────────────────────────*/
-    float limits_max_torque = 0.0f;
-    if (mdco.getValueFromOpenRegister(0x6076, 0x00))
-    {
-        limits_max_torque = mdco.getValueFromOpenRegister(0x6072, 0x00) /
-                            mdco.getValueFromOpenRegister(0x6076, 0x00);
-    }
-    float limits_max_velocity = 0.0f;
-    raw_data                  = (float)mdco.getValueFromOpenRegister(0x6080, 0x00);
-    std::memcpy(&limits_max_velocity, &raw_data, sizeof(float));
-    float limits_max_position = 0.0f;
-    raw_data                  = (float)mdco.getValueFromOpenRegister(0x607D, 0x02);
-    std::memcpy(&limits_max_position, &raw_data, sizeof(float));
-    float limits_min_position = 0.0f;
-    raw_data                  = (float)mdco.getValueFromOpenRegister(0x607D, 0x01);
-    std::memcpy(&limits_min_position, &raw_data, sizeof(float));
-    float limits_max_acceleration = 0.0f;
-    raw_data                      = (float)mdco.getValueFromOpenRegister(0x60C5, 0x00);
-    std::memcpy(&limits_max_acceleration, &raw_data, sizeof(float));
-    float limits_max_deceleration = 0.0f;
-    raw_data                      = (float)mdco.getValueFromOpenRegister(0x60C6, 0x00);
-    std::memcpy(&limits_max_deceleration, &raw_data, sizeof(float));
+    u16 limits_max_current   = mdco.getValueFromOpenRegister(0x6073, 0x00);
+    u32 limits_rated_current = mdco.getValueFromOpenRegister(0x6075, 0x00);
+    u16 limits_max_torque    = mdco.getValueFromOpenRegister(0x6072, 0x00);
+    u32 limits_rated_torque  = mdco.getValueFromOpenRegister(0x6076, 0x00);
+
+    u32 limits_max_velocity = mdco.getValueFromOpenRegister(0x6080, 0x00);
+
+    u32 limits_max_position = mdco.getValueFromOpenRegister(0x607D, 0x02);
+
+    u32 limits_min_position = mdco.getValueFromOpenRegister(0x607D, 0x01);
+
+    u32 limits_max_acceleration = mdco.getValueFromOpenRegister(0x60C5, 0x00);
+
+    u32 limits_max_deceleration = mdco.getValueFromOpenRegister(0x60C6, 0x00);
 
     /*────────────────────────────
       section [profile]
     ────────────────────────────*/
-    float profile_acceleration = 0.0f;
-    raw_data                   = mdco.getValueFromOpenRegister(0x2008, 0x04);
+    u32 profile_acceleration = 0.0f;
+    raw_data                 = mdco.getValueFromOpenRegister(0x2008, 0x04);
     std::memcpy(&profile_acceleration, &raw_data, sizeof(float));
-    float profile_deceleration = 0.0f;
-    raw_data                   = mdco.getValueFromOpenRegister(0x2008, 0x05);
+    u32 profile_deceleration = 0.0f;
+    raw_data                 = mdco.getValueFromOpenRegister(0x2008, 0x05);
     std::memcpy(&profile_deceleration, &raw_data, sizeof(float));
-    float profile_velocity = 0.0f;
-    raw_data               = mdco.getValueFromOpenRegister(0x2008, 0x03);
+    u32 profile_velocity = 0.0f;
+    raw_data             = mdco.getValueFromOpenRegister(0x2008, 0x03);
     std::memcpy(&profile_velocity, &raw_data, sizeof(float));
 
     /*────────────────────────────
@@ -787,13 +774,6 @@ void CandleToolCO::setupReadConfig(u16 id, const std::string& cfgName)
     raw_data     = mdco.getValueFromOpenRegister(0x200C, 0x02);
     std::memcpy(&imp_kd, &raw_data, sizeof(float));
 
-    /*────────────────────────────
-      section [homing]
-    ────────────────────────────*/
-    std::string homing_mode       = "OFF";
-    float       homing_max_travel = 10.0;
-    float       homing_max_torque = 1.0;
-    float       homing_max_vel    = 10.0;
     // ────────────────────────────────────────────────────────────
     // ÉCRITURE DU FICHIER CONFIG
     // ────────────────────────────────────────────────────────────
@@ -813,12 +793,14 @@ void CandleToolCO::setupReadConfig(u16 id, const std::string& cfgName)
     cfg << "kv = " << motor_kv << '\n';
     cfg << "torque constant = " << motor_torque_constant << '\n';
     cfg << "gear ratio = " << motor_gear_ratio << '\n';
-    cfg << "max current = " << motor_max_current << '\n';
     cfg << "torque bandwidth = " << motor_torque_bandwidth << '\n';
     cfg << "shutdown temp = " << motor_shutdown_temp << "\n\n";
 
     // ----- [limits] -----
     cfg << "[limits]\n";
+    cfg << "rated current = " << limits_rated_current << '\n';
+    cfg << "max current = " << limits_max_current << '\n';
+    cfg << "rated torque = " << limits_rated_torque << '\n';
     cfg << "max torque = " << limits_max_torque << '\n';
     cfg << "max velocity = " << limits_max_velocity << '\n';
     cfg << "max position = " << limits_max_position << '\n';
@@ -855,13 +837,6 @@ void CandleToolCO::setupReadConfig(u16 id, const std::string& cfgName)
     cfg << "[impedance pd]\n";
     cfg << "kp = " << imp_kp << '\n';
     cfg << "kd = " << imp_kd << "\n\n";
-
-    // ----- [homing] -----
-    cfg << "[homing]\n";
-    cfg << "mode = " << homing_mode << '\n';
-    cfg << "max travel = " << homing_max_travel << '\n';
-    cfg << "max torque = " << homing_max_torque << '\n';
-    cfg << "max velocity = " << homing_max_vel << '\n';
 
     cfg.close();
     log.info("Fichier %s généré avec succès.\n ", configName.c_str());
