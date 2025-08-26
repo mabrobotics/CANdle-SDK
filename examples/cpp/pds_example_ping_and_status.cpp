@@ -22,7 +22,14 @@ int main()
 
     auto candle    = attachCandle(CANdleBaudrate_E::CAN_BAUD_1M, candleTypes::busTypes_t::USB);
     auto findPdses = Pds::discoverPDS(candle);
-    Pds  pds(findPdses[0], candle);
+
+    if (findPdses.size() == 0)
+    {
+        m_log.error("No PDSs found!");
+        return EXIT_FAILURE;
+    }
+
+    Pds pds(findPdses[0], candle);
 
     pds.init();
 
@@ -122,5 +129,5 @@ int main()
     m_log.info("Metrology data:");
     m_log.info("Bus voltage: %0.2f V", pdsBusVoltage / 1000.0f);
 
-    return 0;
+    return EXIT_SUCCESS;
 }

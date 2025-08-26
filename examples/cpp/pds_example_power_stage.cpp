@@ -11,7 +11,7 @@
 
 using namespace mab;
 
-constexpr u16 PDS_CAN_ID = 120;
+constexpr u16 PDS_CAN_ID = 100;
 
 constexpr socketIndex_E POWER_STAGE_SOCKET_INDEX    = socketIndex_E::SOCKET_1;
 constexpr socketIndex_E BRAKE_RESISTOR_SOCKET_INDEX = socketIndex_E::SOCKET_3;
@@ -25,7 +25,11 @@ int main()
         mab::attachCandle(mab::CANdleBaudrate_E::CAN_BAUD_1M, mab::candleTypes::busTypes_t::USB);
     Pds pds(PDS_CAN_ID, candle);
 
-    pds.init();
+    if (pds.init() != PdsModule::error_E::OK)
+    {
+        _log.error("No PDSs found!");
+        return EXIT_FAILURE;
+    }
 
     auto powerStage    = pds.attachPowerStage(POWER_STAGE_SOCKET_INDEX);
     auto brakeResistor = pds.attachBrakeResistor(BRAKE_RESISTOR_SOCKET_INDEX);
