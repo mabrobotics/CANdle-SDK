@@ -45,15 +45,15 @@ namespace mab
     };
 
     /// @brief Modes of operation for the MD device cf. 0x6060 in the CANopen object dictionary
-    enum ModesOfOperation
+    enum ModesOfOperation : i8
     {
-        Impedance          = (u8)-3,
-        Service            = (u8)-2,
-        Idle               = (u8)0,
-        ProfilePosition    = (u8)1,
-        ProfileVelocity    = (u8)3,
-        CyclicSyncPosition = (u8)8,
-        CyclicSyncVelocity = (u8)9,
+        Impedance          = -3,
+        Service            = -2,
+        Idle               = 0,
+        ProfilePosition    = 1,
+        ProfileVelocity    = 3,
+        CyclicSyncPosition = 8,
+        CyclicSyncVelocity = 9,
     };
 
     /// @brief Software representation of MD device on the can network
