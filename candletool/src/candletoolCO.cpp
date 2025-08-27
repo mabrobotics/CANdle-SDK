@@ -22,23 +22,11 @@
 
 using namespace mab;
 
-CandleToolCO::CandleToolCO(const mab::CANdleBaudrate_E baud)
+CandleToolCO::CandleToolCO(const mab::CANdleBaudrate_E baud, candleTypes::busTypes_t busType)
 {
     log.m_tag   = "CANDLETOOLco";
     log.m_layer = Logger::ProgramLayer_E::TOP;
-
-    std::unique_ptr<I_CommunicationInterface> bus;
-
-    mINI::INIFile      file(getCandletoolConfigPath());
-    mINI::INIStructure ini;
-    file.read(ini);
-
-    std::string& device = ini["communication"]["device"];
-    busString           = ini["communication"]["bus"];
-
-    bus = std::make_unique<USB>(Candle::CANDLE_VID, Candle::CANDLE_PID, device);
-
-    m_candle = attachCandle(baud, std::move(bus));
+    m_candle    = attachCandle(baud, busType);
 }
 
 CandleToolCO::~CandleToolCO()

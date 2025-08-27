@@ -8,12 +8,12 @@ using namespace mab;
 
 UserCommandCO cmdCANopen;
 
-MdcoCli::MdcoCli(CLI::App& rootCli) : m_rootCli(rootCli)
+MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleBuilder)
+    : m_rootCli(rootCli), m_candleBuilder(candleBuilder)
 {
     m_log.m_tag   = "MDCO";
     m_log.m_layer = Logger::ProgramLayer_E::TOP;
-
-    mdco = m_rootCli.add_subcommand("mdco", "Send CANopen command instead of CAN FD.");
+    mdco          = m_rootCli.add_subcommand("mdco", "Send CANopen command instead of CAN FD.");
 
     // CANopen command
     blinkco     = mdco->add_subcommand("blink", "Blink LEDs on MD drive.");
@@ -523,7 +523,7 @@ void MdcoCli::parse(mab::CANdleBaudrate_E baud)
         return;
     if (mdco->parsed())
     {
-        CandleToolCO candleToolCO(baud);
+        CandleToolCO candleToolCO(baud, *(m_candleBuilder->busType));
         if (blinkco->parsed())
             candleToolCO.blink(cmdCANopen.id);
         if (clearco->parsed())

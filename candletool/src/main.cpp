@@ -121,7 +121,7 @@ int main(int argc, char** argv)
     CandleCli candleCli(&app, candleBuilder);
     MDCli     mdCli(&app, candleBuilder);
     PdsCli    pdsCli(app, candleBuilder);
-    MdcoCli   MdcoCli(app);
+    MdcoCli   MdcoCli(app, candleBuilder);
 
     CLI11_PARSE(app, argc, argv);
     if (showCandleSDKVersion)

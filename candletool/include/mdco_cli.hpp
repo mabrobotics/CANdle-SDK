@@ -10,7 +10,7 @@ class MdcoCli
 {
   public:
     MdcoCli() = delete;
-    MdcoCli(CLI::App& rootCli);
+    MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleBuilder);
     ~MdcoCli() = default;
 
     /// @brief Parse the command line arguments for the MDCO CLI
@@ -18,8 +18,9 @@ class MdcoCli
     void parse(mab::CANdleBaudrate_E baud);
 
   private:
-    Logger    m_log;
-    CLI::App& m_rootCli;
+    Logger                               m_log;
+    CLI::App&                            m_rootCli;
+    const std::shared_ptr<CandleBuilder> m_candleBuilder;
 
     //  principal subcommands
     CLI::App* mdco           = nullptr;

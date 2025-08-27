@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include "candle_types.hpp"
 #include "candle.hpp"
 #include "mini/ini.h"
 #include "logger.hpp"
@@ -40,7 +41,7 @@ namespace mab
       public:
         /// @brief Constructor for CandleToolCO
         /// @param baud The baud rate for the CANdle device
-        explicit CandleToolCO(mab::CANdleBaudrate_E baud);
+        explicit CandleToolCO(mab::CANdleBaudrate_E baud, candleTypes::busTypes_t busType);
 
         /// @brief Destructor for CandleToolCO
         ~CandleToolCO();
@@ -292,8 +293,6 @@ namespace mab
       private:
         Logger       log;
         mab::Candle* m_candle;
-
-        std::string busString;
 
         std::string validateAndGetFinalConfigPath(const std::string& cfgPath);
 
