@@ -516,11 +516,9 @@ namespace mab
     MDCO::Error_t MDCO::testHeartbeat()
     {
         uint32_t heartbeat_id = 0x700 + (uint32_t)this->m_canId;
-
         m_log.info("Waiting for a heartbeat message with can id 0x%03X...", heartbeat_id);
 
-        std::vector<u8> frame = {0x00};
-
+        std::vector<u8>           frame = {0x00};
         std::vector<uint8_t>      response;
         mab::candleTypes::Error_t error;
 
@@ -538,63 +536,57 @@ namespace mab
             response = result.first;
             error    = result.second;
 
-            // if a correct message is received
-            if (error == mab::candleTypes::Error_t::OK && response.size() >= 3)
+            // if a incorrect message is received, ignore it
+            if (error != mab::candleTypes::Error_t::OK || response.size() < 3)
+                continue;
+
+            // if the received message is not a Heartbeat, ignore it
+            if (!(response[0] == 0x04 && response[1] == 0x01 && response[2] == 0x05))
+                continue;
+
+            // heartbeat received
+            m_log.success("heartbeat received");
+
+            auto now_us = std::chrono::duration_cast<std::chrono::microseconds>(
+                              std::chrono::steady_clock::now() - start_time)
+                              .count();
+
+            // first heartbeat
+            if (firstHeartbeatReceived == 0)
             {
-                // if the message is a Heartbeat
-                if (response[0] == 0x04 && response[1] == 0x01 && response[2] == 0x05)
+                firstHeartbeatReceived = now_us;
+
+                // keep sending message until the last heartbeat disappears on the bus or timeout
+                do
                 {
-                    m_log.success("heartbeat received");
+                    result = transferCanOpenFrameNoRespondExpected(
+                        heartbeat_id, frame, 1, /*timeoutMs=*/10);
+                    response = result.first;
+                    error    = result.second;
+                } while ((error == mab::candleTypes::Error_t::OK && response.size() > 1 &&
+                          response[1] == 0x01) &&
+                         (std::chrono::steady_clock::now() - start_time < timeout));
 
-                    auto now_us = std::chrono::duration_cast<std::chrono::microseconds>(
-                                      std::chrono::steady_clock::now() - start_time)
-                                      .count();
-
-                    // first heartbeat
-                    if (firstHeartbeatReceived == 0)
-                    {
-                        firstHeartbeatReceived = now_us;
-
-                        result = transferCanOpenFrameNoRespondExpected(
-                            heartbeat_id, frame, 1, /*timeoutMs=*/10);
-                        response = result.first;
-                        error    = result.second;
-
-                        // keep sending message until the last heartbeat disappears on the bus
-                        while ((response.size() > 1 && response[1] == 0x01) &&
-                               (std::chrono::steady_clock::now() - start_time < timeout))
-                        {
-                            result = transferCanOpenFrameNoRespondExpected(
-                                heartbeat_id, frame, 1, /*timeoutMs=*/10);
-                            response = result.first;
-                            error    = result.second;
-
-                            // if we lost communication with the MD
-                            if (error != mab::candleTypes::Error_t::OK || response.size() <= 1)
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        // second heartbeat — calculating delta time
-                        auto delta_us = std::chrono::duration_cast<std::chrono::microseconds>(
-                                            std::chrono::steady_clock::now() - start_time)
-                                            .count() -
-                                        firstHeartbeatReceived;
-
-                        m_log.success("heartbeat received with in between time of %.6lf s",
-                                      static_cast<double>(delta_us) / 1'000'000.0);
-                        return OK;
-                    }
-                }
+                continue;  // keep waiting for the second heartbeat
             }
+
+            // second heartbeat — calculating delta time
+            auto delta_us = std::chrono::duration_cast<std::chrono::microseconds>(
+                                std::chrono::steady_clock::now() - start_time)
+                                .count() -
+                            firstHeartbeatReceived;
+
+            m_log.success("heartbeat received with in between time of %.6lf s",
+                          static_cast<double>(delta_us) / 1'000'000.0);
+            return OK;
         }
 
-        // timeout conditions
+        // ---------- Timeout ----------
         if (firstHeartbeatReceived == 0)
             m_log.error("No heartbeat has been received after 5s.\n");
         else
             m_log.success("One heartbeat has been received in the last 5s");
+
         return OK;
     }
 
@@ -904,115 +896,6 @@ namespace mab
         m_log.debug("Motor Name successfully written.");
         return Error_t::OK;
     }
-
-    // MDCO::Error_t MDCO::readLongOpenRegisters(i16 index, short subindex, std::vector<u8>&
-    // outData)
-    // {
-    //     if (isReadable(index, subindex) != OK)
-    //     {
-    //         m_log.error("Object 0x%04x:0x%02x is not readable!", index, subindex);
-    //         return Error_t::REQUEST_INVALID;
-    //     }
-
-    //     m_log.debug("Read Object (0x%lx:0x%x) via segmented SDO…", index, subindex);
-
-    //     // ---------- 1) Initiation Request ----------
-    //     std::vector<u8> initReq = {0x40,  // CCS=2: Initiate Upload
-    //                                u8(index & 0xFF),
-    //                                u8(index >> 8),
-    //                                u8(subindex),
-    //                                0x00,
-    //                                0x00,
-    //                                0x00,
-    //                                0x00};
-
-    //     auto [rspInit, errInit] = transferCanOpenFrame(0x600 + m_canId, initReq, initReq.size());
-    //     if (errInit != mab::candleTypes::Error_t::OK || rspInit.size() < 8)
-    //     {
-    //         m_log.error("Failed to initiate SDO read.");
-    //         return Error_t::TRANSFER_FAILED;
-    //     }
-
-    //     u8   cmd         = rspInit[0];
-    //     bool isExpedited = cmd & 0x02;
-    //     bool hasSize     = cmd & 0x01;
-
-    //     if (isExpedited)
-    //     {
-    //         m_log.warn("Data received in expedited mode, probably ≤ 4 bytes.");
-    //         u8 n   = ((cmd >> 2) & 0x03);  // number of used bytes
-    //         u8 len = 4 - n;
-
-    //         outData.insert(outData.end(), rspInit.begin() + 4, rspInit.begin() + 4 + len);
-    //     }
-    //     else
-    //     {
-    //         // ---------- 2) Segmented reading ----------
-    //         u32 totalLen = 0;
-    //         if (hasSize)
-    //         {
-    //             totalLen = rspInit[4] | (rspInit[5] << 8) | (rspInit[6] << 16) | (rspInit[7] <<
-    //             24); outData.reserve(totalLen);
-    //         }
-
-    //         bool toggle   = false;
-    //         bool finished = false;
-
-    //         while (!finished)
-    //         {
-    //             std::vector<u8> segReq = {u8(0x60 | (toggle ? 0x10 : 0x00)), 0, 0, 0, 0, 0, 0,
-    //             0}; auto [rspSeg, errSeg] =
-    //                 transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, segReq, segReq.size());
-
-    //             if (errSeg != mab::candleTypes::Error_t::OK || rspSeg.size() < 1)
-    //             {
-    //                 m_log.error("Error segment reading");
-    //                 return Error_t::TRANSFER_FAILED;
-    //             }
-
-    //             u8 segCmd = rspSeg[0];
-    //             if ((segCmd & 0x10) != (toggle ? 0x10 : 0x00))
-    //             {
-    //                 m_log.error("Bit toggle didn't expected, corrupt transfer.");
-    //                 return Error_t::TRANSFER_FAILED;
-    //             }
-
-    //             bool last    = segCmd & 0x01;
-    //             u8   unused  = (segCmd >> 1) & 0x07;
-    //             u8   dataLen = 7 - unused;
-
-    //             if ((i16)rspSeg.size() < (1 + dataLen))
-    //             {
-    //                 m_log.error("Incomplete data in the segment.");
-    //                 return Error_t::TRANSFER_FAILED;
-    //             }
-
-    //             outData.insert(outData.end(), rspSeg.begin() + 1, rspSeg.begin() + 1 + dataLen);
-    //             finished = last;
-    //             toggle   = !toggle;
-    //         }
-
-    //         if (hasSize && outData.size() != totalLen)
-    //         {
-    //             m_log.warn(
-    //                 "Size of data read (%d) ≠ size announced (%d)", outData.size(), totalLen);
-    //         }
-    //     }
-
-    //     // ---------- 3) Display ----------
-    //     if (dataSizeOfEdsObject(index, subindex) == 0)
-    //     {
-    //         // if data size is 0, we assume it is a string
-    //         std::string motorName(outData.begin(), outData.end());
-    //         m_log.info("Data received (convert into string): '%s'", motorName.c_str());
-    //     }
-    //     else
-    //     {
-    //         m_log.info("Data received: %s", std::string(outData.begin(), outData.end()).c_str());
-    //     }
-
-    //     return Error_t::OK;
-    // }
 
     MDCO::Error_t MDCO::readLongOpenRegisters(i16 index, short subindex, std::vector<u8>& outData)
     {
