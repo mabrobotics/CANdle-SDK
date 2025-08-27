@@ -144,7 +144,12 @@ void CandleToolCO::sendPdoSpeed(u16 id, i32 desiredSpeed)
 
     log.info("Sending PDO for speed loop control");
     std::vector<u8> frameSetup = {0x0F, 0x00, 0x09};
-    md.writeOpenPDORegisters(0x300 + id, frameSetup);
+    err                        = md.writeOpenPDORegisters(0x300 + id, frameSetup);
+    if (err != MDCO::OK)
+    {
+        log.error("Error sending setup PDO");
+        return;
+    }
 
     std::vector<u8> frameSpeed = {0x0F,
                                   0x00,
@@ -152,7 +157,12 @@ void CandleToolCO::sendPdoSpeed(u16 id, i32 desiredSpeed)
                                   (u8)(desiredSpeed >> 8),
                                   (u8)(desiredSpeed >> 16),
                                   (u8)(desiredSpeed >> 24)};
-    md.writeOpenPDORegisters(0x500 + id, frameSpeed);
+    err                        = md.writeOpenPDORegisters(0x500 + id, frameSpeed);
+    if (err != MDCO::OK)
+    {
+        log.error("Error sending speed PDO");
+        return;
+    }
     auto start   = std::chrono::steady_clock::now();
     auto timeout = std::chrono::seconds((5));
     while (std::chrono::steady_clock::now() - start < timeout)
@@ -204,14 +214,24 @@ void CandleToolCO::sendPdoPosition(u16 id, i32 DesiredPos)
     log.info("Sending PDO for speed loop control");
 
     std::vector<u8> frameSetup = {0x0F, 0x00, 0x08};
-    md.writeOpenPDORegisters(0x300 + id, frameSetup);
+    err                        = md.writeOpenPDORegisters(0x300 + id, frameSetup);
+    if (err != MDCO::OK)
+    {
+        log.error("Error sending setup PDO");
+        return;
+    }
     std::vector<u8> framePosition = {0x0F,
                                      0x00,
                                      (u8)(DesiredPos),
                                      (u8)(DesiredPos >> 8),
                                      (u8)(DesiredPos >> 16),
                                      (u8)(DesiredPos >> 24)};
-    md.writeOpenPDORegisters(0x400 + id, framePosition);
+    err                           = md.writeOpenPDORegisters(0x400 + id, framePosition);
+    if (err != MDCO::OK)
+    {
+        log.error("Error sending position PDO");
+        return;
+    }
 
     log.debug("position ask : %d\n", DesiredPos);
 
@@ -781,6 +801,7 @@ void CandleToolCO::setupMotor(u16 id, const std::string& cfgPath, bool force)
         log.error("Error setting impedancepd_kd");
         return;
     }
+    log.info("Don't forget to save the config before shutting down the MD!");
 }
 
 void CandleToolCO::clean(std::string& s)
@@ -804,6 +825,7 @@ void CandleToolCO::clean(std::string& s)
 
 void CandleToolCO::heartbeatTest(u32 MasterId, u32 SlaveId, u32 HeartbeatTimeout)
 {
+    MDCO::Error_t err;
     if (MasterId > 0x7F || SlaveId > 0x7f)
     {
         log.error("id > 0x7F");
@@ -818,15 +840,30 @@ void CandleToolCO::heartbeatTest(u32 MasterId, u32 SlaveId, u32 HeartbeatTimeout
     u8              bytes3 = ((u8)(HeartbeatTimeout >> 8));
     u8              bytes4 = ((u8)(HeartbeatTimeout));
     DataSlave              = bytes4 + (bytes3 << 8) + (bytes2 << 16) + (bytes1 << 24);
-    mdproducer.sendCustomData(0x700 + MasterId, frame);
+    err                    = mdproducer.sendCustomData(0x700 + MasterId, frame);
+    if (err != MDCO::OK)
+    {
+        log.error("Error sending heartbeat");
+        return;
+    }
     if (md.getValueFromOpenRegister(0x1003, 0x00) != 00)
     {
         log.error("The Driver is in fault state before testing the hearbeat");
         return;
     }
 
-    md.writeOpenRegisters(0x1016, 0x01, DataSlave, 4);
-    mdproducer.sendCustomData(0x700 + MasterId, frame);
+    err = md.writeOpenRegisters(0x1016, 0x01, DataSlave, 4);
+    if (err != MDCO::OK)
+    {
+        log.error("Error setting slave data for heartbeat");
+        return;
+    }
+    err = mdproducer.sendCustomData(0x700 + MasterId, frame);
+    if (err != MDCO::OK)
+    {
+        log.error("Error sending heartbeat");
+        return;
+    }
     auto start   = std::chrono::steady_clock::now();
     auto timeout = std::chrono::milliseconds((HeartbeatTimeout / 100));
     while (std::chrono::steady_clock::now() - start < timeout)
@@ -1392,6 +1429,7 @@ void CandleToolCO::SendTime(uint16_t id)
         return;
     }
 }
+
 void CandleToolCO::blink(u16 id)
 {
     MDCO mdco(id, m_candle);
@@ -1537,6 +1575,7 @@ void CandleToolCO::SendNMT(u8 id, u8 command)
         return;
     }
 }
+
 void CandleToolCO::ReadHeartbeat(u16 id)
 {
     MDCO          mdco(id, m_candle);
@@ -1546,4 +1585,29 @@ void CandleToolCO::ReadHeartbeat(u16 id)
         log.error("Error reading heartbeat for node %d", id);
         return;
     }
+}
+
+bool CandleToolCO::isCanOpenConfigComplete(const std::string& pathToConfig)
+{
+    mINI::INIFile      defaultFile(getMotorsConfigPath() + "/CANopen/default.cfg");
+    mINI::INIStructure defaultIni;
+    defaultFile.read(defaultIni);
+
+    mINI::INIFile      userFile(pathToConfig);
+    mINI::INIStructure userIni;
+    userFile.read(userIni);
+
+    // Loop fills all lacking fields in the user's config file.
+    for (auto const& it : defaultIni)
+    {
+        auto const& section    = it.first;
+        auto const& collection = it.second;
+        for (auto const& it2 : collection)
+        {
+            auto const& key = it2.first;
+            if (!userIni[section].has(key))
+                return false;
+        }
+    }
+    return true;
 }

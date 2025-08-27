@@ -309,29 +309,6 @@ namespace mab
             return true;
         }
 
-        inline bool isCanOpenConfigComplete(const std::string& pathToConfig)
-        {
-            mINI::INIFile      defaultFile(getMotorsConfigPath() + "/CANopen/default.cfg");
-            mINI::INIStructure defaultIni;
-            defaultFile.read(defaultIni);
-
-            mINI::INIFile      userFile(pathToConfig);
-            mINI::INIStructure userIni;
-            userFile.read(userIni);
-
-            // Loop fills all lacking fields in the user's config file.
-            for (auto const& it : defaultIni)
-            {
-                auto const& section    = it.first;
-                auto const& collection = it.second;
-                for (auto const& it2 : collection)
-                {
-                    auto const& key = it2.first;
-                    if (!userIni[section].has(key))
-                        return false;
-                }
-            }
-            return true;
-        }
+        bool isCanOpenConfigComplete(const std::string& pathToConfig);
     };
 }  // namespace mab
