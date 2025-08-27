@@ -905,6 +905,115 @@ namespace mab
         return Error_t::OK;
     }
 
+    // MDCO::Error_t MDCO::readLongOpenRegisters(i16 index, short subindex, std::vector<u8>&
+    // outData)
+    // {
+    //     if (isReadable(index, subindex) != OK)
+    //     {
+    //         m_log.error("Object 0x%04x:0x%02x is not readable!", index, subindex);
+    //         return Error_t::REQUEST_INVALID;
+    //     }
+
+    //     m_log.debug("Read Object (0x%lx:0x%x) via segmented SDO…", index, subindex);
+
+    //     // ---------- 1) Initiation Request ----------
+    //     std::vector<u8> initReq = {0x40,  // CCS=2: Initiate Upload
+    //                                u8(index & 0xFF),
+    //                                u8(index >> 8),
+    //                                u8(subindex),
+    //                                0x00,
+    //                                0x00,
+    //                                0x00,
+    //                                0x00};
+
+    //     auto [rspInit, errInit] = transferCanOpenFrame(0x600 + m_canId, initReq, initReq.size());
+    //     if (errInit != mab::candleTypes::Error_t::OK || rspInit.size() < 8)
+    //     {
+    //         m_log.error("Failed to initiate SDO read.");
+    //         return Error_t::TRANSFER_FAILED;
+    //     }
+
+    //     u8   cmd         = rspInit[0];
+    //     bool isExpedited = cmd & 0x02;
+    //     bool hasSize     = cmd & 0x01;
+
+    //     if (isExpedited)
+    //     {
+    //         m_log.warn("Data received in expedited mode, probably ≤ 4 bytes.");
+    //         u8 n   = ((cmd >> 2) & 0x03);  // number of used bytes
+    //         u8 len = 4 - n;
+
+    //         outData.insert(outData.end(), rspInit.begin() + 4, rspInit.begin() + 4 + len);
+    //     }
+    //     else
+    //     {
+    //         // ---------- 2) Segmented reading ----------
+    //         u32 totalLen = 0;
+    //         if (hasSize)
+    //         {
+    //             totalLen = rspInit[4] | (rspInit[5] << 8) | (rspInit[6] << 16) | (rspInit[7] <<
+    //             24); outData.reserve(totalLen);
+    //         }
+
+    //         bool toggle   = false;
+    //         bool finished = false;
+
+    //         while (!finished)
+    //         {
+    //             std::vector<u8> segReq = {u8(0x60 | (toggle ? 0x10 : 0x00)), 0, 0, 0, 0, 0, 0,
+    //             0}; auto [rspSeg, errSeg] =
+    //                 transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, segReq, segReq.size());
+
+    //             if (errSeg != mab::candleTypes::Error_t::OK || rspSeg.size() < 1)
+    //             {
+    //                 m_log.error("Error segment reading");
+    //                 return Error_t::TRANSFER_FAILED;
+    //             }
+
+    //             u8 segCmd = rspSeg[0];
+    //             if ((segCmd & 0x10) != (toggle ? 0x10 : 0x00))
+    //             {
+    //                 m_log.error("Bit toggle didn't expected, corrupt transfer.");
+    //                 return Error_t::TRANSFER_FAILED;
+    //             }
+
+    //             bool last    = segCmd & 0x01;
+    //             u8   unused  = (segCmd >> 1) & 0x07;
+    //             u8   dataLen = 7 - unused;
+
+    //             if ((i16)rspSeg.size() < (1 + dataLen))
+    //             {
+    //                 m_log.error("Incomplete data in the segment.");
+    //                 return Error_t::TRANSFER_FAILED;
+    //             }
+
+    //             outData.insert(outData.end(), rspSeg.begin() + 1, rspSeg.begin() + 1 + dataLen);
+    //             finished = last;
+    //             toggle   = !toggle;
+    //         }
+
+    //         if (hasSize && outData.size() != totalLen)
+    //         {
+    //             m_log.warn(
+    //                 "Size of data read (%d) ≠ size announced (%d)", outData.size(), totalLen);
+    //         }
+    //     }
+
+    //     // ---------- 3) Display ----------
+    //     if (dataSizeOfEdsObject(index, subindex) == 0)
+    //     {
+    //         // if data size is 0, we assume it is a string
+    //         std::string motorName(outData.begin(), outData.end());
+    //         m_log.info("Data received (convert into string): '%s'", motorName.c_str());
+    //     }
+    //     else
+    //     {
+    //         m_log.info("Data received: %s", std::string(outData.begin(), outData.end()).c_str());
+    //     }
+
+    //     return Error_t::OK;
+    // }
+
     MDCO::Error_t MDCO::readLongOpenRegisters(i16 index, short subindex, std::vector<u8>& outData)
     {
         if (isReadable(index, subindex) != OK)
@@ -916,14 +1025,8 @@ namespace mab
         m_log.debug("Read Object (0x%lx:0x%x) via segmented SDO…", index, subindex);
 
         // ---------- 1) Initiation Request ----------
-        std::vector<u8> initReq = {0x40,  // CCS=2: Initiate Upload
-                                   u8(index & 0xFF),
-                                   u8(index >> 8),
-                                   u8(subindex),
-                                   0x00,
-                                   0x00,
-                                   0x00,
-                                   0x00};
+        std::vector<u8> initReq = {
+            0x40, u8(index & 0xFF), u8(index >> 8), u8(subindex), 0x00, 0x00, 0x00, 0x00};
 
         auto [rspInit, errInit] = transferCanOpenFrame(0x600 + m_canId, initReq, initReq.size());
         if (errInit != mab::candleTypes::Error_t::OK || rspInit.size() < 8)
@@ -936,74 +1039,84 @@ namespace mab
         bool isExpedited = cmd & 0x02;
         bool hasSize     = cmd & 0x01;
 
+        // ---------- 2a) Expedited transfer ----------
         if (isExpedited)
         {
             m_log.warn("Data received in expedited mode, probably ≤ 4 bytes.");
-            u8 n   = ((cmd >> 2) & 0x03);  // number of used bytes
+            u8 n   = ((cmd >> 2) & 0x03);  // number of unused bytes
             u8 len = 4 - n;
 
             outData.insert(outData.end(), rspInit.begin() + 4, rspInit.begin() + 4 + len);
+
+            // ---------- 3) Display ----------
+            if (dataSizeOfEdsObject(index, subindex) == 0)
+            {
+                std::string motorName(outData.begin(), outData.end());
+                m_log.info("Data received (string): '%s'", motorName.c_str());
+            }
+            else
+            {
+                m_log.info("Data received: %s",
+                           std::string(outData.begin(), outData.end()).c_str());
+            }
+            return Error_t::OK;
         }
-        else
+
+        // ---------- 2b) Segmented transfer ----------
+        u32 totalLen = 0;
+        if (hasSize)
         {
-            // ---------- 2) Segmented reading ----------
-            u32 totalLen = 0;
-            if (hasSize)
+            totalLen = rspInit[4] | (rspInit[5] << 8) | (rspInit[6] << 16) | (rspInit[7] << 24);
+            outData.reserve(totalLen);
+        }
+
+        bool toggle   = false;
+        bool finished = false;
+
+        while (!finished)
+        {
+            std::vector<u8> segReq = {u8(0x60 | (toggle ? 0x10 : 0x00)), 0, 0, 0, 0, 0, 0, 0};
+            auto [rspSeg, errSeg] =
+                transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, segReq, segReq.size());
+
+            if (errSeg != mab::candleTypes::Error_t::OK || rspSeg.size() < 1)
             {
-                totalLen = rspInit[4] | (rspInit[5] << 8) | (rspInit[6] << 16) | (rspInit[7] << 24);
-                outData.reserve(totalLen);
+                m_log.error("Error segment reading");
+                return Error_t::TRANSFER_FAILED;
             }
 
-            bool toggle   = false;
-            bool finished = false;
-
-            while (!finished)
+            u8 segCmd = rspSeg[0];
+            if ((segCmd & 0x10) != (toggle ? 0x10 : 0x00))
             {
-                std::vector<u8> segReq = {u8(0x60 | (toggle ? 0x10 : 0x00)), 0, 0, 0, 0, 0, 0, 0};
-                auto [rspSeg, errSeg] =
-                    transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, segReq, segReq.size());
-
-                if (errSeg != mab::candleTypes::Error_t::OK || rspSeg.size() < 1)
-                {
-                    m_log.error("Error segment reading");
-                    return Error_t::TRANSFER_FAILED;
-                }
-
-                u8 segCmd = rspSeg[0];
-                if ((segCmd & 0x10) != (toggle ? 0x10 : 0x00))
-                {
-                    m_log.error("Bit toggle didn't expected, corrupt transfer.");
-                    return Error_t::TRANSFER_FAILED;
-                }
-
-                bool last    = segCmd & 0x01;
-                u8   unused  = (segCmd >> 1) & 0x07;
-                u8   dataLen = 7 - unused;
-
-                if ((i16)rspSeg.size() < (1 + dataLen))
-                {
-                    m_log.error("Incomplete data in the segment.");
-                    return Error_t::TRANSFER_FAILED;
-                }
-
-                outData.insert(outData.end(), rspSeg.begin() + 1, rspSeg.begin() + 1 + dataLen);
-                finished = last;
-                toggle   = !toggle;
+                m_log.error("Bit toggle unexpected, corrupt transfer.");
+                return Error_t::TRANSFER_FAILED;
             }
 
-            if (hasSize && outData.size() != totalLen)
+            bool last    = segCmd & 0x01;
+            u8   unused  = (segCmd >> 1) & 0x07;
+            u8   dataLen = 7 - unused;
+
+            if ((i16)rspSeg.size() < (1 + dataLen))
             {
-                m_log.warn(
-                    "Size of data read (%d) ≠ size announced (%d)", outData.size(), totalLen);
+                m_log.error("Incomplete data in the segment.");
+                return Error_t::TRANSFER_FAILED;
             }
+
+            outData.insert(outData.end(), rspSeg.begin() + 1, rspSeg.begin() + 1 + dataLen);
+            finished = last;
+            toggle   = !toggle;
+        }
+
+        if (hasSize && outData.size() != totalLen)
+        {
+            m_log.warn("Size of data read (%d) ≠ size announced (%d)", outData.size(), totalLen);
         }
 
         // ---------- 3) Display ----------
         if (dataSizeOfEdsObject(index, subindex) == 0)
         {
-            // if data size is 0, we assume it is a string
             std::string motorName(outData.begin(), outData.end());
-            m_log.info("Data received (convert into string): '%s'", motorName.c_str());
+            m_log.info("Data received (string): '%s'", motorName.c_str());
         }
         else
         {
