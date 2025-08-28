@@ -4,7 +4,7 @@
 namespace mab
 {
 
-    IsolatedConv::IsolatedConv(socketIndex_E socket, Candle* p_candle, u16& canId)
+    IsolatedConv::IsolatedConv(socketIndex_E socket, Candle* p_candle, std::shared_ptr<u16> canId)
         : PdsModule(socket, moduleType_E::ISOLATED_CONVERTER, p_candle, canId)
     {
         m_log.m_tag = "IC12:: " + std::to_string(static_cast<u8>(socket));
@@ -100,12 +100,16 @@ namespace mab
 
     PdsModule::error_E IsolatedConv::getPower(s32& power)
     {
-        return readModuleProperty(propertyId_E::LOAD_POWER, power);
+        // return readModuleProperty(propertyId_E::LOAD_POWER, power);
+        m_log.error("Power read is not implemented yet");
+        return PdsModule::error_E::INTERNAL_ERROR;  // Not implemented
     }
 
     PdsModule::error_E IsolatedConv::getEnergy(s32& energy)
     {
-        return readModuleProperty(propertyId_E::DELIVERED_ENERGY, energy);
+        // return readModuleProperty(propertyId_E::TOTAL_DELIVERED_ENERGY, energy);
+        m_log.error("Energy read is not implemented yet");
+        return PdsModule::error_E::INTERNAL_ERROR;  // Not implemented
     }
 
     PdsModule::error_E IsolatedConv::getTemperature(f32& temperature)

@@ -15,7 +15,7 @@ else
     exit 1
 fi
 
-if ./venv/bin/python3 -m pip install --force-reinstall ./dist/pycandlemab-*-linux_x86_64.whl; then
+if ./venv/bin/python3 -m pip install --force-reinstall ./dist/candlesdk-*-linux_x86_64.whl; then
     echo "Installed pycandle successfully"
 else
     echo -e "\e[31mError in installing pycandle\e[0m"

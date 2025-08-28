@@ -157,7 +157,9 @@ namespace mab
         buffer.insert(buffer.begin(), candleCommandCANframe.begin(), candleCommandCANframe.end());
 
         communicationStatus =
-            busTransfer(&buffer, responseSize + 2 /*response header size*/, timeoutMs + 1);
+            busTransfer(&buffer,
+                        64 /*TODO: this is legacy Candle stuff*/ + 2 /*response header size*/,
+                        timeoutMs + 1);
 
         if (buffer.size() > 3)
             buffer.erase(buffer.begin(), buffer.begin() + 2 /*response header size*/);
@@ -178,7 +180,7 @@ namespace mab
 
         auto testConnectionFrame = std::vector<u8>(baudrateFrame.begin(), baudrateFrame.end());
 
-        const candleTypes::Error_t connectionStatus = busTransfer(&testConnectionFrame, 5);
+        const candleTypes::Error_t connectionStatus = busTransfer(&testConnectionFrame, 6);
         if (connectionStatus != candleTypes::Error_t::OK)
             return connectionStatus;
         return candleTypes::Error_t::OK;

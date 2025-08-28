@@ -12,8 +12,8 @@ requires = [
 build-backend = "scikit_build_core.build"
 
 [project]
-name = "pyCandleMAB"
-version = "2.0.0"
+name = "candlesdk"
+version = "1.2.0"
 dependencies = ["cmake"]
 requires-python = ">= 3.10"
 authors = [{ name = "MAB Robotics", email = "support@mabrobotics.pl" }]
@@ -41,16 +41,18 @@ install.strip = false
 
 [tool.scikit-build.cmake.define]
 PYTHON_BUILD = "ON"
+PYBIND11_FINDPYTHON = "OFF"
 
 [tool.cibuildwheel]
 build-frontend = "build[uv]"
 skip = [
     "cp38-*",
     "cp39-*",
-    "cp310-*",
+    "cp310-win*",
     "cp311-win*",
     "cp312-win*",
     "*musllinux*",
+    "cp*t-*",
 ]
 linux.before-build = "yum -y install libusbx-devel && yum -y install libusb-devel"
 windows.archs = ["AMD64"]

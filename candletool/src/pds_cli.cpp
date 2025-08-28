@@ -362,7 +362,11 @@ void PdsCli::parse()
             }
             else
             {
+                Pds pds(m_canId, candle.value());
+                pds.isBootloaderError(true);
                 m_log.error("PDS flashing failed!");
+                usleep(2'000'000);
+                pds.isBootloaderError(false);
             }
         }
 
