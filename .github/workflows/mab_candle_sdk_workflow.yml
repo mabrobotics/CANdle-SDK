@@ -122,6 +122,32 @@ jobs:
           name: cibw-wheels-windows
           path: ./wheelhouse/*.whl
 
+  build-candleSDK-linux-shared:
+    runs-on: ubuntu-24.04
+    container:
+      image: mabroboticsofficial/mab_build_environment:v2
+      options: --user root
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: "true"
+
+      - name: CMake configure
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Release -B build -G "Unix Makefiles" -DCANDLE_BUILD_STATIC=OFF .
+
+      - name: Build
+        run: cmake --build ./build -j$(nproc)
+
+      - name: Store artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: candlelib-x86_64-shared
+          path: |
+            build/candlelib/*.so
+
   build-candleSDK-linux-static:
     runs-on: ubuntu-24.04
     container:
@@ -151,6 +177,32 @@ jobs:
           path: |
             build/*.deb
 
+  build-candleSDK-linux-arm64-shared:
+    runs-on: ubuntu-latest
+    container:
+      image: mabroboticsofficial/mab_build_environment_arm64_cross-compile:v2
+      options: --user root
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: "true"
+
+      - name: CMake configure
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Release -DCANDLE_BUILD_STATIC=OFF --toolchain ./cmake/linux.arm64.toolchain.cmake ./ -B build -G "Unix Makefiles" .
+
+      - name: Build
+        run: cmake --build ./build -j$(nproc)
+
+      - name: Store artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: candlelib-arm64-shared
+          path: |
+            build/candlelib/*.so
+
   build-candleSDK-linux-arm64-static:
     runs-on: ubuntu-24.04
     container:
@@ -179,6 +231,32 @@ jobs:
           name: Candletool-build-artifacts-arm64
           path: |
             build/*.deb
+
+  build-candleSDK-linux-armhf-shared:
+    runs-on: ubuntu-latest
+    container:
+      image: mabroboticsofficial/mab_build_environment_armhf_cross-compile:v2
+      options: --user root
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: "true"
+
+      - name: CMake configure
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Release -DCANDLE_BUILD_STATIC=OFF --toolchain ./cmake/linux.armhf.toolchain.cmake ./ -B build -G "Unix Makefiles" .
+      
+      - name: Build
+        run: cmake --build ./build -j$(nproc)
+
+      - name: Store artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: candlelib-armhf-shared
+          path: |
+            build/candlelib/*.so
 
   build-candleSDK-linux-armhf-static:
     runs-on: ubuntu-24.04
