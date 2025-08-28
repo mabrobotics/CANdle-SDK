@@ -20,7 +20,7 @@ message("====================")
 message("CandleSDK version: ${CANDLESDK_VERSION} ${CANDLESDK_VERSION_TAG}")
 message("Available flags:")
 message(
-  "PYTHON_BUILD (default OFF) - set buildsystem to build python library shared object"
+  "CANDLESDK_BUILD_PYTHON (default OFF) - set buildsystem to build python library shared object"
 )
 message(
   "CANDLE_BUILD_STATIC (default ON) -  set buildsystem to link against dependencies statically and build CANdle as .a"
@@ -58,7 +58,7 @@ endmacro(add_unit_test_executable)
 
 add_subdirectory(commons)
 add_subdirectory(candlelib)
-if(PYTHON_BUILD)
+if(CANDLESDK_BUILD_PYTHON)
   add_subdirectory(pycandle)
 else()
   add_subdirectory(candletool)

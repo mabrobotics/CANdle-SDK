@@ -4,7 +4,7 @@ project(candlelib)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-if(PYTHON_BUILD)
+if(CANDLESDK_BUILD_PYTHON)
   set(CANDLE_BUILD_STATIC ON)
 endif()
 
