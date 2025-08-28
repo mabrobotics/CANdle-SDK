@@ -746,13 +746,13 @@ if(_use_core_foundation_and_core_services)
 endif()
 
 if(CURL_USE_OPENSSL)
-  find_package(OpenSSL REQUIRED)
+  # find_package(OpenSSL REQUIRED)
   set(_ssl_enabled ON)
   set(USE_OPENSSL ON)
 
   # Depend on OpenSSL via imported targets. This allows our dependents to
   # get our dependencies transitively.
-  list(APPEND CURL_LIBS OpenSSL::SSL OpenSSL::Crypto)
+  list(APPEND CURL_LIBS ssl crypto)
   list(APPEND LIBCURL_PC_REQUIRES_PRIVATE "openssl")
 
   if(CURL_DEFAULT_SSL_BACKEND AND CURL_DEFAULT_SSL_BACKEND STREQUAL "openssl")
@@ -761,7 +761,7 @@ if(CURL_USE_OPENSSL)
   set(_curl_ca_bundle_supported TRUE)
 
   cmake_push_check_state()
-  list(APPEND CMAKE_REQUIRED_LIBRARIES OpenSSL::SSL OpenSSL::Crypto)
+  list(APPEND CMAKE_REQUIRED_LIBRARIES ssl crypto)
   if(NOT DEFINED HAVE_BORINGSSL)
     check_symbol_exists("OPENSSL_IS_BORINGSSL" "openssl/base.h" HAVE_BORINGSSL)
   endif()
@@ -960,7 +960,7 @@ endif()
 macro(curl_openssl_check_exists)
   cmake_push_check_state()
   if(USE_OPENSSL)
-    list(APPEND CMAKE_REQUIRED_LIBRARIES OpenSSL::SSL OpenSSL::Crypto)
+    list(APPEND CMAKE_REQUIRED_LIBRARIES ssl crypto)
     list(APPEND CMAKE_REQUIRED_DEFINITIONS "-DOPENSSL_SUPPRESS_DEPRECATED")  # for SSL_CTX_set_srp_username deprecated since 3.0.0
     if(HAVE_LIBZ)
       list(APPEND CMAKE_REQUIRED_LIBRARIES ZLIB::ZLIB)
@@ -1221,7 +1221,7 @@ if(NOT CURL_DISABLE_LDAP)
     # Check for LDAP
     cmake_push_check_state()
     if(USE_OPENSSL)
-      list(APPEND CMAKE_REQUIRED_LIBRARIES OpenSSL::SSL OpenSSL::Crypto)
+      list(APPEND CMAKE_REQUIRED_LIBRARIES ssl crypto)
     endif()
     find_package(LDAP)
     if(LDAP_FOUND)

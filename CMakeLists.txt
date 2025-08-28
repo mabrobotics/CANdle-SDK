@@ -25,14 +25,16 @@ add_compile_options(-Wfatal-errors -Wall -Wextra -Wpedantic
                     -Wno-unused-parameter -Wno-missing-field-initializers)
 
 if(NOT WIN32)
-  add_compile_options(-Werror)
-  add_compile_definitions(WIN32_MEAN_AND_LEAN) # This define is needed for
+  add_compile_options(-Werror) # This define is needed for
   # windows.h to exclude some less used APIs
+else()
+  add_compile_definitions(WIN32_MEAN_AND_LEAN)
+  set(CANDLE_BUILD_STATIC ON)
 endif()
 
 set(mINI_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/mINI/inc/)
 if(NOT DEFINED CANDLE_BUILD_STATIC)
-  set(CANDLE_BUILD_STATIC TRUE)
+  set(CANDLE_BUILD_STATIC ON)
 endif()
 
 macro(add_unit_test_executable test_name)

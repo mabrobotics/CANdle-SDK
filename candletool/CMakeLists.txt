@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 
 include(GNUInstallDirs)
 
@@ -17,9 +17,31 @@ set(CANDLETOOL_VERSION_FULL
 add_subdirectory(3rd_party/CLI11)
 add_subdirectory(3rd_party/openssl-cmake)
 
-# set(OPENSSL_ROOT_DIR ${OPENSSL_PREFIX}) set(OPENSSL_CRYPTO_LIBRARY crypto)
-# set(OPENSSL_SSL_LIBRARY ssl) set(OPENSSL_FOUND TRUE) set(CMAKE_USE_OPENSSL ON)
-# set(CMAKE_USE_LIBSSH2 OFF) add_subdirectory(3rd_party/curl)
+
+set(CURL_USE_LIBPSL OFF)
+set(BUILD_CURL_EXE OFF)
+set(BUILD_TESTING OFF)
+if(CANDLE_BUILD_STATIC)
+  set(BUILD_STATIC_LIBS ON)
+  set(BUILD_SHARED_LIBS OFF)
+else()
+  set(BUILD_STATIC_LIBS OFF)
+  set(BUILD_SHARED_LIBS ON)
+endif()
+set(ENABLE_CURL_MANUAL OFF)
+set(BUILD_LIBCURL_DOCS OFF)
+set(BUILD_MISC_DOCS OFF)
+set(BUILD_EXAMPLES OFF)
+set(CURL_CA_BUNDLE "none")
+set(CURL_USE_OPENSSL ON)
+set(OPENSSL_ROOT_DIR ${OPENSSL_PREFIX})
+set(USE_OPENSSL_QUIC OFF)
+set(CURL_ENABLE_EXPORT_TARGET OFF)
+set(CURL_DISABLE_NTLM ON)
+set(HTTP_ONLY ON)
+
+add_subdirectory(3rd_party/curl)
+
 
 set(JSON_BuildTests
     OFF
@@ -57,7 +79,7 @@ target_compile_definitions(
           CANDLETOOL_VREVISION=${CANDLETOOL_VERSION_PATCH}
           CANDLETOOL_VTAG=${CANDLETOOL_VERSION_TAG})
 
-target_link_libraries(candletool CLI11 ssl crypto nlohmann_json::nlohmann_json)
+target_link_libraries(candletool CLI11 ssl crypto nlohmann_json::nlohmann_json CURL::libcurl)
 
 # add_unit_test_executable(pds_cli_test tests/pds_cli_test.cpp)
 # target_include_directories(pds_cli_test PRIVATE include)
