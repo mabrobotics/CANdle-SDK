@@ -25,9 +25,9 @@ namespace py = pybind11;
 
 namespace mab
 {
-    Candle* pyAttachCandle(const CANdleBaudrate_E baudrate, candleTypes::busTypes_t busType)
+    Candle* pyAttachCandle(const CANdleDatarate_E datarate, candleTypes::busTypes_t busType)
     {
-        return attachCandle(baudrate, busType);
+        return attachCandle(datarate, busType);
     }
 
     MD createMD(int canId, std::shared_ptr<Candle> candle)
@@ -445,11 +445,11 @@ PYBIND11_MODULE(pyCandle, m)
 
     // CANdle class
 
-    py::enum_<mab::CANdleBaudrate_E>(m, "CANdleBaudrate_E")
-        .value("CAN_BAUD_1M", mab::CAN_BAUD_1M)
-        .value("CAN_BAUD_2M", mab::CAN_BAUD_2M)
-        .value("CAN_BAUD_5M", mab::CAN_BAUD_5M)
-        .value("CAN_BAUD_8M", mab::CAN_BAUD_8M)
+    py::enum_<mab::CANdleDatarate_E>(m, "CANdleDatarate_E")
+        .value("CAN_DATARATE_1M", mab::CAN_DATARATE_1M)
+        .value("CAN_DATARATE_2M", mab::CAN_DATARATE_2M)
+        .value("CAN_DATARATE_5M", mab::CAN_DATARATE_5M)
+        .value("CAN_DATARATE_8M", mab::CAN_DATARATE_8M)
         .export_values();
 
     py::enum_<mab::candleTypes::busTypes_t>(m, "busTypes_t")
@@ -473,7 +473,7 @@ PYBIND11_MODULE(pyCandle, m)
 
     m.def("attachCandle",
           &mab::pyAttachCandle,
-          py::arg("baudrate"),
+          py::arg("datarate"),
           py::arg("busType"),
           py::return_value_policy::take_ownership,
           "Attach a CANdle device to the system.");
@@ -856,9 +856,9 @@ PYBIND11_MODULE(pyCandle, m)
         .def("clearErrors", &mab::Pds::clearErrors, "Clear all errors")
         .def("getCanId", &mab::Pds::getCanId, "Get CAN ID")
         .def("setCanId", &mab::Pds::setCanId, py::arg("canId"), "Set CAN ID")
-        .def("getCanBaudrate", &mab::Pds::getCanBaudrate, "Get CAN baudrate")
+        .def("getCanDatarate", &mab::Pds::getCanDatarate, "Get CAN datarate")
         .def(
-            "setCanBaudrate", &mab::Pds::setCanBaudrate, py::arg("canBaudrate"), "Set CAN baudrate")
+            "setCanDatarate", &mab::Pds::setCanDatarate, py::arg("canDatarate"), "Set CAN datarate")
         .def("getBusVoltage", &mab::pdsGetBusVoltageWrapper, "Get bus voltage")
         .def("getTemperature", &mab::pdsGetTemperatureWrapper)
         .def("getTemperatureLimit", &mab::pdsGetTemperatureLimitWrapper, "Get temperature limit")

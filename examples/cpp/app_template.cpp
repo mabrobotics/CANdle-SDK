@@ -16,7 +16,7 @@ int main(int argc, char** argv)
     std::vector<mab::MD>  mdV;
 
     auto candle = std::unique_ptr<mab::Candle>(
-        attachCandle(mab::CANdleBaudrate_E::CAN_BAUD_1M, mab::candleTypes::busTypes_t::USB));
+        attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M, mab::candleTypes::busTypes_t::USB));
 
     for (const auto& id : mab::Pds::discoverPDS(candle.get()))
     {

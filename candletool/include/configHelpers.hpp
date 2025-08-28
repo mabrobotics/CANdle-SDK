@@ -154,34 +154,64 @@ namespace mab
         }
     }
 
-    inline std::optional<CANdleBaudrate_E> stringToBaudrate(const std::string& baudrateStr)
+    inline static std::optional<mab::CANdleDatarate_E> stringToData(const std::string_view data)
     {
-        if (baudrateStr == "1M")
-            return CANdleBaudrate_E::CAN_BAUD_1M;
-        else if (baudrateStr == "2M")
-            return CANdleBaudrate_E::CAN_BAUD_2M;
-        else if (baudrateStr == "5M")
-            return CANdleBaudrate_E::CAN_BAUD_5M;
-        else if (baudrateStr == "8M")
-            return CANdleBaudrate_E::CAN_BAUD_8M;
-        else
-            throw std::invalid_argument("Invalid baudrate string: " + baudrateStr);
+        if (data == "1M")
+            return mab::CANdleDatarate_E::CAN_DATARATE_1M;
+        if (data == "2M")
+            return mab::CANdleDatarate_E::CAN_DATARATE_2M;
+        if (data == "5M")
+            return mab::CANdleDatarate_E::CAN_DATARATE_5M;
+        if (data == "8M")
+            return mab::CANdleDatarate_E::CAN_DATARATE_8M;
+        return {};
     }
-
-    inline std::string baudrateToString(CANdleBaudrate_E baudrate)
+    inline static std::optional<mab::CANdleDatarate_E> intToData(const u32 data)
     {
-        switch (baudrate)
+        switch (data)
         {
-            case CANdleBaudrate_E::CAN_BAUD_1M:
+            case 1000000:
+                return mab::CANdleDatarate_E::CAN_DATARATE_1M;
+            case 2000000:
+                return mab::CANdleDatarate_E::CAN_DATARATE_2M;
+            case 5000000:
+                return mab::CANdleDatarate_E::CAN_DATARATE_5M;
+            case 8000000:
+                return mab::CANdleDatarate_E::CAN_DATARATE_8M;
+            default:
+                return {};
+        }
+    }
+    inline static std::optional<std::string> datarateToStr(const mab::CANdleDatarate_E data)
+    {
+        switch (data)
+        {
+            case mab::CANdleDatarate_E::CAN_DATARATE_1M:
                 return "1M";
-            case CANdleBaudrate_E::CAN_BAUD_2M:
+            case mab::CANdleDatarate_E::CAN_DATARATE_2M:
                 return "2M";
-            case CANdleBaudrate_E::CAN_BAUD_5M:
+            case mab::CANdleDatarate_E::CAN_DATARATE_5M:
                 return "5M";
-            case CANdleBaudrate_E::CAN_BAUD_8M:
+            case mab::CANdleDatarate_E::CAN_DATARATE_8M:
                 return "8M";
             default:
-                throw std::invalid_argument("Invalid CANdleBaudrate_E value");
+                return {};
+        }
+    }
+    inline static u32 dataToInt(const mab::CANdleDatarate_E data)
+    {
+        switch (data)
+        {
+            case mab::CANdleDatarate_E::CAN_DATARATE_1M:
+                return 1000000;
+            case mab::CANdleDatarate_E::CAN_DATARATE_2M:
+                return 2000000;
+            case mab::CANdleDatarate_E::CAN_DATARATE_5M:
+                return 5000000;
+            case mab::CANdleDatarate_E::CAN_DATARATE_8M:
+                return 8000000;
+            default:
+                return 1000000;  // Default to 1M if unknown
         }
     }
 
