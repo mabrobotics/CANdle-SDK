@@ -18,6 +18,7 @@ add_subdirectory(3rd_party/CLI11)
 set(CANDLETOOL_SOURCES
     src/candle_cli.cpp
     src/canLoader.cpp
+    src/curl_handler.cpp
     src/md_cli.cpp
     src/mab_crc.cpp
     src/mabFileParser.cpp
@@ -162,6 +163,10 @@ elseif(UNIX)
                 WORLD_WRITE
     EXCLUDE_FROM_ALL)
 
+endif()
+
+if(MAKE_TESTS)
+  enable_testing()
 endif()
 
 include(CPack)
