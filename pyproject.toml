@@ -40,7 +40,7 @@ cmake.build-type = "Release"
 install.strip = false
 
 [tool.scikit-build.cmake.define]
-PYTHON_BUILD = "ON"
+CANDLESDK_BUILD_PYTHON = "ON"
 PYBIND11_FINDPYTHON = "OFF"
 
 [tool.cibuildwheel]

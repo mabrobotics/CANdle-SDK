@@ -16,7 +16,17 @@ project(
   candlesdk
   VERSION ${CANDLESDK_VERSION_1}.${CANDLESDK_VERSION_2}.${CANDLESDK_VERSION_3})
 
+message("====================")
 message("CandleSDK version: ${CANDLESDK_VERSION} ${CANDLESDK_VERSION_TAG}")
+message("Available flags:")
+message(
+  "CANDLESDK_BUILD_PYTHON (default OFF) - set buildsystem to build python library shared object"
+)
+message(
+  "CANDLE_BUILD_STATIC (default ON) -  set buildsystem to link against dependencies statically and build CANdle as .a"
+  "(has no effect on windows library and python builds)")
+message("MAKE_TESTS (default ON) - enables/disables some of the unit tests")
+message("====================")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -48,7 +58,7 @@ endmacro(add_unit_test_executable)
 
 add_subdirectory(commons)
 add_subdirectory(candlelib)
-if(PYTHON_BUILD)
+if(CANDLESDK_BUILD_PYTHON)
   add_subdirectory(pycandle)
 else()
   add_subdirectory(candletool)
