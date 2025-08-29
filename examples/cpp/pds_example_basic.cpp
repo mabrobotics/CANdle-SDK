@@ -14,11 +14,10 @@
 
 using namespace mab;
 
-
 int main()
 {
-    auto candle =
-        mab::attachCandle(mab::CANdleBaudrate_E::CAN_BAUD_1M, mab::candleTypes::busTypes_t::USB);
+    auto candle    = mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M,
+                                    mab::candleTypes::busTypes_t::USB);
     auto findPdses = Pds::discoverPDS(candle);
     Pds  pds(findPdses[0], candle);
 

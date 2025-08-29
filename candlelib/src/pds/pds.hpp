@@ -70,8 +70,8 @@ namespace mab
         u16     getCanId();
         error_E setCanId(u16 canId);
 
-        CANdleBaudrate_E getCanBaudrate(void);
-        error_E          setCanBaudrate(CANdleBaudrate_E canBaudrate);
+        CANdleDatarate_E getCanDatarate(void);
+        error_E          setCanDatarate(CANdleDatarate_E canDatarate);
 
         error_E isBootloaderError(bool isBootloaderError);
 

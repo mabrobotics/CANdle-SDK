@@ -18,6 +18,7 @@
 #include "utilities.hpp"
 #include "MDStatus.hpp"
 #include "mini/ini.h"
+#include "configHelpers.hpp"
 
 /* ERROR COLORING NOTE: may not work on all terminals! */
 #define REDSTART    "\033[1;31m"
@@ -107,10 +108,10 @@ namespace mab
                 if (!canOptions.optionsMap.at("datarate")->empty())
                 {
                     // set new can datarate
-                    auto baudrate = stringToBaud(*canOptions.datarate);
-                    if (baudrate.has_value())
+                    auto datarate = stringToData(*canOptions.datarate);
+                    if (datarate.has_value())
                     {
-                        registers.canBaudrate = baudToInt(baudrate.value());
+                        registers.canBaudrate = dataToInt(datarate.value());
                         canChanged            = true;
                     }
                     else
@@ -136,7 +137,7 @@ namespace mab
 
                 registers.runCanReinit = 1;  // Set flag to reinitialize CAN
 
-                m_logger.info("New id: %d, baudrate: %d, timeout: %d ms",
+                m_logger.info("New id: %d, datarate: %d, timeout: %d ms",
                               registers.canID.value,
                               registers.canBaudrate.value,
                               registers.canWatchdog.value);
@@ -155,9 +156,9 @@ namespace mab
                     usleep(1000'000);  // Wait for the MD to reinitialize CAN
                     auto newCanId              = std::make_shared<canId_t>(registers.canID.value);
                     auto newCandleBuilder      = std::make_shared<CandleBuilder>();
-                    newCandleBuilder->datarate = std::make_shared<CANdleBaudrate_E>(
-                        intToBaud(registers.canBaudrate.value)
-                            .value_or(CANdleBaudrate_E::CAN_BAUD_1M));
+                    newCandleBuilder->datarate = std::make_shared<CANdleDatarate_E>(
+                        intToData(registers.canBaudrate.value)
+                            .value_or(CANdleDatarate_E::CAN_DATARATE_1M));
                     newCandleBuilder->pathOrId = candleBuilder->pathOrId;
                     newCandleBuilder->busType  = candleBuilder->busType;
                     md                         = nullptr;  // Reset the old MD instance
@@ -614,8 +615,8 @@ namespace mab
 
                 if (ids.empty())
                 {
-                    m_logger.error("No MD found on the bus for baud %s",
-                                   datarateToString(*(candleBuilder->datarate))
+                    m_logger.error("No MD found on the bus for data %s",
+                                   datarateToStr(*(candleBuilder->datarate))
                                        .value_or("NOT A DATARATE")
                                        .c_str());
                 }

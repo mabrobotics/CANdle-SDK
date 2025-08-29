@@ -3,8 +3,8 @@
 
 int main()
 {
-    mab::Candle* candle =
-        mab::attachCandle(mab::CANdleBaudrate_E::CAN_BAUD_1M, mab::candleTypes::busTypes_t::USB);
+    mab::Candle* candle = mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M,
+                                            mab::candleTypes::busTypes_t::USB);
 
     constexpr mab::canId_t mdId = 100;
     mab::MD                md(mdId, candle);
