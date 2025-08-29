@@ -20,6 +20,7 @@ set(CANDLETOOL_SOURCES
     src/canLoader.cpp
     src/curl_handler.cpp
     src/md_cli.cpp
+    src/file_handler.cpp
     src/mab_crc.cpp
     src/mabFileParser.cpp
     src/main.cpp
@@ -33,10 +34,8 @@ add_executable(candletool ${CANDLETOOL_SOURCES})
 target_link_libraries(candletool candle logger)
 
 target_include_directories(
-  candletool
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-         ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src
-         ${CMAKE_CURRENT_SOURCE_DIR}/file_handlers)
+  candletool PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
+                    ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src)
 
 target_compile_options(candletool PRIVATE -g)
 
