@@ -13,6 +13,7 @@
 #include "md_cli.hpp"
 #include "CLI/CLI.hpp"
 #include "pds_cli.hpp"
+#include "mdco_cli.hpp"
 
 #include "utilities.hpp"
 
@@ -122,6 +123,7 @@ int main(int argc, char** argv)
     CandleCli candleCli(&app, candleBuilder);
     MDCli     mdCli(&app, candleBuilder);
     PdsCli    pdsCli(app, candleBuilder);
+    MdcoCli   MdcoCli(app, candleBuilder);
 
     CLI11_PARSE(app, argc, argv);
     if (showCandleSDKVersion)
@@ -152,6 +154,7 @@ int main(int argc, char** argv)
         std::cerr << app.help() << std::endl;
 
     pdsCli.parse();
+    MdcoCli.parse(*datarate);
 
     return EXIT_SUCCESS;
 }

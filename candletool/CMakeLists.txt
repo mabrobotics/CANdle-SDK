@@ -16,14 +16,21 @@ set(CANDLETOOL_VERSION_FULL
 add_subdirectory(3rd_party/CLI11)
 
 set(CANDLETOOL_SOURCES
-    src/candle_cli.cpp
-    src/canLoader.cpp
-    src/md_cli.cpp
-    src/mab_crc.cpp
-    src/mabFileParser.cpp
-    src/main.cpp
-    src/pds_cli.cpp
-    src/utilities.cpp)
+  src/candle_cli.cpp
+  src/canLoader.cpp
+  src/candletoolCO.cpp
+  src/md_cli.cpp
+  src/mab_crc.cpp
+  src/mabFileParser.cpp
+  src/main.cpp
+  src/pds_cli.cpp
+  src/utilities.cpp
+  objectDictionary/OD.cpp
+  src/edsParser.cpp
+  src/mdco_cli.cpp
+
+)
+
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -31,9 +38,14 @@ add_executable(candletool ${CANDLETOOL_SOURCES})
 
 target_link_libraries(candletool candle logger)
 
-target_include_directories(
-  candletool PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-                    ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src)
+target_include_directories(candletool PUBLIC
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/objectDictionary 
+    ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src
+    
+)
+
 
 target_compile_options(candletool PRIVATE -g)
 

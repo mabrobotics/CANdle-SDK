@@ -50,6 +50,7 @@ target_sources(
           ${UNIX_ONLY_SOURCES}
           src/communication_interface/USB.cpp
           src/MD/MD.cpp
+          src/MD/MDCO.cpp
           src/pds/pds.cpp
           src/pds/pds_module.cpp
           src/pds/pds_protocol.cpp
@@ -69,6 +70,8 @@ target_include_directories(
          ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_device
          ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_interface
          ${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger
+         ${CMAKE_CURRENT_SOURCE_DIR}/../candletool/include  
+         ${CMAKE_CURRENT_SOURCE_DIR}/../candletool/objectDictionary 
          ${LIBUSB_INCLUDE_DIR})
 target_include_directories(candle SYSTEM PRIVATE ${LIBUSB_INCLUDE_DIR})
 if(UNIX)
