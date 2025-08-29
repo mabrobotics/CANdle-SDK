@@ -1,9 +1,11 @@
 #pragma once
 #include <memory>
 #include <string>
+#include <cstdlib>
 #include "mab_types.hpp"
 #include "md_types.hpp"
 #include "CLI/CLI.hpp"
+#include "logger.hpp"
 
 namespace mab
 {
@@ -18,6 +20,22 @@ namespace mab
         "\033[32mhttps://mabrobotics.pl/servos/manual\033[0m \n\n";
 
     std::string trim(const std::string_view s);
+
+    /// @brief command executor function
+    /// @param command command to execute in the shell
+    /// @return true on error, false on success
+    inline bool executeCommand(const std::string_view command)
+    {
+        Logger log(Logger::ProgramLayer_E::LAYER_2, "CMD_EXECUTOR");
+        log.debug("Executing command: %s", command.data());
+        int ret = std::system(command.data());
+        if (ret != 0)
+        {
+            log.error("Failed to execute command: %s", command.data());
+            return true;
+        }
+        return false;
+    }
 
     class MABDescriptionFormatter : public CLI::Formatter
     {

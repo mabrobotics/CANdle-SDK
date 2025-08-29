@@ -1,5 +1,6 @@
 #include <filesystem>
 #include "curl_handler.hpp"
+#include "utilities.hpp"
 
 namespace mab
 {
@@ -48,13 +49,13 @@ namespace mab
         {
             m_log.info("Found URL [ %s ] for file [ %s ]", baseUrl.c_str(), filename.data());
             std::string command = "curl -L -o " + filename + " " + baseUrl + filename;
-            CurlError_E result  = executeCommand(command);
-            if (result != CurlError_E::OK)
+            bool        result  = executeCommand(command);
+            if (result)
             {
                 m_log.error("Failed to download file [ %s ] from URL [ %s ]",
                             filename.data(),
                             (baseUrl + filename).c_str());
-                return std::make_pair(result, pathDownloadedFile);
+                return std::make_pair(CurlError_E::SYSTEM_CALL_ERROR, pathDownloadedFile);
             }
             m_log.success("Successfully downloaded file [ %s ]", name.data());
             return std::make_pair(CurlError_E::OK, pathDownloadedFile.append(filename));
@@ -62,18 +63,6 @@ namespace mab
 
         m_log.error("Could not find URL for file [ %s ] in LUT", name.data());
         return std::make_pair(CurlError_E::ADDRESS_NOT_FOUND, pathDownloadedFile);
-    }
-
-    CurlHandler::CurlError_E CurlHandler::executeCommand(const std::string_view command)
-    {
-        m_log.debug("Executing command: %s", command.data());
-        int ret = std::system(command.data());
-        if (ret != 0)
-        {
-            m_log.error("Failed to execute command: %s", command.data());
-            return CurlError_E::SYSTEM_CALL_ERROR;
-        }
-        return CurlError_E::OK;
     }
 
     CurlHandler::CurlError_E CurlHandler::getLatestLut()

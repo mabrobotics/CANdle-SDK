@@ -30,7 +30,6 @@ namespace mab
         const mINI::INIFile m_fallbackAddressLut;
         mINI::INIStructure  m_addressLutStructure;
 
-        CurlError_E executeCommand(const std::string_view command);
         CurlError_E getLatestLut();
     };
 }  // namespace mab
