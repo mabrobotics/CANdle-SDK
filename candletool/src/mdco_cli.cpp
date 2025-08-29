@@ -517,7 +517,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         ->required();
 }
 
-void MdcoCli::parse(mab::CANdleBaudrate_E baud)
+void MdcoCli::parse(mab::CANdleDatarate_E baud)
 {
     if (!mdco->parsed())
         return;

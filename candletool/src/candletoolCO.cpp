@@ -22,7 +22,7 @@
 
 using namespace mab;
 
-CandleToolCO::CandleToolCO(const mab::CANdleBaudrate_E baud, candleTypes::busTypes_t busType)
+CandleToolCO::CandleToolCO(const mab::CANdleDatarate_E baud, candleTypes::busTypes_t busType)
 {
     log.m_tag   = "CANDLETOOLco";
     log.m_layer = Logger::ProgramLayer_E::TOP;

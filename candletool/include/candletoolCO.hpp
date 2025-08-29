@@ -41,7 +41,7 @@ namespace mab
       public:
         /// @brief Constructor for CandleToolCO
         /// @param baud The baud rate for the CANdle device
-        explicit CandleToolCO(mab::CANdleBaudrate_E baud, candleTypes::busTypes_t busType);
+        explicit CandleToolCO(mab::CANdleDatarate_E baud, candleTypes::busTypes_t busType);
 
         /// @brief Destructor for CandleToolCO
         ~CandleToolCO();

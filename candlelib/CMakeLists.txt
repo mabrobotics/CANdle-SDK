@@ -41,7 +41,6 @@ if(UNIX)
   set(UNIX_ONLY_SOURCES src/communication_interface/SPI.cpp)
 endif()
 
-
 target_sources(
   candle
   PRIVATE src/crc.cpp
@@ -59,25 +58,21 @@ target_sources(
           src/pds/brake_resistor.cpp
           src/pds/isolated_converter.cpp)
 
-
 if(UNIX)
   target_compile_definitions(candle PRIVATE UNIX)
 endif()
-
 target_include_directories(
-  candle 
-  PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/include
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/MD
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/pds
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/can_bootloader
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_device
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_interface
-          ${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger
-          ${CMAKE_CURRENT_SOURCE_DIR}/../candletool/include  
-          ${CMAKE_CURRENT_SOURCE_DIR}/../candletool/objectDictionary 
-          ${LIBUSB_INCLUDE_DIR}
-  )
-
+  candle
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/MD
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/pds
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/can_bootloader
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_device
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_interface
+         ${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger
+         ${CMAKE_CURRENT_SOURCE_DIR}/../candletool/include  
+         ${CMAKE_CURRENT_SOURCE_DIR}/../candletool/objectDictionary 
+         ${LIBUSB_INCLUDE_DIR})
 target_include_directories(candle SYSTEM PRIVATE ${LIBUSB_INCLUDE_DIR})
 if(UNIX)
   target_link_libraries(candle shared_data logger pthread ${LIBUSB_LIBRARY})
