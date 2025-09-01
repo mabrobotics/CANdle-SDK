@@ -16,20 +16,20 @@ set(CANDLETOOL_VERSION_FULL
 add_subdirectory(3rd_party/CLI11)
 
 set(CANDLETOOL_SOURCES
+  objectDictionary/OD.cpp
   src/candle_cli.cpp
   src/canLoader.cpp
+  src/curl_handler.cpp
   src/candletoolCO.cpp
+  src/edsParser.cpp
   src/md_cli.cpp
+  src/mdco_cli.cpp
   src/mab_crc.cpp
   src/mabFileParser.cpp
   src/main.cpp
   src/pds_cli.cpp
-  src/utilities.cpp
-  objectDictionary/OD.cpp
-  src/edsParser.cpp
-  src/mdco_cli.cpp
-)
-
+  src/utilities.cpp)
+  
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -173,6 +173,10 @@ elseif(UNIX)
                 WORLD_WRITE
     EXCLUDE_FROM_ALL)
 
+endif()
+
+if(MAKE_TESTS)
+  enable_testing()
 endif()
 
 include(CPack)
