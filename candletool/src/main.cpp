@@ -87,6 +87,12 @@ int main(int argc, char** argv)
     candleBuilder->busType  = busType;
     candleBuilder->datarate = datarate;
 
+    CANdleBranch canBranch;
+    canBranch.candleBuilder = candleBuilder;
+
+    CANdleToolCtx candleToolCtx;
+    candleToolCtx.candleBranchVec.push_back(canBranch);
+
     auto preBuildTask = [busType, datarate, &cmd]()
     {
         Logger log(Logger::ProgramLayer_E::TOP, "CANDLE_PREBUILD");

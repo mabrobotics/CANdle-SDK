@@ -6,9 +6,17 @@
 #include "md_types.hpp"
 #include "CLI/CLI.hpp"
 #include "logger.hpp"
+#include "candlelib.hpp"
 
 namespace mab
 {
+    enum class sysArch_E
+    {
+        Unknown,
+        X86_64,
+        ARMHF,
+        ARM64,
+    };
 
     constexpr std::string_view MAB_LOGO_HEADER =
         "   ___     _     _  _      _   _         _____               _ \n"
@@ -20,6 +28,19 @@ namespace mab
         "\033[32mhttps://mabrobotics.pl/servos/manual\033[0m \n\n";
 
     std::string trim(const std::string_view s);
+
+    constexpr sysArch_E getSysArch()
+    {
+#if defined(_M_X64) || defined(__amd64__) || defined(__x86_64__)
+        return sysArch_E::X86_64;
+#elif defined(__aarch64__) || defined(_M_ARM64)
+        return sysArch_E::ARM64;
+#elif defined(__arm__) || defined(_M_ARM)
+        return sysArch_E::ARMHF;
+#else
+        return sysArch_E::Unknown;
+#endif
+    }
 
     /// @brief command executor function
     /// @param command command to execute in the shell
@@ -36,6 +57,12 @@ namespace mab
         }
         return false;
     }
+
+    /// @brief this struct will be used to share information across CANdleTool
+    struct CANdleToolCtx
+    {
+        std::vector<CANdleBranch> candleBranchVec;
+    };
 
     class MABDescriptionFormatter : public CLI::Formatter
     {

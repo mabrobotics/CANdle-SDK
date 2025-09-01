@@ -1,3 +1,4 @@
+#pragma once
 #include <cstdlib>
 
 #include "mini/ini.h"
@@ -22,7 +23,7 @@ namespace mab
 
         CurlHandler(const mINI::INIFile fallbackAddressLut);
 
-        std::pair<CurlError_E, std::filesystem::path> downloadFile(const std::string_view name);
+        std::pair<CurlError_E, std::filesystem::path> downloadFile(const std::string_view id);
 
       private:
         Logger m_log = Logger(Logger::ProgramLayer_E::LAYER_2, "CurlHandler");

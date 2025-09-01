@@ -10,9 +10,9 @@ namespace mab
     }
 
     std::pair<CurlHandler::CurlError_E, std::filesystem::path> CurlHandler::downloadFile(
-        const std::string_view name)
+        const std::string_view id)
     {
-        m_log.info("Downloading file [ %s ]", name.data());
+        m_log.info("Downloading file [ %s ]", id.data());
         std::filesystem::path pathDownloadedFile = std::filesystem::current_path();
 
         const mINI::INIFile* file;
@@ -43,8 +43,23 @@ namespace mab
         }
 
         // Look for the address and filename in the LUT structure
-        std::string baseUrl  = m_addressLutStructure[name.data()]["base_url"];
-        std::string filename = m_addressLutStructure[name.data()]["filename"];
+        std::string baseUrl  = m_addressLutStructure[id.data()]["base_url"];
+        std::string filename = m_addressLutStructure[id.data()]["filename"];
+        // For multiarch entries
+        if (filename.empty())
+        {
+            constexpr sysArch_E arch           = getSysArch();
+            std::string         filename_field = "filename_";
+
+            if constexpr (arch == sysArch_E::ARM64)
+                filename_field += "arm64";
+            else if constexpr (arch == sysArch_E::ARMHF)
+                filename_field += "armhf";
+            else if constexpr (arch == sysArch_E::X86_64)
+                filename_field += "x86_64";
+            else
+                m_log.warn("No architecture specific filename found");
+        }
         if (!baseUrl.empty() && !filename.empty())
         {
             m_log.info("Found URL [ %s ] for file [ %s ]", baseUrl.c_str(), filename.data());
@@ -57,11 +72,11 @@ namespace mab
                             (baseUrl + filename).c_str());
                 return std::make_pair(CurlError_E::SYSTEM_CALL_ERROR, pathDownloadedFile);
             }
-            m_log.success("Successfully downloaded file [ %s ]", name.data());
+            m_log.success("Successfully downloaded file [ %s ]", id.data());
             return std::make_pair(CurlError_E::OK, pathDownloadedFile.append(filename));
         }
 
-        m_log.error("Could not find URL for file [ %s ] in LUT", name.data());
+        m_log.error("Could not find URL for file [ %s ] in LUT", id.data());
         return std::make_pair(CurlError_E::ADDRESS_NOT_FOUND, pathDownloadedFile);
     }
 
