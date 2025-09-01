@@ -19,8 +19,8 @@ set(CANDLETOOL_SOURCES
     src/candle_cli.cpp
     src/canLoader.cpp
     src/web_file_module/curl_handler.cpp
+    src/web_file_module/flasher.cpp
     src/md_cli.cpp
-    src/web_file_module/file_handler.cpp
     src/mab_crc.cpp
     src/mabFileParser.cpp
     src/main.cpp
@@ -115,6 +115,8 @@ if(WIN32)
     -static
     logger)
 
+  add_compile_definitions(DEFAULT_CANDLETOOL_CONFIG_DIR
+                          "${CMAKE_INSTALL_SYSCONFDIR}/candletool/config")
 elseif(UNIX)
 
   install(TARGETS candletool RUNTIME COMPONENT candletool)
@@ -165,6 +167,10 @@ elseif(UNIX)
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
                 WORLD_WRITE
     EXCLUDE_FROM_ALL)
+  add_compile_definitions(DEFAULT_CANDLETOOL_CONFIG_DIR="/etc/candletool/")
+else()
+  message(FATAL_ERROR "System not unix nor windows, can not compile!")
+  message()
 
 endif()
 

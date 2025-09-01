@@ -87,10 +87,10 @@ int main(int argc, char** argv)
     candleBuilder->busType  = busType;
     candleBuilder->datarate = datarate;
 
-    CANdleBranch canBranch;
+    CANdleBranch_S canBranch;
     canBranch.candleBuilder = candleBuilder;
 
-    CANdleToolCtx candleToolCtx;
+    CANdleToolCtx_S candleToolCtx;
     candleToolCtx.candleBranchVec.push_back(canBranch);
 
     auto preBuildTask = [busType, datarate, &cmd]()
@@ -126,7 +126,7 @@ int main(int argc, char** argv)
     candleBuilder->preBuildTask = preBuildTask;
 
     CandleCli candleCli(&app, candleBuilder);
-    MDCli     mdCli(&app, candleBuilder);
+    MDCli     mdCli(&app, candleToolCtx);
     PdsCli    pdsCli(app, candleBuilder);
 
     CLI11_PARSE(app, argc, argv);

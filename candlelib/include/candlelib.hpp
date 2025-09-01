@@ -16,7 +16,7 @@ It provides all modules and API interfaces.
 namespace mab
 {
     /// @brief This struct represents one branch of CANdle device + all the connected subdevices
-    struct CANdleBranch
+    struct CANdleBranch_S
     {
         std::shared_ptr<CandleBuilder>                    candleBuilder;
         std::shared_ptr<std::unordered_map<canId_t, MD>>  MdMap;

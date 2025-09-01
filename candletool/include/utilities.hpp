@@ -2,6 +2,7 @@
 #include <memory>
 #include <string>
 #include <cstdlib>
+#include <filesystem>
 #include "mab_types.hpp"
 #include "md_types.hpp"
 #include "CLI/CLI.hpp"
@@ -59,9 +60,11 @@ namespace mab
     }
 
     /// @brief this struct will be used to share information across CANdleTool
-    struct CANdleToolCtx
+    struct CANdleToolCtx_S
     {
-        std::vector<CANdleBranch> candleBranchVec;
+        std::vector<CANdleBranch_S>                  candleBranchVec;
+        const std::shared_ptr<std::filesystem::path> packageEtcPath =
+            std::make_shared<std::filesystem::path>(DEFAULT_CANDLETOOL_CONFIG_DIR);
     };
 
     class MABDescriptionFormatter : public CLI::Formatter

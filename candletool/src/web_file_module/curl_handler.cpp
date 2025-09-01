@@ -9,11 +9,12 @@ namespace mab
     {
     }
 
-    std::pair<CurlHandler::CurlError_E, std::filesystem::path> CurlHandler::downloadFile(
+    std::pair<CurlHandler::CurlError_E, WebFile_S> CurlHandler::downloadFile(
         const std::string_view id)
     {
         m_log.info("Downloading file [ %s ]", id.data());
-        std::filesystem::path pathDownloadedFile = std::filesystem::current_path();
+        WebFile_S webFile;
+        webFile.m_path = std::filesystem::current_path();
 
         const mINI::INIFile* file;
         // Try to get the latest LUT from the server
@@ -29,7 +30,7 @@ namespace mab
         if (!file->read(m_addressLutStructure) || file == nullptr)
         {
             m_log.error("Failed to read the LUT file");
-            return std::make_pair(CurlError_E::FILE_READ_ERROR, pathDownloadedFile);
+            return std::make_pair(CurlError_E::FILE_READ_ERROR, webFile);
         }
 
         // DEBUG PRINT LUT
@@ -41,6 +42,15 @@ namespace mab
                 m_log.debug("  %s = %s", pair.first.c_str(), pair.second.c_str());
             }
         }
+
+        std::string typeString = m_addressLutStructure[id.data()]["type"];
+        auto        type       = WebFile_S::strToType(typeString);
+        if (type == WebFile_S::Type_E::UNKNOWN)
+        {
+            m_log.error("Could not recognise filetype!");
+            return std::make_pair(CurlError_E::UNRECOGNISED_FILETYPE, webFile);
+        }
+        webFile.m_type = type;
 
         // Look for the address and filename in the LUT structure
         std::string baseUrl  = m_addressLutStructure[id.data()]["base_url"];
@@ -70,14 +80,15 @@ namespace mab
                 m_log.error("Failed to download file [ %s ] from URL [ %s ]",
                             filename.data(),
                             (baseUrl + filename).c_str());
-                return std::make_pair(CurlError_E::SYSTEM_CALL_ERROR, pathDownloadedFile);
+                return std::make_pair(CurlError_E::SYSTEM_CALL_ERROR, webFile);
             }
             m_log.success("Successfully downloaded file [ %s ]", id.data());
-            return std::make_pair(CurlError_E::OK, pathDownloadedFile.append(filename));
+            webFile.m_path.append(filename);
+            return std::make_pair(CurlError_E::OK, webFile);
         }
 
         m_log.error("Could not find URL for file [ %s ] in LUT", id.data());
-        return std::make_pair(CurlError_E::ADDRESS_NOT_FOUND, pathDownloadedFile);
+        return std::make_pair(CurlError_E::ADDRESS_NOT_FOUND, webFile);
     }
 
     CurlHandler::CurlError_E CurlHandler::getLatestLut()

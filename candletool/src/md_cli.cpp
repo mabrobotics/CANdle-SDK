@@ -19,6 +19,9 @@
 #include "MDStatus.hpp"
 #include "mini/ini.h"
 #include "configHelpers.hpp"
+#include "curl_handler.hpp"
+#include "flasher.hpp"
+#include "web_file.hpp"
 
 /* ERROR COLORING NOTE: may not work on all terminals! */
 #define REDSTART    "\033[1;31m"
@@ -41,13 +44,14 @@
 
 namespace mab
 {
-    MDCli::MDCli(CLI::App* rootCli, const std::shared_ptr<const CandleBuilder> candleBuilder)
+    MDCli::MDCli(CLI::App* rootCli, CANdleToolCtx_S ctx)
     {
-        if (candleBuilder == nullptr)
+        if (ctx.candleBranchVec.empty())
         {
-            throw std::runtime_error("MDCli arguments can not be nullptr!");
+            throw std::runtime_error("MDCli arguments can not be empty!");
         }
-        auto* mdCLi = rootCli->add_subcommand("md", "MD commands.")->require_subcommand();
+        auto  candleBuilder = ctx.candleBranchVec.at(0).candleBuilder;
+        auto* mdCLi         = rootCli->add_subcommand("md", "MD commands.")->require_subcommand();
         const std::shared_ptr<canId_t> mdCanId = std::make_shared<canId_t>(100);
         auto*                          mdCanIdOption =
             mdCLi->add_option("-i,--id", *mdCanId, "CAN ID of the MD to interact with.");
@@ -1089,41 +1093,80 @@ namespace mab
         UpdateOptions updateOptions(update);
 
         update->callback(
-            [this, candleBuilder, mdCanId, updateOptions]()
+            [this, candleBuilder, mdCanId, updateOptions, ctx]()
             {
-                MabFileParser mabFile(*updateOptions.pathToMabFile,
-                                      MabFileParser::TargetDevice_E::MD);
-
-                if (*(updateOptions.recovery) == false)
+                if (!updateOptions.pathToMabFile->empty())
                 {
-                    auto md = getMd(mdCanId, candleBuilder);
-                    if (md == nullptr)
+                    m_logger.info("Overriding download of file. Using local provided path.");
+                    MabFileParser mabFile(*updateOptions.pathToMabFile,
+                                          MabFileParser::TargetDevice_E::MD);
+
+                    if (*(updateOptions.recovery) == false)
                     {
-                        m_logger.error("Could not communicate with MD device with ID %d", *mdCanId);
+                        auto md = getMd(mdCanId, candleBuilder);
+                        if (md == nullptr)
+                        {
+                            m_logger.error("Could not communicate with MD device with ID %d",
+                                           *mdCanId);
+                            return;
+                        }
+                        md->reset();
+                        usleep(300'000);
+                    }
+                    else
+                    {
+                        m_logger.warn("Recovery mode...");
+                        m_logger.warn(
+                            "Please make sure driver is in the bootload phase (rebooting)");
+                    }
+                    auto candle = candleBuilder->build().value_or(nullptr);
+                    if (candle == nullptr)
+                    {
+                        m_logger.error("Could not connect to candle!");
                         return;
                     }
-                    md->reset();
-                    usleep(300'000);
+                    CanLoader canLoader(candle, &mabFile, *mdCanId);
+                    if (canLoader.flashAndBoot())
+                    {
+                        m_logger.success("Update complete for MD @ %d", *mdCanId);
+                    }
+                    else
+                    {
+                        m_logger.error("MD flashing failed!");
+                    }
                 }
                 else
                 {
-                    m_logger.warn("Recovery mode...");
-                    m_logger.warn("Please make sure driver is in the bootload phase (rebooting)");
-                }
-                auto candle = candleBuilder->build().value_or(nullptr);
-                if (candle == nullptr)
-                {
-                    m_logger.error("Could not connect to candle!");
-                    return;
-                }
-                CanLoader canLoader(candle, &mabFile, *mdCanId);
-                if (canLoader.flashAndBoot())
-                {
-                    m_logger.success("Update complete for MD @ %d", *mdCanId);
-                }
-                else
-                {
-                    m_logger.error("MD flashing failed!");
+                    mINI::INIFile fallbackMetadataFile(*ctx.packageEtcPath);
+                    CurlHandler   curl(fallbackMetadataFile);
+                    if (updateOptions.fwVersion->find_first_of("latest") != std::string::npos)
+                    {
+                        auto curlResult = curl.downloadFile("MAB_CAN_FLASHER_LATEST");
+                        if (curlResult.first != CurlHandler::CurlError_E::OK)
+                        {
+                            m_logger.error("Error on curl download request!");
+                            return;
+                        }
+                        Flasher flasher(curlResult.second);
+                        canId_t flashId = 100;
+                        if (updateOptions.recovery)
+                        {
+                            flashId = 9;
+                        }
+                        auto flashResult = flasher.flash(flashId, *updateOptions.recovery);
+                        if (flashResult != Flasher::Error_E::OK)
+                        {
+                            m_logger.error("Error while flashing firmware!");
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        m_logger.error(
+                            "Could not find requested version! Try providing it manually via "
+                            "--path option.");
+                        return;
+                    }
                 }
             });
         // Version

@@ -5,6 +5,7 @@
 
 #include "mab_types.hpp"
 #include "logger.hpp"
+#include "web_file.hpp"
 
 namespace mab
 {
@@ -18,12 +19,13 @@ namespace mab
             FILE_WRITE_ERROR,
             FILE_READ_ERROR,
             ADDRESS_NOT_FOUND,
-            SYSTEM_CALL_ERROR
+            SYSTEM_CALL_ERROR,
+            UNRECOGNISED_FILETYPE
         };
 
         CurlHandler(const mINI::INIFile fallbackAddressLut);
 
-        std::pair<CurlError_E, std::filesystem::path> downloadFile(const std::string_view id);
+        std::pair<CurlError_E, WebFile_S> downloadFile(const std::string_view id);
 
       private:
         Logger m_log = Logger(Logger::ProgramLayer_E::LAYER_2, "CurlHandler");

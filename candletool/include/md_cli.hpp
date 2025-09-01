@@ -4,6 +4,7 @@
 #include "mab_types.hpp"
 #include "logger.hpp"
 #include "MD.hpp"
+#include "utilities.hpp"
 #include <algorithm>
 #include <memory>
 #include <optional>
@@ -16,7 +17,7 @@ namespace mab
     {
       public:
         MDCli() = delete;
-        MDCli(CLI::App* rootCli, const std::shared_ptr<const CandleBuilder> candleBuilder);
+        MDCli(CLI::App* rootCli, CANdleToolCtx_S ctx);
         ~MDCli() = default;
 
       private:
@@ -170,15 +171,22 @@ namespace mab
                   pathToMabFile(std::make_shared<std::string>(""))
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
+                    {"version",
+                     rootCli->add_option("version",
+                                         *fwVersion,
+                                         "Version of fw to download (latest or X.X.X format)")},
                     {"path",
-                     rootCli->add_option("path", *pathToMabFile, "Path to .mab file")->required()},
+                     rootCli->add_option("-p,--path",
+                                         *pathToMabFile,
+                                         "Override download and provide local path to .mab file")},
                     {"recovery",
                      rootCli->add_flag(
-                         "-r,--recovery", *recovery, "Driver recovery affter failed flashing")}};
+                         "-r,--recovery", *recovery, "Driver recovery after failed flashing")}};
             }
             const std::shared_ptr<bool>         recovery;
             const std::shared_ptr<std::string>  pathToMabFile;
+            const std::shared_ptr<std::string>  fwVersion;
             std::map<std::string, CLI::Option*> optionsMap;
-        };
+        };  // namespace mab
     };
 }  // namespace mab
