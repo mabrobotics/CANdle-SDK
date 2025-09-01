@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include "../include/edsParser.hpp"
+#include "edsParser.hpp"
 
 namespace mab
 {

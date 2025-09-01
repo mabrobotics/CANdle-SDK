@@ -28,7 +28,6 @@ set(CANDLETOOL_SOURCES
   objectDictionary/OD.cpp
   src/edsParser.cpp
   src/mdco_cli.cpp
-
 )
 
 
