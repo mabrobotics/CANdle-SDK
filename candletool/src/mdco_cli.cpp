@@ -523,6 +523,14 @@ void MdcoCli::parse(mab::CANdleDatarate_E baud)
         return;
     if (mdco->parsed())
     {
+        if (m_candleBuilder->preBuildTask)
+        {
+            m_candleBuilder->preBuildTask();
+        }
+        else
+        {
+            m_log.error("Impossible to have user bus choice");
+        }
         CandleToolCO candleToolCO(baud, *(m_candleBuilder->busType));
         if (blinkco->parsed())
             candleToolCO.blink(cmdCANopen.id);
