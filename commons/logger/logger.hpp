@@ -179,11 +179,6 @@ class Logger
         return *this;
     }
 
-    inline bool isLevelEnabled(LogLevel_E wanted) const noexcept
-    {
-        return static_cast<uint8_t>(getCurrentLevel()) <= static_cast<uint8_t>(wanted);
-    }
-
   private:
     inline static std::mutex g_m_printfLock;  // global print lock
     inline static std::optional<FILE*>

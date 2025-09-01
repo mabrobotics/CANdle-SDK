@@ -1122,9 +1122,9 @@ namespace mab
 
     MDCO::Error_t MDCO::writeOpenRegisters(const std::string& name, u32 data, u8 size, bool force)
     {
-        bool debug    = m_log.isLevelEnabled(Logger::LogLevel_E::DEBUG);
-        u32  index    = 0;
-        u8   subIndex = 0;
+        // bool debug    = m_log.isLevelEnabled(Logger::LogLevel_E::DEBUG);
+        u32 index    = 0;
+        u8  subIndex = 0;
         if (findObjectByName(name, index, subIndex) != OK)
         {
             m_log.error("%s not found in EDS file", name.c_str());
@@ -1139,8 +1139,8 @@ namespace mab
             }
         }
         auto err = writeOpenRegisters(index, subIndex, data, size);
-        if (debug)
-            m_log.debug("Error:%d\n", readOpenRegisters(index, subIndex));
+        // if (debug)
+        m_log.debug("Error:%d\n", readOpenRegisters(index, subIndex));
         return err;
     }
 
