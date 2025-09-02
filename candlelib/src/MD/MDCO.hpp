@@ -151,9 +151,9 @@ namespace mab
         /// @brief Change CANopen config the command need to be save before shutoff the motors
         /// @param newID new id of the motor
         /// @param newBaud new baudRate
-        /// @param newwatchdog new watchdog
+        /// @param watchdog new watchdog
         /// @return Error_t indicating the result of the operation
-        Error_t newCanOpenConfig(i32 newID, i32 newBaud, i16 newwatchdog);
+        Error_t newCanOpenConfig(i32 newID, i32 newBaud, u32 watchdog);
 
         /// @brief Perform a encoder test
         /// @param Main Main=1 if you want to perform the test on the main encoder
@@ -166,12 +166,6 @@ namespace mab
         /// @param output output=1 if you want to perform the calibration on the output encoder
         /// @return Error_t indicating the result of the operation
         Error_t encoderCalibration(bool Main, bool output);
-
-        /// @brief change the torque bandwidth with CANopen comand, modification must be saved
-        /// before shuting off the motors
-        /// @param newBandwidth new value for the bandwidth {50-2500}[Hz]
-        /// @return Error_t indicating the result of the operation
-        Error_t canOpenBandwidth(i16 newBandwidth);
 
         /// @brief test the heartbeat of the MD device give time between two heartbeat
         /// @return Error_t indicating the result of the operation

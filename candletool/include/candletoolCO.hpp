@@ -21,7 +21,6 @@ namespace mab
         u32           newId            = 0x0000;
         std::string   baud             = "1M";
         u32           canWatchdog      = 100;
-        u16           bandwidth        = 100;
         std::string   cfgPath          = "";
         std::string   firmwareFileName = "";
         std::string   value            = "";
@@ -29,6 +28,7 @@ namespace mab
         bool          force            = false;
         bool          infoAll          = false;
         bool          noReset          = false;
+        bool          save             = false;
         i32           desiredPos       = 0;
         i32           desiredSpeed     = 0;
         u32           HeartbeatTimeout = 1000;
@@ -54,24 +54,13 @@ namespace mab
         /// @param id The CAN ID of the device to configure
         /// @param newId The new CAN ID to set
         /// @param baud The baud rate to set
-        /// @param timeout The timeout for the CAN communication
-        /// @param termination Optional parameter
-        void configCan(
-            u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination = 0);
+        /// @param watchdog The new watchdog to set
+        /// @param save if true, save after changing parameter
+        void configCan(u16 id, u16 newId, const std::string& baud, u32 watchdog, bool save = false);
 
         /// @brief Save the current configuration of the device
         /// @param id The CAN ID of the device to save the configuration
         void configSave(u16 id);
-
-        /// @brief Set the zero position of the device
-        /// @param id The CAN ID of the device to set the zero position
-        void configZero(u16 id);
-
-        /// @brief Set the torque bandwidth of the device
-        /// @param id The CAN ID of the device to configure
-        /// @param bandwidth The desired torque bandwidth in Hz
-        /// @note The bandwidth must be between 50 and 2500 Hz
-        void configBandwidth(u16 id, u16 bandwidth);
 
         /// @brief Move the device to a target speed with pdo message
         /// @param id The CAN ID of the device to move

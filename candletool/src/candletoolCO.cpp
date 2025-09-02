@@ -50,8 +50,7 @@ void CandleToolCO::ping(const std::string& variant)
     }
 }
 
-void CandleToolCO::configCan(
-    u16 id, u16 newId, const std::string& baud, u16 timeout, bool termination)
+void CandleToolCO::configCan(u16 id, u16 newId, const std::string& baud, u32 watchdog, bool save)
 {
     MDCO mdco = MDCO(id, m_candle);
     long newbaud;
@@ -64,11 +63,20 @@ void CandleToolCO::configCan(
         log.error("Invalid baudrate for CANopen, only 1M and 500K is supported");
         return;
     }
-    MDCO::Error_t err = mdco.newCanOpenConfig(newId, newbaud, termination);
+    MDCO::Error_t err = mdco.newCanOpenConfig(newId, newbaud, watchdog);
     if (err != MDCO::OK)
     {
         log.error("Error setting CANopen config");
         return;
+    }
+    if (save)
+    {
+        err = mdco.openSave();
+        if (err != MDCO::OK)
+        {
+            log.error("Error saving CANopen config");
+            return;
+        }
     }
 }
 
@@ -79,29 +87,6 @@ void CandleToolCO::configSave(u16 id)
     if (err != MDCO::OK)
     {
         log.error("Error saving config");
-        return;
-    }
-}
-
-void CandleToolCO::configZero(u16 id)
-{
-    MDCO          mdco = MDCO(id, m_candle);
-    MDCO::Error_t err  = mdco.openZero();
-    if (err != MDCO::OK)
-    {
-        log.error("Error zeroing");
-        return;
-    }
-}
-
-void CandleToolCO::configBandwidth(u16 id, u16 bandwidth)
-{
-    MDCO          mdco         = MDCO(id, m_candle);
-    u16           newBandwidth = ((u16)bandwidth);
-    MDCO::Error_t err          = mdco.canOpenBandwidth(newBandwidth);
-    if (err != MDCO::OK)
-    {
-        log.error("Error setting bandwidth");
         return;
     }
 }

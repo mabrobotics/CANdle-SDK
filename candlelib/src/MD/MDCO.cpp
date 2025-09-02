@@ -475,7 +475,7 @@ namespace mab
             return MDCO::Error_t::REQUEST_INVALID;
     }
 
-    MDCO::Error_t MDCO::newCanOpenConfig(i32 newID, i32 newBaud, i16 newwatchdog)
+    MDCO::Error_t MDCO::newCanOpenConfig(i32 newID, i32 newBaud, u32 watchdog)
     {
         Error_t err;
         err = writeOpenRegisters("Can ID", newID, 4);
@@ -490,24 +490,10 @@ namespace mab
             m_log.error("Error setting Can Baudrate");
             return err;
         }
-        if (newwatchdog != 0)
-        {
-            err = writeOpenRegisters("Can Watchdog", newwatchdog, 2);
-            if (err != OK)
-            {
-                m_log.error("Error setting Can Watchdog");
-                return err;
-            }
-        }
-        return MDCO::Error_t::OK;
-    }
-
-    MDCO::Error_t MDCO::canOpenBandwidth(i16 newBandwidth)
-    {
-        Error_t err = writeOpenRegisters("Torque Bandwidth", newBandwidth, 2);
+        err = writeOpenRegisters("Can Watchdog", watchdog);
         if (err != OK)
         {
-            m_log.error("Error setting Torque Bandwidth");
+            m_log.error("Error setting Can Watchdog");
             return err;
         }
         return MDCO::Error_t::OK;

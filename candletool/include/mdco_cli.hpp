@@ -23,29 +23,23 @@ class MdcoCli
     const std::shared_ptr<CandleBuilder> m_candleBuilder;
 
     //  principal subcommands
-    CLI::App* mdco           = nullptr;
-    CLI::App* blinkco        = nullptr;
-    CLI::App* clearco        = nullptr;
-    CLI::App* configco       = nullptr;
-    CLI::App* encoderco      = nullptr;
-    CLI::App* heartbeatco    = nullptr;
-    CLI::App* nmt            = nullptr;
-    CLI::App* pdoTestco      = nullptr;
-    CLI::App* pingco         = nullptr;
-    CLI::App* registrco      = nullptr;
-    CLI::App* resetco        = nullptr;
-    CLI::App* setupco        = nullptr;
-    CLI::App* Sync           = nullptr;
-    CLI::App* SDOsegmentedco = nullptr;
-    CLI::App* testco         = nullptr;
-    CLI::App* timeStamp      = nullptr;
-    CLI::App* eds            = nullptr;
-
-    // configco subcommands
-    CLI::App* configBandco = nullptr;
-    CLI::App* configCanco  = nullptr;
-    CLI::App* configSaveco = nullptr;
-    CLI::App* configZeroco = nullptr;
+    CLI::App* mdco         = nullptr;
+    CLI::App* blink        = nullptr;
+    CLI::App* clear        = nullptr;
+    CLI::App* can          = nullptr;
+    CLI::App* encoder      = nullptr;
+    CLI::App* heartbeat    = nullptr;
+    CLI::App* nmt          = nullptr;
+    CLI::App* pdoTest      = nullptr;
+    CLI::App* ping         = nullptr;
+    CLI::App* registr      = nullptr;
+    CLI::App* reset        = nullptr;
+    CLI::App* setup        = nullptr;
+    CLI::App* Sync         = nullptr;
+    CLI::App* SDOsegmented = nullptr;
+    CLI::App* test         = nullptr;
+    CLI::App* timeStamp    = nullptr;
+    CLI::App* eds          = nullptr;
 
     // eds subcommands
     CLI::App* edsLoad             = nullptr;
@@ -71,34 +65,34 @@ class MdcoCli
     CLI::App* nmtResetCommunication = nullptr;
 
     // register subcommands
-    CLI::App* regReadco  = nullptr;
-    CLI::App* regWriteco = nullptr;
+    CLI::App* regRead  = nullptr;
+    CLI::App* regWrite = nullptr;
 
     // pdoTestco subcommands
-    CLI::App* PdoSpeedco    = nullptr;
-    CLI::App* PdoPositionco = nullptr;
-    CLI::App* PdoCustomco   = nullptr;
+    CLI::App* PdoSpeed    = nullptr;
+    CLI::App* PdoPosition = nullptr;
+    CLI::App* PdoCustom   = nullptr;
 
     // setupco subcommands
-    CLI::App*    setupCalibco       = nullptr;
-    CLI::App*    setupCalibOutco    = nullptr;
-    CLI::App*    setupInfoco        = nullptr;
-    CLI::App*    setupMotorco       = nullptr;
-    CLI::App*    setupReadCfgco     = nullptr;
-    CLI::Option* setupInfoAllFlagco = nullptr;
+    CLI::App*    setupCalib       = nullptr;
+    CLI::App*    setupCalibOut    = nullptr;
+    CLI::App*    setupInfo        = nullptr;
+    CLI::App*    setupupload      = nullptr;
+    CLI::App*    setupdownload    = nullptr;
+    CLI::Option* setupInfoAllFlag = nullptr;
 
     // SDOsegmentedco subcommands
-    CLI::App* SDOsegmentedReadco  = nullptr;
-    CLI::App* SDOsegmentedWriteco = nullptr;
+    CLI::App* SDOsegmentedRead  = nullptr;
+    CLI::App* SDOsegmentedWrite = nullptr;
 
     // testco subcommands
-    CLI::App* testEncoderco     = nullptr;
-    CLI::App* testEncoderMainco = nullptr;
-    CLI::App* testEncoderOutco  = nullptr;
-    CLI::App* testLatencyco     = nullptr;
-    CLI::App* testMoveco        = nullptr;
-    CLI::App* testMoveAbsco     = nullptr;
-    CLI::App* testMoveRelco     = nullptr;
-    CLI::App* testMoveSpeedco   = nullptr;
-    CLI::App* testImpedanceco   = nullptr;
+    CLI::App* testEncoder     = nullptr;
+    CLI::App* testEncoderMain = nullptr;
+    CLI::App* testEncoderOut  = nullptr;
+    CLI::App* testLatency     = nullptr;
+    CLI::App* testMove        = nullptr;
+    CLI::App* testMoveAbs     = nullptr;
+    CLI::App* testMoveRel     = nullptr;
+    CLI::App* testMoveSpeed   = nullptr;
+    CLI::App* testImpedance   = nullptr;
 };
