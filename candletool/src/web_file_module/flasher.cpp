@@ -23,7 +23,7 @@ namespace mab
         }
 
         // Permissions
-        cmd += m_path;
+        cmd += m_path.generic_string();
         err = executeCommand(cmd);
         if (err)
         {
@@ -32,7 +32,7 @@ namespace mab
         }
 
         // Flashing
-        cmd = m_path;
+        cmd = m_path.generic_string();
         if (m_type == Type_E::MD_FLASHER)
         {
             cmd += " --id ";

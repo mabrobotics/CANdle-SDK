@@ -116,8 +116,9 @@ if(WIN32)
     -static
     logger)
 
-  add_compile_definitions(DEFAULT_CANDLETOOL_CONFIG_DIR
-                          "${CMAKE_INSTALL_SYSCONFDIR}/candletool/config")
+  add_compile_definitions(
+    DEFAULT_CANDLETOOL_CONFIG_DIR="${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
+  )
 elseif(UNIX)
 
   install(TARGETS candletool RUNTIME COMPONENT candletool)

@@ -42,7 +42,7 @@ namespace mab
                             "Please provide version of fw or latest keyword in the argument!");
                         return;
                     }
-                    std::string fallbackPath = *ctx.packageEtcPath;
+                    std::string fallbackPath = ctx.packageEtcPath->generic_string();
 
                     if (!updateOptions.metadataFile->empty())
                         fallbackPath = *updateOptions.metadataFile;
