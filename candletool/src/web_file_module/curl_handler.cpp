@@ -27,7 +27,7 @@ namespace mab
         }
 
         // If failed, fall back to the local LUT file
-        if (!file->read(m_addressLutStructure) || file == nullptr)
+        if (file == nullptr || !file->read(m_addressLutStructure))
         {
             m_log.error("Failed to read the LUT file");
             return std::make_pair(CurlError_E::FILE_READ_ERROR, webFile);
@@ -69,6 +69,7 @@ namespace mab
                 filename_field += "x86_64";
             else
                 m_log.warn("No architecture specific filename found");
+            filename = m_addressLutStructure[id.data()][filename_field];
         }
         if (!baseUrl.empty() && !filename.empty())
         {

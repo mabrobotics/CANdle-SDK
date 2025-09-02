@@ -16,9 +16,9 @@ namespace mab
             m_log.error("No path to the file!");
             return Error_E::NO_FILE;
         }
-        else if (m_type != Type_E::CANDLE_FLASHER || m_type != Type_E::MD_FLASHER)
+        else if (m_type != Type_E::CANDLE_FLASHER && m_type != Type_E::MD_FLASHER)
         {
-            m_log.error("Invalid file type!");
+            m_log.error("Invalid file type: %s", typeToStr(m_type).c_str());
             return Error_E::EXECUTION_ERROR;
         }
 
@@ -36,7 +36,7 @@ namespace mab
         if (m_type == Type_E::MD_FLASHER)
         {
             cmd += " --id ";
-            cmd += canId;
+            cmd += std::to_string(canId);
             cmd += " --baud 1M ";
             if (recovery)
                 cmd += "--wait";

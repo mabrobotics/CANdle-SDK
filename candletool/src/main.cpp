@@ -93,6 +93,10 @@ int main(int argc, char** argv)
     CANdleToolCtx_S candleToolCtx;
     candleToolCtx.candleBranchVec.push_back(canBranch);
 
+    // TODO: debug only
+    *candleToolCtx.packageEtcPath =
+        "/home/pawel/mab-github/CANdle-SDK/candletool/template_package/etc/candletool";
+
     auto preBuildTask = [busType, datarate, &cmd]()
     {
         Logger log(Logger::ProgramLayer_E::TOP, "CANDLE_PREBUILD");

@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <filesystem>
 #include <variant>
 #include "MDStatus.hpp"
 #include "canLoader.hpp"
@@ -1095,7 +1096,49 @@ namespace mab
         update->callback(
             [this, candleBuilder, mdCanId, updateOptions, ctx]()
             {
-                if (!updateOptions.pathToMabFile->empty())
+                if (updateOptions.pathToMabFile->empty())
+                {
+                    std::string fallbackPath = *ctx.packageEtcPath;
+
+                    if (!updateOptions.metadataFile->empty())
+                        fallbackPath = *updateOptions.metadataFile;
+                    else
+                        fallbackPath += "/config/web_files_metadata.ini";
+
+                    m_logger.debug("Fallback path at: %s", fallbackPath.c_str());
+                    mINI::INIFile fallbackMetadataFile(fallbackPath);
+                    CurlHandler   curl(fallbackMetadataFile);
+                    if (updateOptions.fwVersion->find_first_of("latest") != std::string::npos)
+                    {
+                        auto curlResult = curl.downloadFile("MAB_CAN_FLASHER_LATEST");
+                        if (curlResult.first != CurlHandler::CurlError_E::OK)
+                        {
+                            m_logger.error("Error on curl download request!");
+                            return;
+                        }
+                        Flasher flasher(curlResult.second);
+                        canId_t flashId = 100;
+                        if (*updateOptions.recovery)
+                        {
+                            flashId = 9;
+                        }
+                        auto flashResult = flasher.flash(flashId, *updateOptions.recovery);
+                        if (flashResult != Flasher::Error_E::OK)
+                        {
+                            m_logger.error("Error while flashing firmware!");
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        m_logger.error(
+                            "Could not find requested version! Try providing it manually via "
+                            "--path option.");
+                        return;
+                    }
+                    return;
+                }
+                else
                 {
                     m_logger.info("Overriding download of file. Using local provided path.");
                     MabFileParser mabFile(*updateOptions.pathToMabFile,
@@ -1133,40 +1176,9 @@ namespace mab
                     else
                     {
                         m_logger.error("MD flashing failed!");
-                    }
-                }
-                else
-                {
-                    mINI::INIFile fallbackMetadataFile(*ctx.packageEtcPath);
-                    CurlHandler   curl(fallbackMetadataFile);
-                    if (updateOptions.fwVersion->find_first_of("latest") != std::string::npos)
-                    {
-                        auto curlResult = curl.downloadFile("MAB_CAN_FLASHER_LATEST");
-                        if (curlResult.first != CurlHandler::CurlError_E::OK)
-                        {
-                            m_logger.error("Error on curl download request!");
-                            return;
-                        }
-                        Flasher flasher(curlResult.second);
-                        canId_t flashId = 100;
-                        if (updateOptions.recovery)
-                        {
-                            flashId = 9;
-                        }
-                        auto flashResult = flasher.flash(flashId, *updateOptions.recovery);
-                        if (flashResult != Flasher::Error_E::OK)
-                        {
-                            m_logger.error("Error while flashing firmware!");
-                            return;
-                        }
-                    }
-                    else
-                    {
-                        m_logger.error(
-                            "Could not find requested version! Try providing it manually via "
-                            "--path option.");
                         return;
                     }
+                    m_logger.success("Update complete for MD @ %d", *mdCanId);
                 }
             });
         // Version
