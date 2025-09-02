@@ -129,7 +129,7 @@ int main(int argc, char** argv)
     // of parsers
     candleBuilder->preBuildTask = preBuildTask;
 
-    CandleCli candleCli(&app, candleBuilder);
+    CandleCli candleCli(&app, candleToolCtx);
     MDCli     mdCli(&app, candleToolCtx);
     PdsCli    pdsCli(app, candleBuilder);
 

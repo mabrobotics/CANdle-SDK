@@ -1,7 +1,14 @@
+
+#include <vector>
+
 #include "candle_cli.hpp"
 #include "mabFileParser.hpp"
 #include "candle_bootloader.hpp"
 #include "mab_crc.hpp"
+#include "curl_handler.hpp"
+#include "web_file.hpp"
+#include "flasher.hpp"
+#include "utilities.hpp"
 
 #ifdef WIN32
 #include <windows.h>
@@ -9,9 +16,13 @@
 
 namespace mab
 {
-    CandleCli::CandleCli(CLI::App*                                  rootCli,
-                         const std::shared_ptr<const CandleBuilder> candleBuilder)
+    CandleCli::CandleCli(CLI::App* rootCli, CANdleToolCtx_S ctx)
     {
+        if (ctx.candleBranchVec.empty())
+        {
+            throw std::runtime_error("MDCli arguments can not be empty!");
+        }
+        auto  candleBuilder = ctx.candleBranchVec.at(0).candleBuilder;
         auto* candleCli =
             rootCli->add_subcommand("candle", "CANdle device commands.")->require_subcommand();
         // Update
@@ -19,25 +30,57 @@ namespace mab
 
         UpdateOptions updateOptions(update);
         update->callback(
-            [this, updateOptions]()
+            [this, updateOptions, ctx]()
             {
                 m_logger.info("Performing Candle firmware update.");
 
-                MabFileParser candleFirmware(*updateOptions.pathToMabFile,
-                                             MabFileParser::TargetDevice_E::CANDLE);
-
-                auto candle_bootloader = attachCandleBootloader();
-                for (size_t i = 0; i < candleFirmware.m_fwEntry.size;
-                     i += CandleBootloader::PAGE_SIZE_STM32G474)
+                if (updateOptions.pathToMabFile->empty())
                 {
-                    std::array<u8, CandleBootloader::PAGE_SIZE_STM32G474> page;
-                    std::memcpy(
-                        page.data(), &candleFirmware.m_fwEntry.data->data()[i], page.size());
-                    u32 crc = candleCRC::crc32(page.data(), page.size());
-                    if (candle_bootloader->writePage(page, crc) != candleTypes::Error_t::OK)
+                    std::string fallbackPath = *ctx.packageEtcPath;
+
+                    if (!updateOptions.metadataFile->empty())
+                        fallbackPath = *updateOptions.metadataFile;
+                    else
+                        fallbackPath += "/config/web_files_metadata.ini";
+
+                    m_logger.debug("Fallback path at: %s", fallbackPath.c_str());
+                    mINI::INIFile fallbackMetadataFile(fallbackPath);
+                    CurlHandler   curl(fallbackMetadataFile);
+                    if (updateOptions.fwVersion->find_first_of("latest") != std::string::npos)
                     {
-                        m_logger.error("Candle flashing failed!");
-                        break;
+                        auto curlResult = curl.downloadFile("MAB_USB_FLASHER_LATEST");
+                        if (curlResult.first != CurlHandler::CurlError_E::OK)
+                        {
+                            m_logger.error("Error on curl download request!");
+                            return;
+                        }
+                        Flasher flasher(curlResult.second);
+                        auto    flashResult = flasher.flash();
+                        if (flashResult != Flasher::Error_E::OK)
+                        {
+                            m_logger.error("Error while flashing firmware!");
+                            return;
+                        }
+                    }
+                }
+                else
+                {
+                    MabFileParser candleFirmware(*updateOptions.pathToMabFile,
+                                                 MabFileParser::TargetDevice_E::CANDLE);
+
+                    auto candle_bootloader = attachCandleBootloader();
+                    for (size_t i = 0; i < candleFirmware.m_fwEntry.size;
+                         i += CandleBootloader::PAGE_SIZE_STM32G474)
+                    {
+                        std::array<u8, CandleBootloader::PAGE_SIZE_STM32G474> page;
+                        std::memcpy(
+                            page.data(), &candleFirmware.m_fwEntry.data->data()[i], page.size());
+                        u32 crc = candleCRC::crc32(page.data(), page.size());
+                        if (candle_bootloader->writePage(page, crc) != candleTypes::Error_t::OK)
+                        {
+                            m_logger.error("Candle flashing failed!");
+                            break;
+                        }
                     }
                 }
             });

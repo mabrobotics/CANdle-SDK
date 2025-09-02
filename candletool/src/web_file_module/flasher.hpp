@@ -22,7 +22,7 @@ namespace mab
         {
         }
 
-        Error_E flash(canId_t canId, bool recovery);
+        Error_E flash(canId_t canId = 100, bool recovery = false);
 
       private:
         Logger m_log = Logger(Logger::ProgramLayer_E::LAYER_2, "FLASHER");

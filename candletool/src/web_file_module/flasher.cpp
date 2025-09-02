@@ -2,7 +2,7 @@
 
 namespace mab
 {
-    Flasher::Error_E Flasher::flash(canId_t canId = 100, bool recovery = false)
+    Flasher::Error_E Flasher::flash(canId_t canId, bool recovery)
     {
         m_log.warn("This is a legacy method of installing firmware.");
         m_log.warn("It only works on linux, and the flashed device");
