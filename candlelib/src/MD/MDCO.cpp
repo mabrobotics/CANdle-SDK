@@ -1138,7 +1138,8 @@ namespace mab
             }
         }
         auto err = writeOpenRegisters(index, subIndex, data, size);
-        m_log.debug("Error:%d\n", readOpenRegisters(index, subIndex));
+        if (m_log.g_m_verbosity == Logger::Verbosity_E::VERBOSITY_3)
+            m_log.debug("Error:%d\n", readOpenRegisters(index, subIndex));
         return err;
     }
 

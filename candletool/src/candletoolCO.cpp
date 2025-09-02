@@ -94,7 +94,7 @@ void CandleToolCO::configZero(u16 id)
     }
 }
 
-void CandleToolCO::configBandwidth(u16 id, f32 bandwidth)
+void CandleToolCO::configBandwidth(u16 id, u16 bandwidth)
 {
     MDCO          mdco         = MDCO(id, m_candle);
     u16           newBandwidth = ((u16)bandwidth);
@@ -1472,18 +1472,6 @@ void CandleToolCO::reset(u16 id)
         log.error("Error resetting MD device with ID %d", id);
         return;
     }
-}
-
-u8 CandleToolCO::getNumericParamFromList(std::string& param, const std::vector<std::string>& list)
-{
-    int i = 0;
-    for (auto& type : list)
-    {
-        if (type == param)
-            return i;
-        i++;
-    }
-    return 0;
 }
 
 void CandleToolCO::edsLoad(const std::string& edsFilePath)

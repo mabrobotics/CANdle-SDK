@@ -21,7 +21,7 @@ namespace mab
         u32           newId            = 0x0000;
         std::string   baud             = "1M";
         u32           canWatchdog      = 100;
-        f32           bandwidth        = 100.f;
+        u16           bandwidth        = 100;
         std::string   cfgPath          = "";
         std::string   firmwareFileName = "";
         std::string   value            = "";
@@ -71,7 +71,7 @@ namespace mab
         /// @param id The CAN ID of the device to configure
         /// @param bandwidth The desired torque bandwidth in Hz
         /// @note The bandwidth must be between 50 and 2500 Hz
-        void configBandwidth(u16 id, f32 bandwidth);
+        void configBandwidth(u16 id, u16 bandwidth);
 
         /// @brief Move the device to a target speed with pdo message
         /// @param id The CAN ID of the device to move
@@ -295,18 +295,6 @@ namespace mab
         mab::Candle* m_candle;
 
         std::string validateAndGetFinalConfigPath(const std::string& cfgPath);
-
-        u8 getNumericParamFromList(std::string& param, const std::vector<std::string>& list);
-
-        template <class T>
-        bool checkParamLimit(T value, T min, T max)
-        {
-            if (value > max)
-                return false;
-            if (value < min)
-                return false;
-            return true;
-        }
 
         bool isCanOpenConfigComplete(const std::string& pathToConfig);
     };
