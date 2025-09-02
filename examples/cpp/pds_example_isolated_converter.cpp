@@ -21,7 +21,7 @@ int main()
     _log.m_tag = "PDS Example";
 
     auto candle =
-        mab::attachCandle(mab::CANdleBaudrate_E::CAN_BAUD_1M, mab::candleTypes::busTypes_t::USB);
+        mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M, mab::candleTypes::busTypes_t::USB);
 
     Pds pds(PDS_CAN_ID, candle);
 

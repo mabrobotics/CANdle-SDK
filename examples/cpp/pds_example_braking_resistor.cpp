@@ -7,6 +7,7 @@
 */
 
 #include "candle.hpp"
+#include "mab_types.hpp"
 #include "pds.hpp"
 
 using namespace mab;
@@ -20,7 +21,7 @@ int main()
     Logger _log;
     _log.m_tag = "PDS Example";
 
-    auto candle = attachCandle(CANdleBaudrate_E::CAN_BAUD_1M, candleTypes::busTypes_t::USB);
+    auto candle = attachCandle(CANdleDatarate_E::CAN_DATARATE_1M, candleTypes::busTypes_t::USB);
     Pds  pds(PDS_CAN_ID, candle);
 
     if (pds.init() != PdsModule::error_E::OK)

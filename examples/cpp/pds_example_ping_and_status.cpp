@@ -20,7 +20,7 @@ int main()
     m_log.m_tag   = "PDS";
     m_log.m_layer = Logger::ProgramLayer_E::TOP;
 
-    auto candle    = attachCandle(CANdleBaudrate_E::CAN_BAUD_1M, candleTypes::busTypes_t::USB);
+    auto candle    = attachCandle(CANdleDatarate_E::CAN_DATARATE_1M, candleTypes::busTypes_t::USB);
     auto findPdses = Pds::discoverPDS(candle);
 
     if (findPdses.size() == 0)
