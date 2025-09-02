@@ -4,8 +4,8 @@
 
 namespace mab
 {
-    CurlHandler::CurlHandler(const mINI::INIFile fallbackAddressLut)
-        : m_fallbackAddressLut(fallbackAddressLut)
+    CurlHandler::CurlHandler(const mINI::INIFile fallbackMetadata)
+        : m_fallbackMetadata(fallbackMetadata)
     {
     }
 
@@ -23,7 +23,7 @@ namespace mab
         {
             m_log.warn(
                 "Could not get the latest LUT from the MAB servers, falling back to local LUT");
-            file = &m_fallbackAddressLut;
+            file = &m_fallbackMetadata;
         }
 
         // If failed, fall back to the local LUT file

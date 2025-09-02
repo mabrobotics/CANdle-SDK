@@ -23,14 +23,14 @@ namespace mab
             UNRECOGNISED_FILETYPE
         };
 
-        CurlHandler(const mINI::INIFile fallbackAddressLut);
+        CurlHandler(const mINI::INIFile fallbackMetadata);
 
         std::pair<CurlError_E, WebFile_S> downloadFile(const std::string_view id);
 
       private:
         Logger m_log = Logger(Logger::ProgramLayer_E::LAYER_2, "CurlHandler");
 
-        const mINI::INIFile m_fallbackAddressLut;
+        const mINI::INIFile m_fallbackMetadata;
         mINI::INIStructure  m_addressLutStructure;
 
         CurlError_E getLatestLut();
