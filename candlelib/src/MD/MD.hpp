@@ -406,14 +406,14 @@ namespace mab
             }
 
             std::vector<u8> frame;
-            frame.push_back((u8)MdFrameId_E::WRITE_REGISTER_DEFAULT_RESPONSE);
+            frame.push_back((u8)MdFrameId_E::WRITE_REGISTER_LEGACY);
             frame.push_back((u8)0x0);
             auto payload = serializeMDRegisters(regs);
             frame.insert(frame.end(), payload.begin(), payload.end());
             auto readRegResult = transferCanFrame(frame, DEFAULT_RESPONSE_SIZE);
 
             MdFrameId_E frameId = (MdFrameId_E)readRegResult.first.at(0);
-            if (frameId == MdFrameId_E::RESPONSE_DEFAULT || frameId == MdFrameId_E::WRITE_REGISTER)
+            if (frameId == MdFrameId_E::RESPONSE_LEGACY || frameId == MdFrameId_E::WRITE_REGISTER)
                 return Error_t::OK; // TODO: Possible do smth with received data?
             else
             {

@@ -15,9 +15,9 @@ namespace mab
         m_bus = nullptr;
     }
 
-    Candle::Candle(const CANdleBaudrate_E                           canBaudrate,
+    Candle::Candle(const CANdleDatarate_E                           canDatarate,
                    std::unique_ptr<mab::I_CommunicationInterface>&& bus)
-        : m_canBaudrate(canBaudrate), m_bus(std::move(bus))
+        : m_canDatarate(canDatarate), m_bus(std::move(bus))
     {
     }
 
@@ -71,9 +71,9 @@ namespace mab
     }
     std::optional<version_ut> Candle::getCandleVersion()
     {
-        auto buffer       = baudrateCommandFrame(m_canBaudrate);
-        auto baudResponse = busTransfer(&buffer, 6);
-        if (baudResponse != candleTypes::Error_t::OK || buffer.size() < 6)
+        auto buffer       = datarateCommandFrame(m_canDatarate);
+        auto dataResponse = busTransfer(&buffer, 6);
+        if (dataResponse != candleTypes::Error_t::OK || buffer.size() < 6)
         {
             return std::nullopt;
         }
@@ -183,9 +183,9 @@ namespace mab
     // TODO: this must be changed to something less invasive
     candleTypes::Error_t Candle::legacyCheckConnection()
     {
-        auto baudrateFrame = baudrateCommandFrame(m_canBaudrate);
+        auto datarateFrame = datarateCommandFrame(m_canDatarate);
 
-        auto testConnectionFrame = std::vector<u8>(baudrateFrame.begin(), baudrateFrame.end());
+        auto testConnectionFrame = std::vector<u8>(datarateFrame.begin(), datarateFrame.end());
 
         const candleTypes::Error_t connectionStatus = busTransfer(&testConnectionFrame, 6);
         if (connectionStatus != candleTypes::Error_t::OK)
@@ -196,7 +196,7 @@ namespace mab
     candleTypes::Error_t Candle::enterBootloader(
         std::unique_ptr<mab::I_CommunicationInterface>&& usb)
     {
-        Candle candleApp = Candle(CANdleBaudrate_E::CAN_BAUD_1M, std::move(usb));
+        Candle candleApp = Candle(CANdleDatarate_E::CAN_DATARATE_1M, std::move(usb));
 
         std::vector<u8> enterBootloaderCmd;
         for (auto byte : Candle::enterBootloaderFrame())
