@@ -98,6 +98,7 @@ if(WIN32)
   install(
     FILES
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini
+      ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/web_files_metadata.ini
     DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
                 WORLD_WRITE
@@ -130,6 +131,7 @@ elseif(UNIX)
   install(
     FILES
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini
+      ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/web_files_metadata.ini
     DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
                 WORLD_WRITE
@@ -163,6 +165,7 @@ elseif(UNIX)
   install(
     FILES
       "${PROJECT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini"
+      "${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/web_files_metadata.ini"
     DESTINATION "/etc/candletool/"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
                 WORLD_WRITE

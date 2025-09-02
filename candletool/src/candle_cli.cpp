@@ -36,6 +36,12 @@ namespace mab
 
                 if (updateOptions.pathToMabFile->empty())
                 {
+                    if (updateOptions.fwVersion->empty())
+                    {
+                        m_logger.error(
+                            "Please provide version of fw or latest keyword in the argument!");
+                        return;
+                    }
                     std::string fallbackPath = *ctx.packageEtcPath;
 
                     if (!updateOptions.metadataFile->empty())
@@ -46,21 +52,21 @@ namespace mab
                     m_logger.debug("Fallback path at: %s", fallbackPath.c_str());
                     mINI::INIFile fallbackMetadataFile(fallbackPath);
                     CurlHandler   curl(fallbackMetadataFile);
-                    if (updateOptions.fwVersion->find_first_of("latest") != std::string::npos)
+
+                    std::string fileId = "MAB_USB_FLASHER_";
+                    fileId += *updateOptions.fwVersion;
+                    auto curlResult = curl.downloadFile(fileId);
+                    if (curlResult.first != CurlHandler::CurlError_E::OK)
                     {
-                        auto curlResult = curl.downloadFile("MAB_USB_FLASHER_LATEST");
-                        if (curlResult.first != CurlHandler::CurlError_E::OK)
-                        {
-                            m_logger.error("Error on curl download request!");
-                            return;
-                        }
-                        Flasher flasher(curlResult.second);
-                        auto    flashResult = flasher.flash();
-                        if (flashResult != Flasher::Error_E::OK)
-                        {
-                            m_logger.error("Error while flashing firmware!");
-                            return;
-                        }
+                        m_logger.error("Error on curl download request!");
+                        return;
+                    }
+                    Flasher flasher(curlResult.second);
+                    auto    flashResult = flasher.flash();
+                    if (flashResult != Flasher::Error_E::OK)
+                    {
+                        m_logger.error("Error while flashing firmware!");
+                        return;
                     }
                 }
                 else

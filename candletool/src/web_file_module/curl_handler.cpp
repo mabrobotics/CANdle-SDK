@@ -47,14 +47,15 @@ namespace mab
         auto        type       = WebFile_S::strToType(typeString);
         if (type == WebFile_S::Type_E::UNKNOWN)
         {
-            m_log.error("Could not recognise filetype!");
+            m_log.error("Could not recognise filetype or no such ID in metainfo file!");
             return std::make_pair(CurlError_E::UNRECOGNISED_FILETYPE, webFile);
         }
         webFile.m_type = type;
 
         // Look for the address and filename in the LUT structure
-        std::string baseUrl  = m_addressLutStructure[id.data()]["base_url"];
-        std::string filename = m_addressLutStructure[id.data()]["filename"];
+        std::string baseUrl       = m_addressLutStructure[id.data()]["base_url"];
+        std::string baseUrlMirror = m_addressLutStructure[id.data()]["base_url_mirror"];
+        std::string filename      = m_addressLutStructure[id.data()]["filename"];
         // For multiarch entries
         if (filename.empty())
         {
@@ -74,14 +75,24 @@ namespace mab
         if (!baseUrl.empty() && !filename.empty())
         {
             m_log.info("Found URL [ %s ] for file [ %s ]", baseUrl.c_str(), filename.data());
-            std::string command = "curl -L -o " + filename + " " + baseUrl + filename;
+            std::string command = constructCurlCmd(filename, baseUrl);
             bool        result  = executeCommand(command);
             if (result)
             {
-                m_log.error("Failed to download file [ %s ] from URL [ %s ]",
-                            filename.data(),
-                            (baseUrl + filename).c_str());
-                return std::make_pair(CurlError_E::SYSTEM_CALL_ERROR, webFile);
+                m_log.warn("Failed to download file [ %s ] from URL [ %s ]",
+                           filename.data(),
+                           (baseUrl + filename).c_str());
+                m_log.warn("Trying mirror...");
+                command = constructCurlCmd(filename, baseUrlMirror);
+                result  = executeCommand(command);
+
+                if (result)
+                {
+                    m_log.error("Failed to download file [ %s ] from URL [ %s ]",
+                                filename.data(),
+                                (baseUrlMirror + filename).c_str());
+                    return std::make_pair(CurlError_E::SYSTEM_CALL_ERROR, webFile);
+                }
             }
             m_log.success("Successfully downloaded file [ %s ]", id.data());
             webFile.m_path.append(filename);

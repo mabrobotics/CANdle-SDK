@@ -34,5 +34,13 @@ namespace mab
         mINI::INIStructure  m_addressLutStructure;
 
         CurlError_E getLatestLut();
+
+        static inline std::string constructCurlCmd(std::string_view filename,
+                                                   std::string_view baseUrl)
+        {
+            std::stringstream ret;
+            ret << "curl --fail -L -o " << filename << " " << baseUrl << filename;
+            return ret.str();
+        }
     };
 }  // namespace mab
