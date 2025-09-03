@@ -20,19 +20,22 @@ namespace mab
         // TODO
     }
 
-    void Pds::init(void)
+    void Pds::init(u16 canId)
+    {
+        *m_canId = canId;
+        init();
+    }
+
+    PdsModule::error_E Pds::init(void)
     {
         PdsModule::error_E result = readModules();
         if (result != PdsModule::error_E ::OK)
         {
             m_log.error("Reading PDS submodules failed! [ %s ]", PdsModule::error2String(result));
             // TODO: How to handle this error?
+            return PdsModule::error_E::COMMUNICATION_ERROR;
         }
-    }
-    void Pds::init(u16 canId)
-    {
-        *m_canId = canId;
-        init();
+        return PdsModule::error_E::OK;
     }
 
     PdsModule::error_E Pds::createModule(moduleType_E type, socketIndex_E socket)
