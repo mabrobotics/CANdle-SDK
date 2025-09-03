@@ -22,11 +22,11 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/candletool/candletool",
             "args": [
-                "update",
                 "md",
+                "--id",
                 "100",
-                "-f",
-                "~/mab/mab_firmware/build-EMBEDDED/app/motor_driver_legacy/MAB_md_app_legacy.mab"
+                "update",
+                "latest"
             ],
             "stopAtEntry": true,
             "cwd": "${fileDirname}",
