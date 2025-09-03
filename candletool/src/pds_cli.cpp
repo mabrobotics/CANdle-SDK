@@ -16,7 +16,7 @@
 */
 constexpr const char* CONTROL_BOARD_INI_SECTION = PdsModule::mType2Str(moduleType_E::CONTROL_BOARD);
 constexpr const char* CAN_ID_INI_KEY            = "CAN ID";
-constexpr const char* CAN_BAUD_INI_KEY          = "CAN BAUD";
+constexpr const char* CAN_DATARATE_INI_KEY      = "CAN DATA";
 constexpr const char* SHUTDOWN_TIME_INI_KEY     = "SHUTDOWN TIME";
 constexpr const char* BATT_LVL_1_INI_KEY        = "BATTERY LEVEL 1";
 constexpr const char* BATT_LVL_2_INI_KEY        = "BATTERY LEVEL 2";
@@ -62,10 +62,11 @@ PdsCli::PdsCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleBui
 
     m_canIdCmdOption = m_canIdCmd->add_option("<NEW_CAN_ID>", m_newCanId, "New CAN ID")->required();
 
-    m_canBaudCmd = m_canCmd->add_subcommand("baud", "Set the CAN baudrate of the PDS device");
+    m_canDataCmd = m_canCmd->add_subcommand("data", "Set the CAN datarate of the PDS device");
 
-    m_canBaudCmdOption =
-        m_canBaudCmd->add_option("<NEW_CAN_BAUD>", m_canBaudrate, "New CAN Baudrate")->required();
+    m_canDataCmdOption =
+        m_canDataCmd->add_option("<NEW_CAN_DATARATE>", m_canDatarate, "New CAN Datarate")
+            ->required();
 
     m_configSetupCmd =
         m_pdsCmd->add_subcommand("setup_cfg", "Configure PDS device with the .cfg file")
@@ -362,7 +363,11 @@ void PdsCli::parse()
             }
             else
             {
+                Pds pds(m_canId, candle.value());
+                pds.isBootloaderError(true);
                 m_log.error("PDS flashing failed!");
+                usleep(2'000'000);
+                pds.isBootloaderError(false);
             }
         }
 
@@ -390,7 +395,7 @@ void PdsCli::parse()
                 m_log.debug("CAN ID command parsed");
 
                 /*
-                     For ID and Baud there is actually no sense to read them
+                     For ID and Data there is actually no sense to read them
                      so the conditions and handler might be removed in further refactor
                 */
 
@@ -423,15 +428,15 @@ void PdsCli::parse()
                     m_log.success("Current CAN ID [ %u ]", pds->getCanId());
                 }
             }
-            else if (m_canBaudCmd->parsed())
+            else if (m_canDataCmd->parsed())
             {
-                m_log.debug("CAN Baudrate command parsed");
-                if (!m_canBaudCmdOption->empty())
+                m_log.debug("CAN Datarate command parsed");
+                if (!m_canDataCmdOption->empty())
                 {
-                    std::optional<CANdleBaudrate_E> baudOpt = stringToBaudrate(m_canBaudrate);
-                    if (!baudOpt.has_value())
+                    std::optional<CANdleDatarate_E> dataOpt = stringToData(m_canDatarate);
+                    if (!dataOpt.has_value())
                     {
-                        m_log.error("Invalid baudrate: %s", m_canBaudrate.c_str());
+                        m_log.error("Invalid datarate: %s", m_canDatarate.c_str());
                         return;
                     }
 
@@ -441,16 +446,16 @@ void PdsCli::parse()
                         m_log.error("Could not initialize PDS!");
                         return;
                     }
-                    result = pds->setCanBaudrate(baudOpt.value());
+                    result = pds->setCanDatarate(dataOpt.value());
                     if (result != PdsModule::error_E::OK)
-                        m_log.error("Setting CAN baudrate failed [ %s ]",
+                        m_log.error("Setting CAN datarate failed [ %s ]",
                                     PdsModule::error2String(result));
                     else
-                        m_log.success("New CAN baudrate set [ %s ]", m_canBaudrate.c_str());
+                        m_log.success("New CAN datarate set [ %s ]", m_canDatarate.c_str());
                 }
                 else
                 {
-                    m_log.success("Current CAN Baudrate [ %s ]", m_canBaudrate.c_str());
+                    m_log.success("Current CAN Datarate [ %s ]", m_canDatarate.c_str());
                 }
             }
             else
@@ -1489,16 +1494,16 @@ static void fullModuleIni(Pds&                pds,
     }
 }
 
-static std::optional<CANdleBaudrate_E> parseCanBaudIniString(std::string_view baudString)
+static std::optional<CANdleDatarate_E> parseCanDataIniString(std::string_view dataString)
 {
-    if (baudString == "1M")
-        return CANdleBaudrate_E::CAN_BAUD_1M;
-    else if (baudString == "2M")
-        return CANdleBaudrate_E::CAN_BAUD_2M;
-    else if (baudString == "5M")
-        return CANdleBaudrate_E::CAN_BAUD_5M;
-    else if (baudString == "8M")
-        return CANdleBaudrate_E::CAN_BAUD_8M;
+    if (dataString == "1M")
+        return CANdleDatarate_E::CAN_DATARATE_1M;
+    else if (dataString == "2M")
+        return CANdleDatarate_E::CAN_DATARATE_2M;
+    else if (dataString == "5M")
+        return CANdleDatarate_E::CAN_DATARATE_5M;
+    else if (dataString == "8M")
+        return CANdleDatarate_E::CAN_DATARATE_8M;
 
     return std::nullopt;
 }
@@ -1545,34 +1550,34 @@ void PdsCli::setupCtrlConfig(mINI::INIMap<std::string>& iniMap)
         m_log.error("CAN ID field missing so will be ignored");
     }
 
-    // CAN Baudrate
-    if (iniMap.has(CAN_BAUD_INI_KEY))
+    // CAN Datarate
+    if (iniMap.has(CAN_DATARATE_INI_KEY))
     {
-        std::string_view                canBaudString = iniMap[CAN_BAUD_INI_KEY];
-        std::optional<CANdleBaudrate_E> canBaud       = parseCanBaudIniString(canBaudString);
+        std::string_view                canDataString = iniMap[CAN_DATARATE_INI_KEY];
+        std::optional<CANdleDatarate_E> canData       = parseCanDataIniString(canDataString);
         auto                            pds           = getPDS(m_canId);
         if (pds == nullptr)
         {
             m_log.error("Could not initialize PDS!");
             return;
         }
-        if (canBaud.has_value())
+        if (canData.has_value())
         {
-            result = pds->setCanBaudrate(canBaud.value());
+            result = pds->setCanDatarate(canData.value());
             if (result != PdsModule::error_E::OK)
-                m_log.error("CAN BAUD setting failed [ %s ]", PdsModule::error2String(result));
+                m_log.error("CAN DATA setting failed [ %s ]", PdsModule::error2String(result));
             else
-                m_log.success("CAN Baud set [ %s ]", canBaudString.data());
+                m_log.success("CAN Data set [ %s ]", canDataString.data());
         }
         else
         {
-            m_log.error("Given CAN Baud [ %s ] is INVALID! Acceptable values are: 1M, 2M, 5M, 8M");
-            m_log.warn("CAN Baudrate setting was omitted!");
+            m_log.error("Given CAN Data [ %s ] is INVALID! Acceptable values are: 1M, 2M, 5M, 8M");
+            m_log.warn("CAN Datarate setting was omitted!");
         }
     }
     else
     {
-        m_log.error("CAN Baudrate field missing so will be ignored");
+        m_log.error("CAN Datarate field missing so will be ignored");
     }
 
     // Shutdown time
@@ -2020,8 +2025,9 @@ void PdsCli::pdsReadConfig(const std::string& cfgPath)
     pds->getBindBrakeResistor(brSocket);
     pds->getBrakeResistorTriggerVoltage(brTrigger);
 
-    readIni[CONTROL_BOARD_INI_SECTION][CAN_ID_INI_KEY]   = prettyFloatToString(m_canId, true);
-    readIni[CONTROL_BOARD_INI_SECTION][CAN_BAUD_INI_KEY] = baudrateToString(pds->getCanBaudrate());
+    readIni[CONTROL_BOARD_INI_SECTION][CAN_ID_INI_KEY] = prettyFloatToString(m_canId, true);
+    readIni[CONTROL_BOARD_INI_SECTION][CAN_DATARATE_INI_KEY] =
+        datarateToStr(pds->getCanDatarate()).value_or("1M");
     readIni[CONTROL_BOARD_INI_SECTION][SHUTDOWN_TIME_INI_KEY] =
         prettyFloatToString(shutDownTime, true) + "  ; Shutdown time [ ms ]";
     readIni[CONTROL_BOARD_INI_SECTION][BATT_LVL_1_INI_KEY] =

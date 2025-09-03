@@ -50,7 +50,7 @@ namespace mab
         OCD_LEVEL              = 0x40,
         OCD_DELAY              = 0x41,
         RESET_DELIVERED_ENERGY = 0x42,
-
+        STATUS_ERROR           = 0x43,
         /* ... */
 
         HW_VERSION = 0xFD,
@@ -75,7 +75,7 @@ namespace mab
         ENABLED          = (1 << 0),
         OVER_TEMPERATURE = (1 << 1),
         OVER_CURRENT     = (1 << 2),
-
+        BOOTLOADER_ERROR = (1 << 3),
         /*...*/
 
         STO_1              = (1 << 10),
@@ -94,9 +94,10 @@ namespace mab
 
     };
 
-    constexpr std::array<std::pair<propertyId_E, size_t>, 30> propertiesSizeArray = {
+    constexpr std::array<std::pair<propertyId_E, size_t>, 31> propertiesSizeArray = {
         std::make_pair(propertyId_E::STATUS_WORD, sizeof(u32)),
         std::make_pair(propertyId_E::STATUS_CLEAR, sizeof(u32)),
+        std::make_pair(propertyId_E::STATUS_ERROR, sizeof(u32)),
         std::make_pair(propertyId_E::ENABLE, sizeof(bool)),
         std::make_pair(propertyId_E::TEMPERATURE, sizeof(f32)),
         std::make_pair(propertyId_E::TEMPERATURE_LIMIT, sizeof(f32)),
@@ -159,7 +160,6 @@ namespace mab
         bool SUBMODULE_6_ERROR;
         bool CHARGER_DETECTED;
         bool SHUTDOWN_SCHEDULED;
-
         /*...*/
     };
 

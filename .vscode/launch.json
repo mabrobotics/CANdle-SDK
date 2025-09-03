@@ -22,11 +22,11 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/candletool/candletool",
             "args": [
-                "update",
                 "md",
+                "--id",
                 "100",
-                "-f",
-                "~/mab/mab_firmware/build-EMBEDDED/app/motor_driver_legacy/MAB_md_app_legacy.mab"
+                "update",
+                "latest"
             ],
             "stopAtEntry": true,
             "cwd": "${fileDirname}",
@@ -43,7 +43,7 @@
                 "update",
                 "candle",
                 "-f",
-                "/home/emka/mab/mab_firmware/build/EMBEDDED-MAB/candle_legacy/MAB_candle_app_LEGACY.mab",
+                "~/mab/mab_firmware/build/EMBEDDED-MAB/candle_legacy/MAB_candle_app_LEGACY.mab",
             ],
             "stopAtEntry": true,
             "cwd": "${fileDirname}",
@@ -55,13 +55,13 @@
             "name": "update_PDS",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/../build/CANdleSDK/candletool/candletool",
+            "program": "${workspaceFolder}/build/candletool/candletool",
             "args": [
                 "update",
                 "pds",
                 "100",
                 "-f",
-                "/home/emka/workspace/mab/mab_firmware/build/EMBEDDED/app/pds/PDS_app.mab",
+                "~mab/mab_firmware/build/EMBEDDED/app/pds/pds_app.mab",
             ],
             "stopAtEntry": true,
             "cwd": "${fileDirname}",
@@ -110,7 +110,7 @@
             "args": [
                 "pds",
                 "100",
-                "set_can_baud",
+                "set_CAN_DATARATE",
                 "2X"
             ],
             "stopAtEntry": true,

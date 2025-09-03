@@ -8,7 +8,7 @@ This document provides concise documentation for the Power Distribution System (
 import pyCandle
 
 # Connect to CANdle and discover PDS devices
-candle = pyCandle.attachCandle(pyCandle.CANdleBaudrate_E.CAN_BAUD_1M, pyCandle.busTypes_t.USB)
+candle = pyCandle.attachCandle(pyCandle.CANdleDatarate_E.CAN_DATARATE_1M, pyCandle.busTypes_t.USB)
 pds_ids = pyCandle.Pds.discoverPDS(candle)
 pds = pyCandle.Pds(pds_ids[0], candle)
 result = pds.init()

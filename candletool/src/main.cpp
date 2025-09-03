@@ -24,7 +24,7 @@
 
 struct UserCommand
 {
-    std::string baud;
+    std::string data;
     std::string bus;
     std::string variant;
 };
@@ -42,7 +42,7 @@ int main(int argc, char** argv)
     UserCommand cmd;
 
     app.add_option("-d,--datarate",
-                   cmd.baud,
+                   cmd.data,
                    "Select FD CAN Datarate CANdleTOOL will use for communication.")
         ->default_val("1M")
         ->check(CLI::IsMember({"1M", "2M", "5M", "8M"}))
@@ -82,22 +82,30 @@ int main(int argc, char** argv)
 
     auto candleBuilder = std::make_shared<CandleBuilder>();
     auto busType       = std::make_shared<candleTypes::busTypes_t>(candleTypes::busTypes_t::USB);
-    auto datarate      = std::make_shared<CANdleBaudrate_E>(CANdleBaudrate_E::CAN_BAUD_1M);
+    auto datarate      = std::make_shared<CANdleDatarate_E>(CANdleDatarate_E::CAN_DATARATE_1M);
 
     candleBuilder->busType  = busType;
     candleBuilder->datarate = datarate;
+
+    CANdleBranch_S canBranch;
+    canBranch.candleBuilder = candleBuilder;
+
+    CANdleToolCtx_S candleToolCtx;
+    candleToolCtx.candleBranchVec.push_back(canBranch);
 
     auto preBuildTask = [busType, datarate, &cmd]()
     {
         Logger log(Logger::ProgramLayer_E::TOP, "CANDLE_PREBUILD");
         log.debug("Running candle pre-build CLI parsing task...");
         // Parsing bus type
-        if (cmd.bus.find("USB" != 0))
+        if (cmd.bus.find("USB") != std::string::npos)
         {
+            log.debug("Using USB bus");
             *busType = candleTypes::busTypes_t::USB;
         }
-        else if (cmd.bus.find("SPI" != 0))
+        else if (cmd.bus.find("SPI") != std::string::npos)
         {
+            log.debug("Using SPI bus");
             *busType = candleTypes::busTypes_t::SPI;
         }
         else
@@ -105,10 +113,10 @@ int main(int argc, char** argv)
             log.error("Specified bus is not valid!");
         }
 
-        // Parsing baudrate
-        auto parsedBaudOpt = stringToBaud(cmd.baud);
-        if (parsedBaudOpt.has_value())
-            *datarate = parsedBaudOpt.value();
+        // Parsing datarate
+        auto parsedDataOpt = stringToData(cmd.data);
+        if (parsedDataOpt.has_value())
+            *datarate = parsedDataOpt.value();
         else
             log.error("Parsing of the datarate failed!");
     };
@@ -117,8 +125,8 @@ int main(int argc, char** argv)
     // of parsers
     candleBuilder->preBuildTask = preBuildTask;
 
-    CandleCli candleCli(&app, candleBuilder);
-    MDCli     mdCli(&app, candleBuilder);
+    CandleCli candleCli(&app, candleToolCtx);
+    MDCli     mdCli(&app, candleToolCtx);
     PdsCli    pdsCli(app, candleBuilder);
 
     CLI11_PARSE(app, argc, argv);
@@ -127,10 +135,10 @@ int main(int argc, char** argv)
         std::cout << "CandleSDK version: " << CANDLESDK_VERSION << "\n";
     }
 
-    std::optional<mab::CANdleBaudrate_E> baudOpt = stringToBaudrate(cmd.baud);
-    if (!baudOpt.has_value())
+    std::optional<mab::CANdleDatarate_E> dataOpt = stringToData(cmd.data);
+    if (!dataOpt.has_value())
     {
-        std::cerr << "Invalid baudrate: " << cmd.baud << std::endl;
+        std::cerr << "Invalid datarate: " << cmd.data << std::endl;
         return EXIT_FAILURE;
     }
 

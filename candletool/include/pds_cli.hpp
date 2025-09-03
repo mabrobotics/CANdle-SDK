@@ -39,8 +39,8 @@ class PdsCli
     CLI::App*    m_canIdCmd       = nullptr;
     CLI::Option* m_canIdCmdOption = nullptr;
 
-    CLI::App*    m_canBaudCmd       = nullptr;
-    CLI::Option* m_canBaudCmdOption = nullptr;
+    CLI::App*    m_canDataCmd       = nullptr;
+    CLI::Option* m_canDataCmdOption = nullptr;
 
     // "clear" commands node
     CLI::App* m_clearCmd    = nullptr;
@@ -106,7 +106,7 @@ class PdsCli
     // Properties
     u16         m_canId         = 0u;     // PDS CAN ID
     u16         m_newCanId      = 0u;     // PDS CAN ID
-    std::string m_canBaudrate   = "";     // PDS CAN baudrate
+    std::string m_canDatarate   = "";     // PDS CAN datarate
     u32         m_batteryLevel1 = 0u;     // Battery level 1 in mV
     u32         m_batteryLevel2 = 0u;     // Battery level 2 in mV
     u32         m_shutdownTime  = 0u;     // Shutdown time in ms
