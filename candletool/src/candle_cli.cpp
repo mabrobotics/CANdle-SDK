@@ -39,7 +39,9 @@ namespace mab
                     if (updateOptions.fwVersion->empty())
                     {
                         m_logger.error(
-                            "Please provide version of fw or latest keyword in the argument!");
+                            "Please provide version of fw or \"latest\" keyword in the argument!");
+                        m_logger.error(
+                            "For example candletool candle update latest");
                         return;
                     }
                     std::string fallbackPath = ctx.packageEtcPath->generic_string();

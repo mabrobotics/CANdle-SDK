@@ -176,11 +176,12 @@ namespace mab
                     {"version",
                      rootCli->add_option("version",
                                          *fwVersion,
-                                         "Version of fw to download (latest or X.X.X format)")},
+                                         "Version of fw to download (\"latest\" or X.X.X format). "
+                                        "For example:  candletool md update latest")},
                     {"path",
                      rootCli->add_option("-p,--path",
                                          *pathToMabFile,
-                                         "Override download and provide local path to .mab file")},
+                                         "Local path to .mab file")},
                     {"recovery",
                      rootCli->add_flag(
                          "-r,--recovery", *recovery, "Driver recovery after failed flashing")},
