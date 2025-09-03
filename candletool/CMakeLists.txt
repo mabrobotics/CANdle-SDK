@@ -18,7 +18,8 @@ add_subdirectory(3rd_party/CLI11)
 set(CANDLETOOL_SOURCES
     src/candle_cli.cpp
     src/canLoader.cpp
-    src/curl_handler.cpp
+    src/web_file_module/curl_handler.cpp
+    src/web_file_module/flasher.cpp
     src/md_cli.cpp
     src/mab_crc.cpp
     src/mabFileParser.cpp
@@ -33,8 +34,10 @@ add_executable(candletool ${CANDLETOOL_SOURCES})
 target_link_libraries(candletool candle logger)
 
 target_include_directories(
-  candletool PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-                    ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src)
+  candletool
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/web_file_module
+         ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src)
 
 target_compile_options(candletool PRIVATE -g)
 
@@ -95,6 +98,7 @@ if(WIN32)
   install(
     FILES
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini
+      ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/web_files_metadata.ini
     DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
                 WORLD_WRITE
@@ -112,6 +116,9 @@ if(WIN32)
     -static
     logger)
 
+  add_compile_definitions(
+    DEFAULT_CANDLETOOL_CONFIG_DIR="${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
+  )
 elseif(UNIX)
 
   install(TARGETS candletool RUNTIME COMPONENT candletool)
@@ -125,6 +132,7 @@ elseif(UNIX)
   install(
     FILES
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini
+      ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/web_files_metadata.ini
     DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
                 WORLD_WRITE
@@ -158,10 +166,15 @@ elseif(UNIX)
   install(
     FILES
       "${PROJECT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini"
+      "${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/web_files_metadata.ini"
     DESTINATION "/etc/candletool/"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
                 WORLD_WRITE
     EXCLUDE_FROM_ALL)
+  add_compile_definitions(DEFAULT_CANDLETOOL_CONFIG_DIR="/etc/candletool/")
+else()
+  message(FATAL_ERROR "System not unix nor windows, can not compile!")
+  message()
 
 endif()
 
