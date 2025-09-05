@@ -160,7 +160,5 @@ int main(int argc, char** argv)
         std::cerr << app.help() << std::endl;
 
     pdsCli.parse();
-    MdcoCli.parse(*datarate);
-
     return EXIT_SUCCESS;
 }

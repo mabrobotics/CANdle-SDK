@@ -265,49 +265,14 @@ Error_t edsParser::isValid()
 
 Error_t edsParser::unload()
 {
-    const std::string pathFile = "./eds/eds_path.txt";
+    mINI::INIFile      file(mab::getCandletoolConfigPath());
+    mINI::INIStructure ini;
+    file.read(ini);
 
-    // check if the file exists
-    if (!std::filesystem::exists(pathFile))
-    {
-        log.warn("No eds_path.txt file.");
-        return INVALID_PATH;
-    }
-
-    // check if the file already empty
-    std::ifstream in(pathFile);
-    if (!in.is_open())
-    {
-        log.error("Impossible to open eds_path.txt in reading mode.");
-        return INVALID_PATH;
-    }
-
-    std::string content;
-    std::getline(in, content);
-    in.close();
-
-    // Trim simple
-    content.erase(0, content.find_first_not_of("\t\r\n"));
-    content.erase(content.find_last_not_of("\t\r\n") + 1);
-
-    if (content.empty())
-    {
-        log.warn("The eds_path.txt file is already empty.");
-        return OK;
-    }
-
-    // erase the content of the file
-    std::ofstream out(pathFile, std::ios::trunc);
-    if (!out.is_open())
-    {
-        log.error("Impossible to open eds_path.txt in writing mode.");
-        return INVALID_PATH;
-    }
-
-    out << "";
-    out.close();
-
-    log.info("EDS path delete from eds_path.txt.");
+    // Modify & Rewrite
+    ini["eds"]["path"] = "";
+    file.write(ini);
+    log.success("EDS unloaded");
     return OK;
 }
 
