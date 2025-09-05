@@ -628,7 +628,7 @@ Error_t edsParser::generateCpp(const std::string& path)
     std::ofstream hpp((defaultPath + "OD.hpp"));
     hpp << "#pragma once\n";
     hpp << "#include <vector>\n";
-    hpp << "#include \"../include/edsParser.hpp\"\n\n";
+    hpp << "#include \"edsParser.hpp\"\n\n";
     hpp << "namespace mab\n";
     hpp << "{\n";
     hpp << "std::vector<edsObject> generateObjectDictionary();\n";
