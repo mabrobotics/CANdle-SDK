@@ -41,7 +41,6 @@ namespace mab
         Logger                               m_log;
         CLI::App&                            m_rootCli;
         const std::shared_ptr<CandleBuilder> m_candleBuilder;
-
         //  principal subcommands
         CLI::App* mdco         = nullptr;
         CLI::App* blink        = nullptr;
@@ -118,6 +117,11 @@ namespace mab
         CLI::App* testMoveRel   = nullptr;
         CLI::App* testMoveSpeed = nullptr;
         CLI::App* testImpedance = nullptr;
+
+        void        clean(std::string& s);
+        bool        isCanOpenConfigComplete(const std::string& pathToConfig);
+        std::string validateAndGetFinalConfigPath(const std::string& cfgPath);
+        void        updateUserChoice();
 
         struct ClearOptions
         {
@@ -334,13 +338,5 @@ namespace mab
             const std::shared_ptr<bool>         force;
             std::map<std::string, CLI::Option*> optionsMap;
         };
-
-        /// @brief delete all space and all capital letter in the s string
-        /// @param s the string we need to clean
-        void clean(std::string& s);
-
-        bool        isCanOpenConfigComplete(const std::string& pathToConfig);
-        std::string validateAndGetFinalConfigPath(const std::string& cfgPath);
-        void        updateUserChoice();
     };
 }  // namespace mab

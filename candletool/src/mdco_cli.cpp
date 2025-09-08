@@ -1168,7 +1168,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
             mINI::INIFile      motorCfg(finalConfigPath);
             mINI::INIStructure cfg;
             motorCfg.read(cfg);
-            mINI::INIFile      file(getCandletoolConfigPath());
+            mINI::INIFile      file(getCanOpenConfigPath());
             mINI::INIStructure ini;
             file.read(ini);
             auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));

@@ -523,11 +523,11 @@ namespace mab
             error    = result.second;
 
             // if a incorrect message is received, ignore it
-            if (error != mab::candleTypes::Error_t::OK || response.size() < 3)
+            if (error != mab::candleTypes::Error_t::OK)
                 continue;
 
             // if the received message is not a Heartbeat, ignore it
-            if (!(response[0] == 0x04 && response[1] == 0x01 && response[2] == 0x05))
+            if ((int)response.size() <= 4)
                 continue;
 
             // heartbeat received

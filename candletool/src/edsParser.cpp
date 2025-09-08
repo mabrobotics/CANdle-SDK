@@ -205,7 +205,7 @@ edsParser::~edsParser()
 
 Error_t edsParser::load(const std::string& edsFilePath)
 {
-    mINI::INIFile      file(mab::getCandletoolConfigPath());
+    mINI::INIFile      file(mab::getCanOpenConfigPath());
     mINI::INIStructure ini;
     file.read(ini);
 
@@ -265,7 +265,7 @@ Error_t edsParser::isValid()
 
 Error_t edsParser::unload()
 {
-    mINI::INIFile      file(mab::getCandletoolConfigPath());
+    mINI::INIFile      file(mab::getCanOpenConfigPath());
     mINI::INIStructure ini;
     file.read(ini);
 
@@ -1217,7 +1217,7 @@ Error_t edsParser::modifyObject(const edsObject& obj, u32 index, u8 subindex)
 
 Error_t edsParser::updateFilePath()
 {
-    mINI::INIFile      file(mab::getCandletoolConfigPath());
+    mINI::INIFile      file(mab::getCanOpenConfigPath());
     mINI::INIStructure ini;
     file.read(ini);
 
