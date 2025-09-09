@@ -16,9 +16,26 @@ namespace mab
     }
 
     Candle::Candle(const CANdleDatarate_E                           canDatarate,
-                   std::unique_ptr<mab::I_CommunicationInterface>&& bus)
-        : m_canDatarate(canDatarate), m_bus(std::move(bus))
+                   std::unique_ptr<mab::I_CommunicationInterface>&& bus,
+                   bool                                             useRegularCANFrames)
+        : m_canDatarate(canDatarate),
+          m_bus(std::move(bus)),
+          m_useRegularCanFrames(useRegularCANFrames),
+          m_maxCANFrameSize(useRegularCANFrames ? 8 : 64)
     {
+        if (m_useRegularCanFrames)
+            m_log.debug("CANdle initialized with regular CAN format, max frame size is %u",
+                        m_maxCANFrameSize);
+        else
+            m_log.debug("CANdle initialized with CAN-FD format, max frame size is %u",
+                        m_maxCANFrameSize);
+
+        if (canDatarate != CANdleDatarate_E::CAN_DATARATE_1M && useRegularCANFrames)
+        {
+            throw std::runtime_error(
+                "Regular CAN does not support datarate above 1Mbps. Either use CAN-FD or lower the "
+                "datarate to 1M.");
+        }
     }
 
     candleTypes::Error_t Candle::init()
@@ -71,7 +88,7 @@ namespace mab
     }
     std::optional<version_ut> Candle::getCandleVersion()
     {
-        auto buffer       = datarateCommandFrame(m_canDatarate);
+        auto buffer       = datarateCommandFrame(m_canDatarate, m_useRegularCanFrames);
         auto dataResponse = busTransfer(&buffer, 6);
         if (dataResponse != candleTypes::Error_t::OK || buffer.size() < 6)
         {
@@ -142,7 +159,7 @@ namespace mab
         m_log.debug("SEND");
         // frameDump(dataToSend);  // can be enabled for in depth debugging
 
-        if (dataToSend.size() > 64)
+        if (dataToSend.size() > m_maxCANFrameSize)
         {
             m_log.error("CAN frame too long!");
             return std::pair<std::vector<u8>, candleTypes::Error_t>(
@@ -176,7 +193,7 @@ namespace mab
     // TODO: this must be changed to something less invasive
     candleTypes::Error_t Candle::legacyCheckConnection()
     {
-        auto datarateFrame = datarateCommandFrame(m_canDatarate);
+        auto datarateFrame = datarateCommandFrame(m_canDatarate, m_useRegularCanFrames);
 
         auto testConnectionFrame = std::vector<u8>(datarateFrame.begin(), datarateFrame.end());
 

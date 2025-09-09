@@ -140,13 +140,17 @@ jobs:
 
       - name: Build
         run: cmake --build ./build -j$(nproc)
+      
+      - name: Rename artifact to arch dependant name
+        run: |
+          mv build/candlelib/libcandle.so build/candlelib/libcandle-x86_64.so
 
       - name: Store artifacts
         uses: actions/upload-artifact@v4
         with:
           name: candlelib-x86_64-shared
           path: |
-            build/candlelib/*.so
+            build/candlelib/libcandle-x86_64.so
 
   build-candleSDK-linux-static:
     runs-on: ubuntu-24.04
@@ -196,12 +200,16 @@ jobs:
       - name: Build
         run: cmake --build ./build -j$(nproc)
 
+      - name: Rename artifact to arch dependant name
+        run: |
+          mv build/candlelib/libcandle.so build/candlelib/libcandle-arm64.so
+
       - name: Store artifacts
         uses: actions/upload-artifact@v4
         with:
           name: candlelib-arm64-shared
           path: |
-            build/candlelib/*.so
+            build/candlelib/libcandle-arm64.so
 
   build-candleSDK-linux-arm64-static:
     runs-on: ubuntu-24.04
@@ -250,13 +258,17 @@ jobs:
       
       - name: Build
         run: cmake --build ./build -j$(nproc)
+      
+      - name: Rename artifact to arch dependant name
+        run: |
+          mv build/candlelib/libcandle.so build/candlelib/libcandle-armhf.so
 
       - name: Store artifacts
         uses: actions/upload-artifact@v4
         with:
           name: candlelib-armhf-shared
           path: |
-            build/candlelib/*.so
+            build/candlelib/libcandle-armhf.so
 
   build-candleSDK-linux-armhf-static:
     runs-on: ubuntu-24.04
