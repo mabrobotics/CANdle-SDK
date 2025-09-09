@@ -29,6 +29,13 @@ namespace mab
         else
             m_log.debug("CANdle initialized with CAN-FD format, max frame size is %u",
                         m_maxCANFrameSize);
+
+        if (canDatarate != CANdleDatarate_E::CAN_DATARATE_1M && useRegularCANFrames)
+        {
+            throw std::runtime_error(
+                "Regular CAN does not support datarate above 1Mbps. Either use CAN-FD or lower the "
+                "datarate to 1M.");
+        }
     }
 
     candleTypes::Error_t Candle::init()
