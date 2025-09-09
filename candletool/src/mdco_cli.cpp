@@ -129,7 +129,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco((*mdCanId), candle);
             if (mdco.blinkOpenTest() != MDCO::Error_t::OK)
             {
@@ -152,7 +152,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId, canOptions]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco(*mdCanId, candle);
             long newbaud;
             if (*canOptions.datarate == "1M")
@@ -195,7 +195,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId, clearOptions]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco((*mdCanId), candle);
             m_log.info("sending in canOpen clear error \n");
             MDCO::Error_t err = MDCO::OK;
@@ -230,7 +230,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             std::vector<canId_t> mdIds;
             mdIds = MDCO::discoverOpenMDs(candle);
             m_log.info("Discovered MDs: ");
@@ -447,7 +447,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId, HeartbeatOptions]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO::Error_t err;
             if (*HeartbeatOptions.masterCanId > 0x7F || *HeartbeatOptions.slaveCanId > 0x7f)
             {
@@ -548,7 +548,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco   = MDCO(*mdCanId, candle);
             std::vector<u8> data = {0x01, (u8)*mdCanId};
             MDCO::Error_t   err  = mdco.writeOpenPDORegisters(0x000, data);
@@ -567,7 +567,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco   = MDCO(*mdCanId, candle);
             std::vector<u8> data = {0x02, (u8)*mdCanId};
             MDCO::Error_t   err  = mdco.writeOpenPDORegisters(0x000, data);
@@ -586,7 +586,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco   = MDCO(*mdCanId, candle);
             std::vector<u8> data = {0x80, (u8)*mdCanId};
             MDCO::Error_t   err  = mdco.writeOpenPDORegisters(0x000, data);
@@ -603,7 +603,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco   = MDCO(*mdCanId, candle);
             std::vector<u8> data = {0x81, (u8)*mdCanId};
             MDCO::Error_t   err  = mdco.writeOpenPDORegisters(0x000, data);
@@ -622,7 +622,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco   = MDCO(*mdCanId, candle);
             std::vector<u8> data = {0x82, (u8)*mdCanId};
             MDCO::Error_t   err  = mdco.writeOpenPDORegisters(0x000, data);
@@ -647,7 +647,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO md     = MDCO(*mdCanId, candle);
 
             m_log.info("Sending SDO for motor setup!");
@@ -728,7 +728,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO md     = MDCO(*mdCanId, candle);
 
             m_log.info("Sending SDO for motor setup!");
@@ -838,7 +838,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         {
             updateUserChoice();
             unsigned long long data = strtoul((cmdCANopen.value.c_str()), nullptr, 16);
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco   = MDCO(*mdCanId, candle);
 
             MDCO::Error_t err;
@@ -920,7 +920,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId, readOption]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco   = MDCO(*mdCanId, candle);
             std::vector<u8> data;
             int dataSize = mdco.dataSizeOfEdsObject(*readOption.index, *readOption.subindex);
@@ -956,7 +956,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId, writeOption]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco   = MDCO(*mdCanId, candle);
 
             MDCO::Error_t err;
@@ -1043,7 +1043,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco((*mdCanId), candle);
             MDCO::Error_t err = mdco.openReset();
             if (err != MDCO::OK)
@@ -1066,7 +1066,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco((*mdCanId), candle);
             MDCO::Error_t err = mdco.encoderCalibration(1, 0);
             if (err != MDCO::OK)
@@ -1083,7 +1083,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco((*mdCanId), candle);
             MDCO::Error_t err = mdco.encoderCalibration(0, 1);
             if (err != MDCO::OK)
@@ -1101,7 +1101,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco((*mdCanId), candle);
             bool printAll = false;
             setupInfoAllFlag->count() > 0 ? printAll = true : printAll = false;
@@ -1171,7 +1171,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
             mINI::INIFile      file(getCanOpenConfigPath());
             mINI::INIStructure ini;
             file.read(ini);
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco((*mdCanId), candle);
 
             std::string motor_name            = "";
@@ -1547,7 +1547,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco((*mdCanId), candle);
             mINI::INIStructure readIni; /*< mINI structure for read data */
             MDRegisters_S      regs;    /*< read register */
@@ -1738,7 +1738,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         {
             updateUserChoice();
             u16  reg    = strtoul(cmdCANopen.reg.c_str(), nullptr, 16);
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco((*mdCanId), candle);
             std::vector<u8> data;
             MDCO::Error_t   err = mdco.readLongOpenRegisters(reg, cmdCANopen.subReg, data);
@@ -1766,7 +1766,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         {
             updateUserChoice();
             u16  reg    = strtoul(cmdCANopen.reg.c_str(), nullptr, 16);
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco((*mdCanId), candle);
 
             MDCO::Error_t err =
@@ -1786,7 +1786,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco((*mdCanId), candle);
             long SyncMessageValue = mdco.getValueFromOpenRegister(0x1005, 0x0);
             std::vector<u8> data;
@@ -1822,7 +1822,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco((*mdCanId), candle);
             u64  latence_totale = 0;
             bool testOk         = true;
@@ -1873,7 +1873,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId, moveAbsParm]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco((*mdCanId), candle);
             MDCO::Error_t err;
             err = mdco.setProfileParameters(*moveAbsParm.param);
@@ -1917,7 +1917,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId, moveRelParam]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco((*mdCanId), candle);
             MDCO::Error_t err;
             err = mdco.setProfileParameters(*moveRelParam.param);
@@ -1959,7 +1959,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId, moveSpeedParam]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco((*mdCanId), candle);
             MDCO::Error_t err;
             err = mdco.setProfileParameters(*moveSpeedParam.param);
@@ -2014,7 +2014,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId, moveImpedanceParam]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco((*mdCanId), candle);
             MDCO::Error_t err;
             err = mdco.setProfileParameters(*moveImpedanceParam.param);
@@ -2059,7 +2059,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         [this, candleBuilder, mdCanId]()
         {
             updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
+            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco((*mdCanId), candle);
 
             auto now = std::chrono::system_clock::now();
