@@ -48,7 +48,8 @@ namespace mab
         /// @param canDatarate CAN network datarate
         /// @param bus Initialized communication interface
         explicit Candle(const CANdleDatarate_E                           canDatarate,
-                        std::unique_ptr<mab::I_CommunicationInterface>&& bus);
+                        std::unique_ptr<mab::I_CommunicationInterface>&& bus,
+                        bool useRegularCANFrames = false);
 
         /// @brief Method for transfering CAN packets via CANdle device
         /// @param canId Target CAN node ID
@@ -88,7 +89,9 @@ namespace mab
 
         std::unique_ptr<mab::I_CommunicationInterface> m_bus;
 
-        bool m_isInitialized = false;
+        bool         m_isInitialized       = false;
+        const bool   m_useRegularCanFrames = false;
+        const size_t m_maxCANFrameSize     = 64;
 
         candleTypes::Error_t busTransfer(std::vector<u8>* data,
                                          size_t           responseLength = 0,
@@ -107,9 +110,10 @@ namespace mab
             return std::array<u8, 2>({ENTER_BOOTLOADER, 0x0});
         }
 
-        static inline std::vector<u8> datarateCommandFrame(const CANdleDatarate_E datarate)
+        static inline std::vector<u8> datarateCommandFrame(const CANdleDatarate_E datarate,
+                                                           const u8               regularCanFormat)
         {
-            return std::vector<u8>({CANDLE_CONFIG_DATARATE, datarate});
+            return std::vector<u8>({CANDLE_CONFIG_DATARATE, datarate, regularCanFormat});
         }
 
         static inline std::vector<u8> sendCanFrameHeader(const u8&&  length,
