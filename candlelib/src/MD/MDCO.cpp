@@ -591,6 +591,12 @@ namespace mab
             m_log.error("Error saving all parameters");
             return err;
         }
+        // wait for motor to restart
+        auto start   = std::chrono::steady_clock::now();
+        auto timeout = std::chrono::milliseconds((2000));
+        while (std::chrono::steady_clock::now() - start < timeout)
+        {
+        }
         return MDCO::Error_t::OK;
     }
 

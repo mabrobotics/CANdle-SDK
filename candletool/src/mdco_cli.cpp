@@ -2024,6 +2024,13 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
                 detachCandle(candle);
                 return;
             }
+            err = mdco.openSave();
+            if (err != MDCO::OK)
+            {
+                m_log.error("Error enabling driver");
+                detachCandle(candle);
+                return;
+            }
             err = mdco.enableDriver(Impedance);
             if (err != MDCO::OK)
             {

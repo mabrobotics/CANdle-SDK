@@ -14,8 +14,8 @@ int main()
     // Attach Candle is an AIO method to get ready to use candle handle that corresponds to the real
     // CANdle USB-CAN converter. Its a main object so should have the longest lifetime of all
     // objects from the library.
-    mab::Candle* candle = mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M,
-                                            mab::candleTypes::busTypes_t::USB);
+    mab::Candle* candle = mab::attachCandle(
+        mab::CANdleDatarate_E::CAN_DATARATE_1M, mab::candleTypes::busTypes_t::USB, true);
 
     // Look for MAB devices present on the can network
     auto ids = mab::MDCO::discoverOpenMDs(candle);

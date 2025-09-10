@@ -26,9 +26,11 @@ namespace py = pybind11;
 
 namespace mab
 {
-    Candle* pyAttachCandle(const CANdleDatarate_E datarate, candleTypes::busTypes_t busType)
+    Candle* pyAttachCandle(const CANdleDatarate_E  datarate,
+                           candleTypes::busTypes_t busType,
+                           bool                    useRegularCANFrames)
     {
-        return attachCandle(datarate, busType);
+        return attachCandle(datarate, busType, useRegularCANFrames);
     }
 
     MD createMD(int canId, std::shared_ptr<Candle> candle)
@@ -566,6 +568,7 @@ PYBIND11_MODULE(pyCandle, m)
           &mab::pyAttachCandle,
           py::arg("datarate"),
           py::arg("busType"),
+          py::arg("useRegularCANFrames"),
           py::return_value_policy::take_ownership,
           "Attach a CANdle device to the system.");
 
