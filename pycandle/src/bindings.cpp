@@ -178,19 +178,6 @@ namespace mab
         return MDCO(canId, candle.get());
     }
 
-    // ===== MDCO Wrapper Helpers (complete but non-intrusive) =====
-
-    // Wrapper: read an OpenCANopen register and return (value, error)
-    std::pair<i32, MDCO::Error_t> mdcoReadOpenRegisterValue(MDCO& mdco,
-                                                            i16   index,
-                                                            u8    subindex,
-                                                            bool  force = false)
-    {
-        MDCO::Error_t err = mdco.readOpenRegisters(index, subindex, force);
-        i32           val = mdco.getValueFromOpenRegister(index, subindex);
-        return std::make_pair(val, err);
-    }
-
     // Wrapper: read long OpenCANopen register into a vector and return (data, error)
     std::pair<std::vector<u8>, MDCO::Error_t> mdcoReadLongOpenRegistersWrapper(MDCO& mdco,
                                                                                i16   index,
@@ -750,6 +737,10 @@ PYBIND11_MODULE(pyCandle, m)
     py::class_<mab::MDCO>(m, "MDCO")
         .def(py::init([](int canId, mab::Candle* candle) -> auto
                       { return mab::MDCO(canId, candle); }))
+        .def_static("discoverOpenMDs",
+                    &mab::MDCO::discoverOpenMDs,
+                    py::arg("candle"),
+                    "Discover MD-CO devices on the bus.")
         .def("printAllInfo",
              &mab::MDCO::printAllInfo,
              "Print CANopen object dictionary and device info.")
@@ -822,22 +813,6 @@ PYBIND11_MODULE(pyCandle, m)
              py::arg("kd"),
              py::arg("torqueff"),
              "Set motion profile and impedance parameters.")
-        // Object dictionary helpers
-        // .def("findObjectByName",
-        //      &mab::mdcoFindObjectByNameWrapper,
-        //      py::arg("searchTerm"),
-        //      "Find object by name and return (index, subindex, error).")
-        // .def("isReadable",
-        //      &mab::MDCO::isReadable,
-        //      py::arg("index"),
-        //      py::arg("subIndex"),
-        //      "Check if OD entry is readable.")
-        // .def("isWritable",
-        //      &mab::MDCO::isWritable,
-        //      py::arg("index"),
-        //      py::arg("subIndex"),
-        //      "Check if OD entry is writable.")
-        // Register access
         .def("readOpenRegisters",
              &mab::MDCO::readOpenRegisters,
              py::arg("index"),

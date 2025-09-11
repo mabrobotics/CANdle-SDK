@@ -7,7 +7,7 @@ import time
 # Initialize CANdle
 candle = pc.attachCandle(pc.CANdleDatarate_E.CAN_DATARATE_1M, pc.busTypes_t.USB, True)
 
-# Create virtual MD representation
+# Create virtual MD representation (insert your motor id)
 mdco = pc.MDCO(15, candle)
 
 # movement parameter (insert your motor parameter)
@@ -25,22 +25,6 @@ TorqueForceFeedback=0
 # Initialize it to see if it connects
 err = mdco.setProfileParameters(maxAcceleration,maxDeceleration,maxCurrent,ratedCurrent,maxSpeed,maxTorque,ratedTorque,kp,kd,TorqueForceFeedback)
 mdco.openSave()
-mdco.enableDriver(pc.CanOpenMotionMode_t.Impedance)
 print(f"MD initialized with following status: {err}")
+mdco.testHeartbeat()
 
-# Torque actual value register
-index=0x6077
-subindex=0x00
-
-if err == pc.MDCO_Error_t.OK:
-    for i in range(500):
-        value = mdco.getValueFromOpenRegister(index,subindex)
-        # testing bit sign
-        if value & (1 << 15):
-            value -= 1 << 16
-        # Display torque actual value
-        print("torque actual value:",(value))
-        time.sleep(0.01)
-
-# disable driver
-mdco.disableDriver()
