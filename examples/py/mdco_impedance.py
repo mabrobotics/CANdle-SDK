@@ -15,7 +15,7 @@ maxAcceleration=10
 maxDeceleration=10
 maxTorque=2000
 ratedTorque=1000
-maxCurrent=500
+maxCurrent=2000
 ratedCurrent=1000
 maxSpeed=200
 kp=10
@@ -23,15 +23,16 @@ kd=1
 TorqueForceFeedback=0
 
 # Initialize it to see if it connects
-err = mdco.setProfileParameters(maxAcceleration,maxDeceleration,maxCurrent,ratedCurrent,maxSpeed,maxTorque,ratedTorque,kp,kd,TorqueForceFeedback)
+mdco.setProfileParameters(maxAcceleration,maxDeceleration,maxCurrent,ratedCurrent,maxSpeed,maxTorque,ratedTorque,kp,kd,TorqueForceFeedback)
 mdco.openSave()
-mdco.enableDriver(pc.CanOpenMotionMode_t.Impedance)
+err = mdco.enableDriver(pc.CanOpenMotionMode_t.Impedance)
 print(f"MD initialized with following status: {err}")
 
 # Torque actual value register
 index=0x6077
 subindex=0x00
 
+# Display torque actual value
 if err == pc.MDCO_Error_t.OK:
     for i in range(500):
         value = mdco.getValueFromOpenRegister(index,subindex)

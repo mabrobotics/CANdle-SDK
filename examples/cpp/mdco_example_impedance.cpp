@@ -27,8 +27,7 @@ int main()
     }
 
     i32 desiredSpeed = 0;
-    i32 targetPos    = 1;
-    i16 torque       = 0;
+    i32 targetPos    = 0;
     f32 kp           = 10;
     f32 kd           = 1;
 
@@ -44,7 +43,7 @@ int main()
     // Rated torque is in mN*m
     MyMotorParam.RatedTorque = 1000;
     // Max torque is in rated torque *10^(-3)
-    MyMotorParam.MaxTorque = 2000;
+    MyMotorParam.MaxTorque = 4000;
     // Max speed is RPM
     MyMotorParam.MaxSpeed = 1000;
     // Max acceleration in RPM/s
@@ -54,6 +53,9 @@ int main()
 
     // Send the motor parameter to the MD
     mdco.setProfileParameters(MyMotorParam);
+
+    // Save motor parameter
+    mdco.openSave();
 
     // set the motor in the impedance mode
     mdco.enableDriver(Impedance);
@@ -68,12 +70,10 @@ int main()
     mdco.writeOpenRegisters("Kd_impedance", kd_bits);
     mdco.writeOpenRegisters("Position Demand Value", targetPos);
     mdco.writeOpenRegisters("Velocity Demand Value", desiredSpeed);
-    mdco.writeOpenRegisters("Torque Demand Value", torque);
     auto start   = std::chrono::steady_clock::now();
     auto timeout = std::chrono::seconds((5));
     while (std::chrono::steady_clock::now() - start < timeout)
     {
-        mdco.writeOpenRegisters("Torque Demand Value", torque);
     }
     mdco.writeOpenRegisters("Torque Demand Value", 0);
     mdco.disableDriver();

@@ -10,8 +10,8 @@ candle = pc.attachCandle(pc.CANdleDatarate_E.CAN_DATARATE_1M, pc.busTypes_t.USB,
 # call discoverOpenMDs function
 ids = pc.MDCO.discoverOpenMDs(candle)
 
+# displays the list of all found IDs
 if (len(ids)!=0):
-    # displays the list of all found IDs
     print("MDCO attach to the candle :", ids)
 else:
     print ("No motor drives is attached to the candle")

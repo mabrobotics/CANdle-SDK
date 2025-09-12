@@ -24,7 +24,14 @@ TorqueForceFeedback=0
 
 # Initialize it to see if it connects
 err = mdco.setProfileParameters(maxAcceleration,maxDeceleration,maxCurrent,ratedCurrent,maxSpeed,maxTorque,ratedTorque,kp,kd,TorqueForceFeedback)
+
+# save the parameters to the motor controller
 mdco.openSave()
+
+# display the error code
 print(f"MD initialized with following status: {err}")
+
+# test the heartbeat
 mdco.testHeartbeat()
+
 

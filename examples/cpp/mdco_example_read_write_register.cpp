@@ -51,18 +51,12 @@ int main()
     mdco.readLongOpenRegisters(0x2000, 0x06, MotorNameAfter);
 
     // you can also use PDO for faster communication
-    std::vector<u8> frame;
-    frame.reserve(2);
-    frame.push_back(0x00);
-    frame.push_back(0x0f);
+    std::vector<u8> frame = {0x00, 0x0f};
     mdco.writeOpenPDORegisters(0x200 + ids[0], frame);
 
     // you can use this method for every other message who don't need answer (NMT,TimeStamp,etc.).
     // e.g. send a NMT reset node message to the motor drive with the lowest id
-    std::vector<u8> data;
-    data.reserve(2);
-    data.push_back(0x81);
-    data.push_back(ids[0]);
+    std::vector<u8> data = {0x81, (u8)ids[0]};
     mdco.sendCustomData(0x000, data);
 
     return EXIT_SUCCESS;

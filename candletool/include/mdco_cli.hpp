@@ -7,6 +7,7 @@
 #include "mini/ini.h"
 #include "configHelpers.hpp"
 #include "edsParser.hpp"
+#include "mab_types.hpp"
 
 namespace mab
 {

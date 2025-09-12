@@ -39,8 +39,8 @@ int main()
     // should switch to stop mode (Cf. NMT state machine, CiA 301)
     MDCO mdcoProducer(15, candle);
 
-    std::vector<u8> frame;
-    frame.push_back(0x05);
+    std::vector<u8> frame = {0x05};
+    // frame.push_back(0x05);
     long DataSlave;
     u8   bytes1 = 0x00;  //(Producer ID >> 8)
     u8   bytes2 = 0x0E;  //(Producer ID)

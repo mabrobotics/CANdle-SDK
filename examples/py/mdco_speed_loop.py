@@ -26,7 +26,9 @@ timeoutms=5000
 
 # Initialize it to see if it connects
 err = mdco.setProfileParameters(maxAcceleration,maxDeceleration,maxCurrent,ratedCurrent,maxSpeed,maxTorque,ratedTorque,kp,kd,TorqueForceFeedback)
+# save parameter 
 mdco.openSave()
+# Display error code
 print(f"MD initialized with following status: {err}")
 
 

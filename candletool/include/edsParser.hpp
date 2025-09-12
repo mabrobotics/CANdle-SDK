@@ -1,11 +1,11 @@
 #include <string>
 #include <fstream>
-#include <filesystem>
 #include <iostream>
 #include <regex>
 #include <set>
-#include <algorithm>  // std::transform
-#include <cctype>     // std::tolower
+#include <filesystem>
+#include <algorithm>
+#include <cctype>
 
 #include "mab_types.hpp"
 #include "logger.hpp"
