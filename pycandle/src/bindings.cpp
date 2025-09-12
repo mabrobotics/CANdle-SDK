@@ -12,6 +12,7 @@
 #include "candle_types.hpp"
 #include "candle.hpp"
 #include "MD.hpp"
+#include "MDCO.hpp"
 #include "logger.hpp"
 #include "pds.hpp"
 #include "pds_module.hpp"
@@ -25,9 +26,11 @@ namespace py = pybind11;
 
 namespace mab
 {
-    Candle* pyAttachCandle(const CANdleDatarate_E datarate, candleTypes::busTypes_t busType)
+    Candle* pyAttachCandle(const CANdleDatarate_E  datarate,
+                           candleTypes::busTypes_t busType,
+                           bool                    useRegularCANFrames)
     {
-        return attachCandle(datarate, busType);
+        return attachCandle(datarate, busType, useRegularCANFrames);
     }
 
     MD createMD(int canId, std::shared_ptr<Candle> candle)
@@ -170,8 +173,85 @@ namespace mab
         return err;
     }
 
-    // PDS Wrapper Functions
+    MDCO createMDCO(int canId, std::shared_ptr<Candle> candle)
+    {
+        return MDCO(canId, candle.get());
+    }
 
+    // Wrapper: read long OpenCANopen register into a vector and return (data, error)
+    std::pair<std::vector<u8>, MDCO::Error_t> mdcoReadLongOpenRegistersWrapper(MDCO& mdco,
+                                                                               i16   index,
+                                                                               short subindex)
+    {
+        std::vector<u8> data;
+        MDCO::Error_t   err = mdco.readLongOpenRegisters(index, subindex, data);
+        return std::make_pair(std::move(data), err);
+    }
+
+    // Wrapper: write OpenCANopen register by index/subindex
+    MDCO::Error_t mdcoWriteOpenRegistersByIndex(
+        MDCO& mdco, i16 index, short subindex, i32 data, short size, bool force = false)
+    {
+        return mdco.writeOpenRegisters(index, subindex, data, size, force);
+    }
+
+    // Wrapper: write OpenCANopen register by object name
+    MDCO::Error_t mdcoWriteOpenRegistersByName(
+        MDCO& mdco, const std::string& name, u32 data, u8 size = 0, bool force = false)
+    {
+        return mdco.writeOpenRegisters(name, data, size, force);
+    }
+
+    // Wrapper: cast int to ModesOfOperation to enable driver
+    MDCO::Error_t mdcoEnableDriverFromInt(MDCO& mdco, int mode)
+    {
+        return mdco.enableDriver(static_cast<ModesOfOperation>(mode));
+    }
+
+    // Wrapper: set profile parameters without exposing the struct in Python
+    MDCO::Error_t mdcoSetProfileParametersWrapper(MDCO& mdco,
+                                                  i32   accLimit,
+                                                  i32   dccLimit,
+                                                  i32   maxCurrent,
+                                                  i32   ratedCurrent,
+                                                  i32   maxSpeed,
+                                                  i32   maxTorque,
+                                                  i32   ratedTorque,
+                                                  float kp,
+                                                  float kd,
+                                                  i32   torqueff)
+    {
+        moveParameter p{};
+        p.accLimit     = accLimit;
+        p.dccLimit     = dccLimit;
+        p.MaxCurrent   = maxCurrent;
+        p.RatedCurrent = ratedCurrent;
+        p.MaxSpeed     = maxSpeed;
+        p.MaxTorque    = maxTorque;
+        p.RatedTorque  = ratedTorque;
+        p.kp           = kp;
+        p.kd           = kd;
+        p.torqueff     = torqueff;
+        return mdco.setProfileParameters(p);
+    }
+
+    // Wrapper: impedance move using (kp, kd, torqueff) directly
+    MDCO::Error_t mdcoMoveImpedanceWrapper(MDCO& mdco,
+                                           i32   desiredSpeed,
+                                           i32   targetPos,
+                                           float kp,
+                                           float kd,
+                                           i32   torqueff,
+                                           i16   timeoutMillis)
+    {
+        moveParameter p{};
+        p.kp       = kp;
+        p.kd       = kd;
+        p.torqueff = torqueff;
+        return mdco.moveImpedance(desiredSpeed, targetPos, p, timeoutMillis);
+    }
+
+    // PDS Wrapper Functions
     // Pds class wrappers
     std::pair<pdsFwMetadata_S, PdsModule::error_E> pdsFwMetadataWrapper(Pds& pds)
     {
@@ -475,6 +555,7 @@ PYBIND11_MODULE(pyCandle, m)
           &mab::pyAttachCandle,
           py::arg("datarate"),
           py::arg("busType"),
+          py::arg("useRegularCANFrames"),
           py::return_value_policy::take_ownership,
           "Attach a CANdle device to the system.");
 
@@ -633,6 +714,153 @@ PYBIND11_MODULE(pyCandle, m)
           py::arg("regName"),
           py::arg("value"),
           "Write a register to the MD device.");
+
+    // MDCO class
+    py::enum_<mab::MDCO::Error_t>(m, "MDCO_Error_t")
+        .value("OK", mab::MDCO::Error_t::OK)
+        .value("REQUEST_INVALID", mab::MDCO::Error_t::REQUEST_INVALID)
+        .value("TRANSFER_FAILED", mab::MDCO::Error_t::TRANSFER_FAILED)
+        .value("NOT_CONNECTED", mab::MDCO::Error_t::NOT_CONNECTED)
+        .value("UNKNOWN_OBJECT", mab::MDCO::Error_t::UNKNOWN_OBJECT)
+        .export_values();
+
+    py::enum_<mab::ModesOfOperation>(m, "CanOpenMotionMode_t")
+        .value("Impedance", mab::ModesOfOperation::Impedance)
+        .value("Service", mab::ModesOfOperation::Service)
+        .value("Idle", mab::ModesOfOperation::Idle)
+        .value("ProfilePosition", mab::ModesOfOperation::ProfilePosition)
+        .value("ProfileVelocity", mab::ModesOfOperation::ProfileVelocity)
+        .value("CyclicSyncPosition", mab::ModesOfOperation::ProfilePosition)
+        .value("CyclicSyncVelocity", mab::ModesOfOperation::ProfileVelocity)
+        .export_values();
+
+    py::class_<mab::MDCO>(m, "MDCO")
+        .def(py::init([](int canId, mab::Candle* candle) -> auto
+                      { return mab::MDCO(canId, candle); }))
+        .def_static("discoverOpenMDs",
+                    &mab::MDCO::discoverOpenMDs,
+                    py::arg("candle"),
+                    "Discover MD-CO devices on the bus.")
+        .def("printAllInfo",
+             &mab::MDCO::printAllInfo,
+             "Print CANopen object dictionary and device info.")
+        .def("dataSizeOfEdsObject",
+             &mab::MDCO::dataSizeOfEdsObject,
+             py::arg("index"),
+             py::arg("subIndex"),
+             "Return size (bytes) of object dictionary entry.")
+        // Driver state & control
+        .def("enableDriver",
+             &mab::mdcoEnableDriverFromInt,
+             py::arg("mode"),
+             "Enable the driver with a given mode (int enum).")
+        .def("disableDriver", &mab::MDCO::disableDriver, "Disable the driver.")
+        .def("openReset", &mab::MDCO::openReset, "Reset the CANopen node.")
+        .def("openSave", &mab::MDCO::openSave, "Save parameters to non-volatile memory.")
+        .def("openZero", &mab::MDCO::openZero, "Zero the position counters.")
+        .def("clearOpenErrors",
+             &mab::MDCO::clearOpenErrors,
+             py::arg("level"),
+             "Clear errors at a given level.")
+        .def("testHeartbeat", &mab::MDCO::testHeartbeat, "Send a heartbeat test command.")
+        .def("blinkOpenTest", &mab::MDCO::blinkOpenTest, "Blink LEDs for test.")
+        .def("newCanOpenConfig",
+             &mab::MDCO::newCanOpenConfig,
+             py::arg("newID"),
+             py::arg("newBaud"),
+             py::arg("watchdog"),
+             "Reconfigure node ID / baud / watchdog.")
+        .def("testEncoder",
+             &mab::MDCO::testEncoder,
+             py::arg("main"),
+             py::arg("output"),
+             "Run encoder test.")
+        .def("encoderCalibration",
+             &mab::MDCO::encoderCalibration,
+             py::arg("main"),
+             py::arg("output"),
+             "Calibrate encoder.")
+        // Motion
+        .def("movePosition",
+             &mab::MDCO::movePosition,
+             py::arg("desiredPos"),
+             py::arg("timeoutMillis"),
+             "Move to absolute position.")
+        .def("moveSpeed",
+             &mab::MDCO::moveSpeed,
+             py::arg("desiredSpeed"),
+             py::arg("timeoutMillis"),
+             "Move at target speed.")
+        .def("moveImpedance",
+             &mab::mdcoMoveImpedanceWrapper,
+             py::arg("desiredSpeed"),
+             py::arg("targetPos"),
+             py::arg("kp"),
+             py::arg("kd"),
+             py::arg("torqueff"),
+             py::arg("timeoutMillis"),
+             "Impedance move using kp/kd/torqueff.")
+        .def("setProfileParameters",
+             &mab::mdcoSetProfileParametersWrapper,
+             py::arg("accLimit"),
+             py::arg("dccLimit"),
+             py::arg("maxCurrent"),
+             py::arg("ratedCurrent"),
+             py::arg("maxSpeed"),
+             py::arg("maxTorque"),
+             py::arg("ratedTorque"),
+             py::arg("kp"),
+             py::arg("kd"),
+             py::arg("torqueff"),
+             "Set motion profile and impedance parameters.")
+        .def("readOpenRegisters",
+             &mab::MDCO::readOpenRegisters,
+             py::arg("index"),
+             py::arg("subindex"),
+             py::arg("force"),
+             "Issue a read for an OD entry (value retrievable via getValueFromOpenRegister).")
+        .def("getValueFromOpenRegister",
+             &mab::MDCO::getValueFromOpenRegister,
+             py::arg("index"),
+             py::arg("subindex"),
+             "Get last-read value for an OD entry.")
+        .def("readLongOpenRegisters",
+             &mab::mdcoReadLongOpenRegistersWrapper,
+             py::arg("index"),
+             py::arg("subindex"),
+             "Read long OD entry and return (data, error).")
+        .def("writeOpenRegisters",
+             &mab::mdcoWriteOpenRegistersByIndex,
+             py::arg("index"),
+             py::arg("subindex"),
+             py::arg("data"),
+             py::arg("size"),
+             py::arg("force") = false,
+             "Write OD entry by index/subindex with size and optional force.")
+        .def("writeOpenRegisters",
+             &mab::mdcoWriteOpenRegistersByName,
+             py::arg("name"),
+             py::arg("data"),
+             py::arg("size")  = 0,
+             py::arg("force") = false,
+             "Write OD entry by name with optional size and force.")
+        .def("writeLongOpenRegisters",
+             &mab::MDCO::writeLongOpenRegisters,
+             py::arg("index"),
+             py::arg("subindex"),
+             py::arg("dataString"),
+             py::arg("force"),
+             "Write long OD entry by index/subindex from hex string.")
+        .def("writeOpenPDORegisters",
+             &mab::MDCO::writeOpenPDORegisters,
+             py::arg("index"),
+             py::arg("data"),
+             "Send a PDO to the node.")
+        .def("sendCustomData",
+             &mab::MDCO::sendCustomData,
+             py::arg("index"),
+             py::arg("data"),
+             "Send a raw SDO.");
 
     // Logger
     py::enum_<Logger::Verbosity_E>(m, "Verbosity_E")
