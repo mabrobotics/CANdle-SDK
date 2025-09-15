@@ -16,16 +16,24 @@ project(
   candlesdk
   VERSION ${CANDLESDK_VERSION_1}.${CANDLESDK_VERSION_2}.${CANDLESDK_VERSION_3})
 
+option(CANDLESDK_BUILD_PYTHON "Build python library shared object" OFF)
+option(CANDLESDK_BUILD_EXAMPLES
+       "Build examples (has no effect on python builds)" ON)
+option(CANDLESDK_BUILD_CANDLETOOL
+       "Build candletool executable (has no effect on python builds)" ON)
+option(CANDLE_BUILD_STATIC
+       "Build static library (has no effect on windows library and python builds)"
+       ON)
+option(MAKE_TESTS "Enable/disable some of the unit tests" ON)
+
 message("====================")
 message("CandleSDK version: ${CANDLESDK_VERSION} ${CANDLESDK_VERSION_TAG}")
-message("Available flags:")
-message(
-  "CANDLESDK_BUILD_PYTHON (default OFF) - set buildsystem to build python library shared object"
-)
-message(
-  "CANDLE_BUILD_STATIC (default ON) -  set buildsystem to link against dependencies statically and build CANdle as .a"
-  "(has no effect on windows library and python builds)")
-message("MAKE_TESTS (default ON) - enables/disables some of the unit tests")
+message("Available flags and their values:")
+message("  CANDLESDK_BUILD_PYTHON = ${CANDLESDK_BUILD_PYTHON}")
+message("  CANDLESDK_BUILD_EXAMPLES = ${CANDLESDK_BUILD_EXAMPLES}")
+message("  CANDLESDK_BUILD_CANDLETOOL = ${CANDLESDK_BUILD_CANDLETOOL}")
+message("  CANDLE_BUILD_STATIC = ${CANDLE_BUILD_STATIC}")
+message("  MAKE_TESTS = ${MAKE_TESTS}")
 message("====================")
 
 set(CMAKE_CXX_STANDARD 20)
@@ -41,9 +49,6 @@ if(NOT WIN32)
 endif()
 
 set(mINI_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/mINI/inc/)
-if(NOT DEFINED CANDLE_BUILD_STATIC)
-  set(CANDLE_BUILD_STATIC TRUE)
-endif()
 
 macro(add_unit_test_executable test_name)
   message("Adding unit test executable ${test_name}")
@@ -61,6 +66,10 @@ add_subdirectory(candlelib)
 if(CANDLESDK_BUILD_PYTHON)
   add_subdirectory(pycandle)
 else()
-  add_subdirectory(candletool)
-  add_subdirectory(examples)
+  if(CANDLESDK_BUILD_CANDLETOOL)
+    add_subdirectory(candletool)
+  endif()
+  if(CANDLESDK_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+  endif()
 endif()
