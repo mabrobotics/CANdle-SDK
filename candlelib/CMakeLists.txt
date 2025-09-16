@@ -143,4 +143,9 @@ if(MAKE_TESTS)
   target_include_directories(md_v2_test PRIVATE include src/MD/)
   target_link_libraries(md_v2_test PRIVATE logger shared_data candle)
 
+ add_unit_test_executable(mdco_v2_test src/MD/MDCO_test.cpp)
+   target_sources(mdco_v2_test PRIVATE src/MD/MDCO.cpp)
+  target_include_directories(mdco_v2_test PRIVATE include src/MD/)
+  target_link_libraries(mdco_v2_test PRIVATE logger shared_data candle)
+
 endif()
