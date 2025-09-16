@@ -739,11 +739,6 @@ namespace mab
 
         ss << "\n\n ---- Received CAN Frame Info ----" << "\n";
 
-        for (int i = 0; i < (int)response.size(); i++)
-        {
-            cout << std::hex << (int)response[i] << endl;
-        }
-
         u8 cmd = response[0];
         if ((cmd & 0xF0) != 0x40)
         {

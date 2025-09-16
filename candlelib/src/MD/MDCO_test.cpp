@@ -32,9 +32,9 @@ class MDCO_test : public ::testing::Test
     }
 };
 
-TEST_F(MDCO_test, checkROAccess)
+TEST_F(MDCO_test, checkROAccessCO)
 {
-    std::vector<u8> mockReponse = {0x4F, 0x61, 0x60, 0x00, 0xFF, 0x00, 0x00, 0x00};
+    std::vector<u8> mockReponse = {0x04, 0x01, 0x4F, 0x61, 0x60, 0x00, 0xFF, 0x00, 0x00, 0x00};
 
     EXPECT_CALL(*m_debugBus, transfer(_, _, _))
         .Times(1)
