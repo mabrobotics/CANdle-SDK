@@ -740,6 +740,8 @@ namespace mab
         ss << "\n\n ---- Received CAN Frame Info ----" << "\n";
         u8 cmd = response[0];
 
+        cout << (int)cmd << endl << endl;
+
         if ((cmd & 0xF0) != 0x40)
         {
             ss << "Frame not recognized as an SDO Upload Expedited response." << "\n";
