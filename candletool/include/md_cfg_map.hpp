@@ -116,7 +116,11 @@ namespace mab
                           "output encoder mode",
                           encoderModeToReadable,
                           encoderModeFromReadable)},
-            {0x026, MDCfgElement("output encoder", "output encoder calibration mode")},
+            {0x026,
+             MDCfgElement("output encoder",
+                          "output encoder calibration mode",
+                          encoderCalibrationModeToReadable,
+                          encoderCalibrationModeFromReadable)},
 
             // PID parameters
             {0x030, MDCfgElement("position PID", "kp")},
@@ -184,6 +188,10 @@ namespace mab
         static const std::function<std::optional<std::string>(const std::string_view)>
             encoderModeFromReadable;
 
+        static const std::function<std::string(std::string_view)> encoderCalibrationModeToReadable;
+        static const std::function<std::optional<std::string>(const std::string_view)>
+            encoderCalibrationModeFromReadable;
+
         static const std::function<std::string(std::string_view)> GPIOModeToReadable;
         static const std::function<std::optional<std::string>(const std::string_view)>
             GPIOModeFromReadable;
@@ -222,6 +230,25 @@ namespace mab
     {
         std::string output = trim(value);
         return std::to_string(MDAuxEncoderModeValue_S::toNumeric(value.data()).value_or(0));
+    };
+
+    // Special case for encoder calibration mode
+    inline const std::function<std::string(std::string_view)>
+        MDConfigMap::encoderCalibrationModeToReadable =
+            [](const std::string_view value) -> std::string
+    {
+        std::string output = trim(value);
+        return MDAuxEncoderCalibrationModeValue_S::toReadable(std::stoll(output))
+            .value_or("NOT FOUND");
+    };
+
+    inline const std::function<std::optional<std::string>(const std::string_view)>
+        MDConfigMap::encoderCalibrationModeFromReadable =
+            [](const std::string_view value) -> std::optional<std::string>
+    {
+        std::string output = trim(value);
+        return std::to_string(
+            MDAuxEncoderCalibrationModeValue_S::toNumeric(value.data()).value_or(0));
     };
 
     // Special case for GPIO mode
