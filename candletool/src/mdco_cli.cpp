@@ -43,15 +43,13 @@ std::string MdcoCli::validateAndGetFinalConfigPath(const std::string& cfgPath)
         m_log.m_layer = Logger::ProgramLayer_E::TOP;
         m_log.error("\"%s\" is incomplete.", finalConfigPath.c_str());
         m_log.info("Generate updated file with all required fields? [y/n]");
-        // TODO: that is so dumb
-        //  if (!getConfirmation())
-        //      exit(0);
-        finalConfigPath = generateUpdatedConfigFile(finalConfigPath);
-        m_log.info("Generated updated file \"%s\"", finalConfigPath.c_str());
-        m_log.info("Setup MD with newly generated config? [y/n]");
-        // TODO: that is so dumb, again!
-        // if (!getConfirmation())
-        //     exit(0);
+        if (getConfirmation())
+        {
+            finalConfigPath = generateUpdatedConfigFile(finalConfigPath);
+            m_log.info("Generated updated file \"%s\"", finalConfigPath.c_str());
+        }
+        else
+            m_log.info("Proceeding with original file \"%s\"", finalConfigPath.c_str());
     }
     return finalConfigPath;
 }
@@ -242,7 +240,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         });
 
     // EDS ============================================================================
-    eds = mdco->add_subcommand("eds", "EDS file analizer and generator.")->excludes(mdCanIdOption);
+    eds = mdco->add_subcommand("eds", "EDS file analyzer and generator.")->excludes(mdCanIdOption);
 
     // EDS load
     edsLoad = eds->add_subcommand("load", "Load the path to the .eds file to analyze.");
@@ -1550,13 +1548,10 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
             auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco((*mdCanId), candle);
             mINI::INIStructure readIni; /*< mINI structure for read data */
-            MDRegisters_S      regs;    /*< read register */
             std::string        configName = cmdCANopen.value;
-            mdco.m_timeout                = 10;
-
-            long raw_data = 0;
+            long               raw_data   = 0;
             /*────────────────────────────
-              VARIABLES  –  section [motor]
+              section [motor]
             ────────────────────────────*/
             std::vector<u8> motor_name;
             mdco.readLongOpenRegisters(0x2000, 0x06, motor_name);
@@ -1650,7 +1645,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
             std::memcpy(&imp_kd, &raw_data, sizeof(float));
 
             // ────────────────────────────────────────────────────────────
-            // ÉCRITURE DU FICHIER CONFIG
+            // WRITING CONFIG FILE
             // ────────────────────────────────────────────────────────────
             std::ofstream cfg(configName);
             if (!cfg.is_open())
