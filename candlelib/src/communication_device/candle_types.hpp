@@ -31,6 +31,6 @@ namespace mab
             USB,
             SPI
         };
-    };                                      // namespace candleTypes
+    }  // namespace candleTypes
     constexpr u32 DEFAULT_CAN_TIMEOUT = 2;  // ms
 }  // namespace mab
