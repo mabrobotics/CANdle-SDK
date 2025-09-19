@@ -319,8 +319,8 @@ std::vector<edsObject> mab::generateObjectDictionary()
         edsObject{0x2000, 0x0, "Highest sub-index supported", 0x7, "RAM", 0x5, "ro", false, 0xd});
     list.push_back(edsObject{0x2000, 0x1, "Pole pairs", 0x7, "RAM", 0x7, "rw", false, 0x0});
     list.push_back(edsObject{0x2000, 0x2, "Torque constant", 0x7, "RAM", 0x8, "rw", false, 0x0});
-    list.push_back(edsObject{0x2000, 0x3, "Phase Inductance", 0x7, "RAM", 0x8, "ro", false, 0x0});
-    list.push_back(edsObject{0x2000, 0x4, "Phase resistance", 0x7, "RAM", 0x8, "ro", false, 0x0});
+    list.push_back(edsObject{0x2000, 0x3, "Phase Inductance", 0x7, "RAM", 0x8, "rw", false, 0x0});
+    list.push_back(edsObject{0x2000, 0x4, "Phase resistance", 0x7, "RAM", 0x8, "rw", false, 0x0});
     list.push_back(edsObject{0x2000, 0x5, "Torque Bandwidth", 0x7, "RAM", 0x6, "rw", false, 0x0});
     list.push_back(edsObject{0x2000, 0x6, "Motor Name", 0x7, "RAM", 0x9, "rw", false, 0x0});
     list.push_back(

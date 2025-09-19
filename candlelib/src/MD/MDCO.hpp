@@ -208,8 +208,12 @@ namespace mab
         /// @param subindex subindex from the object dictionary where the user want to read the
         /// value
         /// @param outData vector where the data will be stored
+        /// @param silent if true, nothings wil be print on the terminal
         /// @return Error on failure
-        Error_t readLongOpenRegisters(i16 index, short subindex, std::vector<u8>& outData);
+        Error_t readLongOpenRegisters(i16              index,
+                                      short            subindex,
+                                      std::vector<u8>& outData,
+                                      bool             silent = false);
 
         /// @brief return a value from a can open register using SDO can frame
         /// @param index index from the object dictionary where the user want to read the value

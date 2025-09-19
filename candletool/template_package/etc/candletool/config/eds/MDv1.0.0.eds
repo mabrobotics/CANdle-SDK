@@ -1954,7 +1954,7 @@ ParameterName=Phase Inductance
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0008
-AccessType=ro
+AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
@@ -1963,7 +1963,7 @@ ParameterName=Phase resistance
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0008
-AccessType=ro
+AccessType=rw
 DefaultValue=0
 PDOMapping=0
 

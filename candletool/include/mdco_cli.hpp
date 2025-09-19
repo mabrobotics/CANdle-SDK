@@ -8,6 +8,7 @@
 #include "configHelpers.hpp"
 #include "edsParser.hpp"
 #include "mab_types.hpp"
+#include "mdco_cfg_map.hpp"
 
 namespace mab
 {

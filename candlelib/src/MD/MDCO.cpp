@@ -889,7 +889,10 @@ namespace mab
         return Error_t::OK;
     }
 
-    MDCO::Error_t MDCO::readLongOpenRegisters(i16 index, short subindex, std::vector<u8>& outData)
+    MDCO::Error_t MDCO::readLongOpenRegisters(i16              index,
+                                              short            subindex,
+                                              std::vector<u8>& outData,
+                                              bool             silent)
     {
         if (isReadable(index, subindex) != OK)
         {
@@ -927,12 +930,14 @@ namespace mab
             if (dataSizeOfEdsObject(index, subindex) == 0)
             {
                 std::string motorName(outData.begin(), outData.end());
-                m_log.info("Data received (string): '%s'", motorName.c_str());
+                if (!silent)
+                    m_log.info("Data received (string): '%s'", motorName.c_str());
             }
             else
             {
-                m_log.info("Data received: %s",
-                           std::string(outData.begin(), outData.end()).c_str());
+                if (!silent)
+                    m_log.info("Data received: %s",
+                               std::string(outData.begin(), outData.end()).c_str());
             }
             return Error_t::OK;
         }
@@ -988,14 +993,18 @@ namespace mab
         }
 
         // ---------- 3) Display ----------
+
         if (dataSizeOfEdsObject(index, subindex) == 0)
         {
             std::string motorName(outData.begin(), outData.end());
-            m_log.info("Data received (string): '%s'", motorName.c_str());
+            if (!silent)
+                m_log.info("Data received (string): '%s'", motorName.c_str());
         }
         else
         {
-            m_log.info("Data received: %s", std::string(outData.begin(), outData.end()).c_str());
+            if (!silent)
+                m_log.info("Data received: %s",
+                           std::string(outData.begin(), outData.end()).c_str());
         }
 
         return Error_t::OK;
