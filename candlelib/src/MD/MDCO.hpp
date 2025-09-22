@@ -89,7 +89,7 @@ namespace mab
         {
             m_log.m_layer = Logger::ProgramLayer_E::TOP;
             std::stringstream tag;
-            tag << "MD" << std::setfill('0') << std::setw(4) << m_canId;
+            tag << "MDCO" << std::setfill('0') << std::setw(3) << m_canId;
             m_log.m_tag = tag.str();
         }
 
@@ -134,10 +134,6 @@ namespace mab
                               i32            targetPos,
                               moveParameter& param,
                               i16            timeoutMillis = 5000);
-
-        /// @brief Check communication with MD device
-        /// @return Error if not connected
-        Error_t init();
 
         /// @brief Blink the built-in LEDs with CANopen command
         Error_t blinkOpenTest();
@@ -255,9 +251,6 @@ namespace mab
         /// @param data value to write
         /// @return Error on failure
         Error_t sendCustomData(i16 index, std::vector<u8> data);
-
-        /// @brief averages the latency of 1000 commands
-        void testLatency();
 
         /// @brief try to communicate with canOpen frame (SDO) with all the possible id
         /// @param candle
