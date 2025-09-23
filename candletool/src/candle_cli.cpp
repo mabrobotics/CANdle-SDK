@@ -40,8 +40,7 @@ namespace mab
                     {
                         m_logger.error(
                             "Please provide version of fw or \"latest\" keyword in the argument!");
-                        m_logger.error(
-                            "For example candletool candle update latest");
+                        m_logger.error("For example candletool candle update latest");
                         return;
                     }
                     std::string fallbackPath = ctx.packageEtcPath->generic_string();
@@ -49,7 +48,8 @@ namespace mab
                     if (!updateOptions.metadataFile->empty())
                         fallbackPath = *updateOptions.metadataFile;
                     else
-                        fallbackPath += "/config/web_files_metadata.ini";
+                        fallbackPath =
+                            (*ctx.packageEtcPath / "web_files_metadata.ini").generic_string();
 
                     m_logger.debug("Fallback path at: %s", fallbackPath.c_str());
                     mINI::INIFile fallbackMetadataFile(fallbackPath);

@@ -126,14 +126,14 @@ elseif(UNIX)
   install(
     DIRECTORY
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/motors
-    DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
+    DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
     COMPONENT _configs)
 
   install(
     FILES
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/web_files_metadata.ini
-    DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
+    DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
                 WORLD_WRITE
     COMPONENT _configs)
@@ -161,17 +161,19 @@ elseif(UNIX)
   install(
     FILES
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/udev/rules.d/99-candletool.rules
-    DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/")
+    DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/")
 
   install(
     FILES
       "${PROJECT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini"
       "${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/web_files_metadata.ini"
-    DESTINATION "/etc/candletool/"
+    DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/candletool/"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
                 WORLD_WRITE
     EXCLUDE_FROM_ALL)
-  add_compile_definitions(DEFAULT_CANDLETOOL_CONFIG_DIR="/etc/candletool/")
+  add_compile_definitions(
+    DEFAULT_CANDLETOOL_CONFIG_DIR="${CMAKE_INSTALL_FULL_SYSCONFDIR}/candletool/config"
+  )
 else()
   message(FATAL_ERROR "System not unix nor windows, can not compile!")
   message()
