@@ -231,7 +231,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
             auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             std::vector<canId_t> mdIds;
             mdIds = MDCO::discoverOpenMDs(candle);
-            m_log.info("Discovered MDs: ");
+            m_log.info("Discovered MDCOs: ");
             for (const auto& id : mdIds)
             {
                 m_log.info("- %d", id);
@@ -1118,8 +1118,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
                 m_log.info("Manufacturer Device Name: %s", motorName.c_str());
                 long Firmware = mdco.getValueFromOpenRegister(0x200A, 3);
                 m_log.info("Firmware version: %li", Firmware);
-                long Bootloder = mdco.getValueFromOpenRegister(0x200B, 4);
-                m_log.info("Bootloder version: %li", Bootloder);
+                long Bootloader = mdco.getValueFromOpenRegister(0x200B, 4);
+                m_log.info("Bootloader version: %li", Bootloader);
             }
             else
             {
@@ -1391,8 +1391,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
             updateUserChoice();
             auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco((*mdCanId), candle);
-            u64  latence_totale = 0;
-            bool testOk         = true;
+            u64  total_latency = 0;
+            bool testOk        = true;
 
             for (int i = 0; i < 100; ++i)
             {
@@ -1404,17 +1404,17 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
                 }
 
                 auto end = std::chrono::steady_clock::now();
-                auto duree =
+                auto duration =
                     std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-                latence_totale += static_cast<u64>(duree);
+                total_latency += static_cast<u64>(duration);
             }
 
             if (testOk)
             {
-                u64 moyenne = latence_totale / 100;
-                m_log.info("---------------Latence---------------\n");
-                m_log.info("Total: %lu µs\n", latence_totale);
-                m_log.info("Result (average of 100 attempts): %lu µs\n", moyenne);
+                u64 average = total_latency / 100;
+                m_log.info("---------------Latency---------------\n");
+                m_log.info("Total: %lu µs\n", total_latency);
+                m_log.info("Result (average of 100 attempts): %lu µs\n", average);
             }
 
             else

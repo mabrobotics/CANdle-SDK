@@ -35,10 +35,6 @@ namespace mab
         MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleBuilder);
         ~MdcoCli() = default;
 
-        /// @brief Parse the command line arguments for the MDCO CLI
-        /// @param baud The baud rate for the CANdle device
-        void parse(mab::CANdleDatarate_E baud);
-
       private:
         Logger                               m_log;
         CLI::App&                            m_rootCli;
