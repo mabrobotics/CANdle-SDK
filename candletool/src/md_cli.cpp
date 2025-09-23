@@ -487,8 +487,6 @@ namespace mab
                         (*ctx.packageEtcPath / "motors" / configFilePath).generic_string();
                 }
 
-                std::cout << "Config file path: " << configFilePath << std::endl;
-
                 MDConfigMap cfgMap;
                 for (auto& [regAddress, cfgElement] : cfgMap.m_map)
                 {
@@ -1106,7 +1104,8 @@ namespace mab
                     {
                         m_logger.error(
                             "Please provide version of fw or  \"latest\" keyword in the argument!");
-                        m_logger.error("For example candletool md update latest");
+                        m_logger.error(
+                            "For example candletool md update latest");
                         return;
                     }
                     std::string fallbackPath;
@@ -1116,8 +1115,6 @@ namespace mab
                     else
                         fallbackPath =
                             (*ctx.packageEtcPath / "web_files_metadata.ini").generic_string();
-
-                    m_logger.error("Fallback file path: %s", fallbackPath.c_str());
 
                     m_logger.debug("Fallback path at: %s", fallbackPath.c_str());
                     mINI::INIFile fallbackMetadataFile(fallbackPath);
