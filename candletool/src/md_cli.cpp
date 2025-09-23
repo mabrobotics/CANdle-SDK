@@ -464,7 +464,7 @@ namespace mab
         ConfigOptions downloadConfigOptions(downloadConfig);
 
         downloadConfig->callback(
-            [this, candleBuilder, mdCanId, downloadConfigOptions]()
+            [this, candleBuilder, mdCanId, downloadConfigOptions, ctx]()
             {
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
@@ -483,7 +483,8 @@ namespace mab
                 if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
                     configFilePath.end())
                 {
-                    configFilePath = "/etc/candletool/config/motors/" + configFilePath;
+                    configFilePath =
+                        (*ctx.packageEtcPath / "motors" / configFilePath).generic_string();
                 }
 
                 MDConfigMap cfgMap;
@@ -516,7 +517,7 @@ namespace mab
         ConfigOptions uploadConfigOptions(uploadConfig);
 
         uploadConfig->callback(
-            [this, candleBuilder, mdCanId, uploadConfigOptions]()
+            [this, candleBuilder, mdCanId, uploadConfigOptions, ctx]()
             {
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
@@ -535,7 +536,8 @@ namespace mab
                 if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
                     configFilePath.end())
                 {
-                    configFilePath = "/etc/candletool/config/motors/" + configFilePath;
+                    configFilePath =
+                        (*ctx.packageEtcPath / "motors" / configFilePath).generic_string();
                 }
 
                 mINI::INIFile      configFile(configFilePath);
@@ -1106,12 +1108,13 @@ namespace mab
                             "For example candletool md update latest");
                         return;
                     }
-                    std::string fallbackPath = ctx.packageEtcPath->generic_string();
+                    std::string fallbackPath;
 
                     if (!updateOptions.metadataFile->empty())
                         fallbackPath = *updateOptions.metadataFile;
                     else
-                        fallbackPath += "/config/web_files_metadata.ini";
+                        fallbackPath =
+                            (*ctx.packageEtcPath / "web_files_metadata.ini").generic_string();
 
                     m_logger.debug("Fallback path at: %s", fallbackPath.c_str());
                     mINI::INIFile fallbackMetadataFile(fallbackPath);
