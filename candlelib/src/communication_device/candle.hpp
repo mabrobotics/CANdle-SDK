@@ -142,7 +142,8 @@ namespace mab
     /// @param bus Initialized CANdle communication interface
     /// @return Configured candle object or nullptr
     inline mab::Candle* attachCandle(const CANdleDatarate_E                      datarate,
-                                     std::unique_ptr<I_CommunicationInterface>&& bus)
+                                     std::unique_ptr<I_CommunicationInterface>&& bus,
+                                     bool useRegularCANFrames = false)
     {
         Logger log(Logger::ProgramLayer_E::TOP, "CANDLE_BUILDER");
         if (bus == nullptr)
@@ -151,7 +152,7 @@ namespace mab
             return {};
         }
 
-        mab::Candle* candle = new mab::Candle(datarate, std::move(bus));
+        mab::Candle* candle = new mab::Candle(datarate, std::move(bus), useRegularCANFrames);
         if (candle == nullptr || candle->init() != candleTypes::Error_t::OK)
         {
             log.error("Could not initialize CANdle device!");
@@ -165,7 +166,8 @@ namespace mab
     /// @param bus Initialized CANdle communication interface
     /// @return Configured candle object or nullptr
     inline mab::Candle* attachCandle(const CANdleDatarate_E  datarate,
-                                     candleTypes::busTypes_t busType)
+                                     candleTypes::busTypes_t busType,
+                                     bool                    useRegularCANFrames = false)
     {
         std::unique_ptr<mab::I_CommunicationInterface> bus;
         switch (busType)
@@ -174,12 +176,12 @@ namespace mab
                 bus = std::make_unique<mab::USB>(mab::Candle::CANDLE_VID, mab::Candle::CANDLE_PID);
                 if (bus->connect() != mab::I_CommunicationInterface::Error_t::OK)
                     throw std::runtime_error("Could not connect USB device!");
-                return attachCandle(datarate, std::move(bus));
+                return attachCandle(datarate, std::move(bus), useRegularCANFrames);
             case candleTypes::busTypes_t::SPI:
                 bus = std::make_unique<mab::SPI>();
                 if (bus->connect() != mab::I_CommunicationInterface::Error_t::OK)
                     throw std::runtime_error("Could not connect SPI device!");
-                return attachCandle(datarate, std::move(bus));
+                return attachCandle(datarate, std::move(bus), useRegularCANFrames);
             default:
                 throw std::runtime_error("Wrong communication interface provided!");
                 return {};

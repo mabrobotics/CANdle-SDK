@@ -16,16 +16,20 @@ set(CANDLETOOL_VERSION_FULL
 add_subdirectory(3rd_party/CLI11)
 
 set(CANDLETOOL_SOURCES
-    src/candle_cli.cpp
-    src/canLoader.cpp
-    src/web_file_module/curl_handler.cpp
-    src/web_file_module/flasher.cpp
-    src/md_cli.cpp
-    src/mab_crc.cpp
-    src/mabFileParser.cpp
-    src/main.cpp
-    src/pds_cli.cpp
-    src/utilities.cpp)
+  objectDictionary/OD.cpp
+  src/candle_cli.cpp
+  src/canLoader.cpp
+  src/web_file_module/curl_handler.cpp
+  src/web_file_module/flasher.cpp
+  src/edsParser.cpp
+  src/md_cli.cpp
+  src/mdco_cli.cpp
+  src/mab_crc.cpp
+  src/mabFileParser.cpp
+  src/main.cpp
+  src/pds_cli.cpp
+  src/utilities.cpp)
+
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -36,8 +40,10 @@ target_link_libraries(candletool candle logger)
 target_include_directories(
   candletool
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
+         ${CMAKE_CURRENT_SOURCE_DIR}/objectDictionary 
          ${CMAKE_CURRENT_SOURCE_DIR}/src/web_file_module
          ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src)
+
 
 target_compile_options(candletool PRIVATE -g)
 
@@ -98,6 +104,7 @@ if(WIN32)
   install(
     FILES
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini
+      ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletoolco.ini
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/web_files_metadata.ini
     DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
@@ -132,6 +139,7 @@ elseif(UNIX)
   install(
     FILES
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini
+      ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletoolco.ini
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/web_files_metadata.ini
     DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
@@ -166,6 +174,7 @@ elseif(UNIX)
   install(
     FILES
       "${PROJECT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini"
+      "${PROJECT_SOURCE_DIR}/template_package/etc/candletool/config/candletoolco.ini"
       "${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/web_files_metadata.ini"
     DESTINATION "/etc/candletool/"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
