@@ -6,11 +6,13 @@ namespace mab
     MDCO::Error_t MDCO::findObjectByName(const std::string& searchTerm, u32& index, u8& subIndex)
     {
         bool objectFound = false;
+        // for loop over all objects contained in the object dictionary
         for (const edsObject& obj : this->ObjectDictionary)
         {
             if (obj.ParameterName.size() == searchTerm.size())
             {
                 bool equal = true;
+                // compare each character of the two strings, case insensitive
                 for (size_t i = 0; i < obj.ParameterName.size(); ++i)
                 {
                     if (tolower(obj.ParameterName[i]) != tolower(searchTerm[i]))
@@ -19,10 +21,13 @@ namespace mab
                         break;
                     }
                 }
+                // if they are equal, return the index and subindex
                 if (equal)
                 {
                     index    = obj.index;
                     subIndex = obj.subIndex;
+                    // if the object was already found once, we warn the user that multiple objects
+                    // have the same name
                     if (objectFound)
                     {
                         m_log.warn(
@@ -40,6 +45,7 @@ namespace mab
                 }
             }
         }
+        // if the object was found at least once, return OK else UNKNOWN_OBJECT
         if (objectFound)
         {
             return OK;
@@ -50,10 +56,13 @@ namespace mab
 
     MDCO::Error_t MDCO::isWritable(const u32 index, const u8 subIndex)
     {
+        // for loop over all objects contained in the object dictionary
         for (const edsObject& obj : this->ObjectDictionary)
         {
+            // if the index and subindex match
             if (index == obj.index && subIndex == obj.subIndex)
             {
+                // check if the access type contains 'w' or 'W'
                 if (obj.accessType.find('w') != std::string::npos ||
                     obj.accessType.find('W') != std::string::npos)
                 {
@@ -71,10 +80,13 @@ namespace mab
 
     MDCO::Error_t MDCO::isReadable(const u32 index, const u8 subIndex)
     {
+        // for loop over all objects contained in the object dictionary
         for (const edsObject& obj : this->ObjectDictionary)
         {
+            // if the index and subindex match
             if (index == obj.index && subIndex == obj.subIndex)
             {
+                // check if the access type contains 'r' or 'R'
                 if (obj.accessType.find('r') != std::string::npos ||
                     obj.accessType.find('R') != std::string::npos)
                 {
@@ -92,22 +104,28 @@ namespace mab
 
     i8 MDCO::dataSizeOfEdsObject(const u32 index, const u8 subIndex)
     {
+        // for loop over all objects contained in the object dictionary
         for (const edsObject& obj : this->ObjectDictionary)
         {
+            // if the index and subindex match
             if (index == obj.index && subIndex == obj.subIndex)
             {
+                // if dataype is boolean, u8 or i8
                 if (obj.DataType == 0x0001 || obj.DataType == 0x0002 || obj.DataType == 0x0005)
                 {
                     return 1;
                 }
+                // if dataype is u16 or i16
                 else if (obj.DataType == 0x0003 || obj.DataType == 0x0006)
                 {
                     return 2;
                 }
+                // if dataype is u32, i32 or real32
                 else if (obj.DataType == 0x0004 || obj.DataType == 0x0007 || obj.DataType == 0x0008)
                 {
                     return 4;
                 }
+                // if dataype is u64, i64 or real64
                 else if (obj.DataType == 0x0011 || obj.DataType == 0x0015 || obj.DataType == 0x001B)
                 {
                     return 8;
@@ -126,6 +144,7 @@ namespace mab
     void MDCO::printAllInfo()
     {
         i32 value;
+        // loop over all objects in the object dictionary and print their info
         for (i16 i = 0; i < (i16)ObjectDictionary.size(); i++)
         {
             value =
@@ -150,6 +169,8 @@ namespace mab
 
     MDCO::Error_t MDCO::setProfileParameters(moveParameter& param)
     {
+        // set all the parameters needed to configure the motor for moving log an error message if
+        // transfer failed
         Error_t err;
         err = writeOpenRegisters("Motor Max Acceleration", param.accLimit);
         if (err != OK)
@@ -198,6 +219,7 @@ namespace mab
 
     MDCO::Error_t MDCO::enableDriver(ModesOfOperation mode)
     {
+        // set the mode of operation and enable the driver, log an error message if transfer failed
         Error_t err;
         err = writeOpenRegisters("Modes Of Operation", mode, 1);
         if (err != OK)
@@ -228,6 +250,7 @@ namespace mab
 
     MDCO::Error_t MDCO::disableDriver()
     {
+        // disable the driver, log an error message if transfer failed
         Error_t err;
         err = writeOpenRegisters("Motor Target Velocity", 0);
         if (err != OK)
@@ -254,15 +277,16 @@ namespace mab
     {
         auto start      = std::chrono::steady_clock::now();
         auto lastSend   = start;
-        auto timeout    = std::chrono::milliseconds(timeoutMillis);
-        auto sendPeriod = std::chrono::milliseconds(10);
+        auto timeout    = std::chrono::milliseconds(timeoutMillis);  // total movement timeout
+        auto sendPeriod = std::chrono::milliseconds(10);             // send every 10ms
 
+        // while timeout non reach or position not reached
         while (std::chrono::steady_clock::now() - start < timeout &&
                !((i16)getValueFromOpenRegister(0x6064, 0) > (DesiredPos - 100) &&
                  (i16)getValueFromOpenRegister(0x6064, 0) < (DesiredPos + 100)))
         {
             auto now = std::chrono::steady_clock::now();
-            if (now - lastSend >= sendPeriod)
+            if (now - lastSend >= sendPeriod)  // send position message every sendPeriod time
             {
                 Error_t err = writeOpenRegisters("Motor Target Position", DesiredPos, 4);
                 if (err != OK)
@@ -274,6 +298,7 @@ namespace mab
             }
         }
         m_log.debug("actual position: %d\n", (i16)getValueFromOpenRegister(0x6064, 0));
+        // check if position reached with a tolerance of 200 [inc]
         if (((i16)getValueFromOpenRegister(0x6064, 0) > (DesiredPos - 200) &&
              (i16)getValueFromOpenRegister(0x6064, 0) < (DesiredPos + 200)))
         {
@@ -289,12 +314,14 @@ namespace mab
     {
         auto start      = std::chrono::steady_clock::now();
         auto lastSend   = start;
-        auto timeout    = std::chrono::milliseconds(timeoutMillis);
-        auto sendPeriod = std::chrono::milliseconds(10);
+        auto timeout    = std::chrono::milliseconds(timeoutMillis);  // total movement timeout
+        auto sendPeriod = std::chrono::milliseconds(10);             // send every 10ms
 
+        // while timeout non reach
         while (std::chrono::steady_clock::now() - start < timeout)
         {
             auto now = std::chrono::steady_clock::now();
+            // send speed message every sendPeriod time
             if (now - lastSend >= sendPeriod)
             {
                 Error_t err = writeOpenRegisters("Motor Target Velocity", DesiredSpeed);
@@ -306,7 +333,7 @@ namespace mab
                 lastSend = now;
             }
         }
-
+        // check if speed reached with a tolerance of 5 [RPM]
         if ((i16)getValueFromOpenRegister(0x606C, 0x00) <= DesiredSpeed + 5 &&
             (i16)getValueFromOpenRegister(0x606C, 0x00) >= DesiredSpeed - 5)
         {
@@ -361,7 +388,7 @@ namespace mab
             return err;
         }
         auto start   = std::chrono::steady_clock::now();
-        auto timeout = std::chrono::milliseconds((timeoutMillis));
+        auto timeout = std::chrono::milliseconds((timeoutMillis));  // total movement timeout
         while (std::chrono::steady_clock::now() - start < timeout)
         {
         }
@@ -376,6 +403,7 @@ namespace mab
 
     MDCO::Error_t MDCO::blinkOpenTest()
     {
+        // blink the motor led, log an error message if transfer failed
         Error_t err;
         err = writeOpenRegisters("Controlword", 0x06, 2);
         if (err != OK)
@@ -400,6 +428,7 @@ namespace mab
 
     MDCO::Error_t MDCO::openReset()
     {
+        // reset the motor via SDO message, log an error message if transfer failed
         Error_t err;
         err = writeOpenRegisters("Controlword", 0x06, 2);
         if (err != OK)
@@ -457,6 +486,7 @@ namespace mab
         while (std::chrono::steady_clock::now() - start < timeout)
         {
         }
+        // clear errors or warnings or both depending on the level
         if (level == 1)
             return writeOpenRegisters("Clear Errors", 1, 1);
         if (level == 2)
@@ -477,6 +507,7 @@ namespace mab
 
     MDCO::Error_t MDCO::newCanOpenConfig(i32 newID, i32 newBaud, u32 watchdog)
     {
+        // set new can configuration, log an error message if transfer failed
         Error_t err;
         err = writeOpenRegisters("Can ID", newID, 4);
         if (err != OK)
@@ -501,6 +532,8 @@ namespace mab
 
     MDCO::Error_t MDCO::testHeartbeat()
     {
+        // send heartbeat and check if the motor responds correctly, log an error message if
+        // transfer
         uint32_t heartbeat_id = 0x700 + (uint32_t)this->m_canId;
         m_log.info("Waiting for a heartbeat message with can id 0x%03X...", heartbeat_id);
 
@@ -578,6 +611,7 @@ namespace mab
 
     MDCO::Error_t MDCO::openSave()
     {
+        // save the motor configuration via SDO message, log an error message if transfer failed
         Error_t err;
         err = writeOpenRegisters("Controlword", 0x06, 2);
         if (err != OK)
@@ -585,7 +619,8 @@ namespace mab
             m_log.error("Error setting Controlword for openSave");
             return err;
         }
-        err = writeOpenRegisters("Save all parameters", 0x65766173, 4);
+        err = writeOpenRegisters(
+            "Save all parameters", 0x65766173, 4);  // 0x65766173="save" in ASCII and little endian
         if (err != OK)
         {
             m_log.error("Error saving all parameters");
@@ -602,6 +637,8 @@ namespace mab
 
     MDCO::Error_t MDCO::openZero()
     {
+        // set the motor zero position to the actual position via SDO message, log an error message
+        // if transfer failed
         Error_t err;
         err = writeOpenRegisters("Controlword", 0x06, 2);
         if (err != OK)
@@ -621,7 +658,7 @@ namespace mab
             m_log.error("Error setting Set Zero");
             return err;
         }
-
+        // verify that the zero position has been set correctly
         if ((getValueFromOpenRegister(0x6064, 0) > -50) &&
             (getValueFromOpenRegister(0x6064, 0) < 50))
         {
@@ -637,6 +674,7 @@ namespace mab
 
     MDCO::Error_t MDCO::testEncoder(bool Main, bool output)
     {
+        // test the motor encoders via SDO message, log an error message if transfer failed
         Error_t err;
         err = writeOpenRegisters("Controlword", 0x06, 2);
         if (err != OK)
@@ -673,6 +711,7 @@ namespace mab
 
     MDCO::Error_t MDCO::encoderCalibration(bool Main, bool output)
     {
+        // calibrate the motor encoders via SDO message, log an error message if transfer failed
         Error_t err;
         err = writeOpenRegisters("Controlword", 0x06, 2);
         if (err != OK)
@@ -709,6 +748,7 @@ namespace mab
 
     MDCO::Error_t MDCO::readOpenRegisters(i16 index, u8 subindex, bool force)
     {
+        // check if the object is readable unless force is true
         if (!force)
         {
             if (isReadable(index, subindex) != OK)
@@ -788,6 +828,7 @@ namespace mab
                                                const std::string& dataString,
                                                bool               force)
     {
+        // check if the object is writable unless force is true
         if (!force)
         {
             if (isWritable(index, subindex) != OK)
@@ -893,7 +934,7 @@ namespace mab
                                               short            subindex,
                                               std::vector<u8>& outData,
                                               bool             silent)
-    {
+    {  // check if the object is readable
         if (isReadable(index, subindex) != OK)
         {
             m_log.error("Object 0x%04x:0x%02x is not readable!", index, subindex);
@@ -1012,13 +1053,14 @@ namespace mab
 
     i32 MDCO::getValueFromOpenRegister(i16 index, u8 subindex)
     {
+        // check if the object is readable
         if (isReadable(index, subindex) != OK)
         {
             m_log.error("Object 0x%04x:0x%02x is not writable!", index, subindex);
             return Error_t::REQUEST_INVALID;
         }
         m_log.debug("Read Open register...");
-
+        // send sdo upload expedited request
         std::vector<u8> frame = {
             0x40,
             ((u8)index),
@@ -1061,6 +1103,7 @@ namespace mab
     MDCO::Error_t MDCO::writeOpenRegisters(
         i16 index, short subindex, i32 data, short size, bool force)
     {
+        // check if the object is writable unless force is true
         if (!force)
         {
             if (isWritable(index, subindex) != OK)
@@ -1069,18 +1112,20 @@ namespace mab
                 return Error_t::REQUEST_INVALID;
             }
         }
-
+        // if size is 0, then read the size from the EDS file
         if (size == 0)
         {
             size = dataSizeOfEdsObject(index, subindex);
             if (size == -1)
             {
+                // size= -1 mean object not found in EDS file
                 m_log.error(
                     "Object 0x%04x:0x%02x has an unsupported size (%d)!", index, subindex, size);
                 return Error_t::REQUEST_INVALID;
             }
             else if (size == 0 || size > 4)
             {
+                // size=0 mean object is string or array, size>4 not supported in expedited transfer
                 m_log.error(
                     "Object 0x%04x:0x%02x has an unsupported size (%d), please use an "
                     "Segmented transfer !",
@@ -1090,7 +1135,7 @@ namespace mab
                 return Error_t::REQUEST_INVALID;
             }
         }
-
+        // send sdo download expedited request
         std::vector<u8> frame;
         frame.reserve(8);
         if (size == 1)
@@ -1122,7 +1167,7 @@ namespace mab
     }
 
     MDCO::Error_t MDCO::writeOpenRegisters(const std::string& name, u32 data, u8 size, bool force)
-    {
+    {  // search index and subindex from the EDS file corresponding to the name
         u32 index    = 0;
         u8  subIndex = 0;
         if (findObjectByName(name, index, subIndex) != OK)
@@ -1146,6 +1191,8 @@ namespace mab
 
     MDCO::Error_t MDCO::writeOpenPDORegisters(i16 index, std::vector<u8> data)
     {
+        // send PDO write request, PDO is slave/master communication mode so the motor will not
+        // respond
         m_log.debug("Writing Open Pdo register...");
 
         auto [response, error] = transferCanOpenFrameNoRespondExpected(index, data, data.size());
@@ -1171,7 +1218,7 @@ namespace mab
     std::vector<canId_t> MDCO::discoverOpenMDs(Candle* candle)
     {
         constexpr canId_t MIN_VALID_ID = 0x01;  // ids less than that are reserved for special
-        constexpr canId_t MAX_VALID_ID = 0x7F;  // 0x600-0x580
+        constexpr canId_t MAX_VALID_ID = 0x7F;  // 0x600-0x580=0x7F
 
         std::vector<u8> frame = {
             0x40,  // Command: initiate upload

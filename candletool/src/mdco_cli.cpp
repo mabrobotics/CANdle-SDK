@@ -6,8 +6,10 @@ UserCommandCO cmdCANopen;
 
 std::string MdcoCli::validateAndGetFinalConfigPath(const std::string& cfgPath)
 {
+    // Check if the file exists, if not, check if it exists relative to the default config
     std::string finalConfigPath        = cfgPath;
     std::string pathRelToDefaultConfig = getMotorsConfigPath() + cfgPath;
+    // Check if the file exists
     if (!fileExists(finalConfigPath))
     {
         if (!fileExists(pathRelToDefaultConfig))
@@ -19,7 +21,7 @@ std::string MdcoCli::validateAndGetFinalConfigPath(const std::string& cfgPath)
         }
         finalConfigPath = pathRelToDefaultConfig;
     }
-
+    // Check if the file is a valid config file
     if (!isConfigValid(finalConfigPath))
     {
         m_log.error("\"%s\" in not a valid motor .cfg file.", finalConfigPath.c_str());
@@ -29,6 +31,7 @@ std::string MdcoCli::validateAndGetFinalConfigPath(const std::string& cfgPath)
     std::string defaultConfigPath =
         finalConfigPath.substr(0, finalConfigPath.find_last_of('/') + 1) + "default.cfg";
 
+    // If default config does not exist, warn the user
     if (!fileExists(defaultConfigPath))
     {
         m_log.warn("No default config found at expected location \"%s\"",
@@ -37,7 +40,8 @@ std::string MdcoCli::validateAndGetFinalConfigPath(const std::string& cfgPath)
         if (!getConfirmation())
             exit(0);
     }
-
+    // If default config exists, check if the user config is complete, if not, offer to generate
+    // missing parts
     if (fileExists(defaultConfigPath) && !isCanOpenConfigComplete(finalConfigPath))
     {
         m_log.m_layer = Logger::ProgramLayer_E::TOP;
@@ -68,7 +72,7 @@ void MdcoCli::clean(std::string& s)
             continue;      // skip all spaces (internal & trailing)
         }
         seenNonSpace   = true;
-        s[write_pos++] = std::tolower(c);
+        s[write_pos++] = std::tolower(c);  // pass all character in lower case
     }
     s.resize(write_pos);
 }
@@ -100,6 +104,7 @@ bool MdcoCli::isCanOpenConfigComplete(const std::string& pathToConfig)
 
 void MdcoCli::updateUserChoice()
 {
+    // update user choice for bus, device, data rate, etc. options
     if (m_candleBuilder->preBuildTask)
     {
         m_candleBuilder->preBuildTask();
@@ -1434,16 +1439,16 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
         ->add_option("--position", cmdCANopen.desiredPos, "Absolute position to reach [rad].")
         ->required();
 
-    MovementLimitsOPtions moveAbsParm(testMoveAbs);
+    MovementLimitsOPtions moveAbsParam(testMoveAbs);
 
     testMoveAbs->callback(
-        [this, candleBuilder, mdCanId, moveAbsParm]()
+        [this, candleBuilder, mdCanId, moveAbsParam]()
         {
             updateUserChoice();
             auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
             MDCO mdco((*mdCanId), candle);
             MDCO::Error_t err;
-            err = mdco.setProfileParameters(*moveAbsParm.param);
+            err = mdco.setProfileParameters(*moveAbsParam.param);
             if (err != MDCO::OK)
             {
                 m_log.error("Error setting profile parameters");

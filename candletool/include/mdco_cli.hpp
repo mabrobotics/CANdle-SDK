@@ -108,7 +108,6 @@ namespace mab
         CLI::App* SDOsegmentedWrite = nullptr;
 
         // testco subcommands
-
         CLI::App* testLatency   = nullptr;
         CLI::App* testMove      = nullptr;
         CLI::App* testMoveAbs   = nullptr;
@@ -116,10 +115,21 @@ namespace mab
         CLI::App* testMoveSpeed = nullptr;
         CLI::App* testImpedance = nullptr;
 
-        void        clean(std::string& s);
-        bool        isCanOpenConfigComplete(const std::string& pathToConfig);
+        /// @brief It returns the same string, without any spaces and all in lowercase.
+        /// @param s Input string to be cleaned.
+        void clean(std::string& s);
+
+        /// @brief Check if the CANopen configuration file is complete
+        bool isCanOpenConfigComplete(const std::string& pathToConfig);
+
+        /// @brief Validate and get the final configuration path
+        /// @param cfgPath Path to the configuration file to verify
+        /// @return Validated path to the configuration file
         std::string validateAndGetFinalConfigPath(const std::string& cfgPath);
-        void        updateUserChoice();
+
+        /// @brief Update in terms of option (baudrate, bus...) user choice before executing a
+        /// command
+        void updateUserChoice();
 
         struct ClearOptions
         {
