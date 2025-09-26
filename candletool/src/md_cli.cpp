@@ -675,6 +675,16 @@ namespace mab
                         auto fault = md->readRegisters(reg);
                         if (fault != MD::Error_t::OK)
                             m_logger.error("Error while reading register %s", reg.m_name.data());
+
+                        if constexpr (std::is_integral_v<decltype(reg.value)>)
+                        {
+                            m_logger.debug(
+                                "Read register %s, Value: %d", reg.m_name.data(), reg.value);
+                        }
+                        else
+                        {
+                            m_logger.debug("Read register %s", reg.m_name.data());
+                        }
                     }
                 };
 
@@ -722,8 +732,8 @@ namespace mab
                          << std::to_string(readableRegisters.motorShutdownTemp.value) << " *C"
                          << std::endl;
                 m_logger << "- motor calibration mode: "
-                         << MDAuxEncoderCalibrationModeValue_S::toReadable(
-                                readableRegisters.auxEncoderCalibrationMode.value)
+                         << MDMainEncoderCalibrationModeValue_S::toReadable(
+                                readableRegisters.motorCalibrationMode.value)
                                 .value_or("Unknown")
                          << std::endl;
                 m_logger << "- motor torque constant: " << std::setprecision(4)
@@ -1102,8 +1112,7 @@ namespace mab
                     {
                         m_logger.error(
                             "Please provide version of fw or  \"latest\" keyword in the argument!");
-                        m_logger.error(
-                            "For example candletool md update latest");
+                        m_logger.error("For example candletool md update latest");
                         return;
                     }
                     std::string fallbackPath = ctx.packageEtcPath->generic_string();
