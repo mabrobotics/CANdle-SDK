@@ -31,9 +31,13 @@ print(f"MD initialized with following status: {err}")
 # Torque actual value register
 index=0x6077
 subindex=0x00
+# Target position register
+index2=0x607A
+subindex2=0x00
 
 # Display torque actual value
 if err == pc.MDCO_Error_t.OK:
+    # mode spring
     for i in range(500):
         value = mdco.getValueFromOpenRegister(index,subindex)
         # testing bit sign
@@ -42,6 +46,11 @@ if err == pc.MDCO_Error_t.OK:
         # Display torque actual value
         print("torque actual value:",(value))
         time.sleep(0.01)
-
+    # mode movement
+    for i in range(500):
+        mdco.writeOpenRegisters(index2,subindex2,-i*10,4)
+        value = mdco.getValueFromOpenRegister(index2,subindex2)
+        print("position actual value:",(value))
+        time.sleep(0.01)
 # disable driver
 mdco.disableDriver()
