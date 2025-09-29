@@ -290,6 +290,13 @@ namespace mab
             return *this;
         }
 
+        MDRegisterEntry_S& operator=(const T* otherValue)
+        {
+            memcpy(value, otherValue, N);
+
+            return *this;
+        }
+
         const T* operator=(MDRegisterEntry_S& reg) const
         {
             return value;
