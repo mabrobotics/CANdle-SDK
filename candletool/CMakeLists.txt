@@ -28,7 +28,8 @@ set(CANDLETOOL_SOURCES
   src/mabFileParser.cpp
   src/main.cpp
   src/pds_cli.cpp
-  src/utilities.cpp)
+  src/utilities.cpp
+  objectDictionary/OD.cpp )
 
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)

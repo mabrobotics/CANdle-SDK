@@ -278,38 +278,52 @@ namespace mab
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
                     {"MaxVelocity",
-                     rootCli->add_option(
-                         "--MaxVelocity", (*param).MaxSpeed, "Profile max velocity [rad/s].")},
+                     rootCli
+                         ->add_option(
+                             "--MaxVelocity", (*param).MaxSpeed, "Profile max velocity [rad/s].")
+                         ->required()},
                     {"MaxAcceleration",
-                     rootCli->add_option("--MaxAcceleration",
-                                         (*param).accLimit,
-                                         "Profile max acceleration [rad/s^2].")},
+                     rootCli
+                         ->add_option("--MaxAcceleration",
+                                      (*param).accLimit,
+                                      "Profile max acceleration [rad/s^2].")
+                         ->required()},
                     {"MaxDeceleration",
-                     rootCli->add_option("--MaxDeceleration",
-                                         (*param).dccLimit,
-                                         "Profile max deceleration [rad/s^2].")},
+                     rootCli
+                         ->add_option("--MaxDeceleration",
+                                      (*param).dccLimit,
+                                      "Profile max deceleration [rad/s^2].")
+                         ->required()},
                     {"MaxCurrent",
-                     rootCli->add_option("--MaxCurrent",
-                                         (*param).MaxCurrent,
-                                         "Configures the maximum allowed phase current in the "
-                                         "motor. The value is "
-                                         "expressed in permille of rated current.")},
+                     rootCli
+                         ->add_option("--MaxCurrent",
+                                      (*param).MaxCurrent,
+                                      "Configures the maximum allowed phase current in the "
+                                      "motor. The value is "
+                                      "expressed in permille of rated current.")
+                         ->required()},
                     {"RatedCurrent",
-                     rootCli->add_option("--RatedCurrent",
-                                         (*param).RatedCurrent,
-                                         "Configures the maximum allowed torque in the motor. "
-                                         "The value is expressed "
-                                         "in permille of rated torque.")},
+                     rootCli
+                         ->add_option("--RatedCurrent",
+                                      (*param).RatedCurrent,
+                                      "Configures the maximum allowed torque in the motor. "
+                                      "The value is expressed "
+                                      "in permille of rated torque.")
+                         ->required()},
                     {"MaxTorque",
-                     rootCli->add_option("--MaxTorque",
-                                         (*param).MaxTorque,
-                                         "Configures the maximum allowed phase current in the "
-                                         "motor. The value is "
-                                         "expressed in permille of rated current.")},
+                     rootCli
+                         ->add_option("--MaxTorque",
+                                      (*param).MaxTorque,
+                                      "Configures the maximum allowed phase current in the "
+                                      "motor. The value is "
+                                      "expressed in permille of rated current.")
+                         ->required()},
                     {"RatedTorque",
-                     rootCli->add_option("--RatedTorque",
-                                         (*param).RatedTorque,
-                                         "Configures the motor rated torque expressed in mNm.")}};
+                     rootCli
+                         ->add_option("--RatedTorque",
+                                      (*param).RatedTorque,
+                                      "Configures the motor rated torque expressed in mNm.")
+                         ->required()}};
             }
             const std::shared_ptr<moveParameter> param;
 

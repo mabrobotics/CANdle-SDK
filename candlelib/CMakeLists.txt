@@ -56,8 +56,7 @@ target_sources(
           src/pds/pds_protocol.cpp
           src/pds/power_stage.cpp
           src/pds/brake_resistor.cpp
-          src/pds/isolated_converter.cpp
-          ../candletool/objectDictionary/OD.cpp )
+          src/pds/isolated_converter.cpp)
 
 if(UNIX)
   target_compile_definitions(candle PRIVATE UNIX)
