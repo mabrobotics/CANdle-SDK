@@ -47,7 +47,7 @@ std::string edsParser::generateObjectSection(const edsObject& obj)
 bool indexExistsInSection(const std::string& section, u32 index)
 {
     std::smatch        match;
-    std::regex         lineRegex(R"((\d+)=0x([0-9A-Fa-f]{4}))");
+    std::regex         lineRegex(R"((\d+)=0x([0-9A-Fa-f]{4}))");  // Matches lines like "1=0x1000"
     std::string        line;
     std::istringstream stream(section);
 
@@ -67,7 +67,7 @@ void updateObjectListSection(std::string& section, u32 index)
 {
     std::vector<u32>   indices;
     std::smatch        match;
-    std::regex         entryRegex(R"((\d+)=0x([0-9A-Fa-f]{4}))");
+    std::regex         entryRegex(R"((\d+)=0x([0-9A-Fa-f]{4}))");  // Matches lines like "1=0x1000"
     std::string        line;
     std::istringstream stream(section);
     std::string        newSection;
@@ -580,7 +580,8 @@ Error_t edsParser::generateCpp(const std::string& path)
     std::string            line;
     std::string            currentSection;
 
-    std::regex sectionRegex(R"(\[([0-9A-Fa-f]{4})(?:sub([0-9A-Fa-f]+))?\])");
+    std::regex sectionRegex(
+        R"(\[([0-9A-Fa-f]{4})(?:sub([0-9A-Fa-f]+))?\])");  // Matches [1000] or [1000sub1]
 
     while (std::getline(in, line))
     {
@@ -1078,7 +1079,7 @@ Error_t edsParser::deleteObject(u32 index, u8 subindex)
         snprintf(sectionID, sizeof(sectionID), "%04Xsub%u", index, subindex);
 
     std::string pattern = "\\[" + std::string(sectionID) + "\\][^\\[]*";
-    std::regex  sectionRegex(pattern, std::regex::icase);
+    std::regex  sectionRegex(pattern, std::regex::icase);  // Case insensitive
     std::smatch match;
 
     if (!std::regex_search(content, match, sectionRegex))
@@ -1348,9 +1349,9 @@ bool edsParser::hasMandatoryIndices()
 
 bool edsParser::hasValidAccessTypes()
 {
-    std::ifstream         file(m_edsFilePath);
-    std::string           line;
-    std::regex            pattern(R"(AccessType\s*=\s*(\w+))");
+    std::ifstream file(m_edsFilePath);
+    std::string   line;
+    std::regex    pattern(R"(AccessType\s*=\s*(\w+))");  // Capture the value after AccessType=
     std::set<std::string> validTypes = {"ro", "rw", "wo", "const", "rwr", "rww"};
 
     while (std::getline(file, line))
@@ -1375,7 +1376,8 @@ bool edsParser::hasValidDataTypes()
 {
     std::ifstream file(m_edsFilePath);
     std::string   line;
-    std::regex    pattern(R"(DataType\s*=\s*0x([0-9A-Fa-f]+))");
+    std::regex    pattern(
+        R"(DataType\s*=\s*0x([0-9A-Fa-f]+))");  // Capture the hex value after DataType=
 
     while (std::getline(file, line))
     {
