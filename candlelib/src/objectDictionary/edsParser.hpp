@@ -1,3 +1,6 @@
+#ifndef EDS_PARSER_HPP
+#define EDS_PARSER_HPP
+
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -10,9 +13,6 @@
 #include "mini/ini.h"
 #include "mab_types.hpp"
 #include "logger.hpp"
-
-#ifndef EDS_PARSER_HPP
-#define EDS_PARSER_HPP
 
 namespace mab
 {
