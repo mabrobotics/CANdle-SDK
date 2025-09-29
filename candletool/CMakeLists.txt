@@ -16,7 +16,6 @@ set(CANDLETOOL_VERSION_FULL
 add_subdirectory(3rd_party/CLI11)
 
 set(CANDLETOOL_SOURCES
-  objectDictionary/OD.cpp
   src/candle_cli.cpp
   src/canLoader.cpp
   src/web_file_module/curl_handler.cpp
@@ -29,7 +28,7 @@ set(CANDLETOOL_SOURCES
   src/main.cpp
   src/pds_cli.cpp
   src/utilities.cpp
-  objectDictionary/OD.cpp )
+  )
 
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -41,7 +40,6 @@ target_link_libraries(candletool candle logger)
 target_include_directories(
   candletool
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-         ${CMAKE_CURRENT_SOURCE_DIR}/objectDictionary 
          ${CMAKE_CURRENT_SOURCE_DIR}/src/web_file_module
          ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src)
 

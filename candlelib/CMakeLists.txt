@@ -56,7 +56,8 @@ target_sources(
           src/pds/pds_protocol.cpp
           src/pds/power_stage.cpp
           src/pds/brake_resistor.cpp
-          src/pds/isolated_converter.cpp)
+          src/pds/isolated_converter.cpp
+          src/objectDictionary/OD.cpp )
 
 if(UNIX)
   target_compile_definitions(candle PRIVATE UNIX)
@@ -71,7 +72,7 @@ target_include_directories(
          ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_interface
          ${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger
          ${CMAKE_CURRENT_SOURCE_DIR}/../candletool/include  
-         ${CMAKE_CURRENT_SOURCE_DIR}/../candletool/objectDictionary 
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/objectDictionary 
          ${LIBUSB_INCLUDE_DIR})
 target_include_directories(candle SYSTEM PRIVATE ${LIBUSB_INCLUDE_DIR})
 if(UNIX)
