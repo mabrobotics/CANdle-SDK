@@ -18,7 +18,7 @@ else:
 
 # make blink each driver led in ascending order
 for i in range(len(ids)):
-    md = pc.MDCO(ids[i], candle);
+    md = pc.MDCO(ids[i], candle)
     print("blink motor drive with ID: %d", ids[i])
     md.blinkOpenTest()
     time.sleep(5)

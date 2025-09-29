@@ -2,6 +2,7 @@
 
 #include <string>
 #include <filesystem>
+#include <optional>
 #include "mab_types.hpp"
 #include "mini/ini.h"
 

@@ -20,7 +20,6 @@ set(CANDLETOOL_SOURCES
   src/canLoader.cpp
   src/web_file_module/curl_handler.cpp
   src/web_file_module/flasher.cpp
-  src/edsParser.cpp
   src/md_cli.cpp
   src/mdco_cli.cpp
   src/mab_crc.cpp
