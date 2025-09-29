@@ -1,5 +1,6 @@
 #include "candle.hpp"
 #include "MD.hpp"
+#include "MDStatus.hpp"
 
 int main()
 {
@@ -18,10 +19,15 @@ int main()
 
     std::cout << "ID: " << mdId << "\n";
 
-    md.readRegisters(registerBuffer.motorName,
-                     registerBuffer.canBaudrate,
-                     registerBuffer.motorGearRatio,
-                     registerBuffer.motorIMax);
+    mab::MD::Error_t err = md.readRegisters(registerBuffer.motorName,
+                                            registerBuffer.canBaudrate,
+                                            registerBuffer.motorGearRatio,
+                                            registerBuffer.motorIMax);
+    if (err != mab::MD::Error_t::OK)
+    {
+        std::cout << "Error reading registers: " << static_cast<u8>(err) << "\n";
+        return EXIT_FAILURE;
+    }
 
     std::string canDatarateString = registerBuffer.canBaudrate.value == 1'000'000   ? "1M\n"
                                     : registerBuffer.canBaudrate.value == 2'000'000 ? "2M\n"
@@ -33,6 +39,36 @@ int main()
               << "CAN datarate: " << canDatarateString
               << "Motor gear ratio: " << registerBuffer.motorGearRatio.value << "\n"
               << "Motor max current: " << registerBuffer.motorIMax.value;
+
+    err = md.readRegisters(
+        registerBuffer.quickStatus, registerBuffer.calibrationStatus, registerBuffer.motionStatus);
+    if (err != mab::MD::Error_t::OK)
+    {
+        std::cout << "Error reading registers: " << static_cast<u8>(err) << "\n";
+        return EXIT_FAILURE;
+    }
+
+    // Decode status bits
+    mab::MDStatus statuses;
+    mab::MDStatus::toMap(registerBuffer.quickStatus.value, statuses.quickStatus);
+    mab::MDStatus::toMap(registerBuffer.calibrationStatus.value, statuses.calibrationStatus);
+    mab::MDStatus::toMap(registerBuffer.motionStatus.value, statuses.motionStatus);
+
+    std::cout << "\nQuick status:\n";
+    for (const auto& [bit, status] : statuses.quickStatus)
+    {
+        std::cout << " - " << status.name << ": " << (status.isSet() ? "SET" : "NOT SET") << "\n";
+    }
+    std::cout << "\nCalibration status:\n";
+    for (const auto& [bit, status] : statuses.calibrationStatus)
+    {
+        std::cout << " - " << status.name << ": " << (status.isSet() ? "SET" : "NOT SET") << "\n";
+    }
+    std::cout << "\nMotion status:\n";
+    for (const auto& [bit, status] : statuses.motionStatus)
+    {
+        std::cout << " - " << status.name << ": " << (status.isSet() ? "SET" : "NOT SET") << "\n";
+    }
 
     mab::detachCandle(candle);
 
