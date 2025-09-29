@@ -44,7 +44,9 @@ namespace mab
 
     inline std::string getCanOpenConfigPath()
     {
-        return getDefaultConfigDir() + "candletoolco.ini";
+        std::filesystem::path configPath = getDefaultConfigDir();
+        configPath /= "candletoolco.ini";
+        return configPath.string();
     }
 
     inline bool fileExists(const std::string& filepath)
