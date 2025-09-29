@@ -31,14 +31,14 @@ namespace mab
     /// @brief Parameters for the move operation
     struct moveParameter
     {
-        u32 MaxSpeed     = 220;
-        u16 MaxCurrent   = 500;
-        u32 RatedCurrent = 1000;
-        u16 MaxTorque    = 500;
-        u32 RatedTorque  = 1000;
-        i32 accLimit     = 1000;
-        i32 dccLimit     = 1000;
-        f32 kp           = 1.0;
+        u32 MaxSpeed     = 0;
+        u16 MaxCurrent   = 0;
+        u32 RatedCurrent = 0;
+        u16 MaxTorque    = 0;
+        u32 RatedTorque  = 0;
+        i32 accLimit     = 0;
+        i32 dccLimit     = 0;
+        f32 kp           = 0.0;
         f32 kd           = 0.0;
         f32 ki           = 0.0;
         i16 torqueff     = 0x00;
