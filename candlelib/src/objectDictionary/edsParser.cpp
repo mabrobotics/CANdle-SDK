@@ -17,13 +17,6 @@ std::string intToHex(u32 val, size_t width)
     return oss.str();
 }
 
-std::string toHex(u32 val, int width = 4)
-{
-    std::ostringstream oss;
-    oss << std::uppercase << std::hex << std::setw(width) << std::setfill('0') << val;
-    return oss.str();
-}
-
 std::string edsParser::generateObjectSection(const edsObject& obj)
 {
     std::ostringstream oss;
@@ -874,9 +867,9 @@ Error_t edsParser::addObject(const edsObject& obj)
     }
     in.close();
 
-    std::string targetSection = (obj.subIndex > 0)
-                                    ? (toHex(obj.index) + "sub" + std::to_string(obj.subIndex))
-                                    : toHex(obj.index);
+    std::string targetSection =
+        (obj.subIndex > 0) ? (intToHex(obj.index, 4) + "sub" + std::to_string(obj.subIndex))
+                           : intToHex(obj.index, 4);
 
     // Delete the existing object if it's already there
     bool   objectExists = false;

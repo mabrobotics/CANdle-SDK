@@ -11,7 +11,6 @@ set(COMMON_INCLUDES
     ../candlelib/include
     ../commons/logger
     ../candlelib/src/objectDictionary
-
 )
 
 
