@@ -81,6 +81,12 @@ namespace mab
             m_log.m_tag = tag.str();
         }
 
+        /// @brief @brief convert T parameter to a u32 value
+        /// @param value  value to convert
+        /// @return  u32 value
+        template <typename T>
+        u32 toU32(T value);
+
         /// @brief use SDO message in order to send all value needed to configure the motor for
         /// moving
         /// @param param struct containing all the parameters needed to configure the motor
