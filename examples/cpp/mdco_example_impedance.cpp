@@ -61,12 +61,10 @@ int main()
     mdco.enableDriver(Impedance);
 
     // kp
-    u32 kp_bits;
-    memcpy(&kp_bits, &(kp), sizeof(float));
+    u32 kp_bits = mdco.toU32(kp);
     mdco.writeOpenRegisters("Kp_impedance", kp_bits);
     // kd
-    u32 kd_bits;
-    memcpy(&kd_bits, &(kd), sizeof(float));
+    u32 kd_bits = mdco.toU32(kd);
     mdco.writeOpenRegisters("Kd_impedance", kd_bits);
     mdco.writeOpenRegisters("Position Demand Value", targetPos);
     mdco.writeOpenRegisters("Velocity Demand Value", desiredSpeed);

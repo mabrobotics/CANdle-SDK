@@ -84,8 +84,28 @@ namespace mab
         /// @brief @brief convert T parameter to a u32 value
         /// @param value  value to convert
         /// @return  u32 value
+
+        // Convert any trivially copyable type to u32
         template <typename T>
-        u32 toU32(T value);
+        u32 toU32(T value)
+        {
+            static_assert(std::is_trivially_copyable_v<T>, "T must be trivially copyable");
+            if constexpr (sizeof(T) <= sizeof(u32))
+            {
+                // Zero-initialize u32
+                u32 result = 0;
+                // Copy bytes of value into result
+                std::array<std::byte, sizeof(T)> bytes =
+                    std::bit_cast<std::array<std::byte, sizeof(T)>>(value);
+                std::memcpy(&result, bytes.data(), sizeof(T));
+                return result;
+            }
+            else
+            {
+                m_log.error("Value too large to fit in u32");
+                return 0;
+            }
+        }
 
         /// @brief use SDO message in order to send all value needed to configure the motor for
         /// moving
