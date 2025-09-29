@@ -12,7 +12,7 @@ std::string mab::toLower(const std::string& s)
     return out;
 }
 
-std::string int_to_hex(u32 val, size_t width)
+std::string intToHex(u32 val, size_t width)
 {
     std::ostringstream oss;
     oss << std::uppercase << std::hex << std::setw(width) << std::setfill('0') << val;
@@ -96,7 +96,7 @@ void updateObjectListSection(std::string& section, u32 index)
     newSection += "SupportedObjects=" + std::to_string(indices.size()) + "\n";
     for (size_t i = 0; i < indices.size(); ++i)
     {
-        newSection += std::to_string(i + 1) + "=0x" + int_to_hex(indices[i], 4) + "\n";
+        newSection += std::to_string(i + 1) + "=0x" + intToHex(indices[i], 4) + "\n";
     }
 
     section = newSection;
@@ -1151,10 +1151,10 @@ Error_t edsParser::modifyObject(const edsObject& obj, u32 index, u8 subindex)
             }
             // if the line containing the section in which we need to modify the PDO
             if (trimmed.front() == '[' && trimmed.back() == ']' &&
-                trimmed.find("[" + int_to_hex(obj.index, 4)) != std::string::npos)
+                trimmed.find("[" + intToHex(obj.index, 4)) != std::string::npos)
             {
                 currentSection   = trimmed;
-                std::string base = "[" + int_to_hex(obj.index, 4);
+                std::string base = "[" + intToHex(obj.index, 4);
                 inSection        = (currentSection.rfind(base, 0) == 0);
                 continue;
             }
