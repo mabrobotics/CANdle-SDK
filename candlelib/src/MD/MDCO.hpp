@@ -44,18 +44,6 @@ namespace mab
         i16 torqueff     = 0x00;
     };
 
-    /// @brief Modes of operation for the MD device cf. 0x6060 in the CANopen object dictionary
-    enum ModesOfOperation : i8
-    {
-        Impedance          = -3,
-        Service            = -2,
-        Idle               = 0,
-        ProfilePosition    = 1,
-        ProfileVelocity    = 3,
-        CyclicSyncPosition = 8,
-        CyclicSyncVelocity = 9,
-    };
-
     /// @brief Software representation of MD device on the can network
     class MDCO
     {
