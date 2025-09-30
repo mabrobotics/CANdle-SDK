@@ -42,7 +42,8 @@ endif()
 
 if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64" OR ${CMAKE_SYSTEM_PROCESSOR}
                                                    STREQUAL "armhf")
-  add_compile_options(-Wno-array-bounds -Wno-stringop-overread)
+  add_compile_options(-Wno-array-bounds -Wno-stringop-overread
+                      -Wno-stringop-overflow)
 endif()
 
 set(mINI_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/mINI/inc/)
