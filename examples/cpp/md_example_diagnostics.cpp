@@ -50,9 +50,9 @@ int main()
 
     // Decode status bits
     mab::MDStatus statuses;
-    mab::MDStatus::toMap(registerBuffer.quickStatus.value, statuses.quickStatus);
-    mab::MDStatus::toMap(registerBuffer.calibrationStatus.value, statuses.calibrationStatus);
-    mab::MDStatus::toMap(registerBuffer.motionStatus.value, statuses.motionStatus);
+    mab::MDStatus::decode(registerBuffer.quickStatus.value, statuses.quickStatus);
+    mab::MDStatus::decode(registerBuffer.calibrationStatus.value, statuses.calibrationStatus);
+    mab::MDStatus::decode(registerBuffer.motionStatus.value, statuses.motionStatus);
 
     std::cout << "\nQuick status:\n";
     for (const auto& [bit, status] : statuses.quickStatus)
