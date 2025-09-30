@@ -22,8 +22,6 @@ execute_process(COMMAND which "${TOOLCHAIN_CROSS_TRIPLET}-gcc"
 execute_process(COMMAND which "${TOOLCHAIN_CROSS_TRIPLET}-g++"
                 OUTPUT_VARIABLE CMAKE_CXX_COMPILER_NEWLINED)
 
-add_compile_options(-Wno-array-bounds)
-
 string(STRIP "${CMAKE_C_COMPILER_NEWLINED}" CMAKE_C_COMPILER)
 string(STRIP "${CMAKE_CXX_COMPILER_NEWLINED}" CMAKE_CXX_COMPILER)
 

@@ -40,6 +40,11 @@ if(NOT WIN32)
   # windows.h to exclude some less used APIs
 endif()
 
+if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64" OR ${CMAKE_SYSTEM_PROCESSOR}
+                                                   STREQUAL "armhf")
+  add_compile_options(-Wno-array-bounds)
+endif()
+
 set(mINI_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/mINI/inc/)
 if(NOT DEFINED CANDLE_BUILD_STATIC)
   set(CANDLE_BUILD_STATIC TRUE)
