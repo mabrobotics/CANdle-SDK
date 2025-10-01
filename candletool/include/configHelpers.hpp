@@ -14,7 +14,7 @@ namespace mab
         GetModuleFileName(NULL, path, 256);
         return std::filesystem::path(path).remove_filename().string() + std::string("config\\");
 #else
-        return std::string("/etc/candletool/config/");
+        return std::string(DEFAULT_CANDLETOOL_CONFIG_DIR) + std::string("/");
 #endif
     }
 
