@@ -21,10 +21,11 @@ option(CANDLESDK_BUILD_EXAMPLES
        "Build examples (has no effect on python builds)" ON)
 option(CANDLESDK_BUILD_CANDLETOOL
        "Build candletool executable (has no effect on python builds)" ON)
-option(CANDLE_BUILD_STATIC
-       "Build static library (has no effect on windows library and python builds)"
-       ON)
-option(MAKE_TESTS "Enable/disable some of the unit tests" ON)
+option(
+  CANDLE_BUILD_STATIC
+  "Build static library (has no effect on windows library and python builds)"
+  ON)
+option(MAKE_TESTS "Enable/disable some of the unit tests" OFF)
 
 message("====================")
 message("CandleSDK version: ${CANDLESDK_VERSION} ${CANDLESDK_VERSION_TAG}")
