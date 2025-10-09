@@ -18,11 +18,12 @@ class CandleFrameDTOTest : public ::testing::Test
 
 TEST_F(CandleFrameDTOTest, InitTest)
 {
-    frame.init(0x123, 1);
+    frame.init(0x123, 1, 2);
     EXPECT_EQ(frame.isValid(), false);
     EXPECT_EQ(frame.canId(), 0x123);
     EXPECT_EQ(frame.sequenceNo(), 1);
     EXPECT_EQ(frame.length(), 0);
+    EXPECT_EQ(frame.timeout(), 2);
 
     frame.addData((void*)"\x01\x02\x03\x04", 4);
     EXPECT_EQ(frame.length(), 4);
@@ -33,11 +34,12 @@ TEST_F(CandleFrameDTOTest, InitTest)
     EXPECT_EQ(frame.canId(), 0);
     EXPECT_EQ(frame.sequenceNo(), 0);
     EXPECT_EQ(frame.length(), 0);
+    EXPECT_EQ(frame.timeout(), 0);
 }
 
 TEST_F(CandleFrameDTOTest, serializeDeserializeTest)
 {
-    frame.init(0x123, 1);
+    frame.init(0x123, 1, 2);
     frame.addData((void*)"\x01\x02\x03\x04", 4);
     frame.addData((void*)"\x05\x06\x07\x08", 4);
 
@@ -50,6 +52,7 @@ TEST_F(CandleFrameDTOTest, serializeDeserializeTest)
     EXPECT_EQ(newFrame.canId(), 0x123);
     EXPECT_EQ(newFrame.sequenceNo(), 1);
     EXPECT_EQ(newFrame.length(), 8);
+    EXPECT_EQ(newFrame.timeout(), 2);
     EXPECT_EQ(newFrame.isValid(), true);
     for (u8 i = 0; i < newFrame.length(); i++)
     {
