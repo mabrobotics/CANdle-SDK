@@ -156,7 +156,11 @@
     MD_REG(idDirect, f32, 0xEE0C, RW)                \
     MD_REG(iqDirect, f32, 0xEE0D, RW)                \
     MD_REG(idTarget, f32, 0xEE0E, RO)                \
-    MD_REG(iqTarget, f32, 0xEE0F, RO)
+    MD_REG(iqTarget, f32, 0xEE0F, RO)                \
+    MD_REG(decouplingEnable, u8, 0xEE10, RW)         \
+    MD_REG(fluxLinkage, f32, 0xEE11, RW)             \
+    MD_REG(inductanceD, f32, 0xEE12, RW)             \
+    MD_REG(inductanceQ, f32, 0xEE13, RW)
 
 namespace mab
 {
