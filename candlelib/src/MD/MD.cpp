@@ -328,7 +328,7 @@ namespace mab
             m_log.error("Could not read quick status vector!");
             return std::make_pair(m_status.quickStatus, result);
         }
-        MDStatus::toMap(m_mdRegisters.quickStatus.value, m_status.quickStatus);
+        MDStatus::decode(m_mdRegisters.quickStatus.value, m_status.quickStatus);
         return std::make_pair(m_status.quickStatus, result);
     }
 
@@ -342,7 +342,7 @@ namespace mab
             m_log.error("Could not read main encoder errors!");
             return std::make_pair(m_status.encoderStatus, result);
         }
-        MDStatus::toMap(m_mdRegisters.mainEncoderStatus.value, m_status.encoderStatus);
+        MDStatus::decode(m_mdRegisters.mainEncoderStatus.value, m_status.encoderStatus);
         return std::make_pair(m_status.encoderStatus, result);
     }
 
@@ -356,7 +356,7 @@ namespace mab
             m_log.error("Could not read output encoder errors!");
             return std::make_pair(m_status.encoderStatus, result);
         }
-        MDStatus::toMap(m_mdRegisters.auxEncoderStatus.value, m_status.encoderStatus);
+        MDStatus::decode(m_mdRegisters.auxEncoderStatus.value, m_status.encoderStatus);
         return std::make_pair(m_status.encoderStatus, result);
     }
 
@@ -370,7 +370,7 @@ namespace mab
             m_log.error("Could not read ");
             return std::make_pair(m_status.calibrationStatus, result);
         }
-        MDStatus::toMap(m_mdRegisters.calibrationStatus.value, m_status.calibrationStatus);
+        MDStatus::decode(m_mdRegisters.calibrationStatus.value, m_status.calibrationStatus);
         return std::make_pair(m_status.calibrationStatus, result);
     }
 
@@ -384,7 +384,7 @@ namespace mab
             m_log.error("Could not read ");
             return std::make_pair(m_status.bridgeStatus, result);
         }
-        MDStatus::toMap(m_mdRegisters.bridgeStatus.value, m_status.bridgeStatus);
+        MDStatus::decode(m_mdRegisters.bridgeStatus.value, m_status.bridgeStatus);
         return std::make_pair(m_status.bridgeStatus, result);
     }
 
@@ -398,7 +398,7 @@ namespace mab
             m_log.error("Could not read ");
             return std::make_pair(m_status.hardwareStatus, result);
         }
-        MDStatus::toMap(m_mdRegisters.hardwareStatus.value, m_status.hardwareStatus);
+        MDStatus::decode(m_mdRegisters.hardwareStatus.value, m_status.hardwareStatus);
         return std::make_pair(m_status.hardwareStatus, result);
     }
 
@@ -412,7 +412,7 @@ namespace mab
             m_log.error("Could not read ");
             return std::make_pair(m_status.communicationStatus, result);
         }
-        MDStatus::toMap(m_mdRegisters.communicationStatus.value, m_status.communicationStatus);
+        MDStatus::decode(m_mdRegisters.communicationStatus.value, m_status.communicationStatus);
         return std::make_pair(m_status.communicationStatus, result);
     }
 
@@ -426,7 +426,7 @@ namespace mab
             m_log.error("Could not read ");
             return std::make_pair(m_status.motionStatus, result);
         }
-        MDStatus::toMap(m_mdRegisters.motionStatus.value, m_status.motionStatus);
+        MDStatus::decode(m_mdRegisters.motionStatus.value, m_status.motionStatus);
         return std::make_pair(m_status.motionStatus, result);
     }
 

@@ -1,12 +1,23 @@
 #pragma once
 #include <memory>
 #include <string>
+#include <cstdlib>
+#include <filesystem>
 #include "mab_types.hpp"
 #include "md_types.hpp"
 #include "CLI/CLI.hpp"
+#include "logger.hpp"
+#include "candlelib.hpp"
 
 namespace mab
 {
+    enum class sysArch_E
+    {
+        Unknown,
+        X86_64,
+        ARMHF,
+        ARM64,
+    };
 
     constexpr std::string_view MAB_LOGO_HEADER =
         "   ___     _     _  _      _   _         _____               _ \n"
@@ -18,6 +29,43 @@ namespace mab
         "\033[32mhttps://mabrobotics.pl/servos/manual\033[0m \n\n";
 
     std::string trim(const std::string_view s);
+
+    constexpr sysArch_E getSysArch()
+    {
+#if defined(_M_X64) || defined(__amd64__) || defined(__x86_64__)
+        return sysArch_E::X86_64;
+#elif defined(__aarch64__) || defined(_M_ARM64)
+        return sysArch_E::ARM64;
+#elif defined(__arm__) || defined(_M_ARM)
+        return sysArch_E::ARMHF;
+#else
+        return sysArch_E::Unknown;
+#endif
+    }
+
+    /// @brief command executor function
+    /// @param command command to execute in the shell
+    /// @return true on error, false on success
+    inline bool executeCommand(const std::string_view command)
+    {
+        Logger log(Logger::ProgramLayer_E::LAYER_2, "CMD_EXECUTOR");
+        log.debug("Executing command: %s", command.data());
+        int ret = std::system(command.data());
+        if (ret != 0)
+        {
+            log.error("Failed to execute command: %s", command.data());
+            return true;
+        }
+        return false;
+    }
+
+    /// @brief this struct will be used to share information across CANdleTool
+    struct CANdleToolCtx_S
+    {
+        std::vector<CANdleBranch_S>                  candleBranchVec;
+        const std::shared_ptr<std::filesystem::path> packageEtcPath =
+            std::make_shared<std::filesystem::path>(DEFAULT_CANDLETOOL_CONFIG_DIR);
+    };
 
     class MABDescriptionFormatter : public CLI::Formatter
     {
@@ -61,65 +109,4 @@ namespace mab
         }
     };
 
-    // Baudrate helpers
-    inline static std::optional<mab::CANdleBaudrate_E> stringToBaud(const std::string_view baud)
-    {
-        if (baud == "1M")
-            return mab::CANdleBaudrate_E::CAN_BAUD_1M;
-        if (baud == "2M")
-            return mab::CANdleBaudrate_E::CAN_BAUD_2M;
-        if (baud == "5M")
-            return mab::CANdleBaudrate_E::CAN_BAUD_5M;
-        if (baud == "8M")
-            return mab::CANdleBaudrate_E::CAN_BAUD_8M;
-        return {};
-    }
-    inline static std::optional<mab::CANdleBaudrate_E> intToBaud(const u32 baud)
-    {
-        switch (baud)
-        {
-            case 1000000:
-                return mab::CANdleBaudrate_E::CAN_BAUD_1M;
-            case 2000000:
-                return mab::CANdleBaudrate_E::CAN_BAUD_2M;
-            case 5000000:
-                return mab::CANdleBaudrate_E::CAN_BAUD_5M;
-            case 8000000:
-                return mab::CANdleBaudrate_E::CAN_BAUD_8M;
-            default:
-                return {};
-        }
-    }
-    inline static std::optional<std::string> datarateToString(const mab::CANdleBaudrate_E baud)
-    {
-        switch (baud)
-        {
-            case mab::CANdleBaudrate_E::CAN_BAUD_1M:
-                return "1M";
-            case mab::CANdleBaudrate_E::CAN_BAUD_2M:
-                return "2M";
-            case mab::CANdleBaudrate_E::CAN_BAUD_5M:
-                return "5M";
-            case mab::CANdleBaudrate_E::CAN_BAUD_8M:
-                return "8M";
-            default:
-                return {};
-        }
-    }
-    inline static u32 baudToInt(const mab::CANdleBaudrate_E baud)
-    {
-        switch (baud)
-        {
-            case mab::CANdleBaudrate_E::CAN_BAUD_1M:
-                return 1000000;
-            case mab::CANdleBaudrate_E::CAN_BAUD_2M:
-                return 2000000;
-            case mab::CANdleBaudrate_E::CAN_BAUD_5M:
-                return 5000000;
-            case mab::CANdleBaudrate_E::CAN_BAUD_8M:
-                return 8000000;
-            default:
-                return 1000000;  // Default to 1M if unknown
-        }
-    }
 }  // namespace mab

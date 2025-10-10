@@ -52,8 +52,8 @@ namespace mab
 
         void printModuleInfo(void);
 
-        void init(void);
-        void init(u16 canId);
+        PdsModule::error_E init(void);
+        void               init(u16 canId);
 
         error_E      getFwMetadata(pdsFwMetadata_S& metadata) const;
         modulesSet_S getModules(void);
@@ -70,8 +70,8 @@ namespace mab
         u16     getCanId();
         error_E setCanId(u16 canId);
 
-        CANdleBaudrate_E getCanBaudrate(void);
-        error_E          setCanBaudrate(CANdleBaudrate_E canBaudrate);
+        CANdleDatarate_E getCanDatarate(void);
+        error_E          setCanDatarate(CANdleDatarate_E canDatarate);
 
         error_E isBootloaderError(bool isBootloaderError);
 

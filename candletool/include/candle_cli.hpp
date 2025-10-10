@@ -4,6 +4,7 @@
 #include "mab_types.hpp"
 #include "logger.hpp"
 #include "candle_types.hpp"
+#include "utilities.hpp"
 
 namespace mab
 {
@@ -12,7 +13,7 @@ namespace mab
     {
       public:
         CandleCli() = delete;
-        CandleCli(CLI::App* rootCli, const std::shared_ptr<const CandleBuilder> candleBuilder);
+        CandleCli(CLI::App* rootCli, CANdleToolCtx_S ctx);
         ~CandleCli() = default;
 
       private:
@@ -20,14 +21,29 @@ namespace mab
 
         struct UpdateOptions
         {
-            UpdateOptions(CLI::App* rootCli) : pathToMabFile(std::make_shared<std::string>(""))
+            UpdateOptions(CLI::App* rootCli)
+                : fwVersion(std::make_shared<std::string>("")),
+                  pathToMabFile(std::make_shared<std::string>("")),
+                  metadataFile(std::make_shared<std::string>(""))
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
+                    {"version",
+                     rootCli->add_option("version",
+                                         *fwVersion,
+                                         "Version of fw to download (\"latest\" or X.X.X format). "
+                                         "For example:  candletool candle update latest")},
                     {"path",
-                     rootCli->add_option("path", *pathToMabFile, "Path to .mab file")->required()}};
+                     rootCli->add_option("-p,--path",
+                                         *pathToMabFile,
+                                         "Local path to .mab file")},
+                    {"meta_file",
+                     rootCli->add_option("-m,--meta-file",
+                                         *metadataFile,
+                                         "File with file metadata for managing downloads.")}};
             }
-            const std::shared_ptr<bool>         recovery;
+            const std::shared_ptr<std::string>  fwVersion;
             const std::shared_ptr<std::string>  pathToMabFile;
+            const std::shared_ptr<std::string>  metadataFile;
             std::map<std::string, CLI::Option*> optionsMap;
         };
     };

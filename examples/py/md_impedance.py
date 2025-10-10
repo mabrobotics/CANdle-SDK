@@ -5,7 +5,7 @@ import time
 # pc.logVerbosity(pc.Verbosity_E.VERBOSITY_3)
 
 # Initialize CANdle on the USB bus (SPI bus not supported yet)
-candle = pc.attachCandle(pc.CANdleBaudrate_E.CAN_BAUD_1M, pc.busTypes_t.USB)
+candle = pc.attachCandle(pc.CANdleDatarate_E.CAN_DATARATE_1M, pc.busTypes_t.USB)
 
 # Create virual MD representation
 md = pc.MD(100, candle)

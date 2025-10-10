@@ -29,7 +29,7 @@ namespace mab
         enum CandleCommands_t : u8
         {
             NONE                   = 0,
-            CANDLE_CONFIG_BAUDRATE = 2,
+            CANDLE_CONFIG_DATARATE = 2,
             GENERIC_CAN_FRAME      = 4,
             RESET                  = 9,
             ENTER_BOOTLOADER       = 10,
@@ -45,10 +45,11 @@ namespace mab
         ~Candle();
 
         /// @brief Create CANdle device object based on provided communication interface
-        /// @param canBaudrate CAN network datarate
+        /// @param canDatarate CAN network datarate
         /// @param bus Initialized communication interface
-        explicit Candle(const CANdleBaudrate_E                           canBaudrate,
-                        std::unique_ptr<mab::I_CommunicationInterface>&& bus);
+        explicit Candle(const CANdleDatarate_E                           canDatarate,
+                        std::unique_ptr<mab::I_CommunicationInterface>&& bus,
+                        bool useRegularCANFrames = false);
 
         /// @brief Method for transfering CAN packets via CANdle device
         /// @param canId Target CAN node ID
@@ -79,7 +80,7 @@ namespace mab
         static candleTypes::Error_t enterBootloader(
             std::unique_ptr<mab::I_CommunicationInterface>&& usb);
 
-        const CANdleBaudrate_E m_canBaudrate;
+        const CANdleDatarate_E m_canDatarate;
 
       private:
         static constexpr u32 DEFAULT_CONFIGURATION_TIMEOUT = 10;
@@ -88,7 +89,9 @@ namespace mab
 
         std::unique_ptr<mab::I_CommunicationInterface> m_bus;
 
-        bool m_isInitialized = false;
+        bool         m_isInitialized       = false;
+        const bool   m_useRegularCanFrames = false;
+        const size_t m_maxCANFrameSize     = 64;
 
         candleTypes::Error_t busTransfer(std::vector<u8>* data,
                                          size_t           responseLength = 0,
@@ -107,9 +110,10 @@ namespace mab
             return std::array<u8, 2>({ENTER_BOOTLOADER, 0x0});
         }
 
-        static inline std::vector<u8> baudrateCommandFrame(const CANdleBaudrate_E baudrate)
+        static inline std::vector<u8> datarateCommandFrame(const CANdleDatarate_E datarate,
+                                                           const u8               regularCanFormat)
         {
-            return std::vector<u8>({CANDLE_CONFIG_BAUDRATE, baudrate});
+            return std::vector<u8>({CANDLE_CONFIG_DATARATE, datarate, regularCanFormat});
         }
 
         static inline std::vector<u8> sendCanFrameHeader(const u8&&  length,
@@ -134,10 +138,10 @@ namespace mab
     };
 
     /// @brief Create CANdle device instance
-    /// @param baudrate Target data-rate of the CAN bus
+    /// @param datarate Target data-rate of the CAN bus
     /// @param bus Initialized CANdle communication interface
     /// @return Configured candle object or nullptr
-    inline mab::Candle* attachCandle(const CANdleBaudrate_E                      baudrate,
+    inline mab::Candle* attachCandle(const CANdleDatarate_E                      datarate,
                                      std::unique_ptr<I_CommunicationInterface>&& bus)
     {
         Logger log(Logger::ProgramLayer_E::TOP, "CANDLE_BUILDER");
@@ -147,7 +151,7 @@ namespace mab
             return {};
         }
 
-        mab::Candle* candle = new mab::Candle(baudrate, std::move(bus));
+        mab::Candle* candle = new mab::Candle(datarate, std::move(bus));
         if (candle == nullptr || candle->init() != candleTypes::Error_t::OK)
         {
             log.error("Could not initialize CANdle device!");
@@ -157,10 +161,10 @@ namespace mab
     }
 
     /// @brief Create CANdle device instance
-    /// @param baudrate Target data-rate of the CAN bus
+    /// @param datarate Target data-rate of the CAN bus
     /// @param bus Initialized CANdle communication interface
     /// @return Configured candle object or nullptr
-    inline mab::Candle* attachCandle(const CANdleBaudrate_E  baudrate,
+    inline mab::Candle* attachCandle(const CANdleDatarate_E  datarate,
                                      candleTypes::busTypes_t busType)
     {
         std::unique_ptr<mab::I_CommunicationInterface> bus;
@@ -170,12 +174,12 @@ namespace mab
                 bus = std::make_unique<mab::USB>(mab::Candle::CANDLE_VID, mab::Candle::CANDLE_PID);
                 if (bus->connect() != mab::I_CommunicationInterface::Error_t::OK)
                     throw std::runtime_error("Could not connect USB device!");
-                return attachCandle(baudrate, std::move(bus));
+                return attachCandle(datarate, std::move(bus));
             case candleTypes::busTypes_t::SPI:
                 bus = std::make_unique<mab::SPI>();
                 if (bus->connect() != mab::I_CommunicationInterface::Error_t::OK)
                     throw std::runtime_error("Could not connect SPI device!");
-                return attachCandle(baudrate, std::move(bus));
+                return attachCandle(datarate, std::move(bus));
             default:
                 throw std::runtime_error("Wrong communication interface provided!");
                 return {};
@@ -197,7 +201,7 @@ namespace mab
       public:
         CandleBuilder() = default;
 
-        std::shared_ptr<CANdleBaudrate_E>        datarate = nullptr;
+        std::shared_ptr<CANdleDatarate_E>        datarate = nullptr;
         std::shared_ptr<candleTypes::busTypes_t> busType  = nullptr;
         std::optional<std::string_view>          pathOrId;
 

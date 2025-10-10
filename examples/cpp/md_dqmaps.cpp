@@ -28,7 +28,7 @@ int main(int argc, char** argv)
     fprintf(stderr, "Parsing CSV successfull!\n");
 
     auto candle =
-        mab::attachCandle(mab::CANdleBaudrate_E::CAN_BAUD_1M, mab::candleTypes::busTypes_t::USB);
+        mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M, mab::candleTypes::busTypes_t::USB);
     mab::MD md(100, candle);
     if (md.init() != mab::MD::Error_t::OK)
     {

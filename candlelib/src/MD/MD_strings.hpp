@@ -9,7 +9,7 @@
 
 namespace mab
 {
-    struct MDCanBaudrateValue_S
+    struct MDCanDatarateValue_S
     {
         static inline const std::map<u32, std::string_view> fromNumericMap{
             {1'000'000, "1M"}, {2'000'000, "2M"}, {5'000'000, "5M"}, {8'000'000, "8M"}};

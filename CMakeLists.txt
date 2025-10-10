@@ -5,53 +5,78 @@ include(git_func.cmake)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CANDLESDK_VERSION_1 1)
-set(CANDLESDK_VERSION_2 1)
+set(CANDLESDK_VERSION_2 3)
 set(CANDLESDK_VERSION_3 0)
-set(CANDLESDK_VERSION ${CANDLESDK_VERSION_1}.${CANDLESDK_VERSION_2}.${CANDLESDK_VERSION_3})
+set(CANDLESDK_VERSION
+    ${CANDLESDK_VERSION_1}.${CANDLESDK_VERSION_2}.${CANDLESDK_VERSION_3})
 add_compile_definitions(CANDLESDK_VERSION="${CANDLESDK_VERSION}")
 get_tag(CANDLESDK_VERSION_TAG)
 
-project(candlesdk VERSION ${CANDLESDK_VERSION_1}.${CANDLESDK_VERSION_2}.${CANDLESDK_VERSION_3})
+project(
+  candlesdk
+  VERSION ${CANDLESDK_VERSION_1}.${CANDLESDK_VERSION_2}.${CANDLESDK_VERSION_3})
 
+option(CANDLESDK_BUILD_PYTHON "Build python library shared object" OFF)
+option(CANDLESDK_BUILD_EXAMPLES
+       "Build examples (has no effect on python builds)" ON)
+option(CANDLESDK_BUILD_CANDLETOOL
+       "Build candletool executable (has no effect on python builds)" ON)
+option(
+  CANDLE_BUILD_STATIC
+  "Build static library (has no effect on windows library and python builds)"
+  ON)
+option(MAKE_TESTS "Enable/disable some of the unit tests" OFF)
+
+message("====================")
 message("CandleSDK version: ${CANDLESDK_VERSION} ${CANDLESDK_VERSION_TAG}")
+message("Available flags and their values:")
+message("  CANDLESDK_BUILD_PYTHON = ${CANDLESDK_BUILD_PYTHON}")
+message("  CANDLESDK_BUILD_EXAMPLES = ${CANDLESDK_BUILD_EXAMPLES}")
+message("  CANDLESDK_BUILD_CANDLETOOL = ${CANDLESDK_BUILD_CANDLETOOL}")
+message("  CANDLE_BUILD_STATIC = ${CANDLE_BUILD_STATIC}")
+message("  MAKE_TESTS = ${MAKE_TESTS}")
+message("====================")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_compile_options(
-  -Wfatal-errors
-  -Wall
-  -Wextra
-  -Wpedantic
-  -Wno-unused-parameter
-  -Wno-missing-field-initializers)
+add_compile_options(-Wfatal-errors -Wall -Wextra -Wpedantic
+                    -Wno-unused-parameter -Wno-missing-field-initializers)
 
 if(NOT WIN32)
-    add_compile_options(
-  -Werror)
+  add_compile_options(-Werror)
+  add_compile_definitions(WIN32_MEAN_AND_LEAN) # This define is needed for
+  # windows.h to exclude some less used APIs
+endif()
+
+if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64" OR ${CMAKE_SYSTEM_PROCESSOR}
+                                                   STREQUAL "armhf")
+  add_compile_options(-Wno-array-bounds -Wno-stringop-overread
+                      -Wno-stringop-overflow)
 endif()
 
 set(mINI_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/mINI/inc/)
-if(NOT DEFINED CANDLE_BUILD_STATIC)
-    set(CANDLE_BUILD_STATIC TRUE)
-endif()
 
 macro(add_unit_test_executable test_name)
-    message("Adding unit test executable ${test_name}")
-    add_executable(${test_name} ${ARGN})
-    target_link_libraries(${test_name} PRIVATE Unit_test)
-    set_target_properties(${test_name} PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/ut_runners/
-        OUTPUT_NAME test_${test_name}
-    )
+  message("Adding unit test executable ${test_name}")
+  add_executable(${test_name} ${ARGN})
+  target_link_libraries(${test_name} PRIVATE Unit_test)
+  set_target_properties(
+    ${test_name}
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/ut_runners/
+               OUTPUT_NAME test_${test_name})
 
 endmacro(add_unit_test_executable)
 
 add_subdirectory(commons)
 add_subdirectory(candlelib)
-if(PYTHON_BUILD)
-    add_subdirectory(pycandle)
+if(CANDLESDK_BUILD_PYTHON)
+  add_subdirectory(pycandle)
 else()
+  if(CANDLESDK_BUILD_CANDLETOOL)
     add_subdirectory(candletool)
+  endif()
+  if(CANDLESDK_BUILD_EXAMPLES)
     add_subdirectory(examples)
+  endif()
 endif()

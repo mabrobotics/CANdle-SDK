@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <filesystem>
 #include <variant>
 #include "MDStatus.hpp"
 #include "canLoader.hpp"
@@ -18,6 +19,10 @@
 #include "utilities.hpp"
 #include "MDStatus.hpp"
 #include "mini/ini.h"
+#include "configHelpers.hpp"
+#include "curl_handler.hpp"
+#include "flasher.hpp"
+#include "web_file.hpp"
 
 /* ERROR COLORING NOTE: may not work on all terminals! */
 #define REDSTART    "\033[1;31m"
@@ -40,13 +45,14 @@
 
 namespace mab
 {
-    MDCli::MDCli(CLI::App* rootCli, const std::shared_ptr<const CandleBuilder> candleBuilder)
+    MDCli::MDCli(CLI::App* rootCli, CANdleToolCtx_S ctx)
     {
-        if (candleBuilder == nullptr)
+        if (ctx.candleBranchVec.empty())
         {
-            throw std::runtime_error("MDCli arguments can not be nullptr!");
+            throw std::runtime_error("MDCli arguments can not be empty!");
         }
-        auto* mdCLi = rootCli->add_subcommand("md", "MD commands.")->require_subcommand();
+        auto  candleBuilder = ctx.candleBranchVec.at(0).candleBuilder;
+        auto* mdCLi         = rootCli->add_subcommand("md", "MD commands.")->require_subcommand();
         const std::shared_ptr<canId_t> mdCanId = std::make_shared<canId_t>(100);
         auto*                          mdCanIdOption =
             mdCLi->add_option("-i,--id", *mdCanId, "CAN ID of the MD to interact with.");
@@ -107,10 +113,10 @@ namespace mab
                 if (!canOptions.optionsMap.at("datarate")->empty())
                 {
                     // set new can datarate
-                    auto baudrate = stringToBaud(*canOptions.datarate);
-                    if (baudrate.has_value())
+                    auto datarate = stringToData(*canOptions.datarate);
+                    if (datarate.has_value())
                     {
-                        registers.canBaudrate = baudToInt(baudrate.value());
+                        registers.canBaudrate = dataToInt(datarate.value());
                         canChanged            = true;
                     }
                     else
@@ -136,7 +142,7 @@ namespace mab
 
                 registers.runCanReinit = 1;  // Set flag to reinitialize CAN
 
-                m_logger.info("New id: %d, baudrate: %d, timeout: %d ms",
+                m_logger.info("New id: %d, datarate: %d, timeout: %d ms",
                               registers.canID.value,
                               registers.canBaudrate.value,
                               registers.canWatchdog.value);
@@ -155,9 +161,9 @@ namespace mab
                     usleep(1000'000);  // Wait for the MD to reinitialize CAN
                     auto newCanId              = std::make_shared<canId_t>(registers.canID.value);
                     auto newCandleBuilder      = std::make_shared<CandleBuilder>();
-                    newCandleBuilder->datarate = std::make_shared<CANdleBaudrate_E>(
-                        intToBaud(registers.canBaudrate.value)
-                            .value_or(CANdleBaudrate_E::CAN_BAUD_1M));
+                    newCandleBuilder->datarate = std::make_shared<CANdleDatarate_E>(
+                        intToData(registers.canBaudrate.value)
+                            .value_or(CANdleDatarate_E::CAN_DATARATE_1M));
                     newCandleBuilder->pathOrId = candleBuilder->pathOrId;
                     newCandleBuilder->busType  = candleBuilder->busType;
                     md                         = nullptr;  // Reset the old MD instance
@@ -614,8 +620,8 @@ namespace mab
 
                 if (ids.empty())
                 {
-                    m_logger.error("No MD found on the bus for baud %s",
-                                   datarateToString(*(candleBuilder->datarate))
+                    m_logger.error("No MD found on the bus for data %s",
+                                   datarateToStr(*(candleBuilder->datarate))
                                        .value_or("NOT A DATARATE")
                                        .c_str());
                 }
@@ -1088,41 +1094,93 @@ namespace mab
         UpdateOptions updateOptions(update);
 
         update->callback(
-            [this, candleBuilder, mdCanId, updateOptions]()
+            [this, candleBuilder, mdCanId, updateOptions, ctx]()
             {
-                MabFileParser mabFile(*updateOptions.pathToMabFile,
-                                      MabFileParser::TargetDevice_E::MD);
-
-                if (*(updateOptions.recovery) == false)
+                if (updateOptions.pathToMabFile->empty())
                 {
-                    auto md = getMd(mdCanId, candleBuilder);
-                    if (md == nullptr)
+                    if (updateOptions.fwVersion->empty())
                     {
-                        m_logger.error("Could not communicate with MD device with ID %d", *mdCanId);
+                        m_logger.error(
+                            "Please provide version of fw or  \"latest\" keyword in the argument!");
+                        m_logger.error(
+                            "For example candletool md update latest");
                         return;
                     }
-                    md->reset();
-                    usleep(300'000);
-                }
-                else
-                {
-                    m_logger.warn("Recovery mode...");
-                    m_logger.warn("Please make sure driver is in the bootload phase (rebooting)");
-                }
-                auto candle = candleBuilder->build().value_or(nullptr);
-                if (candle == nullptr)
-                {
-                    m_logger.error("Could not connect to candle!");
+                    std::string fallbackPath = ctx.packageEtcPath->generic_string();
+
+                    if (!updateOptions.metadataFile->empty())
+                        fallbackPath = *updateOptions.metadataFile;
+                    else
+                        fallbackPath += "/config/web_files_metadata.ini";
+
+                    m_logger.debug("Fallback path at: %s", fallbackPath.c_str());
+                    mINI::INIFile fallbackMetadataFile(fallbackPath);
+                    CurlHandler   curl(fallbackMetadataFile);
+
+                    std::string fileId = "MAB_CAN_FLASHER_";
+                    fileId += *updateOptions.fwVersion;
+                    auto curlResult = curl.downloadFile(fileId);
+                    if (curlResult.first != CurlHandler::CurlError_E::OK)
+                    {
+                        m_logger.error("Error on curl download request!");
+                        return;
+                    }
+                    Flasher flasher(curlResult.second);
+                    canId_t flashId = 100;
+                    if (*updateOptions.recovery)
+                    {
+                        flashId = 9;
+                    }
+                    auto flashResult = flasher.flash(flashId, *updateOptions.recovery);
+                    if (flashResult != Flasher::Error_E::OK)
+                    {
+                        m_logger.error("Error while flashing firmware!");
+                        return;
+                    }
+
                     return;
                 }
-                CanLoader canLoader(candle, &mabFile, *mdCanId);
-                if (canLoader.flashAndBoot())
-                {
-                    m_logger.success("Update complete for MD @ %d", *mdCanId);
-                }
                 else
                 {
-                    m_logger.error("MD flashing failed!");
+                    m_logger.info("Overriding download of file. Using local provided path.");
+                    MabFileParser mabFile(*updateOptions.pathToMabFile,
+                                          MabFileParser::TargetDevice_E::MD);
+
+                    if (*(updateOptions.recovery) == false)
+                    {
+                        auto md = getMd(mdCanId, candleBuilder);
+                        if (md == nullptr)
+                        {
+                            m_logger.error("Could not communicate with MD device with ID %d",
+                                           *mdCanId);
+                            return;
+                        }
+                        md->reset();
+                        usleep(300'000);
+                    }
+                    else
+                    {
+                        m_logger.warn("Recovery mode...");
+                        m_logger.warn(
+                            "Please make sure driver is in the bootload phase (rebooting)");
+                    }
+                    auto candle = candleBuilder->build().value_or(nullptr);
+                    if (candle == nullptr)
+                    {
+                        m_logger.error("Could not connect to candle!");
+                        return;
+                    }
+                    CanLoader canLoader(candle, &mabFile, *mdCanId);
+                    if (canLoader.flashAndBoot())
+                    {
+                        m_logger.success("Update complete for MD @ %d", *mdCanId);
+                    }
+                    else
+                    {
+                        m_logger.error("MD flashing failed!");
+                        return;
+                    }
+                    m_logger.success("Update complete for MD @ %d", *mdCanId);
                 }
             });
         // Version

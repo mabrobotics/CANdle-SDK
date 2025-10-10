@@ -20,19 +20,22 @@ namespace mab
         // TODO
     }
 
-    void Pds::init(void)
+    void Pds::init(u16 canId)
+    {
+        *m_canId = canId;
+        init();
+    }
+
+    PdsModule::error_E Pds::init(void)
     {
         PdsModule::error_E result = readModules();
         if (result != PdsModule::error_E ::OK)
         {
             m_log.error("Reading PDS submodules failed! [ %s ]", PdsModule::error2String(result));
             // TODO: How to handle this error?
+            return PdsModule::error_E::COMMUNICATION_ERROR;
         }
-    }
-    void Pds::init(u16 canId)
-    {
-        *m_canId = canId;
-        init();
+        return PdsModule::error_E::OK;
     }
 
     PdsModule::error_E Pds::createModule(moduleType_E type, socketIndex_E socket)
@@ -452,14 +455,14 @@ namespace mab
         return result;
     }
 
-    CANdleBaudrate_E Pds::getCanBaudrate(void)
+    CANdleDatarate_E Pds::getCanDatarate(void)
     {
-        return mp_candle->m_canBaudrate;
+        return mp_candle->m_canDatarate;
     }
 
-    PdsModule::error_E Pds::setCanBaudrate(CANdleBaudrate_E canBaudrate)
+    PdsModule::error_E Pds::setCanDatarate(CANdleDatarate_E canDatarate)
     {
-        return writeModuleProperty(propertyId_E::CAN_BAUDRATE, canBaudrate);
+        return writeModuleProperty(propertyId_E::CAN_BAUDRATE, canDatarate);
     }
 
     PdsModule::error_E Pds::getTemperatureLimit(f32& temperatureLimit)

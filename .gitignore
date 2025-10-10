@@ -40,6 +40,8 @@ wheelhouse
 
 # Executables
 *.exe
+# With exception for a driver
+!candlesdk-win-driver.exe 
 *.out
 *.app
 
