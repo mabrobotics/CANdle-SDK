@@ -8,7 +8,7 @@ cd ${base_dir}
 mkdir $BUILD_DIRECTORY -p
 cd $BUILD_DIRECTORY
 chmod -R a+rw ${base_dir}/${BUILD_DIRECTORY}
-cmake ..
+cmake -DCMAKE_INSTALL_SYSCONFDIR=/etc ..
 chmod -R a+rw ${base_dir}/${BUILD_DIRECTORY}
 make -j4
 chmod -R a+rw ${base_dir}/${BUILD_DIRECTORY}
