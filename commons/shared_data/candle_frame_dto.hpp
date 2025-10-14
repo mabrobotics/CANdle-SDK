@@ -77,7 +77,7 @@ namespace mab
             buffer                  = (u8*)buffer + sizeof(frameDTO.sequenceNumber);
             std::memcpy(frameDTO.data, buffer, frameDTO.length);
         }
-        inline Error_t addData(void* data, decltype(frameDTO.length) size)
+        inline Error_t addData(const void* data, decltype(frameDTO.length) size)
         {
             if (frameDTO.length + size > sizeof(frameDTO.data))
                 return Error_t::MSG_TOO_LONG;
