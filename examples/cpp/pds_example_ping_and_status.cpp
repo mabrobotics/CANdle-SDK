@@ -129,5 +129,7 @@ int main()
     m_log.info("Metrology data:");
     m_log.info("Bus voltage: %0.2f V", pdsBusVoltage / 1000.0f);
 
+    detachCandle(candle);
+
     return EXIT_SUCCESS;
 }
