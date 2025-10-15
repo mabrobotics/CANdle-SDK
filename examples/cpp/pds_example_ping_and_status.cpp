@@ -21,7 +21,7 @@ int main()
     m_log.m_layer = Logger::ProgramLayer_E::TOP;
 
     auto candle    = attachCandle(CANdleDatarate_E::CAN_DATARATE_1M, candleTypes::busTypes_t::USB);
-    auto findPdses = Pds::discoverPDS(candle);
+    auto findPdses = Pds::discoverPDS(candleTypes::busTypes_t::USB);
 
     if (findPdses.size() == 0)
     {
@@ -29,7 +29,7 @@ int main()
         return EXIT_FAILURE;
     }
 
-    Pds pds(findPdses[0], candle);
+    Pds pds(findPdses[0].id, candle);
 
     pds.init();
 
