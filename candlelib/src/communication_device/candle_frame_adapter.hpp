@@ -2,7 +2,6 @@
 
 #include "logger.hpp"
 #include "candle_frame_dto.hpp"
-#include "tsdeque.hpp"
 
 #include <atomic>
 #include <future>
@@ -31,7 +30,8 @@ namespace mab
             {
                 for (size_t i = 0; i < maxCount; i++)
                 {
-                    ret.emplace_back(m_candleFrameAccumulator.pop_front());
+                    ret.emplace_back(m_candleFrameAccumulator.front());
+                    m_candleFrameAccumulator.pop_front();
                 }
             }
             else
@@ -39,7 +39,8 @@ namespace mab
                 const size_t frameAccumulatorSize = m_candleFrameAccumulator.size();
                 for (size_t i = 0; i < frameAccumulatorSize; i++)
                 {
-                    ret.emplace_back(m_candleFrameAccumulator.pop_front());
+                    ret.emplace_back(m_candleFrameAccumulator.front());
+                    m_candleFrameAccumulator.pop_front();
                 }
             }
             return ret;
@@ -47,6 +48,6 @@ namespace mab
 
       private:
         Logger m_log = Logger(Logger::ProgramLayer_E::LAYER_2, "CANDLE_FR_ADAPTER");
-        TQueueConcurrent<CANdleFrame> m_candleFrameAccumulator;
+        std::deque<CANdleFrame> m_candleFrameAccumulator;
     };
 }  // namespace mab
