@@ -7,47 +7,51 @@
 #include <future>
 #include <memory>
 #include <deque>
+#include <optional>
 
 namespace mab
 {
-    class CandleFrameAdapter
+    class CANdleFrameAdapter
     {
+      public:
+        static constexpr size_t MAX_FRAMES_ACCUMULATED = 256;
+        struct CANdleFrameBuilder
+        {
+            canId_t                          canId        = 0;
+            std::unique_ptr<std::vector<u8>> data         = nullptr;
+            u16                              timeout100us = 0;
+
+            std::optional<CANdleFrame> build(u8 seqenceNo)
+            {
+                if (canId != 0 && data != nullptr)
+                {
+                    CANdleFrame cf;
+                    cf.init(canId, seqenceNo, timeout100us);
+                    cf.addData(data->data(), data->size());
+                    return cf;
+                }
+                else
+                    return {};
+            }
+        };
+
         enum class Error_t
         {
             UNKNOWN,
-            OK
+            OK,
+            INVALID_FRAME
         };
 
-      public:
-        CandleFrameAdapter()
-        {
-        }
+        std::vector<CANdleFrame> yeldAccumulatedFrames(const size_t maxCount);
 
-        std::vector<CANdleFrame> yeldAccumulatedFrames(const size_t maxCount)
-        {
-            std::vector<CANdleFrame> ret;
-            if (maxCount > m_candleFrameAccumulator.size())
-            {
-                for (size_t i = 0; i < maxCount; i++)
-                {
-                    ret.emplace_back(m_candleFrameAccumulator.front());
-                    m_candleFrameAccumulator.pop_front();
-                }
-            }
-            else
-            {
-                const size_t frameAccumulatorSize = m_candleFrameAccumulator.size();
-                for (size_t i = 0; i < frameAccumulatorSize; i++)
-                {
-                    ret.emplace_back(m_candleFrameAccumulator.front());
-                    m_candleFrameAccumulator.pop_front();
-                }
-            }
-            return ret;
-        }
+      Error_t accumulateFrame(const canId_t          canId,
+                              const std::vector<u8>& data,
+                              const u16              timeout100us)
 
-      private:
-        Logger m_log = Logger(Logger::ProgramLayer_E::LAYER_2, "CANDLE_FR_ADAPTER");
-        std::deque<CANdleFrame> m_candleFrameAccumulator;
+          private : Logger m_log = Logger(Logger::ProgramLayer_E::LAYER_2, "CANDLE_FR_ADAPTER");
+        std::deque<CANdleFrameBuilder> m_candleFrameAccumulator;
+
+        std::condition_variable m_newData;
+        std::mutex              m_mutex;
     };
 }  // namespace mab
