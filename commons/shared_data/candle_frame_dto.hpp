@@ -9,7 +9,7 @@ namespace mab
     struct CANdleFrameDTO
     {
         canId_t canId          = 0;
-        u16     timeout        = 0;  // us
+        u16     timeout        = 0;  // 100 us
         u8      length         = 0;  // data length in bytes
         u8      sequenceNumber = 0;  // start at 1 for the first frame in the package
                                      // and increment by 1 for each frame
