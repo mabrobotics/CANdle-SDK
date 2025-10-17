@@ -2,61 +2,54 @@
 
 #include "logger.hpp"
 #include "candle_frame_dto.hpp"
+#include "mab_types.hpp"
 
 #include <atomic>
+#include <array>
 #include <future>
 #include <memory>
-#include <deque>
 #include <optional>
+#include <mutex>
+#include <condition_variable>
+#include <chrono>
 
 namespace mab
 {
     class CANdleFrameAdapter
     {
       public:
-        static constexpr size_t MAX_FRAMES_ACCUMULATED = 256;
-        struct CANdleFrameBuilder
-        {
-            canId_t                          canId        = 0;
-            std::unique_ptr<std::vector<u8>> data         = nullptr;
-            u16                              timeout100us = 0;
+        static constexpr size_t                FRAME_BUFFER_SIZE     = 7;
+        static constexpr size_t                USB_MAX_BULK_TRANSFER = 512;
+        static constexpr std::chrono::duration READER_TIMEOUT = std::chrono::milliseconds(10);
 
-            std::optional<CANdleFrame> build(u8 seqenceNo)
-            {
-                if (canId != 0 && data != nullptr)
-                {
-                    CANdleFrame cf;
-                    cf.init(canId, seqenceNo, timeout100us);
-                    cf.addData(data->data(), data->size());
-                    return cf;
-                }
-                else
-                    return {};
-            }
-        };
+        static constexpr u16 PACKED_SIZE =
+            sizeof(CANdleFrame::DTO_PARSE_ID) + sizeof(u8 /*ACK*/) + sizeof(u8 /*COUNT*/) +
+            CANdleFrame::DTO_SIZE * FRAME_BUFFER_SIZE + sizeof(u32 /*CRC32*/);
+
+        static_assert(PACKED_SIZE < USB_MAX_BULK_TRANSFER, "USB bulk transfer too long!");
 
         enum class Error_t
         {
             UNKNOWN,
             OK,
+            READER_TIMEOUT,
             INVALID_FRAME
         };
 
-        std::vector<CANdleFrame> yeldAccumulatedFrames(const size_t maxCount);
+        std::pair<std::vector<u8>, Error_t> accumulateFrame(const canId_t          canId,
+                                                            const std::vector<u8>& data,
+                                                            const u16              timeout100us);
 
-        Error_t accumulateFrame(const canId_t          canId,
-                                const std::vector<u8>& data,
-                                const u16              timeout100us);
-
-        Error_t parseResponse(const std::vector<CANdleFrame>&);
+        std::vector<u8> getPackedFrame();
+        Error_t         parsePackedFrame(const std::vector<u8>& packedFrames);
 
       private:
         Logger m_log = Logger(Logger::ProgramLayer_E::LAYER_2, "CANDLE_FR_ADAPTER");
-        std::deque<CANdleFrameBuilder> m_candleFrameAccumulator;
-        std::mutex                     m_frameAccumulatorMux;
-        std::deque<CANdleFrame>        m_returnRegister;
-        std::mutex                     m_returnRegisterMux;
+        std::array<std::vector<u8>, FRAME_BUFFER_SIZE> m_responseBuffer;
 
-        std::condition_variable m_returnRegistered;
+        std::atomic<u8>         m_count = 0;
+        std::vector<u8>         m_packedFrame;
+        std::mutex              m_mutex;
+        std::condition_variable m_cv;
     };
 }  // namespace mab

@@ -1,60 +1,45 @@
 #include "candle_frame_adapter.hpp"
 #include "algorithm"
+#include "chrono"
 
 namespace mab
 {
-
-    std::vector<CANdleFrame> CANdleFrameAdapter::yeldAccumulatedFrames(const size_t maxCount)
+    std::pair<std::vector<u8>, CANdleFrameAdapter::Error_t> CANdleFrameAdapter::accumulateFrame(
+        const canId_t canId, const std::vector<u8>& data, const u16 timeout100us)
     {
-        std::unique_lock lock(m_frameAccumulatorMux);
+        std::unique_lock lock(m_mutex);
 
-        std::vector<CANdleFrame> ret;
-        const size_t             count =
-            maxCount < m_candleFrameAccumulator.size() ? maxCount : m_candleFrameAccumulator.size();
+        size_t seqId = m_count;
 
-        for (size_t i = 0; i < count; i++)
+        if (m_count >= FRAME_BUFFER_SIZE)
         {
-            CANdleFrame cf = m_candleFrameAccumulator.front().build(i + 1).value_or(CANdleFrame());
+            auto timeout = m_cv.wait_for(lock, std::chrono::milliseconds(READER_TIMEOUT));
 
-            // discard bad frames
-            if (cf.isValid())
+            if (timeout == std::cv_status::timeout)
             {
-                ret.push_back(cf);
-
-                // Register return frame
-                m_returnRegister.push_back(std::move(cf));
-                m_returnRegister.back().clearData();
-                m_returnRegistered.notify_one();
+                m_log.error("Frame accumulation timed out! Reader thread might be malfunctioning!");
+                return std::make_pair<std::vector<u8>, Error_t>({}, Error_t::READER_TIMEOUT);
             }
-            else
-            {
-                m_log.error("Invalid frame in the accumulator!");
-            }
-
-            m_candleFrameAccumulator.pop_front();
         }
-        return ret;
+        CANdleFrame cf;
+        cf.init(canId, m_count++, timeout100us);
+        if (cf.addData(data.data(), data.size()) != CANdleFrame::Error_t::OK)
+        {
+            m_log.error("Could not generate CANdle Frame!");
+            return std::make_pair<std::vector<u8>, Error_t>({}, Error_t::INVALID_FRAME);
+        }
+        u8 buf[cf.DTO_SIZE] = {0};
+        cf.serialize(buf);
+        m_packedFrame.insert(m_packedFrame.end(), buf, buf + cf.DTO_SIZE);
+
+        auto timeout = m_cv.wait_for(lock, std::chrono::milliseconds(READER_TIMEOUT));
+        if (timeout == std::cv_status::timeout)
+        {
+            m_log.error("Frame accumulation timed out! Reader thread might be malfunctioning!");
+            return std::make_pair<std::vector<u8>, Error_t>({}, Error_t::READER_TIMEOUT);
+        }
+        return std::make_pair<std::vector<u8>, Error_t>(std::vector(m_responseBuffer[seqId]),
+                                                        Error_t::OK);
     }
 
-    CANdleFrameAdapter::Error_t CANdleFrameAdapter::accumulateFrame(const canId_t          canId,
-                                                                    const std::vector<u8>& data,
-                                                                    const u16 timeout100us)
-    {
-        if (canId == 0)
-            return Error_t::INVALID_FRAME;
-
-        std::unique_lock lock(m_frameAccumulatorMux);
-        // If not found create a new frame
-        CANdleFrameBuilder cfb;
-        cfb.canId        = canId;
-        cfb.data         = std::make_unique<std::vector<u8>>(data);
-        cfb.timeout100us = timeout100us;
-        m_candleFrameAccumulator.push_back(std::move(cfb));
-        return Error_t::OK;
-    }
-
-    CANdleFrameAdapter::Error_t CANdleFrameAdapter::parseResponse(const std::vector<CANdleFrame>&)
-    {
-        return Error_t::OK;
-    }
 }  // namespace mab

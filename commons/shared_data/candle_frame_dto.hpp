@@ -100,7 +100,7 @@ namespace mab
             std::memset(frameDTO.data, 0, sizeof(frameDTO.data));
             frameDTO.length = 0;
         }
-        inline const std::remove_cvref_t<decltype(frameDTO.data[0])>* data()
+        inline const std::remove_cvref_t<decltype(frameDTO.data[0])>* data() const
         {
             return &frameDTO.data[0];
         }
