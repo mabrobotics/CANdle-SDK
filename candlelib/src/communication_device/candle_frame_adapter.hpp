@@ -44,14 +44,19 @@ namespace mab
 
         std::vector<CANdleFrame> yeldAccumulatedFrames(const size_t maxCount);
 
-      Error_t accumulateFrame(const canId_t          canId,
-                              const std::vector<u8>& data,
-                              const u16              timeout100us)
+        Error_t accumulateFrame(const canId_t          canId,
+                                const std::vector<u8>& data,
+                                const u16              timeout100us);
 
-          private : Logger m_log = Logger(Logger::ProgramLayer_E::LAYER_2, "CANDLE_FR_ADAPTER");
+        Error_t parseResponse(const std::vector<CANdleFrame>&);
+
+      private:
+        Logger m_log = Logger(Logger::ProgramLayer_E::LAYER_2, "CANDLE_FR_ADAPTER");
         std::deque<CANdleFrameBuilder> m_candleFrameAccumulator;
+        std::mutex                     m_frameAccumulatorMux;
+        std::deque<CANdleFrame>        m_returnRegister;
+        std::mutex                     m_returnRegisterMux;
 
-        std::condition_variable m_newData;
-        std::mutex              m_mutex;
+        std::condition_variable m_returnRegistered;
     };
 }  // namespace mab
