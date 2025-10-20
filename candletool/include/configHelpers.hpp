@@ -1,8 +1,14 @@
+#pragma once
+
 #include <string>
 #include <filesystem>
+#include <optional>
 #include "mab_types.hpp"
-
 #include "mini/ini.h"
+
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 namespace mab
 {
@@ -35,6 +41,13 @@ namespace mab
     inline std::string getCandletoolConfigPath()
     {
         return getDefaultConfigDir() + "candletool.ini";
+    }
+
+    inline std::string getCanOpenConfigPath()
+    {
+        std::filesystem::path configPath = getDefaultConfigDir();
+        configPath /= "candletoolco.ini";
+        return configPath.string();
     }
 
     inline bool fileExists(const std::string& filepath)

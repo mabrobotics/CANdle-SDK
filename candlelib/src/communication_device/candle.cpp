@@ -177,8 +177,7 @@ namespace mab
             busTransfer(&buffer,
                         64 /*TODO: this is legacy Candle stuff*/ + 2 /*response header size*/,
                         timeoutMs + 1);
-
-        if (buffer.at(1) != 0x01)
+        if (!m_useRegularCanFrames && buffer.at(1) != 0x01)
         {
             m_log.error("CAN frame did not reach target device with id: %d!", canId);
             return std::pair<std::vector<u8>, candleTypes::Error_t>(

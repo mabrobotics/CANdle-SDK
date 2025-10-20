@@ -7,7 +7,7 @@ import time
 # Initialize CANdle on the USB bus (SPI bus not supported yet)
 candle = pc.attachCandle(pc.CANdleDatarate_E.CAN_DATARATE_1M, pc.busTypes_t.USB)
 
-# Create virual MD representation
+# Create virtual MD representation
 md = pc.MD(100, candle)
 
 # Initialize it to see if it connects
