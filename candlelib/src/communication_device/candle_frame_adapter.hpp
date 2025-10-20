@@ -44,12 +44,14 @@ namespace mab
         std::vector<u8> getPackedFrame() noexcept;
         Error_t         parsePackedFrame(const std::vector<u8>& packedFrames) noexcept;
 
+        u8 getCount() const noexcept;
+
       private:
         Logger m_log = Logger(Logger::ProgramLayer_E::LAYER_2, "CANDLE_FR_ADAPTER");
         std::array<std::vector<u8>, FRAME_BUFFER_SIZE> m_responseBuffer;
 
-        std::atomic<u8>           m_count = 0;
-        std::vector<u8>           m_packedFrame;
+        std::atomic<u8>           m_count       = 0;
+        std::vector<u8>           m_packedFrame = {CANdleFrame::DTO_PARSE_ID, 0x1, 0x0};
         std::mutex                m_mutex;
         std::condition_variable   m_cv;
         std::counting_semaphore<> m_sem = std::counting_semaphore<>((ptrdiff_t)FRAME_BUFFER_SIZE);

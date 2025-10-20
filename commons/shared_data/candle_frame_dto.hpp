@@ -52,13 +52,13 @@ namespace mab
         inline bool isValid() const
         {
             return frameDTO.canId != 0 && frameDTO.length != 0 &&
-                   frameDTO.length < sizeof(frameDTO.data);
+                   frameDTO.length <= sizeof(frameDTO.data);
         }
 
         inline bool isValid(decltype(frameDTO.sequenceNumber) expectedSeqNum) const
         {
             return frameDTO.canId != 0 && frameDTO.length != 0 &&
-                   frameDTO.length < sizeof(frameDTO.data) &&
+                   frameDTO.length <= sizeof(frameDTO.data) &&
                    frameDTO.sequenceNumber == expectedSeqNum;
         }
 
