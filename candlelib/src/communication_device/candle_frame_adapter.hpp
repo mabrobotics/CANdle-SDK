@@ -10,6 +10,7 @@
 #include <memory>
 #include <optional>
 #include <mutex>
+#include <semaphore>
 #include <condition_variable>
 #include <chrono>
 
@@ -40,16 +41,17 @@ namespace mab
                                                             const std::vector<u8>& data,
                                                             const u16              timeout100us);
 
-        std::vector<u8> getPackedFrame();
-        Error_t         parsePackedFrame(const std::vector<u8>& packedFrames);
+        std::vector<u8> getPackedFrame() noexcept;
+        Error_t         parsePackedFrame(const std::vector<u8>& packedFrames) noexcept;
 
       private:
         Logger m_log = Logger(Logger::ProgramLayer_E::LAYER_2, "CANDLE_FR_ADAPTER");
         std::array<std::vector<u8>, FRAME_BUFFER_SIZE> m_responseBuffer;
 
-        std::atomic<u8>         m_count = 0;
-        std::vector<u8>         m_packedFrame;
-        std::mutex              m_mutex;
-        std::condition_variable m_cv;
+        std::atomic<u8>           m_count = 0;
+        std::vector<u8>           m_packedFrame;
+        std::mutex                m_mutex;
+        std::condition_variable   m_cv;
+        std::counting_semaphore<> m_sem = std::counting_semaphore<>((ptrdiff_t)FRAME_BUFFER_SIZE);
     };
 }  // namespace mab

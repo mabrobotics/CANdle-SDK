@@ -11,7 +11,7 @@ class Crc
         return crcLen;
     };
 
-    uint32_t calcCrc(char* pData, uint32_t dataLength);
+    static uint32_t calcCrc(const char* pData, uint32_t dataLength);
 
   private:
     static const uint32_t crcLen = 4;
