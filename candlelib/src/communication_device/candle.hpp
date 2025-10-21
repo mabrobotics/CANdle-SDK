@@ -8,6 +8,7 @@
 #include <utility>
 #include <iomanip>
 #include <map>
+#include <mutex>
 
 #include "candle_types.hpp"
 #include "logger.hpp"
@@ -94,6 +95,8 @@ namespace mab
         bool         m_isInitialized       = false;
         const bool   m_useRegularCanFrames = false;
         const size_t m_maxCANFrameSize     = 64;
+
+        std::mutex m_mux;
 
         candleTypes::Error_t busTransfer(std::vector<u8>* data,
                                          size_t           responseLength = 0,

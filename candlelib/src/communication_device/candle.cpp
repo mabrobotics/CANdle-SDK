@@ -109,6 +109,7 @@ namespace mab
                                              size_t           responseLength,
                                              const u32        timeoutMs) const
     {
+        std::unique_lock lock(m_mux);
         if (data == nullptr)
         {
             m_log.error("Data vector broken!");
