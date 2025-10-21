@@ -96,7 +96,7 @@ namespace mab
         const bool   m_useRegularCanFrames = false;
         const size_t m_maxCANFrameSize     = 64;
 
-        std::mutex m_mux;
+        mutable std::mutex m_mux;
 
         candleTypes::Error_t busTransfer(std::vector<u8>* data,
                                          size_t           responseLength = 0,

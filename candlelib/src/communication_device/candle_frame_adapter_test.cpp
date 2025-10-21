@@ -5,6 +5,8 @@
 #include <future>
 #include <numeric>
 #include <thread>
+#include <semaphore>
+#include <thread>
 
 #include "candle_frame_adapter.hpp"
 #include "candle_frame_dto.hpp"
@@ -13,9 +15,24 @@
 using namespace mab;
 class CandleFrameAdapterTest : public ::testing::Test
 {
+  public:
+    void mockReadWrite(std::stop_token stoken, mab::CANdleFrameAdapter* cfaPtr)
+    {
+        while (!stoken.stop_requested())
+        {
+            m_binSem.acquire();
+            if (stoken.stop_requested())
+                break;
+            auto fr = cfaPtr->getPackedFrame();
+            cfaPtr->parsePackedFrame(fr);
+        }
+    }
+
   protected:
     static constexpr size_t      CANDLE_FRAME_COUNT = 10;
     std::vector<std::vector<u8>> mockDataVector;
+    std::counting_semaphore<>    m_binSem = std::counting_semaphore<>(0);
+    std::atomic<bool>            m_stopRequested{false};
 
     void SetUp() override
     {
@@ -34,7 +51,11 @@ class CandleFrameAdapterTest : public ::testing::Test
 
 TEST_F(CandleFrameAdapterTest, simultaneousReadWrite)
 {
-    mab::CANdleFrameAdapter cfa;
+    auto lamb = std::make_shared<std::function<void(void)>>([this]() { m_binSem.release(); });
+
+    mab::CANdleFrameAdapter cfa(lamb);
+
+    std::jthread thread(&CandleFrameAdapterTest::mockReadWrite, this, &cfa);
 
     std::vector<std::future<std::pair<std::vector<u8>, CANdleFrameAdapter::Error_t>>> futures;
 
@@ -50,14 +71,11 @@ TEST_F(CandleFrameAdapterTest, simultaneousReadWrite)
                                      timeout));
     }
 
-    auto fr = cfa.getPackedFrame();
-    cfa.parsePackedFrame(fr);
-    fr = cfa.getPackedFrame();
-    cfa.parsePackedFrame(fr);
-
     for (auto& future : futures)
     {
         auto result = future.get();
         EXPECT_EQ(CANdleFrameAdapter::Error_t::OK, result.second);
     }
+    thread.request_stop();
+    m_binSem.release();
 }

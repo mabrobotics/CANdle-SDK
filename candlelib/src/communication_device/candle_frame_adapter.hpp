@@ -13,6 +13,7 @@
 #include <semaphore>
 #include <condition_variable>
 #include <chrono>
+#include <thread>
 
 namespace mab
 {
@@ -37,6 +38,11 @@ namespace mab
             INVALID_FRAME
         };
 
+        explicit CANdleFrameAdapter(std::shared_ptr<std::function<void(void)>> requestTransfer)
+            : m_requestTransfer(requestTransfer)
+        {
+        }
+
         std::pair<std::vector<u8>, Error_t> accumulateFrame(const canId_t          canId,
                                                             const std::vector<u8>& data,
                                                             const u16              timeout100us);
@@ -55,5 +61,7 @@ namespace mab
         std::mutex                m_mutex;
         std::condition_variable   m_cv;
         std::counting_semaphore<> m_sem = std::counting_semaphore<>((ptrdiff_t)FRAME_BUFFER_SIZE);
+
+        const std::weak_ptr<std::function<void(void)>> m_requestTransfer;
     };
 }  // namespace mab

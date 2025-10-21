@@ -30,6 +30,16 @@ namespace mab
         cf.serialize(buf);
         m_packedFrame.insert(m_packedFrame.end(), buf, buf + cf.DTO_SIZE);
 
+        // Notify host object that the reader must run
+        if (auto func = m_requestTransfer.lock())
+        {
+            (*func)();
+        }
+        else
+        {
+            m_log.warn("No thread to notify to start transfer!");
+        }
+
         // Wait for data to be available
         auto timeout = m_cv.wait_for(lock, std::chrono::milliseconds(READER_TIMEOUT));
         if (timeout == std::cv_status::timeout)
