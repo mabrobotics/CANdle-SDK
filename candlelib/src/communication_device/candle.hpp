@@ -8,6 +8,7 @@
 #include <utility>
 #include <iomanip>
 #include <map>
+#include <future>
 #include <mutex>
 
 #include "candle_types.hpp"
@@ -16,7 +17,7 @@
 #include "USB.hpp"
 #include "SPI.hpp"
 #include "mab_types.hpp"
-
+#include "candle_frame_adapter.hpp"
 #include "candle_frame_dto.hpp"
 
 namespace mab
@@ -96,7 +97,9 @@ namespace mab
         const bool   m_useRegularCanFrames = false;
         const size_t m_maxCANFrameSize     = 64;
 
-        mutable std::mutex m_mux;
+        mutable std::mutex                         m_mux;
+        CANdleFrameAdapter                         m_cfadapter;
+        std::shared_ptr<std::function<void(void)>> m_sync;
 
         candleTypes::Error_t busTransfer(std::vector<u8>* data,
                                          size_t           responseLength = 0,

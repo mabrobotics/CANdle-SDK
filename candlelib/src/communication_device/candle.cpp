@@ -21,7 +21,8 @@ namespace mab
         : m_canDatarate(canDatarate),
           m_bus(std::move(bus)),
           m_useRegularCanFrames(useRegularCANFrames),
-          m_maxCANFrameSize(useRegularCANFrames ? 8 : 64)
+          m_maxCANFrameSize(useRegularCANFrames ? 8 : 64),
+          m_cfadapter(m_sync)
     {
         if (m_useRegularCanFrames)
             m_log.debug("CANdle initialized with regular CAN format, max frame size is %u",
