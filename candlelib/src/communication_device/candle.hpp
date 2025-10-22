@@ -87,7 +87,8 @@ namespace mab
         const CANdleDatarate_E m_canDatarate;
 
       private:
-        static constexpr u32 DEFAULT_CONFIGURATION_TIMEOUT = 10;
+        static constexpr std::chrono::milliseconds DEFAULT_CONFIGURATION_TIMEOUT =
+            std::chrono::milliseconds(20);
 
         Logger m_log = Logger(Logger::ProgramLayer_E::TOP, "CANDLE");
 
@@ -97,9 +98,15 @@ namespace mab
         const bool   m_useRegularCanFrames = false;
         const size_t m_maxCANFrameSize     = 64;
 
-        mutable std::mutex                         m_mux;
+        mutable std::mutex                         m_busTransferMux;
+        mutable std::mutex                         m_cfSyncMux;
         CANdleFrameAdapter                         m_cfadapter;
-        std::shared_ptr<std::function<void(void)>> m_sync;
+        std::shared_ptr<std::function<void(void)>> m_cfsync;
+        std::jthread                               m_cfTransferThread;
+        std::counting_semaphore<7>                 m_cfTransferSemaphore{0};
+        std::atomic_bool                           m_cfTransferAlive{false};
+
+        void cfTransferLoop(std::stop_token stopToken) noexcept;
 
         candleTypes::Error_t busTransfer(std::vector<u8>* data,
                                          size_t           responseLength = 0,
