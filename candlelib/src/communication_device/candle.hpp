@@ -85,10 +85,10 @@ namespace mab
             std::unique_ptr<mab::I_CommunicationInterface>&& usb);
 
         inline std::future<std::pair<std::vector<u8>, CANdleFrameAdapter::Error_t>>
-        transferCANFrameAsync(const canId_t         canId,
-                              const std::vector<u8> dataToSend,
-                              const size_t          responseSize,
-                              const u16             timeout100us = DEFAULT_CAN_TIMEOUT * 10)
+        transferCANFrameAsync(const canId_t          canId,
+                              const std::vector<u8>& dataToSend,
+                              const size_t           responseSize,
+                              const u16              timeout100us = DEFAULT_CAN_TIMEOUT * 10)
         {
             auto ret = std::async(std::launch::async,
                                   &CANdleFrameAdapter::accumulateFrame,
@@ -113,10 +113,9 @@ namespace mab
         const bool   m_useRegularCanFrames = false;
         const size_t m_maxCANFrameSize     = 64;
 
-        mutable std::mutex                         m_busTransferMux;
         mutable std::mutex                         m_cfSyncMux;
-        CANdleFrameAdapter                         m_cfAdapter;
         std::shared_ptr<std::function<void(void)>> m_cfsync;
+        CANdleFrameAdapter                         m_cfAdapter;
         std::jthread                               m_cfTransferThread;
         std::counting_semaphore<7>                 m_cfTransferSemaphore{0};
         std::atomic_bool                           m_cfTransferAlive{false};
