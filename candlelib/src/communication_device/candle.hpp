@@ -16,6 +16,8 @@
 #include "SPI.hpp"
 #include "mab_types.hpp"
 
+#include "candle_frame_dto.hpp"
+
 namespace mab
 {
     /// @brief Backbone object for CANdle ecosystem, contains all the peripheral handles. When it is
