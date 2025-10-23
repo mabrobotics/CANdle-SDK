@@ -102,7 +102,11 @@ namespace mab
             {0x015, MDCfgElement("motor", "torque constant c")},
             {0x019, MDCfgElement("motor", "dynamic friction")},
             {0x01A, MDCfgElement("motor", "static friction")},
-            {0x01E, MDCfgElement("motor", "calibration mode")},
+            {0x01E,
+             MDCfgElement("motor",
+                          "calibration mode",
+                          mainEncoderCalibrationModeToReadable,
+                          mainEncoderCalibrationModeFromReadable)},
             {0x808, MDCfgElement("motor", "shutdown temp")},
             {0x600, MDCfgElement("motor", "reverse direction")},
 
@@ -119,8 +123,8 @@ namespace mab
             {0x026,
              MDCfgElement("output encoder",
                           "output encoder calibration mode",
-                          encoderCalibrationModeToReadable,
-                          encoderCalibrationModeFromReadable)},
+                          auxEncoderCalibrationModeToReadable,
+                          auxEncoderCalibrationModeFromReadable)},
 
             // PID parameters
             {0x030, MDCfgElement("position PID", "kp")},
@@ -184,6 +188,16 @@ namespace mab
         static const std::function<std::optional<std::string>(const std::string_view)>
             encoderFromReadable;
 
+        static const std::function<std::string(std::string_view)>
+            mainEncoderCalibrationModeToReadable;
+        static const std::function<std::optional<std::string>(const std::string_view)>
+            mainEncoderCalibrationModeFromReadable;
+
+        static const std::function<std::string(std::string_view)>
+            auxEncoderCalibrationModeToReadable;
+        static const std::function<std::optional<std::string>(const std::string_view)>
+            auxEncoderCalibrationModeFromReadable;
+
         static const std::function<std::string(std::string_view)> encoderModeToReadable;
         static const std::function<std::optional<std::string>(const std::string_view)>
             encoderModeFromReadable;
@@ -216,11 +230,52 @@ namespace mab
         return MDAuxEncoderValue_S::toReadable(std::stoll(value.data())).value_or("NOT FOUND");
     };
 
-    // Special case for encoder mode
+    // Special case for main encoder calibration mode
+
+    inline const std::function<std::string(std::string_view)>
+        MDConfigMap::mainEncoderCalibrationModeToReadable =
+            [](const std::string_view value) -> std::string
+    {
+        std::string output = trim(value);
+        return MDMainEncoderCalibrationModeValue_S::toReadable(std::stoll(output))
+            .value_or("NOT FOUND");
+    };
+
+    inline const std::function<std::optional<std::string>(const std::string_view)>
+        MDConfigMap::mainEncoderCalibrationModeFromReadable =
+            [](const std::string_view value) -> std::optional<std::string>
+    {
+        std::string output = trim(value);
+        return std::to_string(
+            MDMainEncoderCalibrationModeValue_S::toNumeric(value.data()).value_or(0));
+    };
+
+    // Special case for aux encoder calibration mode
+
+    inline const std::function<std::string(std::string_view)>
+        MDConfigMap::auxEncoderCalibrationModeToReadable =
+            [](const std::string_view value) -> std::string
+    {
+        std::string output = trim(value);
+        return MDAuxEncoderCalibrationModeValue_S::toReadable(std::stoll(output))
+            .value_or("NOT FOUND");
+    };
+
+    inline const std::function<std::optional<std::string>(const std::string_view)>
+        MDConfigMap::auxEncoderCalibrationModeFromReadable =
+            [](const std::string_view value) -> std::optional<std::string>
+    {
+        std::string output = trim(value);
+        return std::to_string(
+            MDAuxEncoderCalibrationModeValue_S::toNumeric(value.data()).value_or(0));
+    };
+
+    // Special case for aux encoder mode
     inline const std::function<std::string(std::string_view)> MDConfigMap::encoderModeToReadable =
         [](const std::string_view value) -> std::string
     {
         std::string output = trim(value);
+        std::cout << "ENCODER MODE RAW: '" << output << "'" << std::endl;
         return MDAuxEncoderModeValue_S::toReadable(std::stoll(output)).value_or("NOT FOUND");
     };
 

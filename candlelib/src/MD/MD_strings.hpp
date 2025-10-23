@@ -114,6 +114,35 @@ namespace mab
             return std::nullopt;
         }
     };
+    struct MDMainEncoderCalibrationModeValue_S
+    {
+        static inline const std::map<u32, std::string_view> fromNumericMap{{0, "FULL"},
+                                                                           {1, "NOPPDET"}};
+        static inline const std::map<std::string_view, u32> toNumericMap{{"FULL", 0},
+                                                                         {"NOPPDET", 1}};
+
+        static std::optional<u32> toNumeric(const std::string_view val)
+        {
+            if (std::isdigit(val[0]))
+                return std::stoi(val.data());
+            auto it = toNumericMap.find(val);
+            if (it != toNumericMap.end())
+            {
+                return it->second;
+            }
+            return std::nullopt;
+        }
+
+        static std::optional<std::string> toReadable(u32 val)
+        {
+            auto it = fromNumericMap.find(val);
+            if (it != fromNumericMap.end())
+            {
+                return std::string(it->second);
+            }
+            return std::nullopt;
+        }
+    };
     struct MDAuxEncoderCalibrationModeValue_S
     {
         static inline const std::map<u32, std::string_view> fromNumericMap{{0, "FULL"},
