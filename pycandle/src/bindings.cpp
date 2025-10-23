@@ -580,6 +580,8 @@ PYBIND11_MODULE(pyCandle, m)
         .value("VELOCITY_PID", mab::MdMode_E::VELOCITY_PID)
         .value("RAW_TORQUE", mab::MdMode_E::RAW_TORQUE)
         .value("IMPEDANCE", mab::MdMode_E::IMPEDANCE)
+        .value("PROFILE_POSITION", mab::MdMode_E::POSITION_PROFILE)
+        .value("PROFILE_VELOCITY", mab::MdMode_E::VELOCITY_PROFILE)
         .export_values();
 
     py::class_<mab::MD>(m, "MD")
