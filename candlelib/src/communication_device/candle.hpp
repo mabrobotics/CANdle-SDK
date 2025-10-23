@@ -84,6 +84,15 @@ namespace mab
         static candleTypes::Error_t enterBootloader(
             std::unique_ptr<mab::I_CommunicationInterface>&& usb);
 
+        /// @brief Asynchronous CAN frame transfer
+        /// @param canId Target CAN node ID
+        /// @param dataToSend Data to be transferred via CAN bus
+        /// @param responseSize Size of the expected device response (0 for not expecting a
+        /// response)
+        /// @param timeout100us Time after which candle will stop waiting for node response in
+        /// units of 100 microseconds
+        /// @return Future containing response can frame (undefined on error being not OK) and error
+        /// code
         inline std::future<std::pair<std::vector<u8>, CANdleFrameAdapter::Error_t>>
         transferCANFrameAsync(const canId_t          canId,
                               const std::vector<u8>& dataToSend,

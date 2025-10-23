@@ -17,11 +17,14 @@
 
 namespace mab
 {
+    /// @brief Adapter class to convert CAN frames to Candle frame DTOs and accumulate them to
+    /// fully utilize USB bulk transfers
     class CANdleFrameAdapter
     {
       public:
-        static constexpr size_t                FRAME_BUFFER_SIZE     = 7;
-        static constexpr size_t                USB_MAX_BULK_TRANSFER = 512;
+        static constexpr size_t FRAME_BUFFER_SIZE = 7;
+        static constexpr size_t USB_MAX_BULK_TRANSFER =
+            512;  // Full-speed USB max bulk transfer size for libusb
         static constexpr std::chrono::duration READER_TIMEOUT = std::chrono::milliseconds(10);
 
         static constexpr u16 PACKED_SIZE =
@@ -38,18 +41,37 @@ namespace mab
             INVALID_FRAME
         };
 
+        /// @brief CFAdapter constructor
+        /// @param requestTransfer This function will be called every time the CAN frame is
+        /// accumulated
         explicit CANdleFrameAdapter(std::shared_ptr<std::function<void(void)>> requestTransfer)
             : m_requestTransfer(requestTransfer)
         {
         }
 
+        /// @brief Accumulate CAN frame into Candle frame(s)
+        /// @param canId Target CAN node ID
+        /// @param data Data to be transferred via CAN bus
+        /// @param timeout100us Time after which candle will stop waiting for node response in
+        /// units of 100 microseconds
+        /// @return Future containing response can frame (undefined on error being not OK) and error
+        /// code
         std::pair<std::vector<u8>, Error_t> accumulateFrame(const canId_t          canId,
                                                             const std::vector<u8>& data,
                                                             const u16              timeout100us);
 
+        /// @brief Get packed frame ready to be sent via bus, clears internal buffer for fresh frame
+        /// accumulation
+        /// @return packed candle frames (Header,ACK placeholder, length, candle frame(s), CRC32)
         std::vector<u8> getPackedFrame() noexcept;
-        Error_t         parsePackedFrame(const std::vector<u8>& packedFrames) noexcept;
 
+        /// @brief  Parse received packed candle frames for the waiting futures
+        /// @param packedFrames Received packed candle frames
+        /// @return OK on success, error code otherwise
+        Error_t parsePackedFrame(const std::vector<u8>& packedFrames) noexcept;
+
+        /// @brief Get number of accumulated frames waiting for transfer atomically
+        /// @return number of accumulated frames
         u8 getCount() const noexcept;
 
       private:
