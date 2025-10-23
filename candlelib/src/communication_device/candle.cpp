@@ -22,7 +22,7 @@ namespace mab
           m_bus(std::move(bus)),
           m_useRegularCanFrames(useRegularCANFrames),
           m_maxCANFrameSize(useRegularCANFrames ? 8 : 64),
-          m_cfadapter(m_cfsync)
+          m_cfAdapter(m_cfsync)
     {
         if (m_useRegularCanFrames)
             m_log.debug("CANdle initialized with regular CAN format, max frame size is %u",
@@ -127,11 +127,11 @@ namespace mab
             auto result = m_cfTransferSemaphore.try_acquire_for(DEFAULT_CONFIGURATION_TIMEOUT);
             if (result)
             {
-                while (m_cfadapter.getCount() > 0)
+                while (m_cfAdapter.getCount() > 0)
                 {
                     if (stopToken.stop_requested())
                         break;
-                    std::vector<u8> packedFrame = m_cfadapter.getPackedFrame();
+                    std::vector<u8> packedFrame = m_cfAdapter.getPackedFrame();
                     if (packedFrame.size() < 4)
                     {
                         m_log.warn("CF transfer packed frame empty!");
@@ -144,7 +144,7 @@ namespace mab
                         m_log.error("Candle transfer failed!");
                         break;
                     }
-                    if (m_cfadapter.parsePackedFrame(packedFrame) !=
+                    if (m_cfAdapter.parsePackedFrame(packedFrame) !=
                         CANdleFrameAdapter::Error_t::OK)
                     {
                         m_log.error("CF transfer parsing failed!");

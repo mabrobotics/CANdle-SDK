@@ -84,6 +84,21 @@ namespace mab
         static candleTypes::Error_t enterBootloader(
             std::unique_ptr<mab::I_CommunicationInterface>&& usb);
 
+        inline std::future<std::pair<std::vector<u8>, CANdleFrameAdapter::Error_t>>
+        transferCANFrameAsync(const canId_t         canId,
+                              const std::vector<u8> dataToSend,
+                              const size_t          responseSize,
+                              const u16             timeout100us = DEFAULT_CAN_TIMEOUT * 10)
+        {
+            auto ret = std::async(std::launch::async,
+                                  &CANdleFrameAdapter::accumulateFrame,
+                                  &m_cfAdapter,
+                                  canId,
+                                  dataToSend,
+                                  timeout100us);
+            return ret;
+        }
+
         const CANdleDatarate_E m_canDatarate;
 
       private:
@@ -100,7 +115,7 @@ namespace mab
 
         mutable std::mutex                         m_busTransferMux;
         mutable std::mutex                         m_cfSyncMux;
-        CANdleFrameAdapter                         m_cfadapter;
+        CANdleFrameAdapter                         m_cfAdapter;
         std::shared_ptr<std::function<void(void)>> m_cfsync;
         std::jthread                               m_cfTransferThread;
         std::counting_semaphore<7>                 m_cfTransferSemaphore{0};
