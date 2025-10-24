@@ -414,7 +414,7 @@ namespace mab
 
             MdFrameId_E frameId = (MdFrameId_E)readRegResult.first.at(0);
             if (frameId == MdFrameId_E::RESPONSE_LEGACY || frameId == MdFrameId_E::WRITE_REGISTER)
-                return Error_t::OK; // TODO: Possible do smth with received data?
+                return Error_t::OK;  // TODO: Possible do smth with received data?
             else
             {
                 m_log.error("Error in the register write response!");
