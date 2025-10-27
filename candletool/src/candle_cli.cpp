@@ -49,7 +49,8 @@ namespace mab
                     if (!updateOptions.metadataFile->empty())
                         fallbackPath = *updateOptions.metadataFile;
                     else
-                        fallbackPath += "/config/web_files_metadata.ini";
+                        fallbackPath =
+                            (*ctx.packageEtcPath / "web_files_metadata.ini").generic_string();
 
                     m_logger.debug("Fallback path at: %s", fallbackPath.c_str());
                     mINI::INIFile fallbackMetadataFile(fallbackPath);
