@@ -58,6 +58,7 @@ namespace mab
 
     candleTypes::Error_t Candle::init()
     {
+        // TODO: add call std::call_once for deferring initialization
         if (m_bus == nullptr)
         {
             m_log.error("Bus not initialized!");
