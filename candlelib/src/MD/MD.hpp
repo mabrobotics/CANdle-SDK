@@ -325,8 +325,10 @@ namespace mab
             frame.push_back((u8)MdFrameId_E::READ_REGISTER);
             frame.push_back((u8)0x0);
             // Add serialized register data to be read [LSB addr, MSB addr, payload-bytes...]
-            auto payload = serializeMDRegisters(regs);
-            frame.insert(frame.end(), payload.begin(), payload.end());
+            std::vector<u8> payload = serializeMDRegisters(regs);
+            frame.reserve(frame.size() + payload.size());
+            for (auto byte : payload)
+                frame.push_back(byte);
             auto readRegResult = transferCanFrame(frame, frame.size());
             if (readRegResult.second != candleTypes::Error_t::OK)
             {
