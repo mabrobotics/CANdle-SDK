@@ -324,6 +324,7 @@ jobs:
 
   test-candleSDK-linux-static:
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     container:
       image: mabroboticsofficial/mab_build_environment:v2
       options: --user root

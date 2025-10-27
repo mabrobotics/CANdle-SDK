@@ -23,7 +23,8 @@ namespace mab
         CANdleFrameDTO frameDTO = {0};
 
       public:
-        static constexpr u8     DTO_PARSE_ID = 0x0F;
+        static constexpr u8     DTO_PARSE_ID    = 15;
+        static constexpr u8     DATA_MAX_LENGTH = 64;
         static constexpr size_t DTO_SIZE =
             sizeof(CANdleFrameDTO::canId) + sizeof(CANdleFrameDTO::timeout) +
             sizeof(CANdleFrameDTO::length) + sizeof(CANdleFrameDTO::sequenceNumber) +
@@ -51,13 +52,13 @@ namespace mab
         inline bool isValid() const
         {
             return frameDTO.canId != 0 && frameDTO.length != 0 &&
-                   frameDTO.length < sizeof(frameDTO.data);
+                   frameDTO.length <= sizeof(frameDTO.data);
         }
 
         inline bool isValid(decltype(frameDTO.sequenceNumber) expectedSeqNum) const
         {
             return frameDTO.canId != 0 && frameDTO.length != 0 &&
-                   frameDTO.length < sizeof(frameDTO.data) &&
+                   frameDTO.length <= sizeof(frameDTO.data) &&
                    frameDTO.sequenceNumber == expectedSeqNum;
         }
 
@@ -99,7 +100,7 @@ namespace mab
             std::memset(frameDTO.data, 0, sizeof(frameDTO.data));
             frameDTO.length = 0;
         }
-        inline const std::remove_cvref_t<decltype(frameDTO.data[0])>* data()
+        inline const std::remove_cvref_t<decltype(frameDTO.data[0])>* data() const
         {
             return &frameDTO.data[0];
         }

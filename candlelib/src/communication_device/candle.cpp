@@ -21,7 +21,9 @@ namespace mab
         : m_canDatarate(canDatarate),
           m_bus(std::move(bus)),
           m_useRegularCanFrames(useRegularCANFrames),
-          m_maxCANFrameSize(useRegularCANFrames ? 8 : 64)
+          m_maxCANFrameSize(useRegularCANFrames ? 8 : 64),
+          m_cfsync(std::make_shared<std::function<void(void)>>()),
+          m_cfAdapter(m_cfsync)
     {
         if (m_useRegularCanFrames)
             m_log.debug("CANdle initialized with regular CAN format, max frame size is %u",
@@ -36,6 +38,22 @@ namespace mab
                 "Regular CAN does not support datarate above 1Mbps. Either use CAN-FD or lower the "
                 "datarate to 1M.");
         }
+        *m_cfsync = std::function<void(void)>(
+            [this]()
+            {
+                std::unique_lock lock(this->m_cfSyncMux);
+                this->m_log.debug("CF transfer requested");
+                // Start CF transfer thread if not already running
+                if (!this->m_cfTransferThread.joinable() || !this->m_cfTransferAlive.load())
+                {
+                    this->m_log.debug("Spinning up CF transfer thread");
+                    this->m_cfTransferAlive.store(true);
+                    this->m_cfTransferThread = std::jthread([this](std::stop_token stoken)
+                                                            { this->cfTransferLoop(stoken); });
+                }
+                this->m_log.debug("Releasing CF transfer semaphore");
+                this->m_cfTransferSemaphore.release();
+            });
     }
 
     candleTypes::Error_t Candle::init()
@@ -105,6 +123,50 @@ namespace mab
         }
     }
 
+    void Candle::cfTransferLoop(std::stop_token stopToken) noexcept
+    {
+        m_cfTransferAlive.store(true);
+        while (!stopToken.stop_requested())
+        {
+            m_log.debug("CF transfer thread waiting for semaphore...");
+            auto result = m_cfTransferSemaphore.try_acquire_for(DEFAULT_CONFIGURATION_TIMEOUT);
+            if (result)
+            {
+                while (m_cfAdapter.getCount() > 0)
+                {
+                    if (stopToken.stop_requested())
+                        break;
+                    std::vector<u8> packedFrame = m_cfAdapter.getPackedFrame();
+                    if (packedFrame.size() < 4)
+                    {
+                        m_log.warn("CF transfer packed frame empty!");
+                        break;
+                    }
+                    m_log.debug("CF transfer thread sending frame");
+                    candleTypes::Error_t transferStatus = busTransfer(
+                        &packedFrame, packedFrame.size(), DEFAULT_CONFIGURATION_TIMEOUT.count());
+                    if (transferStatus != candleTypes::Error_t::OK)
+                    {
+                        m_log.error("Candle transfer failed!");
+                        break;
+                    }
+                    if (m_cfAdapter.parsePackedFrame(packedFrame) !=
+                        CANdleFrameAdapter::Error_t::OK)
+                    {
+                        m_log.error("CF transfer parsing failed!");
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                m_log.debug("CF transfer thread timeout");
+                break;
+            }
+        }
+        m_cfTransferAlive.store(false);
+    }
+
     candleTypes::Error_t Candle::busTransfer(std::vector<u8>* data,
                                              size_t           responseLength,
                                              const u32        timeoutMs) const
@@ -138,6 +200,7 @@ namespace mab
             if (result.second)
                 return candleTypes::Error_t::UNKNOWN_ERROR;
         }
+
         return candleTypes::Error_t::OK;
     }
 

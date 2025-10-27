@@ -8,6 +8,8 @@
 #include <utility>
 #include <iomanip>
 #include <map>
+#include <future>
+#include <mutex>
 
 #include "candle_types.hpp"
 #include "logger.hpp"
@@ -15,7 +17,7 @@
 #include "USB.hpp"
 #include "SPI.hpp"
 #include "mab_types.hpp"
-
+#include "candle_frame_adapter.hpp"
 #include "candle_frame_dto.hpp"
 
 namespace mab
@@ -82,10 +84,35 @@ namespace mab
         static candleTypes::Error_t enterBootloader(
             std::unique_ptr<mab::I_CommunicationInterface>&& usb);
 
+        /// @brief Asynchronous CAN frame transfer
+        /// @param canId Target CAN node ID
+        /// @param dataToSend Data to be transferred via CAN bus
+        /// @param responseSize Size of the expected device response (0 for not expecting a
+        /// response)
+        /// @param timeout100us Time after which candle will stop waiting for node response in
+        /// units of 100 microseconds
+        /// @return Future containing response can frame (undefined on error being not OK) and error
+        /// code
+        inline std::future<std::pair<std::vector<u8>, CANdleFrameAdapter::Error_t>>
+        transferCANFrameAsync(const canId_t          canId,
+                              const std::vector<u8>& dataToSend,
+                              const size_t           responseSize,
+                              const u16              timeout100us = DEFAULT_CAN_TIMEOUT * 10)
+        {
+            auto ret = std::async(std::launch::async,
+                                  &CANdleFrameAdapter::accumulateFrame,
+                                  &m_cfAdapter,
+                                  canId,
+                                  dataToSend,
+                                  timeout100us);
+            return ret;
+        }
+
         const CANdleDatarate_E m_canDatarate;
 
       private:
-        static constexpr u32 DEFAULT_CONFIGURATION_TIMEOUT = 10;
+        static constexpr std::chrono::milliseconds DEFAULT_CONFIGURATION_TIMEOUT =
+            std::chrono::milliseconds(20);
 
         Logger m_log = Logger(Logger::ProgramLayer_E::TOP, "CANDLE");
 
@@ -94,6 +121,15 @@ namespace mab
         bool         m_isInitialized       = false;
         const bool   m_useRegularCanFrames = false;
         const size_t m_maxCANFrameSize     = 64;
+
+        mutable std::mutex                         m_cfSyncMux;
+        std::shared_ptr<std::function<void(void)>> m_cfsync;
+        CANdleFrameAdapter                         m_cfAdapter;
+        std::jthread                               m_cfTransferThread;
+        std::counting_semaphore<7>                 m_cfTransferSemaphore{0};
+        std::atomic_bool                           m_cfTransferAlive{false};
+
+        void cfTransferLoop(std::stop_token stopToken) noexcept;
 
         candleTypes::Error_t busTransfer(std::vector<u8>* data,
                                          size_t           responseLength = 0,
