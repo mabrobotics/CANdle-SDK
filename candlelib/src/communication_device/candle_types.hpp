@@ -31,6 +31,18 @@ namespace mab
             USB,
             SPI
         };
-    };                                      // namespace candleTypes
+
+        struct CANFrameData_t
+        {
+            const canId_t                                m_canId          = 0;
+            std::vector<u8>                              m_data           = {};
+            u8                                           m_responseLength = 0;
+            std::chrono::high_resolution_clock::duration m_timeout = std::chrono::microseconds(0);
+
+            CANFrameData_t(const canId_t canId) : m_canId(canId)
+            {
+            }
+        };
+    };  // namespace candleTypes
     constexpr u32 DEFAULT_CAN_TIMEOUT = 2;  // ms
 }  // namespace mab

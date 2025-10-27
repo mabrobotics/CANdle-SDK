@@ -217,9 +217,14 @@ namespace mab
             return reg.value;
         }
 
-        constexpr size_t getSize()
+        constexpr size_t getSize() const
         {
             return sizeof(T);
+        }
+
+        constexpr size_t getSerializedSize() const
+        {
+            return sizeof(T) + sizeof(m_regAddress);
         }
 
         const std::array<u8, sizeof(value) + sizeof(m_regAddress)>* getSerializedRegister()
@@ -305,6 +310,11 @@ namespace mab
         constexpr size_t getSize() const
         {
             return sizeof(T[N]);
+        }
+
+        constexpr size_t getSerializedSize() const
+        {
+            return sizeof(T[N]) + sizeof(m_regAddress);
         }
 
         const std::array<u8, sizeof(value) + sizeof(m_regAddress)>* getSerializedRegister()
