@@ -15,8 +15,9 @@ namespace mab
     class MDAggregator
     {
       public:
-        using CFFrameFuture_t = std::future<std::pair<std::vector<u8>, candleTypes::Error_t>>;
-        class MDFrame : candleTypes::CANFrameData_t
+        using CFFrameFuture_t =
+            std::shared_future<std::pair<std::vector<u8>, candleTypes::Error_t>>;
+        class MDFrame : public candleTypes::CANFrameData_t
         {
           public:
             const MdFrameId_E m_frameType;
@@ -44,6 +45,37 @@ namespace mab
             }
         };
 
+        template <typename T>
+        class RegisterFuture
+        {
+          public:
+            std::future<std::pair<MDRegisterEntry_S<T>, candleTypes::Error_t>> m_regFuture;
+
+            RegisterFuture(MDRegisterEntry_S<T>        reg,
+                           CFFrameFuture_t             fullFrameFuture,
+                           const std::optional<size_t> registerIdx = {})
+                : m_reg(reg), m_fullFrameFuture(fullFrameFuture), m_registerIdx(registerIdx)
+            {
+                regFuture =
+                    std::async(std::launch::deferred,
+                               [this]() -> std::pair<MDRegisterEntry_S<T>, candleTypes::Error_t>
+                               {
+                                   auto                 cfFramePair = m_fullFrameFuture.get();
+                                   MDRegisterEntry_S<T> reg;
+                                   if (cfFramePair.second == candleTypes::Error_t::OK)
+                                   {
+                                       MD
+                                   }
+                               })
+            }
+
+          private:
+            MDRegisterEntry_S<T> m_reg;
+            CFFrameFuture_t      m_fullFrameFuture;
+
+            const std::optional<size_t> m_registerIdx;
+        };
+
         const canId_t m_canId;
 
         MDAggregator(const canId_t canId,
@@ -53,8 +85,22 @@ namespace mab
         {
         }
 
+        void forceSendAvailableFrames(size_t maxCount)
+        {
+            std::unique_lock lock(m_mux);  // Lock to prevent race conditions with user thread
+
+            maxCount = m_frameTypeMap.size() > maxCount ? maxCount : m_frameTypeMap.size();
+
+            for (size_t i = 0; i < maxCount; i++)
+            {
+                auto it = m_frameTypeMap.begin();
+                (*m_sendFrameFunction)(std::move(it->second));
+                m_frameTypeMap.erase(it);
+            }
+        }
+
         template <typename T>
-        inline std::future<candleTypes::Error_t> writeRegisterAsync(MDRegisterEntry_S<T> reg)
+        inline RegisterFuture<T> writeRegisterAsync(const MDRegisterEntry_S<T>&& reg)
         {
             size_t serializedRegSize = reg.getSerializedRegister();
 
@@ -63,25 +109,28 @@ namespace mab
             auto mapIter = m_frameTypeMap.find(MdFrameId_E::WRITE_REGISTER);
             if (writeQueue == m_frameTypeMap.end())
             {
-                mapIter = m_frameTypeMap[MdFrameId_E::WRITE_REGISTER] = std::deque<MDFrame>();
+                mapIter = m_frameTypeMap[MdFrameId_E::WRITE_REGISTER] =
+                    MDFrame(m_canId, MdFrameId_E::WRITE_REGISTER);
             }
-            auto MDFrameQueue = mapIter->second;
+            auto frame = mapIter->second;
             // Small discrepancy over efficiency boost - we only look for a place in the last frame
             // only in order not to look throughout all of the frames (which may have more space
             // left)
-            auto frame = MDFrameQueue.back();
             if (CANdleFrame::DATA_MAX_LENGTH - frame.m_data().size() < serializedRegSize)
             {
-                frame = MDFrameQueue.emplace_back(m_canId, MdFrameId_E::WRITE_REGISTER);
+                (*m_sendFrameFunction)(frame);
+                frame = MDFrame(m_canId, MdFrameId_E::WRITE_REGISTER);
             }
 
             size_t idx = frame.insertRegister(reg);
+
+            return RegisterFuture(std::move(reg), m_sendFrameFunction())
         }
 
       private:
         const std::shared_ptr<std::function<CFFrameFuture_t(candleTypes::CANFrameData_t)>>
-                                                             m_sendFrameFunction;
-        std::unordered_map<MdFrameId_E, std::deque<MDFrame>> m_frameTypeMap;
+                                                 m_sendFrameFunction;
+        std::unordered_map<MdFrameId_E, MDFrame> m_frameTypeMap;
 
         mutable std::mutex m_mux;
     };
