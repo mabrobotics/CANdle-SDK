@@ -60,12 +60,17 @@ namespace mab
                     std::async(std::launch::deferred,
                                [this]() -> std::pair<MDRegisterEntry_S<T>, candleTypes::Error_t>
                                {
-                                   auto                 cfFramePair = m_fullFrameFuture.get();
                                    MDRegisterEntry_S<T> reg;
+                                   auto                 cfFramePair = m_fullFrameFuture.get();
                                    if (cfFramePair.second == candleTypes::Error_t::OK)
                                    {
-                                       MD
+                                       std::vector<u8> tempBuf;
+                                       tempBuf.insert(tempBuf.end(),
+                                                      cfFramePair.begin() + m_registerIdx,
+                                                      cfFramePair.end());
+                                       reg.setSerializedRegister(std::move(tempBuf));
                                    }
+                                   return std::make_pair(reg, cfFramePair.second);
                                })
             }
 
