@@ -37,9 +37,9 @@ namespace mab
             inline size_t insertRegister(MDRegisterEntry_S<T> reg)
             {
                 auto serializedReg = reg.getSerializedRegister();
-                if (m_frame.size() + serializedReg.size() > 64)
+                if (m_data.size() + serializedReg.size() > 64)
                     return 0;
-                size_t regAt = m_frame.size();
+                size_t regAt = m_data.size();
                 m_data.insert(m_data.end(), serializedReg->begin(), serializedReg->end());
                 return regAt;
             }
@@ -56,22 +56,23 @@ namespace mab
                            const std::optional<size_t> registerIdx = {})
                 : m_reg(reg), m_fullFrameFuture(fullFrameFuture), m_registerIdx(registerIdx)
             {
-                regFuture =
-                    std::async(std::launch::deferred,
-                               [this]() -> std::pair<MDRegisterEntry_S<T>, candleTypes::Error_t>
-                               {
-                                   MDRegisterEntry_S<T> reg;
-                                   auto                 cfFramePair = m_fullFrameFuture.get();
-                                   if (cfFramePair.second == candleTypes::Error_t::OK)
-                                   {
-                                       std::vector<u8> tempBuf;
-                                       tempBuf.insert(tempBuf.end(),
-                                                      cfFramePair.begin() + m_registerIdx,
-                                                      cfFramePair.end());
-                                       reg.setSerializedRegister(std::move(tempBuf));
-                                   }
-                                   return std::make_pair(reg, cfFramePair.second);
-                               })
+                m_regFuture = std::async(
+                    std::launch::deferred,
+                    [this]() -> std::pair<MDRegisterEntry_S<T>, candleTypes::Error_t>
+                    {
+                        MDRegisterEntry_S<T> reg;
+                        auto                 cfFramePair = m_fullFrameFuture.get();
+                        if (cfFramePair.second == candleTypes::Error_t::OK &&
+                            m_registerIdx.has_value())
+                        {
+                            std::vector<u8> tempBuf;
+                            tempBuf.insert(tempBuf.end(),
+                                           cfFramePair.first.begin() + m_registerIdx.value(),
+                                           cfFramePair.first.end());
+                            reg.setSerializedRegister(std::move(tempBuf));
+                        }
+                        return std::make_pair(reg, cfFramePair.second);
+                    });
             }
 
           private:
@@ -85,8 +86,9 @@ namespace mab
 
         MDAggregator(const canId_t canId,
                      std::shared_ptr<std::function<CFFrameFuture_t(candleTypes::CANFrameData_t)>>
-                         sendFrameFunction)
-            : m_canId(canId), m_sendFrameFunction(sendFrameFunction)
+                                                       sendFrameFunction,
+                     std::shared_ptr<std::atomic_bool> senderBusy)
+            : m_canId(canId), m_sendFrameFunction(sendFrameFunction), m_senderBusy(senderBusy)
         {
         }
 
@@ -105,23 +107,24 @@ namespace mab
         }
 
         template <typename T>
-        inline RegisterFuture<T> writeRegisterAsync(const MDRegisterEntry_S<T>&& reg)
+        inline RegisterFuture<T> writeRegisterAsync(const MDRegisterEntry_S<T> reg)
         {
-            size_t serializedRegSize = reg.getSerializedRegister();
+            size_t serializedRegSize = reg.getSerializedSize();
 
             std::unique_lock lock(m_mux);  // Lock to prevent race conditions with sending thread
 
             auto mapIter = m_frameTypeMap.find(MdFrameId_E::WRITE_REGISTER);
-            if (writeQueue == m_frameTypeMap.end())
+            if (mapIter == m_frameTypeMap.end())
             {
-                mapIter = m_frameTypeMap[MdFrameId_E::WRITE_REGISTER] =
+                m_frameTypeMap[MdFrameId_E::WRITE_REGISTER] =
                     MDFrame(m_canId, MdFrameId_E::WRITE_REGISTER);
+                mapIter = m_frameTypeMap.find(MdFrameId_E::WRITE_REGISTER);
             }
             auto frame = mapIter->second;
             // Small discrepancy over efficiency boost - we only look for a place in the last frame
             // only in order not to look throughout all of the frames (which may have more space
             // left)
-            if (CANdleFrame::DATA_MAX_LENGTH - frame.m_data().size() < serializedRegSize)
+            if (CANdleFrame::DATA_MAX_LENGTH - frame.m_data.size() < serializedRegSize)
             {
                 (*m_sendFrameFunction)(frame);
                 frame = MDFrame(m_canId, MdFrameId_E::WRITE_REGISTER);
@@ -129,13 +132,41 @@ namespace mab
 
             size_t idx = frame.insertRegister(reg);
 
-            return RegisterFuture(std::move(reg), m_sendFrameFunction())
+            return RegisterFuture(std::move(reg), m_sendFrameFunction);
+        }
+
+        template <typename T>
+        inline RegisterFuture<T> readRegisterAsync(MDRegisterEntry_S<T> reg)
+        {
+            size_t serializedRegSize = reg.getSerializedSize();
+
+            std::unique_lock lock(m_mux);  // Lock to prevent race conditions with sending thread
+            auto             mapIter = m_frameTypeMap.find(MdFrameId_E::READ_REGISTER);
+            if (mapIter == m_frameTypeMap.end())
+            {
+                m_frameTypeMap.emplace(MdFrameId_E::READ_REGISTER,
+                                       MDFrame(m_canId, MdFrameId_E::READ_REGISTER));
+                mapIter = m_frameTypeMap.find(MdFrameId_E::READ_REGISTER);
+            }
+            // Small discrepancy over efficiency boost - we only look for a place in the last frame
+            // only in order not to look throughout all of the frames (which may have more space
+            // left)
+            if (CANdleFrame::DATA_MAX_LENGTH - mapIter->second.m_data.size() < serializedRegSize)
+            {
+                (*m_sendFrameFunction)(std::move(mapIter->second));
+                m_frameTypeMap.emplace(MdFrameId_E::READ_REGISTER,
+                                       MDFrame(m_canId, MdFrameId_E::READ_REGISTER));
+                mapIter = m_frameTypeMap.find(MdFrameId_E::READ_REGISTER);
+            }
+            const size_t idx = mapIter->second.insertRegister(reg);
+            return RegisterFuture<T>(reg, m_sendFrameFunction, idx);
         }
 
       private:
         const std::shared_ptr<std::function<CFFrameFuture_t(candleTypes::CANFrameData_t)>>
                                                  m_sendFrameFunction;
         std::unordered_map<MdFrameId_E, MDFrame> m_frameTypeMap;
+        const std::shared_ptr<std::atomic_bool>  m_senderBusy;
 
         mutable std::mutex m_mux;
     };
