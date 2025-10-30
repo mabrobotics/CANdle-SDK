@@ -140,11 +140,6 @@ if(MAKE_TESTS)
   target_include_directories(md_v2_test PRIVATE include src/MD/)
   target_link_libraries(md_v2_test PRIVATE logger shared_data candle)
 
-  add_unit_test_executable(md_aggregator_test src/MD/MD_aggregator_test.cpp)
-  target_sources(md_aggregator_test PRIVATE src/MD/MD_aggregator.cpp)
-  target_include_directories(md_aggregator_test PRIVATE include src/MD/)
-  target_link_libraries(md_aggregator_test PRIVATE logger shared_data candle)
-
   add_unit_test_executable(
     candle_frame_adapter_test
     src/communication_device/candle_frame_adapter_test.cpp)

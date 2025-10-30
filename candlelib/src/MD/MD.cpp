@@ -19,6 +19,19 @@ namespace mab
         //     if (devType != deviceType_E::UNKNOWN_DEVICE)
         //         return Error_t::OK;
         // }
+        auto candleVersionOpt = m_candle->getCandleVersion();
+
+        if (!candleVersionOpt.has_value())
+            m_log.error("Could not read candle version!");
+        else if (candleVersionOpt.value().s.major < 2 ||
+                 (candleVersionOpt.value().s.major == 2 && candleVersionOpt.value().s.minor < 4))
+        {
+            m_log.error(
+                "You are using old CANdle firmware version. This firmware version will not work "
+                "with the current CANdle-SDK version!");
+            return Error_t::LEGACY_FW;
+        }
+
         m_mdRegisters.legacyHardwareVersion = 0;
 
         auto mfLegacydataResult = readRegister(m_mdRegisters.legacyHardwareVersion);

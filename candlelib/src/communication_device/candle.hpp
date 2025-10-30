@@ -76,7 +76,7 @@ namespace mab
         /// @return Error on failure
         candleTypes::Error_t reset();
 
-        std::optional<version_ut> getCandleVersion();
+        std::optional<version_ut> getCandleVersion() const;
 
         /// @brief Command the application to reboot into a bootloader and await commands.
         /// @param usb initialized usb interface (bootloader only works via USB)

@@ -105,7 +105,7 @@ namespace mab
         }
         return candleTypes::Error_t::OK;
     }
-    std::optional<version_ut> Candle::getCandleVersion()
+    std::optional<version_ut> Candle::getCandleVersion() const
     {
         auto buffer       = datarateCommandFrame(m_canDatarate, m_useRegularCanFrames);
         auto dataResponse = busTransfer(&buffer, 6);

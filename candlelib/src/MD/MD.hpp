@@ -53,7 +53,8 @@ namespace mab
             OK,
             REQUEST_INVALID,
             TRANSFER_FAILED,
-            NOT_CONNECTED
+            NOT_CONNECTED,
+            LEGACY_FW
         };
 
         /// @brief Create MD object instance
