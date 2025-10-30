@@ -381,28 +381,25 @@ namespace mab
                 m_candle->transferCANFrameAsync(m_canId, frame, frame.size());
             return std::async(
                 std::launch::deferred,
-                [](std::future<std::pair<std::vector<u8>, CANdleFrameAdapter::Error_t>>
-                       readRegResultFuture)
+                [&regs](std::future<std::pair<std::vector<u8>, CANdleFrameAdapter::Error_t>>
+                            readRegResultFuture)
                     -> std::pair<Error_t, std::tuple<MDRegisterEntry_S<T>&...>>
                 {
-                    auto regs          = std::tuple<MDRegisterEntry_S<T>&...>();
                     auto readRegResult = readRegResultFuture.get();
                     if (readRegResult.second != CANdleFrameAdapter::Error_t::OK)
                     {
-                        return std::make_pair(Error_t::TRANSFER_FAILED,
-                                              std::tuple<MDRegisterEntry_S<T>&...>());
+                        return std::make_pair(Error_t::TRANSFER_FAILED, regs);
                     }
                     readRegResult.first.erase(readRegResult.first.begin(),
                                               readRegResult.first.begin() + 2);
                     bool deserializeFailed = deserializeMDRegisters(readRegResult.first, regs);
                     if (deserializeFailed)
                     {
-                        return std::make_pair(Error_t::TRANSFER_FAILED,
-                                              std::tuple<MDRegisterEntry_S<T>&...>());
+                        return std::make_pair(Error_t::TRANSFER_FAILED, regs);
                     }
                     return std::make_pair(Error_t::OK, regs);
                 },
-                readRegResultFuture);
+                std::move(readRegResultFuture));
         }
 
         /// @brief Write registers to MD memory
@@ -474,7 +471,7 @@ namespace mab
         inline std::future<Error_t> writeRegistersAsync(MDRegisterEntry_S<T>&... regs)
         {
             auto tuple = std::tuple<MDRegisterEntry_S<T>&...>(regs...);
-            return writeRegisters(tuple);
+            return writeRegistersAsync(tuple);
         }
 
         template <class... T>
@@ -500,7 +497,7 @@ namespace mab
                     else
                         return Error_t::TRANSFER_FAILED;
                 },
-                writeRegResultFuture);
+                std::move(writeRegResultFuture));
         }
 
         /// @brief Helper method to handle md errors
