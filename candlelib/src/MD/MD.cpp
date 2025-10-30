@@ -28,8 +28,7 @@ namespace mab
         {
             m_log.error(
                 "You are using old CANdle firmware version. This firmware version will not work "
-                "with the current CANdle-SDK version!");
-            return Error_t::LEGACY_FW;
+                "with asynchronous API!");
         }
 
         m_mdRegisters.legacyHardwareVersion = 0;

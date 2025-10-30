@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 #include <iomanip>
+#include <future>
 
 namespace mab
 {
@@ -360,6 +361,50 @@ namespace mab
             return Error_t::OK;
         }
 
+        template <class... T>
+        inline std::future<std::pair<Error_t, std::tuple<MDRegisterEntry_S<T>&...>>>
+        readRegistersAsync(std::tuple<MDRegisterEntry_S<T>&...> regs)
+        {
+            m_log.debug("Submitting register read frame...");
+
+            // Add protocol read header [0x41, 0x00]
+            std::vector<u8> frame;
+            frame.push_back((u8)MdFrameId_E::READ_REGISTER);
+            frame.push_back((u8)0x0);
+            // Add serialized register data to be read [LSB addr, MSB addr, payload-bytes...]
+            std::vector<u8> payload = serializeMDRegisters(regs);
+            frame.reserve(frame.size() + payload.size());
+            for (auto byte : payload)
+                frame.push_back(byte);
+
+            auto readRegResultFuture =
+                m_candle->transferCANFrameAsync(m_canId, frame, frame.size());
+            return std::async(
+                std::launch::deferred,
+                [](std::future<std::pair<std::vector<u8>, CANdleFrameAdapter::Error_t>>
+                       readRegResultFuture)
+                    -> std::pair<Error_t, std::tuple<MDRegisterEntry_S<T>&...>>
+                {
+                    auto regs          = std::tuple<MDRegisterEntry_S<T>&...>();
+                    auto readRegResult = readRegResultFuture.get();
+                    if (readRegResult.second != CANdleFrameAdapter::Error_t::OK)
+                    {
+                        return std::make_pair(Error_t::TRANSFER_FAILED,
+                                              std::tuple<MDRegisterEntry_S<T>&...>());
+                    }
+                    readRegResult.first.erase(readRegResult.first.begin(),
+                                              readRegResult.first.begin() + 2);
+                    bool deserializeFailed = deserializeMDRegisters(readRegResult.first, regs);
+                    if (deserializeFailed)
+                    {
+                        return std::make_pair(Error_t::TRANSFER_FAILED,
+                                              std::tuple<MDRegisterEntry_S<T>&...>());
+                    }
+                    return std::make_pair(Error_t::OK, regs);
+                },
+                readRegResultFuture);
+        }
+
         /// @brief Write registers to MD memory
         /// @tparam ...T Register entry underlying type (should be deducible)
         /// @param ...regs Registry references to be written to memory
@@ -425,6 +470,39 @@ namespace mab
             }
         }
 
+        template <class... T>
+        inline std::future<Error_t> writeRegistersAsync(MDRegisterEntry_S<T>&... regs)
+        {
+            auto tuple = std::tuple<MDRegisterEntry_S<T>&...>(regs...);
+            return writeRegisters(tuple);
+        }
+
+        template <class... T>
+        inline std::future<Error_t> writeRegistersAsync(std::tuple<MDRegisterEntry_S<T>&...>& regs)
+        {
+            m_log.debug("Submitting frame transfer request...");
+
+            std::vector<u8> frame;
+            frame.push_back((u8)MdFrameId_E::WRITE_REGISTER_LEGACY);
+            frame.push_back((u8)0x0);
+            auto payload = serializeMDRegisters(regs);
+            frame.insert(frame.end(), payload.begin(), payload.end());
+            auto writeRegResultFuture =
+                m_candle->transferCANFrameAsync(m_canId, frame, frame.size());
+            return std::async(
+                std::launch::deferred,
+                [](std::future<std::pair<std::vector<u8>, CANdleFrameAdapter::Error_t>>
+                       writeRegResultFuture) -> Error_t
+                {
+                    auto result = writeRegResultFuture.get();
+                    if (result.second == CANdleFrameAdapter::Error_t::OK)
+                        return Error_t::OK;
+                    else
+                        return Error_t::TRANSFER_FAILED;
+                },
+                writeRegResultFuture);
+        }
+
         /// @brief Helper method to handle md errors
         /// @return true on failure, false on normal operation
         inline bool isMDError(Error_t err)
@@ -455,7 +533,7 @@ namespace mab
         static std::vector<canId_t> discoverMDs(Candle* candle);
 
       private:
-        const Candle* m_candle;
+        Candle* const m_candle;
 
         inline const Candle* getCandle() const
         {
