@@ -10,6 +10,8 @@ namespace mab
 {
     Candle::~Candle()
     {
+        m_cfTransferThread.request_stop();
+        m_cfTransferThread.join();
         m_log.debug("Deconstructing Candle, do not reuse any handles provided by it!\n");
         m_bus->disconnect();
         m_bus = nullptr;
@@ -137,7 +139,9 @@ namespace mab
                 {
                     if (stopToken.stop_requested())
                         break;
-                    std::vector<u8> packedFrame = m_cfAdapter.getPackedFrame();
+                    std::vector<u8> packedFrame;
+                    u64             frameIdx;
+                    std::tie(packedFrame, frameIdx) = m_cfAdapter.getPackedFrame();
                     if (packedFrame.size() < 4)
                     {
                         m_log.warn("CF transfer packed frame empty!");
@@ -151,7 +155,7 @@ namespace mab
                         m_log.error("Candle transfer failed!");
                         break;
                     }
-                    if (m_cfAdapter.parsePackedFrame(packedFrame) !=
+                    if (m_cfAdapter.parsePackedFrame(packedFrame, frameIdx) !=
                         CANdleFrameAdapter::Error_t::OK)
                     {
                         m_log.error("CF transfer parsing failed!");
@@ -182,6 +186,7 @@ namespace mab
             m_log.error("Data empty!");
             return candleTypes::Error_t::DATA_EMPTY;
         }
+        // frameDump(*data);
 
         if (responseLength == 0)
         {
@@ -201,6 +206,7 @@ namespace mab
             if (result.second)
                 return candleTypes::Error_t::UNKNOWN_ERROR;
         }
+        // frameDump(*data);
 
         return candleTypes::Error_t::OK;
     }

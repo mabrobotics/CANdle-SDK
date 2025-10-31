@@ -28,7 +28,9 @@ namespace mab
             return std::make_pair<std::vector<u8>, Error_t>({}, Error_t::INVALID_FRAME);
         }
         cf.serialize(buf);
-        m_packedFrame.insert(m_packedFrame.end(), buf, buf + cf.DTO_SIZE);
+        u64 thisFrameIdx = m_frameIndex;
+        m_packedFrames[m_frameIndex].insert(
+            m_packedFrames[m_frameIndex].end(), buf, buf + cf.DTO_SIZE);
 
         // Notify host object that the reader must run
         if (auto func = m_requestTransfer.lock())
@@ -47,21 +49,30 @@ namespace mab
             m_log.error("Frame accumulation timed out! Writer thread might be malfunctioning!");
             return std::make_pair<std::vector<u8>, Error_t>({}, Error_t::READER_TIMEOUT);
         }
-        return std::make_pair<std::vector<u8>, Error_t>(std::vector(m_responseBuffer[seqIdx]),
-                                                        Error_t::OK);
+        auto responseIt = m_responseBuffer.find(thisFrameIdx);
+        if (responseIt == m_responseBuffer.end())
+        {
+            return std::make_pair<std::vector<u8>, Error_t>(std::vector<u8>(), Error_t::FRAME_LOST);
+        }
+        return std::make_pair<std::vector<u8>, Error_t>(
+            std::vector(m_responseBuffer[thisFrameIdx][seqIdx]), Error_t::OK);
     }
 
-    std::vector<u8> CANdleFrameAdapter::getPackedFrame() noexcept
+    std::pair<std::vector<u8>, std::atomic<u64>> CANdleFrameAdapter::getPackedFrame()
     {
         std::unique_lock lock(m_mutex);
 
-        std::vector<u8> packedFrame = m_packedFrame;
-        u8              count       = m_count;
-        m_count                     = 0;
-        m_packedFrame.clear();
-        m_packedFrame.push_back(CANdleFrame::DTO_PARSE_ID);
-        m_packedFrame.push_back(0x1 /*ACK*/);
-        m_packedFrame.push_back(0x0 /*Placeholder for count*/);
+        auto m_packedFrameIt = m_packedFrames.find(m_frameIndex);
+
+        if (m_packedFrameIt == m_packedFrames.end())
+        {
+            m_log.warn("Expected frame is empty!");
+        }
+
+        std::vector<u8> packedFrame  = m_packedFrames[m_frameIndex++];
+        u8              count        = m_count;
+        m_count                      = 0;
+        m_packedFrames[m_frameIndex] = std::vector<u8>({CANdleFrame::DTO_PARSE_ID, 0x1, 0x0});
         m_sem.release(count);
 
         auto countIter      = packedFrame.begin() + 2 /*PARSE_ID + ACK*/;
@@ -71,19 +82,16 @@ namespace mab
         packedFrame.push_back(calculatedCRC32 >> 8);
         packedFrame.push_back(calculatedCRC32 >> 16);
         packedFrame.push_back(calculatedCRC32 >> 24);
-        return packedFrame;
+        return std::make_pair(packedFrame, m_frameIndex - 1);
     }
 
     CANdleFrameAdapter::Error_t CANdleFrameAdapter::parsePackedFrame(
-        const std::vector<u8>& packedFrames) noexcept
+        const std::vector<u8>& packedFrames, std::atomic<u64> idx)
     {
         std::unique_lock lock(m_mutex);
 
-        for (auto& buf : m_responseBuffer)
-        {
-            buf.clear();
-        }
-        auto pfIterator = packedFrames.begin();
+        m_responseBuffer[idx] = std::array<std::vector<u8>, FRAME_BUFFER_SIZE>();
+        auto pfIterator       = packedFrames.begin();
         if (*pfIterator != CANdleFrame::DTO_PARSE_ID)
         {
             m_log.error("Wrong parse ID of CANdle Frames!");
@@ -129,19 +137,19 @@ namespace mab
             CANdleFrame cf;
             cf.deserialize((void*)&(*pfIterator));
             pfIterator += CANdleFrame::DTO_SIZE;
-            size_t idx = cf.sequenceNo() - 1;
+            size_t subidx = cf.sequenceNo() - 1;
             if (!cf.isValid() || idx > FRAME_BUFFER_SIZE - 1)
             {
                 m_log.error("CANdle frame %u is not valid! Index = %u, Can ID = %u, Length = %u",
                             count,
-                            idx,
+                            subidx,
                             cf.canId(),
                             cf.length());
                 m_cv.notify_all();
                 return Error_t::INVALID_FRAME;
             }
-            m_responseBuffer[idx].insert(
-                m_responseBuffer[idx].begin(), cf.data(), cf.data() + cf.length());
+            m_responseBuffer[idx][subidx].insert(
+                m_responseBuffer[idx][subidx].begin(), cf.data(), cf.data() + cf.length());
         }
         m_cv.notify_all();
         return Error_t::OK;

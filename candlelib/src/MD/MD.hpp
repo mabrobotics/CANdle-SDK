@@ -363,7 +363,7 @@ namespace mab
 
         template <class... T>
         inline std::future<std::pair<Error_t, std::tuple<MDRegisterEntry_S<T>&...>>>
-        readRegistersAsync(std::tuple<MDRegisterEntry_S<T>&...> regs)
+        readRegistersAsync(std::tuple<MDRegisterEntry_S<T>&...>& regs)
         {
             m_log.debug("Submitting register read frame...");
 

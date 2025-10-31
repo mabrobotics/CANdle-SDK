@@ -14,6 +14,7 @@
 #include <condition_variable>
 #include <chrono>
 #include <thread>
+#include <unordered_map>
 
 namespace mab
 {
@@ -25,7 +26,7 @@ namespace mab
         static constexpr size_t FRAME_BUFFER_SIZE = 7;
         static constexpr size_t USB_MAX_BULK_TRANSFER =
             512;  // Full-speed USB max bulk transfer size for libusb
-        static constexpr std::chrono::duration READER_TIMEOUT = std::chrono::milliseconds(10);
+        static constexpr std::chrono::duration READER_TIMEOUT = std::chrono::milliseconds(20);
 
         static constexpr u16 PACKED_SIZE =
             sizeof(CANdleFrame::DTO_PARSE_ID) + sizeof(u8 /*ACK*/) + sizeof(u8 /*COUNT*/) +
@@ -38,7 +39,8 @@ namespace mab
             UNKNOWN,
             OK,
             READER_TIMEOUT,
-            INVALID_FRAME
+            INVALID_FRAME,
+            FRAME_LOST
         };
 
         /// @brief CFAdapter constructor
@@ -63,12 +65,12 @@ namespace mab
         /// @brief Get packed frame ready to be sent via bus, clears internal buffer for fresh frame
         /// accumulation
         /// @return packed candle frames (Header,ACK placeholder, length, candle frame(s), CRC32)
-        std::vector<u8> getPackedFrame() noexcept;
+        std::pair<std::vector<u8>, std::atomic<u64>> getPackedFrame();
 
         /// @brief  Parse received packed candle frames for the waiting futures
         /// @param packedFrames Received packed candle frames
         /// @return OK on success, error code otherwise
-        Error_t parsePackedFrame(const std::vector<u8>& packedFrames) noexcept;
+        Error_t parsePackedFrame(const std::vector<u8>& packedFrames, std::atomic<u64> idx);
 
         /// @brief Get number of accumulated frames waiting for transfer atomically
         /// @return number of accumulated frames
@@ -76,10 +78,14 @@ namespace mab
 
       private:
         Logger m_log = Logger(Logger::ProgramLayer_E::LAYER_2, "CANDLE_FR_ADAPTER");
-        std::array<std::vector<u8>, FRAME_BUFFER_SIZE> m_responseBuffer;
 
-        std::atomic<u8>           m_count       = 0;
-        std::vector<u8>           m_packedFrame = {CANdleFrame::DTO_PARSE_ID, 0x1, 0x0};
+        std::atomic<u8>  m_count      = 0;
+        std::atomic<u64> m_frameIndex = 0;
+
+        std::unordered_map<u64, std::vector<u8>> m_packedFrames = {
+            std::make_pair<u64, std::vector<u8>>(0, {CANdleFrame::DTO_PARSE_ID, 0x1, 0x0})};
+        std::unordered_map<u64, std::array<std::vector<u8>, FRAME_BUFFER_SIZE>> m_responseBuffer;
+
         std::mutex                m_mutex;
         std::condition_variable   m_cv;
         std::counting_semaphore<> m_sem = std::counting_semaphore<>((ptrdiff_t)FRAME_BUFFER_SIZE);
