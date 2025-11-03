@@ -52,6 +52,8 @@ namespace mab
         auto responseIt = m_responseBuffer.find(thisFrameIdx);
         if (responseIt == m_responseBuffer.end())
         {
+            m_log.warn("Frame has timed-out! It will never be received!");
+            m_log.debug("Frames in the buffer %u", m_responseBuffer.size());
             return std::make_pair<std::vector<u8>, Error_t>(std::vector<u8>(), Error_t::FRAME_LOST);
         }
         return std::make_pair<std::vector<u8>, Error_t>(
@@ -69,8 +71,10 @@ namespace mab
             m_log.warn("Expected frame is empty!");
         }
 
-        std::vector<u8> packedFrame  = m_packedFrames[m_frameIndex++];
-        u8              count        = m_count;
+        m_log.debug("Sending frame with idx: %u", m_frameIndex.load());
+        std::vector<u8> packedFrame = m_packedFrames[m_frameIndex];
+        m_packedFrames.erase(m_frameIndex++);
+        u8 count                     = m_count;
         m_count                      = 0;
         m_packedFrames[m_frameIndex] = std::vector<u8>({CANdleFrame::DTO_PARSE_ID, 0x1, 0x0});
         m_sem.release(count);
@@ -148,10 +152,11 @@ namespace mab
                 m_cv.notify_all();
                 return Error_t::INVALID_FRAME;
             }
+            m_log.debug("Parsing bus frame %u with CAN frame %u", idx.load(), subidx + 1);
             m_responseBuffer[idx][subidx].insert(
                 m_responseBuffer[idx][subidx].begin(), cf.data(), cf.data() + cf.length());
+            m_cv.notify_one();
         }
-        m_cv.notify_all();
         return Error_t::OK;
     }
 
