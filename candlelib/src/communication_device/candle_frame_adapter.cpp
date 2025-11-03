@@ -7,13 +7,13 @@ namespace mab
     std::pair<std::vector<u8>, CANdleFrameAdapter::Error_t> CANdleFrameAdapter::accumulateFrame(
         const canId_t canId, const std::vector<u8>& data, const u16 timeout100us)
     {
-        // Wait for the buffer to be available
-        auto success = m_sem.try_acquire_for(std::chrono::milliseconds(READER_TIMEOUT));
-        if (!success)
-        {
-            m_log.error("Frame accumulation timed out! Reader thread might be malfunctioning!");
-            return std::make_pair<std::vector<u8>, Error_t>({}, Error_t::READER_TIMEOUT);
-        }
+        // // Wait for the buffer to be available
+        // auto success = m_sem.try_acquire_for(std::chrono::milliseconds(READER_TIMEOUT));
+        // if (!success)
+        // {
+        //     m_log.error("Frame accumulation timed out! Reader thread might be malfunctioning!");
+        //     return std::make_pair<std::vector<u8>, Error_t>({}, Error_t::READER_TIMEOUT);
+        // }
 
         std::unique_lock lock(m_mutex);
         const size_t     seqIdx = m_count++;
@@ -42,8 +42,15 @@ namespace mab
             m_log.warn("No thread to notify to start transfer!");
         }
 
+        // Add notifier if not done for this frame
+        if (m_notifiers.find(thisFrameIdx) == m_notifiers.end())
+        {
+            m_notifiers.try_emplace(thisFrameIdx);
+        }
+
         // Wait for data to be available
-        auto timeout = m_cv.wait_for(lock, std::chrono::milliseconds(READER_TIMEOUT));
+        auto timeout =
+            m_notifiers[thisFrameIdx].wait_for(lock, std::chrono::milliseconds(READER_TIMEOUT));
         if (timeout == std::cv_status::timeout)
         {
             // TODO: add marked for discard frames
@@ -110,14 +117,14 @@ namespace mab
         if (*pfIterator != CANdleFrame::DTO_PARSE_ID)
         {
             m_log.error("Wrong parse ID of CANdle Frames!");
-            m_cv.notify_all();
+            m_notifiers[idx].notify_all();
             return Error_t::INVALID_FRAME;
         }
         pfIterator++;
         if (!*pfIterator /*ACK*/)
         {
             m_log.error("Error inside the CANdle Device!");
-            m_cv.notify_all();
+            m_notifiers[idx].notify_all();
             return Error_t::INVALID_FRAME;
         }
         pfIterator++;
@@ -127,7 +134,7 @@ namespace mab
                 PACKED_SIZE - ((FRAME_BUFFER_SIZE - count) * CANdleFrame::DTO_SIZE))
         {
             m_log.error("Invalid message size!");
-            m_cv.notify_all();
+            m_notifiers[idx].notify_all();
             return Error_t::INVALID_FRAME;
         }
 
@@ -142,7 +149,7 @@ namespace mab
         if (readCRC32 != calculatedCRC32)
         {
             m_log.error("Invalid message checksum! 0x%08x != 0x%08x", readCRC32, calculatedCRC32);
-            m_cv.notify_one();
+            m_notifiers[idx].notify_all();
             return Error_t::INVALID_FRAME;
         }
         pfIterator -= count * CANdleFrame::DTO_SIZE;  // Rollback to the data head
@@ -160,14 +167,14 @@ namespace mab
                             subidx + 1,
                             cf.canId(),
                             cf.length());
-                m_cv.notify_one();
+                m_notifiers[idx].notify_one();
                 return Error_t::INVALID_FRAME;
             }
             m_log.debug("Parsing bus frame %u with CAN frame %u", idx.load(), subidx + 1);
             m_responseBuffer[idx][subidx].insert(
                 m_responseBuffer[idx][subidx].begin(), cf.data(), cf.data() + cf.length());
-            m_cv.notify_one();
         }
+        m_notifiers[idx].notify_all();
         return Error_t::OK;
     }
 

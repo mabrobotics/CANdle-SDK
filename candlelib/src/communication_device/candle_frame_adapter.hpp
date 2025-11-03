@@ -85,9 +85,10 @@ namespace mab
         std::unordered_map<u64, std::vector<u8>> m_packedFrames = {
             std::make_pair<u64, std::vector<u8>>(0, {CANdleFrame::DTO_PARSE_ID, 0x1, 0x0})};
         std::unordered_map<u64, std::array<std::vector<u8>, FRAME_BUFFER_SIZE>> m_responseBuffer;
+        std::unordered_map<u64, std::condition_variable>                        m_notifiers;
 
-        std::mutex                m_mutex;
-        std::condition_variable   m_cv;
+        std::mutex m_mutex;
+        // std::condition_variable   m_cv;
         std::counting_semaphore<> m_sem = std::counting_semaphore<>((ptrdiff_t)FRAME_BUFFER_SIZE);
 
         const std::weak_ptr<std::function<void(void)>> m_requestTransfer;
