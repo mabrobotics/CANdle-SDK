@@ -7,13 +7,13 @@ namespace mab
     std::pair<std::vector<u8>, CANdleFrameAdapter::Error_t> CANdleFrameAdapter::accumulateFrame(
         const canId_t canId, const std::vector<u8>& data, const u16 timeout100us)
     {
-        // // Wait for the buffer to be available
-        // auto success = m_sem.try_acquire_for(std::chrono::milliseconds(READER_TIMEOUT));
-        // if (!success)
-        // {
-        //     m_log.error("Frame accumulation timed out! Reader thread might be malfunctioning!");
-        //     return std::make_pair<std::vector<u8>, Error_t>({}, Error_t::READER_TIMEOUT);
-        // }
+        // Wait for the buffer to be available
+        auto success = m_sem.try_acquire_for(std::chrono::milliseconds(READER_TIMEOUT));
+        if (!success)
+        {
+            m_log.error("Frame accumulation timed out! Reader thread might be malfunctioning!");
+            return std::make_pair<std::vector<u8>, Error_t>({}, Error_t::READER_TIMEOUT);
+        }
 
         std::unique_lock lock(m_mutex);
         const size_t     seqIdx = m_count++;
