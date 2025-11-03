@@ -46,6 +46,7 @@ namespace mab
         auto timeout = m_cv.wait_for(lock, std::chrono::milliseconds(READER_TIMEOUT));
         if (timeout == std::cv_status::timeout)
         {
+            // TODO: add marked for discard frames
             m_log.error("Frame accumulation timed out! Writer thread might be malfunctioning!");
             return std::make_pair<std::vector<u8>, Error_t>({}, Error_t::READER_TIMEOUT);
         }
@@ -56,8 +57,18 @@ namespace mab
             m_log.debug("Frames in the buffer %u", m_responseBuffer.size());
             return std::make_pair<std::vector<u8>, Error_t>(std::vector<u8>(), Error_t::FRAME_LOST);
         }
-        return std::make_pair<std::vector<u8>, Error_t>(
-            std::vector(m_responseBuffer[thisFrameIdx][seqIdx]), Error_t::OK);
+
+        auto buff = m_responseBuffer[thisFrameIdx][seqIdx];
+        m_responseBuffer[thisFrameIdx][seqIdx].clear();
+        bool shouldDelete = true;
+        for (auto responseCANFrames : m_responseBuffer[thisFrameIdx])
+        {
+            if (!responseCANFrames.empty())
+                shouldDelete = false;
+        }
+        if (shouldDelete)
+            m_responseBuffer.erase(thisFrameIdx);
+        return std::make_pair<std::vector<u8>, Error_t>(std::vector(std::move(buff)), Error_t::OK);
     }
 
     std::pair<std::vector<u8>, std::atomic<u64>> CANdleFrameAdapter::getPackedFrame()
@@ -131,7 +142,7 @@ namespace mab
         if (readCRC32 != calculatedCRC32)
         {
             m_log.error("Invalid message checksum! 0x%08x != 0x%08x", readCRC32, calculatedCRC32);
-            m_cv.notify_all();
+            m_cv.notify_one();
             return Error_t::INVALID_FRAME;
         }
         pfIterator -= count * CANdleFrame::DTO_SIZE;  // Rollback to the data head
@@ -142,14 +153,14 @@ namespace mab
             cf.deserialize((void*)&(*pfIterator));
             pfIterator += CANdleFrame::DTO_SIZE;
             size_t subidx = cf.sequenceNo() - 1;
-            if (!cf.isValid() || idx > FRAME_BUFFER_SIZE - 1)
+            if (!cf.isValid() || subidx > FRAME_BUFFER_SIZE - 1)
             {
                 m_log.error("CANdle frame %u is not valid! Index = %u, Can ID = %u, Length = %u",
                             count,
-                            subidx,
+                            subidx + 1,
                             cf.canId(),
                             cf.length());
-                m_cv.notify_all();
+                m_cv.notify_one();
                 return Error_t::INVALID_FRAME;
             }
             m_log.debug("Parsing bus frame %u with CAN frame %u", idx.load(), subidx + 1);
