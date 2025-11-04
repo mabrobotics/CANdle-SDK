@@ -14,6 +14,7 @@
 #include <condition_variable>
 #include <chrono>
 #include <thread>
+#include <vector>
 #include <unordered_map>
 
 namespace mab

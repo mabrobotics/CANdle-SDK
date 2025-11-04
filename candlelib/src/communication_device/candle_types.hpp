@@ -1,6 +1,7 @@
 #pragma once
 
 #include "mab_types.hpp"
+#include <vector>
 
 #ifdef WIN32
 #include <windows.h>
