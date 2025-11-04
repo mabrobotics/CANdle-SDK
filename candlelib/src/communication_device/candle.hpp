@@ -123,7 +123,7 @@ namespace mab
 
       private:
         static constexpr std::chrono::milliseconds DEFAULT_CONFIGURATION_TIMEOUT =
-            std::chrono::milliseconds(20);
+            std::chrono::milliseconds(5);
 
         Logger m_log = Logger(Logger::ProgramLayer_E::TOP, "CANDLE");
 

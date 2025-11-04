@@ -239,6 +239,8 @@ namespace mab
         bool setSerializedRegister(std::vector<u8>& data)
         {
             // Frame layout <8bits per chunk> [LSB address, MSB address, Payload ...]
+            if (data.size() < getSerializedSize() || data.data() == nullptr)
+                return false;
             u16 addressFromSerial = 0;
             std::memcpy(&addressFromSerial, data.data(), sizeof(m_regAddress));
             if (addressFromSerial == m_regAddress)
@@ -329,6 +331,8 @@ namespace mab
         bool setSerializedRegister(std::vector<u8>& data)
         {
             // Frame layout <8bits per chunk> [LSB address, MSB address, Payload ...]
+            if (data.size() < getSerializedSize())
+                return false;
             u16 addressFromSerial = 0;
             std::memcpy(&addressFromSerial, data.data(), sizeof(m_regAddress));
             if (addressFromSerial == m_regAddress)

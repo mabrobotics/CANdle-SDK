@@ -155,10 +155,14 @@ namespace mab
                         m_log.error("Candle transfer failed!");
                         break;
                     }
-                    if (m_cfAdapter.parsePackedFrame(packedFrame, frameIdx) !=
-                        CANdleFrameAdapter::Error_t::OK)
+                    auto err = m_cfAdapter.parsePackedFrame(packedFrame, frameIdx);
+                    if (err != CANdleFrameAdapter::Error_t::OK)
                     {
                         m_log.error("CF transfer parsing failed!");
+                        if (err == CANdleFrameAdapter::Error_t::INVALID_CANDLE_FRAME)
+                        {
+                            m_log.error("CAN frame did not get a response!");
+                        }
                         break;
                     }
                 }

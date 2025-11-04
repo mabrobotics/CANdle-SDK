@@ -39,8 +39,9 @@ namespace mab
             UNKNOWN,
             OK,
             READER_TIMEOUT,
-            INVALID_FRAME,
-            FRAME_LOST
+            INVALID_BUS_FRAME,
+            FRAME_LOST,
+            INVALID_CANDLE_FRAME
         };
 
         /// @brief CFAdapter constructor
