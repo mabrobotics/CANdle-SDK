@@ -386,7 +386,8 @@ namespace mab
                     -> std::pair<Error_t, std::tuple<MDRegisterEntry_S<T>&...>>
                 {
                     auto readRegResult = readRegResultFuture.get();
-                    if (readRegResult.second != CANdleFrameAdapter::Error_t::OK)
+                    if (readRegResult.second != CANdleFrameAdapter::Error_t::OK ||
+                        readRegResult.first.empty())
                     {
                         return std::make_pair(Error_t::TRANSFER_FAILED, regs);
                     }
