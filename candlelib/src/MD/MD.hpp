@@ -362,8 +362,16 @@ namespace mab
         }
 
         template <class... T>
-        inline std::future<std::pair<Error_t, std::tuple<MDRegisterEntry_S<T>&...>>>
-        readRegistersAsync(std::tuple<MDRegisterEntry_S<T>&...>& regs)
+        inline std::future<Error_t> readRegistersAsync(MDRegisterEntry_S<T>&... regs)
+        {
+            auto regTuple =
+                std::tuple<MDRegisterEntry_S<T>&...>(std::forward<MDRegisterEntry_S<T>&>(regs)...);
+            auto resultPair = readRegistersAsync(std::move(regTuple));
+            return resultPair;
+        }
+
+        template <class... T>
+        inline std::future<Error_t> readRegistersAsync(std::tuple<MDRegisterEntry_S<T>&...> regs)
         {
             m_log.debug("Submitting register read frame...");
 
@@ -381,26 +389,29 @@ namespace mab
                 m_candle->transferCANFrameAsync(m_canId, frame, frame.size());
             return std::async(
                 std::launch::deferred,
-                [&regs](std::future<std::pair<std::vector<u8>, CANdleFrameAdapter::Error_t>>
-                            readRegResultFuture)
-                    -> std::pair<Error_t, std::tuple<MDRegisterEntry_S<T>&...>>
+                [](std::future<std::pair<std::vector<u8>, CANdleFrameAdapter::Error_t>>
+                        readRegResultFuture,
+                   auto regs) -> Error_t
                 {
                     auto readRegResult = readRegResultFuture.get();
                     if (readRegResult.second != CANdleFrameAdapter::Error_t::OK ||
-                        readRegResult.first.empty())
+                        readRegResult.first.size() < 3)
                     {
-                        return std::make_pair(Error_t::TRANSFER_FAILED, regs);
+                        return Error_t::TRANSFER_FAILED;
                     }
                     readRegResult.first.erase(readRegResult.first.begin(),
                                               readRegResult.first.begin() + 2);
-                    bool deserializeFailed = deserializeMDRegisters(readRegResult.first, regs);
+                    bool deserializeFailed = deserializeMDRegisters(
+                        readRegResult.first,
+                        std::forward<std::tuple<MDRegisterEntry_S<T>&...>&>(regs));
                     if (deserializeFailed)
                     {
-                        return std::make_pair(Error_t::TRANSFER_FAILED, regs);
+                        return Error_t::TRANSFER_FAILED;
                     }
-                    return std::make_pair(Error_t::OK, regs);
+                    return Error_t::OK;
                 },
-                std::move(readRegResultFuture));
+                std::move(readRegResultFuture),
+                std::move(regs));
         }
 
         /// @brief Write registers to MD memory
