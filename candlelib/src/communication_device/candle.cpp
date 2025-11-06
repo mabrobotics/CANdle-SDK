@@ -11,7 +11,8 @@ namespace mab
     Candle::~Candle()
     {
         m_cfTransferThread.request_stop();
-        m_cfTransferThread.join();
+        if (m_cfTransferThread.joinable())
+            m_cfTransferThread.join();
         m_log.debug("Deconstructing Candle, do not reuse any handles provided by it!\n");
         m_bus->disconnect();
         m_bus = nullptr;
