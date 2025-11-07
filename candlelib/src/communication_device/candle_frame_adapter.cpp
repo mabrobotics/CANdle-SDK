@@ -168,11 +168,11 @@ namespace mab
             pfIterator += CANdleFrame::DTO_SIZE;
             if (!cf.isValid() || cf.sequenceNo() > FRAME_BUFFER_SIZE)
             {
-                m_log.error("CANdle frame %u is not valid! Index = %u, Can ID = %u, Length = %u",
-                            count,
-                            cf.sequenceNo(),
-                            cf.canId(),
-                            cf.length());
+                m_log.warn("CANdle frame %u is not valid! Index = %u, Can ID = %u, Length = %u",
+                           count,
+                           cf.sequenceNo(),
+                           cf.canId(),
+                           cf.length());
                 err = Error_t::INVALID_CANDLE_FRAME;
                 continue;
             }
@@ -182,12 +182,30 @@ namespace mab
                 m_responseBuffer[idx][subidx].begin(), cf.data(), cf.data() + cf.length());
         }
         m_notifiers[idx].notify_all();
+
+        m_log.debug("Memory state data:");
+        m_log.debug("Packed frames size: %u ; Responses size: %u ; Notifiers size: %u",
+                    m_packedFrames.size(),
+                    m_responseBuffer.size(),
+                    m_notifiers.size());
+
+        if (idx % DEPRECATION_FRAME_COUNT == 0)
+        {
+            std::vector<u64> toDelete;
+            for (const auto& [idx, _] : m_responseBuffer)
+            {
+                if (idx + DEPRECATION_FRAME_COUNT < m_frameIndex)
+                {
+                    toDelete.push_back(idx);
+                }
+            }
+            for (const auto& idx : toDelete)
+            {
+                m_log.debug("Cleaning up buffer with idx: %u", idx);
+                m_responseBuffer.erase(idx);
+                m_notifiers.erase(idx);
+            }
+        }
         return err;
     }
-
-    u8 CANdleFrameAdapter::getCount() const noexcept
-    {
-        return m_count;
-    }
-
 }  // namespace mab

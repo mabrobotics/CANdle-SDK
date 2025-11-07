@@ -29,6 +29,9 @@ namespace mab
             512;  // Full-speed USB max bulk transfer size for libusb
         static constexpr std::chrono::duration READER_TIMEOUT = std::chrono::milliseconds(20);
 
+        static constexpr size_t DEPRECATION_FRAME_COUNT =
+            500;  // Frames older than this will be deleted
+
         static constexpr u16 PACKED_SIZE =
             sizeof(CANdleFrame::DTO_PARSE_ID) + sizeof(u8 /*ACK*/) + sizeof(u8 /*COUNT*/) +
             CANdleFrame::DTO_SIZE * FRAME_BUFFER_SIZE + sizeof(u32 /*CRC32*/);
@@ -76,7 +79,10 @@ namespace mab
 
         /// @brief Get number of accumulated frames waiting for transfer atomically
         /// @return number of accumulated frames
-        u8 getCount() const noexcept;
+        inline u8 getCount() const noexcept
+        {
+            return m_count;
+        }
 
       private:
         Logger m_log = Logger(Logger::ProgramLayer_E::LAYER_2, "CANDLE_FR_ADAPTER");
