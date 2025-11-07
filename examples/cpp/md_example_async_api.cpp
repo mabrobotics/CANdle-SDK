@@ -46,18 +46,18 @@ int main()
 
     for (size_t i = 0; i < 1000; i++)
     {
-        std::future<mab::MD::Error_t> promises[DRIVE_NO];
+        std::future<mab::MD::Error_t> MDRequests[DRIVE_NO];
         // Send read/write requests to all the drives
         for (size_t driveNo = 0; driveNo < DRIVE_NO; driveNo++)
         {
-            promises[driveNo] = mds[driveNo].writeRegistersAsync(regArr[driveNo].runBlink = 1);
-            promises[driveNo] = mds[driveNo].readRegistersAsync(regArr[driveNo].mainEncoderPosition,
-                                                                regArr[driveNo].mosfetTemperature);
+            MDRequests[driveNo] = mds[driveNo].writeRegistersAsync(regArr[driveNo].runBlink = 1);
+            MDRequests[driveNo] = mds[driveNo].readRegistersAsync(
+                regArr[driveNo].mainEncoderPosition, regArr[driveNo].mosfetTemperature);
         }
         // Insert requested data into the provided register buffers
         for (size_t driveNo = 0; driveNo < DRIVE_NO; driveNo++)
         {
-            auto err = promises[driveNo].get();
+            auto err = MDRequests[driveNo].get();
             log.info("Pos %u: %.6f rad; Temp: %f deg C; Err: %u",
                      driveNo,
                      regArr[driveNo].mainEncoderPosition.value,
