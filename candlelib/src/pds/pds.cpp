@@ -397,45 +397,44 @@ namespace mab
         }
     }
 
-    const std::vector<canId_t> Pds::discoverPDS(Candle* candle)
+    const std::vector<canIdAndRate> Pds::discoverPDS(mab::candleTypes::busTypes_t busType)
     {
-        constexpr canId_t MIN_VAILID_ID = 10;     // ids less than that are reserved for special
-        constexpr canId_t MAX_VAILID_ID = 0x7FF;  // 11-bit value (standard can ID max)
+        constexpr canId_t MIN_VALID_ID = 10;     // ids less than that are reserved for special
+        constexpr canId_t MAX_VALID_ID = 0x7FF;  // 11-bit value (standard can ID max)
 
-        Logger               log(Logger::ProgramLayer_E::TOP, "PDS_DISCOVERY");
-        std::vector<canId_t> ids;
+        Logger                    log(Logger::ProgramLayer_E::TOP, "PDS_DISCOVERY");
+        std::vector<canIdAndRate> ids;
 
-        if (candle == nullptr)
-        {
-            log.error("Candle is empty!");
-            return std::vector<canId_t>();
-        }
-
+        constexpr std::array<CANdleDatarate_E, 4> values = {CANdleDatarate_E::CAN_DATARATE_1M,
+                                                            CANdleDatarate_E::CAN_DATARATE_2M,
+                                                            CANdleDatarate_E::CAN_DATARATE_5M,
+                                                            CANdleDatarate_E::CAN_DATARATE_8M};
         log.info("Looking for PDS");
-        pdsFwMetadata_S ver;
 
-        for (canId_t id = MIN_VAILID_ID; id < MAX_VAILID_ID; id++)
+        for (size_t i = 0; i < values.size(); i++)
         {
-            log.debug("Trying to bind PDS with id %d", id);
-            log.progress(float(id) / float(MAX_VAILID_ID));
-            // workaround for ping error spam
-            Logger::Verbosity_E prevVerbosity =
-                Logger::g_m_verbosity.value_or(Logger::Verbosity_E::VERBOSITY_1);
-            Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
-            Pds pds(id, candle);
-            if (pds.getFwMetadata(ver) == Pds::error_E::OK)
-                ids.push_back(id);
+            auto candle = attachCandle(values[i], busType);
 
-            Logger::g_m_verbosity = prevVerbosity;
-        }
-        for (canId_t id : ids)
-        {
-            log.info("Discovered PDS device with ID: %d", id);
-        }
-        if (ids.size() > 0)
-            return ids;
+            pdsFwMetadata_S ver;
 
-        log.warn("Have not found any PDS devices on the CAN bus!");
+            for (canId_t id = MIN_VALID_ID; id <= MAX_VALID_ID; id++)
+            {
+                log.debug("Trying to bind PDS with id %d", id);
+
+                log.progress(float(id) / float(MAX_VALID_ID) / 4.0f +
+                             (float(i) * float(MAX_VALID_ID) / 4.0f) / MAX_VALID_ID);
+                // workaround for ping error spam
+                Logger::Verbosity_E prevVerbosity =
+                    Logger::g_m_verbosity.value_or(Logger::Verbosity_E::VERBOSITY_1);
+                Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
+                Pds pds(id, candle);
+                if (pds.getFwMetadata(ver) == Pds::error_E::OK)
+                    ids.push_back({id, values[i]});
+
+                Logger::g_m_verbosity = prevVerbosity;
+            }
+            delete candle;
+        }
         return ids;
     }
 

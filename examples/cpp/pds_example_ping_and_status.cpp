@@ -21,7 +21,7 @@ int main()
     m_log.m_layer = Logger::ProgramLayer_E::TOP;
 
     auto candle    = attachCandle(CANdleDatarate_E::CAN_DATARATE_1M, candleTypes::busTypes_t::USB);
-    auto findPdses = Pds::discoverPDS(candle);
+    auto findPdses = Pds::discoverPDS(candleTypes::busTypes_t::USB);
 
     if (findPdses.size() == 0)
     {
@@ -29,7 +29,7 @@ int main()
         return EXIT_FAILURE;
     }
 
-    Pds pds(findPdses[0], candle);
+    Pds pds(findPdses[0].id, candle);
 
     pds.init();
 
@@ -128,6 +128,8 @@ int main()
     m_log.info("---------------------------------");
     m_log.info("Metrology data:");
     m_log.info("Bus voltage: %0.2f V", pdsBusVoltage / 1000.0f);
+
+    detachCandle(candle);
 
     return EXIT_SUCCESS;
 }
