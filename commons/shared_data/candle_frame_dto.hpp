@@ -23,8 +23,8 @@ namespace mab
         CANdleFrameDTO frameDTO = {0};
 
       public:
-        static constexpr u8     DTO_PARSE_ID    = 0x0F;
-        static constexpr u8     DATA_MAX_LENGTH = 0x40;
+        static constexpr u8     DTO_PARSE_ID    = 15;
+        static constexpr u8     DATA_MAX_LENGTH = 64;
         static constexpr size_t DTO_SIZE =
             sizeof(CANdleFrameDTO::canId) + sizeof(CANdleFrameDTO::timeout) +
             sizeof(CANdleFrameDTO::length) + sizeof(CANdleFrameDTO::sequenceNumber) +
