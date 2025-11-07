@@ -361,6 +361,12 @@ namespace mab
             return Error_t::OK;
         }
 
+        /// @brief Request read of registers from the memory of the MD asynchronously (up to 64
+        /// bytes per request)
+        /// @tparam ...T Type of registers
+        /// @param ...regs Register requests to be read (they will be overwritten by read)
+        /// @return Future with error type on failure. Getting the future will ensure overwriting
+        /// the read registers with requested data.
         template <class... T>
         inline std::future<Error_t> readRegistersAsync(MDRegisterEntry_S<T>&... regs)
         {
@@ -370,6 +376,12 @@ namespace mab
             return resultPair;
         }
 
+        /// @brief Request read of registers from the memory of the MD asynchronously (up to 64
+        /// bytes per request)
+        /// @tparam ...T Type of registers
+        /// @param ...regs Register requests to be read (they will be overwritten by read)
+        /// @return Future with error type on failure. Getting the future will ensure overwriting
+        /// the read registers with requested data.
         template <class... T>
         inline std::future<Error_t> readRegistersAsync(std::tuple<MDRegisterEntry_S<T>&...> regs)
         {
@@ -479,6 +491,12 @@ namespace mab
             }
         }
 
+        /// @brief Write registers to MD memory asynchronously (up to 64 bytes per request)
+        /// @tparam ...T Register entry underlying type (should be deducible)
+        /// @param ...regs Registry references to be overwritten by data in the MD.
+        /// @return Future with error on failure. Getting the future will ensure data has been
+        /// written. It is required to check the return value of the future to ensure proper
+        /// CANdle-SDK operation.
         template <class... T>
         inline std::future<Error_t> writeRegistersAsync(MDRegisterEntry_S<T>&... regs)
         {
