@@ -74,7 +74,11 @@ namespace mab
                 shouldDelete = false;
         }
         if (shouldDelete)
+        {
+            m_log.debug("Deleting used buffer!");
             m_responseBuffer.erase(thisFrameIdx);
+            m_notifiers.erase(thisFrameIdx);
+        }
         return std::make_pair<std::vector<u8>, Error_t>(std::vector(std::move(buff)), Error_t::OK);
     }
 
