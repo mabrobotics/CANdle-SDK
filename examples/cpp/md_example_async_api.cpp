@@ -1,9 +1,15 @@
+/// @file md_example_async_api.cpp
+/// @brief Example of using asynchronous API for MD drives. This API is designated for advanced
+/// users that want to achieve low-latency when using multiple drives on the CAN bus. The API is
+/// prepared to handle multiple frame requests in parallel but it can be overloaded if too many
+/// requests are made without waiting for the promises (at about 30 requests at once this issue may
+/// start to manifest) and the frames might get lost so it is recommended to check the return values
+/// of the asynchronous functions in order to verify that the frames were properly sent and
+/// received, as well as calling .get() on promises after <30 requests have been made.
+
 #include "candlelib.hpp"
 
 #include <array>
-#include <type_traits>
-#include <chrono>
-#include <cmath>
 
 using namespace mab;
 
