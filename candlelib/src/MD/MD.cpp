@@ -282,6 +282,30 @@ namespace mab
         return MD::Error_t::OK;
     }
 
+    MD::Error_t MD::setProfileDeceleration(float profileDeceleration /*s^-2*/)
+    {
+        m_mdRegisters.profileDeceleration = profileDeceleration;
+        if (writeRegisters(m_mdRegisters.profileDeceleration) != MD::Error_t::OK)
+        {
+            m_log.error("Profile deceleration setting failed!");
+            return MD::Error_t::TRANSFER_FAILED;
+        }
+        m_log.info("Profile deceleration set to value %.2f", profileDeceleration);
+        return MD::Error_t::OK;
+    }
+
+    MD::Error_t MD::setPositionWindow(float windowSize /*rad*/)
+    {
+        m_mdRegisters.positionWindow = windowSize;
+        if (writeRegisters(m_mdRegisters.positionWindow) != MD::Error_t::OK)
+        {
+            m_log.error("Position window setting failed!");
+            return MD::Error_t::TRANSFER_FAILED;
+        }
+        m_log.info("Position window set to value %.2f", windowSize);
+        return MD::Error_t::OK;
+    }
+
     MD::Error_t MD::setTargetPosition(float position /*rad*/)
     {
         m_mdRegisters.targetPosition = position;
