@@ -638,6 +638,12 @@ PYBIND11_MODULE(pyCandle, m)
              &mab::MD::setProfileAcceleration,
              py::arg("profileAcceleration"),
              "Set the target profile acceleration when performing profile movement.")
+        .def("setProfileDeceleration",
+             &mab::MD::setProfileDeceleration,
+             "Set the target profile deceleration when performing profile movement.")
+        .def("setPositionWindow",
+             &mab::MD::setPositionWindow,
+             "Set the the symmetrical position window at which position reached flag is raised.")
         .def("setTargetPosition",
              &mab::MD::setTargetPosition,
              py::arg("position"),
