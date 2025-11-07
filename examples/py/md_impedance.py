@@ -5,7 +5,7 @@ import time
 # pc.logVerbosity(pc.Verbosity_E.VERBOSITY_3)
 
 # Initialize CANdle on the USB bus (SPI bus not supported yet)
-candle = pc.attachCandle(pc.CANdleBaudrate_E.CAN_BAUD_1M, pc.busTypes_t.USB)
+candle = pc.attachCandle(pc.CANdleDatarate_E.CAN_DATARATE_1M, pc.busTypes_t.USB)
 
 # Create virual MD representation
 md = pc.MD(100, candle)
@@ -32,7 +32,7 @@ if err == pc.MD_Error_t.OK:
         t = i * 0.05
         # Set desired position
         md.setTargetPosition(t)
-        if (i % 2 == 0):
+        if i % 2 == 0:
             # Recieve achieved position
             pos, err = md.getPosition()
 
@@ -40,7 +40,8 @@ if err == pc.MD_Error_t.OK:
             torque = pc.readRegisterFloat(md, "motorTorque")[0]
             print(f"Exerting torque: {round(torque,2)} Nm")
             print(
-                f"Position: {round(pos,2)}, Target position: {round(t,2)} Error: {err}")
+                f"Position: {round(pos,2)}, Target position: {round(t,2)} Error: {err}"
+            )
 
         # Sleep less than wdg timer
         time.sleep(0.02)
