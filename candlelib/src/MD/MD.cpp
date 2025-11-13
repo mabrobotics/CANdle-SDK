@@ -5,9 +5,10 @@ namespace mab
 
     MD::Error_t MD::init()
     {
-        // TODO: add new hw struct support CS-36
-        //  m_mdRegisters.hardwareType.value.deviceType = deviceType_E::UNKNOWN_DEVICE;
-        //  auto mfDataResult                           = readRegister(m_mdRegisters.hardwareType);
+        // TODO: add call std::call_once for deferring initialization
+        //  TODO: add new hw struct support CS-36
+        //   m_mdRegisters.hardwareType.value.deviceType = deviceType_E::UNKNOWN_DEVICE;
+        //   auto mfDataResult                           = readRegister(m_mdRegisters.hardwareType);
 
         // if (mfDataresult == Error_t::OK)
         // {
@@ -18,6 +19,18 @@ namespace mab
         //     if (devType != deviceType_E::UNKNOWN_DEVICE)
         //         return Error_t::OK;
         // }
+        auto candleVersionOpt = m_candle->getCandleVersion();
+
+        if (!candleVersionOpt.has_value())
+            m_log.error("Could not read candle version!");
+        else if (candleVersionOpt.value().s.major < 2 ||
+                 (candleVersionOpt.value().s.major == 2 && candleVersionOpt.value().s.minor < 4))
+        {
+            m_log.error(
+                "You are using old CANdle firmware version. This firmware version will not work "
+                "with asynchronous API!");
+        }
+
         m_mdRegisters.legacyHardwareVersion = 0;
 
         auto mfLegacydataResult = readRegister(m_mdRegisters.legacyHardwareVersion);

@@ -11,7 +11,7 @@ namespace mab
         auto success = m_sem.try_acquire_for(std::chrono::milliseconds(READER_TIMEOUT));
         if (!success)
         {
-            m_log.error("Frame accumulation timed out! Reader thread might be malfunctioning!");
+            m_log.error("Frame timed out! CANdle is overloaded!");
             return std::make_pair<std::vector<u8>, Error_t>({}, Error_t::READER_TIMEOUT);
         }
 
@@ -25,10 +25,12 @@ namespace mab
         if (cf.addData(data.data(), data.size()) != CANdleFrame::Error_t::OK)
         {
             m_log.error("Could not generate CANdle Frame!");
-            return std::make_pair<std::vector<u8>, Error_t>({}, Error_t::INVALID_FRAME);
+            return std::make_pair<std::vector<u8>, Error_t>({}, Error_t::INVALID_BUS_FRAME);
         }
         cf.serialize(buf);
-        m_packedFrame.insert(m_packedFrame.end(), buf, buf + cf.DTO_SIZE);
+        u64 thisFrameIdx = m_frameIndex;
+        m_packedFrames[m_frameIndex].insert(
+            m_packedFrames[m_frameIndex].end(), buf, buf + cf.DTO_SIZE);
 
         // Notify host object that the reader must run
         if (auto func = m_requestTransfer.lock())
@@ -40,29 +42,66 @@ namespace mab
             m_log.warn("No thread to notify to start transfer!");
         }
 
+        // Add notifier if not done for this frame
+        if (m_notifiers.find(thisFrameIdx) == m_notifiers.end())
+        {
+            m_notifiers.try_emplace(thisFrameIdx);
+        }
+
         // Wait for data to be available
-        auto timeout = m_cv.wait_for(lock, std::chrono::milliseconds(READER_TIMEOUT));
+        auto timeout =
+            m_notifiers[thisFrameIdx].wait_for(lock, std::chrono::milliseconds(READER_TIMEOUT));
         if (timeout == std::cv_status::timeout)
         {
-            m_log.error("Frame accumulation timed out! Writer thread might be malfunctioning!");
+            // TODO: add marked for discard frames
+            m_log.error("Frame writer timed out! Frame was lost");
             return std::make_pair<std::vector<u8>, Error_t>({}, Error_t::READER_TIMEOUT);
         }
-        return std::make_pair<std::vector<u8>, Error_t>(std::vector(m_responseBuffer[seqIdx]),
-                                                        Error_t::OK);
+        auto responseIt = m_responseBuffer.find(thisFrameIdx);
+        if (responseIt == m_responseBuffer.end())
+        {
+            m_log.warn("Frame has timed-out! It will never be received!");
+            m_log.debug("Frames in the buffer %u", m_responseBuffer.size());
+            return std::make_pair<std::vector<u8>, Error_t>(std::vector<u8>(), Error_t::FRAME_LOST);
+        }
+
+        auto buff = m_responseBuffer[thisFrameIdx][seqIdx];
+        m_responseBuffer[thisFrameIdx][seqIdx].clear();
+        bool shouldDelete = true;
+        for (auto responseCANFrames : m_responseBuffer[thisFrameIdx])
+        {
+            if (!responseCANFrames.empty())
+                shouldDelete = false;
+        }
+        if (shouldDelete)
+        {
+            m_log.debug("Deleting used buffer!");
+            m_responseBuffer.erase(thisFrameIdx);
+            m_notifiers.erase(thisFrameIdx);
+        }
+        return std::make_pair<std::vector<u8>, Error_t>(std::vector(std::move(buff)), Error_t::OK);
     }
 
-    std::vector<u8> CANdleFrameAdapter::getPackedFrame() noexcept
+    std::pair<std::vector<u8>, std::atomic<u64>> CANdleFrameAdapter::getPackedFrame()
     {
         std::unique_lock lock(m_mutex);
 
-        std::vector<u8> packedFrame = m_packedFrame;
-        u8              count       = m_count;
-        m_count                     = 0;
-        m_packedFrame.clear();
-        m_packedFrame.push_back(CANdleFrame::DTO_PARSE_ID);
-        m_packedFrame.push_back(0x1 /*ACK*/);
-        m_packedFrame.push_back(0x0 /*Placeholder for count*/);
+        auto m_packedFrameIt = m_packedFrames.find(m_frameIndex);
+
+        if (m_packedFrameIt == m_packedFrames.end())
+        {
+            m_log.warn("Expected frame is empty!");
+        }
+
+        m_log.debug("Sending frame with idx: %u", m_frameIndex.load());
+        std::vector<u8> packedFrame = m_packedFrames[m_frameIndex];
+        m_packedFrames.erase(m_frameIndex++);
+        u8 count                     = m_count;
+        m_count                      = 0;
+        m_packedFrames[m_frameIndex] = std::vector<u8>({CANdleFrame::DTO_PARSE_ID, 0x1, 0x0});
         m_sem.release(count);
+
+        lock.unlock();
 
         auto countIter      = packedFrame.begin() + 2 /*PARSE_ID + ACK*/;
         *countIter          = count;
@@ -71,31 +110,28 @@ namespace mab
         packedFrame.push_back(calculatedCRC32 >> 8);
         packedFrame.push_back(calculatedCRC32 >> 16);
         packedFrame.push_back(calculatedCRC32 >> 24);
-        return packedFrame;
+        return std::make_pair(packedFrame, m_frameIndex - 1);
     }
 
     CANdleFrameAdapter::Error_t CANdleFrameAdapter::parsePackedFrame(
-        const std::vector<u8>& packedFrames) noexcept
+        const std::vector<u8>& packedFrames, std::atomic<u64> idx)
     {
         std::unique_lock lock(m_mutex);
 
-        for (auto& buf : m_responseBuffer)
-        {
-            buf.clear();
-        }
-        auto pfIterator = packedFrames.begin();
+        m_responseBuffer[idx] = std::array<std::vector<u8>, FRAME_BUFFER_SIZE>();
+        auto pfIterator       = packedFrames.begin();
         if (*pfIterator != CANdleFrame::DTO_PARSE_ID)
         {
             m_log.error("Wrong parse ID of CANdle Frames!");
-            m_cv.notify_all();
-            return Error_t::INVALID_FRAME;
+            m_notifiers[idx].notify_all();
+            return Error_t::INVALID_BUS_FRAME;
         }
         pfIterator++;
         if (!*pfIterator /*ACK*/)
         {
             m_log.error("Error inside the CANdle Device!");
-            m_cv.notify_all();
-            return Error_t::INVALID_FRAME;
+            m_notifiers[idx].notify_all();
+            return Error_t::INVALID_BUS_FRAME;
         }
         pfIterator++;
         u8 count = *pfIterator;
@@ -104,8 +140,8 @@ namespace mab
                 PACKED_SIZE - ((FRAME_BUFFER_SIZE - count) * CANdleFrame::DTO_SIZE))
         {
             m_log.error("Invalid message size!");
-            m_cv.notify_all();
-            return Error_t::INVALID_FRAME;
+            m_notifiers[idx].notify_all();
+            return Error_t::INVALID_BUS_FRAME;
         }
 
         pfIterator += count * CANdleFrame::DTO_SIZE + 1;  // Skip to CRC32
@@ -119,37 +155,57 @@ namespace mab
         if (readCRC32 != calculatedCRC32)
         {
             m_log.error("Invalid message checksum! 0x%08x != 0x%08x", readCRC32, calculatedCRC32);
-            m_cv.notify_all();
-            return Error_t::INVALID_FRAME;
+            m_notifiers[idx].notify_all();
+            return Error_t::INVALID_BUS_FRAME;
         }
         pfIterator -= count * CANdleFrame::DTO_SIZE;  // Rollback to the data head
 
+        Error_t err = Error_t::OK;
         for (; count != 0; count--)
         {
             CANdleFrame cf;
             cf.deserialize((void*)&(*pfIterator));
             pfIterator += CANdleFrame::DTO_SIZE;
-            size_t idx = cf.sequenceNo() - 1;
-            if (!cf.isValid() || idx > FRAME_BUFFER_SIZE - 1)
+            if (!cf.isValid() || cf.sequenceNo() > FRAME_BUFFER_SIZE)
             {
-                m_log.error("CANdle frame %u is not valid! Index = %u, Can ID = %u, Length = %u",
-                            count,
-                            idx,
-                            cf.canId(),
-                            cf.length());
-                m_cv.notify_all();
-                return Error_t::INVALID_FRAME;
+                m_log.warn("CANdle frame %u is not valid! Index = %u, Can ID = %u, Length = %u",
+                           count,
+                           cf.sequenceNo(),
+                           cf.canId(),
+                           cf.length());
+                err = Error_t::INVALID_CANDLE_FRAME;
+                continue;
             }
-            m_responseBuffer[idx].insert(
-                m_responseBuffer[idx].begin(), cf.data(), cf.data() + cf.length());
+            size_t subidx = cf.sequenceNo() - 1;
+            m_log.debug("Parsing bus frame %u with CAN frame %u", idx.load(), subidx + 1);
+            m_responseBuffer[idx][subidx].insert(
+                m_responseBuffer[idx][subidx].begin(), cf.data(), cf.data() + cf.length());
         }
-        m_cv.notify_all();
-        return Error_t::OK;
-    }
+        m_notifiers[idx].notify_all();
 
-    u8 CANdleFrameAdapter::getCount() const noexcept
-    {
-        return m_count;
-    }
+        m_log.debug("Memory state data:");
+        m_log.debug("Packed frames size: %u ; Responses size: %u ; Notifiers size: %u",
+                    m_packedFrames.size(),
+                    m_responseBuffer.size(),
+                    m_notifiers.size());
 
+        if (idx % DEPRECATION_FRAME_COUNT == 0)
+        {
+            std::vector<u64> toDelete;
+            for (const auto& [idx, _] : m_responseBuffer)
+            {
+                if (idx + DEPRECATION_FRAME_COUNT < m_frameIndex)
+                {
+                    toDelete.push_back(idx);
+                }
+            }
+            for (const auto& idx : toDelete)
+            {
+                m_log.debug("Cleaning up buffer with idx: %u", idx);
+                m_responseBuffer.erase(idx);
+                m_notifiers.erase(idx);
+            }
+        }
+        return err;
+    }
 }  // namespace mab

@@ -10,6 +10,9 @@ namespace mab
 {
     Candle::~Candle()
     {
+        m_cfTransferThread.request_stop();
+        if (m_cfTransferThread.joinable())
+            m_cfTransferThread.join();
         m_log.debug("Deconstructing Candle, do not reuse any handles provided by it!\n");
         m_bus->disconnect();
         m_bus = nullptr;
@@ -58,6 +61,7 @@ namespace mab
 
     candleTypes::Error_t Candle::init()
     {
+        // TODO: add call std::call_once for deferring initialization
         if (m_bus == nullptr)
         {
             m_log.error("Bus not initialized!");
@@ -104,7 +108,7 @@ namespace mab
         }
         return candleTypes::Error_t::OK;
     }
-    std::optional<version_ut> Candle::getCandleVersion()
+    std::optional<version_ut> Candle::getCandleVersion() const
     {
         auto buffer       = datarateCommandFrame(m_canDatarate, m_useRegularCanFrames);
         auto dataResponse = busTransfer(&buffer, 6);
@@ -136,7 +140,9 @@ namespace mab
                 {
                     if (stopToken.stop_requested())
                         break;
-                    std::vector<u8> packedFrame = m_cfAdapter.getPackedFrame();
+                    std::vector<u8> packedFrame;
+                    u64             frameIdx;
+                    std::tie(packedFrame, frameIdx) = m_cfAdapter.getPackedFrame();
                     if (packedFrame.size() < 4)
                     {
                         m_log.warn("CF transfer packed frame empty!");
@@ -150,10 +156,17 @@ namespace mab
                         m_log.error("Candle transfer failed!");
                         break;
                     }
-                    if (m_cfAdapter.parsePackedFrame(packedFrame) !=
-                        CANdleFrameAdapter::Error_t::OK)
+                    auto err = m_cfAdapter.parsePackedFrame(packedFrame, frameIdx);
+                    if (err != CANdleFrameAdapter::Error_t::OK)
                     {
-                        m_log.error("CF transfer parsing failed!");
+                        if (err == CANdleFrameAdapter::Error_t::INVALID_CANDLE_FRAME)
+                        {
+                            m_log.warn("CAN frame did not get a response!");
+                        }
+                        else
+                        {
+                            m_log.error("CF transfer parsing failed!");
+                        }
                         break;
                     }
                 }
@@ -181,6 +194,7 @@ namespace mab
             m_log.error("Data empty!");
             return candleTypes::Error_t::DATA_EMPTY;
         }
+        // frameDump(*data);
 
         if (responseLength == 0)
         {
@@ -200,6 +214,7 @@ namespace mab
             if (result.second)
                 return candleTypes::Error_t::UNKNOWN_ERROR;
         }
+        // frameDump(*data);
 
         return candleTypes::Error_t::OK;
     }
