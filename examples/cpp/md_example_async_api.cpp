@@ -17,9 +17,10 @@ int main()
 {
     Logger log(Logger::ProgramLayer_E::TOP, "User Program");
 
-    // Create and open communication with candle (using unique_ptr releases the user from the need
-    // for detach candle at the end)
+    // Create and open communication with candle
     auto candle = mab::attachCandle(mab::CAN_DATARATE_1M, mab::candleTypes::busTypes_t::USB);
+    // This is an optional step. Using unique_ptr releases the user from the need
+    // for calling detachCandle at the end.
     std::unique_ptr<mab::Candle> uniqueCandle = std::unique_ptr<mab::Candle>(std::move(candle));
 
     // Enter your MDs here

@@ -29,6 +29,10 @@ namespace mab
             m_log.error(
                 "You are using old CANdle firmware version. This firmware version will not work "
                 "with asynchronous API!");
+            m_log.error(
+                "Go to the"
+                "https://mabrobotics.github.io/MD80-x-CANdle-Documentation/Downloads/intro.html "
+                "for latest firmware and more information.");
         }
 
         m_mdRegisters.legacyHardwareVersion = 0;
