@@ -24,7 +24,7 @@ class CandleFrameAdapterTest : public ::testing::Test
             if (stoken.stop_requested())
                 break;
             auto fr = cfaPtr->getPackedFrame();
-            cfaPtr->parsePackedFrame(fr);
+            cfaPtr->parsePackedFrame(fr.first, fr.second.load());
         }
     }
 

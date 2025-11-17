@@ -217,9 +217,14 @@ namespace mab
             return reg.value;
         }
 
-        constexpr size_t getSize()
+        constexpr size_t getSize() const
         {
             return sizeof(T);
+        }
+
+        constexpr size_t getSerializedSize() const
+        {
+            return sizeof(T) + sizeof(m_regAddress);
         }
 
         const std::array<u8, sizeof(value) + sizeof(m_regAddress)>* getSerializedRegister()
@@ -234,6 +239,8 @@ namespace mab
         bool setSerializedRegister(std::vector<u8>& data)
         {
             // Frame layout <8bits per chunk> [LSB address, MSB address, Payload ...]
+            if (data.size() < getSerializedSize() || data.data() == nullptr)
+                return false;
             u16 addressFromSerial = 0;
             std::memcpy(&addressFromSerial, data.data(), sizeof(m_regAddress));
             if (addressFromSerial == m_regAddress)
@@ -307,6 +314,11 @@ namespace mab
             return sizeof(T[N]);
         }
 
+        constexpr size_t getSerializedSize() const
+        {
+            return sizeof(T[N]) + sizeof(m_regAddress);
+        }
+
         const std::array<u8, sizeof(value) + sizeof(m_regAddress)>* getSerializedRegister()
         {
             // Frame layout <8bits per chunk> [LSB address, MSB address, Payload ...]
@@ -319,6 +331,8 @@ namespace mab
         bool setSerializedRegister(std::vector<u8>& data)
         {
             // Frame layout <8bits per chunk> [LSB address, MSB address, Payload ...]
+            if (data.size() < getSerializedSize())
+                return false;
             u16 addressFromSerial = 0;
             std::memcpy(&addressFromSerial, data.data(), sizeof(m_regAddress));
             if (addressFromSerial == m_regAddress)

@@ -76,7 +76,7 @@ namespace mab
         /// @return Error on failure
         candleTypes::Error_t reset();
 
-        std::optional<version_ut> getCandleVersion();
+        std::optional<version_ut> getCandleVersion() const;
 
         /// @brief Command the application to reboot into a bootloader and await commands.
         /// @param usb initialized usb interface (bootloader only works via USB)
@@ -108,11 +108,22 @@ namespace mab
             return ret;
         }
 
+        inline std::future<std::pair<std::vector<u8>, CANdleFrameAdapter::Error_t>>
+        transferCANFrameAsync(candleTypes::CANFrameData_t frameData)
+        {
+            return transferCANFrameAsync(
+                frameData.m_canId,
+                frameData.m_data,
+                frameData.m_responseLength,
+                std::chrono::duration_cast<std::chrono::microseconds>(frameData.m_timeout).count() /
+                    100);  // convert to 100us units
+        }
+
         const CANdleDatarate_E m_canDatarate;
 
       private:
         static constexpr std::chrono::milliseconds DEFAULT_CONFIGURATION_TIMEOUT =
-            std::chrono::milliseconds(20);
+            std::chrono::milliseconds(5);
 
         Logger m_log = Logger(Logger::ProgramLayer_E::TOP, "CANDLE");
 
