@@ -74,7 +74,7 @@ namespace mab
             buffer = (u8*)buffer + sizeof(frameDTO.sequenceNumber);
             std::memcpy(buffer, frameDTO.data, frameDTO.length);
         }
-        inline void deserialize(void* buffer)
+        inline void deserialize(const void* buffer)
         {
             clear();
             frameDTO.canId          = *(decltype(frameDTO.canId)*)buffer;
