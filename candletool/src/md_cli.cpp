@@ -742,6 +742,18 @@ namespace mab
                                 .value_or("Unknown")
                          << std::endl;
 
+                m_logger << "- main encoder: "
+                         << MDAuxEncoderValue_S::toReadable(readableRegisters.mainEncoder.value)
+                                .value_or("Unknown")
+                         << std::endl;
+
+                if (readableRegisters.mainEncoder.value != 0)
+                {
+                    m_logger << "   - main encoder position: "
+                             << readableRegisters.mainEncoderPosition.value << " rad" << std::endl;
+                    m_logger << "   - main encoder velocity: "
+                             << readableRegisters.mainEncoderVelocity.value << " rad/s" << std::endl;
+                }
                 m_logger << "- auxilary encoder: "
                          << MDAuxEncoderValue_S::toReadable(readableRegisters.auxEncoder.value)
                                 .value_or("Unknown")
