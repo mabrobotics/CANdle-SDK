@@ -1135,7 +1135,7 @@ namespace mab
                         return;
                     }
                     Flasher flasher(curlResult.second);
-                    canId_t flashId = 100;
+                    canId_t flashId = *mdCanId;
                     if (*updateOptions.recovery)
                     {
                         flashId = 9;
