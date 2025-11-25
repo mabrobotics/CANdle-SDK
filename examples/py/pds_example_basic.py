@@ -18,7 +18,7 @@ class PDSExample:
         self.pds = None
         self.candle = None
 
-    def connect_candle(self, baudrate=pyCandle.CANdleBaudrate_E.CAN_BAUD_1M,
+    def connect_candle(self, baudrate=pyCandle.CANdleDatarate_E.CAN_DATARATE_1M,
                        bus_type=pyCandle.busTypes_t.USB):
         """
         Connect to a CANdle device.
