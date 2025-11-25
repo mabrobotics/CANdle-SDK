@@ -785,9 +785,9 @@ namespace mab
                 m_logger << "   - max velocity: " << std::setprecision(2)
                          << readableRegisters.maxVelocity.value << " rad/s" << std::endl;
                 m_logger << "   - position limit min: " << std::setprecision(2)
-                         << readableRegisters.positionLimitMin.value << " rad" << std::endl;
+                         << as_inf(readableRegisters.positionLimitMin.value) << " rad" << std::endl;
                 m_logger << "   - position limit max: " << std::setprecision(2)
-                         << readableRegisters.positionLimitMax.value << " rad" << std::endl;
+                         << as_inf(readableRegisters.positionLimitMax.value) << " rad" << std::endl;
 
                 m_logger << "- position: " << std::setprecision(2)
                          << readableRegisters.mainEncoderPosition.value << " rad" << std::endl;
