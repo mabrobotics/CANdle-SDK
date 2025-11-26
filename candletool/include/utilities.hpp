@@ -19,7 +19,7 @@ namespace mab
         ARM64,
     };
 
-    static std::string MAB_LOGO_HEADER =
+    static std::string CANDLE_LOGO_HEADER =
         "   ___     _     _  _      _   _         _____               _ \n"
         "  / __|   /_\\   | \\| |  __| | | |  ___  |_   _|  ___   ___  | |\n"
         " | (__   / _ \\  | .` | / _` | | | / -_)   | |   / _ \\ / _ \\ | |\n"
@@ -103,10 +103,11 @@ namespace mab
                 desc += " \n[At most " + std::to_string(max_options) +
                         " of the following options are allowed]";
             }
-            std::string mabLogo = MAB_LOGO_HEADER;
-            MAB_LOGO_HEADER     = "";
+            std::string candleLogo = CANDLE_LOGO_HEADER;
+            CANDLE_LOGO_HEADER     = "";
 
-            return (!desc.empty()) ? std::string(mabLogo) + desc + "\n\n" : std::string(mabLogo);
+            return (!desc.empty()) ? std::string(candleLogo) + desc + "\n\n"
+                                   : std::string(candleLogo);
         }
     };
 
