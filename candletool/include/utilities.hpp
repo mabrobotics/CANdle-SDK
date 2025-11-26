@@ -3,8 +3,10 @@
 #include <string>
 #include <cstdlib>
 #include <filesystem>
-#include "mab_types.hpp"
-#include "md_types.hpp"
+#include <iostream>
+#include <type_traits>
+#include <limits>
+#include <cmath>
 #include "CLI/CLI.hpp"
 #include "logger.hpp"
 #include "candlelib.hpp"
@@ -110,5 +112,39 @@ namespace mab
                                    : std::string(candleLogo);
         }
     };
+
+    template <typename T>
+    struct InfNum
+    {
+        static_assert(std::is_floating_point_v<T>, "InfNum<T> requires a floating-point type");
+
+        T value;
+
+        friend std::ostream& operator<<(std::ostream& os, const InfNum& f)
+        {
+            if (std::isnan(f.value))
+                return os << "NaN";
+            if (std::isinf(f.value))
+                return os << (f.value > 0 ? "Inf" : "-Inf");
+
+            const T maxv    = std::numeric_limits<T>::max();
+            const T lowestv = std::numeric_limits<T>::lowest();
+
+            if (f.value == maxv)
+                return os << "inf";
+            if (f.value == lowestv)
+                return os << "-inf";
+
+            // otherwise print the value normally
+            return os << f.value;
+        }
+    };
+
+    // helper factory for nicer syntax
+    template <typename T>
+    inline InfNum<T> as_inf(T v)
+    {
+        return InfNum<T>{v};
+    }
 
 }  // namespace mab
