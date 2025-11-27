@@ -41,7 +41,7 @@ int main(int argc, char** argv)
     app.failure_message(
         [](const CLI::App* app, const CLI::Error& e) -> std::string
         {
-            std::string header = "\n\n" + std::string(e.what()) + "!\n\n";
+            std::string header = std::string("\n\n") + ORANGE + e.what() + "!\n\n" + RESETCLR;
 
             std::string help = app->help();
 
