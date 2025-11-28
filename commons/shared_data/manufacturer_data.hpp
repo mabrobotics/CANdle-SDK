@@ -9,7 +9,6 @@ with new device map */
 
 namespace mab
 {
-
     enum class deviceType_E : u8
     {
         UNKNOWN_DEVICE = 0x00,
@@ -25,27 +24,14 @@ namespace mab
 
 #pragma pack(push, 1)
 
-    struct hardwareType_S
-    {
-        deviceType_E deviceType = deviceType_E::UNKNOWN_DEVICE;  // 0xAX - hosts, 0x0X - peripherals
-        u8           deviceRevision;
-    };
-
     struct manufacturerData_S
     {
-        u16            version = 1;
-        u8             batchCode[24];
-        hardwareType_S hardwareType;
-        u8             placeholder[130];
-        u32            CRC32;
+        u32          CRC32;
+        u16          version;
+        deviceType_E deviceType;
+        u8           deviceRevision;
+        u8           batchCode[24];
     };
-
-    union manufacturerData_U
-    {
-        manufacturerData_S manufacturerData{};
-        u8                 bytes[sizeof(manufacturerData_S)];
-    };
-
 #pragma pack(pop)
 
 }  // namespace mab
