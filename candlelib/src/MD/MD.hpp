@@ -152,6 +152,17 @@ namespace mab
         /// @return
         Error_t setProfileAcceleration(float profileAcceleration /*s^-2*/);
 
+        /// @brief Set target profile deceleration when performing profile movement
+        /// @param profileDeceleration deceleration in s^-2
+        /// @return
+        Error_t setProfileDeceleration(float profileDeceleration /*s^-2*/);
+
+        /// @brief  Set the symmetrical position window at which position reached flag is raised
+        /// @param windowSize size of the window in radians. Spans symmetrically around target
+        /// position.
+        /// @return
+        Error_t setPositionWindow(float windowSize /*rad*/);
+
         /// @brief Set target position
         /// @param position target position in radians
         /// @return
