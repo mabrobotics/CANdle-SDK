@@ -23,7 +23,6 @@ namespace mab
     };
 
 #pragma pack(push, 1)
-
     struct manufacturerData_S
     {
         u32          CRC32;
@@ -31,6 +30,11 @@ namespace mab
         deviceType_E deviceType;
         u8           deviceRevision;
         u8           batchCode[24];
+
+        inline bool isEmpty() const
+        {
+            return version == 0xffff;
+        }
     };
 #pragma pack(pop)
 
