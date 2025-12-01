@@ -743,6 +743,18 @@ namespace mab
                                 .value_or("Unknown")
                          << std::endl;
 
+                m_logger << "- main encoder: "
+                         << MDAuxEncoderValue_S::toReadable(readableRegisters.mainEncoder.value)
+                                .value_or("Unknown")
+                         << std::endl;
+
+                if (readableRegisters.mainEncoder.value != 0)
+                {
+                    m_logger << "   - main encoder position: "
+                             << readableRegisters.mainEncoderPosition.value << " rad" << std::endl;
+                    m_logger << "   - main encoder velocity: "
+                             << readableRegisters.mainEncoderVelocity.value << " rad/s" << std::endl;
+                }
                 m_logger << "- auxilary encoder: "
                          << MDAuxEncoderValue_S::toReadable(readableRegisters.auxEncoder.value)
                                 .value_or("Unknown")
@@ -781,11 +793,11 @@ namespace mab
                          << as_inf(readableRegisters.positionLimitMax.value) << " rad" << std::endl;
 
                 m_logger << "- position: " << std::setprecision(2)
-                         << readableRegisters.mainEncoderPosition.value << " rad" << std::endl;
+                         << readableRegisters.jointPosition.value << " rad" << std::endl;
                 m_logger << "- velocity: " << std::setprecision(2)
-                         << readableRegisters.mainEncoderVelocity.value << " rad/s" << std::endl;
+                         << readableRegisters.jointVelocity.value << " rad/s" << std::endl;
                 m_logger << "- torque: " << std::setprecision(2)
-                         << readableRegisters.motorTorque.value << " Nm" << std::endl;
+                         << readableRegisters.jointTorque.value << " Nm" << std::endl;
                 m_logger << "- MOSFET temperature: " << std::fixed << std::setprecision(2)
                          << readableRegisters.mosfetTemperature.value << " *C" << std::endl;
                 m_logger << "- motor temperature: " << std::fixed << std::setprecision(2)

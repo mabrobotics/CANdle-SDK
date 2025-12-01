@@ -114,7 +114,6 @@ namespace mab
             {0x020,
              MDCfgElement(
                  "output encoder", "output encoder", encoderToReadable, encoderFromReadable)},
-            {0x022, MDCfgElement("output encoder", "output encoder default baud")},
             {0x025,
              MDCfgElement("output encoder",
                           "output encoder mode",
@@ -123,8 +122,10 @@ namespace mab
             {0x026,
              MDCfgElement("output encoder",
                           "output encoder calibration mode",
-                          auxEncoderCalibrationModeToReadable,
-                          auxEncoderCalibrationModeFromReadable)},
+                          encoderCalibrationModeToReadable,
+                          encoderCalibrationModeFromReadable)},
+            {0x02A,
+             MDCfgElement("main encoder", "main encoder", encoderToReadable, encoderFromReadable)},
 
             // PID parameters
             {0x030, MDCfgElement("position PID", "kp")},

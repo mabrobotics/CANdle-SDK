@@ -43,11 +43,13 @@
                                                      \
     MD_REG(auxEncoder, u8, 0x020, RW)                \
     MD_REG(auxEncoderDir, u8, 0x021, WO)             \
-    MD_REG(auxEncoderDefaultBaud, u32, 0x022, RW)    \
     MD_REG(auxEncoderVelocity, float, 0x023, RO)     \
     MD_REG(auxEncoderPosition, float, 0x024, RO)     \
     MD_REG(auxEncoderMode, u8, 0x025, RW)            \
     MD_REG(auxEncoderCalibrationMode, u8, 0x026, RW) \
+                                                     \
+    MD_REG(mainEncoder, u8, 0x02A, RW)               \
+    MD_REG(mainEncoderDir, u8, 0x02B, WO)            \
                                                      \
     MD_REG(motorPosPidKp, float, 0x030, RW)          \
     MD_REG(motorPosPidKi, float, 0x031, RW)          \
@@ -65,6 +67,9 @@
     MD_REG(mainEncoderVelocity, float, 0x062, RO)    \
     MD_REG(mainEncoderPosition, float, 0x063, RO)    \
     MD_REG(motorTorque, float, 0x064, RO)            \
+    MD_REG(jointVelocity, float, 0x062, RO)          \
+    MD_REG(jointPosition, float, 0x063, RO)          \
+    MD_REG(jointTorque, float, 0x064, RO)            \
                                                      \
     MD_REG(homingMode, u8, 0x070, RW)                \
     MD_REG(homingMaxTravel, float, 0x071, RW)        \

@@ -473,35 +473,35 @@ namespace mab
 
     std::pair<float, MD::Error_t> MD::getPosition()
     {
-        auto result = readRegister(m_mdRegisters.mainEncoderPosition);
+        auto result = readRegister(m_mdRegisters.jointPosition);
         if (result != Error_t::OK)
         {
             m_log.error("Could not read ");
             return std::make_pair(0, result);
         }
-        return std::make_pair(m_mdRegisters.mainEncoderPosition.value, result);
+        return std::make_pair(m_mdRegisters.jointPosition.value, result);
     }
 
     std::pair<float, MD::Error_t> MD::getVelocity()
     {
-        auto result = readRegister(m_mdRegisters.mainEncoderVelocity);
+        auto result = readRegister(m_mdRegisters.jointVelocity);
         if (result != Error_t::OK)
         {
             m_log.error("Could not read ");
             return std::make_pair(0, result);
         }
-        return std::make_pair(m_mdRegisters.mainEncoderVelocity.value, result);
+        return std::make_pair(m_mdRegisters.jointVelocity.value, result);
     }
 
     std::pair<float, MD::Error_t> MD::getTorque()
     {
-        auto result = readRegister(m_mdRegisters.motorTorque);
+        auto result = readRegister(m_mdRegisters.jointTorque);
         if (result != Error_t::OK)
         {
             m_log.error("Could not read ");
             return std::make_pair(0, result);
         }
-        return std::make_pair(m_mdRegisters.motorTorque.value, result);
+        return std::make_pair(m_mdRegisters.jointTorque.value, result);
     }
 
     std::pair<float, MD::Error_t> MD::getOutputEncoderPosition()
