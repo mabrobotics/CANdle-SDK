@@ -1152,7 +1152,7 @@ namespace mab
                     m_logger.info("Overriding download of file. Using local provided path.");
                     MabFileParser mabFile(*updateOptions.pathToMabFile,
                                           MabFileParser::TargetDevice_E::MD);
-
+                    int retries = 1;
                     if (*(updateOptions.recovery) == false)
                     {
                         auto md = getMd(mdCanId, candleBuilder);
@@ -1170,6 +1170,7 @@ namespace mab
                         m_logger.warn("Recovery mode...");
                         m_logger.warn(
                             "Please make sure driver is in the bootload phase (rebooting)");
+                        retries = 1000;
                     }
                     auto candle = candleBuilder->build().value_or(nullptr);
                     if (candle == nullptr)
@@ -1178,16 +1179,14 @@ namespace mab
                         return;
                     }
                     CanLoader canLoader(candle, &mabFile, *mdCanId);
-                    if (canLoader.flashAndBoot())
-                    {
-                        m_logger.success("Update complete for MD @ %d", *mdCanId);
-                    }
-                    else
-                    {
-                        m_logger.error("MD flashing failed!");
-                        return;
-                    }
-                    m_logger.success("Update complete for MD @ %d", *mdCanId);
+                    while(retries-- > 0)
+                        if (canLoader.flashAndBoot())
+                        {
+                            m_logger.success("Update complete for MD @ %d", *mdCanId);
+                            return;
+                        }
+                    m_logger.error("MD flashing failed!");
+                    return;
                 }
             });
         // Version
