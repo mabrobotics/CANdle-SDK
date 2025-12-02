@@ -2,13 +2,10 @@
 #include <memory>
 #include <string>
 #include "candle.hpp"
-#include "candle_bootloader.hpp"
 #include "candle_cli.hpp"
 #include "candle_types.hpp"
 #include "configHelpers.hpp"
 #include "logger.hpp"
-#include "mabFileParser.hpp"
-#include "mab_crc.hpp"
 #include "mab_types.hpp"
 #include "md_cli.hpp"
 #include "CLI/CLI.hpp"
@@ -41,6 +38,18 @@ int main(int argc, char** argv)
     app.formatter(mabDescriptionFormatter);
     app.ignore_case();
     UserCommand cmd;
+
+    app.failure_message(
+        [](const CLI::App* app, const CLI::Error& e) -> std::string
+        {
+            std::string header = std::string("\n\n") + ORANGE + e.what() + "!\n\n" + RESETCLR;
+
+            std::string help = app->help();
+
+            header.insert(header.begin(), help.begin(), help.end());
+
+            return header;
+        });
 
     app.add_option("-d,--datarate",
                    cmd.data,
@@ -141,6 +150,7 @@ int main(int argc, char** argv)
     if (!dataOpt.has_value())
     {
         std::cerr << "Invalid datarate: " << cmd.data << std::endl;
+        std::cerr << app.help();
         return EXIT_FAILURE;
     }
 

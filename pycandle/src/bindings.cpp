@@ -575,6 +575,8 @@ PYBIND11_MODULE(pyCandle, m)
         .value("VELOCITY_PID", mab::MdMode_E::VELOCITY_PID)
         .value("RAW_TORQUE", mab::MdMode_E::RAW_TORQUE)
         .value("IMPEDANCE", mab::MdMode_E::IMPEDANCE)
+        .value("PROFILE_POSITION", mab::MdMode_E::POSITION_PROFILE)
+        .value("PROFILE_VELOCITY", mab::MdMode_E::VELOCITY_PROFILE)
         .export_values();
 
     py::class_<mab::MD>(m, "MD")
@@ -631,6 +633,12 @@ PYBIND11_MODULE(pyCandle, m)
              &mab::MD::setProfileAcceleration,
              py::arg("profileAcceleration"),
              "Set the target profile acceleration when performing profile movement.")
+        .def("setProfileDeceleration",
+             &mab::MD::setProfileDeceleration,
+             "Set the target profile deceleration when performing profile movement.")
+        .def("setPositionWindow",
+             &mab::MD::setPositionWindow,
+             "Set the the symmetrical position window at which position reached flag is raised.")
         .def("setTargetPosition",
              &mab::MD::setTargetPosition,
              py::arg("position"),

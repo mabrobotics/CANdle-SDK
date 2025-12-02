@@ -158,7 +158,7 @@ namespace mab
         std::unordered_map<MotionStatusBits, StatusItem_S> motionStatus = {
             {MotionStatusBits::ErrorPositionLimit, StatusItem_S("Error Position Limit", true)},
             {MotionStatusBits::ErrorVelocityLimit, StatusItem_S("Error Velocity Limit", true)},
-            {MotionStatusBits::WarningAcceleration, StatusItem_S("Warning Acceleration", true)},
+            {MotionStatusBits::WarningAcceleration, StatusItem_S("Warning Acceleration", false)},
             {MotionStatusBits::WarningTorque, StatusItem_S("Warning Torque", false)},
             {MotionStatusBits::WarningVelocity, StatusItem_S("Warning Velocity", false)},
             {MotionStatusBits::WarningPosition, StatusItem_S("Warning Position", false)}};
@@ -176,7 +176,7 @@ namespace mab
         }
 
         template <class T>
-        static void toMap(u32 bytes, std::unordered_map<T, StatusItem_S>& map)
+        static void decode(u32 bytes, std::unordered_map<T, StatusItem_S>& map)
         {
             for (auto& bit : map)
             {

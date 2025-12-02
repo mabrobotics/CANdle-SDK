@@ -46,6 +46,7 @@ target_sources(
   PRIVATE src/crc.cpp
           src/can_bootloader/can_bootloader.cpp
           src/communication_device/candle.cpp
+          src/communication_device/candle_frame_adapter.cpp
           src/communication_device/candle_bootloader.cpp
           ${UNIX_ONLY_SOURCES}
           src/communication_interface/USB.cpp
@@ -57,9 +58,8 @@ target_sources(
           src/pds/power_stage.cpp
           src/pds/brake_resistor.cpp
           src/pds/isolated_converter.cpp
-          src/objectDictionary/OD.cpp 
-          src/objectDictionary/edsParser.cpp
-)
+          src/objectDictionary/OD.cpp
+          src/objectDictionary/edsParser.cpp)
 
 if(UNIX)
   target_compile_definitions(candle PRIVATE UNIX)
@@ -73,9 +73,9 @@ target_include_directories(
          ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_device
          ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_interface
          ${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger
-         ${CMAKE_CURRENT_SOURCE_DIR}/../candletool/include  
+         ${CMAKE_CURRENT_SOURCE_DIR}/../candletool/include
          ${CMAKE_CURRENT_SOURCE_DIR}/../candletool/3rd_party/mINI/src
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/objectDictionary 
+         ${CMAKE_CURRENT_SOURCE_DIR}/src/objectDictionary
          ${LIBUSB_INCLUDE_DIR})
 target_include_directories(candle SYSTEM PRIVATE ${LIBUSB_INCLUDE_DIR})
 if(UNIX)
@@ -146,8 +146,18 @@ if(MAKE_TESTS)
   target_include_directories(md_v2_test PRIVATE include src/MD/)
   target_link_libraries(md_v2_test PRIVATE logger shared_data candle)
 
- add_unit_test_executable(mdco_v2_test src/MD/MDCO_test.cpp)
-   target_sources(mdco_v2_test PRIVATE src/MD/MDCO.cpp)
+  add_unit_test_executable(
+    candle_frame_adapter_test
+    src/communication_device/candle_frame_adapter_test.cpp)
+  target_sources(candle_frame_adapter_test
+                 PRIVATE src/communication_device/candle_frame_adapter.cpp)
+  target_include_directories(candle_frame_adapter_test
+                             PRIVATE include src src/communication_device)
+  target_link_libraries(candle_frame_adapter_test PRIVATE logger shared_data
+                                                          candle)
+
+  add_unit_test_executable(mdco_v2_test src/MD/MDCO_test.cpp)
+  target_sources(mdco_v2_test PRIVATE src/MD/MDCO.cpp)
   target_include_directories(mdco_v2_test PRIVATE include src/MD/)
   target_link_libraries(mdco_v2_test PRIVATE logger shared_data candle)
 

@@ -66,7 +66,6 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 md->blink();
@@ -88,7 +87,6 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 MDRegisters_S registers;
@@ -170,7 +168,6 @@ namespace mab
                     md                         = getMd(newCanId, newCandleBuilder);
                     if (md == nullptr)
                     {
-                        m_logger.error("Could not connect to MD!");
                         return;
                     }
                     // Save the new can parameters to the MD
@@ -209,7 +206,6 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 MDRegisters_S registers;
@@ -425,7 +421,6 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 MDRegisters_S registers;
@@ -469,7 +464,6 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Could not connect to MD!");
                     return;
                 }
 
@@ -521,7 +515,6 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Could not connect to MD!");
                     return;
                 }
 
@@ -586,7 +579,6 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 MDRegisters_S registers;
@@ -644,7 +636,6 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 if (md->save() != MD::Error_t::OK)
@@ -675,6 +666,16 @@ namespace mab
                         auto fault = md->readRegisters(reg);
                         if (fault != MD::Error_t::OK)
                             m_logger.error("Error while reading register %s", reg.m_name.data());
+
+                        if constexpr (std::is_integral_v<decltype(reg.value)>)
+                        {
+                            m_logger.debug(
+                                "Read register %s, Value: %d", reg.m_name.data(), reg.value);
+                        }
+                        else
+                        {
+                            m_logger.debug("Read register %s", reg.m_name.data());
+                        }
                     }
                 };
 
@@ -722,8 +723,8 @@ namespace mab
                          << std::to_string(readableRegisters.motorShutdownTemp.value) << " *C"
                          << std::endl;
                 m_logger << "- motor calibration mode: "
-                         << MDAuxEncoderCalibrationModeValue_S::toReadable(
-                                readableRegisters.auxEncoderCalibrationMode.value)
+                         << MDMainEncoderCalibrationModeValue_S::toReadable(
+                                readableRegisters.motorCalibrationMode.value)
                                 .value_or("Unknown")
                          << std::endl;
                 m_logger << "- motor torque constant: " << std::setprecision(4)
@@ -775,9 +776,9 @@ namespace mab
                 m_logger << "   - max velocity: " << std::setprecision(2)
                          << readableRegisters.maxVelocity.value << " rad/s" << std::endl;
                 m_logger << "   - position limit min: " << std::setprecision(2)
-                         << readableRegisters.positionLimitMin.value << " rad" << std::endl;
+                         << as_inf(readableRegisters.positionLimitMin.value) << " rad" << std::endl;
                 m_logger << "   - position limit max: " << std::setprecision(2)
-                         << readableRegisters.positionLimitMax.value << " rad" << std::endl;
+                         << as_inf(readableRegisters.positionLimitMax.value) << " rad" << std::endl;
 
                 m_logger << "- position: " << std::setprecision(2)
                          << readableRegisters.mainEncoderPosition.value << " rad" << std::endl;
@@ -868,7 +869,6 @@ namespace mab
                 std::string registerStr = *(regReadOptions.registerAddressOrName);
                 if (md == nullptr)
                 {
-                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 if (std::string("0x").compare(registerStr.substr(0, 2)) == 0)
@@ -922,7 +922,6 @@ namespace mab
 
                 if (md == nullptr)
                 {
-                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 if (std::string("0x").compare(registerStr.substr(0, 2)) == 0)
@@ -1003,7 +1002,6 @@ namespace mab
                     auto md = getMd(mdCanId, candleBuilder);
                     if (md == nullptr)
                     {
-                        m_logger.error("Could not connect to MD!");
                         return;
                     }
                     md->reset();
@@ -1027,7 +1025,6 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 if (md->isMDError(md->setTargetPosition(*absoluteTestOptions.target)))
@@ -1062,7 +1059,6 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 if (*relativeTestOptions.target > 10.0f)
@@ -1102,8 +1098,7 @@ namespace mab
                     {
                         m_logger.error(
                             "Please provide version of fw or  \"latest\" keyword in the argument!");
-                        m_logger.error(
-                            "For example candletool md update latest");
+                        m_logger.error("For example candletool md update latest");
                         return;
                     }
                     std::string fallbackPath = ctx.packageEtcPath->generic_string();
@@ -1126,7 +1121,7 @@ namespace mab
                         return;
                     }
                     Flasher flasher(curlResult.second);
-                    canId_t flashId = 100;
+                    canId_t flashId = *mdCanId;
                     if (*updateOptions.recovery)
                     {
                         flashId = 9;
@@ -1184,7 +1179,9 @@ namespace mab
                 }
             });
         // Version
-        auto* version = mdCLi->add_subcommand("version", "Check version of the MD device.");
+        auto* version = mdCLi->add_subcommand("version", "Check version of the MD device.")
+                            ->needs(mdCanIdOption);
+        ;
 
         version->callback(
             [this, candleBuilder, mdCanId]()
@@ -1192,7 +1189,6 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 MDRegisters_S regs;
@@ -1213,6 +1209,28 @@ namespace mab
                               MDLegacyHwVersion_S::toReadable(regs.legacyHardwareVersion.value)
                                   .value_or("Unknown")
                                   .c_str());
+            });
+        // Zero
+        auto* zero = mdCLi->add_subcommand("zero", "Zero the drive's position (encoder).")
+                         ->needs(mdCanIdOption);
+        ;
+
+        zero->callback(
+            [this, candleBuilder, mdCanId]()
+            {
+                auto md = getMd(mdCanId, candleBuilder);
+                if (md == nullptr)
+                {
+                    return;
+                }
+                if (md->zero() == MD::Error_t::OK)
+                {
+                    m_logger.success("Successfully zeroed MD!");
+                }
+                else
+                {
+                    m_logger.error("Failed to zero MD!");
+                }
             });
     }
 
@@ -1236,6 +1254,7 @@ namespace mab
             return md;
         else
         {
+            m_logger.error("Could not connect to MD!");
             return nullptr;
         }
     }
