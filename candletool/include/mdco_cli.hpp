@@ -10,22 +10,24 @@
 #include "mab_types.hpp"
 #include "mdco_cfg_map.hpp"
 
+#include <filesystem>
+
 namespace mab
 {
 
     struct UserCommandCO
     {
-        u32           id           = 0x0000;
-        u8            subReg       = 0x0;
-        u8            dataSize     = 0x0;
-        std::string   cfgPath      = "";
-        std::string   value        = "";
-        std::string   reg          = "0x0000";
-        bool          force        = false;
-        i32           desiredPos   = 0;
-        i32           desiredSpeed = 0;
-        moveParameter param;
-        edsObject     edsObj;  // used for EDS parser
+        u32                   id           = 0x0000;
+        u8                    subReg       = 0x0;
+        u8                    dataSize     = 0x0;
+        std::filesystem::path cfgPath      = "";
+        std::string           value        = "";
+        std::string           reg          = "0x0000";
+        bool                  force        = false;
+        i32                   desiredPos   = 0;
+        i32                   desiredSpeed = 0;
+        moveParameter         param;
+        edsObject             edsObj;  // used for EDS parser
     };
 
     class MdcoCli
@@ -120,12 +122,12 @@ namespace mab
         void clean(std::string& s);
 
         /// @brief Check if the CANopen configuration file is complete
-        bool isCanOpenConfigComplete(const std::string& pathToConfig);
+        bool isCanOpenConfigComplete(const std::filesystem::path& pathToConfig);
 
         /// @brief Validate and get the final configuration path
         /// @param cfgPath Path to the configuration file to verify
         /// @return Validated path to the configuration file
-        std::string validateAndGetFinalConfigPath(const std::string& cfgPath);
+        std::string validateAndGetFinalConfigPath(const std::filesystem::path& cfgPath);
 
         /// @brief Update in terms of option (baudrate, bus...) user choice before executing a
         /// command

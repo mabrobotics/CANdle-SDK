@@ -4,11 +4,12 @@ using namespace mab;
 
 UserCommandCO cmdCANopen;
 
-std::string MdcoCli::validateAndGetFinalConfigPath(const std::string& cfgPath)
+std::string MdcoCli::validateAndGetFinalConfigPath(const std::filesystem::path& cfgPath)
 {
     // Check if the file exists, if not, check if it exists relative to the default config
-    std::string finalConfigPath        = cfgPath;
-    std::string pathRelToDefaultConfig = getMotorsConfigPath() + cfgPath;
+    std::filesystem::path finalConfigPath = cfgPath;
+    std::filesystem::path pathRelToDefaultConfig =
+        getMotorsConfigPath().string() + cfgPath.string();
     // Check if the file exists
     if (!fileExists(finalConfigPath))
     {
@@ -28,8 +29,9 @@ std::string MdcoCli::validateAndGetFinalConfigPath(const std::string& cfgPath)
         m_log.warn("Valid file must have .cfg extension, and size of < 1MB");
         exit(1);
     }
-    std::string defaultConfigPath =
-        finalConfigPath.substr(0, finalConfigPath.find_last_of('/') + 1) + "default.cfg";
+    std::filesystem::path defaultConfigPath =
+        finalConfigPath.string().substr(0, finalConfigPath.string().find_last_of('/') + 1) +
+        "default.cfg";
 
     // If default config does not exist, warn the user
     if (!fileExists(defaultConfigPath))
@@ -77,9 +79,9 @@ void MdcoCli::clean(std::string& s)
     s.resize(write_pos);
 }
 
-bool MdcoCli::isCanOpenConfigComplete(const std::string& pathToConfig)
+bool MdcoCli::isCanOpenConfigComplete(const std::filesystem::path& pathToConfig)
 {
-    mINI::INIFile      defaultFile(getMotorsConfigPath() + "/CANopen/default.cfg");
+    mINI::INIFile      defaultFile(getMotorsConfigPath() / "CANopen/default.cfg");
     mINI::INIStructure defaultIni;
     defaultFile.read(defaultIni);
 
@@ -1156,7 +1158,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
                 m_log.warn("Omitting config validation on user request!");
                 if (!fileExists(finalConfigPath))
                 {
-                    finalConfigPath = getMotorsConfigPath() + cmdCANopen.cfgPath;
+                    finalConfigPath = getMotorsConfigPath() / cmdCANopen.cfgPath;
                     if (!fileExists(finalConfigPath))
                     {
                         m_log.error("Neither \"%s\", nor \"%s\", exists!.",
