@@ -172,13 +172,13 @@ namespace mab
         // set all the parameters needed to configure the motor for moving log an error message if
         // transfer failed
         Error_t err;
-        err = writeOpenRegisters("Motor Max Acceleration", param.accLimit);
+        err = writeOpenRegisters("Max Acceleration", param.accLimit);
         if (err != OK)
         {
             m_log.error("Error setting Max Acceleration");
             return err;
         }
-        err = writeOpenRegisters("Motor Max Deceleration", param.dccLimit);
+        err = writeOpenRegisters("Max Deceleration", param.dccLimit);
         if (err != OK)
         {
             m_log.error("Error setting Max Deceleration");
@@ -202,7 +202,7 @@ namespace mab
             m_log.error("Error setting Max Motor Speed");
             return err;
         }
-        err = writeOpenRegisters("Motor Max Torque", param.MaxTorque);
+        err = writeOpenRegisters("Max Torque", param.MaxTorque);
         if (err != OK)
         {
             m_log.error("Error setting Max Torque");
@@ -252,10 +252,10 @@ namespace mab
     {
         // disable the driver, log an error message if transfer failed
         Error_t err;
-        err = writeOpenRegisters("Motor Target Velocity", 0);
+        err = writeOpenRegisters("Target Velocity", 0);
         if (err != OK)
         {
-            m_log.error("Error setting Motor Target Velocity to 0");
+            m_log.error("Error setting Target Velocity to 0");
             return err;
         }
         err = writeOpenRegisters("Controlword", 6);
@@ -417,7 +417,7 @@ namespace mab
             m_log.error("Error setting Modes Of Operation");
             return err;
         }
-        err = writeOpenRegisters("Blink LEDs", 1, 1);
+        err = writeOpenRegisters("Blink", 1, 1);
         if (err != OK)
         {
             m_log.error("Error setting Blink LEDs");
@@ -652,7 +652,7 @@ namespace mab
             m_log.error("Error setting Modes Of Operation for openZero");
             return err;
         }
-        err = writeOpenRegisters("Set Zero", 1, 1);
+        err = writeOpenRegisters("Zero", 1, 1);
         if (err != OK)
         {
             m_log.error("Error setting Set Zero");
@@ -727,7 +727,7 @@ namespace mab
         }
         if (Main)
         {
-            err = writeOpenRegisters("Run Calibration", 1, 1);
+            err = writeOpenRegisters("Calibrate", 1, 1);
             if (err != OK)
             {
                 m_log.error("Error setting Run Calibration");
@@ -791,7 +791,7 @@ namespace mab
             u8 n       = (cmd & 0x0C) >> 2;  // bits 1-0
             u8 dataLen = 4 - n;
 
-            // Index et Subindex
+            // Index and Subindex
             u16 index    = response[2] << 8 | response[1];
             u8  subindex = response[3];
 
@@ -808,7 +808,8 @@ namespace mab
             {
                 ss << std::hex << std::setw(2) << std::setfill('0') << (i16)response[4 + i];
             }
-            ss << "\n" << "------------------------" << "\n";
+            ss << "\n"
+               << "------------------------" << "\n";
             m_log.info("%s\n", ss.str().c_str());
         }
 
