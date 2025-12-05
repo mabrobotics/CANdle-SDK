@@ -1123,9 +1123,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleB
                     motorName += c;
                 }
                 m_log.info("Manufacturer Device Name: %s", motorName.c_str());
-                long Firmware = mdco.getValueFromOpenRegister(0x200A, 3);
+                long Firmware = mdco.getValueFromOpenRegister(0x2001, 3);
                 m_log.info("Firmware version: %li", Firmware);
-                long Bootloader = mdco.getValueFromOpenRegister(0x200B, 4);
+                long Bootloader = mdco.getValueFromOpenRegister(0x2002, 4);
                 m_log.info("Bootloader version: %li", Bootloader);
             }
             else
