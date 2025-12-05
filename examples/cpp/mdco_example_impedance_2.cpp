@@ -1,6 +1,8 @@
 #include "candle.hpp"
 #include "MDCO.hpp"
 
+#define PIx2 6.28318530718f
+
 using namespace mab;
 
 int main()
@@ -29,42 +31,33 @@ int main()
     // Get first md that was detected (the one with the lowest id).
     MDCO mdco(ids[0], candle);
 
-    // Enter the limit of your motor
-    moveParameter MyMotorParam;
-    // Rated Current is in mA
-    MyMotorParam.RatedCurrent = 1000;
-    // Max current is in Rated Current *10^(-3)
-    MyMotorParam.MaxCurrent = 500;
-    // Rated torque is in mN*m
-    MyMotorParam.RatedTorque = 1000;
-    // Max torque is in rated torque *10^(-3)
-    MyMotorParam.MaxTorque = 500;
-    // Max speed is RPM
-    MyMotorParam.MaxSpeed = 1000;
+    mdco.openZero();
+    // set the motor in the impedance mode
+    mdco.enableDriver(Impedance);
 
-    // Send the motor parameter to the MD
-    mdco.setProfileParameters(MyMotorParam);
+    static constexpr i32 countPerRotation = 16384;
+    static constexpr f32 countToRadian    = PIx2 / countPerRotation;
+    static constexpr f32 radianToCount    = 1.f / countToRadian;
 
-    // set the motor in the cyclic velocity mode
-    mdco.enableDriver(CyclicSyncVelocity);
+    constexpr float stepSize       = 0.05f * radianToCount;
+    float           targetPosition = 0.f;
 
-    // loop parameter
-    auto start      = std::chrono::steady_clock::now();
-    auto lastSend   = start;
-    auto timeout    = std::chrono::seconds(5);
-    auto sendPeriod = std::chrono::milliseconds(10);
-
-    while (std::chrono::steady_clock::now() - start < timeout)
+    for (u16 i = 0; i < 100; i++)
     {
-        auto now = std::chrono::steady_clock::now();
-        if (now - lastSend >= sendPeriod)
+        targetPosition += stepSize;
+        // Providing new target position
+        mdco.writeOpenRegisters("Target Position", static_cast<i32>(targetPosition));
+
+        if (i % 10 == 0)
         {
-            mdco.writeOpenRegisters("Target Velocity", 20);
-            lastSend = now;
+            i32 posRead = mdco.getValueFromOpenRegister(0x6064, 0x0);
+            log.info("Target position: %.3f | Current position: %.3f",
+                     targetPosition * countToRadian,
+                     static_cast<f32>(posRead) * countToRadian /*Request positional data*/);
         }
+        usleep(20'000);
     }
 
-    // enter idle mode and leave Enable operation state
     mdco.disableDriver();
 
     return EXIT_SUCCESS;

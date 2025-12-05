@@ -28,8 +28,8 @@ int main()
 
     i32 desiredSpeed = 0;
     i32 targetPos    = 0;
-    f32 kp           = 10;
-    f32 kd           = 1;
+    u32 kp           = 10;
+    u32 kd           = 1;
 
     // Get first md that was detected (the one with the lowest id).
     MDCO mdco(ids[0], candle);
@@ -61,19 +61,17 @@ int main()
     mdco.enableDriver(Impedance);
 
     // kp
-    u32 kp_bits = mdco.toU32(kp);
-    mdco.writeOpenRegisters("Kp_impedance", kp_bits);
+    mdco.writeOpenRegisters(0x2011, 0x1, kp, sizeof(kp));
     // kd
-    u32 kd_bits = mdco.toU32(kd);
-    mdco.writeOpenRegisters("Kd_impedance", kd_bits);
-    mdco.writeOpenRegisters("Position Demand Value", targetPos);
-    mdco.writeOpenRegisters("Velocity Demand Value", desiredSpeed);
+    mdco.writeOpenRegisters(0x2011, 0x1, kd, sizeof(kd));
+    mdco.writeOpenRegisters("Target Position", targetPos);
+    mdco.writeOpenRegisters("Target Velocity", desiredSpeed);
     auto start   = std::chrono::steady_clock::now();
     auto timeout = std::chrono::seconds((5));
     while (std::chrono::steady_clock::now() - start < timeout)
     {
     }
-    mdco.writeOpenRegisters("Torque Demand Value", 0);
+    mdco.writeOpenRegisters("Target Torque", 0);
     mdco.disableDriver();
 
     return EXIT_SUCCESS;

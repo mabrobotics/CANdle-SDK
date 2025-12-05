@@ -46,9 +46,9 @@ int main()
     // You can use SDO segmented transfer for register with a size over 4 bytes
     std::vector<u8> MotorNameBefore;
     std::vector<u8> MotorNameAfter;
-    mdco.readLongOpenRegisters(0x2000, 0x06, MotorNameBefore);
-    mdco.writeLongOpenRegisters(0x2000, 0x06, "My Custom Motor Name");
-    mdco.readLongOpenRegisters(0x2000, 0x06, MotorNameAfter);
+    mdco.readLongOpenRegisters(0x2006, 0x06, MotorNameBefore);
+    mdco.writeLongOpenRegisters(0x2006, 0x06, "My Custom Motor Name");
+    mdco.readLongOpenRegisters(0x2006, 0x06, MotorNameAfter);
 
     // you can also use PDO for faster communication
     std::vector<u8> frame = {0x00, 0x0f};
