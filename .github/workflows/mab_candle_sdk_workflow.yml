@@ -125,7 +125,7 @@ jobs:
   build-candleSDK-linux-shared:
     runs-on: ubuntu-24.04
     container:
-      image: mabroboticsofficial/mab_build_environment:v2
+      image: mabroboticsofficial/mab_build_environment:v3
       options: --user root
 
     steps:
@@ -155,7 +155,7 @@ jobs:
   build-candleSDK-linux-static:
     runs-on: ubuntu-24.04
     container:
-      image: mabroboticsofficial/mab_build_environment:v2
+      image: mabroboticsofficial/mab_build_environment:v3
       options: --user root
 
     steps:
@@ -184,7 +184,7 @@ jobs:
   build-candleSDK-linux-arm64-shared:
     runs-on: ubuntu-latest
     container:
-      image: mabroboticsofficial/mab_build_environment_arm64_cross-compile:v2
+      image: mabroboticsofficial/mab_build_environment_arm64_cross-compile:v3
       options: --user root
 
     steps:
@@ -214,7 +214,7 @@ jobs:
   build-candleSDK-linux-arm64-static:
     runs-on: ubuntu-24.04
     container:
-      image: mabroboticsofficial/mab_build_environment_arm64_cross-compile:v2
+      image: mabroboticsofficial/mab_build_environment_arm64_cross-compile:v3
       options: --user root
 
     steps:
@@ -243,7 +243,7 @@ jobs:
   build-candleSDK-linux-armhf-shared:
     runs-on: ubuntu-latest
     container:
-      image: mabroboticsofficial/mab_build_environment_armhf_cross-compile:v2
+      image: mabroboticsofficial/mab_build_environment_armhf_cross-compile:v3
       options: --user root
 
     steps:
@@ -273,7 +273,7 @@ jobs:
   build-candleSDK-linux-armhf-static:
     runs-on: ubuntu-24.04
     container:
-      image: mabroboticsofficial/mab_build_environment_armhf_cross-compile:v2
+      image: mabroboticsofficial/mab_build_environment_armhf_cross-compile:v3
       options: --user root
 
     steps:
