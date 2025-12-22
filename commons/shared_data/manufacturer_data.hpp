@@ -16,6 +16,7 @@ namespace mab
         MD20           = 0x02,
         MD80HV         = 0x03,
         PDS            = 0x04,
+        MD80DE         = 0x05,
 
         UNKNOWN_DEVICE_2 = 0xA0,
         CANDLE           = 0xA1,
@@ -31,6 +32,8 @@ namespace mab
                 return (char*)"md20";
             case mab::deviceType_E::MD80HV:
                 return (char*)"md80hv";
+            case mab::deviceType_E::MD80DE:
+                return (char*)"md80de";
             case mab::deviceType_E::CANDLE:
                 return (char*)"candle";
             case mab::deviceType_E::CANDLE_HAT:
