@@ -2,11 +2,6 @@
 
 #include "mab_types.hpp"
 
-/* When editing this file please iterate
-version in manufacturerData_S,
-and update md_station OTP-FLASH.py file
-with new device map */
-
 namespace mab
 {
     enum class deviceType_E : u8
@@ -46,14 +41,15 @@ namespace mab
     }
 
 #pragma pack(push, 1)
+    // When editing this struct, remember to also update md programming procedure in station repo
     struct manufacturerData_S
     {
-        u32          CRC32;    // TODO: placeholder
-        u16          version;  // manufacturerData format version
-        deviceType_E deviceType;
+        u32          CRC32;
+        u16          version;         // manufacturerData format version
+        deviceType_E deviceType;      // device type
         u8           deviceRevision;  // 10 -> HW1.0, 32 -> HW3.2
         u8           prodDate[6];     // ddmmyy format
-        u8           batchCode[24];   // TODO: ASM production code placeholder
+        u8           batchCode[24];   // production code
 
         inline bool isEmpty() const
         {
