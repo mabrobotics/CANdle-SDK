@@ -1,5 +1,6 @@
 #pragma once
 
+#include "edsParser.hpp"
 #include "mab_types.hpp"
 #include "md_types.hpp"
 #include "logger.hpp"
@@ -81,6 +82,9 @@ namespace mab
             m_log.m_tag = tag.str();
         }
 
+        /// @brief check communication with the board
+        Error_t init();
+
         /// @brief use SDO message in order to send all value needed to configure the motor for
         /// moving
         /// @param param struct containing all the parameters needed to configure the motor
@@ -138,7 +142,7 @@ namespace mab
         /// @brief Change CANopen config the command need to be save before shutoff the motors
         /// @param newID new id of the motor
         /// @param newBaud new baudRate
-        /// @param watchdog new watchdog
+        /// @param watchdog new watchdogder
         /// @return Error_t indicating the result of the operation
         Error_t newCanOpenConfig(i32 newID, i32 newBaud, u32 watchdog);
 

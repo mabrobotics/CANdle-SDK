@@ -9,8 +9,10 @@
 #include "edsParser.hpp"
 #include "mab_types.hpp"
 #include "mdco_cfg_map.hpp"
+#include "utilities.hpp"
 
 #include <filesystem>
+#include <memory>
 
 namespace mab
 {
@@ -34,13 +36,14 @@ namespace mab
     {
       public:
         MdcoCli() = delete;
-        MdcoCli(CLI::App& rootCli, const std::shared_ptr<CandleBuilder> candleBuilder);
+        MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx);
         ~MdcoCli() = default;
 
       private:
-        Logger                               m_log;
-        CLI::App&                            m_rootCli;
-        const std::shared_ptr<CandleBuilder> m_candleBuilder;
+        Logger                         m_log;
+        CLI::App&                      m_rootCli;
+        std::shared_ptr<CandleBuilder> m_candleBuilder;
+        CANdleToolCtx_S                m_ctx;
         //  principal subcommands
         CLI::App* mdco         = nullptr;
         CLI::App* blink        = nullptr;
@@ -129,9 +132,8 @@ namespace mab
         /// @return Validated path to the configuration file
         std::string validateAndGetFinalConfigPath(const std::filesystem::path& cfgPath);
 
-        /// @brief Update in terms of option (baudrate, bus...) user choice before executing a
-        /// command
-        void updateUserChoice();
+        std::unique_ptr<MDCO, std::function<void(MD*)>> getMdco(
+            const std::shared_ptr<canId_t> mdCanId);
 
         struct ClearOptions
         {
