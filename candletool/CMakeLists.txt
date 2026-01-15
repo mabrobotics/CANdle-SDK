@@ -161,7 +161,8 @@ elseif(UNIX)
   install(
     FILES
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/udev/rules.d/99-candletool.rules
-    DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/")
+    DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/"
+    COMPONENT rules)
 
   install(
     FILES
@@ -172,6 +173,8 @@ elseif(UNIX)
                 WORLD_WRITE
     EXCLUDE_FROM_ALL)
   add_compile_definitions(DEFAULT_CANDLETOOL_CONFIG_DIR="/etc/candletool/")
+  add_custom_target(install_rules
+    COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_BINARY_DIR}" --component rules)
 else()
   message(FATAL_ERROR "System not unix nor windows, can not compile!")
   message()

@@ -123,7 +123,7 @@
     MD_REG(shuntResistance, float, 0x700, RW)        \
                                                      \
     MD_REG(uniqueID, char[12], 0x7FE, RO)            \
-    MD_REG(hardwareType, hardwareType_S, 0x7FF, RO)  \
+    MD_REG(hardwareType, u8, 0x7FF, RO)              \
     MD_REG(buildDate, u32, 0x800, RO)                \
     MD_REG(commitHash, char[8], 0x801, RO)           \
     MD_REG(firmwareVersion, u32, 0x802, RO)          \
