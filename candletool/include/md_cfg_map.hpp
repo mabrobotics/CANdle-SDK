@@ -124,8 +124,6 @@ namespace mab
                           "output encoder calibration mode",
                           encoderCalibrationModeToReadable,
                           encoderCalibrationModeFromReadable)},
-            {0x02A,
-             MDCfgElement("main encoder", "main encoder", encoderToReadable, encoderFromReadable)},
 
             // PID parameters
             {0x030, MDCfgElement("position PID", "kp")},

@@ -45,6 +45,7 @@ namespace mab
                                                                            {4, "CM_OFFAXIS"},
                                                                            {5, "M24B_CENTER"},
                                                                            {6, "M24B_OFFAXIS"},
+                                                                           {7, "DUAL_ENCODER"},
                                                                            {8, "ONBOARD"},
                                                                            {9, "RLS_17B_SPI"}};
         static inline const std::map<std::string_view, u32> toNumericMap{{"NONE", 0},
@@ -54,6 +55,7 @@ namespace mab
                                                                          {"CM_OFFAXIS", 4},
                                                                          {"M24B_CENTER", 5},
                                                                          {"M24B_OFFAXIS", 6},
+                                                                         {"DUAL_ENCODER", 7},
                                                                          {"ONBOARD", 8},
                                                                          {"RLS_17B_SPI", 9}};
 
