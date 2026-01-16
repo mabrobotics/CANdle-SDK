@@ -134,9 +134,10 @@ std::unique_ptr<MDCO, std::function<void(MDCO*)>> MdcoCli::getMdco(
 
 MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m_ctx(ctx)
 {
-    m_log.m_tag   = "MDCO";
-    m_log.m_layer = Logger::ProgramLayer_E::TOP;
-    mdco          = m_rootCli.add_subcommand("mdco", "Send CANopen command instead of CAN FD.");
+    m_log.m_tag     = "MDCO";
+    m_log.m_layer   = Logger::ProgramLayer_E::TOP;
+    m_candleBuilder = m_ctx.candleBranchVec.at(0).candleBuilder;
+    mdco            = m_rootCli.add_subcommand("mdco", "Send CANopen command instead of CAN FD.");
     const std::shared_ptr<canId_t> mdCanId = std::make_shared<canId_t>(10);
     auto*                          mdCanIdOption =
         mdco->add_option("-i,--id", *mdCanId, "CAN ID of the MD to interact with.");
