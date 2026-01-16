@@ -110,12 +110,13 @@ bool MdcoCli::isCanOpenConfigComplete(const std::filesystem::path& pathToConfig)
 std::unique_ptr<MDCO, std::function<void(MDCO*)>> MdcoCli::getMdco(
     const std::shared_ptr<canId_t> mdCanId)
 {
-    auto candle = m_candleBuilder->build().value_or(nullptr);
-    candle->init();
+    m_candleBuilder->useCAN20Frames = true;
+    auto candle                     = m_candleBuilder->build().value_or(nullptr);
     if (candle == nullptr)
     {
         return (nullptr);
     }
+    candle->init();
     std::function<void(MDCO*)> deleter = [candle](MDCO* ptr)
     {
         delete ptr;

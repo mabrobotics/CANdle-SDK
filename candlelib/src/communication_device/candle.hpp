@@ -255,6 +255,7 @@ namespace mab
         std::shared_ptr<CANdleDatarate_E>        datarate = nullptr;
         std::shared_ptr<candleTypes::busTypes_t> busType  = nullptr;
         std::optional<std::string_view>          pathOrId;
+        std::optional<bool>                      useCAN20Frames;
 
         std::function<void()> preBuildTask = []() {};
 
@@ -292,7 +293,7 @@ namespace mab
                     m_logger.error("Unimplemented bus type");
                     return {};
             }
-            Candle* candle = new Candle(*datarate, std::move(bus));
+            Candle* candle = new Candle(*datarate, std::move(bus), useCAN20Frames.value_or(false));
             if (candle == nullptr || candle->init() != candleTypes::Error_t::OK)
             {
                 m_logger.error("Could not initialize CANdle device!");
