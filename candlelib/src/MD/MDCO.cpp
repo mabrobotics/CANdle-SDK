@@ -167,6 +167,12 @@ namespace mab
         }
     }
 
+    /// TODO: those parameters shoudl be loaded via EDS somehow
+    MDCO::Error_t MDCO::init()
+    {
+        return readOpenRegisters(0x1000, 0);
+    }
+
     MDCO::Error_t MDCO::setProfileParameters(moveParameter& param)
     {
         // set all the parameters needed to configure the motor for moving log an error message if

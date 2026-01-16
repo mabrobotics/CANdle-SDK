@@ -1,5 +1,7 @@
 #include "mdco_cli.hpp"
+#include <memory>
 #include "MDCO.hpp"
+#include "candle.hpp"
 
 using namespace mab;
 
@@ -105,7 +107,7 @@ bool MdcoCli::isCanOpenConfigComplete(const std::filesystem::path& pathToConfig)
     return true;
 }
 
-std::unique_ptr<MDCO, std::function<void(MD*)>> MdcoCli::getMdco(
+std::unique_ptr<MDCO, std::function<void(MDCO*)>> MdcoCli::getMdco(
     const std::shared_ptr<canId_t> mdCanId)
 {
     auto candle = m_candleBuilder->build().value_or(nullptr);
@@ -145,16 +147,13 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     blink->callback(
         [this, mdCanId]()
         {
-            auto mdco = getMd(mdCanId);
+            auto mdco = getMdco(mdCanId);
             if (mdco->blinkOpenTest() != MDCO::Error_t::OK)
             {
                 m_log.error("Failed to blink MD device with ID %d", *mdCanId);
-                detachCandle(candle);
                 return;
             }
             m_log.success("Blinking MD device with ID %d", *mdCanId);
-
-            detachCandle(candle);
         });
 
     // CAN ============================================================================
@@ -166,9 +165,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     can->callback(
         [this, mdCanId, canOptions]()
         {
-            updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
-            MDCO mdco(*mdCanId, candle);
+            auto mdco = getMdco(mdCanId);
             long newbaud;
             if (*canOptions.datarate == "1M")
                 newbaud = 1000000;
@@ -177,7 +174,6 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             else
             {
                 m_log.error("Invalid baudrate for CANopen, only 1M and 500K is supported");
-                detachCandle(candle);
                 return;
             }
             MDCO::Error_t err =
@@ -185,7 +181,6 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             if (err != MDCO::OK)
             {
                 m_log.error("Error setting CANopen config");
-                detachCandle(candle);
                 return;
             }
             if (*canOptions.save)
@@ -194,11 +189,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 if (err != MDCO::OK)
                 {
                     m_log.error("Error saving CANopen config");
-                    detachCandle(candle);
                     return;
                 }
             }
-            detachCandle(candle);
         });
 
     // CLEAR ============================================================================
@@ -209,7 +202,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     clear->callback(
         [this, mdCanId, clearOptions]()
         {
-            auto mdco = getMd(mdCanId);
+            auto mdco = getMdco(mdCanId);
             m_log.info("sending in canOpen clear error \n");
             MDCO::Error_t err = MDCO::OK;
             if (*clearOptions.clearType == "error")
@@ -221,16 +214,13 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             else
             {
                 m_log.error("Unknown command");
-                detachCandle(candle);
                 return;
             }
             if (err != MDCO::OK)
             {
                 m_log.error("Error clearing errors (%s)", (*clearOptions.clearType).c_str());
-                detachCandle(candle);
                 return;
             }
-            detachCandle(candle);
         });
 
     // DISCOVER ============================================================================
@@ -240,18 +230,17 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                          ->excludes(mdCanIdOption);
 
     discover->callback(
-        [this, candleBuilder]()
+        [this]()
         {
-            updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
+            auto candle = std::unique_ptr<Candle>(
+                attachCandle(*(m_candleBuilder->datarate), *(m_candleBuilder->busType), true));
             std::vector<canId_t> mdIds;
-            mdIds = MDCO::discoverOpenMDs(candle);
+            mdIds = MDCO::discoverOpenMDs(candle.get());
             m_log.info("Discovered MDCOs: ");
             for (const auto& id : mdIds)
             {
                 m_log.info("- %d", id);
             }
-            detachCandle(candle);
         });
 
     // EDS ============================================================================
@@ -402,15 +391,12 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     encoderDisplay->callback(
         [this, mdCanId]()
         {
-            updateUserChoice();
-            auto candle       = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
-            MDCO mdco         = MDCO(*mdCanId, candle);
-            MDCO::Error_t err = mdco->readOpenRegisters(0x6064, 0);
+            auto          mdco = getMdco(mdCanId);
+            MDCO::Error_t err  = mdco->readOpenRegisters(0x6064, 0);
             if (err != MDCO::OK)
             {
                 m_log.error("Error reading encoder value");
             }
-            detachCandle(candle);
         });
 
     // ENCODER test
@@ -421,15 +407,12 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     testEncoderMain->callback(
         [this, mdCanId]()
         {
-            updateUserChoice();
-            auto candle       = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
-            MDCO mdco         = MDCO(*mdCanId, candle);
-            MDCO::Error_t err = mdco->testEncoder(true, false);
+            auto          mdco = getMdco(mdCanId);
+            MDCO::Error_t err  = mdco->testEncoder(true, false);
             if (err != MDCO::OK)
             {
                 m_log.error("Error running main encoder test");
             }
-            detachCandle(candle);
         });
 
     // ENCODER test output
@@ -438,15 +421,12 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     testEncoderOut->callback(
         [this, mdCanId]()
         {
-            updateUserChoice();
-            auto candle       = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
-            MDCO mdco         = MDCO(*mdCanId, candle);
-            MDCO::Error_t err = mdco->testEncoder(false, true);
+            auto          mdco = getMdco(mdCanId);
+            MDCO::Error_t err  = mdco->testEncoder(false, true);
             if (err != MDCO::OK)
             {
                 m_log.error("Error running main encoder test");
             }
-            detachCandle(candle);
         });
 
     // Heartbeat ============================================================================
@@ -456,19 +436,16 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
 
     HeartbeatOptions HeartbeatOptions(heartbeat);
 
+    // TODO: rework whole heartbeat mechanism so it is embedded in MDCO class
     heartbeat->callback(
         [this, mdCanId, HeartbeatOptions]()
         {
-            updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
-            MDCO::Error_t err;
             if (*HeartbeatOptions.masterCanId > 0x7F || *HeartbeatOptions.slaveCanId > 0x7f)
             {
                 m_log.error("id > 0x7F");
-                detachCandle(candle);
                 return;
             }
-            MDCO            md    = MDCO(*HeartbeatOptions.slaveCanId, candle);
+            auto            md    = getMdco(mdCanId);
             std::vector<u8> frame = {0x05};
             long            DataSlave;
             u8              bytes1 = ((u8)(*HeartbeatOptions.masterCanId >> 8));
@@ -476,31 +453,27 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             u8              bytes3 = ((u8)(*HeartbeatOptions.timeout >> 8));
             u8              bytes4 = ((u8)(*HeartbeatOptions.timeout));
             DataSlave              = bytes4 + (bytes3 << 8) + (bytes2 << 16) + (bytes1 << 24);
-            err = md.sendCustomData(0x700 + *HeartbeatOptions.masterCanId, frame);
+            MDCO::Error_t err = md->sendCustomData(0x700 + *HeartbeatOptions.masterCanId, frame);
             if (err != MDCO::OK)
             {
                 m_log.error("Error sending heartbeat");
-                detachCandle(candle);
                 return;
             }
-            if (md.getValueFromOpenRegister(0x1003, 0x00) != 00)
+            if (md->getValueFromOpenRegister(0x1003, 0x00) != 00)
             {
                 m_log.error("The Driver is in fault state before testing the heartbeat");
-                detachCandle(candle);
                 return;
             }
-            err = md.writeOpenRegisters(0x1016, 0x01, DataSlave, 4);
+            err = md->writeOpenRegisters(0x1016, 0x01, DataSlave, 4);
             if (err != MDCO::OK)
             {
                 m_log.error("Error setting slave data for heartbeat");
-                detachCandle(candle);
                 return;
             }
-            err = md.sendCustomData(0x700 + *HeartbeatOptions.masterCanId, frame);
+            err = md->sendCustomData(0x700 + *HeartbeatOptions.masterCanId, frame);
             if (err != MDCO::OK)
             {
                 m_log.error("Error sending heartbeat");
-                detachCandle(candle);
                 return;
             }
             auto start   = std::chrono::steady_clock::now();
@@ -509,10 +482,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             {
             }
             // verify if error state before HeartbeatTimeout
-            if (md.getValueFromOpenRegister(0x1001, 0) != 0)
+            if (md->getValueFromOpenRegister(0x1001, 0) != 0)
             {
                 m_log.error("The driver enter fault mode before the Heartbeat timeout");
-                detachCandle(candle);
                 return;
             }
             start   = std::chrono::steady_clock::now();
@@ -521,18 +493,16 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             {
             }
             // verify if error state after HeartbeatTimeout
-            if (md.getValueFromOpenRegister(0x1001, 0) != 0)
+            if (md->getValueFromOpenRegister(0x1001, 0) != 0)
             {
                 m_log.success("The driver enter fault mode after the Heartbeat timeout");
-                detachCandle(candle);
                 return;
             }
-            md.sendCustomData(0x700 + *HeartbeatOptions.masterCanId, frame);
-            if (md.getValueFromOpenRegister(0x1001, 0) != 0)
+            md->sendCustomData(0x700 + *HeartbeatOptions.masterCanId, frame);
+            if (md->getValueFromOpenRegister(0x1001, 0) != 0)
             {
                 m_log.error("The driver still in error mode");
             }
-            detachCandle(candle);
         });
 
     // NMT ============================================================================
@@ -543,15 +513,12 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     nmtRead->callback(
         [this, mdCanId]()
         {
-            updateUserChoice();
-            auto candle       = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType));
-            MDCO md           = MDCO(*mdCanId, candle);
-            MDCO::Error_t err = md.testHeartbeat();
+            auto          md  = getMdco(mdCanId);
+            MDCO::Error_t err = md->testHeartbeat();
             if (err != MDCO::OK)
             {
                 m_log.error("Error reading heartbeat for node %d", *mdCanId);
             }
-            detachCandle(candle);
         });
 
     // NMT operational
@@ -560,9 +527,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     nmtOperational->callback(
         [this, mdCanId]()
         {
-            updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
-            MDCO mdco   = MDCO(*mdCanId, candle);
+            auto            mdco = getMdco(mdCanId);
             std::vector<u8> data = {0x01, (u8)*mdCanId};
             MDCO::Error_t   err  = mdco->writeOpenPDORegisters(0x000, data);
             if (err != MDCO::OK)
@@ -570,8 +535,6 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error("Error sending NMT command %d to node %d", 0x01, *mdCanId);
                 return;
             }
-
-            detachCandle(candle);
         });
 
     // NMT stop
@@ -579,9 +542,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     nmtStop->callback(
         [this, mdCanId]()
         {
-            updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
-            MDCO mdco   = MDCO(*mdCanId, candle);
+            auto            mdco = getMdco(mdCanId);
             std::vector<u8> data = {0x02, (u8)*mdCanId};
             MDCO::Error_t   err  = mdco->writeOpenPDORegisters(0x000, data);
             if (err != MDCO::OK)
@@ -589,7 +550,6 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error("Error sending NMT command %d to node %d", 0x02, *mdCanId);
                 return;
             }
-            detachCandle(candle);
         });
 
     // NMT operational
@@ -598,16 +558,13 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     nmtPreOperational->callback(
         [this, mdCanId]()
         {
-            updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
-            MDCO mdco   = MDCO(*mdCanId, candle);
+            auto            mdco = getMdco(mdCanId);
             std::vector<u8> data = {0x80, (u8)*mdCanId};
             MDCO::Error_t   err  = mdco->writeOpenPDORegisters(0x000, data);
             if (err != MDCO::OK)
             {
                 m_log.error("Error sending NMT command %d to node %d", 0x80, *mdCanId);
             }
-            detachCandle(candle);
         });
 
     // NMT reset node
@@ -615,9 +572,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     nmtResetNode->callback(
         [this, mdCanId]()
         {
-            updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
-            MDCO mdco   = MDCO(*mdCanId, candle);
+            auto            mdco = getMdco(mdCanId);
             std::vector<u8> data = {0x81, (u8)*mdCanId};
             MDCO::Error_t   err  = mdco->writeOpenPDORegisters(0x000, data);
             if (err != MDCO::OK)
@@ -625,7 +580,6 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error("Error sending NMT command %d to node %d", 0x81, *mdCanId);
                 return;
             }
-            detachCandle(candle);
         });
 
     // NMT reset communication
@@ -634,9 +588,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     nmtResetCommunication->callback(
         [this, mdCanId]()
         {
-            updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
-            MDCO mdco   = MDCO(*mdCanId, candle);
+            auto            mdco = getMdco(mdCanId);
             std::vector<u8> data = {0x82, (u8)*mdCanId};
             MDCO::Error_t   err  = mdco->writeOpenPDORegisters(0x000, data);
             if (err != MDCO::OK)
@@ -644,7 +596,6 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error("Error sending NMT command %d to node %d", 0x82, *mdCanId);
                 return;
             }
-            detachCandle(candle);
         });
 
     // PDOTEST ============================================================================
@@ -659,9 +610,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     PdoSpeed->callback(
         [this, mdCanId]()
         {
-            updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
-            MDCO md     = MDCO(*mdCanId, candle);
+            auto md = getMdco(mdCanId);
 
             m_log.info("Sending SDO for motor setup!");
 
@@ -671,28 +620,25 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             param.RatedTorque  = 1000;
             param.RatedCurrent = 1000;
             param.MaxSpeed     = 200;
-            MDCO::Error_t err  = md.setProfileParameters(param);
+            MDCO::Error_t err  = md->setProfileParameters(param);
             if (err != MDCO::OK)
             {
                 m_log.error("Error setting profile parameters");
-                detachCandle(candle);
                 return;
             }
-            err = md.enableDriver(CyclicSyncVelocity);
+            err = md->enableDriver(CyclicSyncVelocity);
             if (err != MDCO::OK)
             {
                 m_log.error("Error enabling driver");
-                detachCandle(candle);
                 return;
             }
 
             m_log.info("Sending PDO for speed loop control");
             std::vector<u8> frameSetup = {0x0F, 0x00, 0x09};
-            err                        = md.writeOpenPDORegisters(0x300 + *mdCanId, frameSetup);
+            err                        = md->writeOpenPDORegisters(0x300 + *mdCanId, frameSetup);
             if (err != MDCO::OK)
             {
                 m_log.error("Error sending setup PDO");
-                detachCandle(candle);
                 return;
             }
 
@@ -702,11 +648,10 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                                           (u8)(cmdCANopen.desiredSpeed >> 8),
                                           (u8)(cmdCANopen.desiredSpeed >> 16),
                                           (u8)(cmdCANopen.desiredSpeed >> 24)};
-            err                        = md.writeOpenPDORegisters(0x500 + *mdCanId, frameSpeed);
+            err                        = md->writeOpenPDORegisters(0x500 + *mdCanId, frameSpeed);
             if (err != MDCO::OK)
             {
                 m_log.error("Error sending speed PDO");
-                detachCandle(candle);
                 return;
             }
             auto start   = std::chrono::steady_clock::now();
@@ -714,8 +659,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             while (std::chrono::steady_clock::now() - start < timeout)
             {
             }
-            if ((int)md.getValueFromOpenRegister(0x606C, 0x00) <= cmdCANopen.desiredSpeed + 5 &&
-                (int)md.getValueFromOpenRegister(0x606C, 0x00) >= cmdCANopen.desiredSpeed - 5)
+            if ((int)md->getValueFromOpenRegister(0x606C, 0x00) <= cmdCANopen.desiredSpeed + 5 &&
+                (int)md->getValueFromOpenRegister(0x606C, 0x00) >= cmdCANopen.desiredSpeed - 5)
             {
                 m_log.success("Velocity Target reached with +/- 5RPM");
             }
@@ -723,14 +668,12 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             {
                 m_log.error("Velocity Target not reached");
             }
-            err = md.disableDriver();
+            err = md->disableDriver();
             if (err != MDCO::OK)
             {
                 m_log.error("Error disabling driver");
-                detachCandle(candle);
                 return;
             }
-            detachCandle(candle);
         });
 
     // PDOTEST position
@@ -740,9 +683,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     PdoPosition->callback(
         [this, mdCanId]()
         {
-            updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
-            MDCO md     = MDCO(*mdCanId, candle);
+            auto md = getMdco(mdCanId);
 
             m_log.info("Sending SDO for motor setup!");
             moveParameter param;
@@ -751,18 +692,16 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             param.RatedTorque  = 1000;
             param.RatedCurrent = 1000;
             param.MaxSpeed     = 200;
-            MDCO::Error_t err  = md.setProfileParameters(param);
+            MDCO::Error_t err  = md->setProfileParameters(param);
             if (err != MDCO::OK)
             {
                 m_log.error("Error setting profile parameters");
-                detachCandle(candle);
                 return;
             }
-            err = md.enableDriver(CyclicSyncPosition);
+            err = md->enableDriver(CyclicSyncPosition);
             if (err != MDCO::OK)
             {
                 m_log.error("Error enabling driver");
-                detachCandle(candle);
                 return;
             }
 
@@ -772,11 +711,10 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             m_log.info("Sending PDO for speed loop control");
 
             std::vector<u8> frameSetup = {0x0F, 0x00, 0x08};
-            err                        = md.writeOpenPDORegisters(0x300 + *mdCanId, frameSetup);
+            err                        = md->writeOpenPDORegisters(0x300 + *mdCanId, frameSetup);
             if (err != MDCO::OK)
             {
                 m_log.error("Error sending setup PDO");
-                detachCandle(candle);
                 return;
             }
             std::vector<u8> framePosition = {0x0F,
@@ -785,11 +723,10 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                                              (u8)(cmdCANopen.desiredPos >> 8),
                                              (u8)(cmdCANopen.desiredPos >> 16),
                                              (u8)(cmdCANopen.desiredPos >> 24)};
-            err = md.writeOpenPDORegisters(0x400 + *mdCanId, framePosition);
+            err = md->writeOpenPDORegisters(0x400 + *mdCanId, framePosition);
             if (err != MDCO::OK)
             {
                 m_log.error("Error sending position PDO");
-                detachCandle(candle);
                 return;
             }
 
@@ -801,28 +738,28 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             auto sendPeriod = std::chrono::milliseconds(100);
 
             while (std::chrono::steady_clock::now() - start < timeout &&
-                   !((int)md.getValueFromOpenRegister(0x6064, 0) > (cmdCANopen.desiredPos - 100) &&
-                     (int)md.getValueFromOpenRegister(0x6064, 0) < (cmdCANopen.desiredPos + 100)))
+                   !((int)md->getValueFromOpenRegister(0x6064, 0) > (cmdCANopen.desiredPos - 100) &&
+                     (int)md->getValueFromOpenRegister(0x6064, 0) < (cmdCANopen.desiredPos + 100)))
             {
                 auto now = std::chrono::steady_clock::now();
                 if (now - lastSend >= sendPeriod)
                 {
                     MDCO::Error_t err =
-                        md.writeOpenRegisters("Motor Target Position", cmdCANopen.desiredPos, 4);
+                        md->writeOpenRegisters("Motor Target Position", cmdCANopen.desiredPos, 4);
                     if (err != MDCO::OK)
                     {
                         m_log.error("Error setting Motor Target Position");
-                        detachCandle(candle);
+
                         return;
                     }
                     lastSend = now;
                 }
             }
 
-            m_log.debug("position actual : %d\n", (int)md.getValueFromOpenRegister(0x6064, 0));
+            m_log.debug("position actual : %d\n", (int)md->getValueFromOpenRegister(0x6064, 0));
 
-            if (((int)md.getValueFromOpenRegister(0x6064, 0) > (cmdCANopen.desiredPos - 200) &&
-                 (int)md.getValueFromOpenRegister(0x6064, 0) < (cmdCANopen.desiredPos + 200)))
+            if (((int)md->getValueFromOpenRegister(0x6064, 0) > (cmdCANopen.desiredPos - 200) &&
+                 (int)md->getValueFromOpenRegister(0x6064, 0) < (cmdCANopen.desiredPos + 200)))
             {
                 m_log.success("Position reached in less than 5s");
             }
@@ -831,15 +768,12 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error("Position not reached in less than 5s");
             }
 
-            err = md.disableDriver();
+            err = md->disableDriver();
             if (err != MDCO::OK)
             {
                 m_log.error("Error disabling driver");
-                detachCandle(candle);
                 return;
             }
-
-            detachCandle(candle);
         });
 
     // PDOTEST custom
@@ -849,10 +783,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     PdoCustom->callback(
         [this, mdCanId]()
         {
-            updateUserChoice();
             unsigned long long data = strtoul((cmdCANopen.value.c_str()), nullptr, 16);
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
-            MDCO mdco   = MDCO(*mdCanId, candle);
+
+            auto mdco = getMdco(mdCanId);
 
             MDCO::Error_t err;
             if (cmdCANopen.edsObj.index == (0x1600))
@@ -862,7 +795,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 if (err != MDCO::OK)
                 {
                     m_log.error("Error sending custom PDO 0x1600");
-                    detachCandle(candle);
+
                     return;
                 }
             }
@@ -873,7 +806,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 if (err != MDCO::OK)
                 {
                     m_log.error("Error sending custom PDO 0x1601");
-                    detachCandle(candle);
+
                     return;
                 }
             }
@@ -889,7 +822,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 if (err != MDCO::OK)
                 {
                     m_log.error("Error sending custom PDO 0x1602");
-                    detachCandle(candle);
+
                     return;
                 }
             }
@@ -905,18 +838,15 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 if (err != MDCO::OK)
                 {
                     m_log.error("Error sending custom PDO 0x1603");
-                    detachCandle(candle);
+
                     return;
                 }
             }
             else
             {
                 m_log.error("Please enter a index between 0x1600 & 0x1603 (Transmit PDO)");
-                detachCandle(candle);
                 return;
             }
-
-            detachCandle(candle);
         });
 
     // REGISTER ============================================================================
@@ -932,9 +862,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     regRead->callback(
         [this, mdCanId, readOption]()
         {
-            updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
-            MDCO mdco   = MDCO(*mdCanId, candle);
+            auto            mdco = getMdco(mdCanId);
             std::vector<u8> data;
             int dataSize = mdco->dataSizeOfEdsObject(*readOption.index, *readOption.subindex);
             if (!*readOption.force)
@@ -953,8 +881,6 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             }
             else
                 mdco->readOpenRegisters(*readOption.index, *readOption.subindex, *readOption.force);
-
-            detachCandle(candle);
         });
 
     // REGISTER write
@@ -968,9 +894,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     regWrite->callback(
         [this, mdCanId, writeOption]()
         {
-            updateUserChoice();
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
-            MDCO mdco   = MDCO(*mdCanId, candle);
+            auto mdco = getMdco(mdCanId);
 
             MDCO::Error_t err;
             // if no value is given, we read the value from the object dictionary
@@ -979,7 +903,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 if (*writeOption.force)
                 {
                     m_log.error("Please enter the data size in bytes if you use the -f flag");
-                    detachCandle(candle);
+
                     return;
                 }
                 else
@@ -1000,10 +924,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                     m_log.error("Error writing register 0x%04X subindex %d",
                                 *writeOption.index,
                                 *writeOption.subindex);
-                    detachCandle(candle);
+
                     return;
                 }
-                detachCandle(candle);
                 return;
             }
             else if (cmdCANopen.dataSize == 8)
@@ -1017,10 +940,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                     m_log.error("Error writing long register 0x%04X subindex %d",
                                 *writeOption.index,
                                 *writeOption.subindex);
-                    detachCandle(candle);
+
                     return;
                 }
-                detachCandle(candle);
                 return;
             }
             else if (cmdCANopen.dataSize == 0)
@@ -1034,20 +956,16 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                     m_log.error("Error writing string register 0x%04X subindex %d",
                                 *writeOption.index,
                                 *writeOption.subindex);
-                    detachCandle(candle);
+
                     return;
                 }
-                detachCandle(candle);
                 return;
             }
             else
             {
                 m_log.error("Wrong/unknow data size");
-                detachCandle(candle);
                 return;
             }
-
-            detachCandle(candle);
         });
 
     // RESET ============================================================================
@@ -1055,16 +973,13 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     reset->callback(
         [this, mdCanId]()
         {
-            auto          md  = getMd(mdCanId);
-            MDCO::Error_t err = mdco->openReset();
+            auto          md  = getMdco(mdCanId);
+            MDCO::Error_t err = md->openReset();
             if (err != MDCO::OK)
             {
                 m_log.error("Error resetting MD device with ID %d", *mdCanId);
-                detachCandle(candle);
                 return;
             }
-
-            detachCandle(candle);
         });
 
     // SETUP ============================================================================
@@ -1076,14 +991,12 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     setupCalib->callback(
         [this, mdCanId]()
         {
-            auto          md  = getMd(mdCanId);
-            MDCO::Error_t err = mdco->encoderCalibration(1, 0);
+            auto          mdco = getMdco(mdCanId);
+            MDCO::Error_t err  = mdco->encoderCalibration(1, 0);
             if (err != MDCO::OK)
             {
                 m_log.error("Error running main encoder calibration");
             }
-
-            detachCandle(candle);
         });
 
     // SETUP calibration output
@@ -1091,14 +1004,12 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     setupCalibOut->callback(
         [this, mdCanId]()
         {
-            auto          md  = getMd(mdCanId);
-            MDCO::Error_t err = mdco->encoderCalibration(0, 1);
+            auto          mdco = getMdco(mdCanId);
+            MDCO::Error_t err  = mdco->encoderCalibration(0, 1);
             if (err != MDCO::OK)
             {
                 m_log.error("Error running output encoder calibration");
             }
-
-            detachCandle(candle);
         });
 
     // SETUP info
@@ -1107,7 +1018,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     setupInfo->callback(
         [this, mdCanId]()
         {
-            auto md       = getMd(mdCanId);
+            auto mdco     = getMdco(mdCanId);
             bool printAll = false;
             setupInfoAllFlag->count() > 0 ? printAll = true : printAll = false;
 
@@ -1132,8 +1043,6 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             {
                 mdco->printAllInfo();
             }
-
-            detachCandle(candle);
         });
 
     // SETUP upload
@@ -1149,7 +1058,6 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     setupupload->callback(
         [this, mdCanId]()
         {
-            updateUserChoice();
             std::string finalConfigPath = cmdCANopen.cfgPath;
             if (!cmdCANopen.force)
                 finalConfigPath = validateAndGetFinalConfigPath(cmdCANopen.cfgPath);
@@ -1172,8 +1080,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             mINI::INIFile      motorCfg(finalConfigPath);
             mINI::INIStructure cfg;
             motorCfg.read(cfg);
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
-            MDCO mdco((*mdCanId), candle);
+            auto          mdco = getMdco(mdCanId);
             MDCOConfigMap configMap;
 
             for (const auto& entry : configMap.m_map)
@@ -1226,7 +1133,6 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             }
 
             m_log.success("Don't forget to save the config before shutting down the MD!");
-            detachCandle(candle);
         });
 
     // SETUP download
@@ -1236,14 +1142,13 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     setupdownload->callback(
         [this, mdCanId]()
         {
-            auto          md = getMd(mdCanId);
+            auto          mdco = getMdco(mdCanId);
             MDCOConfigMap configMap;
             std::ofstream cfg(cmdCANopen.value);
 
             if (!cfg.is_open())
             {
                 m_log.error("Impossible to open %s in writing mode", cmdCANopen.value.c_str());
-                detachCandle(candle);
                 return;
             }
             cfg << std::fixed << std::setprecision(5);
@@ -1288,7 +1193,6 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             }
             cfg.close();
             m_log.success("File %s generate with success.", cmdCANopen.value.c_str());
-            detachCandle(candle);
         });
 
     // SDOsegmented ============================================================================
@@ -1308,10 +1212,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     SDOsegmentedRead->callback(
         [this, mdCanId]()
         {
-            updateUserChoice();
-            u16  reg    = strtoul(cmdCANopen.reg.c_str(), nullptr, 16);
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
-            MDCO mdco((*mdCanId), candle);
+            u16             reg  = strtoul(cmdCANopen.reg.c_str(), nullptr, 16);
+            auto            mdco = getMdco(mdCanId);
             std::vector<u8> data;
             MDCO::Error_t   err = mdco->readLongOpenRegisters(reg, cmdCANopen.subReg, data);
             if (err != MDCO::OK)
@@ -1319,7 +1221,6 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error(
                     "Error reading segmented SDO 0x%04X subindex %d", reg, cmdCANopen.subReg);
             }
-            detachCandle(candle);
         });
 
     // SDOsegmented write
@@ -1336,10 +1237,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     SDOsegmentedWrite->callback(
         [this, mdCanId]()
         {
-            updateUserChoice();
-            u16  reg    = strtoul(cmdCANopen.reg.c_str(), nullptr, 16);
-            auto candle = attachCandle(*(candleBuilder->datarate), *(candleBuilder->busType), true);
-            MDCO mdco((*mdCanId), candle);
+            u16  reg  = strtoul(cmdCANopen.reg.c_str(), nullptr, 16);
+            auto mdco = getMdco(mdCanId);
 
             MDCO::Error_t err =
                 mdco->writeLongOpenRegisters(reg, cmdCANopen.subReg, cmdCANopen.value);
@@ -1348,8 +1247,6 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error(
                     "Error writing segmented SDO 0x%04X subindex %d", reg, cmdCANopen.subReg);
             }
-
-            detachCandle(candle);
         });
 
     // Sync ============================================================================
@@ -1357,7 +1254,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     Sync->callback(
         [this, mdCanId]()
         {
-            auto            md               = getMd(mdCanId);
+            auto            mdco             = getMdco(mdCanId);
             long            SyncMessageValue = mdco->getValueFromOpenRegister(0x1005, 0x0);
             std::vector<u8> data;
             MDCO::Error_t   err;
@@ -1367,7 +1264,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 if (err != MDCO::OK)
                 {
                     m_log.error("Error sending sync message");
-                    detachCandle(candle);
+
                     return;
                 }
                 m_log.success("Sync message send with value:0x%x (default value is 0x80)",
@@ -1375,8 +1272,6 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             }
             else
                 m_log.error("MD with ID:0x%x is not detected", SyncMessageValue);
-
-            detachCandle(candle);
         });
 
     // TEST ============================================================================
@@ -1391,7 +1286,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     testLatency->callback(
         [this, mdCanId]()
         {
-            auto md            = getMd(mdCanId);
+            auto mdco          = getMdco(mdCanId);
             u64  total_latency = 0;
             bool testOk        = true;
 
@@ -1422,8 +1317,6 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             {
                 m_log.error("MD driver not answering");
             }
-
-            detachCandle(candle);
         });
 
     // TEST move
@@ -1440,20 +1333,18 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     testMoveAbs->callback(
         [this, mdCanId, moveAbsParam]()
         {
-            auto          md = getMd(mdCanId);
+            auto          mdco = getMdco(mdCanId);
             MDCO::Error_t err;
             err = mdco->setProfileParameters(*moveAbsParam.param);
             if (err != MDCO::OK)
             {
                 m_log.error("Error setting profile parameters");
-                detachCandle(candle);
                 return;
             }
             err = mdco->enableDriver(ProfilePosition);
             if (err != MDCO::OK)
             {
                 m_log.error("Error enabling driver");
-                detachCandle(candle);
                 return;
             }
             mdco->movePosition(cmdCANopen.desiredPos);
@@ -1461,11 +1352,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             if (err != MDCO::OK)
             {
                 m_log.error("Error disabling driver");
-                detachCandle(candle);
                 return;
             }
-
-            detachCandle(candle);
         });
 
     // TEST move relative
@@ -1482,20 +1370,18 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     testMoveRel->callback(
         [this, mdCanId, moveRelParam]()
         {
-            auto          md = getMd(mdCanId);
+            auto          mdco = getMdco(mdCanId);
             MDCO::Error_t err;
             err = mdco->setProfileParameters(*moveRelParam.param);
             if (err != MDCO::OK)
             {
                 m_log.error("Error setting profile parameters");
-                detachCandle(candle);
                 return;
             }
             err = mdco->enableDriver(CyclicSyncPosition);
             if (err != MDCO::OK)
             {
                 m_log.error("Error enabling driver");
-                detachCandle(candle);
                 return;
             }
             mdco->movePosition(cmdCANopen.desiredPos);
@@ -1503,11 +1389,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             if (err != MDCO::OK)
             {
                 m_log.error("Error disabling driver");
-                detachCandle(candle);
                 return;
             }
-
-            detachCandle(candle);
         });
 
     // TEST move speed
@@ -1522,20 +1405,18 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     testMoveSpeed->callback(
         [this, mdCanId, moveSpeedParam]()
         {
-            auto          md = getMd(mdCanId);
+            auto          mdco = getMdco(mdCanId);
             MDCO::Error_t err;
             err = mdco->setProfileParameters(*moveSpeedParam.param);
             if (err != MDCO::OK)
             {
                 m_log.error("Error setting profile parameters");
-                detachCandle(candle);
                 return;
             }
             err = mdco->enableDriver(CyclicSyncVelocity);
             if (err != MDCO::OK)
             {
                 m_log.error("Error enabling driver");
-                detachCandle(candle);
                 return;
             }
             mdco->moveSpeed(cmdCANopen.desiredSpeed);
@@ -1543,11 +1424,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             if (err != MDCO::OK)
             {
                 m_log.error("Error disabling driver");
-                detachCandle(candle);
                 return;
             }
-
-            detachCandle(candle);
         });
 
     // TEST move impedance
@@ -1575,27 +1453,24 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     testImpedance->callback(
         [this, mdCanId, moveImpedanceParam]()
         {
-            auto          md = getMd(mdCanId);
+            auto          mdco = getMdco(mdCanId);
             MDCO::Error_t err;
             err = mdco->setProfileParameters(*moveImpedanceParam.param);
             if (err != MDCO::OK)
             {
                 m_log.error("Error setting profile parameters");
-                detachCandle(candle);
                 return;
             }
             err = mdco->openSave();
             if (err != MDCO::OK)
             {
                 m_log.error("Error enabling driver");
-                detachCandle(candle);
                 return;
             }
             err = mdco->enableDriver(Impedance);
             if (err != MDCO::OK)
             {
                 m_log.error("Error enabling driver");
-                detachCandle(candle);
                 return;
             }
             err = mdco->moveImpedance(
@@ -1603,18 +1478,14 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             if (err != MDCO::OK)
             {
                 m_log.error("Error moving impedance");
-                detachCandle(candle);
                 return;
             }
             err = mdco->disableDriver();
             if (err != MDCO::OK)
             {
                 m_log.error("Error disabling driver");
-                detachCandle(candle);
                 return;
             }
-
-            detachCandle(candle);
         });
 
     // TIME STAMP ============================================================================
@@ -1625,7 +1496,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     timeStamp->callback(
         [this, mdCanId]()
         {
-            auto mdco = getMd(mdCanId);
+            auto mdco = getMdco(mdCanId);
 
             auto now = std::chrono::system_clock::now();
 
@@ -1674,14 +1545,11 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             if (err != MDCO::OK)
             {
                 m_log.error("Error sending time message");
-                detachCandle(candle);
                 return;
             }
             else
             {
                 m_log.success("message send");
             }
-
-            detachCandle(candle);
         });
 }

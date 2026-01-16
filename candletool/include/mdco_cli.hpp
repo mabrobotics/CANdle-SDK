@@ -132,7 +132,7 @@ namespace mab
         /// @return Validated path to the configuration file
         std::string validateAndGetFinalConfigPath(const std::filesystem::path& cfgPath);
 
-        std::unique_ptr<MDCO, std::function<void(MD*)>> getMdco(
+        std::unique_ptr<MDCO, std::function<void(MDCO*)>> getMdco(
             const std::shared_ptr<canId_t> mdCanId);
 
         struct ClearOptions
