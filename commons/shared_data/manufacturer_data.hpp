@@ -1,9 +1,15 @@
 #pragma once
 
 #include "mab_types.hpp"
+#ifdef __cplusplus
+#include <cstring>
+#else
+#include <string.h>
+#endif
 
 namespace mab
 {
+    // When adding deviceType_E dont forget to update parsign functions below!!!
     enum class deviceType_E : u8
     {
         UNKNOWN_DEVICE = 0x00,
@@ -17,6 +23,24 @@ namespace mab
         CANDLE           = 0xA1,
         CANDLE_HAT       = 0xA2
     };
+    inline mab::deviceType_E cStringToDeviceType(char* cstr)
+    {
+        if (strcmp(cstr, "md80") == 0)
+            return mab::deviceType_E::MD80;
+        if (strcmp(cstr, "md20") == 0)
+            return mab::deviceType_E::MD20;
+        if (strcmp(cstr, "md80hv") == 0)
+            return mab::deviceType_E::MD80HV;
+        if (strcmp(cstr, "md80de") == 0)
+            return mab::deviceType_E::MD80DE;
+        if (strcmp(cstr, "candle") == 0)
+            return mab::deviceType_E::CANDLE;
+        if (strcmp(cstr, "candlehat") == 0)
+            return mab::deviceType_E::CANDLE_HAT;
+        if (strcmp(cstr, "pds") == 0)
+            return mab::deviceType_E::PDS;
+        return mab::deviceType_E::UNKNOWN_DEVICE;
+    }
     inline char* deviceTypeToCstring(deviceType_E type)
     {
         switch (type)
@@ -34,7 +58,7 @@ namespace mab
             case mab::deviceType_E::CANDLE_HAT:
                 return (char*)"candlehat";
             case mab::deviceType_E::PDS:
-                return (char*)"candlehat";
+                return (char*)"pds";
             default:
                 return (char*)"UNKNOWN";
         }
