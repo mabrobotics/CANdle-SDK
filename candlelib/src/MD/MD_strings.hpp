@@ -52,6 +52,7 @@ namespace mab
                                                                          {"ME_AS_CENTER", 1},
                                                                          {"ME_AS_OFFAXIS", 2},
                                                                          {"RLS_17B_RS422", 3},
+                                                                         {"MB053SFA17BENT00", 3}, // deprecated
                                                                          {"CM_OFFAXIS", 4},
                                                                          {"M24B_CENTER", 5},
                                                                          {"M24B_OFFAXIS", 6},
