@@ -25,19 +25,19 @@ namespace mab
     };
     inline mab::deviceType_E cStringToDeviceType(char* cstr)
     {
-        if (strcmp(cstr, "md80"))
+        if (strcmp(cstr, "md80") == 0)
             return mab::deviceType_E::MD80;
-        if (strcmp(cstr, "md20"))
+        if (strcmp(cstr, "md20") == 0)
             return mab::deviceType_E::MD20;
-        if (strcmp(cstr, "md80hv"))
+        if (strcmp(cstr, "md80hv") == 0)
             return mab::deviceType_E::MD80HV;
-        if (strcmp(cstr, "md80de"))
+        if (strcmp(cstr, "md80de") == 0)
             return mab::deviceType_E::MD80DE;
-        if (strcmp(cstr, "candle"))
+        if (strcmp(cstr, "candle") == 0)
             return mab::deviceType_E::CANDLE;
-        if (strcmp(cstr, "candlehat"))
+        if (strcmp(cstr, "candlehat") == 0)
             return mab::deviceType_E::CANDLE_HAT;
-        if (strcmp(cstr, "pds"))
+        if (strcmp(cstr, "pds") == 0)
             return mab::deviceType_E::PDS;
         return mab::deviceType_E::UNKNOWN_DEVICE;
     }
