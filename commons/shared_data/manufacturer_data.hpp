@@ -58,7 +58,7 @@ namespace mab
             case mab::deviceType_E::CANDLE_HAT:
                 return (char*)"candlehat";
             case mab::deviceType_E::PDS:
-                return (char*)"candlehat";
+                return (char*)"pds";
             default:
                 return (char*)"UNKNOWN";
         }
