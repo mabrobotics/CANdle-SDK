@@ -1138,6 +1138,25 @@ namespace mab
                 else
                 {
                     m_logger.info("Overriding download of file. Using local provided path.");
+                    auto extension =
+                        std::filesystem::path(*updateOptions.pathToMabFile).extension();
+                    if (extension == "")
+                    {
+                        WebFile_S localFlasherWebFile = {WebFile_S::Type_E::MD_FLASHER,
+                                                         *updateOptions.pathToMabFile};
+                        Flasher   localFlasher(localFlasherWebFile);
+                        canId_t   flashId = *mdCanId;
+                        if (*updateOptions.recovery)
+                            flashId = 9;
+                        auto flashResult = localFlasher.flash(flashId, *updateOptions.recovery);
+                        if (flashResult != Flasher::Error_E::OK)
+                        {
+                            m_logger.error("Error while flashing firmware!");
+                            return;
+                        }
+                        return;
+                    }
+
                     MabFileParser mabFile(*updateOptions.pathToMabFile,
                                           MabFileParser::TargetDevice_E::MD);
 
