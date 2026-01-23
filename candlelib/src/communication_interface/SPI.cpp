@@ -116,6 +116,9 @@ namespace mab
                        std::chrono::high_resolution_clock::now() - startTime)
                        .count() < timeoutMs * 1000)
             {
+                // This prevents race conditions (DMA clearing buffer while parsing) in candle
+                // device
+                std::this_thread::sleep_for(std::chrono::microseconds(80));
                 // Try transfer - it only checks first byte for response
                 int err = ioctl(m_spiFileDescriptor, SPI_IOC_MESSAGE(1), &m_transferBuffer);
                 if (err < 0)
@@ -142,6 +145,10 @@ namespace mab
                     {
                         // Remove CRC bytes from the received data
                         receivedData.resize(receivedData.size() - spiCRC.getCrcLen());
+                        // This prevents race conditions (DMA clearing buffer while parsing) in
+                        // candle
+                        // device
+                        std::this_thread::sleep_for(std::chrono::microseconds(80));
                         return std::make_pair(receivedData, I_CommunicationInterface::OK);
                     }
                     else

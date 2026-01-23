@@ -4,6 +4,7 @@
 #include <exception>
 #include <vector>
 #include <memory>
+#include <mutex>
 #include <utility>
 
 #include <mab_types.hpp>
@@ -36,6 +37,8 @@ namespace mab
         bool m_connected = false;
 
         std::array<u8, 512> m_rxBuffer = {0};
+
+        mutable std::mutex m_transferMux;
 
       public:
         LibusbDevice(libusb_device* device,
