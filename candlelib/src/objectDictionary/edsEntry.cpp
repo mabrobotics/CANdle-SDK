@@ -1,5 +1,6 @@
+#include <fcntl.h>
+#include <cstring>
 #include <edsEntry.hpp>
-#include <ios>
 #include <string>
 #include <charconv>
 
@@ -8,23 +9,30 @@ namespace mab
     template <class T>
     std::vector<std::byte> EDSEntryValue<T>::getSerializedValue() const
     {
+        return std::vector<std::byte>(reinterpret_cast<const std::byte*>(&m_value),
+                                      reinterpret_cast<const std::byte*>(&m_value) + sizeof(T));
     }
 
     template <class T>
     bool EDSEntryValue<T>::setSerializedValue(std::span<const std::byte> value)
     {
+        if (value.size() != sizeof(T))
+            return false;
+
+        std::memcpy(&m_value, value.data(), sizeof(T));
+
+        return true;
     }
 
     template <class T>
     std::string EDSEntryValue<T>::toString() const
     {
+        return std::to_string(m_value);
     }
 
     template <class T>
     bool EDSEntryValue<T>::fromString(const std::string_view value)
     {
-        static_assert(std::is_arithmetic_v<T>,
-                      "EDSEntryValue<T>::fromString requires an arithmetic type");
         T parsed{};
         if constexpr (std::is_integral_v<T>)
         {
@@ -50,8 +58,9 @@ namespace mab
         return true;
     }
     template <class T>
-    EDSEntryMetaData EDSEntryValue<T>::getBasicData() const
+    I_EDSEntry::EDSEntryMetaData EDSEntryValue<T>::getBasicData() const
     {
+        return m_metaData;
     }
     // Possible type instantiation
     template class EDSEntryValue<uint8_t>;

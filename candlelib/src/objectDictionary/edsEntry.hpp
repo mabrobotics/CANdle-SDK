@@ -83,8 +83,11 @@ namespace mab
 
         T m_value;
 
-        EDSEntryValue(const I_EDSEntry::EDSEntryMetaData& metaData) : metaData(metaData)
+        EDSEntryValue(const I_EDSEntry::EDSEntryMetaData& metaData) : m_metaData(metaData)
         {
+            constexpr bool isSafe = std::is_arithmetic_v<T> && std::is_trivially_copyable_v<T> &&
+                                    std::is_standard_layout_v<T>;
+            static_assert(isSafe, "Type is not safe for value serialization");
         }
         std::vector<std::byte> getSerializedValue() const override;
         bool                   setSerializedValue(std::span<const std::byte> value) override;
