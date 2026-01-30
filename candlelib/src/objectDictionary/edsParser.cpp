@@ -368,8 +368,7 @@ Error_t edsParser::generateMarkdown(const std::string& path)
         mdFile << "| " << getDataTypeName(currentFields["DataType"]) << "| "
                << (currentFields["AccessType"].empty() ? "???" : currentFields["AccessType"])
                << "| " << (currentFields["PDOMapping"].empty() ? "no" : currentFields["PDOMapping"])
-               << "| "
-               << "no | "
+               << "| " << "no | "
                << (currentFields["DefaultValue"].empty() ? "" : currentFields["DefaultValue"])
                << "|\n\n";
 
@@ -491,19 +490,14 @@ Error_t edsParser::generateHtml(const std::string& path)
         htmlFile << "<tr><th>Data Type</th><th>SDO</th><th>PDO</th><th>SRDO</th><th>Default "
                     "Value</th></tr>\n";
 
-        htmlFile << "<tr>"
-                 << "<td>" << getDataTypeName(currentFields["DataType"]) << "</td>"
+        htmlFile << "<tr>" << "<td>" << getDataTypeName(currentFields["DataType"]) << "</td>"
                  << "<td>"
                  << (currentFields["AccessType"].empty() ? "???" : currentFields["AccessType"])
-                 << "</td>"
-                 << "<td>"
+                 << "</td>" << "<td>"
                  << (currentFields["PDOMapping"].empty() ? "no" : currentFields["PDOMapping"])
-                 << "</td>"
-                 << "<td>no</td>"
-                 << "<td>"
+                 << "</td>" << "<td>no</td>" << "<td>"
                  << (currentFields["DefaultValue"].empty() ? "" : currentFields["DefaultValue"])
-                 << "</td>"
-                 << "</tr>\n</table>\n";
+                 << "</td>" << "</tr>\n</table>\n";
 
         currentFields.clear();
     };

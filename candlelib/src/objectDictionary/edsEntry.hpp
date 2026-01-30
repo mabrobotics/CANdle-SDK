@@ -2,7 +2,10 @@
 #include <string>
 #include <string_view>
 #include <span>
+#include <type_traits>
 #include <vector>
+#include <any>
+#include "edsParser.hpp"
 #include "mab_types.hpp"
 
 namespace mab
@@ -32,9 +35,9 @@ namespace mab
 
         enum class ObjectType_E : u8
         {
-            VALUE,
-            ARRAY,
-            RECORD
+            VALUE  = 0x7,
+            ARRAY  = 0x8,
+            RECORD = 0x9
         };
 
         enum class DataType_E
@@ -56,6 +59,14 @@ namespace mab
             DOMAIN         = 0x000F
         };
 
+        enum class Error_t
+        {
+            UNKNOWN,
+            OK,
+            PARSING_FAILED,
+            BAD_ANY_CAST
+        };
+
         struct EDSEntryMetaData
         {
             std::string       parameterName;
@@ -68,14 +79,16 @@ namespace mab
         };
 
         virtual std::vector<std::byte> getSerializedValue() const                     = 0;
-        virtual bool                   setSerializedValue(std::span<const std::byte>) = 0;
+        virtual Error_t                setSerializedValue(std::span<const std::byte>) = 0;
         virtual std::string            toString() const                               = 0;
-        virtual bool                   fromString(const std::string_view)             = 0;
+        virtual Error_t                fromString(const std::string_view)             = 0;
+        virtual std::any               get() const                                    = 0;
+        virtual Error_t                set(std::any val)                              = 0;
 
         virtual EDSEntryMetaData getBasicData() const = 0;
     };
 
-    template <typename T>
+    template <class T>
     class EDSEntryValue : public I_EDSEntry
     {
       public:
@@ -83,51 +96,55 @@ namespace mab
 
         T m_value;
 
-        EDSEntryValue(const I_EDSEntry::EDSEntryMetaData& metaData) : m_metaData(metaData)
+        constexpr EDSEntryValue(const I_EDSEntry::EDSEntryMetaData& metaData) : m_metaData(metaData)
         {
-            constexpr bool isSafe = std::is_arithmetic_v<T> && std::is_trivially_copyable_v<T> &&
-                                    std::is_standard_layout_v<T>;
-            static_assert(isSafe, "Type is not safe for value serialization");
+            static_assert(std::is_nothrow_copy_constructible_v<T>, "Type is not copyable");
+            static_assert(std::is_standard_layout_v<T>, "Type is not standard layout");
         }
         std::vector<std::byte> getSerializedValue() const override;
-        bool                   setSerializedValue(std::span<const std::byte> value) override;
+        Error_t                setSerializedValue(std::span<const std::byte> value) override;
         std::string            toString() const override;
-        bool                   fromString(const std::string_view value) override;
+        Error_t                fromString(const std::string_view value) override;
         EDSEntryMetaData       getBasicData() const override;
+
+        std::any get() const override;
+        Error_t  set(std::any) override;
     };
 
-    template <typename T>
+    template <class T>
     class EDSEntryArray : public I_EDSEntry
     {
       public:
-        const I_EDSEntry::EDSEntryMetaData metaData;
+        const EDSEntryMetaData m_metaData;
 
-        std::vector<T> values;
+        std::vector<EDSEntryValue<T>> m_entries;
 
-        EDSEntryArray(const I_EDSEntry::EDSEntryMetaData& metaData) : metaData(metaData)
+        constexpr EDSEntryArray(const EDSEntryMetaData& metaData) : m_metaData(metaData)
         {
+            constexpr bool isSafe = std::is_standard_layout_v<T> & std::is_trivially_copyable_v<T>;
+            static_assert(isSafe, "Type is not safe for array serialization");
         }
         std::vector<std::byte> getSerializedValue() const override;
-        bool                   setSerializedValue(std::span<const std::byte> value) override;
+        Error_t                setSerializedValue(std::span<const std::byte> value) override;
         std::string            toString() const override;
-        bool                   fromString(const std::string_view value) override;
+        Error_t                fromString(const std::string_view value) override;
         EDSEntryMetaData       getBasicData() const override;
     };
 
     class EDSEntryRecord : public I_EDSEntry
     {
       public:
-        const I_EDSEntry::EDSEntryMetaData metaData;
+        const EDSEntryMetaData m_metaData;
 
-        std::vector<I_EDSEntry> entries;
+        std::vector<I_EDSEntry> m_entries;
 
-        EDSEntryRecord(const I_EDSEntry::EDSEntryMetaData& metaData) : metaData(metaData)
+        constexpr EDSEntryRecord(const EDSEntryMetaData& metaData) : m_metaData(metaData)
         {
         }
         std::vector<std::byte> getSerializedValue() const override;
-        bool                   setSerializedValue(std::span<const std::byte> value) override;
+        Error_t                setSerializedValue(std::span<const std::byte> value) override;
         std::string            toString() const override;
-        bool                   fromString(const std::string_view value) override;
+        Error_t                fromString(const std::string_view value) override;
         EDSEntryMetaData       getBasicData() const override;
     };
 }  // namespace mab
