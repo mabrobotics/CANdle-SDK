@@ -1,43 +1,86 @@
+// This file contains EDS entry interface as well as all of its implemetations. This class serves to
+// represent .eds file entry for each of object types (value, array and record) in a form that is
+// easy to iterate through, enables safe access it's acctual value, and holds onto neccesary
+// meta-data about the object itself.
 
+#include <cstddef>
+#include <span>
+#include <sstream>
 #include <string>
 #include <string_view>
-#include <span>
 #include <type_traits>
+#include <variant>
 #include <vector>
-#include <any>
-#include "edsParser.hpp"
+#include <map>
+#include "logger.hpp"
 #include "mab_types.hpp"
 
 namespace mab
 {
+    namespace open_types
+    {
 
-    class I_EDSEntry
+        using BOOLEAN_t        = u64;
+        using INTEGER8_t       = i64;
+        using INTEGER16_t      = i64;
+        using INTEGER32_t      = i64;
+        using INTEGER64_t      = i64;
+        using UNSIGNED8_t      = u64;
+        using UNSIGNED16_t     = u64;
+        using UNSIGNED32_t     = u64;
+        using UNSIGNED64_t     = u64;
+        using REAL32_t         = f32;
+        using VISIBLE_STRING_t = std::string;
+        using DOMAIN_t         = std::vector<std::byte>;
+    }  // namespace open_types
+
+    class EDSEntry
     {
       public:
-        virtual ~I_EDSEntry() = default;
+        using ValueVariant_t =
+            std::variant<i64, u64, f32, std::string, std::vector<std::byte>, std::nullptr_t>;
         enum class StorageLocation_E
         {
             RAM,
             PERSIST_COMM
         };
-        enum class accessRights_E
-        {
-            READ_ONLY  = 0x00,
-            READ_WRITE = 0x01,
-            WRITE_ONLY = 0x02,
-        };
-        enum class SectionType_E
-        {
-            MANDATORY    = 0,
-            OPTIONAL     = 1,
-            MANUFACTURER = 2,
-        };
-
         enum class ObjectType_E : u8
         {
             VALUE  = 0x7,
             ARRAY  = 0x8,
             RECORD = 0x9
+        };
+
+        enum class Error_t
+        {
+            UNKNOWN,
+            OK,
+            PARSING_FAILED,
+            NO_VALUE
+        };
+
+        struct EDSEntryMetaData
+        {
+            std::string       parameterName;
+            ObjectType_E      objectType;
+            StorageLocation_E storageLocation;
+        };
+
+        const EDSEntryMetaData m_edsEntryMetaData;
+
+        EDSEntry(EDSEntryMetaData&& edsEntryMetaData) : m_edsEntryMetaData(edsEntryMetaData)
+        {
+        }
+    };
+
+    class EDSEntryVal final : public EDSEntry
+    {
+      public:
+        enum class AccessRights_E
+        {
+            READ_ONLY  = 0x00,
+            READ_WRITE = 0x01,
+            WRITE_ONLY = 0x02,
         };
 
         enum class DataType_E
@@ -59,92 +102,101 @@ namespace mab
             DOMAIN         = 0x000F
         };
 
+        struct EDSValueMetaData
+        {
+            DataType_E     dataType;
+            AccessRights_E accessType;
+            bool           PDOMapping;
+            std::string    defaultValueStr;
+        };
+
+        const EDSValueMetaData m_edsValueMetaData;
+        ValueVariant_t         m_value;
+
+        EDSEntryVal(EDSEntryMetaData&& edsEntryMetaData, EDSValueMetaData&& edsValueMetaData);
+
+        template <class T>
+        operator T() const
+        {
+            T result;
+            try
+            {
+                return std::get<T>(m_value);
+            }
+            catch (std::bad_variant_access& e)
+            {
+                Logger            log(Logger::ProgramLayer_E::TOP, "ERR_HANDLR");
+                std::stringstream ss;
+                ValueVariant_t    testVar = T();
+                ss << "The member variant type index was: " << m_value.index();
+                ss << "; and the input variant index was: " << testVar.index();
+                log.error("Bad casting from CANopen entry named %s",
+                          m_edsEntryMetaData.parameterName.c_str());
+                log.error("%s", ss.str().c_str());
+                log.error("%s", e.what());
+                throw e;
+            }
+            return result;
+        }
+
+        template <class T>
+        T operator=(const T& externalValue)
+        {
+            try
+            {
+                m_value = externalValue;
+            }
+            catch (std::bad_variant_access& e)
+            {
+                Logger            log(Logger::ProgramLayer_E::TOP, "ERR_HANDLR");
+                std::stringstream ss;
+                ValueVariant_t    testVar = T();
+                ss << "The member variant type index was: " << m_value.index();
+                ss << "; and the input variant index was: " << testVar.index();
+                log.error("Bad casting to CANopen entry named %s",
+                          m_edsEntryMetaData.parameterName.c_str());
+                log.error("%s", ss.str().c_str());
+                log.error("%s", e.what());
+                throw e;
+            }
+            return externalValue;
+        }
+
+        std::vector<std::byte> getSerializedValue() const noexcept;
+        Error_t                setSerializedValue(const std::span<std::byte> bytes);
+
+        std::string getAsString() const noexcept;
+        Error_t     setFromString(const std::string_view str);
+
+      private:
+        static ValueVariant_t getVariantFromString(const DataType_E&      dataType,
+                                                   const std::string_view str);
+
+        static std::string getStringFromVariant(const DataType_E&     dataType,
+                                                const ValueVariant_t& val);
+    };
+
+    class EDSEntryContainer final : public EDSEntry
+    {
+      public:
         enum class Error_t
         {
             UNKNOWN,
             OK,
             PARSING_FAILED,
-            BAD_ANY_CAST
+            NO_VALUE
         };
 
-        struct EDSEntryMetaData
+        struct EDSContainerMetaData
         {
-            std::string       parameterName;
-            ObjectType_E      objectType;
-            StorageLocation_E storageLocation;
-            DataType_E        dataType;
-            accessRights_E    accessType;
-            bool              PDOMapping;
-            SectionType_E     sectionType;
+            u8 numberOfSubindecies;
         };
 
-        virtual std::vector<std::byte> getSerializedValue() const                     = 0;
-        virtual Error_t                setSerializedValue(std::span<const std::byte>) = 0;
-        virtual std::string            toString() const                               = 0;
-        virtual Error_t                fromString(const std::string_view)             = 0;
-        virtual std::any               get() const                                    = 0;
-        virtual Error_t                set(std::any val)                              = 0;
+        const std::map<u8, EDSEntryVal> subObjectsMap;
 
-        virtual EDSEntryMetaData getBasicData() const = 0;
+        EDSEntryContainer(EDSEntryMetaData&&              edsEntryMetaData,
+                          EDSContainerMetaData&&          EDSContainerMetadata,
+                          const std::map<u8, EDSEntryVal> subObjectsMap);
     };
 
-    template <class T>
-    class EDSEntryValue : public I_EDSEntry
-    {
-      public:
-        const I_EDSEntry::EDSEntryMetaData m_metaData;
-
-        T m_value;
-
-        constexpr EDSEntryValue(const I_EDSEntry::EDSEntryMetaData& metaData) : m_metaData(metaData)
-        {
-            static_assert(std::is_nothrow_copy_constructible_v<T>, "Type is not copyable");
-            static_assert(std::is_standard_layout_v<T>, "Type is not standard layout");
-        }
-        std::vector<std::byte> getSerializedValue() const override;
-        Error_t                setSerializedValue(std::span<const std::byte> value) override;
-        std::string            toString() const override;
-        Error_t                fromString(const std::string_view value) override;
-        EDSEntryMetaData       getBasicData() const override;
-
-        std::any get() const override;
-        Error_t  set(std::any) override;
-    };
-
-    template <class T>
-    class EDSEntryArray : public I_EDSEntry
-    {
-      public:
-        const EDSEntryMetaData m_metaData;
-
-        std::vector<EDSEntryValue<T>> m_entries;
-
-        constexpr EDSEntryArray(const EDSEntryMetaData& metaData) : m_metaData(metaData)
-        {
-            constexpr bool isSafe = std::is_standard_layout_v<T> & std::is_trivially_copyable_v<T>;
-            static_assert(isSafe, "Type is not safe for array serialization");
-        }
-        std::vector<std::byte> getSerializedValue() const override;
-        Error_t                setSerializedValue(std::span<const std::byte> value) override;
-        std::string            toString() const override;
-        Error_t                fromString(const std::string_view value) override;
-        EDSEntryMetaData       getBasicData() const override;
-    };
-
-    class EDSEntryRecord : public I_EDSEntry
-    {
-      public:
-        const EDSEntryMetaData m_metaData;
-
-        std::vector<I_EDSEntry> m_entries;
-
-        constexpr EDSEntryRecord(const EDSEntryMetaData& metaData) : m_metaData(metaData)
-        {
-        }
-        std::vector<std::byte> getSerializedValue() const override;
-        Error_t                setSerializedValue(std::span<const std::byte> value) override;
-        std::string            toString() const override;
-        Error_t                fromString(const std::string_view value) override;
-        EDSEntryMetaData       getBasicData() const override;
-    };
 }  // namespace mab
