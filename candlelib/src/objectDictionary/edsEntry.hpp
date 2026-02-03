@@ -4,6 +4,8 @@
 // meta-data about the object itself.
 
 #include <cstddef>
+#include <functional>
+#include <iterator>
 #include <span>
 #include <sstream>
 #include <string>
@@ -66,11 +68,14 @@ namespace mab
             StorageLocation_E storageLocation;
         };
 
-        const EDSEntryMetaData m_edsEntryMetaData;
-
         EDSEntry(EDSEntryMetaData&& edsEntryMetaData) : m_edsEntryMetaData(edsEntryMetaData)
         {
         }
+
+        const EDSEntryMetaData& getEntryMetaData() const noexcept;
+
+      protected:
+        EDSEntryMetaData m_edsEntryMetaData;
     };
 
     class EDSEntryVal final : public EDSEntry
@@ -109,10 +114,6 @@ namespace mab
             bool           PDOMapping;
             std::string    defaultValueStr;
         };
-
-        const EDSValueMetaData m_edsValueMetaData;
-        ValueVariant_t         m_value;
-
         EDSEntryVal(EDSEntryMetaData&& edsEntryMetaData, EDSValueMetaData&& edsValueMetaData);
 
         template <class T>
@@ -142,11 +143,11 @@ namespace mab
         template <class T>
         T operator=(const T& externalValue)
         {
-            try
+            if (std::holds_alternative<T>(m_value))
             {
                 m_value = externalValue;
             }
-            catch (std::bad_variant_access& e)
+            else
             {
                 Logger            log(Logger::ProgramLayer_E::TOP, "ERR_HANDLR");
                 std::stringstream ss;
@@ -156,8 +157,6 @@ namespace mab
                 log.error("Bad casting to CANopen entry named %s",
                           m_edsEntryMetaData.parameterName.c_str());
                 log.error("%s", ss.str().c_str());
-                log.error("%s", e.what());
-                throw e;
             }
             return externalValue;
         }
@@ -174,29 +173,56 @@ namespace mab
 
         static std::string getStringFromVariant(const DataType_E&     dataType,
                                                 const ValueVariant_t& val);
+        EDSValueMetaData   m_edsValueMetaData;
+        ValueVariant_t     m_value;
     };
 
     class EDSEntryContainer final : public EDSEntry
     {
       public:
-        enum class Error_t
-        {
-            UNKNOWN,
-            OK,
-            PARSING_FAILED,
-            NO_VALUE
-        };
-
         struct EDSContainerMetaData
         {
             u8 numberOfSubindecies;
         };
 
-        const std::map<u8, EDSEntryVal> subObjectsMap;
+        EDSEntryContainer(EDSEntryMetaData&&                           edsEntryMetaData,
+                          EDSContainerMetaData&&                       edsContainerMetadata,
+                          std::map<u8, std::unique_ptr<EDSEntryVal>>&& subObjectsMap)
+            : EDSEntry(std::move(edsEntryMetaData)),
+              m_edsContainerMetaData(std::move(edsContainerMetadata)),
+              m_subObjectsMap(std::move(subObjectsMap))
+        {
+        }
 
-        EDSEntryContainer(EDSEntryMetaData&&              edsEntryMetaData,
-                          EDSContainerMetaData&&          EDSContainerMetadata,
-                          const std::map<u8, EDSEntryVal> subObjectsMap);
+        inline EDSEntryVal& operator[](u8 subIndex)
+        {
+            return *m_subObjectsMap.at(subIndex);
+        }
+
+        const inline EDSContainerMetaData getContainerMetaData() const noexcept
+        {
+            return m_edsContainerMetaData;
+        }
+
+      private:
+        EDSContainerMetaData                       m_edsContainerMetaData;
+        std::map<u8, std::unique_ptr<EDSEntryVal>> m_subObjectsMap;
+    };
+
+    class EDSObjectDictionary
+    {
+      public:
+        EDSObjectDictionary(std::map<u32, EDSEntryContainer>&& map) : m_map(std::move(map))
+        {
+        }
+
+        EDSEntryContainer& operator[](u32 idx)
+        {
+            return m_map.at(idx);
+        }
+
+      private:
+        std::map<u32, EDSEntryContainer> m_map;
     };
 
 }  // namespace mab

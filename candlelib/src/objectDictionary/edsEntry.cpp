@@ -7,6 +7,11 @@
 namespace mab
 {
 
+    const EDSEntry::EDSEntryMetaData& EDSEntry::getEntryMetaData() const noexcept
+    {
+        return m_edsEntryMetaData;
+    }
+
     EDSEntryVal::EDSEntryVal(EDSEntryMetaData&& edsEntryMetaData,
                              EDSValueMetaData&& edsValueMetaData)
         : EDSEntry(std::move(edsEntryMetaData)), m_edsValueMetaData(edsValueMetaData)
