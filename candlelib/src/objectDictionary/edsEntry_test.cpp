@@ -96,7 +96,7 @@ TEST_F(EdsEntry_test, containerLayout)
         .parameterName   = std::string("Container"),
         .objectType      = EDSEntry::ObjectType_E::RECORD,
         .storageLocation = EDSEntry::StorageLocation_E::RAM};
-    EDSEntryContainer::EDSContainerMetaData containerSpecificMetaData = {.numberOfSubindecies = 3};
+    EDSEntryContainer::EDSContainerMetaData containerSpecificMetaData = {.numberOfSubindices = 3};
 
     std::map<u8, std::unique_ptr<EDSEntryVal>> conteinerMap;
     conteinerMap.emplace(

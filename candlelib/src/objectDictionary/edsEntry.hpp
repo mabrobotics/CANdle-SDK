@@ -4,13 +4,10 @@
 // meta-data about the object itself.
 
 #include <cstddef>
-#include <functional>
-#include <iterator>
 #include <span>
 #include <sstream>
 #include <string>
 #include <string_view>
-#include <type_traits>
 #include <variant>
 #include <vector>
 #include <map>
@@ -19,9 +16,11 @@
 
 namespace mab
 {
+    /// @namespace open_types
+    /// @brief this namespace shoudl be used along with EDSEntryVal class for type compatibility
+    /// with the variants
     namespace open_types
     {
-
         using BOOLEAN_t        = u64;
         using INTEGER8_t       = i64;
         using INTEGER16_t      = i64;
@@ -36,6 +35,8 @@ namespace mab
         using DOMAIN_t         = std::vector<std::byte>;
     }  // namespace open_types
 
+    /// @class EDSEntry
+    /// @brief Base class representing an EDS entry
     class EDSEntry
     {
       public:
@@ -57,8 +58,7 @@ namespace mab
         {
             UNKNOWN,
             OK,
-            PARSING_FAILED,
-            NO_VALUE
+            PARSING_FAILED
         };
 
         struct EDSEntryMetaData
@@ -72,6 +72,8 @@ namespace mab
         {
         }
 
+        /// @brief get EDS entry general parameters
+        /// @return EDSEntryMetaData for this entry
         const EDSEntryMetaData& getEntryMetaData() const noexcept;
 
       protected:
@@ -114,6 +116,9 @@ namespace mab
             bool           PDOMapping;
             std::string    defaultValueStr;
         };
+        /// @brief Constructor for EDS entry of a value type
+        /// @param edsEntryMetaData Pre-filled EDS general data struct from the EDS file
+        /// @param edsValueMetaData Pre-filled EDS value specific struct from the EDS file
         EDSEntryVal(EDSEntryMetaData&& edsEntryMetaData, EDSValueMetaData&& edsValueMetaData);
 
         template <class T>
@@ -161,6 +166,13 @@ namespace mab
             return externalValue;
         }
 
+        /// @brief Get EDS value specific parameters
+        /// @return EDSValueMetaData for this entry
+        const inline EDSValueMetaData getContainerMetaData() const noexcept
+        {
+            return m_edsValueMetaData;
+        }
+
         std::vector<std::byte> getSerializedValue() const noexcept;
         Error_t                setSerializedValue(const std::span<std::byte> bytes);
 
@@ -182,7 +194,7 @@ namespace mab
       public:
         struct EDSContainerMetaData
         {
-            u8 numberOfSubindecies;
+            u8 numberOfSubindices;
         };
 
         EDSEntryContainer(EDSEntryMetaData&&                           edsEntryMetaData,
@@ -199,6 +211,8 @@ namespace mab
             return *m_subObjectsMap.at(subIndex);
         }
 
+        /// @brief Get EDS container specific parameters
+        /// @return EDSContainerMetaData for this entry
         const inline EDSContainerMetaData getContainerMetaData() const noexcept
         {
             return m_edsContainerMetaData;
