@@ -1,8 +1,9 @@
 #include <cstddef>
-#include <edsEntry.hpp>
 #include <utility>
 #include <stdexcept>
 #include <variant>
+
+#include "edsEntry.hpp"
 
 namespace mab
 {
@@ -22,7 +23,7 @@ namespace mab
         }
         m_value =
             getVariantFromString(m_edsValueMetaData.dataType, m_edsValueMetaData.defaultValueStr);
-        if (std::holds_alternative<std::nullptr_t>(m_value))
+        if (std::holds_alternative<std::monostate>(m_value))
         {
             throw std::runtime_error("Invalid default value or type!");
         }
@@ -43,7 +44,7 @@ namespace mab
     EDSEntry::Error_t EDSEntryVal::setFromString(const std::string_view str)
     {
         m_value = getVariantFromString(m_edsValueMetaData.dataType, str);
-        if (std::holds_alternative<std::nullptr_t>(m_value))
+        if (std::holds_alternative<std::monostate>(m_value))
         {
             return Error_t::PARSING_FAILED;
         }
@@ -76,13 +77,13 @@ namespace mab
             case DataType_E::REAL32:
                 return open_types::REAL32_t(std::stof(str.data()));
             case DataType_E::REAL64:
-                return nullptr;
+                return {};
             case DataType_E::VISIBLE_STRING:
                 return std::string(str);
             case DataType_E::UNICODE_STRING:
-                return nullptr;
+                return {};
             case DataType_E::OCTET_STRING:
-                return nullptr;
+                return {};
             case DataType_E::DOMAIN:
                 std::vector<std::byte> result;
                 for (const auto& byte : str)

@@ -41,7 +41,7 @@ namespace mab
     {
       public:
         using ValueVariant_t =
-            std::variant<i64, u64, f32, std::string, std::vector<std::byte>, std::nullptr_t>;
+            std::variant<i64, u64, f32, std::string, std::vector<std::byte>, std::monostate>;
         enum class StorageLocation_E
         {
             RAM,
