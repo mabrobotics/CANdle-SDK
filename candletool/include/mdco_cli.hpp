@@ -63,21 +63,6 @@ namespace mab
         CLI::App* test         = nullptr;
         CLI::App* timeStamp    = nullptr;
 
-        // eds subcommands
-        CLI::App* edsLoad             = nullptr;
-        CLI::App* edsUnload           = nullptr;
-        CLI::App* edsDisplay          = nullptr;
-        CLI::App* edsGen              = nullptr;
-        CLI::App* edsGenMd            = nullptr;
-        CLI::App* edsGenHtml          = nullptr;
-        CLI::App* edsGencpp           = nullptr;
-        CLI::App* edsGet              = nullptr;
-        CLI::App* edsFind             = nullptr;
-        CLI::App* edsModify           = nullptr;
-        CLI::App* edsModifyAdd        = nullptr;
-        CLI::App* edsModifyDel        = nullptr;
-        CLI::App* edsModifyCorrection = nullptr;
-
         // encoder subcommands
         CLI::App* encoderDisplay  = nullptr;
         CLI::App* testEncoder     = nullptr;

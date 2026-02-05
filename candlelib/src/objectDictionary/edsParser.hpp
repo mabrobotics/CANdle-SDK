@@ -103,18 +103,6 @@ namespace mab
         /// @return Error_t indicating the result of the operation
         Error_t display();
 
-        /// @brief Generate Markdown documentation from the EDS file
-        /// @return Error_t indicating the result of the operation
-        Error_t generateMarkdown(const std::string& path = "");
-
-        /// @brief Generate HTML documentation from the EDS file
-        /// @return Error_t indicating the result of the operation
-        Error_t generateHtml(const std::string& path = "");
-
-        /// @brief Generate C++ header and source files from the EDS file
-        /// @return Error_t indicating the result of the operation
-        Error_t generateCpp(const std::string& path = "");
-
         /// @brief Get the content of an object from its index and subindex
         /// @param index Index of the object to retrieve
         /// @param subindex Subindex of the object to retrieve
@@ -125,24 +113,6 @@ namespace mab
         /// @param searchTerm Term to search for in the EDS file
         /// @return Error_t indicating the result of the operation
         Error_t find(const std::string& searchTerm);
-
-        /// @brief Add a new object to the EDS file
-        /// @param obj The edsObject to add
-        /// @return Error_t indicating the result of the operation
-        Error_t addObject(const edsObject& obj);
-
-        /// @brief Delete an object from the EDS file based on its index and subindex
-        /// @param index Index of the object to delete
-        /// @param subindex Subindex of the object to delete
-        /// @return Error_t indicating the result of the operation
-        Error_t deleteObject(u32 index, u8 subindex);
-
-        /// @brief Modify an existing object in the EDS file
-        /// @param obj The edsObject with updated values
-        /// @param index Index of the object to modify
-        /// @param subindex Subindex of the object to modify
-        /// @return Error_t indicating the result of the operation
-        Error_t modifyObject(const edsObject& obj, u32 index, u8 subindex);
 
       private:
         Logger log;
