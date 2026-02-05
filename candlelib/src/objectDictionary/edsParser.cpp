@@ -1,4 +1,5 @@
 #include "edsParser.hpp"
+#include <filesystem>
 
 using namespace mab;
 
@@ -14,24 +15,6 @@ std::string intToHex(u32 val, size_t width)
 {
     std::ostringstream oss;
     oss << std::uppercase << std::hex << std::setw(width) << std::setfill('0') << val;
-    return oss.str();
-}
-
-std::string edsParser::generateObjectSection(const edsObject& obj)
-{
-    std::ostringstream oss;
-    oss << "[" << std::hex << std::uppercase << std::setfill('0') << std::setw(4) << obj.index;
-    if (obj.subIndex != 0)
-        oss << "sub" << std::dec << (int)obj.subIndex;
-    oss << "]\n";
-    oss << "ParameterName=" << obj.ParameterName << "\n";
-    oss << "ObjectType=0x" << std::hex << (int)obj.ObjectType << "\n";
-    if (!obj.StorageLocation.empty())
-        oss << ";StorageLocation=" << obj.StorageLocation << "\n";
-    oss << "DataType=0x" << std::hex << obj.DataType << "\n";
-    oss << "AccessType=" << obj.accessType << "\n";
-    oss << "DefaultValue=0x" << std::hex << obj.defaultValue << "\n";
-    oss << "PDOMapping=" << (obj.PDOMapping ? 1 : 0) << "\n";
     return oss.str();
 }
 
@@ -93,57 +76,6 @@ void updateObjectListSection(std::string& section, u32 index)
     section = newSection;
 }
 
-void updateObjectTypeSection(std::map<std::string, std::string>& sectionMap,
-                             SectionType_t                       type,
-                             u32                                 index)
-{
-    std::string sectionName;
-    switch (type)
-    {
-        case MandatoryObjects:
-            sectionName = "MandatoryObjects";
-            break;
-        case OptionalObjects:
-            sectionName = "OptionalObjects";
-            break;
-        case ManufacturerObjects:
-            sectionName = "ManufacturerObjects";
-            break;
-    }
-
-    std::string& sectionContent = sectionMap[sectionName];
-
-    // Extract existing index
-    std::set<u32>     indexSet;
-    std::stringstream ss(sectionContent);
-    std::string       line;
-    while (std::getline(ss, line))
-    {
-        std::smatch match;
-        if (std::regex_match(line, match, std::regex(R"((\d+)\s*=\s*0x([0-9A-Fa-f]{4}))")))
-        {
-            indexSet.insert(std::stoul(match[2], nullptr, 16));
-        }
-    }
-
-    indexSet.insert(index);  // Add the new index
-
-    // rebuild the section properly
-    std::ostringstream out;
-    out << "[" << sectionName << "]\n";
-    out << "SupportedObjects=" << indexSet.size() << "\n";
-
-    int i = 1;
-    for (u32 idx : indexSet)
-    {
-        out << i << "=0x" << std::uppercase << std::hex << std::setw(4) << std::setfill('0') << idx
-            << "\n";
-        ++i;
-    }
-
-    sectionMap[sectionName] = out.str();
-}
-
 std::string mab::getObjectTypeName(const std::string& hex)
 {
     if (hex == "0x7")
@@ -190,13 +122,9 @@ std::string mab::getDataTypeName(const std::string& hex)
     return hex;  // fallback
 }
 
-edsParser::~edsParser()
+Error_t edsParser::load(const std::filesystem::path& edsFilePath)
 {
-}
-
-Error_t edsParser::load(const std::string& edsFilePath)
-{
-    mINI::INIFile      file(mab::getCanOpenConfigPath());
+    mINI::INIFile      file(edsFilePath);
     mINI::INIStructure ini;
     file.read(ini);
 
@@ -254,62 +182,14 @@ Error_t edsParser::isValid()
     return OK;
 }
 
-Error_t edsParser::unload()
-{
-    mINI::INIFile      file(mab::getCanOpenConfigPath());
-    mINI::INIStructure ini;
-    file.read(ini);
-
-    // Modify & Rewrite
-    ini["eds"]["path"] = "";
-    file.write(ini);
-    log.success("EDS unloaded");
-    return OK;
-}
-
 Error_t edsParser::display()
 {
-    std::stringstream ss;
-
-    // update the path since the eds_path.txt file
-    Error_t pathResult = this->updateFilePath();
-    if (pathResult != OK)
-    {
-        log.error("Impossible to update the EDS path.\n");
-        return pathResult;
-    }
-
-    std::ifstream edsFile(m_edsFilePath);
-    if (!edsFile.is_open())
-    {
-        log.error("Impossible to open the EDS file: %s\n", m_edsFilePath.c_str());
-        return INVALID_PATH;
-    }
-
-    ss << "\n--- Content of " << m_edsFilePath << "---\n";
-
-    std::string line;
-    while (std::getline(edsFile, line))
-    {
-        ss << line << std::endl;
-    }
-
-    edsFile.close();
-    ss << "--- End of EDS file ---\n";
-
-    log.success("%s", ss.str().c_str());
-
-    return OK;
+    // TODO: see later if that makes sense here
+    return Error_t::OK;
 }
 
 Error_t edsParser::get(u32 index, u8 subindex)
 {
-    if (updateFilePath() != OK)
-    {
-        log.error("Impossible to upload the EDS path.\n");
-        return INVALID_PATH;
-    }
-
     std::ifstream edsFile(m_edsFilePath);
     if (!edsFile.is_open())
     {
@@ -399,12 +279,6 @@ Error_t edsParser::get(u32 index, u8 subindex)
 
 Error_t edsParser::find(const std::string& searchTerm)
 {
-    if (updateFilePath() != OK)
-    {
-        log.error("Impossible to upload the EDS path.\n");
-        return INVALID_PATH;
-    }
-
     std::ifstream edsFile(m_edsFilePath);
     if (!edsFile.is_open())
     {
@@ -484,42 +358,6 @@ Error_t edsParser::find(const std::string& searchTerm)
         log.warn("No section is containing '%s'.\n", searchTerm.c_str());
         return INVALID_INDEX;
     }
-
-    return OK;
-}
-
-Error_t edsParser::updateFilePath()
-{
-    mINI::INIFile      file(mab::getCanOpenConfigPath());
-    mINI::INIStructure ini;
-    file.read(ini);
-
-    const std::string pathFile = ini["eds"]["path"];
-
-    std::ifstream in(pathFile);
-    if (!in.is_open())
-    {
-        log.error("Impossible to open the file containing the EDS file: %s\n", pathFile.c_str());
-        return INVALID_PATH;
-    }
-
-    std::string line;
-    std::getline(in, line);
-    in.close();
-
-    // cleaning (we removed spaces, tabs, and newlines)
-    line.erase(0, line.find_first_not_of("\t\r\n"));
-    line.erase(line.find_last_not_of("\t\r\n") + 1);
-
-    if (line.empty())
-    {
-        log.error("eds_path.txt file empty or invalid.\n");
-        return INVALID_PATH;
-    }
-
-    m_edsFilePath = pathFile;
-    // m_edsFilePath = line;
-    log.info("EDS path update from the eds_path.txt file : %s", m_edsFilePath.c_str());
 
     return OK;
 }

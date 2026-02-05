@@ -12,6 +12,8 @@
 #include "configHelpers.hpp"
 #include "mab_types.hpp"
 #include "logger.hpp"
+#include "edsEntry.hpp"
+#include "mini/ini.h"
 
 namespace mab
 {
@@ -27,35 +29,6 @@ namespace mab
         INVALID_FILE,
         INVALID_INDEX,
         UNKNOWN_ERROR
-    };
-
-    /// @brief Enum representing the type of object in the EDS file
-    /// @details This enum is used to categorize objects in the EDS file into three types:
-    /// MandatoryObjects, OptionalObjects, and ManufacturerObjects.
-    /// @note The values correspond to the object types defined in the EDS file.
-    enum SectionType_t
-    {
-        MandatoryObjects    = 0,
-        OptionalObjects     = 1,
-        ManufacturerObjects = 2,
-    };
-
-    /// @brief Structure representing an object in the EDS file
-    /// @details Contains fields such as index, subindex, parameter name, storage location, data
-    /// type, access type, PDOMapping, default value, and object type.
-    /// @note The object type is represented as an enum for better readability.
-    struct edsObject
-    {
-        u32           index           = 0x0000;
-        u8            subIndex        = 0x0;
-        std::string   ParameterName   = "";
-        u8            ObjectType      = 0;
-        std::string   StorageLocation = "RAM";
-        u32           DataType        = 0x0000;
-        std::string   accessType      = "RO";
-        bool          PDOMapping      = false;
-        u32           defaultValue    = 0;
-        SectionType_t sectionType     = ManufacturerObjects;
     };
 
     /// @brief Get the name of the object type based on its hexadecimal representation
@@ -76,28 +49,16 @@ namespace mab
     class edsParser
     {
       public:
-        edsParser()
-        {
-            log.m_layer = Logger::ProgramLayer_E::TOP;
-            std::stringstream tag;
-            tag << "eds parser";
-            log.m_tag = tag.str();
-        };
-
-        ~edsParser();
+        mINI::INIStructure m_edsIni;
 
         /// @brief Load EDS file from the specified path
         /// @param edsFilePath Path to the EDS file
         /// @return Error_t indicating the result of the operation
-        Error_t load(const std::string& edsFilePath);
+        Error_t load(const std::filesystem::path& edsFilePath);
 
         /// @brief Check if the EDS file is valid
         /// @return Error_t indicating the result of the validation
         Error_t isValid();
-
-        /// @brief Unload the EDS file
-        /// @return Error_t indicating the result of the operation
-        Error_t unload();
 
         /// @brief Display the content of the EDS file
         /// @return Error_t indicating the result of the operation
@@ -115,18 +76,9 @@ namespace mab
         Error_t find(const std::string& searchTerm);
 
       private:
-        Logger log;
+        Logger log = Logger(Logger::ProgramLayer_E::TOP, "EDS_PARSER");
 
-        std::string m_edsFilePath;
-
-        /// @brief Update the file path from the eds_path.txt file
-        /// @return Error_t indicating the result of the operation
-        Error_t updateFilePath();
-
-        /// @brief Generate a section string for an edsObject
-        /// @param obj The edsObject to generate the section for
-        /// @return std::string representing the section of the object
-        std::string generateObjectSection(const edsObject& obj);
+        std::filesystem::path m_edsFilePath;
 
         /// @brief verify if the EDS file has a FileInfo section
         /// @return true if the FileInfo section exists, false otherwise
@@ -136,7 +88,8 @@ namespace mab
         /// @return true if the MandatoryObjects section exists, false otherwise
         bool hasMandatoryObjectsSection();
 
-        /// @brief Check if the EDS file has a SupportedObjects key in the MandatoryObjects section
+        /// @brief Check if the EDS file has a SupportedObjects key in the MandatoryObjects
+        /// section
         /// @return true if the SupportedObjects key exists, false otherwise
         bool hasSupportedObjects();
 
