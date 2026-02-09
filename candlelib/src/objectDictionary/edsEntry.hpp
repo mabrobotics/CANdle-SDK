@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <span>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -40,6 +41,7 @@ namespace mab
     class EDSEntry
     {
       public:
+      public:
         using ValueVariant_t =
             std::variant<i64, u64, f32, std::string, std::vector<std::byte>, std::monostate>;
         enum class StorageLocation_E
@@ -58,31 +60,10 @@ namespace mab
         {
             UNKNOWN,
             OK,
-            PARSING_FAILED
+            PARSING_FAILED,
+            INCORRECT_USE
         };
 
-        struct EDSEntryMetaData
-        {
-            std::string       parameterName;
-            ObjectType_E      objectType;
-            StorageLocation_E storageLocation;
-        };
-
-        EDSEntry(EDSEntryMetaData&& edsEntryMetaData) : m_edsEntryMetaData(edsEntryMetaData)
-        {
-        }
-
-        /// @brief get EDS entry general parameters
-        /// @return EDSEntryMetaData for this entry
-        const EDSEntryMetaData& getEntryMetaData() const noexcept;
-
-      protected:
-        EDSEntryMetaData m_edsEntryMetaData;
-    };
-
-    class EDSEntryVal final : public EDSEntry
-    {
-      public:
         enum class AccessRights_E
         {
             READ_ONLY  = 0x00,
@@ -116,25 +97,46 @@ namespace mab
             bool           PDOMapping;
             std::string    defaultValueStr;
         };
-        /// @brief Constructor for EDS entry of a value type
-        /// @param edsEntryMetaData Pre-filled EDS general data struct from the EDS file
-        /// @param edsValueMetaData Pre-filled EDS value specific struct from the EDS file
-        EDSEntryVal(EDSEntryMetaData&& edsEntryMetaData, EDSValueMetaData&& edsValueMetaData);
+
+        struct EDSContainerMetaData
+        {
+            u8 numberOfSubindices;
+        };
+
+        struct EDSEntryMetaData
+        {
+            std::string                         parameterName;
+            ObjectType_E                        objectType;
+            StorageLocation_E                   storageLocation;
+            std::optional<EDSValueMetaData>     edsValueMeta;
+            std::optional<EDSContainerMetaData> edsContainerMeta;
+        };
+
+        EDSEntry(EDSEntryMetaData&& edsEntryMetaData);
+        EDSEntry(EDSEntryMetaData&&                        edsEntryMetaData,
+                 std::map<u8, std::unique_ptr<EDSEntry>>&& subObjectsMap);
 
         template <class T>
         operator T() const
         {
             T result;
+            if (!m_value.has_value())
+            {
+                Logger log(Logger::ProgramLayer_E::TOP, "ERR_HANDLR");
+                log.error("EDS entry named %s has no value! It can not be accessed this way.",
+                          m_edsEntryMetaData.parameterName.c_str());
+                return {};
+            }
             try
             {
-                return std::get<T>(m_value);
+                return std::get<T>(m_value.value());
             }
             catch (std::bad_variant_access& e)
             {
                 Logger            log(Logger::ProgramLayer_E::TOP, "ERR_HANDLR");
                 std::stringstream ss;
                 ValueVariant_t    testVar = T();
-                ss << "The member variant type index was: " << m_value.index();
+                ss << "The member variant type index was: " << m_value.value().index();
                 ss << "; and the input variant index was: " << testVar.index();
                 log.error("Bad casting from CANopen entry named %s",
                           m_edsEntryMetaData.parameterName.c_str());
@@ -148,7 +150,14 @@ namespace mab
         template <class T>
         T operator=(const T& externalValue)
         {
-            if (std::holds_alternative<T>(m_value))
+            if (!m_value.has_value())
+            {
+                Logger log(Logger::ProgramLayer_E::TOP, "ERR_HANDLR");
+                log.error("EDS entry named %s has no value! It can not be accessed this way.",
+                          m_edsEntryMetaData.parameterName.c_str());
+                return {};
+            }
+            if (std::holds_alternative<T>(m_value.value()))
             {
                 m_value = externalValue;
             }
@@ -157,7 +166,7 @@ namespace mab
                 Logger            log(Logger::ProgramLayer_E::TOP, "ERR_HANDLR");
                 std::stringstream ss;
                 ValueVariant_t    testVar = T();
-                ss << "The member variant type index was: " << m_value.index();
+                ss << "The member variant type index was: " << m_value.value().index();
                 ss << "; and the input variant index was: " << testVar.index();
                 log.error("Bad casting to CANopen entry named %s",
                           m_edsEntryMetaData.parameterName.c_str());
@@ -166,12 +175,29 @@ namespace mab
             return externalValue;
         }
 
+        inline EDSEntry& operator[](u8 subIndex)
+        {
+            if (!m_subObjectsMap.has_value())
+            {
+                Logger log(Logger::ProgramLayer_E::TOP, "ERR_HANDLR");
+                log.error("EDS entry named %s has no subindicies! It can not be accessed this way.",
+                          m_edsEntryMetaData.parameterName.c_str());
+                throw std::runtime_error("No map in the EDS entry");
+            }
+            return *(m_subObjectsMap.value()).at(subIndex);
+        }
+
+        /// @brief get EDS entry general parameters
+        /// @return EDSEntryMetaData for this entry
+        const EDSEntryMetaData& getEntryMetaData() const noexcept;
+
         /// @brief Get EDS value specific parameters
         /// @return EDSValueMetaData for this entry
-        const inline EDSValueMetaData getContainerMetaData() const noexcept
-        {
-            return m_edsValueMetaData;
-        }
+        const std::optional<EDSValueMetaData> getValueMetaData() const noexcept;
+
+        /// @brief Get EDS container specific parameters
+        /// @return EDSContainerMetaData for this entry
+        const inline std::optional<EDSContainerMetaData> getContainerMetaData() const noexcept;
 
         std::vector<std::byte> getSerializedValue() const noexcept;
         Error_t                setSerializedValue(const std::span<std::byte> bytes);
@@ -185,58 +211,26 @@ namespace mab
 
         static std::string getStringFromVariant(const DataType_E&     dataType,
                                                 const ValueVariant_t& val);
-        EDSValueMetaData   m_edsValueMetaData;
-        ValueVariant_t     m_value;
-    };
 
-    class EDSEntryContainer final : public EDSEntry
-    {
-      public:
-        struct EDSContainerMetaData
-        {
-            u8 numberOfSubindices;
-        };
-
-        EDSEntryContainer(EDSEntryMetaData&&                           edsEntryMetaData,
-                          EDSContainerMetaData&&                       edsContainerMetadata,
-                          std::map<u8, std::unique_ptr<EDSEntryVal>>&& subObjectsMap)
-            : EDSEntry(std::move(edsEntryMetaData)),
-              m_edsContainerMetaData(std::move(edsContainerMetadata)),
-              m_subObjectsMap(std::move(subObjectsMap))
-        {
-        }
-
-        inline EDSEntryVal& operator[](u8 subIndex)
-        {
-            return *m_subObjectsMap.at(subIndex);
-        }
-
-        /// @brief Get EDS container specific parameters
-        /// @return EDSContainerMetaData for this entry
-        const inline EDSContainerMetaData getContainerMetaData() const noexcept
-        {
-            return m_edsContainerMetaData;
-        }
-
-      private:
-        EDSContainerMetaData                       m_edsContainerMetaData;
-        std::map<u8, std::unique_ptr<EDSEntryVal>> m_subObjectsMap;
+        EDSEntryMetaData                                       m_edsEntryMetaData;
+        std::optional<ValueVariant_t>                          m_value;
+        std::optional<std::map<u8, std::unique_ptr<EDSEntry>>> m_subObjectsMap;
     };
 
     class EDSObjectDictionary
     {
       public:
-        EDSObjectDictionary(std::map<u32, EDSEntryContainer>&& map) : m_map(std::move(map))
+        EDSObjectDictionary(std::map<u32, EDSEntry>&& map) : m_map(std::move(map))
         {
         }
 
-        EDSEntryContainer& operator[](u32 idx)
+        EDSEntry& operator[](u32 idx)
         {
             return m_map.at(idx);
         }
 
       private:
-        std::map<u32, EDSEntryContainer> m_map;
+        std::map<u32, EDSEntry> m_map;
     };
 
 }  // namespace mab

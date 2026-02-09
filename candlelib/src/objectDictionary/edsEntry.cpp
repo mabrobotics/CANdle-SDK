@@ -1,4 +1,5 @@
 #include <cstddef>
+#include <sstream>
 #include <utility>
 #include <stdexcept>
 #include <variant>
@@ -12,53 +13,96 @@ namespace mab
     {
         return m_edsEntryMetaData;
     }
+    const std::optional<EDSEntry::EDSValueMetaData> EDSEntry::getValueMetaData() const noexcept
+    {
+        return m_edsEntryMetaData.edsValueMeta;
+    }
+    const inline std::optional<EDSEntry::EDSContainerMetaData> EDSEntry::getContainerMetaData()
+        const noexcept
+    {
+        return m_edsEntryMetaData.edsContainerMeta;
+    }
 
-    EDSEntryVal::EDSEntryVal(EDSEntryMetaData&& edsEntryMetaData,
-                             EDSValueMetaData&& edsValueMetaData)
-        : EDSEntry(std::move(edsEntryMetaData)), m_edsValueMetaData(edsValueMetaData)
+    EDSEntry::EDSEntry(EDSEntryMetaData&& edsEntryMetaData) : m_edsEntryMetaData(edsEntryMetaData)
     {
         if (m_edsEntryMetaData.objectType != ObjectType_E::VALUE)
+            throw std::runtime_error("Invalid constructor for value entry!");
+
+        if (!m_edsEntryMetaData.edsValueMeta.has_value())
         {
-            throw std::runtime_error("Array or Record parsed incorrectly!");
+            std::stringstream ss;
+            ss << "Invalid EDS entry generation at entry " << m_edsEntryMetaData.parameterName;
+            throw std::runtime_error(ss.str());
         }
-        m_value =
-            getVariantFromString(m_edsValueMetaData.dataType, m_edsValueMetaData.defaultValueStr);
-        if (std::holds_alternative<std::monostate>(m_value))
+
+        m_value = getVariantFromString(m_edsEntryMetaData.edsValueMeta.value().dataType,
+                                       m_edsEntryMetaData.edsValueMeta.value().defaultValueStr);
+        if (std::holds_alternative<std::monostate>(m_value.value()))
         {
             throw std::runtime_error("Invalid default value or type!");
         }
     }
-    std::vector<std::byte> EDSEntryVal::getSerializedValue() const noexcept
+
+    EDSEntry::EDSEntry(EDSEntryMetaData&&                        edsEntryMetaData,
+                       std::map<u8, std::unique_ptr<EDSEntry>>&& subObjectsMap)
+        : m_edsEntryMetaData(std::move(edsEntryMetaData)), m_subObjectsMap(std::move(subObjectsMap))
     {
-        if (std::holds_alternative<open_types::INTEGER8_t>(m_value) ||
-            std::holds_alternative<open_types::INTEGER16_t>(m_value) ||
-            std::holds_alternative<open_types::INTEGER32_t>(m_value) ||
-            std::holds_alternative<open_types::INTEGER64_t>(m_value))
+        if (m_edsEntryMetaData.objectType == ObjectType_E::VALUE)
+            throw std::runtime_error("Invalid constructor for container entry!");
+
+        if (!m_edsEntryMetaData.edsContainerMeta.has_value())
         {
-            auto v = std::as_bytes(std::span(&std::get<open_types::INTEGER64_t>(m_value), 1));
+            std::stringstream ss;
+            ss << "Invalid EDS entry generation at entry " << m_edsEntryMetaData.parameterName;
+            throw std::runtime_error(ss.str());
+        }
+
+        if (m_subObjectsMap.value().size() !=
+            m_edsEntryMetaData.edsContainerMeta.value().numberOfSubindices)
+        {
+            std::stringstream ss;
+            ss << "Invalid subindecies in map generation at entry "
+               << m_edsEntryMetaData.parameterName;
+            throw std::runtime_error(ss.str());
+        }
+    }
+
+    std::vector<std::byte> EDSEntry::getSerializedValue() const noexcept
+    {
+        if (!m_edsEntryMetaData.edsValueMeta.has_value() || !m_value.has_value())
+            return {};
+
+        if (std::holds_alternative<open_types::INTEGER8_t>(m_value.value()) ||
+            std::holds_alternative<open_types::INTEGER16_t>(m_value.value()) ||
+            std::holds_alternative<open_types::INTEGER32_t>(m_value.value()) ||
+            std::holds_alternative<open_types::INTEGER64_t>(m_value.value()))
+        {
+            auto v =
+                std::as_bytes(std::span(&std::get<open_types::INTEGER64_t>(m_value.value()), 1));
             return std::vector<std::byte>(v.begin(), v.end());
         }
-        else if (std::holds_alternative<open_types::BOOLEAN_t>(m_value) ||
-                 std::holds_alternative<open_types::UNSIGNED8_t>(m_value) ||
-                 std::holds_alternative<open_types::UNSIGNED16_t>(m_value) ||
-                 std::holds_alternative<open_types::UNSIGNED32_t>(m_value) ||
-                 std::holds_alternative<open_types::UNSIGNED64_t>(m_value))
+        else if (std::holds_alternative<open_types::BOOLEAN_t>(m_value.value()) ||
+                 std::holds_alternative<open_types::UNSIGNED8_t>(m_value.value()) ||
+                 std::holds_alternative<open_types::UNSIGNED16_t>(m_value.value()) ||
+                 std::holds_alternative<open_types::UNSIGNED32_t>(m_value.value()) ||
+                 std::holds_alternative<open_types::UNSIGNED64_t>(m_value.value()))
         {
-            auto v = std::as_bytes(std::span(&std::get<open_types::UNSIGNED64_t>(m_value), 1));
+            auto v =
+                std::as_bytes(std::span(&std::get<open_types::UNSIGNED64_t>(m_value.value()), 1));
             return std::vector<std::byte>(v.begin(), v.end());
         }
-        else if (std::holds_alternative<open_types::REAL32_t>(m_value))
+        else if (std::holds_alternative<open_types::REAL32_t>(m_value.value()))
         {
-            auto v = std::as_bytes(std::span(&std::get<open_types::REAL32_t>(m_value), 1));
+            auto v = std::as_bytes(std::span(&std::get<open_types::REAL32_t>(m_value.value()), 1));
             return std::vector<std::byte>(v.begin(), v.end());
         }
-        else if (std::holds_alternative<open_types::DOMAIN_t>(m_value))
+        else if (std::holds_alternative<open_types::DOMAIN_t>(m_value.value()))
         {
-            return std::get<open_types::DOMAIN_t>(m_value);
+            return std::get<open_types::DOMAIN_t>(m_value.value());
         }
-        else if (std::holds_alternative<open_types::VISIBLE_STRING_t>(m_value))
+        else if (std::holds_alternative<open_types::VISIBLE_STRING_t>(m_value.value()))
         {
-            const std::string&     str = std::get<open_types::VISIBLE_STRING_t>(m_value);
+            const std::string&     str = std::get<open_types::VISIBLE_STRING_t>(m_value.value());
             std::vector<std::byte> result;
             for (const char& c : str)
             {
@@ -69,9 +113,12 @@ namespace mab
         else
             return {};
     }
-    EDSEntry::Error_t EDSEntryVal::setSerializedValue(const std::span<std::byte> bytes)
+    EDSEntry::Error_t EDSEntry::setSerializedValue(const std::span<std::byte> bytes)
     {
-        switch (m_edsValueMetaData.dataType)
+        if (!m_edsEntryMetaData.edsValueMeta.has_value() || !m_value.has_value())
+            return Error_t::INCORRECT_USE;
+
+        switch (m_edsEntryMetaData.edsValueMeta.value().dataType)
         {
             case DataType_E::BOOLEAN:
                 if (bytes.size() != sizeof(open_types::BOOLEAN_t))
@@ -162,22 +209,26 @@ namespace mab
         return Error_t::OK;
     }
 
-    std::string EDSEntryVal::getAsString() const noexcept
+    std::string EDSEntry::getAsString() const noexcept
     {
-        return getStringFromVariant(m_edsValueMetaData.dataType, m_value);
+        if (!m_edsEntryMetaData.edsValueMeta.has_value() || !m_value.has_value())
+            return "INCORRECT USAGE";
+        return getStringFromVariant(m_edsEntryMetaData.edsValueMeta.value().dataType,
+                                    m_value.value());
     }
-    EDSEntry::Error_t EDSEntryVal::setFromString(const std::string_view str)
+    EDSEntry::Error_t EDSEntry::setFromString(const std::string_view str)
     {
-        m_value = getVariantFromString(m_edsValueMetaData.dataType, str);
-        if (std::holds_alternative<std::monostate>(m_value))
+        if (!m_edsEntryMetaData.edsValueMeta.has_value() || !m_value.has_value())
+            return Error_t::INCORRECT_USE;
+        m_value = getVariantFromString(m_edsEntryMetaData.edsValueMeta.value().dataType, str);
+        if (std::holds_alternative<std::monostate>(m_value.value()))
         {
             return Error_t::PARSING_FAILED;
         }
         return Error_t::OK;
     }
-
-    EDSEntryVal::ValueVariant_t EDSEntryVal::getVariantFromString(const DataType_E&      dataType,
-                                                                  const std::string_view str)
+    EDSEntry::ValueVariant_t EDSEntry::getVariantFromString(const DataType_E&      dataType,
+                                                            const std::string_view str)
     {
         switch (dataType)
         {
@@ -220,8 +271,8 @@ namespace mab
         return nullptr;
     }
 
-    std::string EDSEntryVal::getStringFromVariant(const DataType_E&     dataType,
-                                                  const ValueVariant_t& val)
+    std::string EDSEntry::getStringFromVariant(const DataType_E&     dataType,
+                                               const ValueVariant_t& val)
     {
         switch (dataType)
         {

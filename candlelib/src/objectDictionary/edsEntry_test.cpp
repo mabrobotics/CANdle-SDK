@@ -2,6 +2,7 @@
 #include <gmock/gmock.h>
 #include <map>
 #include <memory>
+#include <string>
 #include <utility>
 #include <span>
 #include "edsEntry.hpp"
@@ -22,36 +23,39 @@ class EdsEntry_test : public ::testing::Test
 
 TEST_F(EdsEntry_test, simpleValues)
 {
-    EDSEntry::EDSEntryMetaData    floatMetaData{.parameterName = std::string("Float"),
-                                                .objectType    = EDSEntry::ObjectType_E::VALUE,
-                                                .storageLocation = EDSEntry::StorageLocation_E::RAM};
-    EDSEntryVal::EDSValueMetaData floatValueMetaData{
-        .dataType        = EDSEntryVal::DataType_E::REAL32,
-        .accessType      = EDSEntryVal::AccessRights_E::READ_WRITE,
+    EDSEntry::EDSValueMetaData floatValueMetaData{
+        .dataType        = EDSEntry::DataType_E::REAL32,
+        .accessType      = EDSEntry::AccessRights_E::READ_WRITE,
         .PDOMapping      = true,
         .defaultValueStr = "1.0f"};
+    EDSEntry::EDSEntryMetaData floatMetaData{.parameterName   = std::string("Float"),
+                                             .objectType      = EDSEntry::ObjectType_E::VALUE,
+                                             .storageLocation = EDSEntry::StorageLocation_E::RAM,
+                                             .edsValueMeta    = floatValueMetaData};
 
-    EDSEntry::EDSEntryMetaData    uintMetaData{.parameterName   = std::string("UINT"),
-                                               .objectType      = EDSEntry::ObjectType_E::VALUE,
-                                               .storageLocation = EDSEntry::StorageLocation_E::RAM};
-    EDSEntryVal::EDSValueMetaData uintValueMetaData{
-        .dataType        = EDSEntryVal::DataType_E::UNSIGNED16,
-        .accessType      = EDSEntryVal::AccessRights_E::READ_WRITE,
-        .PDOMapping      = true,
-        .defaultValueStr = "12"};
+    EDSEntry::EDSValueMetaData uintValueMetaData{.dataType   = EDSEntry::DataType_E::UNSIGNED16,
+                                                 .accessType = EDSEntry::AccessRights_E::READ_WRITE,
+                                                 .PDOMapping = true,
+                                                 .defaultValueStr = "12"};
+    EDSEntry::EDSEntryMetaData uintMetaData{.parameterName   = std::string("UINT"),
+                                            .objectType      = EDSEntry::ObjectType_E::VALUE,
+                                            .storageLocation = EDSEntry::StorageLocation_E::RAM,
+                                            .edsValueMeta    = uintValueMetaData};
 
-    EDSEntry::EDSEntryMetaData    stringMetaData{.parameterName = std::string("String"),
-                                                 .objectType    = EDSEntry::ObjectType_E::VALUE,
-                                                 .storageLocation = EDSEntry::StorageLocation_E::RAM};
-    EDSEntryVal::EDSValueMetaData stringValueMetaData{
-        .dataType        = EDSEntryVal::DataType_E::VISIBLE_STRING,
-        .accessType      = EDSEntryVal::AccessRights_E::READ_WRITE,
+    EDSEntry::EDSValueMetaData stringValueMetaData{
+        .dataType        = EDSEntry::DataType_E::VISIBLE_STRING,
+        .accessType      = EDSEntry::AccessRights_E::READ_WRITE,
         .PDOMapping      = true,
         .defaultValueStr = "Some text"};
 
-    EDSEntryVal floatEntry(std::move(floatMetaData), std::move(floatValueMetaData));
-    EDSEntryVal uintEntry(std::move(uintMetaData), std::move(uintValueMetaData));
-    EDSEntryVal stringEntry(std::move(stringMetaData), std::move(stringValueMetaData));
+    EDSEntry::EDSEntryMetaData stringMetaData{.parameterName   = std::string("String"),
+                                              .objectType      = EDSEntry::ObjectType_E::VALUE,
+                                              .storageLocation = EDSEntry::StorageLocation_E::RAM,
+                                              .edsValueMeta    = stringValueMetaData};
+
+    EDSEntry floatEntry(std::move(floatMetaData));
+    EDSEntry uintEntry(std::move(uintMetaData));
+    EDSEntry stringEntry(std::move(stringMetaData));
 
     REAL32_t         floatValue = floatEntry;
     UNSIGNED16_t     uintValue  = uintEntry;
@@ -66,53 +70,52 @@ TEST_F(EdsEntry_test, simpleValues)
 
 TEST_F(EdsEntry_test, containerLayout)
 {
-    EDSEntry::EDSEntryMetaData    floatMetaData{.parameterName = std::string("Float"),
-                                                .objectType    = EDSEntry::ObjectType_E::VALUE,
-                                                .storageLocation = EDSEntry::StorageLocation_E::RAM};
-    EDSEntryVal::EDSValueMetaData floatValueMetaData{
-        .dataType        = EDSEntryVal::DataType_E::REAL32,
-        .accessType      = EDSEntryVal::AccessRights_E::READ_WRITE,
+    EDSEntry::EDSValueMetaData floatValueMetaData{
+        .dataType        = EDSEntry::DataType_E::REAL32,
+        .accessType      = EDSEntry::AccessRights_E::READ_WRITE,
         .PDOMapping      = true,
         .defaultValueStr = "1.0f"};
+    EDSEntry::EDSEntryMetaData floatMetaData{.parameterName   = std::string("Float"),
+                                             .objectType      = EDSEntry::ObjectType_E::VALUE,
+                                             .storageLocation = EDSEntry::StorageLocation_E::RAM,
+                                             .edsValueMeta    = floatValueMetaData};
 
-    EDSEntry::EDSEntryMetaData    uintMetaData{.parameterName   = std::string("UINT"),
-                                               .objectType      = EDSEntry::ObjectType_E::VALUE,
-                                               .storageLocation = EDSEntry::StorageLocation_E::RAM};
-    EDSEntryVal::EDSValueMetaData uintValueMetaData{
-        .dataType        = EDSEntryVal::DataType_E::UNSIGNED16,
-        .accessType      = EDSEntryVal::AccessRights_E::READ_WRITE,
-        .PDOMapping      = true,
-        .defaultValueStr = "12"};
+    EDSEntry::EDSValueMetaData uintValueMetaData{.dataType   = EDSEntry::DataType_E::UNSIGNED16,
+                                                 .accessType = EDSEntry::AccessRights_E::READ_WRITE,
+                                                 .PDOMapping = true,
+                                                 .defaultValueStr = "12"};
+    EDSEntry::EDSEntryMetaData uintMetaData{.parameterName   = std::string("UINT"),
+                                            .objectType      = EDSEntry::ObjectType_E::VALUE,
+                                            .storageLocation = EDSEntry::StorageLocation_E::RAM,
+                                            .edsValueMeta    = uintValueMetaData};
 
-    EDSEntry::EDSEntryMetaData    stringMetaData{.parameterName = std::string("String"),
-                                                 .objectType    = EDSEntry::ObjectType_E::VALUE,
-                                                 .storageLocation = EDSEntry::StorageLocation_E::RAM};
-    EDSEntryVal::EDSValueMetaData stringValueMetaData{
-        .dataType        = EDSEntryVal::DataType_E::VISIBLE_STRING,
-        .accessType      = EDSEntryVal::AccessRights_E::READ_WRITE,
+    EDSEntry::EDSValueMetaData stringValueMetaData{
+        .dataType        = EDSEntry::DataType_E::VISIBLE_STRING,
+        .accessType      = EDSEntry::AccessRights_E::READ_WRITE,
         .PDOMapping      = true,
         .defaultValueStr = "Some text"};
 
-    EDSEntry::EDSEntryMetaData containerMetaData = {
-        .parameterName   = std::string("Container"),
-        .objectType      = EDSEntry::ObjectType_E::RECORD,
-        .storageLocation = EDSEntry::StorageLocation_E::RAM};
-    EDSEntryContainer::EDSContainerMetaData containerSpecificMetaData = {.numberOfSubindices = 3};
+    EDSEntry::EDSEntryMetaData stringMetaData{.parameterName   = std::string("String"),
+                                              .objectType      = EDSEntry::ObjectType_E::VALUE,
+                                              .storageLocation = EDSEntry::StorageLocation_E::RAM,
+                                              .edsValueMeta    = stringValueMetaData};
 
-    std::map<u8, std::unique_ptr<EDSEntryVal>> conteinerMap;
-    conteinerMap.emplace(
-        0, std::make_unique<EDSEntryVal>(std::move(floatMetaData), std::move(floatValueMetaData)));
-    conteinerMap.emplace(
-        1, std::make_unique<EDSEntryVal>(std::move(uintMetaData), std::move(uintValueMetaData)));
-    conteinerMap.emplace(
-        2,
-        std::make_unique<EDSEntryVal>(std::move(stringMetaData), std::move(stringValueMetaData)));
+    EDSEntry::EDSContainerMetaData containerSpecificMetaData = {.numberOfSubindices = 3};
 
-    EDSEntryContainer containerEntry(std::move(containerMetaData),
-                                     std::move(containerSpecificMetaData),
-                                     std::move(conteinerMap));
+    EDSEntry::EDSEntryMetaData containerMetaData{
+        .parameterName    = std::string("Conatiner"),
+        .objectType       = EDSEntry::ObjectType_E::RECORD,
+        .storageLocation  = EDSEntry::StorageLocation_E::RAM,
+        .edsContainerMeta = containerSpecificMetaData};
 
-    std::map<u32, EDSEntryContainer> ODMap;
+    std::map<u8, std::unique_ptr<EDSEntry>> containerMap;
+    containerMap.emplace(0, std::make_unique<EDSEntry>(std::move(floatMetaData)));
+    containerMap.emplace(1, std::make_unique<EDSEntry>(std::move(uintMetaData)));
+    containerMap.emplace(2, std::make_unique<EDSEntry>(std::move(stringMetaData)));
+
+    EDSEntry containerEntry(std::move(containerMetaData), std::move(containerMap));
+
+    std::map<u32, EDSEntry> ODMap;
     ODMap.emplace(0x1000, std::move(containerEntry));
 
     EDSObjectDictionary od(std::move(ODMap));
@@ -124,16 +127,17 @@ TEST_F(EdsEntry_test, containerLayout)
 
 TEST_F(EdsEntry_test, serialization)
 {
-    EDSEntry::EDSEntryMetaData    floatMetaData{.parameterName = std::string("Float"),
-                                                .objectType    = EDSEntry::ObjectType_E::VALUE,
-                                                .storageLocation = EDSEntry::StorageLocation_E::RAM};
-    EDSEntryVal::EDSValueMetaData floatValueMetaData{
-        .dataType        = EDSEntryVal::DataType_E::REAL32,
-        .accessType      = EDSEntryVal::AccessRights_E::READ_WRITE,
+    EDSEntry::EDSValueMetaData floatValueMetaData{
+        .dataType        = EDSEntry::DataType_E::REAL32,
+        .accessType      = EDSEntry::AccessRights_E::READ_WRITE,
         .PDOMapping      = true,
         .defaultValueStr = "1.0f"};
+    EDSEntry::EDSEntryMetaData floatMetaData{.parameterName   = std::string("Float"),
+                                             .objectType      = EDSEntry::ObjectType_E::VALUE,
+                                             .storageLocation = EDSEntry::StorageLocation_E::RAM,
+                                             .edsValueMeta    = floatValueMetaData};
 
-    EDSEntryVal floatEntry(std::move(floatMetaData), std::move(floatValueMetaData));
+    EDSEntry floatEntry(std::move(floatMetaData));
 
     floatEntry      = 3.14f;
     auto serialized = floatEntry.getSerializedValue();
@@ -144,16 +148,18 @@ TEST_F(EdsEntry_test, serialization)
 
 TEST_F(EdsEntry_test, stringSerialization)
 {
-    EDSEntry::EDSEntryMetaData    stringMetaData{.parameterName = std::string("String"),
-                                                 .objectType    = EDSEntry::ObjectType_E::VALUE,
-                                                 .storageLocation = EDSEntry::StorageLocation_E::RAM};
-    EDSEntryVal::EDSValueMetaData stringValueMetaData{
-        .dataType        = EDSEntryVal::DataType_E::VISIBLE_STRING,
-        .accessType      = EDSEntryVal::AccessRights_E::READ_WRITE,
+    EDSEntry::EDSValueMetaData stringValueMetaData{
+        .dataType        = EDSEntry::DataType_E::VISIBLE_STRING,
+        .accessType      = EDSEntry::AccessRights_E::READ_WRITE,
         .PDOMapping      = true,
         .defaultValueStr = "Some text"};
 
-    EDSEntryVal stringEntry(std::move(stringMetaData), std::move(stringValueMetaData));
+    EDSEntry::EDSEntryMetaData stringMetaData{.parameterName   = std::string("String"),
+                                              .objectType      = EDSEntry::ObjectType_E::VALUE,
+                                              .storageLocation = EDSEntry::StorageLocation_E::RAM,
+                                              .edsValueMeta    = stringValueMetaData};
+
+    EDSEntry stringEntry(std::move(stringMetaData));
 
     auto readBytes = stringEntry.getSerializedValue();
     EXPECT_EQ(readBytes.size(), 9);  // "Some text" length
