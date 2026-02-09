@@ -270,7 +270,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         [this, mdCanId]()
         {
             auto          mdco = getMdco(mdCanId);
-            MDCO::Error_t err  = mdco->testEncoder(true, false);
+            MDCO::Error_t err  = MDCO::NOT_CONNECTED;  // mdco->testEncoder(true, false);
             if (err != MDCO::OK)
             {
                 m_log.error("Error running main encoder test");
@@ -284,7 +284,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         [this, mdCanId]()
         {
             auto          mdco = getMdco(mdCanId);
-            MDCO::Error_t err  = mdco->testEncoder(false, true);
+            MDCO::Error_t err  = MDCO::Error_t::UNKNOWN_OBJECT;  // mdco->testEncoder(false, true);
             if (err != MDCO::OK)
             {
                 m_log.error("Error running main encoder test");
@@ -1209,7 +1209,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error("Error enabling driver");
                 return;
             }
-            mdco->movePosition(cmdCANopen.desiredPos);
+            // mdco->movePosition(cmdCANopen.desiredPos);
             err = mdco->disableDriver();
             if (err != MDCO::OK)
             {
@@ -1246,7 +1246,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error("Error enabling driver");
                 return;
             }
-            mdco->movePosition(cmdCANopen.desiredPos);
+            // mdco->movePosition(cmdCANopen.desiredPos);
             err = mdco->disableDriver();
             if (err != MDCO::OK)
             {
@@ -1281,7 +1281,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error("Error enabling driver");
                 return;
             }
-            mdco->moveSpeed(cmdCANopen.desiredSpeed);
+            // mdco->moveSpeed(cmdCANopen.desiredSpeed);
             err = mdco->disableDriver();
             if (err != MDCO::OK)
             {
@@ -1335,8 +1335,10 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error("Error enabling driver");
                 return;
             }
-            err = mdco->moveImpedance(
-                cmdCANopen.desiredSpeed, cmdCANopen.desiredPos, cmdCANopen.param, 5000);
+            err =
+                MDCO::Error_t::UNKNOWN_OBJECT;  // mdco->moveImpedance(
+                                                //  cmdCANopen.desiredSpeed, cmdCANopen.desiredPos,
+                                                //  cmdCANopen.param, 5000);
             if (err != MDCO::OK)
             {
                 m_log.error("Error moving impedance");

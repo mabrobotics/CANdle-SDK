@@ -78,8 +78,6 @@ namespace mab
       private:
         Logger log = Logger(Logger::ProgramLayer_E::TOP, "EDS_PARSER");
 
-        std::filesystem::path m_edsFilePath;
-
         /// @brief verify if the EDS file has a FileInfo section
         /// @return true if the FileInfo section exists, false otherwise
         bool hasFileInfoSection();

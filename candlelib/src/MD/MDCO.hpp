@@ -100,33 +100,6 @@ namespace mab
         /// @return Error_t indicating the result of the operation
         Error_t disableDriver();
 
-        /// @brief Move to desired position
-        /// @param DesiredPos desired position
-        /// @param timeoutMillis aimed position during timeout time [ms]
-        /// @note The motor need to have the profile parameters set & a mode of operation set before
-        /// calling this function
-        void movePosition(i32 DesiredPos, i16 timeoutMillis = 5000);
-
-        /// @brief Move to desired speed
-        /// @param DesiredSpeed desired speed [RPM]
-        /// @param timeoutMillis aimed speed during timeout time [ms]
-        /// @note The motor need to have the profile parameters set & a mode of operation set before
-        /// calling this function
-        void moveSpeed(i32 DesiredSpeed, i16 timeoutMillis = 5000);
-
-        /// @brief Move to desired position with impedance control
-        /// @param desiredSpeed desired speed [RPM]
-        /// @param targetPos desired position
-        /// @param param struct containing all the parameters needed to configure the motor
-        /// @param timeoutMillis keep Impedance mode during timeout time [ms]
-        /// @return Error_t indicating the result of the operation
-        /// @details This function sets the motor in impedance control mode and moves it to the
-        /// specified position with the given speed, gains, and torque.
-        Error_t moveImpedance(i32            desiredSpeed,
-                              i32            targetPos,
-                              moveParameter& param,
-                              i16            timeoutMillis = 5000);
-
         /// @brief Blink the built-in LEDs with CANopen command
         Error_t blinkOpenTest();
 
@@ -146,12 +119,6 @@ namespace mab
         /// @return Error_t indicating the result of the operation
         Error_t newCanOpenConfig(i32 newID, i32 newBaud, u32 watchdog);
 
-        /// @brief Perform a encoder test
-        /// @param Main Main=1 if you want to perform the test on the main encoder
-        /// @param output output=1 if you want to perform the test on the output encoder
-        /// @return Error_t indicating the result of the operation
-        Error_t testEncoder(bool Main, bool output);
-
         /// @brief Perform a encoder calibration
         /// @param Main Main=1 if you want to perform the calibration on the main encoder
         /// @param output output=1 if you want to perform the calibration on the output encoder
@@ -160,7 +127,7 @@ namespace mab
 
         /// @brief test the heartbeat of the MD device give time between two heartbeat
         /// @return Error_t indicating the result of the operation
-        Error_t testHeartbeat();
+        Error_t testHeartbeat();  // TODO: eval this
 
         /// @brief Save configuration data to the memory
         /// @return Error_t indicating the result of the operation
