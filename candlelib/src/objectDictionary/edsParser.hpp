@@ -46,15 +46,14 @@ namespace mab
     /// @return std::string The lowercase version of the input string
     std::string toLower(const std::string& s);
 
-    class edsParser
+    class EDSParser
     {
       public:
-        mINI::INIStructure m_edsIni;
-
         /// @brief Load EDS file from the specified path
         /// @param edsFilePath Path to the EDS file
         /// @return Error_t indicating the result of the operation
-        Error_t load(const std::filesystem::path& edsFilePath);
+        static std::pair<EDSObjectDictionary, Error_t> load(
+            const std::filesystem::path& edsFilePath);
 
         /// @brief Check if the EDS file is valid
         /// @return Error_t indicating the result of the validation
@@ -76,32 +75,54 @@ namespace mab
         Error_t find(const std::string& searchTerm);
 
       private:
-        Logger log = Logger(Logger::ProgramLayer_E::TOP, "EDS_PARSER");
+        static EDSEntry::EDSValueMetaData parseValueMetadata(mINI::INIMap<std::string>& entry);
 
-        /// @brief verify if the EDS file has a FileInfo section
-        /// @return true if the FileInfo section exists, false otherwise
-        bool hasFileInfoSection();
+        static inline bool isEntry(std::string_view s)
+        {
+            return !s.empty() &&
+                   std::all_of(
+                       s.begin(), s.end(), [](unsigned char c) { return std::isdigit(c); }) &&
+                   s.size() == 4;
+        }
+        static bool isSubentry(std::string_view s)
+        {
+            constexpr std::string_view sub = "sub";
 
-        /// @brief Check if the EDS file has a MandatoryObjects section
-        /// @return true if the MandatoryObjects section exists, false otherwise
-        bool hasMandatoryObjectsSection();
+            if (s.size() <= 7)  // minimum: 4 + 3 + 1 = 8
+                return false;
 
-        /// @brief Check if the EDS file has a SupportedObjects key in the MandatoryObjects
-        /// section
-        /// @return true if the SupportedObjects key exists, false otherwise
-        bool hasSupportedObjects();
+            return s.substr(4, 3) == sub;
+        }
 
-        /// @brief Check if the EDS file has mandatory indices (0x1000, 0x1001, 0x1018)
-        /// @return true if all mandatory indices are present, false otherwise
-        bool hasMandatoryIndices();
+        static std::optional<std::pair<unsigned int, unsigned int>> extractIndexAndSubindex(
+            std::string_view input)
+        {
+            // Must be at least "XXXXsubY"
+            if (input.size() < 8)
+                return std::nullopt;
 
-        /// @brief Check if the EDS file has only valid access types
-        /// @return true if all access types are valid, false otherwise
-        bool hasValidAccessTypes();
+            // Check fixed separator
+            if (input.substr(4, 3) != "sub")
+                return std::nullopt;
 
-        /// @brief Check if the EDS file has only valid data types
-        /// @return true if all data types are valid, false otherwise
-        bool hasValidDataTypes();
+            unsigned int index{};
+            unsigned int subindex{};
+
+            // Parse XXXX
+            auto [p1, ec1] = std::from_chars(input.data(), input.data() + 4, index);
+
+            if (ec1 != std::errc{})
+                return std::nullopt;
+
+            // Parse YYY (rest of string)
+            auto [p2, ec2] =
+                std::from_chars(input.data() + 7, input.data() + input.size(), subindex, 16);
+
+            if (ec2 != std::errc{} || p2 != input.data() + input.size())
+                return std::nullopt;
+
+            return std::pair{index, subindex};
+        }
     };
 }  // namespace mab
 #endif  // EDS_PARSER_HPP

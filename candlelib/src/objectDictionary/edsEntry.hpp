@@ -4,6 +4,7 @@
 // meta-data about the object itself.
 
 #include <cstddef>
+#include <iterator>
 #include <span>
 #include <sstream>
 #include <stdexcept>
@@ -33,6 +34,7 @@ namespace mab
         using UNSIGNED64_t     = u64;
         using REAL32_t         = f32;
         using VISIBLE_STRING_t = std::string;
+        using OCTET_STRING_t   = std::vector<std::byte>;
         using DOMAIN_t         = std::vector<std::byte>;
     }  // namespace open_types
 
@@ -187,6 +189,18 @@ namespace mab
             return *(m_subObjectsMap.value()).at(subIndex);
         }
 
+        inline const EDSEntry& operator[](u8 subIndex) const
+        {
+            if (!m_subObjectsMap.has_value())
+            {
+                Logger log(Logger::ProgramLayer_E::TOP, "ERR_HANDLR");
+                log.error("EDS entry named %s has no subindicies! It can not be accessed this way.",
+                          m_edsEntryMetaData.parameterName.c_str());
+                throw std::runtime_error("No map in the EDS entry");
+            }
+            return *(m_subObjectsMap.value()).at(subIndex);
+        }
+
         /// @brief get EDS entry general parameters
         /// @return EDSEntryMetaData for this entry
         const EDSEntryMetaData& getEntryMetaData() const noexcept;
@@ -197,7 +211,7 @@ namespace mab
 
         /// @brief Get EDS container specific parameters
         /// @return EDSContainerMetaData for this entry
-        const inline std::optional<EDSContainerMetaData> getContainerMetaData() const noexcept;
+        const std::optional<EDSContainerMetaData> getContainerMetaData() const noexcept;
 
         std::vector<std::byte> getSerializedValue() const noexcept;
         Error_t                setSerializedValue(const std::span<std::byte> bytes);
@@ -227,6 +241,20 @@ namespace mab
         EDSEntry& operator[](u32 idx)
         {
             return m_map.at(idx);
+        }
+
+        std::map<u32, EDSEntry>::const_iterator begin() const
+        {
+            return m_map.begin();
+        }
+        std::map<u32, EDSEntry>::const_iterator end() const
+        {
+            return m_map.end();
+        }
+
+        size_t size() const
+        {
+            return m_map.size();
         }
 
       private:

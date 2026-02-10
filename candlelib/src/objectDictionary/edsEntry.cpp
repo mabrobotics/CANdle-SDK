@@ -1,5 +1,6 @@
 #include <cstddef>
 #include <sstream>
+#include <string>
 #include <utility>
 #include <stdexcept>
 #include <variant>
@@ -17,7 +18,7 @@ namespace mab
     {
         return m_edsEntryMetaData.edsValueMeta;
     }
-    const inline std::optional<EDSEntry::EDSContainerMetaData> EDSEntry::getContainerMetaData()
+    const std::optional<EDSEntry::EDSContainerMetaData> EDSEntry::getContainerMetaData()
         const noexcept
     {
         return m_edsEntryMetaData.edsContainerMeta;
@@ -230,43 +231,70 @@ namespace mab
     EDSEntry::ValueVariant_t EDSEntry::getVariantFromString(const DataType_E&      dataType,
                                                             const std::string_view str)
     {
+        std::string            val(str);
+        std::vector<std::byte> byteResult;
         switch (dataType)
         {
             case DataType_E::BOOLEAN:
+                if (val.empty())
+                    return {};
                 return str == "TRUE" ? open_types::BOOLEAN_t(true) : open_types::BOOLEAN_t(false);
             case DataType_E::INTEGER8:
-                return open_types::INTEGER8_t(std::stoi(str.data()));
+                if (val.empty())
+                    return open_types::INTEGER8_t(0);
+                return open_types::INTEGER8_t(std::stoi(std::string(str).c_str(), nullptr, 0));
             case DataType_E::INTEGER16:
-                return open_types::INTEGER16_t(std::stoi(str.data()));
+                if (val.empty())
+                    return open_types::INTEGER16_t(0);
+                return open_types::INTEGER16_t(std::stoi(std::string(str).c_str(), nullptr, 0));
             case DataType_E::INTEGER32:
-                return open_types::INTEGER32_t(std::stoi(str.data()));
+                if (val.empty())
+                    return open_types::INTEGER32_t(0);
+                return open_types::INTEGER32_t(std::stoll(std::string(str).c_str(), nullptr, 0));
             case DataType_E::INTEGER64:
-                return open_types::INTEGER64_t(std::stoll(str.data()));
+                if (val.empty())
+                    return open_types::INTEGER64_t(0);
+                return open_types::INTEGER64_t(std::stoll(std::string(str).c_str(), nullptr, 0));
             case DataType_E::UNSIGNED8:
-                return open_types::UNSIGNED8_t(std::stoi(str.data()));
+                if (val.empty())
+                    return open_types::UNSIGNED8_t(0);
+                return open_types::UNSIGNED8_t(std::stoul(std::string(str).c_str(), nullptr, 0));
             case DataType_E::UNSIGNED16:
-                return open_types::UNSIGNED16_t(std::stoi(str.data()));
+                if (val.empty())
+                    return open_types::UNSIGNED16_t(0);
+                return open_types::UNSIGNED16_t(std::stoul(std::string(str).c_str(), nullptr, 0));
             case DataType_E::UNSIGNED32:
-                return open_types::UNSIGNED32_t(std::stoul(str.data()));
+                if (val.empty())
+                    return open_types::UNSIGNED32_t(0);
+                return open_types::UNSIGNED32_t(std::stoul(std::string(str).c_str(), nullptr, 0));
             case DataType_E::UNSIGNED64:
-                return open_types::UNSIGNED64_t(std::stoull(str.data()));
+                if (val.empty())
+                    return open_types::UNSIGNED64_t(0);
+                return open_types::UNSIGNED64_t(std::stoull(std::string(str).c_str(), nullptr, 0));
             case DataType_E::REAL32:
-                return open_types::REAL32_t(std::stof(str.data()));
+                if (val.empty())
+                    return open_types::REAL32_t(0);
+                return open_types::REAL32_t(std::stof(std::string(str).c_str()));
             case DataType_E::REAL64:
+                if (val.empty())
+                    return {};
                 return {};
             case DataType_E::VISIBLE_STRING:
                 return std::string(str);
             case DataType_E::UNICODE_STRING:
                 return {};
             case DataType_E::OCTET_STRING:
-                return {};
-            case DataType_E::DOMAIN:
-                std::vector<std::byte> result;
                 for (const auto& byte : str)
                 {
-                    result.push_back(std::byte(byte));
+                    byteResult.push_back(std::byte(byte));
                 }
-                return result;
+                return byteResult;
+            case DataType_E::DOMAIN:
+                for (const auto& byte : str)
+                {
+                    byteResult.push_back(std::byte(byte));
+                }
+                return byteResult;
         }
         return nullptr;
     }
@@ -297,13 +325,13 @@ namespace mab
             case DataType_E::REAL32:
                 return std::to_string(std::get<open_types::REAL32_t>(val));
             case DataType_E::REAL64:
-                return nullptr;
+                return {};
             case DataType_E::VISIBLE_STRING:
                 return std::get<open_types::VISIBLE_STRING_t>(val);
             case DataType_E::UNICODE_STRING:
-                return nullptr;
+                return {};
             case DataType_E::OCTET_STRING:
-                return nullptr;
+                return {};  // todo: case on its own can not support it
             case DataType_E::DOMAIN:
                 std::vector<std::byte> bytes = std::get<open_types::DOMAIN_t>(val);
                 std::string            result;
