@@ -344,4 +344,54 @@ namespace mab
         }
         return nullptr;
     }
+    EDSEntry& EDSEntry::operator[](u8 subIndex)
+    {
+        if (!m_subObjectsMap.has_value())
+        {
+            Logger log(Logger::ProgramLayer_E::TOP, "ERR_HANDLR");
+            log.error("EDS entry named %s has no subindicies! It can not be accessed this way.",
+                      m_edsEntryMetaData.parameterName.c_str());
+            throw std::runtime_error("No map in the EDS entry");
+        }
+        return *(m_subObjectsMap.value()).at(subIndex);
+    }
+    const EDSEntry& EDSEntry::operator[](u8 subIndex) const
+    {
+        if (!m_subObjectsMap.has_value())
+        {
+            Logger log(Logger::ProgramLayer_E::TOP, "ERR_HANDLR");
+            log.error("EDS entry named %s has no subindicies! It can not be accessed this way.",
+                      m_edsEntryMetaData.parameterName.c_str());
+            throw std::runtime_error("No map in the EDS entry");
+        }
+        return *(m_subObjectsMap.value()).at(subIndex);
+    }
+    std::map<u8, std::unique_ptr<EDSEntry>>::const_iterator EDSEntry::m_subObjectsMapBegin() const
+    {
+        if (!m_subObjectsMap.has_value())
+            throw std::runtime_error("No subindicies in EDS entry");
+        return m_subObjectsMap.value().begin();
+    }
+    std::map<u8, std::unique_ptr<EDSEntry>>::const_iterator EDSEntry::m_subObjectsMapEnd() const
+    {
+        if (!m_subObjectsMap.has_value())
+            throw std::runtime_error("No subindicies in EDS entry");
+        return m_subObjectsMap.value().end();
+    }
+    EDSEntry& EDSObjectDictionary::operator[](u32 idx)
+    {
+        return m_map.at(idx);
+    }
+    std::map<u32, EDSEntry>::const_iterator EDSObjectDictionary::begin() const
+    {
+        return m_map.begin();
+    }
+    std::map<u32, EDSEntry>::const_iterator EDSObjectDictionary::end() const
+    {
+        return m_map.end();
+    }
+    size_t EDSObjectDictionary::size() const
+    {
+        return m_map.size();
+    }
 }  // namespace mab

@@ -177,29 +177,13 @@ namespace mab
             return externalValue;
         }
 
-        inline EDSEntry& operator[](u8 subIndex)
-        {
-            if (!m_subObjectsMap.has_value())
-            {
-                Logger log(Logger::ProgramLayer_E::TOP, "ERR_HANDLR");
-                log.error("EDS entry named %s has no subindicies! It can not be accessed this way.",
-                          m_edsEntryMetaData.parameterName.c_str());
-                throw std::runtime_error("No map in the EDS entry");
-            }
-            return *(m_subObjectsMap.value()).at(subIndex);
-        }
+        EDSEntry& operator[](u8 subIndex);
 
-        inline const EDSEntry& operator[](u8 subIndex) const
-        {
-            if (!m_subObjectsMap.has_value())
-            {
-                Logger log(Logger::ProgramLayer_E::TOP, "ERR_HANDLR");
-                log.error("EDS entry named %s has no subindicies! It can not be accessed this way.",
-                          m_edsEntryMetaData.parameterName.c_str());
-                throw std::runtime_error("No map in the EDS entry");
-            }
-            return *(m_subObjectsMap.value()).at(subIndex);
-        }
+        const EDSEntry& operator[](u8 subIndex) const;
+
+        std::map<u8, std::unique_ptr<EDSEntry>>::const_iterator m_subObjectsMapBegin() const;
+
+        std::map<u8, std::unique_ptr<EDSEntry>>::const_iterator m_subObjectsMapEnd() const;
 
         /// @brief get EDS entry general parameters
         /// @return EDSEntryMetaData for this entry
@@ -238,24 +222,12 @@ namespace mab
         {
         }
 
-        EDSEntry& operator[](u32 idx)
-        {
-            return m_map.at(idx);
-        }
+        EDSEntry& operator[](u32 idx);
 
-        std::map<u32, EDSEntry>::const_iterator begin() const
-        {
-            return m_map.begin();
-        }
-        std::map<u32, EDSEntry>::const_iterator end() const
-        {
-            return m_map.end();
-        }
+        std::map<u32, EDSEntry>::const_iterator begin() const;
+        std::map<u32, EDSEntry>::const_iterator end() const;
 
-        size_t size() const
-        {
-            return m_map.size();
-        }
+        size_t size() const;
 
       private:
         std::map<u32, EDSEntry> m_map;
