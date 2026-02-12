@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <string>
 #include <mab_types.hpp>
+#include "md_types.hpp"
 #include <map>
 #include <optional>
 
@@ -255,6 +256,29 @@ namespace mab
                 default:
                     return "UNKNOWN";
             }
+        }
+    };
+    struct MDRegisterAccessError_S
+    {
+        static std::string toReadable(mab::MdRegisterAccessErrorCode code)
+        {
+            switch(code)
+            {
+                case mab::MdRegisterAccessErrorCode::NONE:
+                    return "NO ERROR";
+                case mab::MdRegisterAccessErrorCode::ACCESS:
+                    return "ACCESS (read/write not permitted)";
+                case mab::MdRegisterAccessErrorCode::DEPRECATED:
+                    return "DEPRECATED (register no longer used)";
+                case mab::MdRegisterAccessErrorCode::INVALID:
+                    return "INVALID (request/format not valid)";
+                case mab::MdRegisterAccessErrorCode::OUT_OF_RANGE:
+                    return "OUT OF RANGE";
+                case mab::MdRegisterAccessErrorCode::UNKNOWN:
+                    return "UNKNOWN (undefined)";
+
+            }
+            return "ERROR_CODE_UNKNOWN";
         }
     };
 }  // namespace mab
