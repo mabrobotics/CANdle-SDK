@@ -35,6 +35,7 @@ namespace mab
         using REAL32_t         = f32;
         using VISIBLE_STRING_t = std::string;
         using OCTET_STRING_t   = std::vector<std::byte>;
+        using UNICODE_STRING_t = std::vector<std::byte>;
         using DOMAIN_t         = std::vector<std::byte>;
     }  // namespace open_types
 
@@ -107,6 +108,7 @@ namespace mab
 
         struct EDSEntryMetaData
         {
+            std::pair<u32, std::optional<u8>>   address;
             std::string                         parameterName;
             ObjectType_E                        objectType;
             StorageLocation_E                   storageLocation;
@@ -181,9 +183,10 @@ namespace mab
 
         const EDSEntry& operator[](u8 subIndex) const;
 
-        std::map<u8, std::unique_ptr<EDSEntry>>::const_iterator m_subObjectsMapBegin() const;
-
-        std::map<u8, std::unique_ptr<EDSEntry>>::const_iterator m_subObjectsMapEnd() const;
+        std::map<u8, std::unique_ptr<EDSEntry>>::const_iterator begin() const;
+        std::map<u8, std::unique_ptr<EDSEntry>>::const_iterator end() const;
+        std::map<u8, std::unique_ptr<EDSEntry>>::iterator       begin();
+        std::map<u8, std::unique_ptr<EDSEntry>>::iterator       end();
 
         /// @brief get EDS entry general parameters
         /// @return EDSEntryMetaData for this entry
@@ -202,6 +205,8 @@ namespace mab
 
         std::string getAsString() const noexcept;
         Error_t     setFromString(const std::string_view str);
+
+        size_t valueSize() const noexcept;
 
       private:
         static ValueVariant_t getVariantFromString(const DataType_E&      dataType,
@@ -224,10 +229,15 @@ namespace mab
 
         EDSEntry& operator[](u32 idx);
 
+        std::map<u32, EDSEntry>::iterator       begin();
+        std::map<u32, EDSEntry>::iterator       end();
         std::map<u32, EDSEntry>::const_iterator begin() const;
         std::map<u32, EDSEntry>::const_iterator end() const;
 
         size_t size() const;
+
+        std::optional<std::pair<u32, std::optional<u8>>> getAdressByName(
+            std::string_view name) const noexcept;
 
       private:
         std::map<u32, EDSEntry> m_map;

@@ -4,6 +4,7 @@
 #include <cstring>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -177,6 +178,13 @@ std::pair<EDSObjectDictionary, Error_t> EDSParser::load(const std::filesystem::p
             u8  subidx = isSubentry(key_val.first)
                              ? extractIndexAndSubindex(key_val.first).value().second
                              : 0;
+
+            std::optional<u8> subidxOpt;
+            if (isSubentry(key_val.first))
+            {
+                subidxOpt = subidx;
+            }
+            metaData.address = std::pair<u32, std::optional<u8>>(idx, std::move(subidxOpt));
 
             // Fill object type
             switch (std::stoul(entry["ObjectType"].c_str(), nullptr, 0))

@@ -3,601 +3,100 @@
 namespace mab
 {
 
-    MDCO::Error_t MDCO::findObjectByName(const std::string& searchTerm, u32& index, u8& subIndex)
-    {
-        bool objectFound = false;
-        // for loop over all objects contained in the object dictionary
-        for (const edsObject& obj : this->ObjectDictionary)
-        {
-            if (obj.ParameterName.size() == searchTerm.size())
-            {
-                bool equal = true;
-                // compare each character of the two strings, case insensitive
-                for (size_t i = 0; i < obj.ParameterName.size(); ++i)
-                {
-                    if (tolower(obj.ParameterName[i]) != tolower(searchTerm[i]))
-                    {
-                        equal = false;
-                        break;
-                    }
-                }
-                // if they are equal, return the index and subindex
-                if (equal)
-                {
-                    index    = obj.index;
-                    subIndex = obj.subIndex;
-                    // if the object was already found once, we warn the user that multiple objects
-                    // have the same name
-                    if (objectFound)
-                    {
-                        m_log.warn(
-                            "Multiple objects found with name '%s'. Using the first one found.\n",
-                            searchTerm.c_str());
-                    }
-                    else
-                    {
-                        m_log.debug("Object found: %s (0x%04X, subIndex: %d)\n",
-                                    obj.ParameterName.c_str(),
-                                    obj.index,
-                                    obj.subIndex);
-                        objectFound = true;
-                    }
-                }
-            }
-        }
-        // if the object was found at least once, return OK else UNKNOWN_OBJECT
-        if (objectFound)
-        {
-            return OK;
-        }
-
-        return UNKNOWN_OBJECT;
-    }
-
-    MDCO::Error_t MDCO::isWritable(const u32 index, const u8 subIndex)
-    {
-        // for loop over all objects contained in the object dictionary
-        for (const edsObject& obj : this->ObjectDictionary)
-        {
-            // if the index and subindex match
-            if (index == obj.index && subIndex == obj.subIndex)
-            {
-                // check if the access type contains 'w' or 'W'
-                if (obj.accessType.find('w') != std::string::npos ||
-                    obj.accessType.find('W') != std::string::npos)
-                {
-                    return MDCO::Error_t::OK;
-                }
-                else
-                {
-                    return MDCO::Error_t::REQUEST_INVALID;
-                }
-            }
-        }
-
-        return MDCO::Error_t::UNKNOWN_OBJECT;
-    }
-
-    MDCO::Error_t MDCO::isReadable(const u32 index, const u8 subIndex)
-    {
-        // for loop over all objects contained in the object dictionary
-        for (const edsObject& obj : this->ObjectDictionary)
-        {
-            // if the index and subindex match
-            if (index == obj.index && subIndex == obj.subIndex)
-            {
-                // check if the access type contains 'r' or 'R'
-                if (obj.accessType.find('r') != std::string::npos ||
-                    obj.accessType.find('R') != std::string::npos)
-                {
-                    return MDCO::Error_t::OK;
-                }
-                else
-                {
-                    return MDCO::Error_t::REQUEST_INVALID;
-                }
-            }
-        }
-
-        return MDCO::Error_t::UNKNOWN_OBJECT;
-    }
-
-    i8 MDCO::dataSizeOfEdsObject(const u32 index, const u8 subIndex)
-    {
-        // for loop over all objects contained in the object dictionary
-        for (const edsObject& obj : this->ObjectDictionary)
-        {
-            // if the index and subindex match
-            if (index == obj.index && subIndex == obj.subIndex)
-            {
-                // if dataype is boolean, u8 or i8
-                if (obj.DataType == 0x0001 || obj.DataType == 0x0002 || obj.DataType == 0x0005)
-                {
-                    return 1;
-                }
-                // if dataype is u16 or i16
-                else if (obj.DataType == 0x0003 || obj.DataType == 0x0006)
-                {
-                    return 2;
-                }
-                // if dataype is u32, i32 or real32
-                else if (obj.DataType == 0x0004 || obj.DataType == 0x0007 || obj.DataType == 0x0008)
-                {
-                    return 4;
-                }
-                // if dataype is u64, i64 or real64
-                else if (obj.DataType == 0x0011 || obj.DataType == 0x0015 || obj.DataType == 0x001B)
-                {
-                    return 8;
-                }
-                else if (obj.DataType == 0x0009 || obj.DataType == 0x000A ||
-                         obj.DataType == 0x000B || obj.DataType == 0x000F)
-                {
-                    return 0;  // String => size is variable and unknown
-                }
-            }
-        }
-
-        return -1;  // Invalid index or subindex
-    }
-
-    void MDCO::printAllInfo()
-    {
-        i32 value;
-        // loop over all objects in the object dictionary and print their info
-        for (i16 i = 0; i < (i16)ObjectDictionary.size(); i++)
-        {
-            value =
-                getValueFromOpenRegister(ObjectDictionary[i].index, ObjectDictionary[i].subIndex);
-            if (value != -1)
-                m_log.info(
-                    "----------Object Name:%s----------\nindex:%X, sub-index:%X, Storage "
-                    "Location:%s, "
-                    "Data length(bytes):%d, Access:%s, PDO Mapping:%d, actual value(Raw data "
-                    "received):%lld\n"
-                    "-----------------------------------\n\n",
-                    ObjectDictionary[i].ParameterName.c_str(),
-                    ObjectDictionary[i].index,
-                    ObjectDictionary[i].subIndex,
-                    ObjectDictionary[i].StorageLocation.c_str(),
-                    dataSizeOfEdsObject(ObjectDictionary[i].index, ObjectDictionary[i].subIndex),
-                    ObjectDictionary[i].accessType.c_str(),
-                    ObjectDictionary[i].PDOMapping,
-                    value);
-        }
-    }
-
-    /// TODO: those parameters shoudl be loaded via EDS somehow
     MDCO::Error_t MDCO::init()
     {
-        return readOpenRegisters(0x1000, 0);
+        return readSDO((*m_od)[0x1000]);
     }
 
-    MDCO::Error_t MDCO::setProfileParameters(moveParameter& param)
-    {
-        // set all the parameters needed to configure the motor for moving log an error message if
-        // transfer failed
-        Error_t err;
-        err = writeOpenRegisters("Max Acceleration", param.accLimit);
-        if (err != OK)
-        {
-            m_log.error("Error setting Max Acceleration");
-            return err;
-        }
-        err = writeOpenRegisters("Max Deceleration", param.dccLimit);
-        if (err != OK)
-        {
-            m_log.error("Error setting Max Deceleration");
-            return err;
-        }
-        err = writeOpenRegisters("Max Current", param.MaxCurrent);
-        if (err != OK)
-        {
-            m_log.error("Error setting Max Current");
-            return err;
-        }
-        err = writeOpenRegisters("Motor Rated Current", param.RatedCurrent);
-        if (err != OK)
-        {
-            m_log.error("Error setting Rated Current");
-            return err;
-        }
-        err = writeOpenRegisters("Max Motor Speed", param.MaxSpeed);
-        if (err != OK)
-        {
-            m_log.error("Error setting Max Motor Speed");
-            return err;
-        }
-        err = writeOpenRegisters("Max Torque", param.MaxTorque);
-        if (err != OK)
-        {
-            m_log.error("Error setting Max Torque");
-            return err;
-        }
-        err = writeOpenRegisters("Motor Rated Torque", param.RatedTorque);
-        if (err != OK)
-        {
-            m_log.error("Error setting Rated Torque");
-            return err;
-        }
-        return OK;
-    }
-
-    MDCO::Error_t MDCO::enableDriver(ModesOfOperation mode)
+    MDCO::Error_t MDCO::enable()
     {
         // set the mode of operation and enable the driver, log an error message if transfer failed
         Error_t err;
-        err = writeOpenRegisters("Modes Of Operation", mode, 1);
-        if (err != OK)
+        (*m_od)[0x6060] = (open_types::INTEGER8_t)6;
+        err             = writeSDO((*m_od)[0x6060]);
+        if (err != Error_t::OK)
         {
-            m_log.error("Error setting Mode of Operation");
+            m_log.error("Error sending shutdown cmd!");
             return err;
         }
-        err = writeOpenRegisters("Controlword", 0x80, 2);
-        if (err != OK)
+        (*m_od)[0x6060] = (open_types::INTEGER8_t)15;
+        err             = writeSDO((*m_od)[0x6060]);
+        if (err != Error_t::OK)
         {
-            m_log.error("Error setting Controlword to 0x80");
+            m_log.error("Error sending switch on and enable cmd!");
             return err;
         }
-        err = writeOpenRegisters("Controlword", 0x06, 2);
-        if (err != OK)
-        {
-            m_log.error("Error setting Controlword to 0x06");
-            return err;
-        }
-        err = writeOpenRegisters("Controlword", 15, 2);
-        if (err != OK)
-        {
-            m_log.error("Error setting Controlword to 15");
-            return err;
-        }
-        return OK;
+        return Error_t::OK;
     }
 
-    MDCO::Error_t MDCO::disableDriver()
+    MDCO::Error_t MDCO::disable()
     {
         // disable the driver, log an error message if transfer failed
         Error_t err;
-        err = writeOpenRegisters("Target Velocity", 0);
-        if (err != OK)
+        (*m_od)[0x6060] = (open_types::INTEGER8_t)7;
+        err             = writeSDO((*m_od)[0x6060]);
+        if (err != Error_t::OK)
         {
-            m_log.error("Error setting Target Velocity to 0");
+            m_log.error("Error sending disable operation cmd!");
             return err;
         }
-        err = writeOpenRegisters("Controlword", 6);
-        if (err != OK)
-        {
-            m_log.error("Error setting Controlword to 6");
-            return err;
-        }
-        err = writeOpenRegisters("Modes Of Operation", 0);
-        if (err != OK)
-        {
-            m_log.error("Error setting Modes Of Operation to 0");
-            return err;
-        }
-        return OK;
+        return Error_t::OK;
     }
 
-    MDCO::Error_t MDCO::blinkOpenTest()
+    MDCO::Error_t MDCO::blink()
     {
         // blink the motor led, log an error message if transfer failed
-        Error_t err;
-        err = writeOpenRegisters("Controlword", 0x06, 2);
-        if (err != OK)
-        {
-            m_log.error("Error setting Controlword");
-            return err;
-        }
-        err = writeOpenRegisters("Modes Of Operation", 0xFE, 1);
-        if (err != OK)
-        {
-            m_log.error("Error setting Modes Of Operation");
-            return err;
-        }
-        err = writeOpenRegisters("Blink", 1, 1);
-        if (err != OK)
+        Error_t err     = enterConfigMode();
+        (*m_od)[0x2004][0x1] = (open_types::BOOLEAN_t)1;
+        err                  = writeSDO((*m_od)[0x2004][0x1]);
+        if (err != Error_t::OK)
         {
             m_log.error("Error setting Blink LEDs");
             return err;
         }
-        return MDCO::Error_t::OK;
+        return err;
     }
 
-    MDCO::Error_t MDCO::openReset()
+    MDCO::Error_t MDCO::save()
     {
-        // reset the motor via SDO message, log an error message if transfer failed
-        Error_t err;
-        err = writeOpenRegisters("Controlword", 0x06, 2);
-        if (err != OK)
+        Error_t err     = MDCO::Error_t::OK;
+        (*m_od)[0x6060] = (open_types::INTEGER8_t)6;
+        err             = writeSDO((*m_od)[0x6060]);
+        if (err != Error_t::OK)
         {
-            m_log.error("Error setting Controlword");
+            m_log.error("Error sending shutdown cmd!");
             return err;
         }
-        err = writeOpenRegisters("Modes Of Operation", 0xFE, 1);
-        if (err != OK)
-        {
-            m_log.error("Error setting Modes Of Operation");
-            return err;
-        }
-        err = writeOpenRegisters("Reset Controller", 1, 1);
-        if (err != OK)
-        {
-            m_log.error("Error setting Reset Controller");
-            return err;
-        }
-        return MDCO::Error_t::OK;
-    }
-
-    MDCO::Error_t MDCO::clearOpenErrors(i16 level)
-    {
-        Error_t err;
-        // restart node
-        std::vector<u8> data = {0x81, (u8)m_canId};
-        err                  = writeOpenPDORegisters(0x000, data);
-        if (err != OK)
-        {
-            m_log.error("Error restarting node");
-        }
-        m_log.debug("waiting the node %d to restart\n", m_canId);
-        // wait for the node to restart
-        auto start   = std::chrono::steady_clock::now();
-        auto timeout = std::chrono::milliseconds((5000));
-        while (std::chrono::steady_clock::now() - start < timeout)
-        {
-        }
-        // clearing error register
-        err = writeOpenRegisters("Controlword", 0x06, 2);
-        if (err != OK)
-        {
-            m_log.error("Error setting Controlword");
-            return err;
-        }
-        err = writeOpenRegisters("Modes Of Operation", 0xFF, 1);
-        if (err != OK)
-        {
-            m_log.error("Error setting Modes Of Operation");
-            return err;
-        }
-        start   = std::chrono::steady_clock::now();
-        timeout = std::chrono::milliseconds((100));
-        while (std::chrono::steady_clock::now() - start < timeout)
-        {
-        }
-        // clear errors or warnings or both depending on the level
-        if (level == 1)
-            return writeOpenRegisters("Clear Errors", 1, 1);
-        if (level == 2)
-            return writeOpenRegisters("Clear Warnings", 1, 1);
-        if (level == 3)
-        {
-            err = writeOpenRegisters("Clear Errors", 1, 1);
-            if (err == OK)
-            {
-                return err;
-            }
-            else
-                return MDCO::Error_t::TRANSFER_FAILED;
-        }
-        else
-            return MDCO::Error_t::REQUEST_INVALID;
-    }
-
-    MDCO::Error_t MDCO::newCanOpenConfig(i32 newID, i32 newBaud, u32 watchdog)
-    {
-        // set new can configuration, log an error message if transfer failed
-        Error_t err;
-        err = writeOpenRegisters("Can ID", newID, 4);
-        if (err != OK)
-        {
-            m_log.error("Error setting Can ID");
-            return err;
-        }
-        err = writeOpenRegisters("Can Baudrate", newBaud, 4);
-        if (err != OK)
-        {
-            m_log.error("Error setting Can Baudrate");
-            return err;
-        }
-        err = writeOpenRegisters("Can Watchdog", watchdog);
-        if (err != OK)
-        {
-            m_log.error("Error setting Can Watchdog");
-            return err;
-        }
-        return MDCO::Error_t::OK;
-    }
-
-    MDCO::Error_t MDCO::testHeartbeat()
-    {
-        // send heartbeat and check if the motor responds correctly, log an error message if
-        // transfer
-        uint32_t heartbeat_id = 0x700 + (uint32_t)this->m_canId;
-        m_log.info("Waiting for a heartbeat message with can id 0x%03X...", heartbeat_id);
-
-        std::vector<u8>           frame = {0x00};
-        std::vector<uint8_t>      response;
-        mab::candleTypes::Error_t error;
-
-        uint64_t firstHeartbeatReceived = 0;
-
-        // Chrono setup
-        auto start_time = std::chrono::steady_clock::now();
-        auto timeout    = std::chrono::seconds(5);
-
-        while (std::chrono::steady_clock::now() - start_time < timeout)
-        {
-            // send Heartbeat CANopen frame with high frequency
-            auto result =
-                transferCanOpenFrameNoRespondExpected(heartbeat_id, frame, 1, /*timeoutMs=*/10);
-            response = result.first;
-            error    = result.second;
-
-            // if a incorrect message is received, ignore it
-            if (error != mab::candleTypes::Error_t::OK)
-                continue;
-
-            // if the received message is not a Heartbeat, ignore it
-            if ((int)response.size() <= 4)
-                continue;
-
-            // heartbeat received
-            m_log.success("heartbeat received");
-
-            auto now_us = std::chrono::duration_cast<std::chrono::microseconds>(
-                              std::chrono::steady_clock::now() - start_time)
-                              .count();
-
-            // first heartbeat
-            if (firstHeartbeatReceived == 0)
-            {
-                firstHeartbeatReceived = now_us;
-
-                // keep sending message until the last heartbeat disappears on the bus or timeout
-                do
-                {
-                    result = transferCanOpenFrameNoRespondExpected(
-                        heartbeat_id, frame, 1, /*timeoutMs=*/10);
-                    response = result.first;
-                    error    = result.second;
-                } while ((error == mab::candleTypes::Error_t::OK && response.size() > 1 &&
-                          response[1] == 0x01) &&
-                         (std::chrono::steady_clock::now() - start_time < timeout));
-
-                continue;  // keep waiting for the second heartbeat
-            }
-
-            // second heartbeat — calculating delta time
-            auto delta_us = std::chrono::duration_cast<std::chrono::microseconds>(
-                                std::chrono::steady_clock::now() - start_time)
-                                .count() -
-                            firstHeartbeatReceived;
-
-            m_log.success("heartbeat received with in between time of %.6lf s",
-                          static_cast<double>(delta_us) / 1'000'000.0);
-            return OK;
-        }
-
-        // ---------- Timeout ----------
-        if (firstHeartbeatReceived == 0)
-            m_log.error("No heartbeat has been received after 5s.\n");
-        else
-            m_log.success("One heartbeat has been received in the last 5s");
-
-        return OK;
-    }
-
-    MDCO::Error_t MDCO::openSave()
-    {
-        // save the motor configuration via SDO message, log an error message if transfer failed
-        Error_t err;
-        err = writeOpenRegisters("Controlword", 0x06, 2);
-        if (err != OK)
-        {
-            m_log.error("Error setting Controlword for openSave");
-            return err;
-        }
-        err = writeOpenRegisters(
-            "Save all parameters", 0x65766173, 4);  // 0x65766173="save" in ASCII and little endian
-        if (err != OK)
+        (*m_od)[0x1010][0x1] =
+            (open_types::UNSIGNED32_t)0x65766173;  // 0x65766173="save" in ASCII and little endian
+        err = writeSDO((*m_od)[0x1010][0x1]);
+        if (err != Error_t::OK)
         {
             m_log.error("Error saving all parameters");
             return err;
         }
-        // wait for motor to restart
-        auto start   = std::chrono::steady_clock::now();
-        auto timeout = std::chrono::milliseconds((2000));
-        while (std::chrono::steady_clock::now() - start < timeout)
-        {
-        }
-        return MDCO::Error_t::OK;
+        return err;
     }
 
-    MDCO::Error_t MDCO::openZero()
+    MDCO::Error_t MDCO::zero()
     {
         // set the motor zero position to the actual position via SDO message, log an error message
         // if transfer failed
-        Error_t err;
-        err = writeOpenRegisters("Controlword", 0x06, 2);
-        if (err != OK)
-        {
-            m_log.error("Error setting Controlword for openZero");
-            return err;
-        }
-        err = writeOpenRegisters("Modes Of Operation", 0xFE, 1);
-        if (err != OK)
-        {
-            m_log.error("Error setting Modes Of Operation for openZero");
-            return err;
-        }
-        err = writeOpenRegisters("Zero", 1, 1);
-        if (err != OK)
+        Error_t err = enterConfigMode();
+        (*m_od)[0x2004][0x5] = (open_types::BOOLEAN_t)true;
+        err = writeSDO((*m_od)[0x2004][0x5]);
+        if (err != Error_t::OK)
         {
             m_log.error("Error setting Set Zero");
             return err;
         }
-        // verify that the zero position has been set correctly
-        if ((getValueFromOpenRegister(0x6064, 0) > -50) &&
-            (getValueFromOpenRegister(0x6064, 0) < 50))
-        {
-            m_log.success("Zero update");
-            return MDCO::Error_t::OK;
-        }
-        else
-        {
-            m_log.error("Zero not update");
-            return MDCO::Error_t::TRANSFER_FAILED;
-        }
+        return err;
     }
 
-    MDCO::Error_t MDCO::encoderCalibration(bool Main, bool output)
-    {
-        // calibrate the motor encoders via SDO message, log an error message if transfer failed
-        Error_t err;
-        err = writeOpenRegisters("Controlword", 0x06, 2);
-        if (err != OK)
-        {
-            m_log.error("Error setting Controlword for encoderCalibration");
-            return err;
-        }
-        err = writeOpenRegisters("Modes Of Operation", 0xFE, 1);
-        if (err != OK)
-        {
-            m_log.error("Error setting Modes Of Operation for encoderCalibration");
-            return err;
-        }
-        if (Main)
-        {
-            err = writeOpenRegisters("Calibrate", 1, 1);
-            if (err != OK)
-            {
-                m_log.error("Error setting Run Calibration");
-                return err;
-            }
-        }
-        if (output)
-        {
-            err = writeOpenRegisters("Run Output Encoder Calibration", 1, 1);
-            if (err != OK)
-            {
-                m_log.error("Error setting Run Output Encoder Calibration");
-                return err;
-            }
-        }
-        return MDCO::Error_t::OK;
-    }
 
-    MDCO::Error_t MDCO::readOpenRegisters(i16 index, u8 subindex, bool force)
+    MDCO::Error_t MDCO::readSDO(const EDSEntry& edsEntry) const
     {
-        // check if the object is readable unless force is true
-        if (!force)
-        {
-            if (isReadable(index, subindex) != OK)
-            {
-                m_log.error("Object 0x%04x:0x%02x is not Readable!", index, subindex);
-                return REQUEST_INVALID;
-            }
-        }
+        if(edsEntry)
 
         m_log.debug("Read Open register...");
         std::vector<u8> frame = {

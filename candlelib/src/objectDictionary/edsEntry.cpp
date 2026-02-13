@@ -1,4 +1,5 @@
 #include <cstddef>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -228,6 +229,47 @@ namespace mab
         }
         return Error_t::OK;
     }
+    size_t EDSEntry::valueSize() const noexcept
+    {
+        if (!m_value.has_value() || !m_edsEntryMetaData.edsValueMeta.has_value())
+            return 0;
+        size_t size = 0;
+        switch (m_edsEntryMetaData.edsValueMeta.value().dataType)
+        {
+            case mab::EDSEntry::DataType_E::BOOLEAN:
+            case mab::EDSEntry::DataType_E::INTEGER8:
+            case mab::EDSEntry::DataType_E::UNSIGNED8:
+                size = 1;
+                break;
+            case mab::EDSEntry::DataType_E::INTEGER16:
+            case mab::EDSEntry::DataType_E::UNSIGNED16:
+                size = 2;
+                break;
+            case mab::EDSEntry::DataType_E::INTEGER32:
+            case mab::EDSEntry::DataType_E::UNSIGNED32:
+            case mab::EDSEntry::DataType_E::REAL32:
+                size = 4;
+                break;
+            case mab::EDSEntry::DataType_E::INTEGER64:
+            case mab::EDSEntry::DataType_E::UNSIGNED64:
+            case mab::EDSEntry::DataType_E::REAL64:
+                size = 8;
+                break;
+            case mab::EDSEntry::DataType_E::VISIBLE_STRING:
+                size = std::get<open_types::VISIBLE_STRING_t>(m_value.value()).size();
+                break;
+            case mab::EDSEntry::DataType_E::OCTET_STRING:
+                size = std::get<open_types::OCTET_STRING_t>(m_value.value()).size();
+                break;
+            case mab::EDSEntry::DataType_E::UNICODE_STRING:
+                size = std::get<open_types::UNICODE_STRING_t>(m_value.value()).size();
+                break;
+            case mab::EDSEntry::DataType_E::DOMAIN:
+                size = std::get<open_types::DOMAIN_t>(m_value.value()).size();
+                break;
+        }
+        return size;
+    }
     EDSEntry::ValueVariant_t EDSEntry::getVariantFromString(const DataType_E&      dataType,
                                                             const std::string_view str)
     {
@@ -366,13 +408,25 @@ namespace mab
         }
         return *(m_subObjectsMap.value()).at(subIndex);
     }
-    std::map<u8, std::unique_ptr<EDSEntry>>::const_iterator EDSEntry::m_subObjectsMapBegin() const
+    std::map<u8, std::unique_ptr<EDSEntry>>::const_iterator EDSEntry::begin() const
     {
         if (!m_subObjectsMap.has_value())
             throw std::runtime_error("No subindicies in EDS entry");
         return m_subObjectsMap.value().begin();
     }
-    std::map<u8, std::unique_ptr<EDSEntry>>::const_iterator EDSEntry::m_subObjectsMapEnd() const
+    std::map<u8, std::unique_ptr<EDSEntry>>::const_iterator EDSEntry::end() const
+    {
+        if (!m_subObjectsMap.has_value())
+            throw std::runtime_error("No subindicies in EDS entry");
+        return m_subObjectsMap.value().end();
+    }
+    std::map<u8, std::unique_ptr<EDSEntry>>::iterator EDSEntry::begin()
+    {
+        if (!m_subObjectsMap.has_value())
+            throw std::runtime_error("No subindicies in EDS entry");
+        return m_subObjectsMap.value().begin();
+    }
+    std::map<u8, std::unique_ptr<EDSEntry>>::iterator EDSEntry::end()
     {
         if (!m_subObjectsMap.has_value())
             throw std::runtime_error("No subindicies in EDS entry");
@@ -382,6 +436,14 @@ namespace mab
     {
         return m_map.at(idx);
     }
+    std::map<u32, EDSEntry>::iterator EDSObjectDictionary::begin()
+    {
+        return m_map.begin();
+    }
+    std::map<u32, EDSEntry>::iterator EDSObjectDictionary::end()
+    {
+        return m_map.end();
+    }
     std::map<u32, EDSEntry>::const_iterator EDSObjectDictionary::begin() const
     {
         return m_map.begin();
@@ -389,6 +451,25 @@ namespace mab
     std::map<u32, EDSEntry>::const_iterator EDSObjectDictionary::end() const
     {
         return m_map.end();
+    }
+
+    std::optional<std::pair<u32, std::optional<u8>>> EDSObjectDictionary::getAdressByName(
+        std::string_view name) const noexcept
+    {
+        for (auto& entryPair : m_map)
+        {
+            if (name == entryPair.second.getEntryMetaData().parameterName)
+                return std::make_pair(entryPair.first, std::nullopt);
+            if (entryPair.second.getContainerMetaData().has_value())
+            {
+                for (auto& subentryPair : entryPair.second)
+                {
+                    if (name == subentryPair.second->getEntryMetaData().parameterName)
+                        return std::make_pair(entryPair.first, subentryPair.first);
+                }
+            }
+        }
+        return std::nullopt;
     }
     size_t EDSObjectDictionary::size() const
     {

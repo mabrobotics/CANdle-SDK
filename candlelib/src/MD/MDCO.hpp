@@ -1,18 +1,16 @@
 #pragma once
 
-#include "edsParser.hpp"
+#include "edsEntry.hpp"
 #include "mab_types.hpp"
-#include "md_types.hpp"
 #include "logger.hpp"
 #include "manufacturer_data.hpp"
 #include "candle_types.hpp"
-#include "MDStatus.hpp"
 #include "candle.hpp"
-#include "OD.hpp"
 
 #include <cstring>
 
 #include <array>
+#include <memory>
 #include <queue>
 #include <type_traits>
 #include <utility>
@@ -29,27 +27,13 @@
 namespace mab
 {
 
-    /// @brief Parameters for the move operation
-    struct moveParameter
-    {
-        u32 MaxSpeed     = 0;
-        u16 MaxCurrent   = 0;
-        u32 RatedCurrent = 0;
-        u16 MaxTorque    = 0;
-        u32 RatedTorque  = 0;
-        i32 accLimit     = 0;
-        i32 dccLimit     = 0;
-        f32 kp           = 0.0;
-        f32 kd           = 0.0;
-        f32 ki           = 0.0;
-        i16 torqueff     = 0x00;
-    };
-
     /// @brief Software representation of MD device on the can network
     class MDCO
     {
-        static constexpr size_t DEFAULT_RESPONSE_SIZE = 23;
-        static constexpr u16    SDO_REQUEST_BASE      = 0x600;
+        static constexpr size_t DEFAULT_RESPONSE_SIZE         = 23;
+        static constexpr u16    SDO_REQUEST_BASE              = 0x600;
+        static constexpr u8     INITIATE_SDO_UPLOAD_REQUEST   = 0x40;
+        static constexpr u8     INITIATE_SDO_DOWNLOAD_REQUEST = 0x60;
 
         Logger m_log;
 
@@ -62,7 +46,7 @@ namespace mab
         std::optional<u32> m_timeout;
 
         /// @brief Possible errors present in this class
-        enum Error_t
+        enum class Error_t
         {
             OK,
             REQUEST_INVALID,
@@ -74,7 +58,8 @@ namespace mab
         /// @brief Create MD object instance
         /// @param canId can node id of MD
         /// @param candle pointer to candle instance used for communication
-        MDCO(canId_t canId, Candle* candle) : m_canId(canId), m_candle(candle)
+        MDCO(canId_t canId, Candle* candle, std::shared_ptr<EDSObjectDictionary> od)
+            : m_canId(canId), m_candle(candle), m_od(od)
         {
             m_log.m_layer = Logger::ProgramLayer_E::TOP;
             std::stringstream tag;
@@ -89,53 +74,27 @@ namespace mab
         /// moving
         /// @param param struct containing all the parameters needed to configure the motor
         /// @return error_t indicating the result of the operation
-        Error_t setProfileParameters(moveParameter& param);
+        // Error_t setProfileParameters(moveParameter& param);
 
         /// @brief Enable the driver with the specified mode of operation
         /// @param mode Mode of operation to set cf 0x6060 in the CANopen object dictionary
         /// @return Error_t indicating the result of the operation
-        Error_t enableDriver(ModesOfOperation mode);
+        Error_t enable();
 
         /// @brief Disable the driver
         /// @return Error_t indicating the result of the operation
-        Error_t disableDriver();
+        Error_t disable();
 
         /// @brief Blink the built-in LEDs with CANopen command
-        Error_t blinkOpenTest();
-
-        /// @brief Reset the driver with CANopen command
-        /// @return Error_t indicating the result of the operation
-        Error_t openReset();
-
-        /// @brief Clear errors present in the driver
-        /// @param level 1 => clear error, 2 => clear warning, 3 => clear both
-        /// @return Error_t indicating the result of the operation
-        Error_t clearOpenErrors(i16 level);
-
-        /// @brief Change CANopen config the command need to be save before shutoff the motors
-        /// @param newID new id of the motor
-        /// @param newBaud new baudRate
-        /// @param watchdog new watchdogder
-        /// @return Error_t indicating the result of the operation
-        Error_t newCanOpenConfig(i32 newID, i32 newBaud, u32 watchdog);
-
-        /// @brief Perform a encoder calibration
-        /// @param Main Main=1 if you want to perform the calibration on the main encoder
-        /// @param output output=1 if you want to perform the calibration on the output encoder
-        /// @return Error_t indicating the result of the operation
-        Error_t encoderCalibration(bool Main, bool output);
-
-        /// @brief test the heartbeat of the MD device give time between two heartbeat
-        /// @return Error_t indicating the result of the operation
-        Error_t testHeartbeat();  // TODO: eval this
+        Error_t blink();
 
         /// @brief Save configuration data to the memory
         /// @return Error_t indicating the result of the operation
-        Error_t openSave();
+        Error_t save();
 
         /// @brief Zero out the position of the encoder
         /// @return Error_t indicating the result of the operation
-        Error_t openZero();
+        Error_t zero();
 
         /// @brief read a value from a can open register using SDO can frame
         /// @param index index from the object dictionary where the user want to read the value
@@ -143,7 +102,7 @@ namespace mab
         /// value
         /// @param force if true, skip the check if the object is readable
         /// @return Error on failure
-        Error_t readOpenRegisters(i16 index, u8 subindex, bool force = false);
+        Error_t readSDO(const EDSEntry& edsEntry) const;
 
         /// @brief write a value in a can open register using SDO segmented can frame
         /// @param index index from the object dictionary where the user want to write the value
@@ -152,125 +111,44 @@ namespace mab
         /// @param dataString string containing the data to write
         /// @param force if true, skip the check if the object is writable
         /// @return Error on failure
-        Error_t writeLongOpenRegisters(i16                index,
-                                       short              subindex,
-                                       const std::string& dataString,
-                                       bool               force = false);
-
-        /// @brief read a value from a can open register using SDO segmented transfer can frame (if
-        /// data > 4 bit)
-        /// @param index index from the object dictionary where the user want to read the value
-        /// @param subindex subindex from the object dictionary where the user want to read the
-        /// value
-        /// @param outData vector where the data will be stored
-        /// @param silent if true, nothings wil be print on the terminal
-        /// @return Error on failure
-        Error_t readLongOpenRegisters(i16              index,
-                                      short            subindex,
-                                      std::vector<u8>& outData,
-                                      bool             silent = false);
-
-        /// @brief return a value from a can open register using SDO can frame
-        /// @param index index from the object dictionary where the user want to read the value
-        /// @param subindex subindex from the object dictionary where the user want to read the
-        /// value
-        /// @return the value contained in the register or -1 if error
-        i32 getValueFromOpenRegister(i16 index, u8 subindex);
-
-        /// @brief write a value in a can open register using SDO can frame
-        /// @param index index from the object dictionary where the user want to write the value
-        /// @param subindex subindex from the object dictionary where the user want to write the
-        /// value
-        /// @param data value to write
-        /// @param size size of the data to write (1,2,4)
-        /// @param force if true, skip the check if the object is writable
-        /// @return Error on failure
-        Error_t writeOpenRegisters(
-            i16 index, short subindex, i32 data, short size = 0, bool force = false);
-
-        /// @brief write a value in a can open register using SDO can frame
-        /// @param name name of the object to write
-        /// @param data value to write
-        /// @param size size of the data to write (1,2,4)
-        /// @param force if true, skip the check if the object is writable
-        /// @return Error on failure
-        Error_t writeOpenRegisters(const std::string& name,
-                                   u32                data,
-                                   u8                 size  = 0,
-                                   bool               force = false);
+        Error_t writeSDO(EDSEntry& edsEntry) const;
 
         /// @brief write a value in a can open register using PDO can frame
         /// @param index id of pdo to send (200/300/400/500 + node_id)
         /// @param data value to write
         /// @return Error on failure
-        Error_t writeOpenPDORegisters(i16 index, std::vector<u8> data);
-
-        /// @brief write a value in a can open register using PDO can frame
-        /// @param index id of pdo to send (200/300/400/500 + node_id)
-        /// @param data value to write
-        /// @return Error on failure
-        Error_t sendCustomData(i16 index, std::vector<u8> data);
+        Error_t writePDO(EDSEntry& edsEntry) const;
 
         /// @brief try to communicate with canOpen frame (SDO) with all the possible id
         /// @param candle
         /// @return a vector with all id with a MD attach in CANopen communication
         static std::vector<canId_t> discoverOpenMDs(Candle* candle);
 
-        /// @brief Return the size of the data of an EDS object
-        /// @param index Index of the object in the Object Dictionary
-        /// @param subIndex Subindex of the object in the Object Dictionary
-        /// @return Size of the data in bytes, or 0 if the object is a string or -1 if the object is
-        /// not found
-        i8 dataSizeOfEdsObject(const u32 index, const u8 subIndex);
-
-        /// @brief Display all information about the MD device
-        /// @details This function prints the all the actual register value, device type, and all
-        /// objects in the Object Dictionary.
-        void printAllInfo();
-
       private:
-        const Candle* m_candle;
+        Candle* m_candle;
 
         /// @brief Generate the Object Dictionary from the EDS file
         /// @return A vector of edsObject representing the Object Dictionary
-        const std::vector<edsObject> ObjectDictionary =
-            generateObjectDictionary();  // Object dictionary generated from the EDS file
+        std::shared_ptr<EDSObjectDictionary> m_od;
 
-        /// @brief Find an object in the Object Dictionary by its name
-        /// @param searchTerm name of the object to find
-        /// @param index Output parameter to store the found index
-        /// @param subIndex Output parameter to store the found subindex
-        /// @return Error_t indicating the result of the operation
-        /// @details If multiple objects with the same name are found, only the first one is
-        /// returned, and a warning is logged.
-        Error_t findObjectByName(const std::string& searchTerm, u32& index, u8& subIndex);
-
-        /// @brief Check if an object is writable
-        /// @param index Index of the object in the Object Dictionary
-        /// @param subIndex Subindex of the object in the Object Dictionary
-        /// @return Error_t indicating whether the object is writable or not
-        /// @details This function checks the Object Dictionary to determine if the specified object
-        /// is writable. If the object is not found or not writable, it returns an error.
-        /// If the object is writable, it returns OK.
-        Error_t isWritable(const u32 index, const u8 subIndex);
-
-        /// @brief Check if an object is readable
-        /// @param index Index of the object in the Object Dictionary
-        /// @param subIndex Subindex of the object in the Object Dictionary
-        /// @return Error_t indicating whether the object is readable or not
-        /// @details This function checks the Object Dictionary to determine if the specified object
-        /// is readable. If the object is not found or not readable, it returns an error.
-        /// If the object is readable, it returns OK.
-        Error_t isReadable(const u32 index, const u8 subIndex);
-
-        inline const Candle* getCandle() const
+        inline Error_t enterConfigMode() const
         {
-            if (m_candle != nullptr)
+            Error_t err     = MDCO::Error_t::OK;
+            (*m_od)[0x6060] = (open_types::INTEGER8_t)6;
+            err             = writeSDO((*m_od)[0x6060]);
+            if (err != Error_t::OK)
             {
-                return m_candle;
+                m_log.error("Error sending shutdown cmd!");
+                return err;
             }
-            m_log.error("Candle device empty!");
-            return nullptr;
+            (*m_od)[0x6060] = (open_types::INTEGER8_t)-1;
+            err             = writeSDO((*m_od)[0x6060]);
+            if (err != Error_t::OK)
+            {
+                m_log.error("Error setting config mode!");
+                return err;
+            }
+            return err;
         }
 
         inline std::pair<std::vector<u8>, mab::candleTypes::Error_t> transferCanOpenFrame(
@@ -281,7 +159,7 @@ namespace mab
                 m_log.error("Candle empty!");
                 return {{}, candleTypes::Error_t::DEVICE_NOT_CONNECTED};
             }
-            auto result = getCandle()->transferCANFrame(
+            auto result = m_candle->transferCANFrame(
                 Id, frameToSend, responseSize, m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
 
             if (result.second != candleTypes::Error_t::OK)
@@ -309,7 +187,7 @@ namespace mab
 
             if (timeout == 0)
             {
-                auto result = getCandle()->transferCANFrame(
+                auto result = m_candle->transferCANFrame(
                     Id, frameToSend, responseSize, 10 * m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
                 result.second       = candleTypes::Error_t::OK;
                 m_log.g_m_verbosity = levelBeforePDO;
@@ -318,8 +196,8 @@ namespace mab
             }
             else
             {
-                auto result = getCandle()->transferCANFrame(Id, frameToSend, responseSize, timeout);
-                result.second       = candleTypes::Error_t::OK;
+                auto result   = m_candle->transferCANFrame(Id, frameToSend, responseSize, timeout);
+                result.second = candleTypes::Error_t::OK;
                 m_log.g_m_verbosity = levelBeforePDO;
 
                 return result;
