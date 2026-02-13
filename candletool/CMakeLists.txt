@@ -39,7 +39,10 @@ target_include_directories(
          ${CMAKE_CURRENT_SOURCE_DIR}/src/web_file_module
          ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src)
 
-target_compile_options(candletool PRIVATE -g)
+target_compile_options(candletool PRIVATE -g -Wno-unused-parameter -Wno-missing-field-initializers)
+if(SUPPRESS_WARN)
+target_compile_options(candletool PRIVATE -w)
+endif()
 
 set_target_properties(candletool PROPERTIES OUTPUT_NAME "candletool")
 
