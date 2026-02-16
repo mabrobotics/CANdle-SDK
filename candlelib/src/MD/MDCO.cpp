@@ -1,4 +1,7 @@
 #include "MDCO.hpp"
+#include <span>
+#include <vector>
+#include "candle_types.hpp"
 
 namespace mab
 {
@@ -46,7 +49,7 @@ namespace mab
     MDCO::Error_t MDCO::blink()
     {
         // blink the motor led, log an error message if transfer failed
-        Error_t err     = enterConfigMode();
+        Error_t err          = enterConfigMode();
         (*m_od)[0x2004][0x1] = (open_types::BOOLEAN_t)1;
         err                  = writeSDO((*m_od)[0x2004][0x1]);
         if (err != Error_t::OK)
@@ -82,9 +85,9 @@ namespace mab
     {
         // set the motor zero position to the actual position via SDO message, log an error message
         // if transfer failed
-        Error_t err = enterConfigMode();
-        (*m_od)[0x2004][0x5] = (open_types::BOOLEAN_t)true;
-        err = writeSDO((*m_od)[0x2004][0x5]);
+        Error_t err          = enterConfigMode();
+        (*m_od)[0x2004][0x5] = (open_types::BOOLEAN_t) true;
+        err                  = writeSDO((*m_od)[0x2004][0x5]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting Set Zero");
@@ -93,14 +96,36 @@ namespace mab
         return err;
     }
 
-
     MDCO::Error_t MDCO::readSDO(const EDSEntry& edsEntry) const
     {
-        if(edsEntry)
-
-        m_log.debug("Read Open register...");
+        if (!edsEntry.getValueMetaData().has_value())
+        {
+            return Error_t::UNKNOWN_OBJECT;
+        }
+        if (edsEntry.valueSize() <= 4)
+        {
+            // using expedited transfer
+            std::vector<u8> transmitFrame = {
+                INITIATE_SDO_UPLOAD_REQUEST,
+                (u8)edsEntry.getEntryMetaData().address.first,
+                (u8)(edsEntry.getEntryMetaData().address.first >> 8),
+                (u8)(edsEntry.getEntryMetaData().address.second.value_or(0))};
+            transmitFrame.resize(8, 0);
+            auto [response, error] = transferCanOpenFrame(
+                SDO_REQUEST_BASE + m_canId, transmitFrame, transmitFrame.size());
+            if (error != candleTypes::Error_t::OK)
+            {
+                m_log.error("Failed CAN transfer to SDO %d",)
+                return Error_t::TRANSFER_FAILED;
+            }
+        }
+        else
+        {
+            // using segmented transfer
+        }
+        m_log.debug("Sending SDO upload request");
         std::vector<u8> frame = {
-            0x40,
+            INITIATE_SDO_UPLOAD_REQUEST,
             ((u8)index),
             ((u8)(index >> 8)),
             subindex,
@@ -109,10 +134,6 @@ namespace mab
             0,
             0,
         };
-
-        //  message sending via transferCanFrame
-        auto [response, error] =
-            transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, frame, frame.size());
 
         // data display
         std::stringstream ss;
@@ -466,7 +487,8 @@ namespace mab
             }
             else if (size == 0 || size > 4)
             {
-                // size=0 mean object is string or array, size>4 not supported in expedited transfer
+                // size=0 mean object is string or array, size>4 not supported in expedited
+                // transfer
                 m_log.error(
                     "Object 0x%04x:0x%02x has an unsupported size (%d), please use an "
                     "Segmented transfer !",

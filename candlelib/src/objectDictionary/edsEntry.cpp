@@ -432,28 +432,28 @@ namespace mab
             throw std::runtime_error("No subindicies in EDS entry");
         return m_subObjectsMap.value().end();
     }
-    EDSEntry& EDSObjectDictionary::operator[](u32 idx)
+    EDSEntry& EDSObjectDictionary::operator[](u16 idx)
     {
         return m_map.at(idx);
     }
-    std::map<u32, EDSEntry>::iterator EDSObjectDictionary::begin()
+    std::map<u16, EDSEntry>::iterator EDSObjectDictionary::begin()
     {
         return m_map.begin();
     }
-    std::map<u32, EDSEntry>::iterator EDSObjectDictionary::end()
+    std::map<u16, EDSEntry>::iterator EDSObjectDictionary::end()
     {
         return m_map.end();
     }
-    std::map<u32, EDSEntry>::const_iterator EDSObjectDictionary::begin() const
+    std::map<u16, EDSEntry>::const_iterator EDSObjectDictionary::begin() const
     {
         return m_map.begin();
     }
-    std::map<u32, EDSEntry>::const_iterator EDSObjectDictionary::end() const
+    std::map<u16, EDSEntry>::const_iterator EDSObjectDictionary::end() const
     {
         return m_map.end();
     }
 
-    std::optional<std::pair<u32, std::optional<u8>>> EDSObjectDictionary::getAdressByName(
+    std::optional<std::pair<u16, std::optional<u8>>> EDSObjectDictionary::getAdressByName(
         std::string_view name) const noexcept
     {
         for (auto& entryPair : m_map)

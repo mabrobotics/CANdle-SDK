@@ -108,7 +108,7 @@ namespace mab
 
         struct EDSEntryMetaData
         {
-            std::pair<u32, std::optional<u8>>   address;
+            std::pair<u16, std::optional<u8>>   address;
             std::string                         parameterName;
             ObjectType_E                        objectType;
             StorageLocation_E                   storageLocation;
@@ -223,24 +223,24 @@ namespace mab
     class EDSObjectDictionary
     {
       public:
-        EDSObjectDictionary(std::map<u32, EDSEntry>&& map) : m_map(std::move(map))
+        EDSObjectDictionary(std::map<u16, EDSEntry>&& map) : m_map(std::move(map))
         {
         }
 
-        EDSEntry& operator[](u32 idx);
+        EDSEntry& operator[](u16 idx);
 
-        std::map<u32, EDSEntry>::iterator       begin();
-        std::map<u32, EDSEntry>::iterator       end();
-        std::map<u32, EDSEntry>::const_iterator begin() const;
-        std::map<u32, EDSEntry>::const_iterator end() const;
+        std::map<u16, EDSEntry>::iterator       begin();
+        std::map<u16, EDSEntry>::iterator       end();
+        std::map<u16, EDSEntry>::const_iterator begin() const;
+        std::map<u16, EDSEntry>::const_iterator end() const;
 
         size_t size() const;
 
-        std::optional<std::pair<u32, std::optional<u8>>> getAdressByName(
+        std::optional<std::pair<u16, std::optional<u8>>> getAdressByName(
             std::string_view name) const noexcept;
 
       private:
-        std::map<u32, EDSEntry> m_map;
+        std::map<u16, EDSEntry> m_map;
     };
 
 }  // namespace mab
