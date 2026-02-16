@@ -137,7 +137,6 @@ namespace mab
                 if (!canChanged)
                 {
                     m_logger.warn("No CAN parameters changed, skipping write!");
-                    return;
                 }
 
                 registers.runCanReinit = 1;  // Set flag to reinitialize CAN
