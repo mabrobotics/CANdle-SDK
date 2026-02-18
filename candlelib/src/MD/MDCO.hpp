@@ -33,7 +33,7 @@ namespace mab
         static constexpr size_t DEFAULT_RESPONSE_SIZE         = 23;
         static constexpr u16    SDO_REQUEST_BASE              = 0x600;
         static constexpr u8     INITIATE_SDO_UPLOAD_REQUEST   = 0x40;
-        static constexpr u8     INITIATE_SDO_DOWNLOAD_REQUEST = 0x60;
+        static constexpr u8     INITIATE_SDO_DOWNLOAD_REQUEST = 0x22;
 
         Logger m_log;
 
@@ -136,18 +136,25 @@ namespace mab
         {
             Error_t err     = MDCO::Error_t::OK;
             (*m_od)[0x6060] = (open_types::INTEGER8_t)6;
-            err             = writeSDO((*m_od)[0x6060]);
+            m_log.error("Address 6060: 0x%x", ((*m_od)[0x6060]).getEntryMetaData().address.first);
+            err = writeSDO((*m_od)[0x6060]);
             if (err != Error_t::OK)
             {
                 m_log.error("Error sending shutdown cmd!");
                 return err;
             }
-            (*m_od)[0x6060] = (open_types::INTEGER8_t)-1;
+            (*m_od)[0x6060] = (open_types::INTEGER8_t)-2;
             err             = writeSDO((*m_od)[0x6060]);
             if (err != Error_t::OK)
             {
                 m_log.error("Error setting config mode!");
                 return err;
+            }
+            err = readSDO((*m_od)[0x6061]);
+            if ((i8)(open_types::INTEGER8_t)(*m_od)[0x6061] != -1)
+            {
+                m_log.error("Coudl not enter service mode");
+                m_log.error("Current mode: %i", (i8)(open_types::INTEGER8_t)((*m_od)[0x6061]));
             }
             return err;
         }

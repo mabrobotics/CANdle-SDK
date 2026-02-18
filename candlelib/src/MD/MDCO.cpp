@@ -1,4 +1,5 @@
 #include "MDCO.hpp"
+#include <unistd.h>
 #include <cstddef>
 #include <span>
 #include <vector>
@@ -9,7 +10,6 @@ namespace mab
 
     MDCO::Error_t MDCO::init()
     {
-        m_log.info("Size %d", (*m_od)[0x1000].valueSize());
         return readSDO((*m_od)[0x1000]);
     }
 
@@ -53,7 +53,8 @@ namespace mab
         // blink the motor led, log an error message if transfer failed
         Error_t err          = enterConfigMode();
         (*m_od)[0x2004][0x1] = (open_types::BOOLEAN_t)1;
-        err                  = writeSDO((*m_od)[0x2004][0x1]);
+        usleep(5'000);
+        err = writeSDO((*m_od)[0x2004][0x1]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting Blink LEDs");
@@ -124,11 +125,22 @@ namespace mab
                 m_log.error("Failed upload SDO 0x%x", SDO_REQUEST_BASE + m_canId);
                 return Error_t::TRANSFER_FAILED;
             }
+            m_log.debug("Address: 0x%x", edsEntry.getEntryMetaData().address.first);
+            for (const auto& byte : transmitFrame)
+            {
+                m_log.debug("0x%x", byte);
+            }
+            m_log.debug("---------------------");
+            for (const auto& byte : response)
+            {
+                m_log.debug("0x%x", byte);
+            }
 
             // Verify expedited response (bit 1 == 1)
-            if ((response[0] & 0x02) == 0)
+            if ((response[0] & 0x40) == 0)
             {
-                m_log.error("Expected expedited response");
+                m_log.error("Invalid expedited download response");
+
                 return Error_t::TRANSFER_FAILED;
             }
 
@@ -238,8 +250,15 @@ namespace mab
             // 0x02 = expedited
             // 0x01 = size indicated
             // bits 2-3 = number of unused bytes
-            u8 emptyBytes    = static_cast<u8>(4 - size);
-            transmitFrame[0] = 0x20 | 0x02 | 0x01 | (emptyBytes << 2);
+            // if (payloadSize == 0x1)
+            //     transmitFrame[0] = 0x2F;
+            // else if (payloadSize == 0x2)
+            //     transmitFrame[0] = 0x2B;
+            // else if (payloadSize == 0x3)
+            //     transmitFrame[0] = 0x27;
+            // else
+            //     transmitFrame[0] = 0x23;
+            transmitFrame[0] = INITIATE_SDO_DOWNLOAD_REQUEST;
             transmitFrame[1] = (u8)edsEntry.getEntryMetaData().address.first;
             transmitFrame[2] = (u8)(edsEntry.getEntryMetaData().address.first >> 8);
             transmitFrame[3] = (u8)(edsEntry.getEntryMetaData().address.second.value_or(0));
@@ -256,6 +275,17 @@ namespace mab
             {
                 m_log.error("Failed expedited download SDO 0x%x", SDO_REQUEST_BASE + m_canId);
                 return Error_t::TRANSFER_FAILED;
+            }
+            m_log.debug("Address: 0x%x", edsEntry.getEntryMetaData().address.first);
+            m_log.debug("Lenght: 0x%x", payloadSize);
+            for (const auto& byte : transmitFrame)
+            {
+                m_log.debug("0x%x", byte);
+            }
+            m_log.debug("---------------------");
+            for (const auto& byte : response)
+            {
+                m_log.debug("0x%x", byte);
             }
 
             // Expect initiate download response (0x60)

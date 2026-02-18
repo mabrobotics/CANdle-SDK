@@ -1,5 +1,6 @@
 #include "candle.hpp"
 #include "MDCO.hpp"
+#include "edsEntry.hpp"
 #include "edsParser.hpp"
 
 using namespace mab;
@@ -45,10 +46,12 @@ int main()
         log.error("MDCO exited with %d", mdco.init());
     }
 
+    Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_3;
     mdco.readSDO((*od)[0x6064]);
     log.info("%s - %d",
              (*od)[0x6064].getEntryMetaData().parameterName.c_str(),
              (open_types::INTEGER32_t)(*od)[0x6064]);
+
     mdco.blink();
 
     return EXIT_SUCCESS;
