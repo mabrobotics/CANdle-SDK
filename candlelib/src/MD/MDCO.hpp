@@ -102,7 +102,7 @@ namespace mab
         /// value
         /// @param force if true, skip the check if the object is readable
         /// @return Error on failure
-        Error_t readSDO(const EDSEntry& edsEntry) const;
+        Error_t readSDO(EDSEntry& edsEntry) const;
 
         /// @brief write a value in a can open register using SDO segmented can frame
         /// @param index index from the object dictionary where the user want to write the value
@@ -122,7 +122,8 @@ namespace mab
         /// @brief try to communicate with canOpen frame (SDO) with all the possible id
         /// @param candle
         /// @return a vector with all id with a MD attach in CANopen communication
-        static std::vector<canId_t> discoverOpenMDs(Candle* candle);
+        static std::vector<canId_t> discoverOpenMDs(Candle*                              candle,
+                                                    std::shared_ptr<EDSObjectDictionary> od);
 
       private:
         Candle* m_candle;

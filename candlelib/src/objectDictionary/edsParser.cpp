@@ -133,19 +133,21 @@ std::string mab::getDataTypeName(const std::string& hex)
     return hex;  // fallback
 }
 
-std::pair<EDSObjectDictionary, Error_t> EDSParser::load(const std::filesystem::path& edsFilePath)
+std::pair<std::shared_ptr<EDSObjectDictionary>, Error_t> EDSParser::load(
+    const std::filesystem::path& edsFilePath)
 {
     Logger                                 log(Logger::ProgramLayer_E::TOP, "EDS Parser");
-    std::map<u32, EDSEntry>                odMap;
-    std::map<std::pair<u32, u8>, EDSEntry> subEntryMap;
+    std::map<u16, EDSEntry>                odMap;
+    std::map<std::pair<u16, u8>, EDSEntry> subEntryMap;
 
     mINI::INIStructure ini;
 
     if (!std::filesystem::exists(edsFilePath))
     {
         log.error("EDS file not found: %s", edsFilePath.c_str());
-        return std::make_pair<EDSObjectDictionary, Error_t>(EDSObjectDictionary(std::move(odMap)),
-                                                            INVALID_PATH);
+        return std::make_pair<std::shared_ptr<EDSObjectDictionary>, Error_t>(
+            std::make_shared<EDSObjectDictionary>(EDSObjectDictionary(std::move(odMap))),
+            INVALID_PATH);
     }
 
     mINI::INIFile file(edsFilePath);
@@ -173,7 +175,7 @@ std::pair<EDSObjectDictionary, Error_t> EDSParser::load(const std::filesystem::p
             EDSEntry::EDSEntryMetaData metaData;
             auto&                      entry = key_val.second;
             metaData.parameterName           = entry["ParameterName"];
-            u32 idx    = isEntry(key_val.first) ? std::stoul(key_val.first, nullptr, 0)
+            u32 idx    = isEntry(key_val.first) ? std::stoul(key_val.first, nullptr, 16)
                                                 : extractIndexAndSubindex(key_val.first).value().first;
             u8  subidx = isSubentry(key_val.first)
                              ? extractIndexAndSubindex(key_val.first).value().second
@@ -187,7 +189,7 @@ std::pair<EDSObjectDictionary, Error_t> EDSParser::load(const std::filesystem::p
             metaData.address = std::pair<u32, std::optional<u8>>(idx, std::move(subidxOpt));
 
             // Fill object type
-            switch (std::stoul(entry["ObjectType"].c_str(), nullptr, 0))
+            switch (std::stoul(entry["ObjectType"].c_str(), nullptr, 16))
             {
                 case 0x7:
                     metaData.objectType = EDSEntry::ObjectType_E::VALUE;
@@ -237,7 +239,7 @@ std::pair<EDSObjectDictionary, Error_t> EDSParser::load(const std::filesystem::p
             EDSEntry::EDSEntryMetaData metaData;
             auto&                      entry = key_val.second;
             metaData.parameterName           = entry["ParameterName"];
-            u32 idx                          = std::stoul(key_val.first, nullptr, 0);
+            u32 idx                          = std::stoul(key_val.first, nullptr, 16);
 
             // Fill object type
             switch (std::stoul(entry["ObjectType"].c_str(), nullptr, 0))
@@ -272,12 +274,12 @@ std::pair<EDSObjectDictionary, Error_t> EDSParser::load(const std::filesystem::p
             {
                 EDSEntry::EDSContainerMetaData edsContainerMetadata;
                 edsContainerMetadata.numberOfSubindices =
-                    std::stoul(entry["SubNumber"], nullptr, 0);
+                    std::stoul(entry["SubNumber"], nullptr, 16);
                 metaData.edsContainerMeta = std::move(edsContainerMetadata);
 
                 std::map<u8, std::unique_ptr<EDSEntry>> map;
 
-                for (size_t i = 0; i < std::stoul(entry["SubNumber"], nullptr, 0); i++)
+                for (size_t i = 0; i < std::stoul(entry["SubNumber"], nullptr, 16); i++)
                 {
                     map.emplace(i,
                                 std::make_unique<EDSEntry>(
@@ -288,7 +290,8 @@ std::pair<EDSObjectDictionary, Error_t> EDSParser::load(const std::filesystem::p
         }
     }
 
-    return std::make_pair<EDSObjectDictionary, Error_t>(EDSObjectDictionary(std::move(odMap)), OK);
+    return std::make_pair<std::shared_ptr<EDSObjectDictionary>, Error_t>(
+        std::make_shared<EDSObjectDictionary>(EDSObjectDictionary(std::move(odMap))), OK);
 }
 
 Error_t EDSParser::isValid()
@@ -316,7 +319,7 @@ EDSEntry::EDSValueMetaData EDSParser::parseValueMetadata(mINI::INIMap<std::strin
 {
     EDSEntry::EDSValueMetaData edsValueMetadata;
     edsValueMetadata.defaultValueStr = entry["DefaultValue"];
-    switch (std::stoul(entry["DataType"].c_str(), nullptr, 0))
+    switch (std::stoul(entry["DataType"].c_str(), nullptr, 16))
     {
         case 0x0001:
             edsValueMetadata.dataType = EDSEntry::DataType_E::BOOLEAN;
@@ -377,12 +380,13 @@ EDSEntry::EDSValueMetaData EDSParser::parseValueMetadata(mINI::INIMap<std::strin
         default:
         {
             std::stringstream ss;
-            ss << std::stoul(entry["DataType"].c_str(), nullptr, 0) << " is not a valid data type!";
+            ss << std::stoul(entry["DataType"].c_str(), nullptr, 16)
+               << " is not a valid data type!";
             throw std::runtime_error(ss.str());
         }
     }
     edsValueMetadata.PDOMapping =
-        std::stoul(entry["PDOMapping"].c_str(), nullptr, 0) ? true : false;
+        std::stoul(entry["PDOMapping"].c_str(), nullptr, 16) ? true : false;
     if (std::strcmp(entry["AccessType"].c_str(), "ro") == 0)
     {
         edsValueMetadata.accessType = EDSEntry::AccessRights_E::READ_ONLY;

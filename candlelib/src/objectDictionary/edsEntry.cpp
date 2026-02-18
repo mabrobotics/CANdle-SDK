@@ -118,78 +118,40 @@ namespace mab
     EDSEntry::Error_t EDSEntry::setSerializedValue(const std::span<std::byte> bytes)
     {
         if (!m_edsEntryMetaData.edsValueMeta.has_value() || !m_value.has_value())
+        {
             return Error_t::INCORRECT_USE;
+        }
 
         switch (m_edsEntryMetaData.edsValueMeta.value().dataType)
         {
             case DataType_E::BOOLEAN:
-                if (bytes.size() != sizeof(open_types::BOOLEAN_t))
-                {
-                    return Error_t::PARSING_FAILED;
-                }
                 m_value = *std::bit_cast<const open_types::BOOLEAN_t*>(bytes.data());
                 break;
             case DataType_E::INTEGER8:
-                if (bytes.size() != sizeof(open_types::INTEGER8_t))
-                {
-                    return Error_t::PARSING_FAILED;
-                }
                 m_value = *std::bit_cast<const open_types::INTEGER8_t*>(bytes.data());
                 break;
             case DataType_E::INTEGER16:
-                if (bytes.size() != sizeof(open_types::INTEGER16_t))
-                {
-                    return Error_t::PARSING_FAILED;
-                }
                 m_value = *std::bit_cast<const open_types::INTEGER16_t*>(bytes.data());
                 break;
             case DataType_E::INTEGER32:
-                if (bytes.size() != sizeof(open_types::INTEGER32_t))
-                {
-                    return Error_t::PARSING_FAILED;
-                }
                 m_value = *std::bit_cast<const open_types::INTEGER32_t*>(bytes.data());
                 break;
             case DataType_E::INTEGER64:
-                if (bytes.size() != sizeof(open_types::INTEGER64_t))
-                {
-                    return Error_t::PARSING_FAILED;
-                }
                 m_value = *std::bit_cast<const open_types::INTEGER64_t*>(bytes.data());
                 break;
             case DataType_E::UNSIGNED8:
-                if (bytes.size() != sizeof(open_types::UNSIGNED8_t))
-                {
-                    return Error_t::PARSING_FAILED;
-                }
                 m_value = *std::bit_cast<const open_types::UNSIGNED8_t*>(bytes.data());
                 break;
             case DataType_E::UNSIGNED16:
-                if (bytes.size() != sizeof(open_types::UNSIGNED16_t))
-                {
-                    return Error_t::PARSING_FAILED;
-                }
                 m_value = *std::bit_cast<const open_types::UNSIGNED16_t*>(bytes.data());
                 break;
             case DataType_E::UNSIGNED32:
-                if (bytes.size() != sizeof(open_types::UNSIGNED32_t))
-                {
-                    return Error_t::PARSING_FAILED;
-                }
                 m_value = *std::bit_cast<const open_types::UNSIGNED32_t*>(bytes.data());
                 break;
             case DataType_E::UNSIGNED64:
-                if (bytes.size() != sizeof(open_types::UNSIGNED64_t))
-                {
-                    return Error_t::PARSING_FAILED;
-                }
                 m_value = *std::bit_cast<const open_types::UNSIGNED64_t*>(bytes.data());
                 break;
             case DataType_E::REAL32:
-                if (bytes.size() != sizeof(open_types::REAL32_t))
-                {
-                    return Error_t::PARSING_FAILED;
-                }
                 m_value = *std::bit_cast<const open_types::REAL32_t*>(bytes.data());
                 break;
             case DataType_E::DOMAIN:

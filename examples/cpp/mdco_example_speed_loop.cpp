@@ -18,20 +18,38 @@ int main()
                   "MDv1.0.0.eds")
                   .first;
 
-    std::cout << od.size() << '\n';
-    for (const auto& entry : od)
+    std::cout << od->size() << '\n';
+    // for (const auto& entry : *od)
+    // {
+    //     if (entry.second.getEntryMetaData().objectType == mab::EDSEntry::ObjectType_E::VALUE)
+    //         std::cout << entry.first << " - " << entry.second.getAsString() << '\n';
+    //     else
+    //     {
+    //         for (u8 i = 0; i < entry.second.getContainerMetaData().value().numberOfSubindices;
+    //         i++)
+    //         {
+    //             std::cout << entry.first << "[" << (int)i << "]" << " - "
+    //                       << entry.second[i].getAsString() << '\n';
+    //         }
+    //     }
+    // }
+
+    mab::Candle* candle = mab::attachCandle(
+        mab::CANdleDatarate_E::CAN_DATARATE_1M, mab::candleTypes::busTypes_t::USB, true);
+
+    // Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_3;
+
+    MDCO mdco(10, candle, od);
+    if (mdco.init() != MDCO::Error_t::OK)
     {
-        if (entry.second.getEntryMetaData().objectType == mab::EDSEntry::ObjectType_E::VALUE)
-            std::cout << entry.first << " - " << entry.second.getAsString() << '\n';
-        else
-        {
-            for (u8 i = 0; i < entry.second.getContainerMetaData().value().numberOfSubindices; i++)
-            {
-                std::cout << entry.first << "[" << (int)i << "]" << " - "
-                          << entry.second[i].getAsString() << '\n';
-            }
-        }
+        log.error("MDCO exited with %d", mdco.init());
     }
+
+    mdco.readSDO((*od)[0x6064]);
+    log.info("%s - %d",
+             (*od)[0x6064].getEntryMetaData().parameterName.c_str(),
+             (open_types::INTEGER32_t)(*od)[0x6064]);
+    mdco.blink();
 
     return EXIT_SUCCESS;
 }

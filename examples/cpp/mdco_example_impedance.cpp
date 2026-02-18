@@ -1,5 +1,6 @@
 #include "candle.hpp"
 #include "MDCO.hpp"
+#include "edsParser.hpp"
 
 using namespace mab;
 
@@ -17,8 +18,14 @@ int main()
     mab::Candle* candle = mab::attachCandle(
         mab::CANdleDatarate_E::CAN_DATARATE_1M, mab::candleTypes::busTypes_t::USB, true);
 
+    auto od = EDSParser::load(
+                  "/home/pawel/mab-github/CANdle-SDK/candletool/template_package/etc/candletool/"
+                  "config/eds/"
+                  "MDv1.0.0.eds")
+                  .first;
+
     // Look for MAB devices present on the can network
-    auto ids = mab::MDCO::discoverOpenMDs(candle);
+    auto ids = mab::MDCO::discoverOpenMDs(candle, od);
 
     if (ids.size() == 0)
     {
@@ -26,53 +33,53 @@ int main()
         return EXIT_SUCCESS;
     }
 
-    i32 desiredSpeed = 0;
-    i32 targetPos    = 0;
-    u32 kp           = 10;
-    u32 kd           = 1;
+    // i32 desiredSpeed = 0;
+    // i32 targetPos    = 0;
+    // u32 kp           = 10;
+    // u32 kd           = 1;
 
     // Get first md that was detected (the one with the lowest id).
-    MDCO mdco(ids[0], candle);
+    MDCO mdco(ids[0], candle, od);
 
-    // Enter the limit of your motor
-    moveParameter MyMotorParam;
-    // Rated Current is in mA
-    MyMotorParam.RatedCurrent = 1000;
-    // Max current is in Rated Current *10^(-3)
-    MyMotorParam.MaxCurrent = 500;
-    // Rated torque is in mN*m
-    MyMotorParam.RatedTorque = 1000;
-    // Max torque is in rated torque *10^(-3)
-    MyMotorParam.MaxTorque = 4000;
-    // Max speed is RPM
-    MyMotorParam.MaxSpeed = 1000;
-    // Max acceleration in RPM/s
-    MyMotorParam.accLimit = 1000;
-    // Max deceleration in RPM/s
-    MyMotorParam.dccLimit = 1000;
+    // // Enter the limit of your motor
+    // moveParameter MyMotorParam;
+    // // Rated Current is in mA
+    // MyMotorParam.RatedCurrent = 1000;
+    // // Max current is in Rated Current *10^(-3)
+    // MyMotorParam.MaxCurrent = 500;
+    // // Rated torque is in mN*m
+    // MyMotorParam.RatedTorque = 1000;
+    // // Max torque is in rated torque *10^(-3)
+    // MyMotorParam.MaxTorque = 4000;
+    // // Max speed is RPM
+    // MyMotorParam.MaxSpeed = 1000;
+    // // Max acceleration in RPM/s
+    // MyMotorParam.accLimit = 1000;
+    // // Max deceleration in RPM/s
+    // MyMotorParam.dccLimit = 1000;
 
-    // Send the motor parameter to the MD
-    mdco.setProfileParameters(MyMotorParam);
+    // // Send the motor parameter to the MD
+    // mdco.setProfileParameters(MyMotorParam);
 
-    // Save motor parameter
-    mdco.openSave();
+    // // Save motor parameter
+    // mdco.openSave();
 
-    // set the motor in the impedance mode
-    mdco.enableDriver(Impedance);
+    // // set the motor in the impedance mode
+    // mdco.enableDriver(Impedance);
 
-    // kp
-    mdco.writeOpenRegisters(0x2011, 0x1, kp, sizeof(kp));
-    // kd
-    mdco.writeOpenRegisters(0x2011, 0x1, kd, sizeof(kd));
-    mdco.writeOpenRegisters("Target Position", targetPos);
-    mdco.writeOpenRegisters("Target Velocity", desiredSpeed);
-    auto start   = std::chrono::steady_clock::now();
-    auto timeout = std::chrono::seconds((5));
-    while (std::chrono::steady_clock::now() - start < timeout)
-    {
-    }
-    mdco.writeOpenRegisters("Target Torque", 0);
-    mdco.disableDriver();
+    // // kp
+    // mdco.writeOpenRegisters(0x2011, 0x1, kp, sizeof(kp));
+    // // kd
+    // mdco.writeOpenRegisters(0x2011, 0x1, kd, sizeof(kd));
+    // mdco.writeOpenRegisters("Target Position", targetPos);
+    // mdco.writeOpenRegisters("Target Velocity", desiredSpeed);
+    // auto start   = std::chrono::steady_clock::now();
+    // auto timeout = std::chrono::seconds((5));
+    // while (std::chrono::steady_clock::now() - start < timeout)
+    // {
+    // }
+    // mdco.writeOpenRegisters("Target Torque", 0);
+    // mdco.disableDriver();
 
     return EXIT_SUCCESS;
 }

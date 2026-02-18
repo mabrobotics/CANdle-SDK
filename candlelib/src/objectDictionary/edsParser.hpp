@@ -52,7 +52,7 @@ namespace mab
         /// @brief Load EDS file from the specified path
         /// @param edsFilePath Path to the EDS file
         /// @return Error_t indicating the result of the operation
-        static std::pair<EDSObjectDictionary, Error_t> load(
+        static std::pair<std::shared_ptr<EDSObjectDictionary>, Error_t> load(
             const std::filesystem::path& edsFilePath);
 
         /// @brief Check if the EDS file is valid
@@ -109,7 +109,7 @@ namespace mab
             unsigned int subindex{};
 
             // Parse XXXX
-            auto [p1, ec1] = std::from_chars(input.data(), input.data() + 4, index);
+            auto [p1, ec1] = std::from_chars(input.data(), input.data() + 4, index, 16);
 
             if (ec1 != std::errc{})
                 return std::nullopt;

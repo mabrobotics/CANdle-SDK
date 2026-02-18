@@ -115,7 +115,7 @@ TEST_F(EdsEntry_test, containerLayout)
 
     EDSEntry containerEntry(std::move(containerMetaData), std::move(containerMap));
 
-    std::map<u32, EDSEntry> ODMap;
+    std::map<u16, EDSEntry> ODMap;
     ODMap.emplace(0x1000, std::move(containerEntry));
 
     EDSObjectDictionary od(std::move(ODMap));
