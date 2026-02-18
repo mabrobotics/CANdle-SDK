@@ -1094,6 +1094,8 @@ namespace mab
                                   md->getVelocity().first);
                     usleep(30000);
                 }
+
+                md->disable();
                 m_logger.success("Movement ended.");
             });
 
