@@ -52,8 +52,8 @@ namespace mab
     {
         // blink the motor led, log an error message if transfer failed
         Error_t err          = enterConfigMode();
-        (*m_od)[0x2004][0x1] = (open_types::BOOLEAN_t)1;
-        err                  = writeSDO((*m_od)[0x2004][0x1]);
+        (*m_od)[0x2003][0x1] = (open_types::BOOLEAN_t)1;
+        err                  = writeSDO((*m_od)[0x2003][0x1]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting Blink LEDs");
@@ -88,7 +88,7 @@ namespace mab
         // set the motor zero position to the actual position via SDO message, log an error message
         // if transfer failed
         Error_t err          = enterConfigMode();
-        (*m_od)[0x2004][0x5] = (open_types::BOOLEAN_t)1;
+        (*m_od)[0x2003][0x5] = (open_types::BOOLEAN_t)1;
         err                  = writeSDO((*m_od)[0x2004][0x5]);
         if (err != Error_t::OK)
         {

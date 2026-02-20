@@ -1,21 +1,21 @@
 [FileInfo]
-FileName=MD80_DS402.eds
-FileVersion=1.3
+FileName=MDv1.0.0.eds
+FileVersion=1.0
 FileRevision=1
 LastEDS=
 EDSVersion=4.0
-Description=MD Motor Controller
-CreationTime=10:00AM
+Description=MD motor controller
+CreationTime=1:00PM
 CreationDate=11-23-2020
 CreatedBy=Piotr Wasilewski
-ModificationTime=2:04PM
-ModificationDate=12-11-2025
-ModifiedBy=Krzysztof Kwapisz
+ModificationTime=11:08AM
+ModificationDate=06-11-2024
+ModifiedBy=Pawel Korsak
 
 [DeviceInfo]
 VendorName=MAB ROBOTICS
 VendorNumber=1
-ProductName=MD80
+ProductName=MD
 ProductNumber=1
 RevisionNumber=0
 BaudRate_10=1
@@ -71,7 +71,7 @@ ObjectType=0x7
 DataType=0x0005
 AccessType=ro
 DefaultValue=0x00
-PDOMapping=0
+PDOMapping=1
 
 [1018]
 ParameterName=Identity
@@ -125,7 +125,7 @@ DefaultValue=0x00000000
 PDOMapping=0
 
 [OptionalObjects]
-SupportedObjects=69
+SupportedObjects=61
 1=0x1003
 2=0x1005
 3=0x1006
@@ -159,42 +159,34 @@ SupportedObjects=69
 31=0x1A01
 32=0x1A02
 33=0x1A03
-34=0x603F
-35=0x6040
-36=0x6041
-37=0x6060
-38=0x6061
-39=0x6062
-40=0x6064
-41=0x6067
-42=0x606B
-43=0x606C
-44=0x606D
-45=0x6071
-46=0x6072
-47=0x6073
-48=0x6074
-49=0x6075
-50=0x6076
-51=0x6077
-52=0x6079
-53=0x607A
-54=0x607B
-55=0x607D
-56=0x607E
-57=0x6080
-58=0x6081
-59=0x6083
-60=0x6084
-61=0x6085
-62=0x6091
-63=0x60A8
-64=0x60A9
-65=0x60AA
-66=0x60C5
-67=0x60C6
-68=0x60FF
-69=0x6502
+34=0x6040
+35=0x6041
+36=0x6060
+37=0x6061
+38=0x6062
+39=0x6064
+40=0x6067
+41=0x606B
+42=0x606C
+43=0x606D
+44=0x6072
+45=0x6073
+46=0x6074
+47=0x6075
+48=0x6076
+49=0x6077
+50=0x6079
+51=0x607A
+52=0x607D
+53=0x6080
+54=0x6081
+55=0x6083
+56=0x6084
+57=0x6085
+58=0x60C5
+59=0x60C6
+60=0x60FF
+61=0x6502
 
 [1003]
 ParameterName=Pre-defined error field
@@ -388,7 +380,7 @@ ObjectType=0x7
 ;StorageLocation=PERSIST_COMM
 DataType=0x0009
 AccessType=ro
-DefaultValue=MD
+DefaultValue=MD80
 PDOMapping=0
 
 [1009]
@@ -656,7 +648,7 @@ ObjectType=0x7
 DataType=0x0007
 AccessType=ro
 DefaultValue=0x600+$NODEID
-PDOMapping=0
+PDOMapping=1
 
 [1200sub2]
 ParameterName=COB-ID server to client (tx)
@@ -665,7 +657,7 @@ ObjectType=0x7
 DataType=0x0007
 AccessType=ro
 DefaultValue=0x580+$NODEID
-PDOMapping=0
+PDOMapping=1
 
 [1201]
 ParameterName=SDO server parameter
@@ -689,7 +681,7 @@ ObjectType=0x7
 DataType=0x0007
 AccessType=ro
 DefaultValue=0x600+$NODEID
-PDOMapping=0
+PDOMapping=1
 
 [1201sub2]
 ParameterName=COB-ID server to client (tx)
@@ -698,7 +690,7 @@ ObjectType=0x7
 DataType=0x0007
 AccessType=ro
 DefaultValue=0x580+$NODEID
-PDOMapping=0
+PDOMapping=1
 
 [1280]
 ParameterName=SDO client parameter
@@ -722,7 +714,7 @@ ObjectType=0x7
 DataType=0x0007
 AccessType=rw
 DefaultValue=0x80000000
-PDOMapping=0
+PDOMapping=1
 
 [1280sub2]
 ParameterName=COB-ID server to client (rx)
@@ -731,7 +723,7 @@ ObjectType=0x7
 DataType=0x0007
 AccessType=rw
 DefaultValue=0x80000000
-PDOMapping=0
+PDOMapping=1
 
 [1280sub3]
 ParameterName=Node-ID of the SDO server
@@ -1630,21 +1622,12 @@ AccessType=rw
 DefaultValue=0x60770010
 PDOMapping=0
 
-[603F]
-ParameterName=Error Code
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0006
-AccessType=ro
-DefaultValue=0
-PDOMapping=1
-
 [6040]
 ParameterName=Controlword
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0006
-AccessType=rww
+AccessType=rw
 DefaultValue=0
 PDOMapping=1
 
@@ -1662,7 +1645,7 @@ ParameterName=Modes Of Operation
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0002
-AccessType=rww
+AccessType=rwr
 DefaultValue=0
 PDOMapping=1
 
@@ -1682,10 +1665,10 @@ ObjectType=0x7
 DataType=0x0004
 AccessType=ro
 DefaultValue=0
-PDOMapping=1
+PDOMapping=0
 
 [6064]
-ParameterName=Position Actual Value
+ParameterName=Position Value
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0004
@@ -1698,18 +1681,18 @@ ParameterName=Position Window
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
-AccessType=rww
+AccessType=rw
 DefaultValue=0
-PDOMapping=1
+PDOMapping=0
 
 [606B]
 ParameterName=Velocity Demand Value
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0004
-AccessType=ro
+AccessType=rw
 DefaultValue=0
-PDOMapping=1
+PDOMapping=0
 
 [606C]
 ParameterName=Velocity Actual Value
@@ -1725,26 +1708,17 @@ ParameterName=Velocity Window
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
-AccessType=rww
+AccessType=rw
 DefaultValue=0
-PDOMapping=1
-
-[6071]
-ParameterName=Target Torque
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0003
-AccessType=rww
-DefaultValue=0
-PDOMapping=1
+PDOMapping=0
 
 [6072]
 ParameterName=Max Torque
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0006
-AccessType=rww
-DefaultValue=1000
+AccessType=rw
+DefaultValue=0
 PDOMapping=1
 
 [6073]
@@ -1752,8 +1726,8 @@ ParameterName=Max Current
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0006
-AccessType=rww
-DefaultValue=1000
+AccessType=rw
+DefaultValue=0
 PDOMapping=1
 
 [6074]
@@ -1761,9 +1735,9 @@ ParameterName=Torque Demand Value
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0003
-AccessType=ro
+AccessType=rw
 DefaultValue=0
-PDOMapping=1
+PDOMapping=0
 
 [6075]
 ParameterName=Motor Rated Current
@@ -1771,9 +1745,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
 AccessType=rw
-HighLimit=1000000
-LowLimit=1
-DefaultValue=1
+DefaultValue=0
 PDOMapping=0
 
 [6076]
@@ -1782,7 +1754,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
 AccessType=rw
-DefaultValue=1
+DefaultValue=0
 PDOMapping=0
 
 [6077]
@@ -1795,7 +1767,7 @@ DefaultValue=0
 PDOMapping=1
 
 [6079]
-ParameterName=DC Link Circuit Voltage
+ParameterName=DClink Circuit Voltage
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
@@ -1808,41 +1780,8 @@ ParameterName=Target Position
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0004
-AccessType=rww
+AccessType=rw
 DefaultValue=0
-PDOMapping=1
-
-[607B]
-ParameterName=Position Range Limit
-ObjectType=0x9
-;StorageLocation=RAM
-SubNumber=0x3
-
-[607Bsub0]
-ParameterName=Highest sub-index supported
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=ro
-DefaultValue=0x02
-PDOMapping=0
-
-[607Bsub1]
-ParameterName=Min Position Range Limit
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0004
-AccessType=rww
-DefaultValue=-2147483648
-PDOMapping=1
-
-[607Bsub2]
-ParameterName=Max Position Range Limit
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0004
-AccessType=rww
-DefaultValue=2147483647
 PDOMapping=1
 
 [607D]
@@ -1861,47 +1800,38 @@ DefaultValue=0x02
 PDOMapping=0
 
 [607Dsub1]
-ParameterName=Min Position Limit
+ParameterName=Min position limit
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0004
-AccessType=rww
+AccessType=rw
 DefaultValue=-2147483648
 PDOMapping=1
 
 [607Dsub2]
-ParameterName=Max Position Limit
+ParameterName=Max position limit
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0004
-AccessType=rww
+AccessType=rw
 DefaultValue=2147483647
 PDOMapping=1
-
-[607E]
-ParameterName=Polarity
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=rw
-DefaultValue=0x00
-PDOMapping=0
 
 [6080]
 ParameterName=Max Motor Speed
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
-AccessType=rww
+AccessType=rw
 DefaultValue=1000
-PDOMapping=1
+PDOMapping=0
 
 [6081]
 ParameterName=Profile Velocity
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
-AccessType=rww
+AccessType=rwr
 DefaultValue=0
 PDOMapping=1
 
@@ -1910,7 +1840,7 @@ ParameterName=Profile Acceleration
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
-AccessType=rww
+AccessType=rw
 DefaultValue=0
 PDOMapping=1
 
@@ -1919,7 +1849,7 @@ ParameterName=Profile Deceleration
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
-AccessType=rww
+AccessType=rw
 DefaultValue=0
 PDOMapping=1
 
@@ -1928,76 +1858,16 @@ ParameterName=Quick Stop Deceleration
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
-AccessType=rww
+AccessType=rwr
 DefaultValue=10000
 PDOMapping=1
-
-[6091]
-ParameterName=Gear Ratio
-ObjectType=0x9
-;StorageLocation=RAM
-SubNumber=0x3
-
-[6091sub0]
-ParameterName=Highest sub-index supported
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=ro
-DefaultValue=0x02
-PDOMapping=0
-
-[6091sub1]
-ParameterName=Motor Revolutions
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0007
-AccessType=rww
-DefaultValue=1
-PDOMapping=1
-
-[6091sub2]
-ParameterName=Shaft Revolutions
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0007
-AccessType=rww
-DefaultValue=1
-PDOMapping=1
-
-[60A8]
-ParameterName=SI Unit Position
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0007
-AccessType=ro
-DefaultValue=0x00B50000
-PDOMapping=0
-
-[60A9]
-ParameterName=SI Unit Velocity
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0007
-AccessType=ro
-DefaultValue=0xFDB44700
-PDOMapping=0
-
-[60AA]
-ParameterName=SI Unit Acceleration
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0007
-AccessType=ro
-DefaultValue=0xFDC00300
-PDOMapping=0
 
 [60C5]
 ParameterName=Max Acceleration
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
-AccessType=rww
+AccessType=rw
 DefaultValue=0
 PDOMapping=1
 
@@ -2006,7 +1876,7 @@ ParameterName=Max Deceleration
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
-AccessType=rww
+AccessType=rw
 DefaultValue=0
 PDOMapping=1
 
@@ -2015,7 +1885,7 @@ ParameterName=Target Velocity
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0004
-AccessType=rww
+AccessType=rw
 DefaultValue=0
 PDOMapping=1
 
@@ -2025,11 +1895,11 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
 AccessType=ro
-DefaultValue=0x00030385
+DefaultValue=647
 PDOMapping=0
 
 [ManufacturerObjects]
-SupportedObjects=13
+SupportedObjects=15
 1=0x2000
 2=0x2001
 3=0x2002
@@ -2043,12 +1913,14 @@ SupportedObjects=13
 11=0x200A
 12=0x200B
 13=0x200C
+14=0x200D
+15=0x200E
 
 [2000]
-ParameterName=Firmware info
+ParameterName=Motor Settings
 ObjectType=0x9
 ;StorageLocation=RAM
-SubNumber=0x4
+SubNumber=0xE
 
 [2000sub0]
 ParameterName=Highest sub-index supported
@@ -2056,38 +1928,128 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0005
 AccessType=ro
-DefaultValue=0x03
+DefaultValue=0x0D
 PDOMapping=0
 
 [2000sub1]
-ParameterName=Commit Hash
+ParameterName=Pole pairs
 ObjectType=0x7
 ;StorageLocation=RAM
-DataType=0x0009
-AccessType=ro
+DataType=0x0007
+AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
 [2000sub2]
-ParameterName=Build Date
+ParameterName=Torque constant
 ObjectType=0x7
 ;StorageLocation=RAM
-DataType=0x0007
-AccessType=ro
+DataType=0x0008
+AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
 [2000sub3]
-ParameterName=Version
+ParameterName=Phase Inductance
 ObjectType=0x7
 ;StorageLocation=RAM
-DataType=0x0007
+DataType=0x0008
 AccessType=ro
 DefaultValue=0
 PDOMapping=0
 
+[2000sub4]
+ParameterName=Phase resistance
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=ro
+DefaultValue=0
+PDOMapping=0
+
+[2000sub5]
+ParameterName=Torque Bandwidth
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[2000sub6]
+ParameterName=Motor Name
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0009
+AccessType=rw
+DefaultValue=MD80
+PDOMapping=0
+
+[2000sub7]
+ParameterName=Motor Shutdown Temperature
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0005
+AccessType=rw
+DefaultValue=80
+PDOMapping=0
+
+[2000sub8]
+ParameterName=Gear Ratio
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rw
+DefaultValue=1
+PDOMapping=0
+
+[2000sub9]
+ParameterName=Calibration Mode
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[2000subA]
+ParameterName=Can ID
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=1
+PDOMapping=0
+
+[2000subB]
+ParameterName=Can Baudrate
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=1
+PDOMapping=0
+
+[2000subC]
+ParameterName=Can Watchdog
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0006
+AccessType=rw
+DefaultValue=1
+PDOMapping=0
+
+[2000subD]
+ParameterName=Reverse Direction
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0001
+AccessType=rw
+DefaultValue=false
+PDOMapping=0
+
 [2001]
-ParameterName=Bootloader info
+ParameterName=Velocity PID Controller
 ObjectType=0x9
 ;StorageLocation=RAM
 SubNumber=0x5
@@ -2102,46 +2064,46 @@ DefaultValue=0x04
 PDOMapping=0
 
 [2001sub1]
-ParameterName=Bootloader Fixed
+ParameterName=Kp
 ObjectType=0x7
 ;StorageLocation=RAM
-DataType=0x0001
-AccessType=ro
+DataType=0x0008
+AccessType=rw
 DefaultValue=0
-PDOMapping=0
+PDOMapping=1
 
 [2001sub2]
-ParameterName=Commit Hash
+ParameterName=Ki
 ObjectType=0x7
 ;StorageLocation=RAM
-DataType=0x0009
-AccessType=ro
+DataType=0x0008
+AccessType=rw
 DefaultValue=0
-PDOMapping=0
+PDOMapping=1
 
 [2001sub3]
-ParameterName=Build Date
+ParameterName=Kd
 ObjectType=0x7
 ;StorageLocation=RAM
-DataType=0x0007
-AccessType=ro
+DataType=0x0008
+AccessType=rw
 DefaultValue=0
-PDOMapping=0
+PDOMapping=1
 
 [2001sub4]
-ParameterName=Version
+ParameterName=Integral Limit
 ObjectType=0x7
 ;StorageLocation=RAM
-DataType=0x0007
-AccessType=ro
+DataType=0x0008
+AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
 [2002]
-ParameterName=Hardware info
+ParameterName=Position PID Controller
 ObjectType=0x9
 ;StorageLocation=RAM
-SubNumber=0x6
+SubNumber=0x5
 
 [2002sub0]
 ParameterName=Highest sub-index supported
@@ -2149,157 +2111,52 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0005
 AccessType=ro
-DefaultValue=0x05
+DefaultValue=0x04
 PDOMapping=0
 
 [2002sub1]
-ParameterName=Bridge Type
+ParameterName=Kp
 ObjectType=0x7
 ;StorageLocation=RAM
-DataType=0x0005
-AccessType=ro
+DataType=0x0008
+AccessType=rw
 DefaultValue=0
-PDOMapping=0
+PDOMapping=1
 
 [2002sub2]
-ParameterName=LegacyVersion
+ParameterName=Ki
 ObjectType=0x7
 ;StorageLocation=RAM
-DataType=0x0005
-AccessType=ro
+DataType=0x0008
+AccessType=rw
 DefaultValue=0
-PDOMapping=0
+PDOMapping=1
 
 [2002sub3]
-ParameterName=DeviceType
+ParameterName=Kd
 ObjectType=0x7
 ;StorageLocation=RAM
-DataType=0x0005
-AccessType=ro
+DataType=0x0008
+AccessType=rw
 DefaultValue=0
-PDOMapping=0
+PDOMapping=1
 
 [2002sub4]
-ParameterName=DeviceRevision
+ParameterName=Integral Limit
 ObjectType=0x7
 ;StorageLocation=RAM
-DataType=0x0005
-AccessType=ro
-DefaultValue=0
-PDOMapping=0
-
-[2002sub5]
-ParameterName=CoreID
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x000A
-AccessType=ro
+DataType=0x0008
+AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
 [2003]
-ParameterName=System status
-ObjectType=0x9
-;StorageLocation=RAM
-SubNumber=0xA
-
-[2003sub0]
-ParameterName=Highest sub-index supported
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=ro
-DefaultValue=0x09
-PDOMapping=0
-
-[2003sub1]
-ParameterName=Main Encoder Status
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0007
-AccessType=ro
-DefaultValue=0
-PDOMapping=0
-
-[2003sub2]
-ParameterName=Aux Encoder Status
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0007
-AccessType=ro
-DefaultValue=0
-PDOMapping=0
-
-[2003sub3]
-ParameterName=Calibration Status
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0007
-AccessType=ro
-DefaultValue=0
-PDOMapping=0
-
-[2003sub4]
-ParameterName=Bridge Status
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0007
-AccessType=ro
-DefaultValue=0
-PDOMapping=0
-
-[2003sub5]
-ParameterName=Hardware Status
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0007
-AccessType=ro
-DefaultValue=0
-PDOMapping=0
-
-[2003sub6]
-ParameterName=Homing Status
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0007
-AccessType=ro
-DefaultValue=0
-PDOMapping=0
-
-[2003sub7]
-ParameterName=Motion Status
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0007
-AccessType=ro
-DefaultValue=0
-PDOMapping=0
-
-[2003sub8]
-ParameterName=Communication Status
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0007
-AccessType=ro
-DefaultValue=0
-PDOMapping=0
-
-[2003sub9]
-ParameterName=Misc Status
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0007
-AccessType=ro
-DefaultValue=0
-PDOMapping=0
-
-[2004]
-ParameterName=System command
+ParameterName=System Command
 ObjectType=0x9
 ;StorageLocation=RAM
 SubNumber=0xE
 
-[2004sub0]
+[2003sub0]
 ParameterName=Highest sub-index supported
 ObjectType=0x7
 ;StorageLocation=RAM
@@ -2308,128 +2165,215 @@ AccessType=ro
 DefaultValue=0x0D
 PDOMapping=0
 
-[2004sub1]
-ParameterName=Blink
+[2003sub1]
+ParameterName=Blink LEDs
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0001
-AccessType=wo
+AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
-[2004sub2]
-ParameterName=Reset
+[2003sub2]
+ParameterName=Reset Controller
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0001
-AccessType=wo
+AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
-[2004sub3]
-ParameterName=Calibrate
+[2003sub3]
+ParameterName=Run Calibration
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0001
-AccessType=wo
+AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
-[2004sub4]
-ParameterName=Calibrate Aux
+[2003sub4]
+ParameterName=Run Output Encoder Calibration
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0001
-AccessType=wo
+AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
-[2004sub5]
-ParameterName=Zero
+[2003sub5]
+ParameterName=Set Zero
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0001
-AccessType=wo
+AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
-[2004sub6]
-ParameterName=Calibrate Current
+[2003sub6]
+ParameterName=Calibrate Current PI Gains
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0001
-AccessType=wo
+AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
-[2004sub7]
+[2003sub7]
+ParameterName=Test Output Encoder
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0001
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[2003sub8]
 ParameterName=Test Main Encoder
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0001
-AccessType=wo
+AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
-[2004sub8]
-ParameterName=Test Aux Encoder
+[2003sub9]
+ParameterName=Save Memory
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0001
-AccessType=wo
+AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
-[2004sub9]
-ParameterName=Save
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0001
-AccessType=wo
-DefaultValue=0
-PDOMapping=0
-
-[2004subA]
+[2003subA]
 ParameterName=Revert Factory Settings
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0001
-AccessType=wo
+AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
-[2004subB]
+[2003subB]
 ParameterName=Clear Errors
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0001
-AccessType=wo
+AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
-[2004subC]
+[2003subC]
 ParameterName=Clear Warnings
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0001
-AccessType=wo
+AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
-[2004subD]
-ParameterName=Can Reinit
+[2003subD]
+ParameterName=Run Can Reinit
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0001
-AccessType=wo
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[2004]
+ParameterName=System Status
+ObjectType=0x9
+;StorageLocation=RAM
+SubNumber=0x9
+
+[2004sub0]
+ParameterName=Highest sub-index supported
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x08
+PDOMapping=0
+
+[2004sub1]
+ParameterName=Main Encoder Status
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[2004sub2]
+ParameterName=Output Encoder Status
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[2004sub3]
+ParameterName=Calibration Status
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[2004sub4]
+ParameterName=Bridge Status
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[2004sub5]
+ParameterName=Hardware Status
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[2004sub6]
+ParameterName=Homing Status
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[2004sub7]
+ParameterName=Motion Status
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[2004sub8]
+ParameterName=Communication Status
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
 [2005]
-ParameterName=Motor settings
+ParameterName=Output Encoder
 ObjectType=0x9
 ;StorageLocation=RAM
-SubNumber=0x15
+SubNumber=0x6
 
 [2005sub0]
 ParameterName=Highest sub-index supported
@@ -2437,574 +2381,61 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0005
 AccessType=ro
-DefaultValue=0x14
+DefaultValue=0x05
 PDOMapping=0
 
 [2005sub1]
-ParameterName=Pole Pairs
+ParameterName=Type
 ObjectType=0x7
 ;StorageLocation=RAM
-DataType=0x0007
+DataType=0x0005
 AccessType=rw
-HighLimit=255
-LowLimit=2
 DefaultValue=0
 PDOMapping=0
 
 [2005sub2]
-ParameterName=Torque Constant
+ParameterName=Calibration Mode
 ObjectType=0x7
 ;StorageLocation=RAM
-DataType=0x0008
+DataType=0x0005
 AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
 [2005sub3]
-ParameterName=Inductance
+ParameterName=Mode
 ObjectType=0x7
 ;StorageLocation=RAM
-DataType=0x0008
-AccessType=ro
+DataType=0x0005
+AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
 [2005sub4]
-ParameterName=Resistance
+ParameterName=Position
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0008
 AccessType=ro
 DefaultValue=0
-PDOMapping=0
+PDOMapping=1
 
 [2005sub5]
-ParameterName=Torque Bandwidth
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0006
-AccessType=rw
-HighLimit=2500
-LowLimit=50
-DefaultValue=0
-PDOMapping=0
-
-[2005sub6]
-ParameterName=Name
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0009
-AccessType=rw
-DefaultValue=MD
-PDOMapping=0
-
-[2005sub7]
-ParameterName=Motor Shutdown Temperature
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=rw
-DefaultValue=80
-PDOMapping=0
-
-[2005sub8]
-ParameterName=Calibration Mode
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[2005sub9]
-ParameterName=Can ID
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0007
-AccessType=rw
-HighLimit=31
-LowLimit=10
-DefaultValue=10
-PDOMapping=0
-
-[2005subA]
-ParameterName=Can Datarate
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0007
-AccessType=rw
-DefaultValue=1000000
-PDOMapping=0
-
-[2005subB]
-ParameterName=Can Timeout
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0006
-AccessType=rw
-DefaultValue=200
-PDOMapping=0
-
-[2005subC]
-ParameterName=Can Termination
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[2005subD]
-ParameterName=KV
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0006
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[2005subE]
-ParameterName=Torque Constant A
+ParameterName=Velocity
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0008
-AccessType=rw
+AccessType=rwr
 DefaultValue=0
-PDOMapping=0
-
-[2005subF]
-ParameterName=Torque Constant B
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[2005sub10]
-ParameterName=Torque Constant C
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[2005sub11]
-ParameterName=Friction Dynamic
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[2005sub12]
-ParameterName=Friction Static
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[2005sub13]
-ParameterName=Shunt Resistance
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[2005sub14]
-ParameterName=Thermistor Type
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
+PDOMapping=1
 
 [2006]
-ParameterName=Velocity PID controller
-ObjectType=0x9
-;StorageLocation=RAM
-SubNumber=0x6
-
-[2006sub0]
-ParameterName=Highest sub-index supported
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=ro
-DefaultValue=0x05
-PDOMapping=0
-
-[2006sub1]
-ParameterName=Kp
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rww
-DefaultValue=0
-PDOMapping=1
-
-[2006sub2]
-ParameterName=Ki
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rww
-DefaultValue=0
-PDOMapping=1
-
-[2006sub3]
-ParameterName=Kd
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rww
-DefaultValue=0
-PDOMapping=1
-
-[2006sub4]
-ParameterName=Integral Limit
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[2006sub5]
-ParameterName=Output Max
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[2007]
-ParameterName=Position PID controller
-ObjectType=0x9
-;StorageLocation=RAM
-SubNumber=0x6
-
-[2007sub0]
-ParameterName=Highest sub-index supported
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=ro
-DefaultValue=0x05
-PDOMapping=0
-
-[2007sub1]
-ParameterName=Kp
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rww
-DefaultValue=0
-PDOMapping=1
-
-[2007sub2]
-ParameterName=Ki
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rww
-DefaultValue=0
-PDOMapping=1
-
-[2007sub3]
-ParameterName=Kd
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rww
-DefaultValue=0
-PDOMapping=1
-
-[2007sub4]
-ParameterName=Integral Limit
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[2007sub5]
-ParameterName=Output Max
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[2008]
-ParameterName=Impedance PD controller
-ObjectType=0x9
-;StorageLocation=RAM
-SubNumber=0x4
-
-[2008sub0]
-ParameterName=Highest sub-index supported
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=ro
-DefaultValue=0x03
-PDOMapping=0
-
-[2008sub1]
-ParameterName=Kp
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rww
-DefaultValue=0
-PDOMapping=1
-
-[2008sub2]
-ParameterName=Kd
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rww
-DefaultValue=0
-PDOMapping=1
-
-[2008sub3]
-ParameterName=Output Max
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[2009]
-ParameterName=Main encoder
-ObjectType=0x9
-;StorageLocation=RAM
-SubNumber=0xB
-
-[2009sub0]
-ParameterName=Highest sub-index supported
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=ro
-DefaultValue=0x0A
-PDOMapping=0
-
-[2009sub1]
-ParameterName=Type
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[2009sub2]
-ParameterName=Calibration Mode
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[2009sub3]
-ParameterName=Mode
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[2009sub4]
-ParameterName=Direction
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[2009sub5]
-ParameterName=Position
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=ro
-DefaultValue=0
-PDOMapping=1
-
-[2009sub6]
-ParameterName=Velocity
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=ro
-DefaultValue=0
-PDOMapping=1
-
-[2009sub7]
-ParameterName=Standard Deviation
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[2009sub8]
-ParameterName=Max Error
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[2009sub9]
-ParameterName=Min Error
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[2009subA]
-ParameterName=Zero Offset
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0004
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[200A]
-ParameterName=Aux encoder
-ObjectType=0x9
-;StorageLocation=RAM
-SubNumber=0xB
-
-[200Asub0]
-ParameterName=Highest sub-index supported
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=ro
-DefaultValue=0x0A
-PDOMapping=0
-
-[200Asub1]
-ParameterName=Type
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[200Asub2]
-ParameterName=Calibration Mode
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[200Asub3]
-ParameterName=Mode
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[200Asub4]
-ParameterName=Direction
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[200Asub5]
-ParameterName=Position
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=ro
-DefaultValue=0
-PDOMapping=1
-
-[200Asub6]
-ParameterName=Velocity
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=ro
-DefaultValue=0
-PDOMapping=1
-
-[200Asub7]
-ParameterName=Standard Deviation
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[200Asub8]
-ParameterName=Max Error
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[200Asub9]
-ParameterName=Min Error
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0008
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[200AsubA]
-ParameterName=Zero Offset
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0004
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[200B]
 ParameterName=Temperature
 ObjectType=0x9
 ;StorageLocation=RAM
 SubNumber=0x3
 
-[200Bsub0]
+[2006sub0]
 ParameterName=Highest sub-index supported
 ObjectType=0x7
 ;StorageLocation=RAM
@@ -3013,26 +2444,344 @@ AccessType=ro
 DefaultValue=0x02
 PDOMapping=0
 
-[200Bsub1]
-ParameterName=Temperature Motor
+[2006sub1]
+ParameterName=Motor Temperature
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0008
 AccessType=ro
 DefaultValue=0
 PDOMapping=1
+
+[2006sub2]
+ParameterName=Mosfet Temperature
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=ro
+DefaultValue=0
+PDOMapping=1
+
+[2007]
+ParameterName=Limits
+ObjectType=0x9
+;StorageLocation=RAM
+SubNumber=0x7
+
+[2007sub0]
+ParameterName=Highest sub-index supported
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x06
+PDOMapping=0
+
+[2007sub1]
+ParameterName=Max Torque
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[2007sub2]
+ParameterName=Max Acceleration
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[2007sub3]
+ParameterName=Max Deceleration
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[2007sub4]
+ParameterName=Max Velocity
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[2007sub5]
+ParameterName=Max Position
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[2007sub6]
+ParameterName=Min Position
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[2008]
+ParameterName=Motion
+ObjectType=0x9
+;StorageLocation=RAM
+SubNumber=0xC
+
+[2008sub0]
+ParameterName=Highest sub-index supported
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x0B
+PDOMapping=0
+
+[2008sub1]
+ParameterName=Mode Command
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0005
+AccessType=rww
+DefaultValue=0
+PDOMapping=1
+
+[2008sub2]
+ParameterName=Mode Status
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0005
+AccessType=rww
+DefaultValue=0
+PDOMapping=1
+
+[2008sub3]
+ParameterName=Profile Velocity
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rww
+DefaultValue=0
+PDOMapping=1
+
+[2008sub4]
+ParameterName=Profile Acceleration
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rww
+DefaultValue=0
+PDOMapping=1
+
+[2008sub5]
+ParameterName=Profile Deceleration
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rww
+DefaultValue=0
+PDOMapping=1
+
+[2008sub6]
+ParameterName=Quick Stop Deceleration
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rww
+DefaultValue=0
+PDOMapping=1
+
+[2008sub7]
+ParameterName=Position Window
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rww
+DefaultValue=0
+PDOMapping=1
+
+[2008sub8]
+ParameterName=Velocity Window
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rww
+DefaultValue=0
+PDOMapping=1
+
+[2008sub9]
+ParameterName=Target Position
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rw
+DefaultValue=0
+PDOMapping=1
+
+[2008subA]
+ParameterName=Target Velocity
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rw
+DefaultValue=0
+PDOMapping=1
+
+[2008subB]
+ParameterName=Target Torque
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rw
+DefaultValue=0
+PDOMapping=1
+
+[2009]
+ParameterName=Motor Measurements
+ObjectType=0x9
+;StorageLocation=RAM
+SubNumber=0x4
+
+[2009sub0]
+ParameterName=Highest sub-index supported
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x03
+PDOMapping=0
+
+[2009sub1]
+ParameterName=Output Position
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rwr
+DefaultValue=0
+PDOMapping=1
+
+[2009sub2]
+ParameterName=Output Velocity
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rwr
+DefaultValue=0
+PDOMapping=1
+
+[2009sub3]
+ParameterName=Output Torque
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rwr
+DefaultValue=0
+PDOMapping=1
+
+[200A]
+ParameterName=Firmware info
+ObjectType=0x9
+;StorageLocation=RAM
+SubNumber=0x4
+
+[200Asub0]
+ParameterName=Highest sub-index supported
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x03
+PDOMapping=0
+
+[200Asub1]
+ParameterName=Commit Hash
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0009
+AccessType=ro
+DefaultValue=0
+PDOMapping=0
+
+[200Asub2]
+ParameterName=Build Date
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=ro
+DefaultValue=0
+PDOMapping=0
+
+[200Asub3]
+ParameterName=Version
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=ro
+DefaultValue=0
+PDOMapping=0
+
+[200B]
+ParameterName=Bootloder Info
+ObjectType=0x9
+;StorageLocation=RAM
+SubNumber=0x5
+
+[200Bsub0]
+ParameterName=Highest sub-index supported
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x04
+PDOMapping=0
+
+[200Bsub1]
+ParameterName=Bootloader Fixed
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0001
+AccessType=ro
+DefaultValue=0
+PDOMapping=0
 
 [200Bsub2]
-ParameterName=Temperature Driver
+ParameterName=Commit Hash
 ObjectType=0x7
 ;StorageLocation=RAM
-DataType=0x0008
+DataType=0x0009
 AccessType=ro
 DefaultValue=0
-PDOMapping=1
+PDOMapping=0
+
+[200Bsub3]
+ParameterName=Build Date
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=ro
+DefaultValue=0
+PDOMapping=0
+
+[200Bsub4]
+ParameterName=Version
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=ro
+DefaultValue=0
+PDOMapping=0
 
 [200C]
-ParameterName=User GPIO
+ParameterName=Impedance PD Controller
 ObjectType=0x9
 ;StorageLocation=RAM
 SubNumber=0x3
@@ -3047,6 +2796,39 @@ DefaultValue=0x02
 PDOMapping=0
 
 [200Csub1]
+ParameterName=Kp
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rw
+DefaultValue=0
+PDOMapping=1
+
+[200Csub2]
+ParameterName=Kd
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
+AccessType=rw
+DefaultValue=0
+PDOMapping=1
+
+[200D]
+ParameterName=User GPIO
+ObjectType=0x9
+;StorageLocation=RAM
+SubNumber=0x3
+
+[200Dsub0]
+ParameterName=Highest sub-index supported
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x02
+PDOMapping=0
+
+[200Dsub1]
 ParameterName=User GPIO Configuration
 ObjectType=0x7
 ;StorageLocation=RAM
@@ -3055,11 +2837,20 @@ AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
-[200Csub2]
+[200Dsub2]
 ParameterName=User GPIO State
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0006
+AccessType=ro
+DefaultValue=0
+PDOMapping=0
+
+[200E]
+ParameterName=DC bus voltage
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0008
 AccessType=ro
 DefaultValue=0
 PDOMapping=0

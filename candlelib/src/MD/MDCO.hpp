@@ -164,7 +164,7 @@ namespace mab
             err            = readSDO((*m_od)[0x6041]);
             u16 statusWord = (u16)(open_types::UNSIGNED16_t)(*m_od)[0x6041];
             m_log.debug("Statusword: 0x%x", statusWord);
-            if (err != Error_t::OK || statusWord != 0x27)
+            if (err != Error_t::OK)
             {
                 m_log.error("Error setting config mode!");
                 return err;
