@@ -53,8 +53,7 @@ namespace mab
         // blink the motor led, log an error message if transfer failed
         Error_t err          = enterConfigMode();
         (*m_od)[0x2004][0x1] = (open_types::BOOLEAN_t)1;
-        usleep(5'000);
-        err = writeSDO((*m_od)[0x2004][0x1]);
+        err                  = writeSDO((*m_od)[0x2004][0x1]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting Blink LEDs");
@@ -89,11 +88,11 @@ namespace mab
         // set the motor zero position to the actual position via SDO message, log an error message
         // if transfer failed
         Error_t err          = enterConfigMode();
-        (*m_od)[0x2004][0x5] = (open_types::BOOLEAN_t) true;
+        (*m_od)[0x2004][0x5] = (open_types::BOOLEAN_t)1;
         err                  = writeSDO((*m_od)[0x2004][0x5]);
         if (err != Error_t::OK)
         {
-            m_log.error("Error setting Set Zero");
+            m_log.error("Error setting Blink LEDs");
             return err;
         }
         return err;
@@ -126,15 +125,6 @@ namespace mab
                 return Error_t::TRANSFER_FAILED;
             }
             m_log.debug("Address: 0x%x", edsEntry.getEntryMetaData().address.first);
-            for (const auto& byte : transmitFrame)
-            {
-                m_log.debug("0x%x", byte);
-            }
-            m_log.debug("---------------------");
-            for (const auto& byte : response)
-            {
-                m_log.debug("0x%x", byte);
-            }
 
             // Verify expedited response (bit 1 == 1)
             if ((response[0] & 0x40) == 0)
@@ -278,15 +268,6 @@ namespace mab
             }
             m_log.debug("Address: 0x%x", edsEntry.getEntryMetaData().address.first);
             m_log.debug("Lenght: 0x%x", payloadSize);
-            for (const auto& byte : transmitFrame)
-            {
-                m_log.debug("0x%x", byte);
-            }
-            m_log.debug("---------------------");
-            for (const auto& byte : response)
-            {
-                m_log.debug("0x%x", byte);
-            }
 
             // Expect initiate download response (0x60)
             if ((response[0] & 0xE0) != 0x60)

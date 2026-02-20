@@ -1,5 +1,6 @@
 #pragma once
 
+#include <unistd.h>
 #include "edsEntry.hpp"
 #include "mab_types.hpp"
 #include "logger.hpp"
@@ -134,15 +135,41 @@ namespace mab
 
         inline Error_t enterConfigMode() const
         {
-            Error_t err     = MDCO::Error_t::OK;
-            (*m_od)[0x6060] = (open_types::INTEGER8_t)6;
-            m_log.error("Address 6060: 0x%x", ((*m_od)[0x6060]).getEntryMetaData().address.first);
-            err = writeSDO((*m_od)[0x6060]);
+            Error_t err = MDCO::Error_t::OK;
+
+            (*m_od)[0x6040] = (open_types::UNSIGNED16_t)0x8;
+            err             = writeSDO((*m_od)[0x6040]);
             if (err != Error_t::OK)
             {
-                m_log.error("Error sending shutdown cmd!");
+                m_log.error("Error sending control word cmd!");
                 return err;
             }
+            (*m_od)[0x6040] = (open_types::UNSIGNED16_t)0x6;
+            err             = writeSDO((*m_od)[0x6040]);
+            if (err != Error_t::OK)
+            {
+                m_log.error("Error sending control word cmd!");
+                return err;
+            }
+
+            (*m_od)[0x6040] = (open_types::UNSIGNED16_t)0xf;
+            err             = writeSDO((*m_od)[0x6040]);
+            if (err != Error_t::OK)
+            {
+                m_log.error("Error sending control word cmd!");
+                return err;
+            }
+            usleep(1'000);
+
+            err            = readSDO((*m_od)[0x6041]);
+            u16 statusWord = (u16)(open_types::UNSIGNED16_t)(*m_od)[0x6041];
+            m_log.debug("Statusword: 0x%x", statusWord);
+            if (err != Error_t::OK || statusWord != 0x27)
+            {
+                m_log.error("Error setting config mode!");
+                return err;
+            }
+
             (*m_od)[0x6060] = (open_types::INTEGER8_t)-2;
             err             = writeSDO((*m_od)[0x6060]);
             if (err != Error_t::OK)
@@ -152,6 +179,13 @@ namespace mab
             }
             err = readSDO((*m_od)[0x6061]);
             if ((i8)(open_types::INTEGER8_t)(*m_od)[0x6061] != -1)
+            {
+                m_log.error("Coudl not enter service mode");
+                m_log.error("Current mode: %i", (i8)(open_types::INTEGER8_t)((*m_od)[0x6061]));
+            }
+
+            err = readSDO((*m_od)[0x6060]);
+            if ((i8)(open_types::INTEGER8_t)(*m_od)[0x6060] != -2)
             {
                 m_log.error("Coudl not enter service mode");
                 m_log.error("Current mode: %i", (i8)(open_types::INTEGER8_t)((*m_od)[0x6061]));

@@ -38,7 +38,7 @@ int main()
     mab::Candle* candle = mab::attachCandle(
         mab::CANdleDatarate_E::CAN_DATARATE_1M, mab::candleTypes::busTypes_t::USB, true);
 
-    // Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_3;
+    // Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_2;
 
     MDCO mdco(10, candle, od);
     if (mdco.init() != MDCO::Error_t::OK)
@@ -46,13 +46,14 @@ int main()
         log.error("MDCO exited with %d", mdco.init());
     }
 
-    Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_3;
     mdco.readSDO((*od)[0x6064]);
-    log.info("%s - %d",
+    log.info("%s: %d",
              (*od)[0x6064].getEntryMetaData().parameterName.c_str(),
              (open_types::INTEGER32_t)(*od)[0x6064]);
 
     mdco.blink();
+
+    mdco.zero();
 
     return EXIT_SUCCESS;
 }
