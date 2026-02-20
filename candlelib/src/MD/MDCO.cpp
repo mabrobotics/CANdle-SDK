@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include "candle_types.hpp"
+#include "edsEntry.hpp"
 
 namespace mab
 {
@@ -96,9 +97,17 @@ namespace mab
     {
         // set the motor zero position to the actual position via SDO message, log an error message
         // if transfer failed
-        Error_t err          = enterConfigMode();
-        (*m_od)[0x2003][0x5] = (open_types::BOOLEAN_t)1;
-        err                  = writeSDO((*m_od)[0x2004][0x5]);
+        Error_t                      err      = enterConfigMode();
+        static constexpr std::string zeroName = "Set Zero";
+        auto                         zeroOpt  = m_od->getEntryByName(zeroName);
+        if (!zeroOpt.has_value())
+        {
+            m_log.error("Coudl not locate %s object!", zeroName.c_str());
+            return Error_t::UNKNOWN_OBJECT;
+        }
+        auto& zeroObj = zeroOpt.value().get();
+        zeroObj       = (open_types::BOOLEAN_t)1;
+        err           = writeSDO(zeroObj);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting Blink LEDs");
@@ -113,6 +122,12 @@ namespace mab
         if (!edsEntry.getValueMetaData().has_value())
         {
             return Error_t::UNKNOWN_OBJECT;
+        }
+
+        if (edsEntry.getValueMetaData().value().accessType == EDSEntry::AccessRights_E::WRITE_ONLY)
+        {
+            m_log.error("Coudl not write to %s as it is a write-only object!",
+                        edsEntry.getEntryMetaData().parameterName.c_str());
         }
 
         if (edsEntry.valueSize() <= 4)
@@ -233,6 +248,11 @@ namespace mab
         if (!edsEntry.getValueMetaData().has_value())
         {
             return Error_t::UNKNOWN_OBJECT;
+        }
+        if (edsEntry.getValueMetaData().value().accessType == EDSEntry::AccessRights_E::READ_ONLY)
+        {
+            m_log.error("Coudl not write to %s as it is a read-only object!",
+                        edsEntry.getEntryMetaData().parameterName.c_str());
         }
 
         const std::vector<std::byte>& data        = edsEntry.getSerializedValue();
@@ -364,12 +384,6 @@ namespace mab
         }
 
         return Error_t::OK;
-    }
-
-    MDCO::Error_t MDCO::writePDO(EDSEntry& edsEntry) const
-    {
-        // TODO: PDO Mapping todo
-        return MDCO::Error_t::UNKNOWN_OBJECT;
     }
 
     std::vector<canId_t> MDCO::discoverOpenMDs(Candle*                              candle,

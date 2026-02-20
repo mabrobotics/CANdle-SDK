@@ -52,6 +52,8 @@ int main()
              (*od)[0x6064].getEntryMetaData().parameterName.c_str(),
              (open_types::INTEGER32_t)(*od)[0x6064]);
 
-    mdco.blink();
+    // mdco.blink();
+    // mdco.save();
+    // mdco.enable();
     return EXIT_SUCCESS;
 }
