@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <cstddef>
 #include <span>
+#include <string>
 #include <vector>
 #include "candle_types.hpp"
 
@@ -51,9 +52,17 @@ namespace mab
     MDCO::Error_t MDCO::blink()
     {
         // blink the motor led, log an error message if transfer failed
-        Error_t err          = enterConfigMode();
-        (*m_od)[0x2003][0x1] = (open_types::BOOLEAN_t)1;
-        err                  = writeSDO((*m_od)[0x2003][0x1]);
+        Error_t                      err       = enterConfigMode();
+        static constexpr std::string blinkName = "Blink LEDs";
+        auto                         blinkOpt  = m_od->getEntryByName(blinkName);
+        if (!blinkOpt.has_value())
+        {
+            m_log.error("Coudl not locate %s object!", blinkName.c_str());
+            return Error_t::UNKNOWN_OBJECT;
+        }
+        auto& blinkObj = blinkOpt.value().get();
+        blinkObj       = (open_types::BOOLEAN_t)1;
+        err            = writeSDO(blinkObj);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting Blink LEDs");

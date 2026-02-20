@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "candle.hpp"
 #include "MDCO.hpp"
 #include "edsEntry.hpp"
@@ -52,8 +53,5 @@ int main()
              (open_types::INTEGER32_t)(*od)[0x6064]);
 
     mdco.blink();
-
-    mdco.zero();
-
     return EXIT_SUCCESS;
 }

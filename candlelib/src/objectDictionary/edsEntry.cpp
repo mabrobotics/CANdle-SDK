@@ -1,4 +1,5 @@
 #include <cstddef>
+#include <functional>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -416,7 +417,7 @@ namespace mab
     }
 
     std::optional<std::pair<u16, std::optional<u8>>> EDSObjectDictionary::getAdressByName(
-        std::string_view name) const noexcept
+        std::string_view name) noexcept
     {
         for (auto& entryPair : m_map)
         {
@@ -428,6 +429,26 @@ namespace mab
                 {
                     if (name == subentryPair.second->getEntryMetaData().parameterName)
                         return std::make_pair(entryPair.first, subentryPair.first);
+                }
+            }
+        }
+        return std::nullopt;
+    }
+
+    std::optional<std::reference_wrapper<EDSEntry>> EDSObjectDictionary::getEntryByName(
+        std::string_view name) noexcept
+    {
+        for (auto& entryPair : m_map)
+        {
+            if (name == entryPair.second.getEntryMetaData().parameterName)
+                return std::optional<std::reference_wrapper<EDSEntry>>(entryPair.second);
+            if (entryPair.second.getContainerMetaData().has_value())
+            {
+                for (auto& subentryPair : entryPair.second)
+                {
+                    if (name == subentryPair.second->getEntryMetaData().parameterName)
+                        return std::optional<std::reference_wrapper<EDSEntry>>(
+                            *subentryPair.second.get());
                 }
             }
         }

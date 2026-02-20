@@ -237,7 +237,9 @@ namespace mab
         size_t size() const;
 
         std::optional<std::pair<u16, std::optional<u8>>> getAdressByName(
-            std::string_view name) const noexcept;
+            std::string_view name) noexcept;
+        std::optional<std::reference_wrapper<EDSEntry>> getEntryByName(
+            std::string_view name) noexcept;
 
       private:
         std::map<u16, EDSEntry> m_map;
