@@ -81,7 +81,7 @@ namespace mab
         {
             return !s.empty() &&
                    std::all_of(
-                       s.begin(), s.end(), [](unsigned char c) { return std::isdigit(c); }) &&
+                       s.begin(), s.end(), [](unsigned char c) { return std::isxdigit(c); }) &&
                    s.size() == 4;
         }
         static bool isSubentry(std::string_view s)
