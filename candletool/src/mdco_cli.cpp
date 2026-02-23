@@ -322,118 +322,102 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     // REGISTER read
     CLI::App* sdoRead = sdo->add_subcommand("read", "Read MD register.");
 
-    ReadWriteOptions readOption(sdoRead);
+    ReadOptions readOption(sdoRead);
 
     sdoRead->callback(
         [this, mdCanId, readOption, od]()
         {
-            // auto            mdco = getMdco(mdCanId, od);
-            // std::vector<u8> data;
-            // int dataSize = mdco->dataSizeOfEdsObject(*readOption.index, *readOption.subindex);
-            // if (!*readOption.force)
-            // {
-            //     if (dataSize == 1 || dataSize == 2 || dataSize == 4)
-            //         mdco->readOpenRegisters(
-            //             *readOption.index, *readOption.subindex, *readOption.force);
-            //     else if (dataSize == 8 || dataSize == 0)
-            //         mdco->readLongOpenRegisters(*readOption.index, *readOption.subindex, data);
-            //     else
-            //     {
-            //         m_log.error("Unknown register size for register 0x%04X subindex %d",
-            //                     *readOption.index,
-            //                     *readOption.subindex);
-            //     }
-            // }
-            // else
-            //     mdco->readOpenRegisters(*readOption.index, *readOption.subindex,
-            //     *readOption.force);
-            m_log.warn("To be implemented!");
+            auto mdco = getMdco(mdCanId, od);
+
+            if (readOption.subindex->has_value())
+            {
+                if (!(*od)[*readOption.index][readOption.subindex->value()]
+                         .getValueMetaData()
+                         .has_value())
+                {
+                    m_log.error("This sdo has no value to read!");
+                }
+                auto err = mdco->readSDO((*od)[*readOption.index][readOption.subindex->value()]);
+                if (err != MDCO::Error_t::OK)
+                {
+                    m_log.error("Coudl not read this sdo!");
+                    return;
+                }
+                m_log.success(
+                    "%s = %s",
+                    (*od)[*readOption.index][readOption.subindex->value()]
+                        .getEntryMetaData()
+                        .parameterName.c_str(),
+                    (*od)[*readOption.index][readOption.subindex->value()].getAsString().c_str());
+            }
+            else
+            {
+                if (!(*od)[*readOption.index].getValueMetaData().has_value())
+                {
+                    m_log.error("This sdo has no value to read!");
+                }
+                auto err = mdco->readSDO((*od)[*readOption.index]);
+                if (err != MDCO::Error_t::OK)
+                {
+                    m_log.error("Coudl not read this sdo!");
+                    return;
+                }
+                m_log.success("%s = %s",
+                              (*od)[*readOption.index].getEntryMetaData().parameterName.c_str(),
+                              (*od)[*readOption.index].getAsString().c_str());
+            }
         });
 
     // REGISTER write
-    CLI::App*        sdoWrite = sdo->add_subcommand("write", "Write MD register.");
-    ReadWriteOptions writeOption(sdoWrite);
-    // sdoWrite->add_option("--value", cmdCANopen.value, "Value to write.")->required();
-    // sdoWrite->add_option("--dataSize",
-    //                      cmdCANopen.dataSize,
-    //                      "Size of data to be sent. {1,2,4}[bytes]. Mandatory for CANopen.");
+    CLI::App*    sdoWrite = sdo->add_subcommand("write", "Write MD register.");
+    std::string  sdoValueString;
+    WriteOptions writeOption(sdoWrite);
 
     sdoWrite->callback(
         [this, mdCanId, writeOption, od]()
         {
-            // auto mdco = getMdco(mdCanId, od);
+            auto mdco = getMdco(mdCanId, od);
 
-            // MDCO::Error_t err;
-            // // if no value is given, we read the value from the object dictionary
-            // if (cmdCANopen.dataSize == 0)
-            // {
-            //     if (*writeOption.force)
-            //     {
-            //         m_log.error("Please enter the data size in bytes if you use the -f flag");
-
-            //         return;
-            //     }
-            //     else
-            //         cmdCANopen.dataSize =
-            //             mdco->dataSizeOfEdsObject(*writeOption.index, *writeOption.subindex);
-            // }
-
-            // if (cmdCANopen.dataSize == 1 || cmdCANopen.dataSize == 2 || cmdCANopen.dataSize == 4)
-            // {
-            //     unsigned long data = strtoul((cmdCANopen.value.c_str()), nullptr, 16);
-            //     err                = mdco->writeOpenRegisters(*writeOption.index,
-            //                                    *writeOption.subindex,
-            //                                    data,
-            //                                    cmdCANopen.dataSize,
-            //                                    *writeOption.force);
-            //     if (err != MDCO::OK)
-            //     {
-            //         m_log.error("Error writing register 0x%04X subindex %d",
-            //                     *writeOption.index,
-            //                     *writeOption.subindex);
-
-            //         return;
-            //     }
-            //     return;
-            // }
-            // else if (cmdCANopen.dataSize == 8)
-            // {
-            //     err = mdco->writeLongOpenRegisters(*writeOption.index,
-            //                                        *writeOption.subindex,
-            //                                        cmdCANopen.value,
-            //                                        *writeOption.force);
-            //     if (err != MDCO::OK)
-            //     {
-            //         m_log.error("Error writing long register 0x%04X subindex %d",
-            //                     *writeOption.index,
-            //                     *writeOption.subindex);
-
-            //         return;
-            //     }
-            //     return;
-            // }
-            // else if (cmdCANopen.dataSize == 0)
-            // {
-            //     err = mdco->writeLongOpenRegisters(*writeOption.index,
-            //                                        *writeOption.subindex,
-            //                                        cmdCANopen.value,
-            //                                        *writeOption.force);
-            //     if (err != MDCO::OK)
-            //     {
-            //         m_log.error("Error writing string register 0x%04X subindex %d",
-            //                     *writeOption.index,
-            //                     *writeOption.subindex);
-
-            //         return;
-            //     }
-            //     return;
-            // }
-            // else
-            // {
-            //     m_log.error("Wrong/unknow data size");
-            //     return;
-            // }
-            m_log.warn("To be implemented!");
+            if (writeOption.subindex->has_value())
+            {
+                if (!(*od)[*writeOption.index][writeOption.subindex->value()]
+                         .getValueMetaData()
+                         .has_value())
+                {
+                    m_log.error("This sdo has no value to write!");
+                }
+                (*od)[*writeOption.index][writeOption.subindex->value()].setFromString(
+                    *writeOption.valueStr);
+                auto err = mdco->writeSDO((*od)[*writeOption.index][writeOption.subindex->value()]);
+                if (err != MDCO::Error_t::OK)
+                {
+                    m_log.error("Coudl not read this sdo!");
+                    return;
+                }
+                m_log.success(
+                    "%s = %s",
+                    (*od)[*writeOption.index][writeOption.subindex->value()]
+                        .getEntryMetaData()
+                        .parameterName.c_str(),
+                    (*od)[*writeOption.index][writeOption.subindex->value()].getAsString().c_str());
+            }
+            else
+            {
+                if (!(*od)[*writeOption.index].getValueMetaData().has_value())
+                {
+                    m_log.error("This sdo has no value to write!");
+                }
+                (*od)[*writeOption.index].setFromString(*writeOption.valueStr);
+                auto err = mdco->writeSDO((*od)[*writeOption.index]);
+                if (err != MDCO::Error_t::OK)
+                {
+                    m_log.error("Coudl not read this sdo!");
+                    return;
+                }
+                m_log.success("%s = %s",
+                              (*od)[*writeOption.index].getEntryMetaData().parameterName.c_str(),
+                              (*od)[*writeOption.index].getAsString().c_str());
+            }
         });
 
     // RESET ============================================================================

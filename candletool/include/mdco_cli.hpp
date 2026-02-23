@@ -13,7 +13,9 @@
 #include "utilities.hpp"
 
 #include <filesystem>
+#include <limits>
 #include <memory>
+#include <string>
 
 namespace mab
 {
@@ -96,13 +98,32 @@ namespace mab
             std::map<std::string, CLI::Option*> optionsMap;
         };
 
-        struct ReadWriteOptions
+        struct ReadOptions
         {
-            ReadWriteOptions(CLI::App* rootCli)
-                : index(std::make_shared<u16>()),
-                  subindex(std::make_shared<u8>(0)),
-                  force(std::make_shared<bool>(false))
+            ReadOptions(CLI::App* rootCli)
+                : index(std::make_shared<u16>(0)), subindex(std::make_shared<std::optional<u8>>())
+            {
+                optionsMap = std::map<std::string, CLI::Option*>{
+                    {"index",
+                     rootCli
+                         ->add_option("--index", *index, "Register ID (offset) to read data from.")
+                         ->required()},
+                    {"subindex",
+                     rootCli->add_option(
+                         "--subindex", *subindex, "Register ID (offset) to read data from.")}};
+            }
 
+            const std::shared_ptr<u16>               index;
+            const std::shared_ptr<std::optional<u8>> subindex;
+            std::map<std::string, CLI::Option*>      optionsMap;
+        };
+
+        struct WriteOptions
+        {
+            WriteOptions(CLI::App* rootCli)
+                : index(std::make_shared<u16>(0)),
+                  subindex(std::make_shared<std::optional<u8>>()),
+                  valueStr(std::make_shared<std::string>())
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
                     {"index",
@@ -112,19 +133,14 @@ namespace mab
                     {"subindex",
                      rootCli->add_option(
                          "--subindex", *subindex, "Register ID (offset) to read data from.")},
-                    {"force",
-                     rootCli
-                         ->add_flag("-f,--force",
-                                    *force,
-                                    "Force reading message, without verification in the Object "
-                                    "dictionary.")
-                         ->default_val(false)}};
+                    {"value",
+                     rootCli->add_option("--value", *valueStr, "Value to write by sdo")
+                         ->required()}};
             }
-
-            const std::shared_ptr<u16>          index;
-            const std::shared_ptr<u8>           subindex;
-            const std::shared_ptr<bool>         force;
-            std::map<std::string, CLI::Option*> optionsMap;
+            const std::shared_ptr<u16>               index;
+            const std::shared_ptr<std::optional<u8>> subindex;
+            const std::shared_ptr<std::string>       valueStr;
+            std::map<std::string, CLI::Option*>      optionsMap;
         };
     };
 }  // namespace mab
