@@ -124,12 +124,6 @@ namespace mab
             return Error_t::UNKNOWN_OBJECT;
         }
 
-        if (edsEntry.getValueMetaData().value().accessType == EDSEntry::AccessRights_E::WRITE_ONLY)
-        {
-            m_log.error("Coudl not write to %s as it is a write-only object!",
-                        edsEntry.getEntryMetaData().parameterName.c_str());
-        }
-
         if (edsEntry.valueSize() <= 4)
         {
             // using expedited transfer

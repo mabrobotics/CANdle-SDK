@@ -18,19 +18,6 @@
 namespace mab
 {
 
-    /// @brief Possible errors present in this class
-    /// @details This enum defines the possible errors that can occur during EDS file operations.
-    /// @note The values correspond to specific error conditions such as invalid path, invalid file,
-    /// invalid index, and unknown errors.
-    enum Error_t
-    {
-        OK,
-        INVALID_PATH,
-        INVALID_FILE,
-        INVALID_INDEX,
-        UNKNOWN_ERROR
-    };
-
     /// @brief Get the name of the object type based on its hexadecimal representation
     /// @param hex The hexadecimal string representing the object type
     /// @return std::string The name of the object type, or the hex string if not recognized
@@ -49,6 +36,19 @@ namespace mab
     class EDSParser
     {
       public:
+        /// @brief Possible errors present in this class
+        /// @details This enum defines the possible errors that can occur during EDS file
+        /// operations.
+        /// @note The values correspond to specific error conditions such as invalid path, invalid
+        /// file, invalid index, and unknown errors.
+        enum Error_t
+        {
+            OK,
+            INVALID_PATH,
+            INVALID_FILE,
+            INVALID_INDEX,
+            UNKNOWN_ERROR
+        };
         /// @brief Load EDS file from the specified path
         /// @param edsFilePath Path to the EDS file
         /// @return Error_t indicating the result of the operation

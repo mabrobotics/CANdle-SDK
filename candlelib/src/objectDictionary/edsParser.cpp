@@ -133,7 +133,7 @@ std::string mab::getDataTypeName(const std::string& hex)
     return hex;  // fallback
 }
 
-std::pair<std::shared_ptr<EDSObjectDictionary>, Error_t> EDSParser::load(
+std::pair<std::shared_ptr<EDSObjectDictionary>, EDSParser::Error_t> EDSParser::load(
     const std::filesystem::path& edsFilePath)
 {
     Logger                                 log(Logger::ProgramLayer_E::TOP, "EDS Parser");
@@ -169,7 +169,7 @@ std::pair<std::shared_ptr<EDSObjectDictionary>, Error_t> EDSParser::load(
 
     for (auto key_val : ini)
     {
-        log.info("Looking at :%s", key_val.first.c_str());
+        log.debug("Looking at :%s", key_val.first.c_str());
         if (isEntry(key_val.first) || isSubentry(key_val.first))
         {
             EDSEntry::EDSEntryMetaData metaData;
@@ -233,7 +233,7 @@ std::pair<std::shared_ptr<EDSObjectDictionary>, Error_t> EDSParser::load(
 
     for (auto key_val : ini)
     {
-        log.info("Looking at :%s", key_val.first.c_str());
+        log.debug("Looking at :%s", key_val.first.c_str());
         if (isEntry(key_val.first))
         {
             EDSEntry::EDSEntryMetaData metaData;
@@ -294,23 +294,23 @@ std::pair<std::shared_ptr<EDSObjectDictionary>, Error_t> EDSParser::load(
         std::make_shared<EDSObjectDictionary>(EDSObjectDictionary(std::move(odMap))), OK);
 }
 
-Error_t EDSParser::isValid()
+EDSParser::Error_t EDSParser::isValid()
 {
     return INVALID_FILE;
 }
 
-Error_t EDSParser::display()
+EDSParser::Error_t EDSParser::display()
 {
     // TODO: see later if that makes sense here
     return Error_t::OK;
 }
 
-Error_t EDSParser::get(u32 index, u8 subindex)
+EDSParser::Error_t EDSParser::get(u32 index, u8 subindex)
 {
-    return Error_t::UNKNOWN_ERROR;
+    return EDSParser::Error_t::UNKNOWN_ERROR;
 }
 
-Error_t EDSParser::find(const std::string& searchTerm)
+EDSParser::Error_t EDSParser::find(const std::string& searchTerm)
 {
     return UNKNOWN_ERROR;
 }
@@ -391,13 +391,9 @@ EDSEntry::EDSValueMetaData EDSParser::parseValueMetadata(mINI::INIMap<std::strin
     {
         edsValueMetadata.accessType = EDSEntry::AccessRights_E::READ_ONLY;
     }
-    else if (std::strcmp(entry["AccessType"].c_str(), "rw") == 0)
-    {
-        edsValueMetadata.accessType = EDSEntry::AccessRights_E::READ_WRITE;
-    }
     else
     {
-        edsValueMetadata.accessType = EDSEntry::AccessRights_E::WRITE_ONLY;
+        edsValueMetadata.accessType = EDSEntry::AccessRights_E::READ_WRITE;
     }
     return edsValueMetadata;
 }

@@ -70,8 +70,7 @@ namespace mab
         enum class AccessRights_E
         {
             READ_ONLY  = 0x00,
-            READ_WRITE = 0x01,
-            WRITE_ONLY = 0x02,
+            READ_WRITE = 0x01
         };
 
         enum class DataType_E

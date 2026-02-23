@@ -78,13 +78,6 @@ namespace mab
         static std::vector<canId_t> discoverOpenMDs(Candle*                              candle,
                                                     std::shared_ptr<EDSObjectDictionary> od);
 
-      private:
-        Candle* m_candle;
-
-        /// @brief Generate the Object Dictionary from the EDS file
-        /// @return A vector of edsObject representing the Object Dictionary
-        std::shared_ptr<EDSObjectDictionary> m_od;
-
         inline Error_t enterConfigMode() const
         {
             Error_t err = MDCO::Error_t::OK;
@@ -144,6 +137,13 @@ namespace mab
             }
             return err;
         }
+
+      private:
+        Candle* m_candle;
+
+        /// @brief Generate the Object Dictionary from the EDS file
+        /// @return A vector of edsObject representing the Object Dictionary
+        std::shared_ptr<EDSObjectDictionary> m_od;
 
         inline std::pair<std::vector<u8>, mab::candleTypes::Error_t> transferCanOpenFrame(
             i16 Id, std::vector<u8> frameToSend, size_t responseSize) const
