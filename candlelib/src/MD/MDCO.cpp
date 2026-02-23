@@ -124,7 +124,9 @@ namespace mab
             return Error_t::UNKNOWN_OBJECT;
         }
 
-        if (edsEntry.valueSize() <= 4)
+        if (edsEntry.valueSize() <= 4 &&
+            edsEntry.getEntryMetaData().edsValueMeta.value().dataType !=
+                EDSEntry::DataType_E::VISIBLE_STRING)
         {
             // using expedited transfer
             std::vector<u8> transmitFrame = {

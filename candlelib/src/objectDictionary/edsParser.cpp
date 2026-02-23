@@ -175,11 +175,12 @@ std::pair<std::shared_ptr<EDSObjectDictionary>, EDSParser::Error_t> EDSParser::l
             EDSEntry::EDSEntryMetaData metaData;
             auto&                      entry = key_val.second;
             metaData.parameterName           = entry["ParameterName"];
-            u32 idx    = isEntry(key_val.first) ? std::stoul(key_val.first, nullptr, 16)
-                                                : extractIndexAndSubindex(key_val.first).value().first;
-            u8  subidx = isSubentry(key_val.first)
-                             ? extractIndexAndSubindex(key_val.first).value().second
-                             : 0;
+            u32 idx = isEntry(key_val.first) ? std::stoul(key_val.first, nullptr, 16)
+                                             : extractIndexAndSubindex(key_val.first).value().first;
+
+            u8 subidx = isSubentry(key_val.first)
+                            ? extractIndexAndSubindex(key_val.first).value().second
+                            : 0;
 
             std::optional<u8> subidxOpt;
             if (isSubentry(key_val.first))

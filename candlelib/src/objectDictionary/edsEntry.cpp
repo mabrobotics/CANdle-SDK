@@ -310,25 +310,25 @@ namespace mab
         switch (dataType)
         {
             case DataType_E::BOOLEAN:
-                return std::to_string(std::get<open_types::BOOLEAN_t>(val));
+                return std::to_string((bool)std::get<open_types::BOOLEAN_t>(val));
             case DataType_E::INTEGER8:
-                return std::to_string(std::get<open_types::INTEGER8_t>(val));
+                return std::to_string((i8)std::get<open_types::INTEGER8_t>(val));
             case DataType_E::INTEGER16:
-                return std::to_string(std::get<open_types::INTEGER16_t>(val));
+                return std::to_string((i16)std::get<open_types::INTEGER16_t>(val));
             case DataType_E::INTEGER32:
-                return std::to_string(std::get<open_types::INTEGER32_t>(val));
+                return std::to_string((i32)std::get<open_types::INTEGER32_t>(val));
             case DataType_E::INTEGER64:
-                return std::to_string(std::get<open_types::INTEGER64_t>(val));
+                return std::to_string((i64)std::get<open_types::INTEGER64_t>(val));
             case DataType_E::UNSIGNED8:
-                return std::to_string(std::get<open_types::UNSIGNED8_t>(val));
+                return std::to_string((u8)std::get<open_types::UNSIGNED8_t>(val));
             case DataType_E::UNSIGNED16:
-                return std::to_string(std::get<open_types::UNSIGNED16_t>(val));
+                return std::to_string((u16)std::get<open_types::UNSIGNED16_t>(val));
             case DataType_E::UNSIGNED32:
-                return std::to_string(std::get<open_types::UNSIGNED32_t>(val));
+                return std::to_string((u32)std::get<open_types::UNSIGNED32_t>(val));
             case DataType_E::UNSIGNED64:
-                return std::to_string(std::get<open_types::UNSIGNED64_t>(val));
+                return std::to_string((u64)std::get<open_types::UNSIGNED64_t>(val));
             case DataType_E::REAL32:
-                return std::to_string(std::get<open_types::REAL32_t>(val));
+                return std::to_string((float)std::get<open_types::REAL32_t>(val));
             case DataType_E::REAL64:
                 return {};
             case DataType_E::VISIBLE_STRING:

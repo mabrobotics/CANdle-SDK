@@ -2,6 +2,7 @@
 #include <exception>
 #include <filesystem>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include "CLI/CLI.hpp"
 #include "MDCO.hpp"
@@ -450,12 +451,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             m_log.warn("To be implemented!");
         });
 
-    // SETUP ============================================================================
-    CLI::App* setup = mdco->add_subcommand("setup", "Setup MD via config files, and calibrate.")
-                          ->needs(mdCanIdOption);
-
-    // SETUP calibration
-    CLI::App* setupCalib = setup->add_subcommand("calibration", "Calibrate main MD encoder.");
+    // Calibration
+    CLI::App* setupCalib = mdco->add_subcommand("calibration", "Calibrate main MD encoder.");
     setupCalib->callback(
         [this, mdCanId, od]()
         {
@@ -469,7 +466,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         });
 
     // SETUP calibration output
-    CLI::App* setupCalibOut = setup->add_subcommand("calibration_out", "Calibrate output encoder.");
+    CLI::App* setupCalibOut = mdco->add_subcommand("calibration_out", "Calibrate output encoder.");
     setupCalibOut->callback(
         [this, mdCanId, od]()
         {
@@ -483,37 +480,64 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         });
 
     // SETUP info
-    CLI::App* setupInfo        = setup->add_subcommand("info", "Display info about the MD drive.");
-    auto*     setupInfoAllFlag = setupInfo->add_flag("-a", "Print ALL available info.");
-    setupInfo->callback(
-        [this, mdCanId, od, setupInfoAllFlag]()
+    CLI::App* info = mdco->add_subcommand("info", "Display info about the MD drive.");
+    info->callback(
+        [this, mdCanId, od]()
         {
-            auto mdco     = getMdco(mdCanId, od);
-            bool printAll = false;
-            setupInfoAllFlag->count() > 0 ? printAll = true : printAll = false;
+            auto mdco = getMdco(mdCanId, od);
 
-            // if (!printAll)
-            // {
-            //     long devicetype = mdco->getValueFromOpenRegister(0x1000, 0);
-            //     m_log.info("Device type:", devicetype);
-            //     long int    hexValue = mdco->getValueFromOpenRegister(0x1008, 0);
-            //     std::string motorName;
-            //     for (int i = 0; i <= 3; i++)
-            //     {
-            //         char c = (hexValue >> (8 * i)) & 0xFF;
-            //         motorName += c;
-            //     }
-            //     m_log.info("Manufacturer Device Name: %s", motorName.c_str());
-            //     long Firmware = mdco->getValueFromOpenRegister(0x2001, 3);
-            //     m_log.info("Firmware version: %li", Firmware);
-            //     long Bootloader = mdco->getValueFromOpenRegister(0x2002, 4);
-            //     m_log.info("Bootloader version: %li", Bootloader);
-            // }
-            // else
-            // {
-            //     mdco->printAllInfo();
-            // }
-            m_log.warn("To be implemented!");
+            for (auto& object : *od)
+            {
+                u32 idx = object.first;
+                // error fields skipped
+                bool skip = false;
+                switch (idx)
+                {
+                    case 0x1003:
+                    case 0x1801:
+                        skip = true;
+                        break;
+                    default:
+                        skip = false;
+                        break;
+                }
+                if (skip)
+                    continue;
+                if (object.second.getContainerMetaData().has_value())
+                {
+                    std::stringstream ss;
+                    ss << "[0x" << std::hex << idx << "] "
+                       << object.second.getEntryMetaData().parameterName;
+                    m_log.info("%s", ss.str().c_str());
+                    for (auto& subobject : object.second)
+                    {
+                        if (mdco->readSDO(*subobject.second) != MDCO::Error_t::OK)
+                        {
+                            m_log.error("Coudl not read object %s",
+                                        subobject.second->getEntryMetaData().parameterName.c_str());
+                            continue;
+                        }
+                        std::stringstream ss;
+                        ss << "[0x" << std::hex << idx << "]" << "[0x"
+                           << (uint)subobject.second->getEntryMetaData().address.second.value()
+                           << "]" << subobject.second->getEntryMetaData().parameterName << " = "
+                           << subobject.second->getAsString();
+                        m_log.info("%s", ss.str().c_str());
+                    }
+                    continue;
+                }
+                if (mdco->readSDO(object.second) != MDCO::Error_t::OK)
+                {
+                    m_log.error("Coudl not read object %s",
+                                object.second.getEntryMetaData().parameterName.c_str());
+                    continue;
+                }
+                std::stringstream ss;
+                ss << "[0x" << std::hex << idx << "] "
+                   << object.second.getEntryMetaData().parameterName << " = "
+                   << object.second.getAsString();
+                m_log.info("%s", ss.str().c_str());
+            }
         });
 
     // SETUP upload
