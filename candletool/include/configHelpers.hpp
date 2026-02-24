@@ -49,9 +49,9 @@ namespace mab
         return fileStream.good();
     }
 
-    inline bool isConfigValid(const std::string& pathToConfig)
+    inline bool isConfigValid(const std::filesystem::path& pathToConfig)
     {
-        std::string fileExtension = std::filesystem::path(pathToConfig).extension().string();
+        std::string fileExtension = pathToConfig.extension().string();
         if (!(fileExtension == ".cfg"))
             return false;
         std::error_code   ec;

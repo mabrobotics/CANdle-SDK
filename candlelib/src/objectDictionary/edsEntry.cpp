@@ -155,7 +155,7 @@ namespace mab
             case DataType_E::REAL32:
                 m_value = *std::bit_cast<const open_types::REAL32_t*>(bytes.data());
                 break;
-            case DataType_E::DOMAIN:
+            case DataType_E::DOMAIN_TYPE:
                 m_value = open_types::DOMAIN_t(bytes.begin(), bytes.end());
                 break;
             case DataType_E::VISIBLE_STRING:
@@ -227,7 +227,7 @@ namespace mab
             case mab::EDSEntry::DataType_E::UNICODE_STRING:
                 size = std::get<open_types::UNICODE_STRING_t>(m_value.value()).size();
                 break;
-            case mab::EDSEntry::DataType_E::DOMAIN:
+            case mab::EDSEntry::DataType_E::DOMAIN_TYPE:
                 size = std::get<open_types::DOMAIN_t>(m_value.value()).size();
                 break;
         }
@@ -294,7 +294,7 @@ namespace mab
                     byteResult.push_back(std::byte(byte));
                 }
                 return byteResult;
-            case DataType_E::DOMAIN:
+            case DataType_E::DOMAIN_TYPE:
                 for (const auto& byte : str)
                 {
                     byteResult.push_back(std::byte(byte));
@@ -337,7 +337,7 @@ namespace mab
                 return {};
             case DataType_E::OCTET_STRING:
                 return {};  // todo: case on its own can not support it
-            case DataType_E::DOMAIN:
+            case DataType_E::DOMAIN_TYPE:
                 std::vector<std::byte> bytes = std::get<open_types::DOMAIN_t>(val);
                 std::string            result;
                 for (auto byte : bytes)

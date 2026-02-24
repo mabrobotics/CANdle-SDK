@@ -89,7 +89,7 @@ namespace mab
             VISIBLE_STRING = 0x0009,
             OCTET_STRING   = 0x000A,
             UNICODE_STRING = 0x000B,
-            DOMAIN         = 0x000F
+            DOMAIN_TYPE    = 0x000F
         };
 
         struct EDSValueMetaData

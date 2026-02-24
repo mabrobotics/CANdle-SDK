@@ -59,13 +59,13 @@ std::string MdcoCli::validateAndGetFinalConfigPath(const std::filesystem::path& 
         m_log.info("Generate updated file with all required fields? [y/n]");
         if (getConfirmation())
         {
-            finalConfigPath = generateUpdatedConfigFile(finalConfigPath);
+            finalConfigPath = generateUpdatedConfigFile(finalConfigPath.string());
             m_log.info("Generated updated file \"%s\"", finalConfigPath.c_str());
         }
         else
             m_log.info("Proceeding with original file \"%s\"", finalConfigPath.c_str());
     }
-    return finalConfigPath;
+    return finalConfigPath.string();
 }
 
 void MdcoCli::clean(std::string& s)
@@ -503,7 +503,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                         }
                         std::stringstream ss;
                         ss << "[0x" << std::hex << idx << "]" << "[0x"
-                           << (uint)subobject.second->getEntryMetaData().address.second.value()
+                           << (unsigned int)subobject.second->getEntryMetaData().address.second.value()
                            << "]" << subobject.second->getEntryMetaData().parameterName << " = "
                            << subobject.second->getAsString();
                         m_log.info("%s", ss.str().c_str());

@@ -375,7 +375,7 @@ EDSEntry::EDSValueMetaData EDSParser::parseValueMetadata(mINI::INIMap<std::strin
             break;
 
         case 0x000F:
-            edsValueMetadata.dataType = EDSEntry::DataType_E::DOMAIN;
+            edsValueMetadata.dataType = EDSEntry::DataType_E::DOMAIN_TYPE;
             break;
 
         default:
