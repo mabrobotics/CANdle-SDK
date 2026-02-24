@@ -137,7 +137,6 @@ namespace mab
                 if (!canChanged)
                 {
                     m_logger.warn("No CAN parameters changed, skipping write!");
-                    return;
                 }
 
                 registers.runCanReinit = 1;  // Set flag to reinitialize CAN
@@ -1095,6 +1094,8 @@ namespace mab
                                   md->getVelocity().first);
                     usleep(30000);
                 }
+
+                md->disable();
                 m_logger.success("Movement ended.");
             });
 
