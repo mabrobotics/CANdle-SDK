@@ -97,18 +97,12 @@ namespace mab
             {0x017, MDCfgElement("motor", "gear ratio")},
             {0x018, MDCfgElement("motor", "torque bandwidth")},
             {0x01D, MDCfgElement("motor", "KV")},
-            {0x013, MDCfgElement("motor", "torque constant a")},
-            {0x014, MDCfgElement("motor", "torque constant b")},
-            {0x015, MDCfgElement("motor", "torque constant c")},
-            {0x019, MDCfgElement("motor", "dynamic friction")},
-            {0x01A, MDCfgElement("motor", "static friction")},
             {0x01E,
              MDCfgElement("motor",
                           "calibration mode",
                           mainEncoderCalibrationModeToReadable,
                           mainEncoderCalibrationModeFromReadable)},
             {0x808, MDCfgElement("motor", "shutdown temp")},
-            {0x600, MDCfgElement("motor", "reverse direction")},
 
             // Encoder parameters
             {0x020,

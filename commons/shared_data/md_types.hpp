@@ -118,8 +118,6 @@
     MD_REG(userGpioConfiguration, u8, 0x160, RW)     \
     MD_REG(userGpioState, u16, 0x161, RO)            \
                                                      \
-    MD_REG(reverseDirection, u8, 0x600, RW)          \
-                                                     \
     MD_REG(shuntResistance, float, 0x700, RW)        \
                                                      \
     MD_REG(uniqueID, char[12], 0x7FE, RO)            \
@@ -161,15 +159,15 @@ namespace mab
         RESPONSE_LEGACY        = 0xA0,
         RESPONSE_ERROR         = 0xA1
     };
-    
+
     enum MdRegisterAccessErrorCode : i8
     {
-        NONE = 0,
-        DEPRECATED = -1,
-        INVALID = -2,
-        UNKNOWN = -3,
+        NONE         = 0,
+        DEPRECATED   = -1,
+        INVALID      = -2,
+        UNKNOWN      = -3,
         OUT_OF_RANGE = -4,
-        ACCESS = -5,
+        ACCESS       = -5,
     };
 
     enum class RegisterAccessLevel_E : u8
