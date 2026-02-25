@@ -186,11 +186,33 @@ namespace mab
                 return Error_t::TRANSFER_FAILED;
             }
 
-            // Must NOT be expedited
+            // If server responds with expedited transfer, handle it here
             if ((response[0] & 0x02) != 0)
             {
-                m_log.error("Unexpected expedited response during segmented upload");
-                return Error_t::TRANSFER_FAILED;
+                // Size indicated must be set for expedited upload
+                if ((response[0] & 0x01) == 0)
+                {
+                    m_log.error("Expedited upload without size indication");
+                    return Error_t::TRANSFER_FAILED;
+                }
+
+                u8     emptyBytes = (response[0] >> 2) & 0x03;
+                size_t dataSize   = 4 - emptyBytes;
+
+                result.reserve(dataSize);
+
+                for (size_t i = 0; i < dataSize; ++i)
+                {
+                    result.push_back(static_cast<std::byte>(response[4 + i]));
+                }
+
+                // Store value and return immediately (no segmented loop)
+                if (edsEntry.setSerializedValue(result) == EDSEntry::Error_t::OK)
+                    return Error_t::OK;
+
+                m_log.error("EDS parsing failed with code: %d",
+                            edsEntry.setSerializedValue(result));
+                return Error_t::REQUEST_INVALID;
             }
 
             std::vector<u8> completeData;
