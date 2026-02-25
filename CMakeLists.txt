@@ -26,6 +26,7 @@ option(
   "Build static library (has no effect on windows library and python builds)"
   ON)
 option(MAKE_TESTS "Enable/disable some of the unit tests" OFF)
+option(SUPPRESS_WARN "Enable/disable compilation warnings" OFF)
 
 message("====================")
 message("CandleSDK version: ${CANDLESDK_VERSION} ${CANDLESDK_VERSION_TAG}")
@@ -35,18 +36,21 @@ message("  CANDLESDK_BUILD_EXAMPLES = ${CANDLESDK_BUILD_EXAMPLES}")
 message("  CANDLESDK_BUILD_CANDLETOOL = ${CANDLESDK_BUILD_CANDLETOOL}")
 message("  CANDLE_BUILD_STATIC = ${CANDLE_BUILD_STATIC}")
 message("  MAKE_TESTS = ${MAKE_TESTS}")
+message("  SUPPRESS_WARN = ${SUPPRESS_WARN}")
 message("====================")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_compile_options(-Wfatal-errors -Wall -Wextra -Wpedantic
-                    -Wno-unused-parameter -Wno-missing-field-initializers)
+if(NOT SUPPRESS_WARN)
+  add_compile_options(-Wfatal-errors -Wall -Wextra -Wpedantic
+                      -Wno-unused-parameter -Wno-missing-field-initializers)
 
-if(NOT WIN32)
-  add_compile_options(-Werror)
-  add_compile_definitions(WIN32_MEAN_AND_LEAN) # This define is needed for
-  # windows.h to exclude some less used APIs
+  if(NOT WIN32)
+    add_compile_options(-Werror)
+    add_compile_definitions(WIN32_MEAN_AND_LEAN) # This define is needed for
+    # windows.h to exclude some less used APIs
+  endif()
 endif()
 
 if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64" OR ${CMAKE_SYSTEM_PROCESSOR}
