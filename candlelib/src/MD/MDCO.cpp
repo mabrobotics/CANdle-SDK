@@ -6,6 +6,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include "MDStatus.hpp"
 #include "candle_types.hpp"
 #include "edsEntry.hpp"
 
@@ -470,36 +471,26 @@ namespace mab
               MDCO::Error_t>
     MDCO::getMainEncoderStatus()
     {
-        std::unordered_map<MDStatus::EncoderStatusBits, MDStatus::StatusItem_S> status;
-        Error_t err = readSDO((*m_od)[0x2100][0x1]);
+        MDStatus                                                                encoderStatus;
+        std::unordered_map<MDStatus::EncoderStatusBits, MDStatus::StatusItem_S> statusMap;
+        static constexpr std::string_view mainEncoderStatusName = "Main Encoder Status";
+        auto mainEncoderStatusOpt = m_od->getEntryByName("Main Encoder Status");
+        if (!mainEncoderStatusOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", mainEncoderStatusName.data());
+            return {encoderStatus.encoderStatus, Error_t::UNKNOWN_OBJECT};
+        }
+        auto&   mainEncoderStatusObj = mainEncoderStatusOpt.value().get();
+        Error_t err                  = readSDO(mainEncoderStatusObj);
+        u32     val                  = (open_types::UNSIGNED32_t)mainEncoderStatusObj;
         if (err != Error_t::OK)
         {
-            m_log.error("Error reading Main Encoder Status");
-            return {status, err};
+            m_log.error("Error setting %s",
+                        mainEncoderStatusObj.getEntryMetaData().parameterName.c_str());
+            return {encoderStatus.encoderStatus, err};
         }
-
-        u32 statusWord = (u32)(open_types::UNSIGNED32_t)(*m_od)[0x2100][0x1];
-
-        status = {{MDStatus::EncoderStatusBits::ErrorCommunication,
-                   MDStatus::StatusItem_S("Error Communication", true)},
-                  {MDStatus::EncoderStatusBits::ErrorWrongDirection,
-                   MDStatus::StatusItem_S("Error Wrong Direction", true)},
-                  {MDStatus::EncoderStatusBits::ErrorEmptyLUT,
-                   MDStatus::StatusItem_S("Error Empty LUT", true)},
-                  {MDStatus::EncoderStatusBits::ErrorFaultyLUT,
-                   MDStatus::StatusItem_S("Error Faulty LUT", true)},
-                  {MDStatus::EncoderStatusBits::ErrorCalibration,
-                   MDStatus::StatusItem_S("Error Calibration", true)},
-                  {MDStatus::EncoderStatusBits::ErrorPositionInvalid,
-                   MDStatus::StatusItem_S("Error Position Invalid", true)},
-                  {MDStatus::EncoderStatusBits::ErrorInitialization,
-                   MDStatus::StatusItem_S("Error Initialization", true)},
-                  {MDStatus::EncoderStatusBits::WarningLowAccuracy,
-                   MDStatus::StatusItem_S("Warning Low Accuracy", false)}};
-
-        MDStatus::decode<MDStatus::EncoderStatusBits>(statusWord, status);
-
-        return {status, err};
+        mab::MDStatus::decode(val, encoderStatus.encoderStatus);
+        return {encoderStatus.encoderStatus, err};
     }
 
     std::pair<const std::unordered_map<MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
