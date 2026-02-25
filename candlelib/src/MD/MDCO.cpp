@@ -1,8 +1,10 @@
 #include "MDCO.hpp"
 #include <unistd.h>
+#include <cmath>
 #include <cstddef>
 #include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 #include "candle_types.hpp"
 #include "edsEntry.hpp"
@@ -97,12 +99,12 @@ namespace mab
     {
         // set the motor zero position to the actual position via SDO message, log an error message
         // if transfer failed
-        Error_t                      err      = enterConfigMode();
-        static constexpr std::string zeroName = "Set Zero";
-        auto                         zeroOpt  = m_od->getEntryByName(zeroName);
+        Error_t                           err      = enterConfigMode();
+        static constexpr std::string_view zeroName = "Set Zero";
+        auto                              zeroOpt  = m_od->getEntryByName(zeroName);
         if (!zeroOpt.has_value())
         {
-            m_log.error("Coudl not locate %s object!", zeroName.c_str());
+            m_log.error("Coudl not locate %s object!", zeroName.data());
             return Error_t::UNKNOWN_OBJECT;
         }
         auto& zeroObj = zeroOpt.value().get();
@@ -110,10 +112,654 @@ namespace mab
         err           = writeSDO(zeroObj);
         if (err != Error_t::OK)
         {
-            m_log.error("Error setting Blink LEDs");
+            m_log.error("Error setting %s", zeroObj.getEntryMetaData().parameterName.c_str());
             return err;
         }
         return err;
+    }
+
+    MDCO::Error_t MDCO::reset()
+    {
+        Error_t                           err       = enterConfigMode();
+        static constexpr std::string_view resetName = "Reset Controller";
+        auto                              resetOpt  = m_od->getEntryByName(resetName);
+        if (!resetOpt.has_value())
+        {
+            m_log.error("Coudl not locate %s object!", resetName.data());
+            return Error_t::UNKNOWN_OBJECT;
+        }
+        auto& resetObj = resetOpt.value().get();
+        resetObj       = (open_types::BOOLEAN_t)1;
+        err            = writeSDO(resetObj);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting %s", resetObj.getEntryMetaData().parameterName.c_str());
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::clearErrors()
+    {
+        Error_t                           err            = enterConfigMode();
+        static constexpr std::string_view clearErrorName = "Clear Errors";
+        auto                              clearErrorOpt  = m_od->getEntryByName(clearErrorName);
+        if (!clearErrorOpt.has_value())
+        {
+            m_log.error("Coudl not locate %s object!", clearErrorName.data());
+            return Error_t::UNKNOWN_OBJECT;
+        }
+        auto& clearErrorObj = clearErrorOpt.value().get();
+        clearErrorObj       = (open_types::BOOLEAN_t)1;
+        err                 = writeSDO(clearErrorObj);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting %s", clearErrorObj.getEntryMetaData().parameterName.c_str());
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setCurrentLimit(float currentLimit /*A*/)
+    {
+        static constexpr std::string_view         setCurrentLimitName    = "Motor Rated Current";
+        static constexpr std::string_view         setCurrentMaxLimitName = "Max Current";
+        static constexpr open_types::UNSIGNED16_t setMaxLimit            = 1'000;
+        auto setCurrentLimitOpt = m_od->getEntryByName(setCurrentLimitName);
+        if (!setCurrentLimitOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", setCurrentLimitName.data());
+            return Error_t::UNKNOWN_OBJECT;
+        }
+        auto& setCurrentLimitObj = setCurrentLimitOpt.value().get();
+        setCurrentLimitObj       = (open_types::UNSIGNED16_t)(currentLimit * 1'000);
+        Error_t err              = writeSDO(setCurrentLimitObj);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting %s",
+                        setCurrentLimitObj.getEntryMetaData().parameterName.c_str());
+            return err;
+        }
+
+        auto setCurrentMaxLimitOpt = m_od->getEntryByName(setCurrentMaxLimitName);
+        if (!setCurrentMaxLimitOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", setCurrentMaxLimitName.data());
+            return Error_t::UNKNOWN_OBJECT;
+        }
+        auto& setCurrentMaxLimitObj = setCurrentMaxLimitOpt.value().get();
+        setCurrentMaxLimitObj       = setMaxLimit;
+        err                         = writeSDO(setCurrentMaxLimitObj);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting %s",
+                        setCurrentMaxLimitObj.getEntryMetaData().parameterName.c_str());
+            return err;
+        }
+
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setTorqueBandwidth(u16 torqueBandwidth /*Hz*/)
+    {
+        Error_t                           err                    = enterConfigMode();
+        static constexpr std::string_view setTorqueBandwidthName = "Torque Bandwidth";
+        static constexpr std::string_view reconfigureCANName     = "Run Can Reinit";
+        auto setTorqueBandwidthOpt = m_od->getEntryByName(setTorqueBandwidthName);
+        if (!setTorqueBandwidthOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", setTorqueBandwidthName.data());
+            return Error_t::UNKNOWN_OBJECT;
+        }
+        auto& setTorqueBandwidthObj = setTorqueBandwidthOpt.value().get();
+        setTorqueBandwidthObj       = (open_types::UNSIGNED16_t)torqueBandwidth;
+        err                         = writeSDO(setTorqueBandwidthObj);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting %s",
+                        setTorqueBandwidthObj.getEntryMetaData().parameterName.c_str());
+            return err;
+        }
+        auto reconfigureCANOpt = m_od->getEntryByName(reconfigureCANName);
+        if (!reconfigureCANOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", setTorqueBandwidthName.data());
+            return Error_t::UNKNOWN_OBJECT;
+        }
+        auto& reconfigureCANObj = reconfigureCANOpt.value().get();
+        reconfigureCANObj       = (open_types::BOOLEAN_t)1;
+        err                     = writeSDO(reconfigureCANObj);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting %s",
+                        setTorqueBandwidthObj.getEntryMetaData().parameterName.c_str());
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setOperationMode(mab::ModesOfOperation mode)
+    {
+        constexpr std::string_view operationModeName = "Modes Of Operation";
+        auto                       operationModeOpt  = m_od->getEntryByName(operationModeName);
+        if (!operationModeOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", operationModeName.data());
+            return Error_t::UNKNOWN_OBJECT;
+        }
+        auto& operationModeObj = operationModeOpt.value().get();
+        operationModeObj       = (open_types::INTEGER8_t)mode;
+        Error_t err            = writeSDO(operationModeObj);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting %s",
+                        operationModeObj.getEntryMetaData().parameterName.c_str());
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setPositionPIDparam(float kp, float ki, float kd, float integralMax)
+    {
+        Error_t              err     = enterConfigMode();
+        static constexpr u16 address = 0x2002;
+
+        (*m_od)[address][0x1] = (open_types::REAL32_t)kp;
+        err                   = writeSDO((*m_od)[address][0x1]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting position PID kp");
+            return err;
+        }
+
+        (*m_od)[address][0x2] = (open_types::REAL32_t)ki;
+        err                   = writeSDO((*m_od)[address][0x2]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting position PID ki");
+            return err;
+        }
+
+        (*m_od)[address][0x3] = (open_types::REAL32_t)kd;
+        err                   = writeSDO((*m_od)[address][0x3]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting position PID kd");
+            return err;
+        }
+
+        (*m_od)[address][0x4] = (open_types::REAL32_t)integralMax;
+        err                   = writeSDO((*m_od)[address][0x4]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting position PID integralMax");
+            return err;
+        }
+
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setVelocityPIDparam(float kp, float ki, float kd, float integralMax)
+    {
+        Error_t              err     = enterConfigMode();
+        static constexpr u16 address = 0x2001;
+
+        (*m_od)[address][0x1] = (open_types::REAL32_t)kp;
+        err                   = writeSDO((*m_od)[address][0x1]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting velocity PID kp");
+            return err;
+        }
+
+        (*m_od)[address][0x2] = (open_types::REAL32_t)ki;
+        err                   = writeSDO((*m_od)[address][0x2]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting velocity PID ki");
+            return err;
+        }
+
+        (*m_od)[address][0x3] = (open_types::REAL32_t)kd;
+        err                   = writeSDO((*m_od)[address][0x3]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting velocity PID kd");
+            return err;
+        }
+
+        (*m_od)[address][0x4] = (open_types::REAL32_t)integralMax;
+        err                   = writeSDO((*m_od)[address][0x4]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting velocity PID integralMax");
+            return err;
+        }
+
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setImpedanceParams(float kp, float kd)
+    {
+        Error_t              err     = enterConfigMode();
+        static constexpr u16 address = 0x2003;
+
+        (*m_od)[address][0x1] = (open_types::REAL32_t)kp;
+        err                   = writeSDO((*m_od)[address][0x1]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting impedance kp");
+            return err;
+        }
+
+        (*m_od)[address][0x2] = (open_types::REAL32_t)kd;
+        err                   = writeSDO((*m_od)[address][0x2]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting impedance kd");
+            return err;
+        }
+
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setMaxTorque(float maxTorque /*Nm*/)
+    {
+        (*m_od)[0x6072] = (open_types::UNSIGNED16_t)(maxTorque * 1000);
+        Error_t err     = writeSDO((*m_od)[0x6072]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting Max Torque");
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setProfileVelocity(float profileVelocity /*s^-1*/)
+    {
+        (*m_od)[0x6081] = (open_types::UNSIGNED32_t)(profileVelocity * 1000);
+        Error_t err     = writeSDO((*m_od)[0x6081]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting Profile Velocity");
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setProfileAcceleration(float profileAcceleration /*s^-2*/)
+    {
+        (*m_od)[0x6083] = (open_types::UNSIGNED32_t)(profileAcceleration * 1000);
+        Error_t err     = writeSDO((*m_od)[0x6083]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting Profile Acceleration");
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setProfileDeceleration(float profileDeceleration /*s^-2*/)
+    {
+        (*m_od)[0x6084] = (open_types::UNSIGNED32_t)(profileDeceleration * 1000);
+        Error_t err     = writeSDO((*m_od)[0x6084]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting Profile Deceleration");
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setPositionWindow(float windowSize /*rad*/)
+    {
+        (*m_od)[0x6067] = (open_types::UNSIGNED32_t)(windowSize * 1000000);
+        Error_t err     = writeSDO((*m_od)[0x6067]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting Position Window");
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setTargetPosition(float position /*rad*/)
+    {
+        (*m_od)[0x607A] = (open_types::INTEGER32_t)(position * 1000000);
+        Error_t err     = writeSDO((*m_od)[0x607A]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting Target Position");
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setTargetVelocity(float velocity /*rad/s*/)
+    {
+        (*m_od)[0x606B] = (open_types::INTEGER32_t)(velocity * 60 / (M_PI * 2));
+        Error_t err     = writeSDO((*m_od)[0x606B]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting Target Velocity");
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setTargetTorque(float torque /*Nm*/)
+    {
+        (*m_od)[0x6074] = (open_types::INTEGER16_t)(torque * 1000);
+        Error_t err     = writeSDO((*m_od)[0x6074]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting Target Torque");
+            return err;
+        }
+        return err;
+    }
+
+    std::pair<const std::unordered_map<MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
+              MDCO::Error_t>
+    MDCO::getMainEncoderStatus()
+    {
+        std::unordered_map<MDStatus::EncoderStatusBits, MDStatus::StatusItem_S> status;
+        Error_t err = readSDO((*m_od)[0x2100][0x1]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading Main Encoder Status");
+            return {status, err};
+        }
+
+        u32 statusWord = (u32)(open_types::UNSIGNED32_t)(*m_od)[0x2100][0x1];
+
+        status = {{MDStatus::EncoderStatusBits::ErrorCommunication,
+                   MDStatus::StatusItem_S("Error Communication", true)},
+                  {MDStatus::EncoderStatusBits::ErrorWrongDirection,
+                   MDStatus::StatusItem_S("Error Wrong Direction", true)},
+                  {MDStatus::EncoderStatusBits::ErrorEmptyLUT,
+                   MDStatus::StatusItem_S("Error Empty LUT", true)},
+                  {MDStatus::EncoderStatusBits::ErrorFaultyLUT,
+                   MDStatus::StatusItem_S("Error Faulty LUT", true)},
+                  {MDStatus::EncoderStatusBits::ErrorCalibration,
+                   MDStatus::StatusItem_S("Error Calibration", true)},
+                  {MDStatus::EncoderStatusBits::ErrorPositionInvalid,
+                   MDStatus::StatusItem_S("Error Position Invalid", true)},
+                  {MDStatus::EncoderStatusBits::ErrorInitialization,
+                   MDStatus::StatusItem_S("Error Initialization", true)},
+                  {MDStatus::EncoderStatusBits::WarningLowAccuracy,
+                   MDStatus::StatusItem_S("Warning Low Accuracy", false)}};
+
+        MDStatus::decode<MDStatus::EncoderStatusBits>(statusWord, status);
+
+        return {status, err};
+    }
+
+    std::pair<const std::unordered_map<MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
+              MDCO::Error_t>
+    MDCO::getOutputEncoderStatus()
+    {
+        std::unordered_map<MDStatus::EncoderStatusBits, MDStatus::StatusItem_S> status;
+        Error_t err = readSDO((*m_od)[0x2100][0x2]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading Output Encoder Status");
+            return {status, err};
+        }
+
+        u32 statusWord = (u32)(open_types::UNSIGNED32_t)(*m_od)[0x2100][0x2];
+
+        status = {{MDStatus::EncoderStatusBits::ErrorCommunication,
+                   MDStatus::StatusItem_S("Error Communication", true)},
+                  {MDStatus::EncoderStatusBits::ErrorWrongDirection,
+                   MDStatus::StatusItem_S("Error Wrong Direction", true)},
+                  {MDStatus::EncoderStatusBits::ErrorEmptyLUT,
+                   MDStatus::StatusItem_S("Error Empty LUT", true)},
+                  {MDStatus::EncoderStatusBits::ErrorFaultyLUT,
+                   MDStatus::StatusItem_S("Error Faulty LUT", true)},
+                  {MDStatus::EncoderStatusBits::ErrorCalibration,
+                   MDStatus::StatusItem_S("Error Calibration", true)},
+                  {MDStatus::EncoderStatusBits::ErrorPositionInvalid,
+                   MDStatus::StatusItem_S("Error Position Invalid", true)},
+                  {MDStatus::EncoderStatusBits::ErrorInitialization,
+                   MDStatus::StatusItem_S("Error Initialization", true)},
+                  {MDStatus::EncoderStatusBits::WarningLowAccuracy,
+                   MDStatus::StatusItem_S("Warning Low Accuracy", false)}};
+
+        MDStatus::decode<MDStatus::EncoderStatusBits>(statusWord, status);
+
+        return {status, err};
+    }
+
+    std::pair<const std::unordered_map<MDStatus::CalibrationStatusBits, MDStatus::StatusItem_S>,
+              MDCO::Error_t>
+    MDCO::getCalibrationStatus()
+    {
+        std::unordered_map<MDStatus::CalibrationStatusBits, MDStatus::StatusItem_S> status;
+        Error_t err = readSDO((*m_od)[0x2100][0x3]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading Calibration Status");
+            return {status, err};
+        }
+
+        u32 statusWord = (u32)(open_types::UNSIGNED32_t)(*m_od)[0x2100][0x3];
+
+        status = {{MDStatus::CalibrationStatusBits::ErrorOffsetCalibration,
+                   MDStatus::StatusItem_S("Error Offset Calibration", true)},
+                  {MDStatus::CalibrationStatusBits::ErrorResistance,
+                   MDStatus::StatusItem_S("Error Resistance", true)},
+                  {MDStatus::CalibrationStatusBits::ErrorInductance,
+                   MDStatus::StatusItem_S("Error Inductance", true)},
+                  {MDStatus::CalibrationStatusBits::ErrorPolePairDetection,
+                   MDStatus::StatusItem_S("Error Pole Pair Detection", true)},
+                  {MDStatus::CalibrationStatusBits::ErrorSetup,
+                   MDStatus::StatusItem_S("Error Setup", true)}};
+
+        MDStatus::decode<MDStatus::CalibrationStatusBits>(statusWord, status);
+
+        return {status, err};
+    }
+
+    std::pair<const std::unordered_map<MDStatus::BridgeStatusBits, MDStatus::StatusItem_S>,
+              MDCO::Error_t>
+    MDCO::getBridgeStatus()
+    {
+        std::unordered_map<MDStatus::BridgeStatusBits, MDStatus::StatusItem_S> status;
+        Error_t err = readSDO((*m_od)[0x2100][0x4]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading Bridge Status");
+            return {status, err};
+        }
+
+        u32 statusWord = (u32)(open_types::UNSIGNED32_t)(*m_od)[0x2100][0x4];
+
+        status = {{MDStatus::BridgeStatusBits::ErrorCommunication,
+                   MDStatus::StatusItem_S("Error Communication", true)},
+                  {MDStatus::BridgeStatusBits::ErrorOvercurrent,
+                   MDStatus::StatusItem_S("Error Overcurrent", true)},
+                  {MDStatus::BridgeStatusBits::ErrorGeneralFault,
+                   MDStatus::StatusItem_S("Error General Fault", true)}};
+
+        MDStatus::decode<MDStatus::BridgeStatusBits>(statusWord, status);
+
+        return {status, err};
+    }
+
+    std::pair<const std::unordered_map<MDStatus::HardwareStatusBits, MDStatus::StatusItem_S>,
+              MDCO::Error_t>
+    MDCO::getHardwareStatus()
+    {
+        std::unordered_map<MDStatus::HardwareStatusBits, MDStatus::StatusItem_S> status;
+        Error_t err = readSDO((*m_od)[0x2100][0x5]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading Hardware Status");
+            return {status, err};
+        }
+
+        u32 statusWord = (u32)(open_types::UNSIGNED32_t)(*m_od)[0x2100][0x5];
+
+        status = {{MDStatus::HardwareStatusBits::ErrorOverCurrent,
+                   MDStatus::StatusItem_S("Error Over Current", true)},
+                  {MDStatus::HardwareStatusBits::ErrorOverVoltage,
+                   MDStatus::StatusItem_S("Error Over Voltage", true)},
+                  {MDStatus::HardwareStatusBits::ErrorUnderVoltage,
+                   MDStatus::StatusItem_S("Error Under Voltage", true)},
+                  {MDStatus::HardwareStatusBits::ErrorMotorTemperature,
+                   MDStatus::StatusItem_S("Error Motor Temperature", true)},
+                  {MDStatus::HardwareStatusBits::ErrorMosfetTemperature,
+                   MDStatus::StatusItem_S("Error Mosfet Temperature", true)},
+                  {MDStatus::HardwareStatusBits::ErrorADCCurrentOffset,
+                   MDStatus::StatusItem_S("Error ADC Current Offset", true)}};
+
+        MDStatus::decode<MDStatus::HardwareStatusBits>(statusWord, status);
+
+        return {status, err};
+    }
+
+    std::pair<const std::unordered_map<MDStatus::CommunicationStatusBits, MDStatus::StatusItem_S>,
+              MDCO::Error_t>
+    MDCO::getCommunicationStatus()
+    {
+        std::unordered_map<MDStatus::CommunicationStatusBits, MDStatus::StatusItem_S> status;
+        Error_t err = readSDO((*m_od)[0x2100][0x6]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading Communication Status");
+            return {status, err};
+        }
+
+        u32 statusWord = (u32)(open_types::UNSIGNED32_t)(*m_od)[0x2100][0x6];
+
+        status = {{MDStatus::CommunicationStatusBits::WarningCANWatchdog,
+                   MDStatus::StatusItem_S("Warning CAN Watchdog", false)}};
+
+        MDStatus::decode<MDStatus::CommunicationStatusBits>(statusWord, status);
+
+        return {status, err};
+    }
+
+    std::pair<const std::unordered_map<MDStatus::MotionStatusBits, MDStatus::StatusItem_S>,
+              MDCO::Error_t>
+    MDCO::getMotionStatus()
+    {
+        std::unordered_map<MDStatus::MotionStatusBits, MDStatus::StatusItem_S> status;
+        Error_t err = readSDO((*m_od)[0x2100][0x7]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading Motion Status");
+            return {status, err};
+        }
+
+        u32 statusWord = (u32)(open_types::UNSIGNED32_t)(*m_od)[0x2100][0x7];
+
+        status = {{MDStatus::MotionStatusBits::ErrorPositionLimit,
+                   MDStatus::StatusItem_S("Error Position Limit", true)},
+                  {MDStatus::MotionStatusBits::ErrorVelocityLimit,
+                   MDStatus::StatusItem_S("Error Velocity Limit", true)},
+                  {MDStatus::MotionStatusBits::WarningAcceleration,
+                   MDStatus::StatusItem_S("Warning Acceleration", false)},
+                  {MDStatus::MotionStatusBits::WarningTorque,
+                   MDStatus::StatusItem_S("Warning Torque", false)},
+                  {MDStatus::MotionStatusBits::WarningVelocity,
+                   MDStatus::StatusItem_S("Warning Velocity", false)},
+                  {MDStatus::MotionStatusBits::WarningPosition,
+                   MDStatus::StatusItem_S("Warning Position", false)}};
+
+        MDStatus::decode<MDStatus::MotionStatusBits>(statusWord, status);
+
+        return {status, err};
+    }
+
+    std::pair<float, MDCO::Error_t> MDCO::getPosition()
+    {
+        Error_t err = readSDO((*m_od)[0x6064]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading Position");
+            return {0.0f, err};
+        }
+
+        i32   positionRaw = (i32)(open_types::INTEGER32_t)(*m_od)[0x6064];
+        float position    = positionRaw / 1000000.0f;
+
+        return {position, err};
+    }
+
+    std::pair<float, MDCO::Error_t> MDCO::getVelocity()
+    {
+        Error_t err = readSDO((*m_od)[0x606C]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading Velocity");
+            return {0.0f, err};
+        }
+
+        i32   velocityRaw = (i32)(open_types::INTEGER32_t)(*m_od)[0x606C];
+        float velocity    = velocityRaw / 1000000.0f;
+
+        return {velocity, err};
+    }
+
+    std::pair<float, MDCO::Error_t> MDCO::getTorque()
+    {
+        Error_t err = readSDO((*m_od)[0x6077]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading Torque");
+            return {0.0f, err};
+        }
+
+        i16   torqueRaw = (i16)(open_types::INTEGER16_t)(*m_od)[0x6077];
+        float torque    = torqueRaw / 1000.0f;
+
+        return {torque, err};
+    }
+
+    std::pair<float, MDCO::Error_t> MDCO::getOutputEncoderPosition()
+    {
+        Error_t err = readSDO((*m_od)[0x2200][0x1]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading Output Encoder Position");
+            return {0.0f, err};
+        }
+
+        i32   positionRaw = (i32)(open_types::INTEGER32_t)(*m_od)[0x2200][0x1];
+        float position    = positionRaw / 1000000.0f;
+
+        return {position, err};
+    }
+
+    std::pair<float, MDCO::Error_t> MDCO::getOutputEncoderVelocity()
+    {
+        Error_t err = readSDO((*m_od)[0x2200][0x2]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading Output Encoder Velocity");
+            return {0.0f, err};
+        }
+
+        i32   velocityRaw = (i32)(open_types::INTEGER32_t)(*m_od)[0x2200][0x2];
+        float velocity    = velocityRaw / 1000000.0f;
+
+        return {velocity, err};
+    }
+
+    std::pair<u8, MDCO::Error_t> MDCO::getTemperature()
+    {
+        Error_t err = readSDO((*m_od)[0x2300]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading Temperature");
+            return {0, err};
+        }
+
+        u8 temperature = (u8)(open_types::UNSIGNED8_t)(*m_od)[0x2300];
+
+        return {temperature, err};
     }
 
     MDCO::Error_t MDCO::readSDO(EDSEntry& edsEntry) const
