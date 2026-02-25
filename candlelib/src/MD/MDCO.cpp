@@ -261,8 +261,8 @@ namespace mab
 
     MDCO::Error_t MDCO::setPositionPIDparam(float kp, float ki, float kd, float integralMax)
     {
-        Error_t              err     = enterConfigMode();
-        static constexpr u16 address = 0x2002;
+        Error_t   err     = enterConfigMode();
+        const u16 address = m_od->getAdressByName("Position PID Controller").value().first;
 
         (*m_od)[address][0x1] = (open_types::REAL32_t)kp;
         err                   = writeSDO((*m_od)[address][0x1]);
@@ -301,8 +301,8 @@ namespace mab
 
     MDCO::Error_t MDCO::setVelocityPIDparam(float kp, float ki, float kd, float integralMax)
     {
-        Error_t              err     = enterConfigMode();
-        static constexpr u16 address = 0x2001;
+        Error_t   err     = enterConfigMode();
+        const u16 address = m_od->getAdressByName("Velocity PID Controller").value().first;
 
         (*m_od)[address][0x1] = (open_types::REAL32_t)kp;
         err                   = writeSDO((*m_od)[address][0x1]);
@@ -341,8 +341,8 @@ namespace mab
 
     MDCO::Error_t MDCO::setImpedanceParams(float kp, float kd)
     {
-        Error_t              err     = enterConfigMode();
-        static constexpr u16 address = 0x2003;
+        Error_t   err     = enterConfigMode();
+        const u16 address = m_od->getAdressByName("Impedance PD Controller").value().first;
 
         (*m_od)[address][0x1] = (open_types::REAL32_t)kp;
         err                   = writeSDO((*m_od)[address][0x1]);
@@ -365,8 +365,15 @@ namespace mab
 
     MDCO::Error_t MDCO::setMaxTorque(float maxTorque /*Nm*/)
     {
-        (*m_od)[0x6072] = (open_types::UNSIGNED16_t)(maxTorque * 1000);
+        (*m_od)[0x6076] = (open_types::UNSIGNED16_t)(maxTorque * 1000);
+        (*m_od)[0x6072] = (open_types::UNSIGNED16_t)1000;
         Error_t err     = writeSDO((*m_od)[0x6072]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting Max Torque");
+            return err;
+        }
+        err = writeSDO((*m_od)[0x6076]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting Max Torque");
