@@ -160,7 +160,14 @@
     MD_REG(decouplingEnable, u8, 0xEE10, RW)         \
     MD_REG(fluxLinkage, f32, 0xEE11, RW)             \
     MD_REG(inductanceD, f32, 0xEE12, RW)             \
-    MD_REG(inductanceQ, f32, 0xEE13, RW)
+    MD_REG(inductanceQ, f32, 0xEE13, RW)             \
+                                                     \
+    MD_REG(imuOnboardX, f32, 0xEE1A, RO)             \
+    MD_REG(imuOnboardY, f32, 0xEE1B, RO)             \
+    MD_REG(imuOnboardZ, f32, 0xEE1C, RO)             \
+    MD_REG(imuExternX, f32, 0xEE1D, RO)              \
+    MD_REG(imuExternY, f32, 0xEE1E, RO)              \
+    MD_REG(imuExternZ, f32, 0xEE1F, RO)
 
 namespace mab
 {
