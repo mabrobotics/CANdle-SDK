@@ -944,7 +944,7 @@ namespace mab
             transmitFrame[2] = (u8)(edsEntry.getEntryMetaData().address.first >> 8);
             transmitFrame[3] = (u8)(edsEntry.getEntryMetaData().address.second.value_or(0));
 
-            for (size_t i = 0; i < size; ++i)
+            for (size_t i = 0; i < payloadSize; ++i)
             {
                 transmitFrame[4 + i] = static_cast<u8>(data[i]);
             }
