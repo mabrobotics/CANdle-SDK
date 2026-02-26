@@ -22,14 +22,14 @@ namespace mab
     {
         // set the mode of operation and enable the driver, log an error message if transfer failed
         Error_t err;
-        (*m_od)[0x6060] = (open_types::INTEGER8_t)6;
+        (*m_od)[0x6040] = (open_types::UNSIGNED16_t)6;
         err             = writeSDO((*m_od)[0x6060]);
         if (err != Error_t::OK)
         {
             m_log.error("Error sending shutdown cmd!");
             return err;
         }
-        (*m_od)[0x6060] = (open_types::INTEGER8_t)15;
+        (*m_od)[0x6040] = (open_types::UNSIGNED16_t)15;
         err             = writeSDO((*m_od)[0x6060]);
         if (err != Error_t::OK)
         {
@@ -43,7 +43,7 @@ namespace mab
     {
         // disable the driver, log an error message if transfer failed
         Error_t err;
-        (*m_od)[0x6060] = (open_types::INTEGER8_t)7;
+        (*m_od)[0x6040] = (open_types::INTEGER8_t)7;
         err             = writeSDO((*m_od)[0x6060]);
         if (err != Error_t::OK)
         {
@@ -696,7 +696,7 @@ namespace mab
         }
 
         i32   velocityRaw = (i32)(open_types::INTEGER32_t)(*m_od)[0x606C];
-        float velocity    = velocityRaw / 1000000.0f;
+        float velocity    = velocityRaw;
 
         return {velocity, err};
     }

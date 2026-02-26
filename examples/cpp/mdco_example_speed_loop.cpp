@@ -14,11 +14,7 @@ int main()
     // This parameters sets global internal logging level
     Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_1;
 
-    auto od = EDSParser::load(
-                  "/home/pawel/mab-github/CANdle-SDK/candletool/template_package/etc/candletool/"
-                  "config/eds/"
-                  "MDv1.0.0.eds")
-                  .first;
+    auto od = EDSParser::load("/etc/candletool/config/eds/MDv1.0.0.eds").first;
 
     std::cout << od->size() << '\n';
     // for (const auto& entry : *od)
@@ -47,13 +43,37 @@ int main()
         log.error("MDCO exited with %d", mdco.init());
     }
 
-    mdco.readSDO((*od)[0x6064]);
-    log.info("%s: %d",
-             (*od)[0x6064].getEntryMetaData().parameterName.c_str(),
-             (open_types::INTEGER32_t)(*od)[0x6064]);
+    // mdco.readSDO((*od)[0x6064]);
+    // log.info("%s: %d",
+    //          (*od)[0x6064].getEntryMetaData().parameterName.c_str(),
+    //          (open_types::INTEGER32_t)(*od)[0x6064]);
 
     // mdco.blink();
+    // (*od)[0x6076] = (open_types::UNSIGNED16_t)1000;
+    // (*od)[0x6075] = (open_types::UNSIGNED16_t)10000;
+
+    // (*od)[0x6072] = (open_types::UNSIGNED16_t)10000;
+    // (*od)[0x6073] = (open_types::UNSIGNED16_t)10000;
+
+    // mdco.writeSDO((*od)[0x6076]);
+    // mdco.writeSDO((*od)[0x6075]);
+    // mdco.writeSDO((*od)[0x6072]);
+    // mdco.writeSDO((*od)[0x6073]);
+    // mdco.enterConfigMode();
+    // (*od)[0x2003][0x3] = (open_types::BOOLEAN_t)1;
+    // mdco.writeSDO((*od)[0x2003][0x3]);
     // mdco.save();
-    // mdco.enable();
+    // mdco.zero();
+    (*od)[0x6060] = (open_types::INTEGER8_t)9;
+    mdco.writeSDO((*od)[0x6060]);
+    mdco.enable();
+    while (true)
+    {
+        (*od)[0x60FF] = (open_types::INTEGER32_t)30;
+        mdco.writeSDO((*od)[0x60FF]);
+        usleep(50'000);
+        std::cout << mdco.getVelocity().first << '\n';
+    }
+
     return EXIT_SUCCESS;
 }
