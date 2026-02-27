@@ -27,9 +27,6 @@
     MD_REG(motorName, char[24], 0x010, RW)           \
     MD_REG(motorPolePairs, u32, 0x011, RW)           \
     MD_REG(motorKt, float, 0x012, RW)                \
-    MD_REG(motorKtPhaseA, float, 0x013, RW)          \
-    MD_REG(motorKtPhaseB, float, 0x014, RW)          \
-    MD_REG(motorKtPhaseC, float, 0x015, RW)          \
     MD_REG(motorIMax, float, 0x016, RW)              \
     MD_REG(motorGearRatio, float, 0x017, RW)         \
     MD_REG(motorTorqueBandwidth, u16, 0x018, RW)     \
@@ -43,7 +40,6 @@
                                                      \
     MD_REG(auxEncoder, u8, 0x020, RW)                \
     MD_REG(auxEncoderDir, u8, 0x021, WO)             \
-    MD_REG(auxEncoderDefaultBaud, u32, 0x022, RW)    \
     MD_REG(auxEncoderVelocity, float, 0x023, RO)     \
     MD_REG(auxEncoderPosition, float, 0x024, RO)     \
     MD_REG(auxEncoderMode, u8, 0x025, RW)            \
@@ -62,6 +58,8 @@
     MD_REG(motorImpPidKp, float, 0x050, RW)          \
     MD_REG(motorImpPidKd, float, 0x051, RW)          \
                                                      \
+    MD_REG(mainEncoder, u8, 0x060, RW)               \
+    MD_REG(mainEncoderDir, u8, 0x061, RW)            \
     MD_REG(mainEncoderVelocity, float, 0x062, RO)    \
     MD_REG(mainEncoderPosition, float, 0x063, RO)    \
     MD_REG(motorTorque, float, 0x064, RO)            \
@@ -118,9 +116,7 @@
     MD_REG(userGpioConfiguration, u8, 0x160, RW)     \
     MD_REG(userGpioState, u16, 0x161, RO)            \
                                                      \
-    MD_REG(reverseDirection, u8, 0x600, RW)          \
-                                                     \
-    MD_REG(shuntResistance, float, 0x700, RW)        \
+    MD_REG(shuntResistance, float, 0x700, RO)        \
                                                      \
     MD_REG(uniqueID, char[12], 0x7FE, RO)            \
     MD_REG(hardwareType, u8, 0x7FF, RO)              \
@@ -161,15 +157,15 @@ namespace mab
         RESPONSE_LEGACY        = 0xA0,
         RESPONSE_ERROR         = 0xA1
     };
-    
+
     enum MdRegisterAccessErrorCode : i8
     {
-        NONE = 0,
-        DEPRECATED = -1,
-        INVALID = -2,
-        UNKNOWN = -3,
+        NONE         = 0,
+        DEPRECATED   = -1,
+        INVALID      = -2,
+        UNKNOWN      = -3,
         OUT_OF_RANGE = -4,
-        ACCESS = -5,
+        ACCESS       = -5,
     };
 
     enum class RegisterAccessLevel_E : u8
