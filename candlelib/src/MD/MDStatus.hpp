@@ -145,6 +145,26 @@ namespace mab
             {CommunicationStatusBits::WarningCANWatchdog,
              StatusItem_S("Warning CAN Watchdog", false)}};
 
+        enum class MiscStatusBits : bitPos
+        {
+            ErrorOTP                     = 0,
+            ErrorUnknownHardware         = 1,
+            ErrorConfig                  = 2,
+            WarningConfigMissingEntry    = 27,
+            WarningBootloaderInfoMissing = 28,
+            WarningRestartRequired       = 29,
+            RoutineInProgress            = 30,
+        };
+
+        std::unordered_map<MiscStatusBits, StatusItem_S> miscStatus = {
+            {MiscStatusBits::ErrorOTP, StatusItem_S("Error OTP Memory", true)},
+            {MiscStatusBits::ErrorUnknownHardware, StatusItem_S("Error Unknown Hardware", true)},
+            {MiscStatusBits::ErrorConfig, StatusItem_S("Error Configuration", true)},
+            {MiscStatusBits::WarningConfigMissingEntry, StatusItem_S("Warning Missing Entry in Config", false)},
+            {MiscStatusBits::WarningBootloaderInfoMissing, StatusItem_S("Warning Bootloader Info Missing", false)},
+            {MiscStatusBits::WarningRestartRequired, StatusItem_S("Warning Restart Required", false)},
+            {MiscStatusBits::RoutineInProgress, StatusItem_S("Routine in Progress", false)}};
+
         enum class MotionStatusBits : bitPos
         {
             ErrorPositionLimit  = 0,

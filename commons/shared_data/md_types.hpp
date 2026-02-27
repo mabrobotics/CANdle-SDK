@@ -22,7 +22,6 @@
     MD_REG(canID, u32, 0x001, RW)                    \
     MD_REG(canBaudrate, u32, 0x002, RW)              \
     MD_REG(canWatchdog, u16, 0x003, RW)              \
-    MD_REG(canTermination, u8, 0x004, RW)            \
                                                      \
     MD_REG(motorName, char[24], 0x010, RW)           \
     MD_REG(motorPolePairs, u32, 0x011, RW)           \
@@ -64,18 +63,12 @@
     MD_REG(mainEncoderPosition, float, 0x063, RO)    \
     MD_REG(motorTorque, float, 0x064, RO)            \
                                                      \
-    MD_REG(homingMode, u8, 0x070, RW)                \
-    MD_REG(homingMaxTravel, float, 0x071, RW)        \
-    MD_REG(homingVelocity, float, 0x072, RW)         \
-    MD_REG(homingTorque, float, 0x073, RW)           \
-                                                     \
     MD_REG(runSaveCmd, u8, 0x080, WO)                \
     MD_REG(runTestMainEncoderCmd, u8, 0x081, WO)     \
     MD_REG(runTestAuxEncoderCmd, u8, 0x082, WO)      \
     MD_REG(runCalibrateCmd, u8, 0x083, WO)           \
     MD_REG(runCalibrateAuxEncoderCmd, u8, 0x084, WO) \
     MD_REG(runCalibratePiGains, u8, 0x085, WO)       \
-    MD_REG(runHoming, u8, 0x086, WO)                 \
     MD_REG(runRestoreFactoryConfig, u8, 0x087, WO)   \
     MD_REG(runReset, u8, 0x088, WO)                  \
     MD_REG(runClearWarnings, u8, 0x089, WO)          \
@@ -118,13 +111,16 @@
                                                      \
     MD_REG(shuntResistance, float, 0x700, RO)        \
                                                      \
+    MD_REG(productionDate, char[6], 0x7FA, RO)       \
+    MD_REG(batchCode, char[24], 0x7FB, RO)           \
+    MD_REG(maxDriverCurrent, float, 0x7FC, RO)       \
+    MD_REG(hardwareRev, u8, 0x7FD, RO)               \
     MD_REG(uniqueID, char[12], 0x7FE, RO)            \
     MD_REG(hardwareType, u8, 0x7FF, RO)              \
     MD_REG(buildDate, u32, 0x800, RO)                \
     MD_REG(commitHash, char[8], 0x801, RO)           \
     MD_REG(firmwareVersion, u32, 0x802, RO)          \
     MD_REG(legacyHardwareVersion, u8, 0x803, RO)     \
-    MD_REG(bridgeType, u8, 0x804, RO)                \
     MD_REG(quickStatus, u16, 0x805, RO)              \
     MD_REG(mosfetTemperature, f32, 0x806, RO)        \
     MD_REG(motorTemperature, f32, 0x807, RO)         \
@@ -135,7 +131,6 @@
     MD_REG(bridgeStatus, u32, 0x80C, RO)             \
     MD_REG(hardwareStatus, u32, 0x80D, RO)           \
     MD_REG(communicationStatus, u32, 0x80E, RO)      \
-    MD_REG(homingStatus, u32, 0x80F, RO)             \
     MD_REG(motionStatus, u32, 0x810, RO)             \
     MD_REG(dcBusVoltage, f32, 0x811, RO)             \
     MD_REG(bootloaderFixed, u8, 0x812, RO)           \

@@ -227,6 +227,12 @@ namespace mab
         std::pair<const std::unordered_map<MDStatus::MotionStatusBits, MDStatus::StatusItem_S>,
                   Error_t>
         getMotionStatus();
+        
+        /// @brief Request motion status
+        /// @return Motion status map with bit positions as ids
+        std::pair<const std::unordered_map<MDStatus::MiscStatusBits, MDStatus::StatusItem_S>,
+                  Error_t>
+        getMiscStatus();
 
         /// @brief Request position of the MD
         /// @return Position in radians

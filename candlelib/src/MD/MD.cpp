@@ -471,6 +471,20 @@ namespace mab
         return std::make_pair(m_status.motionStatus, result);
     }
 
+    std::pair<const std::unordered_map<MDStatus::MiscStatusBits, MDStatus::StatusItem_S>,
+              MD::Error_t>
+    MD::getMiscStatus()
+    {
+        auto result = readRegister(m_mdRegisters.miscStatus);
+        if (result != Error_t::OK)
+        {
+            m_log.error("Could not read ");
+            return std::make_pair(m_status.miscStatus, result);
+        }
+        MDStatus::decode(m_mdRegisters.miscStatus.value, m_status.miscStatus);
+        return std::make_pair(m_status.miscStatus, result);
+    }
+
     std::pair<float, MD::Error_t> MD::getPosition()
     {
         auto result = readRegister(m_mdRegisters.mainEncoderPosition);
