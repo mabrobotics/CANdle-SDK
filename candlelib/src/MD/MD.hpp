@@ -6,6 +6,7 @@
 #include "manufacturer_data.hpp"
 #include "candle_types.hpp"
 #include "MDStatus.hpp"
+#include "MD_strings.hpp"
 #include "candle.hpp"
 
 #include <cstring>
@@ -343,10 +344,22 @@ namespace mab
             for (auto byte : payload)
                 frame.push_back(byte);
             auto readRegResult = transferCanFrame(frame, frame.size());
+            MdFrameId_E frameId = (MdFrameId_E)readRegResult.first.at(0);
             if (readRegResult.second != candleTypes::Error_t::OK)
             {
                 m_log.error("Error while reading register!");
                 return Error_t::TRANSFER_FAILED;
+            }
+            else if (frameId == MdFrameId_E::RESPONSE_ERROR)
+            {
+                // communication ok, but there was problem with parsing/data format/handing
+                mab::MdRegisterAccessErrorCode code =
+                    (mab::MdRegisterAccessErrorCode)readRegResult.first.at(1);
+                u16 registerAddress = *(u16*)&readRegResult.first.at(2);
+                m_log.error("Error in register access %s, for register 0x%04X",
+                            MDRegisterAccessError_S::toReadable(code).c_str(),
+                            registerAddress);
+                return Error_t::REQUEST_INVALID;
             }
             // TODO: for some reason MD sends first byte as 0x0, investigate
             //  if (readRegResult.first.at(0) == 0x41)
@@ -486,15 +499,26 @@ namespace mab
             }
 
             std::vector<u8> frame;
-            frame.push_back((u8)MdFrameId_E::WRITE_REGISTER_LEGACY);
+            frame.push_back((u8)MdFrameId_E::WRITE_REGISTER);
             frame.push_back((u8)0x0);
             auto payload = serializeMDRegisters(regs);
             frame.insert(frame.end(), payload.begin(), payload.end());
-            auto readRegResult = transferCanFrame(frame, DEFAULT_RESPONSE_SIZE);
+            auto readRegResult = transferCanFrame(frame, frame.size());
 
             MdFrameId_E frameId = (MdFrameId_E)readRegResult.first.at(0);
             if (frameId == MdFrameId_E::RESPONSE_LEGACY || frameId == MdFrameId_E::WRITE_REGISTER)
                 return Error_t::OK;  // TODO: Possible do smth with received data?
+            else if (frameId == MdFrameId_E::RESPONSE_ERROR)
+            {
+                // communication ok, but there was problem with parsing/data format/handing
+                mab::MdRegisterAccessErrorCode code =
+                    (mab::MdRegisterAccessErrorCode)readRegResult.first.at(1);
+                u16 registerAddress = *(u16*)&readRegResult.first.at(2);
+                m_log.error("Error in register access %s, for register 0x%04X",
+                            MDRegisterAccessError_S::toReadable(code).c_str(),
+                            registerAddress);
+                return Error_t::REQUEST_INVALID;
+            }
             else
             {
                 m_log.error("Error in the register write response!");
