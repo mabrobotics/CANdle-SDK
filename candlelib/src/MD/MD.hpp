@@ -227,12 +227,16 @@ namespace mab
         std::pair<const std::unordered_map<MDStatus::MotionStatusBits, MDStatus::StatusItem_S>,
                   Error_t>
         getMotionStatus();
-        
+
         /// @brief Request motion status
-        /// @return Motion status map with bit positions as ids
+        /// @return Misc status map with bit positions as ids
         std::pair<const std::unordered_map<MDStatus::MiscStatusBits, MDStatus::StatusItem_S>,
                   Error_t>
         getMiscStatus();
+
+        /// @brief Request firmware version
+        /// @return Misc status map with bit positions as ids
+        std::pair<mab::version_ut, Error_t> getFirmwareVersion();
 
         /// @brief Request position of the MD
         /// @return Position in radians
@@ -349,8 +353,8 @@ namespace mab
             frame.reserve(frame.size() + payload.size());
             for (auto byte : payload)
                 frame.push_back(byte);
-            auto readRegResult = transferCanFrame(frame, frame.size());
-            MdFrameId_E frameId = (MdFrameId_E)readRegResult.first.at(0);
+            auto        readRegResult = transferCanFrame(frame, frame.size());
+            MdFrameId_E frameId       = (MdFrameId_E)readRegResult.first.at(0);
             if (readRegResult.second != candleTypes::Error_t::OK)
             {
                 m_log.error("Error while reading register!");

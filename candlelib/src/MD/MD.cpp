@@ -485,6 +485,17 @@ namespace mab
         return std::make_pair(m_status.miscStatus, result);
     }
 
+    std::pair<mab::version_ut, MD::Error_t> MD::getFirmwareVersion()
+    {
+        version_ut version = {};
+        auto       result  = readRegisters(m_mdRegisters.firmwareVersion);
+        if (result == Error_t::OK)
+            version.i = m_mdRegisters.firmwareVersion.value;
+        else
+            m_log.error("Could not read ");
+        return std::make_pair(version, result);
+    }
+
     std::pair<float, MD::Error_t> MD::getPosition()
     {
         auto result = readRegister(m_mdRegisters.mainEncoderPosition);

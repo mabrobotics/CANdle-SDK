@@ -268,14 +268,25 @@ namespace mab
                         m_logger.error("Main encoder calibration failed!");
                         return;
                     }
-                    constexpr int CALIBRATION_TIME = 40;  // seconds
-                    for (int seconds = 0; seconds < CALIBRATION_TIME; seconds++)
+
+                    bool fwV3orNewer = md->getFirmwareVersion().first.s.major >= 3;
+                    auto verbosity   = Logger::g_m_verbosity;
+                    for (float progress = 0; progress < 1.f; progress += 0.001)
                     {
-                        m_logger.progress(static_cast<double>(seconds) /
-                                          static_cast<double>(CALIBRATION_TIME));
-                        usleep(1'000'000);  // Wait for the MD to calibrate, TODO: change it when
-                                            // routines are ready
+                        if (fwV3orNewer)
+                        {
+                            usleep(6'000);
+                            Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
+                            if (!md->getMiscStatus().first.at(
+                                    MDStatus::MiscStatusBits::RoutineInProgress))
+                                progress = 1.0f;
+                            Logger::g_m_verbosity = verbosity;
+                        }
+                        else
+                            usleep(25'000);
+                        m_logger.progress(progress);
                     }
+
                     m_logger.progress(1.0f);  // Ensure progress is at 100%
 
                     // Check if main encoder calibration was successful
@@ -697,8 +708,7 @@ namespace mab
                          << MDBuildDateValue_S::toReadable(readableRegisters.buildDate.value)
                                 .value_or("Unknown")
                          << std::endl;
-                m_logger << "- hash: " << readableRegisters.commitHash.value
-                         << std::endl;
+                m_logger << "- hash: " << readableRegisters.commitHash.value << std::endl;
 
                 m_logger << "Hardware:" << std::endl;
                 m_logger << "- version (legacy): "
@@ -706,11 +716,16 @@ namespace mab
                                 readableRegisters.legacyHardwareVersion.value)
                                 .value_or("Unknown")
                          << std::endl;
-                m_logger << "- type: " << deviceTypeToCstring((mab::deviceType_E)readableRegisters.hardwareType.value) << std::endl; 
-                m_logger << "- rev: " << (int)readableRegisters.hardwareRev.value << std::endl; 
-                m_logger << "- batch code: " << readableRegisters.batchCode.value << std::endl; 
-                m_logger << "- production date: " << readableRegisters.productionDate.value << std::endl; 
-                m_logger << "- max driver current: " << readableRegisters.maxDriverCurrent.value << std::endl; 
+                m_logger << "- type: "
+                         << deviceTypeToCstring(
+                                (mab::deviceType_E)readableRegisters.hardwareType.value)
+                         << std::endl;
+                m_logger << "- rev: " << (int)readableRegisters.hardwareRev.value << std::endl;
+                m_logger << "- batch code: " << readableRegisters.batchCode.value << std::endl;
+                m_logger << "- production date: " << readableRegisters.productionDate.value
+                         << std::endl;
+                m_logger << "- max driver current: " << readableRegisters.maxDriverCurrent.value
+                         << std::endl;
                 m_logger << "- shunt resistance: " << std::setprecision(4)
                          << readableRegisters.shuntResistance.value << " Ohm" << std::endl;
 
