@@ -32,6 +32,7 @@ namespace mab
         payload.insert(payload.end(), bootAdressData.begin(), bootAdressData.end());
         payload.insert(payload.end(), appSizeData.begin(), appSizeData.end());
 
+        m_log.debug("Sending Init. Address: 0x%X, size: %.2fkB", bootAdress, appSize / 1000.f);
         return sendCommand(Command_t::INIT, payload);
     }
 
@@ -62,10 +63,11 @@ namespace mab
 
             m_log.debug("Erasing page %d", i);
             if (sendCommand(Command_t::ERASE, payload) != Error_t::OK)
-            {
-                m_log.error("Failed to erase page %d", i);
-                return CanBootloader::Error_t::DATA_TRANSFER_ERROR;
-            }
+                if (sendCommand(Command_t::ERASE, payload) != Error_t::OK)
+                {
+                    m_log.error("Failed to erase page %d", i);
+                    return CanBootloader::Error_t::DATA_TRANSFER_ERROR;
+                }
         }
 
         m_log.debug("Erasing %d bytes from address %d", size, address);

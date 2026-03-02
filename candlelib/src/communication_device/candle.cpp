@@ -234,7 +234,7 @@ namespace mab
             return std::pair<std::vector<u8>, candleTypes::Error_t>(dataToSend,
                                                                     communicationStatus);
 
-        m_log.debug("SEND");
+        m_log.debug("SEND %d", dataToSend.size());
         // frameDump(dataToSend);  // can be enabled for in depth debugging
 
         if (dataToSend.size() > m_maxCANFrameSize)
@@ -269,7 +269,7 @@ namespace mab
         auto response = buffer;
 
         m_log.debug("Expected received len: %d", responseSize);
-        m_log.debug("RECEIVE");
+        m_log.debug("RECEIVED: %d", buffer.size());
         // frameDump(response);
 
         return std::pair<std::vector<u8>, candleTypes::Error_t>(response, communicationStatus);
