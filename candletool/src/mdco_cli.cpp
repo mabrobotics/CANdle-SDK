@@ -4,9 +4,11 @@
 #include <memory>
 #include <sstream>
 #include <stdexcept>
+#include <string_view>
 #include "CLI/CLI.hpp"
 #include "MDCO.hpp"
 #include "candle.hpp"
+#include "edsEntry.hpp"
 #include "edsParser.hpp"
 #include "mini/ini.h"
 
@@ -440,11 +442,28 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     setupCalib->callback(
         [this, mdCanId, od]()
         {
-            auto mdco = getMdco(mdCanId, od);
-            mdco->enterConfigMode();
-            auto calibrationOpt = od->getEntryByName("Run Calibration");
-            if(cal)
-            
+            constexpr std::string_view calibrationName = "Run Calibration";
+            auto                       mdco            = getMdco(mdCanId, od);
+            if (mdco->enterConfigMode() != MDCO::Error_t::OK)
+            {
+                m_log.error("Could not enter config mode!");
+                return;
+            }
+            auto calibrationOpt = od->getEntryByName(calibrationName);
+            if (!calibrationOpt.has_value())
+            {
+                m_log.error("Could not find %s command in the .eds file!", calibrationName.data());
+                return;
+            }
+
+            auto& calibrationObj = calibrationOpt.value().get();
+            calibrationObj       = (open_types::BOOLEAN_t)1;
+            if (mdco->writeSDO(calibrationObj) != MDCO::Error_t::OK)
+            {
+                m_log.error("Could not write SDO calibration command!");
+                return;
+            }
+            m_log.success("Calibration is running!");
         });
 
     // SETUP calibration output
