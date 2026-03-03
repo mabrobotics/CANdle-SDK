@@ -23,19 +23,21 @@ namespace mab
         // set the mode of operation and enable the driver, log an error message if transfer failed
         Error_t err;
         (*m_od)[0x6040] = (open_types::UNSIGNED16_t)6;
-        err             = writeSDO((*m_od)[0x6060]);
+        err             = writeSDO((*m_od)[0x6040]);
         if (err != Error_t::OK)
         {
             m_log.error("Error sending shutdown cmd!");
             return err;
         }
+        usleep(2'000);
         (*m_od)[0x6040] = (open_types::UNSIGNED16_t)15;
-        err             = writeSDO((*m_od)[0x6060]);
+        err             = writeSDO((*m_od)[0x6040]);
         if (err != Error_t::OK)
         {
             m_log.error("Error sending switch on and enable cmd!");
             return err;
         }
+        usleep(2'000);
         return Error_t::OK;
     }
 
@@ -43,8 +45,8 @@ namespace mab
     {
         // disable the driver, log an error message if transfer failed
         Error_t err;
-        (*m_od)[0x6040] = (open_types::INTEGER8_t)7;
-        err             = writeSDO((*m_od)[0x6060]);
+        (*m_od)[0x6040] = (open_types::UNSIGNED16_t)6;
+        err             = writeSDO((*m_od)[0x6040]);
         if (err != Error_t::OK)
         {
             m_log.error("Error sending disable operation cmd!");
@@ -445,8 +447,8 @@ namespace mab
 
     MDCO::Error_t MDCO::setTargetVelocity(float velocity /*rad/s*/)
     {
-        (*m_od)[0x606B] = (open_types::INTEGER32_t)(velocity * 60 / (M_PI * 2));
-        Error_t err     = writeSDO((*m_od)[0x606B]);
+        (*m_od)[0x60FF] = (open_types::INTEGER32_t)(velocity * 60 / (M_PI * 2));
+        Error_t err     = writeSDO((*m_od)[0x60FF]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting Target Velocity");
@@ -1043,6 +1045,24 @@ namespace mab
                 offset += chunkSize;
                 toggle ^= 1;
             }
+        }
+
+        return Error_t::OK;
+    }
+
+    MDCO::Error_t MDCO::resetNMT() const
+    {
+        // NMT Reset Node command (0x81) to this node ID
+        std::vector<u8> frame(8, 0);
+        frame[0] = 0x81;     // Reset Node command
+        frame[1] = m_canId;  // Target node ID
+
+        auto [response, error] = transferCanOpenFrame(0x000, frame, 2);
+
+        if (error != candleTypes::Error_t::OK)
+        {
+            m_log.error("Failed to send NMT Reset to node %d", m_canId);
+            return Error_t::TRANSFER_FAILED;
         }
 
         return Error_t::OK;

@@ -391,7 +391,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 auto err = mdco->writeSDO((*od)[*writeOption.index][writeOption.subindex->value()]);
                 if (err != MDCO::Error_t::OK)
                 {
-                    m_log.error("Coudl not read this sdo!");
+                    m_log.error("Coudl not write this sdo!");
                     return;
                 }
                 m_log.success(
@@ -411,7 +411,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 auto err = mdco->writeSDO((*od)[*writeOption.index]);
                 if (err != MDCO::Error_t::OK)
                 {
-                    m_log.error("Coudl not read this sdo!");
+                    m_log.error("Coudl not write this sdo!");
                     return;
                 }
                 m_log.success("%s = %s",
@@ -425,14 +425,14 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     reset->callback(
         [this, mdCanId, od]()
         {
-            auto md = getMdco(mdCanId, od);
-            // MDCO::Error_t err = md->openReset();
-            // if (err != MDCO::OK)
-            // {
-            //     m_log.error("Error resetting MD device with ID %d", *mdCanId);
-            //     return;
-            // }
-            m_log.warn("To be implemented!");
+            auto          md  = getMdco(mdCanId, od);
+            MDCO::Error_t err = md->reset();
+            if (err != MDCO::Error_t::OK)
+            {
+                m_log.error("Error resetting MD device with ID %d", *mdCanId);
+                return;
+            }
+            m_log.success("Driver %d is restarting", (uint)*mdCanId);
         });
 
     // Calibration
@@ -441,12 +441,10 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         [this, mdCanId, od]()
         {
             auto mdco = getMdco(mdCanId, od);
-            // MDCO::Error_t err  = mdco->encoderCalibration(1, 0);
-            // if (err != MDCO::OK)
-            // {
-            //     m_log.error("Error running main encoder calibration");
-            // }
-            m_log.warn("To be implemented!");
+            mdco->enterConfigMode();
+            auto calibrationOpt = od->getEntryByName("Run Calibration");
+            if(cal)
+            
         });
 
     // SETUP calibration output
@@ -503,7 +501,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                         }
                         std::stringstream ss;
                         ss << "[0x" << std::hex << idx << "]" << "[0x"
-                           << (unsigned int)subobject.second->getEntryMetaData().address.second.value()
+                           << (unsigned int)subobject.second->getEntryMetaData()
+                                  .address.second.value()
                            << "]" << subobject.second->getEntryMetaData().parameterName << " = "
                            << subobject.second->getAsString();
                         m_log.info("%s", ss.str().c_str());

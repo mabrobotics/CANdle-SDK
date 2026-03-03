@@ -229,6 +229,8 @@ namespace mab
 
         Error_t writeSDO(EDSEntry& edsEntry) const;
 
+        Error_t resetNMT() const;
+
         static std::vector<canId_t> discoverOpenMDs(Candle*                              candle,
                                                     std::shared_ptr<EDSObjectDictionary> od);
 
@@ -258,8 +260,6 @@ namespace mab
                 m_log.error("Error sending control word cmd!");
                 return err;
             }
-            usleep(1'000);
-
             err            = readSDO((*m_od)[0x6041]);
             u16 statusWord = (u16)(open_types::UNSIGNED16_t)(*m_od)[0x6041];
             m_log.debug("Statusword: 0x%x", statusWord);
@@ -276,6 +276,8 @@ namespace mab
                 m_log.error("Error setting config mode!");
                 return err;
             }
+            usleep(3'000);
+
             err = readSDO((*m_od)[0x6061]);
             if ((i8)(open_types::INTEGER8_t)(*m_od)[0x6061] != -1)
             {
@@ -283,6 +285,7 @@ namespace mab
                 m_log.error("Current mode: %i", (i8)(open_types::INTEGER8_t)((*m_od)[0x6061]));
             }
 
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
             err = readSDO((*m_od)[0x6060]);
             if ((i8)(open_types::INTEGER8_t)(*m_od)[0x6060] != -2)
             {

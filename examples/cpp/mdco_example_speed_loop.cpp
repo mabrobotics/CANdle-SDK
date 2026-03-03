@@ -1,4 +1,7 @@
 #include <unistd.h>
+#include <chrono>
+#include <cstdlib>
+#include <thread>
 #include "candle.hpp"
 #include "MDCO.hpp"
 #include "edsEntry.hpp"
@@ -64,15 +67,34 @@ int main()
     // mdco.writeSDO((*od)[0x2003][0x3]);
     // mdco.save();
     // mdco.zero();
+    // mdco.reset();
+    // usleep(5'000'000);
     (*od)[0x6060] = (open_types::INTEGER8_t)9;
-    mdco.writeSDO((*od)[0x6060]);
-    mdco.enable();
-    while (true)
+    if (mdco.writeSDO((*od)[0x6060]) != MDCO::Error_t::OK)
     {
-        (*od)[0x60FF] = (open_types::INTEGER32_t)30;
-        mdco.writeSDO((*od)[0x60FF]);
-        usleep(50'000);
-        std::cout << mdco.getVelocity().first << '\n';
+        return EXIT_FAILURE;
+    }
+    if (mdco.enable() != MDCO::Error_t::OK)
+    {
+        return EXIT_FAILURE;
+    }
+    (*od)[0x6060] = (open_types::INTEGER8_t)9;
+    if (mdco.writeSDO((*od)[0x6060]) != MDCO::Error_t::OK)
+    {
+        return EXIT_FAILURE;
+    }
+    auto start = std::chrono::steady_clock::now();
+    while (start + std::chrono::milliseconds(10'000) > std::chrono::steady_clock::now())
+    {
+        mdco.setTargetVelocity(2.0f);
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        auto pos = mdco.getPosition().first;
+        std::cout << "Pos: " << pos << '\n';
+    }
+
+    if (mdco.disable() != MDCO::Error_t::OK)
+    {
+        return EXIT_FAILURE;
     }
 
     return EXIT_SUCCESS;
