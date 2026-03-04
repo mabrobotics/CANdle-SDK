@@ -1,7 +1,6 @@
 #pragma once
 
 #include <unistd.h>
-#include "CLI/CLI.hpp"
 #include "edsEntry.hpp"
 #include "mab_types.hpp"
 #include "logger.hpp"

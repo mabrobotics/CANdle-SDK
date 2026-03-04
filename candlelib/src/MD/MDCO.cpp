@@ -723,6 +723,16 @@ namespace mab
 
     std::pair<bool, MDCO::Error_t> MDCO::targetReached()
     {
+        Error_t err = readSDO((*m_od)[0x6041]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading status word!");
+            return {false, err};
+        }
+
+        bool reached = (open_types::UNSIGNED16_t)(*m_od)[0x6041] & (1 << 10);
+
+        return {reached, err};
     }
 
     MDCO::Error_t MDCO::readSDO(EDSEntry& edsEntry) const

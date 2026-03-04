@@ -570,16 +570,14 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         test->add_subcommand("move", "Validate if motor can move.")->require_subcommand();
 
     // // TEST move absolute
-    std::shared_ptr<i32> pos;
-    CLI::App*            testMoveAbs =
+    CLI::App* testMoveAbs =
         testMove->add_subcommand("absolute", "Move motor to absolute position.");
-    testMoveAbs->add_option("--position", *pos, "Absolute position to reach [encoder ticks].")
-        ->required();
 
+    MoveOptions moveOptionsAbs(testMoveAbs);
     // MovementLimitsOPtions moveAbsParam(testMoveAbs);
 
     testMoveAbs->callback(
-        [this, mdCanId, od, pos]()
+        [this, mdCanId, od, moveOptionsAbs]()
         {
             auto mdco = getMdco(mdCanId, od);
             if (mdco->enable() != MDCO::Error_t::OK)
@@ -592,22 +590,25 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error("Failed move");
                 return;
             }
-            if (mdco->setTargetVelocity(2.0f) != MDCO::Error_t::OK)
+            if (mdco->setTargetPosition(*moveOptionsAbs.position) != MDCO::Error_t::OK)
             {
                 m_log.error("Failed move");
                 return;
             }
-            while (start + std::chrono::milliseconds(10'000) > std::chrono::steady_clock::now())
+            while (!mdco->targetReached().first)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                auto pos = mdco.getPosition().first;
-                std::cout << "Pos: " << pos << '\n';
-                mdco.setTargetVelocity(2.1f);  // get driver unstuck from quickstop
+                auto position = mdco->getPosition().first;
+                std::cout << "Pos: " << position << '\n';
+                mdco->setTargetPosition(
+                    *moveOptionsAbs.position);  // get driver unstuck from quickstop
             }
 
-            if (mdco.disable() != MDCO::Error_t::OK)
+            m_log.success("Target Reached!");
+
+            if (mdco->disable() != MDCO::Error_t::OK)
             {
-                m_log.error("Failed move");
+                m_log.error("Failed disable");
                 return;
             }
         });

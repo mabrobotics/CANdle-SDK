@@ -101,6 +101,19 @@ namespace mab
             std::map<std::string, CLI::Option*>      optionsMap;
         };
 
+        struct MoveOptions
+        {
+            MoveOptions(CLI::App* rootCli) : position(std::make_shared<i32>(0))
+            {
+                rootCli
+                    ->add_option(
+                        "--position", *position, "Absolute position to reach [encoder ticks].")
+                    ->required();
+            }
+            const std::shared_ptr<i32>          position;
+            std::map<std::string, CLI::Option*> optionsMap;
+        };
+
         struct WriteOptions
         {
             WriteOptions(CLI::App* rootCli)
