@@ -90,6 +90,7 @@ int main()
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         auto pos = mdco.getPosition().first;
         std::cout << "Pos: " << pos << '\n';
+        mdco.setTargetVelocity(2.1f);  // get driver unstuck from quickstop
     }
 
     if (mdco.disable() != MDCO::Error_t::OK)

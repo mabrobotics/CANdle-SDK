@@ -203,7 +203,7 @@ namespace mab
 
         /// @brief Request position of the MD
         /// @return Position in radians
-        std::pair<float, Error_t> getPosition();
+        std::pair<i32, Error_t> getPosition();
 
         /// @brief Request current velocity of the MD
         /// @return Velocity in radians per second

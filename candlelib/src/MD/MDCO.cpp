@@ -9,6 +9,7 @@
 #include "MDStatus.hpp"
 #include "candle_types.hpp"
 #include "edsEntry.hpp"
+#include "mab_types.hpp"
 
 namespace mab
 {
@@ -673,7 +674,7 @@ namespace mab
         return {status, err};
     }
 
-    std::pair<float, MDCO::Error_t> MDCO::getPosition()
+    std::pair<i32, MDCO::Error_t> MDCO::getPosition()
     {
         Error_t err = readSDO((*m_od)[0x6064]);
         if (err != Error_t::OK)
@@ -682,10 +683,9 @@ namespace mab
             return {0.0f, err};
         }
 
-        i32   positionRaw = (i32)(open_types::INTEGER32_t)(*m_od)[0x6064];
-        float position    = positionRaw / 1000000.0f;
+        i32 positionRaw = (i32)(open_types::INTEGER32_t)(*m_od)[0x6064];
 
-        return {position, err};
+        return {positionRaw, err};
     }
 
     std::pair<float, MDCO::Error_t> MDCO::getVelocity()

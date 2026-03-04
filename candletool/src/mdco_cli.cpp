@@ -1,4 +1,5 @@
 #include "mdco_cli.hpp"
+#include <cstddef>
 #include <exception>
 #include <filesystem>
 #include <memory>
@@ -8,6 +9,7 @@
 #include "CLI/CLI.hpp"
 #include "MDCO.hpp"
 #include "candle.hpp"
+#include "candle_types.hpp"
 #include "edsEntry.hpp"
 #include "edsParser.hpp"
 #include "mini/ini.h"
@@ -540,6 +542,26 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                    << object.second.getAsString();
                 m_log.info("%s", ss.str().c_str());
             }
+        });
+
+    // Save
+    CLI::App* save =
+        mdco->add_subcommand("save", "Save registers to persistant memory and reset the driver.");
+    save->callback(
+        [this, mdCanId, od]()
+        {
+            auto mdco = getMdco(mdCanId, od);
+            if (mdco == nullptr)
+            {
+                m_log.error("Coudl not connect to MD via CANopen!");
+                return;
+            }
+            if (mdco->save() != MDCO::Error_t::OK)
+            {
+                m_log.error("Saving failed!");
+                return;
+            }
+            m_log.success("Saving registers succesful!");
         });
 
     // SETUP upload
