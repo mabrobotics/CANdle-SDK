@@ -887,19 +887,6 @@ namespace mab
             // -------- Expedited download --------
             std::vector<u8> transmitFrame(8, 0);
 
-            // Command specifier:
-            // 0x20 = initiate download
-            // 0x02 = expedited
-            // 0x01 = size indicated
-            // bits 2-3 = number of unused bytes
-            // if (payloadSize == 0x1)
-            //     transmitFrame[0] = 0x2F;
-            // else if (payloadSize == 0x2)
-            //     transmitFrame[0] = 0x2B;
-            // else if (payloadSize == 0x3)
-            //     transmitFrame[0] = 0x27;
-            // else
-            //     transmitFrame[0] = 0x23;
             transmitFrame[0] = INITIATE_SDO_DOWNLOAD_REQUEST;
             transmitFrame[1] = (u8)edsEntry.getEntryMetaData().address.first;
             transmitFrame[2] = (u8)(edsEntry.getEntryMetaData().address.first >> 8);
@@ -1080,5 +1067,65 @@ namespace mab
 
         log.warn("Have not found any MD devices on the CAN bus!");
         return ids;
+    }
+    MDCO::Error_t MDCO::enterConfigMode() const
+    {
+        Error_t err = MDCO::Error_t::OK;
+
+        (*m_od)[0x6040] = (open_types::UNSIGNED16_t)0x8;
+        err             = writeSDO((*m_od)[0x6040]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error sending control word cmd!");
+            return err;
+        }
+        (*m_od)[0x6040] = (open_types::UNSIGNED16_t)0x6;
+        err             = writeSDO((*m_od)[0x6040]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error sending control word cmd!");
+            return err;
+        }
+
+        (*m_od)[0x6040] = (open_types::UNSIGNED16_t)0xf;
+        err             = writeSDO((*m_od)[0x6040]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error sending control word cmd!");
+            return err;
+        }
+        err            = readSDO((*m_od)[0x6041]);
+        u16 statusWord = (u16)(open_types::UNSIGNED16_t)(*m_od)[0x6041];
+        m_log.debug("Statusword: 0x%x", statusWord);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting config mode!");
+            return err;
+        }
+
+        (*m_od)[0x6060] = (open_types::INTEGER8_t)-2;
+        err             = writeSDO((*m_od)[0x6060]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting config mode!");
+            return err;
+        }
+        usleep(3'000);
+
+        err = readSDO((*m_od)[0x6061]);
+        if ((i8)(open_types::INTEGER8_t)(*m_od)[0x6061] != -1)
+        {
+            m_log.error("Coudl not enter service mode");
+            m_log.error("Current mode: %i", (i8)(open_types::INTEGER8_t)((*m_od)[0x6061]));
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        err = readSDO((*m_od)[0x6060]);
+        if ((i8)(open_types::INTEGER8_t)(*m_od)[0x6060] != -2)
+        {
+            m_log.error("Coudl not enter service mode");
+            m_log.error("Current mode: %i", (i8)(open_types::INTEGER8_t)((*m_od)[0x6061]));
+        }
+        return err;
     }
 }  // namespace mab
