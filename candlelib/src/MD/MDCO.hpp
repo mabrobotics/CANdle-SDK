@@ -141,12 +141,12 @@ namespace mab
         /// @param windowSize size of the window in radians. Spans symmetrically around target
         /// position.
         /// @return
-        Error_t setPositionWindow(float windowSize /*rad*/);
+        Error_t setPositionWindow(u32 windowSize /*encode tics*/);
 
         /// @brief Set target position
         /// @param position target position in radians
         /// @return
-        Error_t setTargetPosition(float position /*rad*/);
+        Error_t setTargetPosition(i32 position /*encoder ticks*/);
 
         /// @brief Set target velocity
         /// @param velocity target velocity in radians per second

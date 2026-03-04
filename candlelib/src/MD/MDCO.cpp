@@ -422,9 +422,9 @@ namespace mab
         return err;
     }
 
-    MDCO::Error_t MDCO::setPositionWindow(float windowSize /*rad*/)
+    MDCO::Error_t MDCO::setPositionWindow(u32 windowSize /*encode tics*/)
     {
-        (*m_od)[0x6067] = (open_types::UNSIGNED32_t)(windowSize * 1000000);
+        (*m_od)[0x6067] = (open_types::UNSIGNED32_t)(windowSize);
         Error_t err     = writeSDO((*m_od)[0x6067]);
         if (err != Error_t::OK)
         {
@@ -434,9 +434,9 @@ namespace mab
         return err;
     }
 
-    MDCO::Error_t MDCO::setTargetPosition(float position /*rad*/)
+    MDCO::Error_t MDCO::setTargetPosition(i32 position /*encoder ticks*/)
     {
-        (*m_od)[0x607A] = (open_types::INTEGER32_t)(position * 1000000);
+        (*m_od)[0x607A] = (open_types::INTEGER32_t)(position);
         Error_t err     = writeSDO((*m_od)[0x607A]);
         if (err != Error_t::OK)
         {
@@ -474,204 +474,163 @@ namespace mab
               MDCO::Error_t>
     MDCO::getMainEncoderStatus()
     {
-        MDStatus                                                                encoderStatus;
-        std::unordered_map<MDStatus::EncoderStatusBits, MDStatus::StatusItem_S> statusMap;
-        static constexpr std::string_view mainEncoderStatusName = "Main Encoder Status";
-        auto mainEncoderStatusOpt = m_od->getEntryByName("Main Encoder Status");
-        if (!mainEncoderStatusOpt.has_value())
+        mab::MDStatus              statuses;
+        constexpr std::string_view encoderStatusName = "Main Encoder Status";
+        auto                       encoderStatusOpt  = m_od->getEntryByName(encoderStatusName);
+        if (!encoderStatusOpt.has_value())
         {
-            m_log.error("Could not locate %s object!", mainEncoderStatusName.data());
-            return {encoderStatus.encoderStatus, Error_t::UNKNOWN_OBJECT};
+            m_log.error("Could not locate %s object!", encoderStatusName.data());
+            return {statuses.encoderStatus, Error_t::UNKNOWN_OBJECT};
         }
-        auto&   mainEncoderStatusObj = mainEncoderStatusOpt.value().get();
-        Error_t err                  = readSDO(mainEncoderStatusObj);
-        u32     val                  = (open_types::UNSIGNED32_t)mainEncoderStatusObj;
+        auto&   encoderStatusObj = encoderStatusOpt.value().get();
+        Error_t err              = readSDO(encoderStatusObj);
         if (err != Error_t::OK)
         {
-            m_log.error("Error setting %s",
-                        mainEncoderStatusObj.getEntryMetaData().parameterName.c_str());
-            return {encoderStatus.encoderStatus, err};
+            m_log.error("Error reading %s",
+                        encoderStatusObj.getEntryMetaData().parameterName.c_str());
         }
-        mab::MDStatus::decode(val, encoderStatus.encoderStatus);
-        return {encoderStatus.encoderStatus, err};
+        mab::MDStatus::decode((open_types::UNSIGNED32_t)encoderStatusObj, statuses.encoderStatus);
+        return {statuses.encoderStatus, err};
     }
 
     std::pair<const std::unordered_map<MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
               MDCO::Error_t>
     MDCO::getOutputEncoderStatus()
     {
-        std::unordered_map<MDStatus::EncoderStatusBits, MDStatus::StatusItem_S> status;
-        Error_t err = readSDO((*m_od)[0x2100][0x2]);
+        mab::MDStatus              statuses;
+        constexpr std::string_view encoderStatusName = "Output Encoder Status";
+        auto                       encoderStatusOpt  = m_od->getEntryByName(encoderStatusName);
+        if (!encoderStatusOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", encoderStatusName.data());
+            return {statuses.encoderStatus, Error_t::UNKNOWN_OBJECT};
+        }
+        auto&   encoderStatusObj = encoderStatusOpt.value().get();
+        Error_t err              = readSDO(encoderStatusObj);
         if (err != Error_t::OK)
         {
-            m_log.error("Error reading Output Encoder Status");
-            return {status, err};
+            m_log.error("Error reading %s",
+                        encoderStatusObj.getEntryMetaData().parameterName.c_str());
         }
-
-        u32 statusWord = (u32)(open_types::UNSIGNED32_t)(*m_od)[0x2100][0x2];
-
-        status = {{MDStatus::EncoderStatusBits::ErrorCommunication,
-                   MDStatus::StatusItem_S("Error Communication", true)},
-                  {MDStatus::EncoderStatusBits::ErrorWrongDirection,
-                   MDStatus::StatusItem_S("Error Wrong Direction", true)},
-                  {MDStatus::EncoderStatusBits::ErrorEmptyLUT,
-                   MDStatus::StatusItem_S("Error Empty LUT", true)},
-                  {MDStatus::EncoderStatusBits::ErrorFaultyLUT,
-                   MDStatus::StatusItem_S("Error Faulty LUT", true)},
-                  {MDStatus::EncoderStatusBits::ErrorCalibration,
-                   MDStatus::StatusItem_S("Error Calibration", true)},
-                  {MDStatus::EncoderStatusBits::ErrorPositionInvalid,
-                   MDStatus::StatusItem_S("Error Position Invalid", true)},
-                  {MDStatus::EncoderStatusBits::ErrorInitialization,
-                   MDStatus::StatusItem_S("Error Initialization", true)},
-                  {MDStatus::EncoderStatusBits::WarningLowAccuracy,
-                   MDStatus::StatusItem_S("Warning Low Accuracy", false)}};
-
-        MDStatus::decode<MDStatus::EncoderStatusBits>(statusWord, status);
-
-        return {status, err};
+        mab::MDStatus::decode((open_types::UNSIGNED32_t)encoderStatusObj, statuses.encoderStatus);
+        return {statuses.encoderStatus, err};
     }
 
     std::pair<const std::unordered_map<MDStatus::CalibrationStatusBits, MDStatus::StatusItem_S>,
               MDCO::Error_t>
     MDCO::getCalibrationStatus()
     {
-        std::unordered_map<MDStatus::CalibrationStatusBits, MDStatus::StatusItem_S> status;
-        Error_t err = readSDO((*m_od)[0x2100][0x3]);
+        mab::MDStatus              statuses;
+        constexpr std::string_view calibrationStatusName = "Calibration Status";
+        auto calibrationStatusOpt = m_od->getEntryByName(calibrationStatusName);
+        if (!calibrationStatusOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", calibrationStatusName.data());
+            return {statuses.calibrationStatus, Error_t::UNKNOWN_OBJECT};
+        }
+        auto&   calibrationStatusObj = calibrationStatusOpt.value().get();
+        Error_t err                  = readSDO(calibrationStatusObj);
         if (err != Error_t::OK)
         {
-            m_log.error("Error reading Calibration Status");
-            return {status, err};
+            m_log.error("Error reading %s",
+                        calibrationStatusObj.getEntryMetaData().parameterName.c_str());
         }
-
-        u32 statusWord = (u32)(open_types::UNSIGNED32_t)(*m_od)[0x2100][0x3];
-
-        status = {{MDStatus::CalibrationStatusBits::ErrorOffsetCalibration,
-                   MDStatus::StatusItem_S("Error Offset Calibration", true)},
-                  {MDStatus::CalibrationStatusBits::ErrorResistance,
-                   MDStatus::StatusItem_S("Error Resistance", true)},
-                  {MDStatus::CalibrationStatusBits::ErrorInductance,
-                   MDStatus::StatusItem_S("Error Inductance", true)},
-                  {MDStatus::CalibrationStatusBits::ErrorPolePairDetection,
-                   MDStatus::StatusItem_S("Error Pole Pair Detection", true)},
-                  {MDStatus::CalibrationStatusBits::ErrorSetup,
-                   MDStatus::StatusItem_S("Error Setup", true)}};
-
-        MDStatus::decode<MDStatus::CalibrationStatusBits>(statusWord, status);
-
-        return {status, err};
+        mab::MDStatus::decode((open_types::UNSIGNED32_t)calibrationStatusObj,
+                              statuses.calibrationStatus);
+        return {statuses.calibrationStatus, err};
     }
 
     std::pair<const std::unordered_map<MDStatus::BridgeStatusBits, MDStatus::StatusItem_S>,
               MDCO::Error_t>
     MDCO::getBridgeStatus()
     {
-        std::unordered_map<MDStatus::BridgeStatusBits, MDStatus::StatusItem_S> status;
-        Error_t err = readSDO((*m_od)[0x2100][0x4]);
+        mab::MDStatus              statuses;
+        constexpr std::string_view bridgeStatusName = "Bridge Status";
+        auto                       bridgeStatusOpt  = m_od->getEntryByName(bridgeStatusName);
+        if (!bridgeStatusOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", bridgeStatusName.data());
+            return {statuses.bridgeStatus, Error_t::UNKNOWN_OBJECT};
+        }
+        auto&   bridgeStatusObj = bridgeStatusOpt.value().get();
+        Error_t err             = readSDO(bridgeStatusObj);
         if (err != Error_t::OK)
         {
-            m_log.error("Error reading Bridge Status");
-            return {status, err};
+            m_log.error("Error reading %s",
+                        bridgeStatusObj.getEntryMetaData().parameterName.c_str());
         }
-
-        u32 statusWord = (u32)(open_types::UNSIGNED32_t)(*m_od)[0x2100][0x4];
-
-        status = {{MDStatus::BridgeStatusBits::ErrorCommunication,
-                   MDStatus::StatusItem_S("Error Communication", true)},
-                  {MDStatus::BridgeStatusBits::ErrorOvercurrent,
-                   MDStatus::StatusItem_S("Error Overcurrent", true)},
-                  {MDStatus::BridgeStatusBits::ErrorGeneralFault,
-                   MDStatus::StatusItem_S("Error General Fault", true)}};
-
-        MDStatus::decode<MDStatus::BridgeStatusBits>(statusWord, status);
-
-        return {status, err};
+        mab::MDStatus::decode((open_types::UNSIGNED32_t)bridgeStatusObj, statuses.bridgeStatus);
+        return {statuses.bridgeStatus, err};
     }
 
     std::pair<const std::unordered_map<MDStatus::HardwareStatusBits, MDStatus::StatusItem_S>,
               MDCO::Error_t>
     MDCO::getHardwareStatus()
     {
-        std::unordered_map<MDStatus::HardwareStatusBits, MDStatus::StatusItem_S> status;
-        Error_t err = readSDO((*m_od)[0x2100][0x5]);
+        mab::MDStatus              statuses;
+        constexpr std::string_view hardwareStatusName = "Hardware Status";
+        auto                       hardwareStatusOpt  = m_od->getEntryByName(hardwareStatusName);
+        if (!hardwareStatusOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", hardwareStatusName.data());
+            return {statuses.hardwareStatus, Error_t::UNKNOWN_OBJECT};
+        }
+        auto&   hardwareStatusObj = hardwareStatusOpt.value().get();
+        Error_t err               = readSDO(hardwareStatusObj);
         if (err != Error_t::OK)
         {
-            m_log.error("Error reading Hardware Status");
-            return {status, err};
+            m_log.error("Error reading %s",
+                        hardwareStatusObj.getEntryMetaData().parameterName.c_str());
         }
-
-        u32 statusWord = (u32)(open_types::UNSIGNED32_t)(*m_od)[0x2100][0x5];
-
-        status = {{MDStatus::HardwareStatusBits::ErrorOverCurrent,
-                   MDStatus::StatusItem_S("Error Over Current", true)},
-                  {MDStatus::HardwareStatusBits::ErrorOverVoltage,
-                   MDStatus::StatusItem_S("Error Over Voltage", true)},
-                  {MDStatus::HardwareStatusBits::ErrorUnderVoltage,
-                   MDStatus::StatusItem_S("Error Under Voltage", true)},
-                  {MDStatus::HardwareStatusBits::ErrorMotorTemperature,
-                   MDStatus::StatusItem_S("Error Motor Temperature", true)},
-                  {MDStatus::HardwareStatusBits::ErrorMosfetTemperature,
-                   MDStatus::StatusItem_S("Error Mosfet Temperature", true)},
-                  {MDStatus::HardwareStatusBits::ErrorADCCurrentOffset,
-                   MDStatus::StatusItem_S("Error ADC Current Offset", true)}};
-
-        MDStatus::decode<MDStatus::HardwareStatusBits>(statusWord, status);
-
-        return {status, err};
+        mab::MDStatus::decode((open_types::UNSIGNED32_t)hardwareStatusObj, statuses.hardwareStatus);
+        return {statuses.hardwareStatus, err};
     }
 
     std::pair<const std::unordered_map<MDStatus::CommunicationStatusBits, MDStatus::StatusItem_S>,
               MDCO::Error_t>
     MDCO::getCommunicationStatus()
     {
-        std::unordered_map<MDStatus::CommunicationStatusBits, MDStatus::StatusItem_S> status;
-        Error_t err = readSDO((*m_od)[0x2100][0x6]);
+        mab::MDStatus              statuses;
+        constexpr std::string_view communicationStatusName = "Communication Status";
+        auto communicationStatusOpt = m_od->getEntryByName(communicationStatusName);
+        if (!communicationStatusOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", communicationStatusName.data());
+            return {statuses.communicationStatus, Error_t::UNKNOWN_OBJECT};
+        }
+        auto&   communicationStatusObj = communicationStatusOpt.value().get();
+        Error_t err                    = readSDO(communicationStatusObj);
         if (err != Error_t::OK)
         {
-            m_log.error("Error reading Communication Status");
-            return {status, err};
+            m_log.error("Error reading %s",
+                        communicationStatusObj.getEntryMetaData().parameterName.c_str());
         }
-
-        u32 statusWord = (u32)(open_types::UNSIGNED32_t)(*m_od)[0x2100][0x6];
-
-        status = {{MDStatus::CommunicationStatusBits::WarningCANWatchdog,
-                   MDStatus::StatusItem_S("Warning CAN Watchdog", false)}};
-
-        MDStatus::decode<MDStatus::CommunicationStatusBits>(statusWord, status);
-
-        return {status, err};
+        mab::MDStatus::decode((open_types::UNSIGNED32_t)communicationStatusObj,
+                              statuses.communicationStatus);
+        return {statuses.communicationStatus, err};
     }
 
     std::pair<const std::unordered_map<MDStatus::MotionStatusBits, MDStatus::StatusItem_S>,
               MDCO::Error_t>
     MDCO::getMotionStatus()
     {
-        std::unordered_map<MDStatus::MotionStatusBits, MDStatus::StatusItem_S> status;
-        Error_t err = readSDO((*m_od)[0x2100][0x7]);
+        mab::MDStatus              statuses;
+        constexpr std::string_view motionStatusName = "Motion Status";
+        auto                       motionStatusOpt  = m_od->getEntryByName(motionStatusName);
+        if (!motionStatusOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", motionStatusName.data());
+            return {statuses.motionStatus, Error_t::UNKNOWN_OBJECT};
+        }
+        auto&   motionStatusObj = motionStatusOpt.value().get();
+        Error_t err             = readSDO(motionStatusObj);
         if (err != Error_t::OK)
         {
-            m_log.error("Error reading Motion Status");
-            return {status, err};
+            m_log.error("Error reading %s",
+                        motionStatusObj.getEntryMetaData().parameterName.c_str());
         }
-
-        u32 statusWord = (u32)(open_types::UNSIGNED32_t)(*m_od)[0x2100][0x7];
-
-        status = {{MDStatus::MotionStatusBits::ErrorPositionLimit,
-                   MDStatus::StatusItem_S("Error Position Limit", true)},
-                  {MDStatus::MotionStatusBits::ErrorVelocityLimit,
-                   MDStatus::StatusItem_S("Error Velocity Limit", true)},
-                  {MDStatus::MotionStatusBits::WarningAcceleration,
-                   MDStatus::StatusItem_S("Warning Acceleration", false)},
-                  {MDStatus::MotionStatusBits::WarningTorque,
-                   MDStatus::StatusItem_S("Warning Torque", false)},
-                  {MDStatus::MotionStatusBits::WarningVelocity,
-                   MDStatus::StatusItem_S("Warning Velocity", false)},
-                  {MDStatus::MotionStatusBits::WarningPosition,
-                   MDStatus::StatusItem_S("Warning Position", false)}};
-
-        MDStatus::decode<MDStatus::MotionStatusBits>(statusWord, status);
-
-        return {status, err};
+        mab::MDStatus::decode((open_types::UNSIGNED32_t)motionStatusObj, statuses.motionStatus);
+        return {statuses.motionStatus, err};
     }
 
     std::pair<i32, MDCO::Error_t> MDCO::getPosition()
