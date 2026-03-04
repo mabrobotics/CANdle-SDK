@@ -721,6 +721,10 @@ namespace mab
         return {temperature, err};
     }
 
+    std::pair<bool, MDCO::Error_t> MDCO::targetReached()
+    {
+    }
+
     MDCO::Error_t MDCO::readSDO(EDSEntry& edsEntry) const
     {
         std::vector<std::byte> result;

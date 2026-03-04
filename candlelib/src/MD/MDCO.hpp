@@ -1,6 +1,7 @@
 #pragma once
 
 #include <unistd.h>
+#include "CLI/CLI.hpp"
 #include "edsEntry.hpp"
 #include "mab_types.hpp"
 #include "logger.hpp"
@@ -144,6 +145,8 @@ namespace mab
         std::pair<float, Error_t> getOutputEncoderVelocity();
 
         std::pair<u8, Error_t> getTemperature();
+
+        std::pair<bool, Error_t> targetReached();
 
         Error_t readSDO(EDSEntry& edsEntry) const;
 

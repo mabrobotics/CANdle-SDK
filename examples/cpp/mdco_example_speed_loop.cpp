@@ -69,17 +69,12 @@ int main()
     // mdco.zero();
     // mdco.reset();
     // usleep(5'000'000);
-    (*od)[0x6060] = (open_types::INTEGER8_t)9;
-    if (mdco.writeSDO((*od)[0x6060]) != MDCO::Error_t::OK)
-    {
-        return EXIT_FAILURE;
-    }
+
     if (mdco.enable() != MDCO::Error_t::OK)
     {
         return EXIT_FAILURE;
     }
-    (*od)[0x6060] = (open_types::INTEGER8_t)9;
-    if (mdco.writeSDO((*od)[0x6060]) != MDCO::Error_t::OK)
+    if (mdco.setOperationMode(mab::ModesOfOperation::CyclicSyncVelocity) != MDCO::Error_t::OK)
     {
         return EXIT_FAILURE;
     }
