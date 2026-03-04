@@ -1,10 +1,12 @@
 #include "mdco_cli.hpp"
+#include <fcntl.h>
 #include <cstddef>
 #include <exception>
 #include <filesystem>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 #include "CLI/CLI.hpp"
 #include "MDCO.hpp"
@@ -12,6 +14,7 @@
 #include "candle_types.hpp"
 #include "edsEntry.hpp"
 #include "edsParser.hpp"
+#include "mab_types.hpp"
 #include "mini/ini.h"
 
 using namespace mab;
@@ -220,34 +223,41 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     can->callback(
         [this, mdCanId, canOptions, od]()
         {
-            auto mdco = getMdco(mdCanId, od);
-            // long newbaud;
-            // if (*canOptions.datarate == "1M")
-            //     newbaud = 1000000;
-            // else if (*canOptions.datarate == "500K")
-            //     newbaud = 500000;
-            // else
-            // {
-            //     m_log.error("Invalid baudrate for CANopen, only 1M and 500K is supported");
-            //     return;
-            // }
-            // MDCO::Error_t err =
-            //     mdco->newCanOpenConfig(*canOptions.canId, newbaud, *canOptions.timeoutMs);
-            // if (err != MDCO::OK)
-            // {
-            //     m_log.error("Error setting CANopen config");
-            //     return;
-            // }
-            // if (*canOptions.save)
-            // {
-            //     err = mdco->openSave();
-            //     if (err != MDCO::OK)
-            //     {
-            //         m_log.error("Error saving CANopen config");
-            //         return;
-            //     }
-            // }
-            m_log.warn("To be implemented!");
+            constexpr std::string_view canIdName = "Can ID";
+            auto                       mdco      = getMdco(mdCanId, od);
+            if (*canOptions.canId < 1 || *canOptions.canId > 31)
+            {
+                m_log.error("CAN id out of range!");
+                return;
+            }
+
+            // Get id object
+            auto canIdOpt = od->getEntryByName(canIdName);
+            if (!canIdOpt.has_value())
+            {
+                m_log.error("%s not found in eds!", canIdName.data());
+                return;
+            }
+            auto& canIdObj = canIdOpt.value().get();
+
+            if (!canOptions.optionsMap.at("id")->empty() && !(*canOptions.canId == *mdCanId))
+            {
+                // set new can id
+                canIdObj = (open_types::UNSIGNED32_t)(*canOptions.canId);
+                if (mdco->writeSDO(canIdObj) != MDCO::Error_t::OK)
+                {
+                    m_log.error("Failed setting id of %d", *canOptions.canId);
+                    return;
+                }
+            }
+
+            if (mdco->save() != MDCO::Error_t::OK)
+            {
+                m_log.error("Failed to save parameters!");
+                return;
+            }
+
+            m_log.success("Succesfully updated CAN parameters!");
         });
 
     // CLEAR ============================================================================

@@ -68,32 +68,15 @@ namespace mab
 
         struct CanOptions
         {
-            CanOptions(CLI::App* rootCli)
-                : canId(std::make_shared<canId_t>(10)),
-                  datarate(std::make_shared<std::string>("1M")),
-                  timeoutMs(std::make_shared<uint16_t>(200)),
-                  save(std::make_shared<bool>(false))
+            CanOptions(CLI::App* rootCli) : canId(std::make_shared<canId_t>(10))
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
                     {"id",
                      rootCli
                          ->add_option("--new_id", *canId, "New CAN node id for the MD controller.")
-                         ->required()},
-                    {"datarate",
-                     rootCli->add_option("--new_datarate",
-                                         *datarate,
-                                         "New datarate of the MD controller. 1M or 500K")},
-                    {"timeout",
-                     rootCli->add_option(
-                         "--new_timeout", *timeoutMs, "New timeout of the MD controller.")},
-                    {"save",
-                     rootCli->add_flag(
-                         "--save", *save, "Save the new CAN parameters to the MD controller.")}};
+                         ->required()}};
             }
-            const std::shared_ptr<canId_t>     canId;
-            const std::shared_ptr<std::string> datarate;
-            const std::shared_ptr<uint16_t>    timeoutMs;
-            const std::shared_ptr<bool>        save;
+            const std::shared_ptr<canId_t> canId;
 
             std::map<std::string, CLI::Option*> optionsMap;
         };
