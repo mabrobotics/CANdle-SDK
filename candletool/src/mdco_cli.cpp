@@ -20,6 +20,7 @@
 #include "edsEntry.hpp"
 #include "edsParser.hpp"
 #include "mab_types.hpp"
+#include "md_cfg_map.hpp"
 #include "mini/ini.h"
 
 using namespace mab;
@@ -265,13 +266,131 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             m_log.success("Succesfully updated CAN parameters!");
         });
 
+    // CONFIG ===========================================================================
+    auto* config = mdco->add_subcommand("config", "Configure MD drive.")
+                       ->needs(mdCanIdOption)
+                       ->require_subcommand();
+    // Download configuration file
+    auto* downloadConfig =
+        config->add_subcommand("download", "Download configuration from MD drive.");
+
+    ConfigOptions downloadConfigOptions(downloadConfig);
+
+    downloadConfig->callback(
+        [this, od, mdCanId, downloadConfigOptions]()
+        {
+            auto md = getMdco(mdCanId, od);
+            if (md == nullptr)
+            {
+                return;
+            }
+
+            std::string configFilePath = *downloadConfigOptions.configFile;
+            if (configFilePath.empty())
+            {
+                m_log.error("Configuration file path is empty!");
+                return;
+            }
+            // If the path is not specified, prepend the standard path
+            if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
+                configFilePath.end())
+            {
+                configFilePath = "/etc/candletool/config/motors/" + configFilePath;
+            }
+
+            MDCOConfigMap cfgMap;
+            for (auto& [regAddress, cfgElement] : cfgMap.m_map)
+            {
+                cfgElement.m_value = registerRead(*md, regAddress).value_or("NOT FOUND");
+            }
+            // Write the configuration to the file
+            mINI::INIFile      configFile(configFilePath);
+            mINI::INIStructure ini;
+            for (const auto& [regAddress, cfgElement] : cfgMap.m_map)
+            {
+                ini[cfgElement.m_tomlSection.data()][cfgElement.m_tomlKey.data()] =
+                    cfgElement.getReadable();
+            }
+            if (!configFile.generate(ini, true))
+            {
+                m_logger.error("Could not write configuration to file: %s", configFilePath.c_str());
+                return;
+            }
+            m_logger.success("Configuration downloaded successfully to %s", configFilePath.c_str());
+        });
+
+    // Upload configuration file
+    auto* uploadConfig =
+        config->add_subcommand("upload", "Upload configuration to MD drive.")->needs(mdCanIdOption);
+
+    ConfigOptions uploadConfigOptions(uploadConfig);
+
+    uploadConfig->callback(
+        [this, candleBuilder, mdCanId, uploadConfigOptions]()
+        {
+            auto md = getMd(mdCanId, candleBuilder);
+            if (md == nullptr)
+            {
+                return;
+            }
+
+            std::string configFilePath = *uploadConfigOptions.configFile;
+            if (configFilePath.empty())
+            {
+                m_logger.error("Configuration file path is empty!");
+                return;
+            }
+            // If the path is not specified, prepend the standard path
+            if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
+                configFilePath.end())
+            {
+                configFilePath = "/etc/candletool/config/motors/" + configFilePath;
+            }
+
+            mINI::INIFile      configFile(configFilePath);
+            mINI::INIStructure ini;
+            if (!configFile.read(ini))
+            {
+                m_logger.error("Could not read configuration file: %s", configFilePath.c_str());
+                return;
+            }
+
+            MDConfigMap cfgMap;
+
+            for (auto& [address, toml] : cfgMap.m_map)
+            {
+                auto it = ini[toml.m_tomlSection.data()][toml.m_tomlKey.data()];
+                if (it.empty())
+                {
+                    m_logger.warn("Key %s.%s not found in configuration file. Skipping.",
+                                  toml.m_tomlSection.data(),
+                                  toml.m_tomlKey.data());
+                    continue;
+                }
+                if (!toml.setFromReadable(it))
+                {
+                    m_logger.error("Could not set value for %s.%s",
+                                   toml.m_tomlSection.data(),
+                                   toml.m_tomlKey.data());
+                    return;
+                }
+                // Write the value to the MD
+                registerWrite(*md, address, toml.m_value);
+            }
+
+            if (md->save() != MD::Error_t::OK)
+            {
+                m_logger.error("Could not save configuration!");
+                return;
+            }
+            m_logger.success("Uploaded configuration to the MD!");
+        });
     // CLEAR ============================================================================
 
     CLI::App* clear =
         mdco->add_subcommand("clear", "Clear MD drive errors and warnings.")->needs(mdCanIdOption);
-    ClearOptions clearOptions(clear);
     clear->callback(
-        [this, mdCanId, clearOptions, od]()
+        [this, mdCanId, od]()
         {
             auto mdco = getMdco(mdCanId, od);
             if (mdco->clearErrors() != MDCO::Error_t::OK)

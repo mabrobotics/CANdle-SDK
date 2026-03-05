@@ -48,21 +48,22 @@ namespace mab
         std::unique_ptr<MDCO, std::function<void(MDCO*)>> getMdco(
             const std::shared_ptr<canId_t> mdCanId, std::shared_ptr<EDSObjectDictionary> od);
 
-        struct ClearOptions
+        struct ConfigOptions
         {
-            ClearOptions(CLI::App* rootCli) : clearType(std::make_shared<std::string>("all"))
+            ConfigOptions(CLI::App* rootCli) : configFile(std::make_shared<std::string>(""))
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
-                    {"type",
+                    {"file",
                      rootCli
-                         ->add_option("type",
-                                      *clearType,
-                                      "Type of clearing to perform. "
-                                      "Possible values: all, warn, err")
-                         ->default_str("all")},
-                };
+                         ->add_option(
+                             "file",
+                             *configFile,
+                             "Path to the MD config file \n note: if no \"/\" sign is present than "
+                             "global config path will be prepended.")
+                         ->required()}};
             }
-            const std::shared_ptr<std::string>  clearType;
+
+            const std::shared_ptr<std::string>  configFile;
             std::map<std::string, CLI::Option*> optionsMap;
         };
 
