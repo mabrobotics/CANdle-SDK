@@ -1,13 +1,18 @@
 #include "mdco_cli.hpp"
 #include <fcntl.h>
+#include <array>
+#include <chrono>
 #include <cstddef>
 #include <exception>
 #include <filesystem>
 #include <memory>
+#include <ranges>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <thread>
+#include <vector>
 #include "CLI/CLI.hpp"
 #include "MDCO.hpp"
 #include "candle.hpp"
@@ -570,11 +575,10 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         test->add_subcommand("move", "Validate if motor can move.")->require_subcommand();
 
     // // TEST move absolute
-    CLI::App* testMoveAbs =
-        testMove->add_subcommand("absolute", "Move motor to absolute position.");
+    CLI::App* testMoveAbs = testMove->add_subcommand(
+        "absolute", "Move motor to absolute position using position profile mode.");
 
     MoveOptions moveOptionsAbs(testMoveAbs);
-    // MovementLimitsOPtions moveAbsParam(testMoveAbs);
 
     testMoveAbs->callback(
         [this, mdCanId, od, moveOptionsAbs]()
@@ -613,40 +617,71 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             }
         });
 
-    // // // TEST move relative
-    // testMoveRel = testMove->add_subcommand("relative", "Move motor to relative position.");
-    // testMoveRel
-    //     ->add_option("--position",
-    //                  cmdCANopen.desiredPos,
-    //                  "Relative position to reach.<0x0, "
-    //                  "0xFFFFFFFF>[inc] ")
-    //     ->required();
+    // Relative
+    CLI::App* testMoveRel = testMove->add_subcommand(
+        "relative", "Move motor to relative position using impedance mode.");
 
-    // // MovementLimitsOPtions moveRelParam(testMoveRel);
+    MoveOptions moveOptionsRel(testMoveRel);
 
-    // testMoveRel->callback(
-    //     [this, mdCanId, moveRelParam]()
-    //     {
-    //         auto          mdco = getMdco(mdCanId);
-    //         MDCO::Error_t err;
-    //         err = mdco->setProfileParameters(*moveRelParam.param);
-    //         if (err != MDCO::OK)
-    //         {
-    //             m_log.error("Error setting profile parameters");
-    //             return;
-    //         }
-    //         err = mdco->enableDriver(CyclicSyncPosition);
-    //         if (err != MDCO::OK)
-    //         {
-    //             m_log.error("Error enabling driver");
-    //             return;
-    //         }
-    //         // mdco->movePosition(cmdCANopen.desiredPos);
-    //         err = mdco->disableDriver();
-    //         if (err != MDCO::OK)
-    //         {
-    //             m_log.error("Error disabling driver");
-    //             return;
-    //         }
-    //     });
+    testMoveRel->callback(
+        [this, mdCanId, od, moveOptionsRel]()
+        {
+            auto mdco = getMdco(mdCanId, od);
+            if (mdco->zero() != MDCO::Error_t::OK)
+            {
+                m_log.error("Failed move");
+                return;
+            }
+            if (mdco->disable() != MDCO::Error_t::OK)
+            {
+                m_log.error("Failed move");
+                return;
+            }
+            if (mdco->setOperationMode(mab::ModesOfOperation::Impedance) != MDCO::Error_t::OK)
+            {
+                m_log.error("Failed move");
+                return;
+            }
+            if (mdco->enable() != MDCO::Error_t::OK)
+            {
+                m_log.error("Failed move");
+                return;
+            }
+            if (mdco->setOperationMode(mab::ModesOfOperation::Impedance) != MDCO::Error_t::OK)
+            {
+                m_log.error("Failed move");
+                return;
+            }
+            // Arbitrary clamping, better to change that in the future
+            *moveOptionsRel.position = std::clamp(*moveOptionsRel.position, -32'000, 32'000);
+
+            auto             position       = mdco->getPosition().first;
+            auto             targetPosition = *moveOptionsRel.position;
+            constexpr size_t steps          = 100;
+
+            std::array<i32, steps> trajectory;
+
+            size_t i = 0;
+            for (auto& elem : trajectory)
+            {
+                elem = position + (targetPosition - position) * (double)(i++) / (steps);
+            }
+
+            for (const auto& trajectoryPoint : trajectory)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                position = mdco->getPosition().first;
+                m_log << "Pos: " << position << '\n';
+                m_log << "Target: " << trajectoryPoint << '\n';
+                mdco->setTargetPosition(trajectoryPoint);
+            }
+
+            m_log.success("Target Reached!");
+
+            if (mdco->disable() != MDCO::Error_t::OK)
+            {
+                m_log.error("Failed disable");
+                return;
+            }
+        });
 }
