@@ -22,6 +22,7 @@
 #include "mab_types.hpp"
 #include "md_cfg_map.hpp"
 #include "mini/ini.h"
+#include "mdco_config_adapter.hpp"
 
 using namespace mab;
 
@@ -298,25 +299,26 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 configFilePath = "/etc/candletool/config/motors/" + configFilePath;
             }
 
-            MDCOConfigMap cfgMap;
-            for (auto& [regAddress, cfgElement] : cfgMap.m_map)
-            {
-                cfgElement.m_value = registerRead(*md, regAddress).value_or("NOT FOUND");
-            }
-            // Write the configuration to the file
-            mINI::INIFile      configFile(configFilePath);
-            mINI::INIStructure ini;
-            for (const auto& [regAddress, cfgElement] : cfgMap.m_map)
-            {
-                ini[cfgElement.m_tomlSection.data()][cfgElement.m_tomlKey.data()] =
-                    cfgElement.getReadable();
-            }
-            if (!configFile.generate(ini, true))
-            {
-                m_logger.error("Could not write configuration to file: %s", configFilePath.c_str());
-                return;
-            }
-            m_logger.success("Configuration downloaded successfully to %s", configFilePath.c_str());
+            MDConfigMap cfgMap;
+            // for (auto& [regAddress, cfgElement] : cfgMap.m_map)
+            // {
+            //     cfgElement.m_value = registerRead(*md, regAddress).value_or("NOT FOUND");
+            // }
+            // // Write the configuration to the file
+            // mINI::INIFile      configFile(configFilePath);
+            // mINI::INIStructure ini;
+            // for (const auto& [regAddress, cfgElement] : cfgMap.m_map)
+            // {
+            //     ini[cfgElement.m_tomlSection.data()][cfgElement.m_tomlKey.data()] =
+            //         cfgElement.getReadable();
+            // }
+            // if (!configFile.generate(ini, true))
+            // {
+            //     m_logger.error("Could not write configuration to file: %s",
+            //     configFilePath.c_str()); return;
+            // }
+            // m_logger.success("Configuration downloaded successfully to %s",
+            // configFilePath.c_str());
         });
 
     // Upload configuration file
@@ -326,64 +328,64 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     ConfigOptions uploadConfigOptions(uploadConfig);
 
     uploadConfig->callback(
-        [this, candleBuilder, mdCanId, uploadConfigOptions]()
+        [this, od, mdCanId, uploadConfigOptions]()
         {
-            auto md = getMd(mdCanId, candleBuilder);
-            if (md == nullptr)
-            {
-                return;
-            }
+            auto md = getMdco(mdCanId, od);
+            // if (md == nullptr)
+            // {
+            //     return;
+            // }
 
-            std::string configFilePath = *uploadConfigOptions.configFile;
-            if (configFilePath.empty())
-            {
-                m_logger.error("Configuration file path is empty!");
-                return;
-            }
-            // If the path is not specified, prepend the standard path
-            if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
-                configFilePath.end())
-            {
-                configFilePath = "/etc/candletool/config/motors/" + configFilePath;
-            }
+            // std::string configFilePath = *uploadConfigOptions.configFile;
+            // if (configFilePath.empty())
+            // {
+            //     m_logger.error("Configuration file path is empty!");
+            //     return;
+            // }
+            // // If the path is not specified, prepend the standard path
+            // if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
+            //     configFilePath.end())
+            // {
+            //     configFilePath = "/etc/candletool/config/motors/" + configFilePath;
+            // }
 
-            mINI::INIFile      configFile(configFilePath);
-            mINI::INIStructure ini;
-            if (!configFile.read(ini))
-            {
-                m_logger.error("Could not read configuration file: %s", configFilePath.c_str());
-                return;
-            }
+            // mINI::INIFile      configFile(configFilePath);
+            // mINI::INIStructure ini;
+            // if (!configFile.read(ini))
+            // {
+            //     m_logger.error("Could not read configuration file: %s", configFilePath.c_str());
+            //     return;
+            // }
 
-            MDConfigMap cfgMap;
+            // MDConfigMap cfgMap;
 
-            for (auto& [address, toml] : cfgMap.m_map)
-            {
-                auto it = ini[toml.m_tomlSection.data()][toml.m_tomlKey.data()];
-                if (it.empty())
-                {
-                    m_logger.warn("Key %s.%s not found in configuration file. Skipping.",
-                                  toml.m_tomlSection.data(),
-                                  toml.m_tomlKey.data());
-                    continue;
-                }
-                if (!toml.setFromReadable(it))
-                {
-                    m_logger.error("Could not set value for %s.%s",
-                                   toml.m_tomlSection.data(),
-                                   toml.m_tomlKey.data());
-                    return;
-                }
-                // Write the value to the MD
-                registerWrite(*md, address, toml.m_value);
-            }
+            // for (auto& [address, toml] : cfgMap.m_map)
+            // {
+            //     auto it = ini[toml.m_tomlSection.data()][toml.m_tomlKey.data()];
+            //     if (it.empty())
+            //     {
+            //         m_logger.warn("Key %s.%s not found in configuration file. Skipping.",
+            //                       toml.m_tomlSection.data(),
+            //                       toml.m_tomlKey.data());
+            //         continue;
+            //     }
+            //     if (!toml.setFromReadable(it))
+            //     {
+            //         m_logger.error("Could not set value for %s.%s",
+            //                        toml.m_tomlSection.data(),
+            //                        toml.m_tomlKey.data());
+            //         return;
+            //     }
+            //     // Write the value to the MD
+            //     registerWrite(*md, address, toml.m_value);
+            // }
 
-            if (md->save() != MD::Error_t::OK)
-            {
-                m_logger.error("Could not save configuration!");
-                return;
-            }
-            m_logger.success("Uploaded configuration to the MD!");
+            // if (md->save() != MD::Error_t::OK)
+            // {
+            //     m_logger.error("Could not save configuration!");
+            //     return;
+            // }
+            // m_logger.success("Uploaded configuration to the MD!");
         });
     // CLEAR ============================================================================
 
