@@ -127,43 +127,53 @@ namespace mab
         {
             case DataType_E::BOOLEAN:
                 m_value = *std::bit_cast<const open_types::BOOLEAN_t*>(bytes.data());
-                m_value = (open_types::BOOLEAN_t)(bool)std::get<open_types::BOOLEAN_t>(m_value.value());
+                m_value =
+                    (open_types::BOOLEAN_t)(bool)std::get<open_types::BOOLEAN_t>(m_value.value());
                 break;
             case DataType_E::INTEGER8:
                 m_value = *std::bit_cast<const open_types::INTEGER8_t*>(bytes.data());
-                m_value = (open_types::INTEGER8_t)(i8)std::get<open_types::INTEGER8_t>(m_value.value());
+                m_value =
+                    (open_types::INTEGER8_t)(i8)std::get<open_types::INTEGER8_t>(m_value.value());
                 break;
             case DataType_E::INTEGER16:
                 m_value = *std::bit_cast<const open_types::INTEGER16_t*>(bytes.data());
-                m_value = (open_types::INTEGER16_t)(i16)std::get<open_types::INTEGER16_t>(m_value.value());
+                m_value = (open_types::INTEGER16_t)(i16)std::get<open_types::INTEGER16_t>(
+                    m_value.value());
                 break;
             case DataType_E::INTEGER32:
                 m_value = *std::bit_cast<const open_types::INTEGER32_t*>(bytes.data());
-                m_value = (open_types::INTEGER32_t)(i32)std::get<open_types::INTEGER32_t>(m_value.value());
+                m_value = (open_types::INTEGER32_t)(i32)std::get<open_types::INTEGER32_t>(
+                    m_value.value());
                 break;
             case DataType_E::INTEGER64:
                 m_value = *std::bit_cast<const open_types::INTEGER64_t*>(bytes.data());
-                m_value = (open_types::INTEGER64_t)(i64)std::get<open_types::INTEGER64_t>(m_value.value());
+                m_value = (open_types::INTEGER64_t)(i64)std::get<open_types::INTEGER64_t>(
+                    m_value.value());
                 break;
             case DataType_E::UNSIGNED8:
                 m_value = *std::bit_cast<const open_types::UNSIGNED8_t*>(bytes.data());
-                m_value = (open_types::UNSIGNED8_t)(u8)std::get<open_types::UNSIGNED8_t>(m_value.value());
+                m_value =
+                    (open_types::UNSIGNED8_t)(u8)std::get<open_types::UNSIGNED8_t>(m_value.value());
                 break;
             case DataType_E::UNSIGNED16:
                 m_value = *std::bit_cast<const open_types::UNSIGNED16_t*>(bytes.data());
-                m_value = (open_types::UNSIGNED16_t)(u16)std::get<open_types::UNSIGNED16_t>(m_value.value());
+                m_value = (open_types::UNSIGNED16_t)(u16)std::get<open_types::UNSIGNED16_t>(
+                    m_value.value());
                 break;
             case DataType_E::UNSIGNED32:
                 m_value = *std::bit_cast<const open_types::UNSIGNED32_t*>(bytes.data());
-                m_value = (open_types::UNSIGNED32_t)(u32)std::get<open_types::UNSIGNED32_t>(m_value.value());
+                m_value = (open_types::UNSIGNED32_t)(u32)std::get<open_types::UNSIGNED32_t>(
+                    m_value.value());
                 break;
             case DataType_E::UNSIGNED64:
                 m_value = *std::bit_cast<const open_types::UNSIGNED64_t*>(bytes.data());
-                m_value = (open_types::UNSIGNED64_t)(u64)std::get<open_types::UNSIGNED64_t>(m_value.value());
+                m_value = (open_types::UNSIGNED64_t)(u64)std::get<open_types::UNSIGNED64_t>(
+                    m_value.value());
                 break;
             case DataType_E::REAL32:
                 m_value = *std::bit_cast<const open_types::REAL32_t*>(bytes.data());
-                m_value = (open_types::REAL32_t)(f32)std::get<open_types::REAL32_t>(m_value.value());
+                m_value =
+                    (open_types::REAL32_t)(f32)std::get<open_types::REAL32_t>(m_value.value());
                 break;
             case DataType_E::DOMAIN_TYPE:
                 m_value = open_types::DOMAIN_t(bytes.begin(), bytes.end());

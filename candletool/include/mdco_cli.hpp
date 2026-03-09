@@ -32,18 +32,6 @@ namespace mab
         std::shared_ptr<CandleBuilder> m_candleBuilder;
         CANdleToolCtx_S                m_ctx;
 
-        /// @brief It returns the same string, without any spaces and all in lowercase.
-        /// @param s Input string to be cleaned.
-        void clean(std::string& s);
-
-        /// @brief Check if the CANopen configuration file is complete
-        bool isCanOpenConfigComplete(const std::filesystem::path& pathToConfig);
-
-        /// @brief Validate and get the final configuration path
-        /// @param cfgPath Path to the configuration file to verify
-        /// @return Validated path to the configuration file
-        std::string validateAndGetFinalConfigPath(const std::filesystem::path& cfgPath);
-
         std::unique_ptr<MDCO, std::function<void(MDCO*)>> getMdco(
             const std::shared_ptr<canId_t> mdCanId, std::shared_ptr<EDSObjectDictionary> od);
 

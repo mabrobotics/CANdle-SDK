@@ -11,135 +11,60 @@
 #include <functional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace mab
 {
     struct MDCOConfigAdapter
     {
-        enum class Error_t
-        {
-            UNKNOWN,
-            OK,
-            PARSING_FAILED,
-            TRANSMISSION_FAILED
-        };
-        inline static Error_t sendConfigToMDCO(const MDConfigMap&   config,
-                                               EDSObjectDictionary& od,
-                                               MDCO&                mdco)
-        {
-            Logger log(Logger::ProgramLayer_E::TOP, "MDCO CFG");
-            // Manufacturer part parsing
-            for (const auto& [regAddr, objName, subIdx] : manufacturerRegMaping)
-            {
-                const std::string cfgValue = config.getValueByAddress(regAddr);
-                if (cfgValue.empty())
-                {
-                    log.warn("Manufacturer register %s not found in config", objName.data());
-                    continue;
-                }
-                auto objOpt = od.getEntryByName(objName);
-                if (!objOpt.has_value())
-                {
-                    log.warn("Manufacturer register %s not found in OD - skipping", objName.data());
-                    continue;
-                }
-                auto& obj = objOpt.value().get();
-                if (obj.setFromString(cfgValue) != EDSEntry::Error_t::OK)
-                {
-                    log.error("Failed to set value for manufacturer register %s", objName.data());
-                    return od;
-                }
-            }
-
-            // Parse standard CANopen registers with unit conversion
-            for (const auto& [cfgAddr, odAddr, subIdx] : standardRegMaping)
-            {
-                try
-                {
-                    std::string cfgValue = config.getValueByAddress(cfgAddr);
-                    if (!cfgValue.empty())
-                    {
-                        // Convert from config value to OD value if conversion exists
-                        f32 cfgNumVal = std::stof(cfgValue);
-                        i64 odValue   = cfgNumVal;
-
-                        // Apply unit conversion based on register address
-                        if (auto it = cfgToOdUnitConversions.find(cfgAddr);
-                            it != cfgToOdUnitConversions.end())
-                        {
-                            odValue = it->second(cfgNumVal);
-                        }
-
-                        EDSEntry& entry = od[odAddr];
-                        if (subIdx.has_value())
-                        {
-                            entry[subIdx.value()] = odValue;
-                        }
-                        else
-                        {
-                            entry = odValue;
-                        }
-                    }
-                }
-                catch (const std::exception&)
-                {
-                    // Skip if register not found in config
-                    continue;
-                }
-            }
-
-            return od;
-        }
-        inline static Error_t receiveConfigFromMDCO(const EDSObjectDictionary& od,
-                                                    MDConfigMap&               config,
-                                                    MDCO&                      mdco)
-        {
-            return config;
-        }
+        std::vector<std::reference_wrapper<EDSEntry>> configToOd(
+            MDConfigMap& config, std::shared_ptr<EDSObjectDictionary> od);
+        void configFromOd(std::shared_ptr<EDSObjectDictionary> od, MDConfigMap& config);
 
         static constexpr auto toMili = [](std::string_view x) -> std::string
         {
-            f32 xFloat;
-            std::from_chars(x.begin(), x.end(), xFloat);
-            return std::to_string(xFloat * 1000.f);
+            i64 xInt;
+            std::from_chars(x.begin(), x.end(), xInt);
+            return std::to_string(static_cast<i64>(xInt * 1000));
         };
         static constexpr auto fromMili = [](std::string_view x) -> std::string
         {
-            i64 xInt;
-            std::from_chars(x.begin(), x.end(), xInt);
-            return std::to_string(static_cast<i64>(xInt / 1000.f));
+            float xFloat;
+            std::from_chars(x.begin(), x.end(), xFloat);
+            return std::to_string(xFloat / 1000.f);
         };
 
         static constexpr auto toEncTick = [](std::string_view x) -> std::string
         {
-            f32 xFloat;
-            std::from_chars(x.begin(), x.end(), xFloat);
-            return std::to_string(xFloat * 16384.f / (2 * M_PI));
+            i64 xInt;
+            std::from_chars(x.begin(), x.end(), xInt);
+            return std::to_string(static_cast<i64>(xInt * 16384 / (2 * M_PI)));
         };
         static constexpr auto fromEncTick = [](std::string_view x) -> std::string
         {
-            i64 xInt;
-            std::from_chars(x.begin(), x.end(), xInt);
-            return std::to_string(static_cast<i64>(xInt * 2 * M_PI / 16384.f));
+            f32 xFloat;
+            std::from_chars(x.begin(), x.end(), xFloat);
+            return std::to_string(xFloat * 2 * M_PI / 16384.f);
         };
 
         static constexpr auto toRPM = [](std::string_view x) -> std::string
         {
-            f32 xFloat;
-            std::from_chars(x.begin(), x.end(), xFloat);
-            return std::to_string(xFloat * 60.f / (2 * M_PI));
+            i64 xInt;
+            std::from_chars(x.begin(), x.end(), xInt);
+            return std::to_string(static_cast<i64>(xInt * 60.f / (2 * M_PI)));
         };
         static constexpr auto fromRPM = [](std::string_view x) -> std::string
         {
-            i64 xInt;
-            std::from_chars(x.begin(), x.end(), xInt);
-            return std::to_string(static_cast<i64>(xInt * 2 * M_PI / 60.f));
+            f32 xFloat;
+            std::from_chars(x.begin(), x.end(), xFloat);
+            return std::to_string(xFloat * 2 * M_PI / 60.f);
         };
 
         MDCOConfigAdapter()
             : cfgToOdUnitConversions({{0x016, toMili},
                                       {0x112, toMili},
                                       {0x110, toEncTick},
+                                      {0x111, toEncTick},
                                       {0x113, toRPM},
                                       {0x114, toRPM},
                                       {0x115, toRPM},
@@ -150,6 +75,7 @@ namespace mab
               odToCfgUnitConversions({{0x016, fromMili},
                                       {0x112, fromMili},
                                       {0x110, fromEncTick},
+                                      {0x111, fromEncTick},
                                       {0x113, fromRPM},
                                       {0x114, fromRPM},
                                       {0x115, fromRPM},
@@ -170,7 +96,7 @@ namespace mab
                 {0x01D, "Torque constant", {}},
                 {0x01E, "Calibration Mode", {}},
                 {0x808, "Motor Shutdown Temperature", {}},
-                {0x600, "Reverse Direction", {}},
+                // {0x600, "Reverse Direction", {}}, removed for safety
 
                 {0x020, "Output Encoder", {0x1}},
                 {0x025, "Output Encoder", {0x3}},
@@ -200,7 +126,7 @@ namespace mab
                 {0x110, 0x607D, 2},  // Max position
                 {0x111, 0x607D, 1},  // Min position
 
-                {0x113, 0x607F, {}},  // Max velocity
+                {0x113, 0x6080, {}},  // Max velocity
                 {0x114, 0x60C5, {}},  // Max acceleration
                 {0x115, 0x60C6, {}},  // Max deceleration
 
@@ -210,8 +136,10 @@ namespace mab
                 {0x123, 0x6085, {}}   // Quick stop deceleration
             });
 
-        const std::map<u16, std::function<std::string(std::string_view)>> cfgToOdUnitConversions;
-        const std::map<u16, std::function<std::string(std::string_view)>> odToCfgUnitConversions;
+        const std::unordered_map<u16, std::function<std::string(std::string_view)>>
+            cfgToOdUnitConversions;
+        const std::unordered_map<u16, std::function<std::string(std::string_view)>>
+            odToCfgUnitConversions;
     };
 
 }  // namespace mab

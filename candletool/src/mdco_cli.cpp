@@ -26,106 +26,6 @@
 
 using namespace mab;
 
-std::string MdcoCli::validateAndGetFinalConfigPath(const std::filesystem::path& cfgPath)
-{
-    // Check if the file exists, if not, check if it exists relative to the default config
-    std::filesystem::path finalConfigPath = cfgPath;
-    std::filesystem::path pathRelToDefaultConfig =
-        getMotorsConfigPath().string() + cfgPath.string();
-    // Check if the file exists
-    if (!fileExists(finalConfigPath))
-    {
-        if (!fileExists(pathRelToDefaultConfig))
-        {
-            m_log.error("Neither \"%s\", nor \"%s\", exists!.",
-                        cfgPath.c_str(),
-                        pathRelToDefaultConfig.c_str());
-            exit(1);
-        }
-        finalConfigPath = pathRelToDefaultConfig;
-    }
-    // Check if the file is a valid config file
-    if (!isConfigValid(finalConfigPath))
-    {
-        m_log.error("\"%s\" in not a valid motor .cfg file.", finalConfigPath.c_str());
-        m_log.warn("Valid file must have .cfg extension, and size of < 1MB");
-        exit(1);
-    }
-    std::filesystem::path defaultConfigPath =
-        finalConfigPath.string().substr(0, finalConfigPath.string().find_last_of('/') + 1) +
-        "default.cfg";
-
-    // If default config does not exist, warn the user
-    if (!fileExists(defaultConfigPath))
-    {
-        m_log.warn("No default config found at expected location \"%s\"",
-                   defaultConfigPath.c_str());
-        m_log.warn("Cannot check completeness of the config file. Proceed with upload? [y/n]");
-        if (!getConfirmation())
-            exit(0);
-    }
-    // If default config exists, check if the user config is complete, if not, offer to generate
-    // missing parts
-    if (fileExists(defaultConfigPath) && !isCanOpenConfigComplete(finalConfigPath))
-    {
-        m_log.m_layer = Logger::ProgramLayer_E::TOP;
-        m_log.error("\"%s\" is incomplete.", finalConfigPath.c_str());
-        m_log.info("Generate updated file with all required fields? [y/n]");
-        if (getConfirmation())
-        {
-            finalConfigPath = generateUpdatedConfigFile(finalConfigPath.string());
-            m_log.info("Generated updated file \"%s\"", finalConfigPath.c_str());
-        }
-        else
-            m_log.info("Proceeding with original file \"%s\"", finalConfigPath.c_str());
-    }
-    return finalConfigPath.string();
-}
-
-void MdcoCli::clean(std::string& s)
-{
-    size_t write_pos    = 0;
-    bool   seenNonSpace = false;
-    for (size_t read_pos = 0; read_pos < s.size(); ++read_pos)
-    {
-        unsigned char c = s[read_pos];
-        if (std::isspace(c))
-        {
-            if (!seenNonSpace)
-                continue;  // skip leading spaces
-            continue;      // skip all spaces (internal & trailing)
-        }
-        seenNonSpace   = true;
-        s[write_pos++] = std::tolower(c);  // pass all character in lower case
-    }
-    s.resize(write_pos);
-}
-
-bool MdcoCli::isCanOpenConfigComplete(const std::filesystem::path& pathToConfig)
-{
-    mINI::INIFile      defaultFile(getMotorsConfigPath() / "CANopen/default.cfg");
-    mINI::INIStructure defaultIni;
-    defaultFile.read(defaultIni);
-
-    mINI::INIFile      userFile(pathToConfig);
-    mINI::INIStructure userIni;
-    userFile.read(userIni);
-
-    // Loop fills all lacking fields in the user's config file.
-    for (auto const& it : defaultIni)
-    {
-        auto const& section    = it.first;
-        auto const& collection = it.second;
-        for (auto const& it2 : collection)
-        {
-            auto const& key = it2.first;
-            if (!userIni[section].has(key))
-                return false;
-        }
-    }
-    return true;
-}
-
 std::unique_ptr<MDCO, std::function<void(MDCO*)>> MdcoCli::getMdco(
     const std::shared_ptr<canId_t> mdCanId, std::shared_ptr<EDSObjectDictionary> od)
 {
@@ -299,26 +199,51 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 configFilePath = "/etc/candletool/config/motors/" + configFilePath;
             }
 
-            MDConfigMap cfgMap;
-            // for (auto& [regAddress, cfgElement] : cfgMap.m_map)
-            // {
-            //     cfgElement.m_value = registerRead(*md, regAddress).value_or("NOT FOUND");
-            // }
+            MDConfigMap       cfgMap;
+            MDCOConfigAdapter odCfgAdapter;
+            for (auto& [regAddr, objName, subidxOpt] : odCfgAdapter.manufacturerRegMaping)
+            {
+                auto objOpt = od->getEntryByName(objName);
+                if (!objOpt.has_value())
+                {
+                    m_log.warn("Obj %s does not exist in the eds!", objName.data());
+                    continue;
+                }
+                auto& obj = subidxOpt.has_value() ? objOpt.value().get()[subidxOpt.value()]
+                                                  : objOpt.value().get();
+                if (md->readSDO(obj) != MDCO::Error_t::OK)
+                {
+                    m_log.error("Obj %s coudl not be read from md!", objName.data());
+                    continue;
+                }
+            }
+            for (auto& [regAddr, objAddress, subidxOpt] : odCfgAdapter.standardRegMaping)
+            {
+                auto& obj = subidxOpt.has_value() ? (*od)[objAddress][subidxOpt.value()]
+                                                  : (*od)[objAddress];
+                if (md->readSDO(obj) != MDCO::Error_t::OK)
+                {
+                    m_log.error("Obj %d coudl not be read from md!", objAddress);
+                    continue;
+                }
+            }
+
+            odCfgAdapter.configFromOd(od, cfgMap);
             // // Write the configuration to the file
-            // mINI::INIFile      configFile(configFilePath);
-            // mINI::INIStructure ini;
-            // for (const auto& [regAddress, cfgElement] : cfgMap.m_map)
-            // {
-            //     ini[cfgElement.m_tomlSection.data()][cfgElement.m_tomlKey.data()] =
-            //         cfgElement.getReadable();
-            // }
-            // if (!configFile.generate(ini, true))
-            // {
-            //     m_logger.error("Could not write configuration to file: %s",
-            //     configFilePath.c_str()); return;
-            // }
-            // m_logger.success("Configuration downloaded successfully to %s",
-            // configFilePath.c_str());
+            mINI::INIFile      configFile(configFilePath);
+            mINI::INIStructure ini;
+            for (const auto& [regAddress, cfgElement] : cfgMap.m_map)
+            {
+                if (!cfgElement.getReadable().empty())
+                    ini[cfgElement.m_tomlSection.data()][cfgElement.m_tomlKey.data()] =
+                        cfgElement.getReadable();
+            }
+            if (!configFile.generate(ini, true))
+            {
+                m_log.error("Could not write configuration to file: %s", configFilePath.c_str());
+                return;
+            }
+            m_log.success("Configuration downloaded successfully to %s", configFilePath.c_str());
         });
 
     // Upload configuration file
@@ -331,61 +256,71 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         [this, od, mdCanId, uploadConfigOptions]()
         {
             auto md = getMdco(mdCanId, od);
-            // if (md == nullptr)
-            // {
-            //     return;
-            // }
+            if (md == nullptr)
+            {
+                return;
+            }
 
-            // std::string configFilePath = *uploadConfigOptions.configFile;
-            // if (configFilePath.empty())
-            // {
-            //     m_logger.error("Configuration file path is empty!");
-            //     return;
-            // }
-            // // If the path is not specified, prepend the standard path
-            // if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
-            //     configFilePath.end())
-            // {
-            //     configFilePath = "/etc/candletool/config/motors/" + configFilePath;
-            // }
+            std::string configFilePath = *uploadConfigOptions.configFile;
+            if (configFilePath.empty())
+            {
+                m_log.error("Configuration file path is empty!");
+                return;
+            }
+            // If the path is not specified, prepend the standard path
+            if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
+                configFilePath.end())
+            {
+                configFilePath = "/etc/candletool/config/motors/" + configFilePath;
+            }
 
-            // mINI::INIFile      configFile(configFilePath);
-            // mINI::INIStructure ini;
-            // if (!configFile.read(ini))
-            // {
-            //     m_logger.error("Could not read configuration file: %s", configFilePath.c_str());
-            //     return;
-            // }
+            mINI::INIFile      configFile(configFilePath);
+            mINI::INIStructure ini;
+            if (!configFile.read(ini))
+            {
+                m_log.error("Could not read configuration file: %s", configFilePath.c_str());
+                return;
+            }
 
-            // MDConfigMap cfgMap;
+            MDConfigMap       cfgMap;
+            MDCOConfigAdapter odCfgAdapter;
 
-            // for (auto& [address, toml] : cfgMap.m_map)
-            // {
-            //     auto it = ini[toml.m_tomlSection.data()][toml.m_tomlKey.data()];
-            //     if (it.empty())
-            //     {
-            //         m_logger.warn("Key %s.%s not found in configuration file. Skipping.",
-            //                       toml.m_tomlSection.data(),
-            //                       toml.m_tomlKey.data());
-            //         continue;
-            //     }
-            //     if (!toml.setFromReadable(it))
-            //     {
-            //         m_logger.error("Could not set value for %s.%s",
-            //                        toml.m_tomlSection.data(),
-            //                        toml.m_tomlKey.data());
-            //         return;
-            //     }
-            //     // Write the value to the MD
-            //     registerWrite(*md, address, toml.m_value);
-            // }
+            for (auto& [address, toml] : cfgMap.m_map)
+            {
+                auto it = ini[toml.m_tomlSection.data()][toml.m_tomlKey.data()];
+                if (it.empty())
+                {
+                    m_log.warn("Key %s.%s not found in configuration file. Skipping.",
+                               toml.m_tomlSection.data(),
+                               toml.m_tomlKey.data());
+                    continue;
+                }
+                if (!toml.setFromReadable(it))
+                {
+                    m_log.error("Could not set value for %s.%s",
+                                toml.m_tomlSection.data(),
+                                toml.m_tomlKey.data());
+                    return;
+                }
+            }
 
-            // if (md->save() != MD::Error_t::OK)
-            // {
-            //     m_logger.error("Could not save configuration!");
-            //     return;
-            // }
-            // m_logger.success("Uploaded configuration to the MD!");
+            auto entries = odCfgAdapter.configToOd(cfgMap, od);
+
+            for (auto& entry : entries)
+            {
+                if (md->writeSDO(entry.get()) != MDCO::Error_t::OK)
+                {
+                    m_log.error("Error writing %s",
+                                entry.get().getEntryMetaData().parameterName.c_str());
+                }
+            }
+
+            if (md->save() != MDCO::Error_t::OK)
+            {
+                m_log.error("Could not save configuration!");
+                return;
+            }
+            m_log.success("Uploaded configuration to the MD!");
         });
     // CLEAR ============================================================================
 
