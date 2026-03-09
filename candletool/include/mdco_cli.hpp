@@ -35,6 +35,26 @@ namespace mab
         std::unique_ptr<MDCO, std::function<void(MDCO*)>> getMdco(
             const std::shared_ptr<canId_t> mdCanId, std::shared_ptr<EDSObjectDictionary> od);
 
+        struct CalibrationOptions
+        {
+            CalibrationOptions(CLI::App* rootCli)
+                : calibrationOfEncoder(std::make_shared<std::string>("main"))
+            {
+                optionsMap = std::map<std::string, CLI::Option*>{
+
+                    {"encoder",
+                     rootCli
+                         ->add_option("-e,--encoder",
+                                      *calibrationOfEncoder,
+                                      "Type of encoder calibration to perform. "
+                                      "Possible values: main, aux.")
+                         ->default_val("main")}};
+            }
+
+            const std::shared_ptr<std::string>  calibrationOfEncoder;
+            std::map<std::string, CLI::Option*> optionsMap;
+        };
+
         struct ConfigOptions
         {
             ConfigOptions(CLI::App* rootCli) : configFile(std::make_shared<std::string>(""))

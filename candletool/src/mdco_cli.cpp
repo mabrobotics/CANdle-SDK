@@ -54,7 +54,7 @@ std::unique_ptr<MDCO, std::function<void(MDCO*)>> MdcoCli::getMdco(
 
 MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m_ctx(ctx)
 {
-    m_log.m_tag     = "MDCO";
+    m_log.m_tag     = "MDCO_CLI";
     m_log.m_layer   = Logger::ProgramLayer_E::TOP;
     m_candleBuilder = m_ctx.candleBranchVec.at(0).candleBuilder;
 
@@ -498,11 +498,17 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
 
     // Calibration
     CLI::App* setupCalib = mdco->add_subcommand("calibration", "Calibrate main MD encoder.");
+
+    CalibrationOptions calibrationOptions(setupCalib);
     setupCalib->callback(
-        [this, mdCanId, od]()
+        [this, mdCanId, od, calibrationOptions]()
         {
-            constexpr std::string_view calibrationName = "Run Calibration";
-            auto                       mdco            = getMdco(mdCanId, od);
+            std::string calibrationName =
+                *calibrationOptions.calibrationOfEncoder == std::string_view("main")
+                    ? "Run Calibration"
+                    : "Run Output Encoder Calibration";
+            m_log.debug("Running cal with: %s", calibrationName.c_str());
+            auto mdco = getMdco(mdCanId, od);
             if (mdco->enterConfigMode() != MDCO::Error_t::OK)
             {
                 m_log.error("Could not enter config mode!");
@@ -522,21 +528,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error("Could not write SDO calibration command!");
                 return;
             }
-            m_log.success("Calibration is running!");
-        });
-
-    // SETUP calibration output
-    CLI::App* setupCalibOut = mdco->add_subcommand("calibration_out", "Calibrate output encoder.");
-    setupCalibOut->callback(
-        [this, mdCanId, od]()
-        {
-            auto mdco = getMdco(mdCanId, od);
-            // MDCO::Error_t err  = mdco->encoderCalibration(0, 1);
-            // if (err != MDCO::OK)
-            // {
-            //     m_log.error("Error running output encoder calibration");
-            // }
-            m_log.warn("To be implemented!");
+            m_log.info("Calibration is running...");
         });
 
     // SETUP info
