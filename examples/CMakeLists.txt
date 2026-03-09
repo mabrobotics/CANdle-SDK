@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.8)
 
 # Sources shared by multiple targets
 set(COMMON_SOURCES
-    ../candlelib/src/objectDictionary/OD.cpp
     ../candlelib/src/objectDictionary/edsParser.cpp
 )
 

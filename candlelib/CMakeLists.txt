@@ -58,7 +58,6 @@ target_sources(
           src/pds/power_stage.cpp
           src/pds/brake_resistor.cpp
           src/pds/isolated_converter.cpp
-          src/objectDictionary/OD.cpp
           src/objectDictionary/edsParser.cpp
           src/objectDictionary/edsEntry.cpp)
 
@@ -87,9 +86,9 @@ else()
 
 endif()
 if(NOT SUPPRESS_WARN)
-target_compile_options(candle PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-missing-field-initializers)
+    target_compile_options(candle PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-missing-field-initializers)
 else()
-target_compile_options(candle PRIVATE -w)
+    target_compile_options(candle PRIVATE -w)
 endif()
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_options(candle PRIVATE -g3)
