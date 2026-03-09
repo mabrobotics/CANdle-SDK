@@ -22,7 +22,13 @@ int main()
     mab::Candle* candle = mab::attachCandle(
         mab::CANdleDatarate_E::CAN_DATARATE_1M, mab::candleTypes::busTypes_t::USB, true);
 
-    MDCO mdco(10, candle, od);
+    auto connectedMDs = MDCO::discoverOpenMDs(candle, od);
+    if (connectedMDs.empty())
+    {
+        log.error("No MDs found");
+        return EXIT_FAILURE;
+    }
+    MDCO mdco(connectedMDs.front(), candle, od);
     if (mdco.init() != MDCO::Error_t::OK)
     {
         log.error("MDCO exited with %d", mdco.init());
