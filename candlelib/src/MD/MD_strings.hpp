@@ -92,13 +92,17 @@ namespace mab
             {2, "MOTION"},
             {3, "REPORT"},
             {4, "MAIN"},
-            {5, "CALIBRATED_REPORT"}};
+            {5, "CALIBRATED_REPORT"},
+            {6, "DUAL"},
+        };
         static inline const std::map<std::string_view, u32> toNumericMap{{"NONE", 0},
                                                                          {"STARTUP", 1},
                                                                          {"MOTION", 2},
                                                                          {"REPORT", 3},
                                                                          {"MAIN", 4},
-                                                                         {"CALIBRATED_REPORT", 5}};
+                                                                         {"CALIBRATED_REPORT", 5},
+                                                                         {"DUAL", 6}
+        };
 
         static std::optional<u32> toNumeric(const std::string_view val)
         {
