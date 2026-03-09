@@ -43,22 +43,15 @@ namespace mab
         return getDefaultConfigDir() / "candletool.ini";
     }
 
-    inline std::filesystem::path getCanOpenConfigPath()
-    {
-        std::filesystem::path configPath = getDefaultConfigDir();
-        configPath /= "candletoolco.ini";
-        return configPath;
-    }
-
     inline bool fileExists(const std::filesystem::path& filepath)
     {
         std::ifstream fileStream(filepath);
         return fileStream.good();
     }
 
-    inline bool isConfigValid(const std::string& pathToConfig)
+    inline bool isConfigValid(const std::filesystem::path& pathToConfig)
     {
-        std::string fileExtension = std::filesystem::path(pathToConfig).extension().string();
+        std::string fileExtension = pathToConfig.extension().string();
         if (!(fileExtension == ".cfg"))
             return false;
         std::error_code   ec;

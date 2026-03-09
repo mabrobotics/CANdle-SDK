@@ -1,1228 +1,1035 @@
 #include "MDCO.hpp"
+#include <unistd.h>
+#include <cmath>
+#include <cstddef>
+#include <span>
+#include <string>
+#include <string_view>
+#include <vector>
+#include "MDStatus.hpp"
+#include "candle_types.hpp"
+#include "edsEntry.hpp"
+#include "mab_types.hpp"
 
 namespace mab
 {
 
-    MDCO::Error_t MDCO::findObjectByName(const std::string& searchTerm, u32& index, u8& subIndex)
-    {
-        bool objectFound = false;
-        // for loop over all objects contained in the object dictionary
-        for (const edsObject& obj : this->ObjectDictionary)
-        {
-            if (obj.ParameterName.size() == searchTerm.size())
-            {
-                bool equal = true;
-                // compare each character of the two strings, case insensitive
-                for (size_t i = 0; i < obj.ParameterName.size(); ++i)
-                {
-                    if (tolower(obj.ParameterName[i]) != tolower(searchTerm[i]))
-                    {
-                        equal = false;
-                        break;
-                    }
-                }
-                // if they are equal, return the index and subindex
-                if (equal)
-                {
-                    index    = obj.index;
-                    subIndex = obj.subIndex;
-                    // if the object was already found once, we warn the user that multiple objects
-                    // have the same name
-                    if (objectFound)
-                    {
-                        m_log.warn(
-                            "Multiple objects found with name '%s'. Using the first one found.\n",
-                            searchTerm.c_str());
-                    }
-                    else
-                    {
-                        m_log.debug("Object found: %s (0x%04X, subIndex: %d)\n",
-                                    obj.ParameterName.c_str(),
-                                    obj.index,
-                                    obj.subIndex);
-                        objectFound = true;
-                    }
-                }
-            }
-        }
-        // if the object was found at least once, return OK else UNKNOWN_OBJECT
-        if (objectFound)
-        {
-            return OK;
-        }
-
-        return UNKNOWN_OBJECT;
-    }
-
-    MDCO::Error_t MDCO::isWritable(const u32 index, const u8 subIndex)
-    {
-        // for loop over all objects contained in the object dictionary
-        for (const edsObject& obj : this->ObjectDictionary)
-        {
-            // if the index and subindex match
-            if (index == obj.index && subIndex == obj.subIndex)
-            {
-                // check if the access type contains 'w' or 'W'
-                if (obj.accessType.find('w') != std::string::npos ||
-                    obj.accessType.find('W') != std::string::npos)
-                {
-                    return MDCO::Error_t::OK;
-                }
-                else
-                {
-                    return MDCO::Error_t::REQUEST_INVALID;
-                }
-            }
-        }
-
-        return MDCO::Error_t::UNKNOWN_OBJECT;
-    }
-
-    MDCO::Error_t MDCO::isReadable(const u32 index, const u8 subIndex)
-    {
-        // for loop over all objects contained in the object dictionary
-        for (const edsObject& obj : this->ObjectDictionary)
-        {
-            // if the index and subindex match
-            if (index == obj.index && subIndex == obj.subIndex)
-            {
-                // check if the access type contains 'r' or 'R'
-                if (obj.accessType.find('r') != std::string::npos ||
-                    obj.accessType.find('R') != std::string::npos)
-                {
-                    return MDCO::Error_t::OK;
-                }
-                else
-                {
-                    return MDCO::Error_t::REQUEST_INVALID;
-                }
-            }
-        }
-
-        return MDCO::Error_t::UNKNOWN_OBJECT;
-    }
-
-    i8 MDCO::dataSizeOfEdsObject(const u32 index, const u8 subIndex)
-    {
-        // for loop over all objects contained in the object dictionary
-        for (const edsObject& obj : this->ObjectDictionary)
-        {
-            // if the index and subindex match
-            if (index == obj.index && subIndex == obj.subIndex)
-            {
-                // if dataype is boolean, u8 or i8
-                if (obj.DataType == 0x0001 || obj.DataType == 0x0002 || obj.DataType == 0x0005)
-                {
-                    return 1;
-                }
-                // if dataype is u16 or i16
-                else if (obj.DataType == 0x0003 || obj.DataType == 0x0006)
-                {
-                    return 2;
-                }
-                // if dataype is u32, i32 or real32
-                else if (obj.DataType == 0x0004 || obj.DataType == 0x0007 || obj.DataType == 0x0008)
-                {
-                    return 4;
-                }
-                // if dataype is u64, i64 or real64
-                else if (obj.DataType == 0x0011 || obj.DataType == 0x0015 || obj.DataType == 0x001B)
-                {
-                    return 8;
-                }
-                else if (obj.DataType == 0x0009 || obj.DataType == 0x000A ||
-                         obj.DataType == 0x000B || obj.DataType == 0x000F)
-                {
-                    return 0;  // String => size is variable and unknown
-                }
-            }
-        }
-
-        return -1;  // Invalid index or subindex
-    }
-
-    void MDCO::printAllInfo()
-    {
-        i32 value;
-        // loop over all objects in the object dictionary and print their info
-        for (i16 i = 0; i < (i16)ObjectDictionary.size(); i++)
-        {
-            value =
-                getValueFromOpenRegister(ObjectDictionary[i].index, ObjectDictionary[i].subIndex);
-            if (value != -1)
-                m_log.info(
-                    "----------Object Name:%s----------\nindex:%X, sub-index:%X, Storage "
-                    "Location:%s, "
-                    "Data length(bytes):%d, Access:%s, PDO Mapping:%d, actual value(Raw data "
-                    "received):%lld\n"
-                    "-----------------------------------\n\n",
-                    ObjectDictionary[i].ParameterName.c_str(),
-                    ObjectDictionary[i].index,
-                    ObjectDictionary[i].subIndex,
-                    ObjectDictionary[i].StorageLocation.c_str(),
-                    dataSizeOfEdsObject(ObjectDictionary[i].index, ObjectDictionary[i].subIndex),
-                    ObjectDictionary[i].accessType.c_str(),
-                    ObjectDictionary[i].PDOMapping,
-                    value);
-        }
-    }
-
-    /// TODO: those parameters shoudl be loaded via EDS somehow
     MDCO::Error_t MDCO::init()
     {
-        return readOpenRegisters(0x1000, 0);
+        return readSDO((*m_od)[0x1000]);
     }
 
-    MDCO::Error_t MDCO::setProfileParameters(moveParameter& param)
-    {
-        // set all the parameters needed to configure the motor for moving log an error message if
-        // transfer failed
-        Error_t err;
-        err = writeOpenRegisters("Max Acceleration", param.accLimit);
-        if (err != OK)
-        {
-            m_log.error("Error setting Max Acceleration");
-            return err;
-        }
-        err = writeOpenRegisters("Max Deceleration", param.dccLimit);
-        if (err != OK)
-        {
-            m_log.error("Error setting Max Deceleration");
-            return err;
-        }
-        err = writeOpenRegisters("Max Current", param.MaxCurrent);
-        if (err != OK)
-        {
-            m_log.error("Error setting Max Current");
-            return err;
-        }
-        err = writeOpenRegisters("Motor Rated Current", param.RatedCurrent);
-        if (err != OK)
-        {
-            m_log.error("Error setting Rated Current");
-            return err;
-        }
-        err = writeOpenRegisters("Max Motor Speed", param.MaxSpeed);
-        if (err != OK)
-        {
-            m_log.error("Error setting Max Motor Speed");
-            return err;
-        }
-        err = writeOpenRegisters("Max Torque", param.MaxTorque);
-        if (err != OK)
-        {
-            m_log.error("Error setting Max Torque");
-            return err;
-        }
-        err = writeOpenRegisters("Motor Rated Torque", param.RatedTorque);
-        if (err != OK)
-        {
-            m_log.error("Error setting Rated Torque");
-            return err;
-        }
-        return OK;
-    }
-
-    MDCO::Error_t MDCO::enableDriver(ModesOfOperation mode)
+    MDCO::Error_t MDCO::enable()
     {
         // set the mode of operation and enable the driver, log an error message if transfer failed
         Error_t err;
-        err = writeOpenRegisters("Modes Of Operation", mode, 1);
-        if (err != OK)
+        (*m_od)[0x6040] = (open_types::UNSIGNED16_t)6;
+        err             = writeSDO((*m_od)[0x6040]);
+        if (err != Error_t::OK)
         {
-            m_log.error("Error setting Mode of Operation");
+            m_log.error("Error sending shutdown cmd!");
             return err;
         }
-        err = writeOpenRegisters("Controlword", 0x80, 2);
-        if (err != OK)
+        usleep(2'000);
+        (*m_od)[0x6040] = (open_types::UNSIGNED16_t)15;
+        err             = writeSDO((*m_od)[0x6040]);
+        if (err != Error_t::OK)
         {
-            m_log.error("Error setting Controlword to 0x80");
+            m_log.error("Error sending switch on and enable cmd!");
             return err;
         }
-        err = writeOpenRegisters("Controlword", 0x06, 2);
-        if (err != OK)
-        {
-            m_log.error("Error setting Controlword to 0x06");
-            return err;
-        }
-        err = writeOpenRegisters("Controlword", 15, 2);
-        if (err != OK)
-        {
-            m_log.error("Error setting Controlword to 15");
-            return err;
-        }
-        return OK;
+        usleep(2'000);
+        return Error_t::OK;
     }
 
-    MDCO::Error_t MDCO::disableDriver()
+    MDCO::Error_t MDCO::disable()
     {
         // disable the driver, log an error message if transfer failed
         Error_t err;
-        err = writeOpenRegisters("Target Velocity", 0);
-        if (err != OK)
+        (*m_od)[0x6040] = (open_types::UNSIGNED16_t)6;
+        err             = writeSDO((*m_od)[0x6040]);
+        if (err != Error_t::OK)
         {
-            m_log.error("Error setting Target Velocity to 0");
+            m_log.error("Error sending disable operation cmd!");
             return err;
         }
-        err = writeOpenRegisters("Controlword", 6);
-        if (err != OK)
-        {
-            m_log.error("Error setting Controlword to 6");
-            return err;
-        }
-        err = writeOpenRegisters("Modes Of Operation", 0);
-        if (err != OK)
-        {
-            m_log.error("Error setting Modes Of Operation to 0");
-            return err;
-        }
-        return OK;
+        return Error_t::OK;
     }
 
-    void MDCO::movePosition(i32 DesiredPos, i16 timeoutMillis)
-    {
-        auto start      = std::chrono::steady_clock::now();
-        auto lastSend   = start;
-        auto timeout    = std::chrono::milliseconds(timeoutMillis);  // total movement timeout
-        auto sendPeriod = std::chrono::milliseconds(10);             // send every 10ms
-
-        // while timeout non reach or position not reached
-        while (std::chrono::steady_clock::now() - start < timeout &&
-               !((i16)getValueFromOpenRegister(0x6064, 0) > (DesiredPos - 100) &&
-                 (i16)getValueFromOpenRegister(0x6064, 0) < (DesiredPos + 100)))
-        {
-            auto now = std::chrono::steady_clock::now();
-            if (now - lastSend >= sendPeriod)  // send position message every sendPeriod time
-            {
-                Error_t err = writeOpenRegisters("Motor Target Position", DesiredPos, 4);
-                if (err != OK)
-                {
-                    m_log.error("Error setting Motor Target Position");
-                    return;
-                }
-                lastSend = now;
-            }
-        }
-        m_log.debug("actual position: %d\n", (i16)getValueFromOpenRegister(0x6064, 0));
-        // check if position reached with a tolerance of 200 [inc]
-        if (((i16)getValueFromOpenRegister(0x6064, 0) > (DesiredPos - 200) &&
-             (i16)getValueFromOpenRegister(0x6064, 0) < (DesiredPos + 200)))
-        {
-            m_log.success("Position reached in less than 5s");
-        }
-        else
-        {
-            m_log.error("Position not reached in less than 5s");
-        }
-    }
-
-    void MDCO::moveSpeed(i32 DesiredSpeed, i16 timeoutMillis)
-    {
-        auto start      = std::chrono::steady_clock::now();
-        auto lastSend   = start;
-        auto timeout    = std::chrono::milliseconds(timeoutMillis);  // total movement timeout
-        auto sendPeriod = std::chrono::milliseconds(10);             // send every 10ms
-
-        // while timeout non reach
-        while (std::chrono::steady_clock::now() - start < timeout)
-        {
-            auto now = std::chrono::steady_clock::now();
-            // send speed message every sendPeriod time
-            if (now - lastSend >= sendPeriod)
-            {
-                Error_t err = writeOpenRegisters("Motor Target Velocity", DesiredSpeed);
-                if (err != OK)
-                {
-                    m_log.error("Error setting Motor Target Velocity");
-                    return;
-                }
-                lastSend = now;
-            }
-        }
-        // check if speed reached with a tolerance of 5 [RPM]
-        if ((i16)getValueFromOpenRegister(0x606C, 0x00) <= DesiredSpeed + 5 &&
-            (i16)getValueFromOpenRegister(0x606C, 0x00) >= DesiredSpeed - 5)
-        {
-            m_log.success("Velocity Target reached with +/- 5RPM");
-        }
-        else
-        {
-            m_log.error("Velocity Target not reached");
-        }
-    }
-
-    MDCO::Error_t MDCO::moveImpedance(i32            desiredSpeed,
-                                      i32            targetPos,
-                                      moveParameter& param,
-                                      i16            timeoutMillis)
-    {
-        Error_t err;
-        // kp
-        u32 kp_bits;
-        memcpy(&kp_bits, &(param.kp), sizeof(float));
-        err = writeOpenRegisters("Kp_impedance", kp_bits);
-        if (err != OK)
-        {
-            m_log.error("Error setting Kp_impedance");
-            return err;
-        }
-        // kd
-        u32 kd_bits;
-        memcpy(&kd_bits, &(param.kd), sizeof(float));
-        err = writeOpenRegisters("Kd_impedance", kd_bits);
-        if (err != OK)
-        {
-            m_log.error("Error setting Kd_impedance");
-            return err;
-        }
-        err = writeOpenRegisters("Position Demand Value", targetPos);
-        if (err != OK)
-        {
-            m_log.error("Error setting Position Demand Value");
-            return err;
-        }
-        err = writeOpenRegisters("Velocity Demand Value", desiredSpeed);
-        if (err != OK)
-        {
-            m_log.error("Error setting Velocity Demand Value");
-            return err;
-        }
-        err = writeOpenRegisters("Torque Demand Value", param.torqueff);
-        if (err != OK)
-        {
-            m_log.error("Error setting Torque Demand Value");
-            return err;
-        }
-        auto start   = std::chrono::steady_clock::now();
-        auto timeout = std::chrono::milliseconds((timeoutMillis));  // total movement timeout
-        while (std::chrono::steady_clock::now() - start < timeout)
-        {
-        }
-        err = writeOpenRegisters("Torque Demand Value", 0);
-        if (err != OK)
-        {
-            m_log.error("Error resetting Torque Demand Value");
-            return err;
-        }
-        return MDCO::Error_t::OK;
-    }
-
-    MDCO::Error_t MDCO::blinkOpenTest()
+    MDCO::Error_t MDCO::blink()
     {
         // blink the motor led, log an error message if transfer failed
-        Error_t err;
-        err = writeOpenRegisters("Controlword", 0x06, 2);
-        if (err != OK)
+        Error_t                      err       = enterConfigMode();
+        static constexpr std::string blinkName = "Blink LEDs";
+        auto                         blinkOpt  = m_od->getEntryByName(blinkName);
+        if (!blinkOpt.has_value())
         {
-            m_log.error("Error setting Controlword");
-            return err;
+            m_log.error("Coudl not locate %s object!", blinkName.c_str());
+            return Error_t::UNKNOWN_OBJECT;
         }
-        err = writeOpenRegisters("Modes Of Operation", 0xFE, 1);
-        if (err != OK)
-        {
-            m_log.error("Error setting Modes Of Operation");
-            return err;
-        }
-        err = writeOpenRegisters("Blink", 1, 1);
-        if (err != OK)
+        auto& blinkObj = blinkOpt.value().get();
+        blinkObj       = (open_types::BOOLEAN_t)1;
+        err            = writeSDO(blinkObj);
+        if (err != Error_t::OK)
         {
             m_log.error("Error setting Blink LEDs");
             return err;
         }
-        return MDCO::Error_t::OK;
+        return err;
     }
 
-    MDCO::Error_t MDCO::openReset()
+    MDCO::Error_t MDCO::save()
     {
-        // reset the motor via SDO message, log an error message if transfer failed
-        Error_t err;
-        err = writeOpenRegisters("Controlword", 0x06, 2);
-        if (err != OK)
+        Error_t err     = MDCO::Error_t::OK;
+        (*m_od)[0x6060] = (open_types::INTEGER8_t)6;
+        err             = writeSDO((*m_od)[0x6060]);
+        if (err != Error_t::OK)
         {
-            m_log.error("Error setting Controlword");
+            m_log.error("Error sending shutdown cmd!");
             return err;
         }
-        err = writeOpenRegisters("Modes Of Operation", 0xFE, 1);
-        if (err != OK)
-        {
-            m_log.error("Error setting Modes Of Operation");
-            return err;
-        }
-        err = writeOpenRegisters("Reset Controller", 1, 1);
-        if (err != OK)
-        {
-            m_log.error("Error setting Reset Controller");
-            return err;
-        }
-        return MDCO::Error_t::OK;
-    }
-
-    MDCO::Error_t MDCO::clearOpenErrors(i16 level)
-    {
-        Error_t err;
-        // restart node
-        std::vector<u8> data = {0x81, (u8)m_canId};
-        err                  = writeOpenPDORegisters(0x000, data);
-        if (err != OK)
-        {
-            m_log.error("Error restarting node");
-        }
-        m_log.debug("waiting the node %d to restart\n", m_canId);
-        // wait for the node to restart
-        auto start   = std::chrono::steady_clock::now();
-        auto timeout = std::chrono::milliseconds((5000));
-        while (std::chrono::steady_clock::now() - start < timeout)
-        {
-        }
-        // clearing error register
-        err = writeOpenRegisters("Controlword", 0x06, 2);
-        if (err != OK)
-        {
-            m_log.error("Error setting Controlword");
-            return err;
-        }
-        err = writeOpenRegisters("Modes Of Operation", 0xFF, 1);
-        if (err != OK)
-        {
-            m_log.error("Error setting Modes Of Operation");
-            return err;
-        }
-        start   = std::chrono::steady_clock::now();
-        timeout = std::chrono::milliseconds((100));
-        while (std::chrono::steady_clock::now() - start < timeout)
-        {
-        }
-        // clear errors or warnings or both depending on the level
-        if (level == 1)
-            return writeOpenRegisters("Clear Errors", 1, 1);
-        if (level == 2)
-            return writeOpenRegisters("Clear Warnings", 1, 1);
-        if (level == 3)
-        {
-            err = writeOpenRegisters("Clear Errors", 1, 1);
-            if (err == OK)
-            {
-                return err;
-            }
-            else
-                return MDCO::Error_t::TRANSFER_FAILED;
-        }
-        else
-            return MDCO::Error_t::REQUEST_INVALID;
-    }
-
-    MDCO::Error_t MDCO::newCanOpenConfig(i32 newID, i32 newBaud, u32 watchdog)
-    {
-        // set new can configuration, log an error message if transfer failed
-        Error_t err;
-        err = writeOpenRegisters("Can ID", newID, 4);
-        if (err != OK)
-        {
-            m_log.error("Error setting Can ID");
-            return err;
-        }
-        err = writeOpenRegisters("Can Baudrate", newBaud, 4);
-        if (err != OK)
-        {
-            m_log.error("Error setting Can Baudrate");
-            return err;
-        }
-        err = writeOpenRegisters("Can Watchdog", watchdog);
-        if (err != OK)
-        {
-            m_log.error("Error setting Can Watchdog");
-            return err;
-        }
-        return MDCO::Error_t::OK;
-    }
-
-    MDCO::Error_t MDCO::testHeartbeat()
-    {
-        // send heartbeat and check if the motor responds correctly, log an error message if
-        // transfer
-        uint32_t heartbeat_id = 0x700 + (uint32_t)this->m_canId;
-        m_log.info("Waiting for a heartbeat message with can id 0x%03X...", heartbeat_id);
-
-        std::vector<u8>           frame = {0x00};
-        std::vector<uint8_t>      response;
-        mab::candleTypes::Error_t error;
-
-        uint64_t firstHeartbeatReceived = 0;
-
-        // Chrono setup
-        auto start_time = std::chrono::steady_clock::now();
-        auto timeout    = std::chrono::seconds(5);
-
-        while (std::chrono::steady_clock::now() - start_time < timeout)
-        {
-            // send Heartbeat CANopen frame with high frequency
-            auto result =
-                transferCanOpenFrameNoRespondExpected(heartbeat_id, frame, 1, /*timeoutMs=*/10);
-            response = result.first;
-            error    = result.second;
-
-            // if a incorrect message is received, ignore it
-            if (error != mab::candleTypes::Error_t::OK)
-                continue;
-
-            // if the received message is not a Heartbeat, ignore it
-            if ((int)response.size() <= 4)
-                continue;
-
-            // heartbeat received
-            m_log.success("heartbeat received");
-
-            auto now_us = std::chrono::duration_cast<std::chrono::microseconds>(
-                              std::chrono::steady_clock::now() - start_time)
-                              .count();
-
-            // first heartbeat
-            if (firstHeartbeatReceived == 0)
-            {
-                firstHeartbeatReceived = now_us;
-
-                // keep sending message until the last heartbeat disappears on the bus or timeout
-                do
-                {
-                    result = transferCanOpenFrameNoRespondExpected(
-                        heartbeat_id, frame, 1, /*timeoutMs=*/10);
-                    response = result.first;
-                    error    = result.second;
-                } while ((error == mab::candleTypes::Error_t::OK && response.size() > 1 &&
-                          response[1] == 0x01) &&
-                         (std::chrono::steady_clock::now() - start_time < timeout));
-
-                continue;  // keep waiting for the second heartbeat
-            }
-
-            // second heartbeat — calculating delta time
-            auto delta_us = std::chrono::duration_cast<std::chrono::microseconds>(
-                                std::chrono::steady_clock::now() - start_time)
-                                .count() -
-                            firstHeartbeatReceived;
-
-            m_log.success("heartbeat received with in between time of %.6lf s",
-                          static_cast<double>(delta_us) / 1'000'000.0);
-            return OK;
-        }
-
-        // ---------- Timeout ----------
-        if (firstHeartbeatReceived == 0)
-            m_log.error("No heartbeat has been received after 5s.\n");
-        else
-            m_log.success("One heartbeat has been received in the last 5s");
-
-        return OK;
-    }
-
-    MDCO::Error_t MDCO::openSave()
-    {
-        // save the motor configuration via SDO message, log an error message if transfer failed
-        Error_t err;
-        err = writeOpenRegisters("Controlword", 0x06, 2);
-        if (err != OK)
-        {
-            m_log.error("Error setting Controlword for openSave");
-            return err;
-        }
-        err = writeOpenRegisters(
-            "Save all parameters", 0x65766173, 4);  // 0x65766173="save" in ASCII and little endian
-        if (err != OK)
+        (*m_od)[0x1010][0x1] =
+            (open_types::UNSIGNED32_t)0x65766173;  // 0x65766173="save" in ASCII and little endian
+        err = writeSDO((*m_od)[0x1010][0x1]);
+        if (err != Error_t::OK)
         {
             m_log.error("Error saving all parameters");
             return err;
         }
-        // wait for motor to restart
-        auto start   = std::chrono::steady_clock::now();
-        auto timeout = std::chrono::milliseconds((2000));
-        while (std::chrono::steady_clock::now() - start < timeout)
-        {
-        }
-        return MDCO::Error_t::OK;
-    }
-
-    MDCO::Error_t MDCO::openZero()
-    {
-        // set the motor zero position to the actual position via SDO message, log an error message
-        // if transfer failed
-        Error_t err;
-        err = writeOpenRegisters("Controlword", 0x06, 2);
-        if (err != OK)
-        {
-            m_log.error("Error setting Controlword for openZero");
-            return err;
-        }
-        err = writeOpenRegisters("Modes Of Operation", 0xFE, 1);
-        if (err != OK)
-        {
-            m_log.error("Error setting Modes Of Operation for openZero");
-            return err;
-        }
-        err = writeOpenRegisters("Zero", 1, 1);
-        if (err != OK)
-        {
-            m_log.error("Error setting Set Zero");
-            return err;
-        }
-        // verify that the zero position has been set correctly
-        if ((getValueFromOpenRegister(0x6064, 0) > -50) &&
-            (getValueFromOpenRegister(0x6064, 0) < 50))
-        {
-            m_log.success("Zero update");
-            return MDCO::Error_t::OK;
-        }
-        else
-        {
-            m_log.error("Zero not update");
-            return MDCO::Error_t::TRANSFER_FAILED;
-        }
-    }
-
-    MDCO::Error_t MDCO::testEncoder(bool Main, bool output)
-    {
-        // test the motor encoders via SDO message, log an error message if transfer failed
-        Error_t err;
-        err = writeOpenRegisters("Controlword", 0x06, 2);
-        if (err != OK)
-        {
-            m_log.error("Error setting Controlword for testEncoder");
-            return err;
-        }
-        err = writeOpenRegisters("Modes Of Operation", 0xFE, 1);
-        if (err != OK)
-        {
-            m_log.error("Error setting Modes Of Operation for testEncoder");
-            return err;
-        }
-        if (Main)
-        {
-            err = writeOpenRegisters("Test Main Encoder", 1, 1);
-            if (err != OK)
-            {
-                m_log.error("Error setting Test Main Encoder");
-                return err;
-            }
-        }
-        if (output)
-        {
-            err = writeOpenRegisters("Test Output Encoder", 1, 1);
-            if (err != OK)
-            {
-                m_log.error("Error setting Test Output Encoder");
-                return err;
-            }
-        }
-        return MDCO::Error_t::OK;
-    }
-
-    MDCO::Error_t MDCO::encoderCalibration(bool Main, bool output)
-    {
-        // calibrate the motor encoders via SDO message, log an error message if transfer failed
-        Error_t err;
-        err = writeOpenRegisters("Controlword", 0x06, 2);
-        if (err != OK)
-        {
-            m_log.error("Error setting Controlword for encoderCalibration");
-            return err;
-        }
-        err = writeOpenRegisters("Modes Of Operation", 0xFE, 1);
-        if (err != OK)
-        {
-            m_log.error("Error setting Modes Of Operation for encoderCalibration");
-            return err;
-        }
-        if (Main)
-        {
-            err = writeOpenRegisters("Calibrate", 1, 1);
-            if (err != OK)
-            {
-                m_log.error("Error setting Run Calibration");
-                return err;
-            }
-        }
-        if (output)
-        {
-            err = writeOpenRegisters("Run Output Encoder Calibration", 1, 1);
-            if (err != OK)
-            {
-                m_log.error("Error setting Run Output Encoder Calibration");
-                return err;
-            }
-        }
-        return MDCO::Error_t::OK;
-    }
-
-    MDCO::Error_t MDCO::readOpenRegisters(i16 index, u8 subindex, bool force)
-    {
-        // check if the object is readable unless force is true
-        if (!force)
-        {
-            if (isReadable(index, subindex) != OK)
-            {
-                m_log.error("Object 0x%04x:0x%02x is not Readable!", index, subindex);
-                return REQUEST_INVALID;
-            }
-        }
-
-        m_log.debug("Read Open register...");
-        std::vector<u8> frame = {
-            0x40,
-            ((u8)index),
-            ((u8)(index >> 8)),
-            subindex,
-            0,
-            0,
-            0,
-            0,
-        };
-
-        //  message sending via transferCanFrame
-        auto [response, error] =
-            transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, frame, frame.size());
-
-        // data display
-        std::stringstream ss;
-
-        ss << "\n\n ---- Received CAN Frame Info ----" << "\n";
-
-        u8 cmd = response[0];
-        if ((cmd & 0xF0) != 0x40)
-        {
-            ss << "Frame not recognized as an SDO Upload Expedited response." << "\n";
-            return Error_t::TRANSFER_FAILED;
-        }
-        else
-        {
-            // FLAGS Extraction
-            u8 n       = (cmd & 0x0C) >> 2;  // bits 1-0
-            u8 dataLen = 4 - n;
-
-            // Index and Subindex
-            u16 index    = response[2] << 8 | response[1];
-            u8  subindex = response[3];
-
-            // data display
-            ss << "Index      : 0x" << std::hex << std::setw(4) << std::setfill('0') << index
-               << "\n";
-
-            ss << "Subindex   : 0x" << std::hex << std::setw(2) << std::setfill('0')
-               << (i16)subindex << "\n";
-
-            ss << "Data (" << std::dec << (i16)dataLen << " byte(s)): 0x";
-
-            for (i16 i = dataLen - 1; i >= 0; --i)
-            {
-                ss << std::hex << std::setw(2) << std::setfill('0') << (i16)response[4 + i];
-            }
-            ss << "\n"
-               << "------------------------" << "\n";
-            m_log.info("%s\n", ss.str().c_str());
-        }
-
-        if (error == mab::candleTypes::Error_t::OK)
-        {
-            return Error_t::OK;
-        }
-        else
-        {
-            m_log.error("Error in the register write response!");
-            return Error_t::TRANSFER_FAILED;
-        }
-    }
-
-    MDCO::Error_t MDCO::writeLongOpenRegisters(i16                index,
-                                               short              subindex,
-                                               const std::string& dataString,
-                                               bool               force)
-    {
-        // check if the object is writable unless force is true
-        if (!force)
-        {
-            if (isWritable(index, subindex) != OK)
-            {
-                m_log.error("Object 0x%04x:0x%02x is not writable!", index, subindex);
-                return REQUEST_INVALID;
-            }
-        }
-        std::string motorName = dataString;
-
-        m_log.debug("Writing Motor Name to 0x2000:0x06 via segmented SDO...");
-
-        // 1. prepare data to send clip data to 20 bytes (Motor Name)
-        std::vector<u8> data = std::vector<u8>(motorName.begin(), motorName.end());
-        // 2. sending init message of segmented transfer
-        std::vector<u8> initFrame = {0x21,  // CCS=1, E=1, S=1
-                                     u8(index & 0xFF),
-                                     u8(index >> 8),
-                                     u8(subindex),
-                                     u8(data.size() >> 0),
-                                     u8(data.size() >> 8),
-                                     u8(data.size() >> 16),
-                                     u8(data.size() >> 24)};
-
-        auto [initResponse, initError] =
-            transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, initFrame, initFrame.size());
-
-        if (initError != mab::candleTypes::Error_t::OK)
-        {
-            m_log.error("Failed to initiate segmented SDO download.");
-            return Error_t::TRANSFER_FAILED;
-        }
-
-        if (initResponse.size() < 1 || (initResponse[0] & 0xE0) != 0x60)
-        {
-            m_log.error("Unexpected response to initiate download (expected 0x60).");
-            return Error_t::TRANSFER_FAILED;
-        }
-
-        // 3. sending data segments
-        size_t offset = 0;
-        u8     toggle = 0;
-
-        while (offset < data.size())
-        {
-            std::vector<u8> segmentFrame;
-
-            size_t remaining     = data.size() - offset;
-            size_t segmentLength = std::min<size_t>(7, remaining);
-            u8     emptyBytes    = 7 - segmentLength;
-            bool   lastSegment   = (segmentLength == remaining);
-
-            u8 cmdByte = 0x00;
-            cmdByte |= (toggle & 0x01) << 4;         // bit 4: toggle
-            cmdByte |= (emptyBytes & 0x07) << 1;     // bits 3:1: empty bytes
-            cmdByte |= (lastSegment ? 0x01 : 0x00);  // bit 0: C (last segment)
-
-            segmentFrame.push_back(cmdByte);
-
-            // segments data
-            for (size_t i = 0; i < segmentLength; ++i)
-            {
-                segmentFrame.push_back(data[offset + i]);
-            }
-
-            // padding with zeros if needed
-            for (size_t i = segmentLength; i < 7; ++i)
-            {
-                segmentFrame.push_back(0x00);
-            }
-
-            auto [segResponse, segError] =
-                transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, segmentFrame, segmentFrame.size());
-
-            if (segError != mab::candleTypes::Error_t::OK)
-            {
-                m_log.error("Segmented transfer failed at offset {}", offset);
-                return Error_t::TRANSFER_FAILED;
-            }
-
-            // Check server response: must be 0x20 | toggle
-            if (segResponse.size() < 1 || (segResponse[0] & 0xE0) != 0x20)
-            {
-                m_log.error("Malformed segment ACK.");
-                return Error_t::TRANSFER_FAILED;
-            }
-
-            if ((segResponse[0] & 0x10) != (toggle << 4))
-            {
-                m_log.error("Unexpected toggle bit, corrupted transfer.");
-                return Error_t::TRANSFER_FAILED;
-            }
-
-            offset += segmentLength;
-            toggle ^= 0x01;
-        }
-
-        m_log.debug("Motor Name successfully written.");
-        return Error_t::OK;
-    }
-
-    MDCO::Error_t MDCO::readLongOpenRegisters(i16              index,
-                                              short            subindex,
-                                              std::vector<u8>& outData,
-                                              bool             silent)
-    {  // check if the object is readable
-        if (isReadable(index, subindex) != OK)
-        {
-            m_log.error("Object 0x%04x:0x%02x is not readable!", index, subindex);
-            return Error_t::REQUEST_INVALID;
-        }
-
-        m_log.debug("Read Object (0x%lx:0x%x) via segmented SDO…", index, subindex);
-
-        // ---------- 1) Initiation Request ----------
-        std::vector<u8> initReq = {
-            0x40, u8(index & 0xFF), u8(index >> 8), u8(subindex), 0x00, 0x00, 0x00, 0x00};
-
-        auto [rspInit, errInit] = transferCanOpenFrame(0x600 + m_canId, initReq, initReq.size());
-        if (errInit != mab::candleTypes::Error_t::OK || rspInit.size() < 8)
-        {
-            m_log.error("Failed to initiate SDO read.");
-            return Error_t::TRANSFER_FAILED;
-        }
-
-        u8   cmd         = rspInit[0];
-        bool isExpedited = cmd & 0x02;
-        bool hasSize     = cmd & 0x01;
-
-        // ---------- 2a) Expedited transfer ----------
-        if (isExpedited)
-        {
-            m_log.warn("Data received in expedited mode, probably ≤ 4 bytes.");
-            u8 n   = ((cmd >> 2) & 0x03);  // number of unused bytes
-            u8 len = 4 - n;
-
-            outData.insert(outData.end(), rspInit.begin() + 4, rspInit.begin() + 4 + len);
-
-            // ---------- 3) Display ----------
-            if (dataSizeOfEdsObject(index, subindex) == 0)
-            {
-                std::string motorName(outData.begin(), outData.end());
-                if (!silent)
-                    m_log.info("Data received (string): '%s'", motorName.c_str());
-            }
-            else
-            {
-                if (!silent)
-                    m_log.info("Data received: %s",
-                               std::string(outData.begin(), outData.end()).c_str());
-            }
-            return Error_t::OK;
-        }
-
-        // ---------- 2b) Segmented transfer ----------
-        u32 totalLen = 0;
-        if (hasSize)
-        {
-            totalLen = rspInit[4] | (rspInit[5] << 8) | (rspInit[6] << 16) | (rspInit[7] << 24);
-            outData.reserve(totalLen);
-        }
-
-        bool toggle   = false;
-        bool finished = false;
-
-        while (!finished)
-        {
-            std::vector<u8> segReq = {u8(0x60 | (toggle ? 0x10 : 0x00)), 0, 0, 0, 0, 0, 0, 0};
-            auto [rspSeg, errSeg] =
-                transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, segReq, segReq.size());
-
-            if (errSeg != mab::candleTypes::Error_t::OK || rspSeg.size() < 1)
-            {
-                m_log.error("Error segment reading");
-                return Error_t::TRANSFER_FAILED;
-            }
-
-            u8 segCmd = rspSeg[0];
-            if ((segCmd & 0x10) != (toggle ? 0x10 : 0x00))
-            {
-                m_log.error("Bit toggle unexpected, corrupt transfer.");
-                return Error_t::TRANSFER_FAILED;
-            }
-
-            bool last    = segCmd & 0x01;
-            u8   unused  = (segCmd >> 1) & 0x07;
-            u8   dataLen = 7 - unused;
-
-            if ((i16)rspSeg.size() < (1 + dataLen))
-            {
-                m_log.error("Incomplete data in the segment.");
-                return Error_t::TRANSFER_FAILED;
-            }
-
-            outData.insert(outData.end(), rspSeg.begin() + 1, rspSeg.begin() + 1 + dataLen);
-            finished = last;
-            toggle   = !toggle;
-        }
-
-        if (hasSize && outData.size() != totalLen)
-        {
-            m_log.warn("Size of data read (%d) ≠ size announced (%d)", outData.size(), totalLen);
-        }
-
-        // ---------- 3) Display ----------
-
-        if (dataSizeOfEdsObject(index, subindex) == 0)
-        {
-            std::string motorName(outData.begin(), outData.end());
-            if (!silent)
-                m_log.info("Data received (string): '%s'", motorName.c_str());
-        }
-        else
-        {
-            if (!silent)
-                m_log.info("Data received: %s",
-                           std::string(outData.begin(), outData.end()).c_str());
-        }
-
-        return Error_t::OK;
-    }
-
-    i32 MDCO::getValueFromOpenRegister(i16 index, u8 subindex)
-    {
-        // check if the object is readable
-        if (isReadable(index, subindex) != OK)
-        {
-            m_log.error("Object 0x%04x:0x%02x is not writable!", index, subindex);
-            return Error_t::REQUEST_INVALID;
-        }
-        m_log.debug("Read Open register...");
-        // send sdo upload expedited request
-        std::vector<u8> frame = {
-            0x40,
-            ((u8)index),
-            ((u8)(index >> 8)),
-            subindex,
-            0,
-            0,
-            0,
-            0,
-        };
-
-        auto [response, error] =
-            transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, frame, frame.size());
-
-        i32 answerValue = 0;
-        for (i16 i = 0; i <= 4; i++)
-        {
-            answerValue += (((i32)response[4 + i]) << (8 * i));
-        }
-
-        // data display
-        u8 cmd = response[0];
-
-        if ((cmd & 0xF0) != 0x40)
-        {
-            m_log.error("Frame not recognized as an SDO Upload Expedited response.");
-            return -1;
-        }
-        if (error == mab::candleTypes::Error_t::OK)
-        {
-            return answerValue;
-        }
-        else
-        {
-            m_log.error("Error in the register write response!");
-            return -1;
-        }
-    }
-
-    MDCO::Error_t MDCO::writeOpenRegisters(
-        i16 index, short subindex, i32 data, short size, bool force)
-    {
-        // check if the object is writable unless force is true
-        if (!force)
-        {
-            if (isWritable(index, subindex) != OK)
-            {
-                m_log.error("Object 0x%04x:0x%02x is not writable!", index, subindex);
-                return Error_t::REQUEST_INVALID;
-            }
-        }
-        // if size is 0, then read the size from the EDS file
-        if (size == 0)
-        {
-            size = dataSizeOfEdsObject(index, subindex);
-            if (size == -1)
-            {
-                // size= -1 mean object not found in EDS file
-                m_log.error(
-                    "Object 0x%04x:0x%02x has an unsupported size (%d)!", index, subindex, size);
-                return Error_t::REQUEST_INVALID;
-            }
-            else if (size == 0 || size > 4)
-            {
-                // size=0 mean object is string or array, size>4 not supported in expedited transfer
-                m_log.error(
-                    "Object 0x%04x:0x%02x has an unsupported size (%d), please use an "
-                    "Segmented transfer !",
-                    index,
-                    subindex,
-                    size);
-                return Error_t::REQUEST_INVALID;
-            }
-        }
-        // send sdo download expedited request
-        std::vector<u8> frame;
-        frame.reserve(8);
-        if (size == 1)
-            frame.push_back(0x2F);
-        if (size == 2)
-            frame.push_back(0x2B);
-        if (size == 4)
-            frame.push_back(0x23);
-        frame.push_back(((u8)index));         // Index LSB
-        frame.push_back(((u8)(index >> 8)));  // Index MSB
-        frame.push_back(subindex);            // Subindex
-        frame.push_back((u8)data);            // data
-        frame.push_back((u8)(data >> 8));
-        frame.push_back((u8)(data >> 16));
-        frame.push_back((u8)(data >> 24));
-
-        auto [response, error] =
-            transferCanOpenFrame(SDO_REQUEST_BASE + m_canId, frame, frame.size());
-
-        if (error == mab::candleTypes::Error_t::OK)
-        {
-            return Error_t::OK;
-        }
-        else
-        {
-            m_log.error("Error in the register write response!");
-            return Error_t::TRANSFER_FAILED;
-        }
-    }
-
-    MDCO::Error_t MDCO::writeOpenRegisters(const std::string& name, u32 data, u8 size, bool force)
-    {  // search index and subindex from the EDS file corresponding to the name
-        u32 index    = 0;
-        u8  subIndex = 0;
-        if (findObjectByName(name, index, subIndex) != OK)
-        {
-            m_log.error("%s not found in EDS file", name.c_str());
-            return Error_t::UNKNOWN_OBJECT;
-        }
-        if (!force)
-        {
-            if (isWritable(index, subIndex) != OK)
-            {
-                m_log.error("Object 0x%04x:0x%02x is not writable!", index, subIndex);
-                return Error_t::REQUEST_INVALID;
-            }
-        }
-        auto err = writeOpenRegisters(index, subIndex, data, size);
-        if (m_log.g_m_verbosity == Logger::Verbosity_E::VERBOSITY_3)
-            m_log.debug("Error:%d\n", readOpenRegisters(index, subIndex));
         return err;
     }
 
-    MDCO::Error_t MDCO::writeOpenPDORegisters(i16 index, std::vector<u8> data)
+    MDCO::Error_t MDCO::zero()
     {
-        // send PDO write request, PDO is slave/master communication mode so the motor will not
-        // respond
-        m_log.debug("Writing Open Pdo register...");
-
-        auto [response, error] = transferCanOpenFrameNoRespondExpected(index, data, data.size());
-
-        if (error == mab::candleTypes::Error_t::OK)
+        // set the motor zero position to the actual position via SDO message, log an error message
+        // if transfer failed
+        Error_t                           err      = enterConfigMode();
+        static constexpr std::string_view zeroName = "Set Zero";
+        auto                              zeroOpt  = m_od->getEntryByName(zeroName);
+        if (!zeroOpt.has_value())
         {
-            return Error_t::OK;
+            m_log.error("Coudl not locate %s object!", zeroName.data());
+            return Error_t::UNKNOWN_OBJECT;
+        }
+        auto& zeroObj = zeroOpt.value().get();
+        zeroObj       = (open_types::BOOLEAN_t)1;
+        err           = writeSDO(zeroObj);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting %s", zeroObj.getEntryMetaData().parameterName.c_str());
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::reset()
+    {
+        Error_t                           err       = enterConfigMode();
+        static constexpr std::string_view resetName = "Reset Controller";
+        auto                              resetOpt  = m_od->getEntryByName(resetName);
+        if (!resetOpt.has_value())
+        {
+            m_log.error("Coudl not locate %s object!", resetName.data());
+            return Error_t::UNKNOWN_OBJECT;
+        }
+        auto& resetObj = resetOpt.value().get();
+        resetObj       = (open_types::BOOLEAN_t)1;
+        err            = writeSDO(resetObj);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting %s", resetObj.getEntryMetaData().parameterName.c_str());
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::clearErrors()
+    {
+        Error_t                           err            = enterConfigMode();
+        static constexpr std::string_view clearErrorName = "Clear Errors";
+        auto                              clearErrorOpt  = m_od->getEntryByName(clearErrorName);
+        if (!clearErrorOpt.has_value())
+        {
+            m_log.error("Coudl not locate %s object!", clearErrorName.data());
+            return Error_t::UNKNOWN_OBJECT;
+        }
+        auto& clearErrorObj = clearErrorOpt.value().get();
+        clearErrorObj       = (open_types::BOOLEAN_t)1;
+        err                 = writeSDO(clearErrorObj);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting %s", clearErrorObj.getEntryMetaData().parameterName.c_str());
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setCurrentLimit(float currentLimit /*A*/)
+    {
+        static constexpr std::string_view         setCurrentLimitName    = "Motor Rated Current";
+        static constexpr std::string_view         setCurrentMaxLimitName = "Max Current";
+        static constexpr open_types::UNSIGNED16_t setMaxLimit            = 1'000;
+        auto setCurrentLimitOpt = m_od->getEntryByName(setCurrentLimitName);
+        if (!setCurrentLimitOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", setCurrentLimitName.data());
+            return Error_t::UNKNOWN_OBJECT;
+        }
+        auto& setCurrentLimitObj = setCurrentLimitOpt.value().get();
+        setCurrentLimitObj       = (open_types::UNSIGNED16_t)(currentLimit * 1'000);
+        Error_t err              = writeSDO(setCurrentLimitObj);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting %s",
+                        setCurrentLimitObj.getEntryMetaData().parameterName.c_str());
+            return err;
+        }
+
+        auto setCurrentMaxLimitOpt = m_od->getEntryByName(setCurrentMaxLimitName);
+        if (!setCurrentMaxLimitOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", setCurrentMaxLimitName.data());
+            return Error_t::UNKNOWN_OBJECT;
+        }
+        auto& setCurrentMaxLimitObj = setCurrentMaxLimitOpt.value().get();
+        setCurrentMaxLimitObj       = setMaxLimit;
+        err                         = writeSDO(setCurrentMaxLimitObj);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting %s",
+                        setCurrentMaxLimitObj.getEntryMetaData().parameterName.c_str());
+            return err;
+        }
+
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setTorqueBandwidth(u16 torqueBandwidth /*Hz*/)
+    {
+        Error_t                           err                    = enterConfigMode();
+        static constexpr std::string_view setTorqueBandwidthName = "Torque Bandwidth";
+        static constexpr std::string_view reconfigureCANName     = "Run Can Reinit";
+        auto setTorqueBandwidthOpt = m_od->getEntryByName(setTorqueBandwidthName);
+        if (!setTorqueBandwidthOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", setTorqueBandwidthName.data());
+            return Error_t::UNKNOWN_OBJECT;
+        }
+        auto& setTorqueBandwidthObj = setTorqueBandwidthOpt.value().get();
+        setTorqueBandwidthObj       = (open_types::UNSIGNED16_t)torqueBandwidth;
+        err                         = writeSDO(setTorqueBandwidthObj);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting %s",
+                        setTorqueBandwidthObj.getEntryMetaData().parameterName.c_str());
+            return err;
+        }
+        auto reconfigureCANOpt = m_od->getEntryByName(reconfigureCANName);
+        if (!reconfigureCANOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", setTorqueBandwidthName.data());
+            return Error_t::UNKNOWN_OBJECT;
+        }
+        auto& reconfigureCANObj = reconfigureCANOpt.value().get();
+        reconfigureCANObj       = (open_types::BOOLEAN_t)1;
+        err                     = writeSDO(reconfigureCANObj);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting %s",
+                        setTorqueBandwidthObj.getEntryMetaData().parameterName.c_str());
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setOperationMode(mab::ModesOfOperation mode)
+    {
+        constexpr std::string_view operationModeName = "Modes Of Operation";
+        auto                       operationModeOpt  = m_od->getEntryByName(operationModeName);
+        if (!operationModeOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", operationModeName.data());
+            return Error_t::UNKNOWN_OBJECT;
+        }
+        auto& operationModeObj = operationModeOpt.value().get();
+        operationModeObj       = (open_types::INTEGER8_t)mode;
+        Error_t err            = writeSDO(operationModeObj);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting %s",
+                        operationModeObj.getEntryMetaData().parameterName.c_str());
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setPositionPIDparam(float kp, float ki, float kd, float integralMax)
+    {
+        Error_t   err     = enterConfigMode();
+        const u16 address = m_od->getAdressByName("Position PID Controller").value().first;
+
+        (*m_od)[address][0x1] = (open_types::REAL32_t)kp;
+        err                   = writeSDO((*m_od)[address][0x1]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting position PID kp");
+            return err;
+        }
+
+        (*m_od)[address][0x2] = (open_types::REAL32_t)ki;
+        err                   = writeSDO((*m_od)[address][0x2]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting position PID ki");
+            return err;
+        }
+
+        (*m_od)[address][0x3] = (open_types::REAL32_t)kd;
+        err                   = writeSDO((*m_od)[address][0x3]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting position PID kd");
+            return err;
+        }
+
+        (*m_od)[address][0x4] = (open_types::REAL32_t)integralMax;
+        err                   = writeSDO((*m_od)[address][0x4]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting position PID integralMax");
+            return err;
+        }
+
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setVelocityPIDparam(float kp, float ki, float kd, float integralMax)
+    {
+        Error_t   err     = enterConfigMode();
+        const u16 address = m_od->getAdressByName("Velocity PID Controller").value().first;
+
+        (*m_od)[address][0x1] = (open_types::REAL32_t)kp;
+        err                   = writeSDO((*m_od)[address][0x1]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting velocity PID kp");
+            return err;
+        }
+
+        (*m_od)[address][0x2] = (open_types::REAL32_t)ki;
+        err                   = writeSDO((*m_od)[address][0x2]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting velocity PID ki");
+            return err;
+        }
+
+        (*m_od)[address][0x3] = (open_types::REAL32_t)kd;
+        err                   = writeSDO((*m_od)[address][0x3]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting velocity PID kd");
+            return err;
+        }
+
+        (*m_od)[address][0x4] = (open_types::REAL32_t)integralMax;
+        err                   = writeSDO((*m_od)[address][0x4]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting velocity PID integralMax");
+            return err;
+        }
+
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setImpedanceParams(float kp, float kd)
+    {
+        Error_t   err     = enterConfigMode();
+        const u16 address = m_od->getAdressByName("Impedance PD Controller").value().first;
+
+        (*m_od)[address][0x1] = (open_types::REAL32_t)kp;
+        err                   = writeSDO((*m_od)[address][0x1]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting impedance kp");
+            return err;
+        }
+
+        (*m_od)[address][0x2] = (open_types::REAL32_t)kd;
+        err                   = writeSDO((*m_od)[address][0x2]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting impedance kd");
+            return err;
+        }
+
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setMaxTorque(float maxTorque /*Nm*/)
+    {
+        (*m_od)[0x6076] = (open_types::UNSIGNED16_t)(maxTorque * 1000);
+        (*m_od)[0x6072] = (open_types::UNSIGNED16_t)1000;
+        Error_t err     = writeSDO((*m_od)[0x6072]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting Max Torque");
+            return err;
+        }
+        err = writeSDO((*m_od)[0x6076]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting Max Torque");
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setProfileVelocity(float profileVelocity /*s^-1*/)
+    {
+        (*m_od)[0x6081] = (open_types::UNSIGNED32_t)(profileVelocity * 1000);
+        Error_t err     = writeSDO((*m_od)[0x6081]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting Profile Velocity");
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setProfileAcceleration(float profileAcceleration /*s^-2*/)
+    {
+        (*m_od)[0x6083] = (open_types::UNSIGNED32_t)(profileAcceleration * 1000);
+        Error_t err     = writeSDO((*m_od)[0x6083]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting Profile Acceleration");
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setProfileDeceleration(float profileDeceleration /*s^-2*/)
+    {
+        (*m_od)[0x6084] = (open_types::UNSIGNED32_t)(profileDeceleration * 1000);
+        Error_t err     = writeSDO((*m_od)[0x6084]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting Profile Deceleration");
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setPositionWindow(u32 windowSize /*encode tics*/)
+    {
+        (*m_od)[0x6067] = (open_types::UNSIGNED32_t)(windowSize);
+        Error_t err     = writeSDO((*m_od)[0x6067]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting Position Window");
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setTargetPosition(i32 position /*encoder ticks*/)
+    {
+        (*m_od)[0x607A] = (open_types::INTEGER32_t)(position);
+        Error_t err     = writeSDO((*m_od)[0x607A]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting Target Position");
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setTargetVelocity(float velocity /*rad/s*/)
+    {
+        (*m_od)[0x60FF] = (open_types::INTEGER32_t)(velocity * 60 / (M_PI * 2));
+        Error_t err     = writeSDO((*m_od)[0x60FF]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting Target Velocity");
+            return err;
+        }
+        return err;
+    }
+
+    MDCO::Error_t MDCO::setTargetTorque(float torque /*Nm*/)
+    {
+        (*m_od)[0x6074] = (open_types::INTEGER16_t)(torque * 1000);
+        Error_t err     = writeSDO((*m_od)[0x6074]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting Target Torque");
+            return err;
+        }
+        return err;
+    }
+
+    std::pair<const std::unordered_map<MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
+              MDCO::Error_t>
+    MDCO::getMainEncoderStatus()
+    {
+        mab::MDStatus              statuses;
+        constexpr std::string_view encoderStatusName = "Main Encoder Status";
+        auto                       encoderStatusOpt  = m_od->getEntryByName(encoderStatusName);
+        if (!encoderStatusOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", encoderStatusName.data());
+            return {statuses.encoderStatus, Error_t::UNKNOWN_OBJECT};
+        }
+        auto&   encoderStatusObj = encoderStatusOpt.value().get();
+        Error_t err              = readSDO(encoderStatusObj);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading %s",
+                        encoderStatusObj.getEntryMetaData().parameterName.c_str());
+        }
+        mab::MDStatus::decode((open_types::UNSIGNED32_t)encoderStatusObj, statuses.encoderStatus);
+        return {statuses.encoderStatus, err};
+    }
+
+    std::pair<const std::unordered_map<MDStatus::EncoderStatusBits, MDStatus::StatusItem_S>,
+              MDCO::Error_t>
+    MDCO::getOutputEncoderStatus()
+    {
+        mab::MDStatus              statuses;
+        constexpr std::string_view encoderStatusName = "Output Encoder Status";
+        auto                       encoderStatusOpt  = m_od->getEntryByName(encoderStatusName);
+        if (!encoderStatusOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", encoderStatusName.data());
+            return {statuses.encoderStatus, Error_t::UNKNOWN_OBJECT};
+        }
+        auto&   encoderStatusObj = encoderStatusOpt.value().get();
+        Error_t err              = readSDO(encoderStatusObj);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading %s",
+                        encoderStatusObj.getEntryMetaData().parameterName.c_str());
+        }
+        mab::MDStatus::decode((open_types::UNSIGNED32_t)encoderStatusObj, statuses.encoderStatus);
+        return {statuses.encoderStatus, err};
+    }
+
+    std::pair<const std::unordered_map<MDStatus::CalibrationStatusBits, MDStatus::StatusItem_S>,
+              MDCO::Error_t>
+    MDCO::getCalibrationStatus()
+    {
+        mab::MDStatus              statuses;
+        constexpr std::string_view calibrationStatusName = "Calibration Status";
+        auto calibrationStatusOpt = m_od->getEntryByName(calibrationStatusName);
+        if (!calibrationStatusOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", calibrationStatusName.data());
+            return {statuses.calibrationStatus, Error_t::UNKNOWN_OBJECT};
+        }
+        auto&   calibrationStatusObj = calibrationStatusOpt.value().get();
+        Error_t err                  = readSDO(calibrationStatusObj);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading %s",
+                        calibrationStatusObj.getEntryMetaData().parameterName.c_str());
+        }
+        mab::MDStatus::decode((open_types::UNSIGNED32_t)calibrationStatusObj,
+                              statuses.calibrationStatus);
+        return {statuses.calibrationStatus, err};
+    }
+
+    std::pair<const std::unordered_map<MDStatus::BridgeStatusBits, MDStatus::StatusItem_S>,
+              MDCO::Error_t>
+    MDCO::getBridgeStatus()
+    {
+        mab::MDStatus              statuses;
+        constexpr std::string_view bridgeStatusName = "Bridge Status";
+        auto                       bridgeStatusOpt  = m_od->getEntryByName(bridgeStatusName);
+        if (!bridgeStatusOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", bridgeStatusName.data());
+            return {statuses.bridgeStatus, Error_t::UNKNOWN_OBJECT};
+        }
+        auto&   bridgeStatusObj = bridgeStatusOpt.value().get();
+        Error_t err             = readSDO(bridgeStatusObj);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading %s",
+                        bridgeStatusObj.getEntryMetaData().parameterName.c_str());
+        }
+        mab::MDStatus::decode((open_types::UNSIGNED32_t)bridgeStatusObj, statuses.bridgeStatus);
+        return {statuses.bridgeStatus, err};
+    }
+
+    std::pair<const std::unordered_map<MDStatus::HardwareStatusBits, MDStatus::StatusItem_S>,
+              MDCO::Error_t>
+    MDCO::getHardwareStatus()
+    {
+        mab::MDStatus              statuses;
+        constexpr std::string_view hardwareStatusName = "Hardware Status";
+        auto                       hardwareStatusOpt  = m_od->getEntryByName(hardwareStatusName);
+        if (!hardwareStatusOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", hardwareStatusName.data());
+            return {statuses.hardwareStatus, Error_t::UNKNOWN_OBJECT};
+        }
+        auto&   hardwareStatusObj = hardwareStatusOpt.value().get();
+        Error_t err               = readSDO(hardwareStatusObj);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading %s",
+                        hardwareStatusObj.getEntryMetaData().parameterName.c_str());
+        }
+        mab::MDStatus::decode((open_types::UNSIGNED32_t)hardwareStatusObj, statuses.hardwareStatus);
+        return {statuses.hardwareStatus, err};
+    }
+
+    std::pair<const std::unordered_map<MDStatus::CommunicationStatusBits, MDStatus::StatusItem_S>,
+              MDCO::Error_t>
+    MDCO::getCommunicationStatus()
+    {
+        mab::MDStatus              statuses;
+        constexpr std::string_view communicationStatusName = "Communication Status";
+        auto communicationStatusOpt = m_od->getEntryByName(communicationStatusName);
+        if (!communicationStatusOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", communicationStatusName.data());
+            return {statuses.communicationStatus, Error_t::UNKNOWN_OBJECT};
+        }
+        auto&   communicationStatusObj = communicationStatusOpt.value().get();
+        Error_t err                    = readSDO(communicationStatusObj);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading %s",
+                        communicationStatusObj.getEntryMetaData().parameterName.c_str());
+        }
+        mab::MDStatus::decode((open_types::UNSIGNED32_t)communicationStatusObj,
+                              statuses.communicationStatus);
+        return {statuses.communicationStatus, err};
+    }
+
+    std::pair<const std::unordered_map<MDStatus::MotionStatusBits, MDStatus::StatusItem_S>,
+              MDCO::Error_t>
+    MDCO::getMotionStatus()
+    {
+        mab::MDStatus              statuses;
+        constexpr std::string_view motionStatusName = "Motion Status";
+        auto                       motionStatusOpt  = m_od->getEntryByName(motionStatusName);
+        if (!motionStatusOpt.has_value())
+        {
+            m_log.error("Could not locate %s object!", motionStatusName.data());
+            return {statuses.motionStatus, Error_t::UNKNOWN_OBJECT};
+        }
+        auto&   motionStatusObj = motionStatusOpt.value().get();
+        Error_t err             = readSDO(motionStatusObj);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading %s",
+                        motionStatusObj.getEntryMetaData().parameterName.c_str());
+        }
+        mab::MDStatus::decode((open_types::UNSIGNED32_t)motionStatusObj, statuses.motionStatus);
+        return {statuses.motionStatus, err};
+    }
+
+    std::pair<i32, MDCO::Error_t> MDCO::getPosition()
+    {
+        Error_t err = readSDO((*m_od)[0x6064]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading Position");
+            return {0.0f, err};
+        }
+
+        i32 positionRaw = (i32)(open_types::INTEGER32_t)(*m_od)[0x6064];
+
+        return {positionRaw, err};
+    }
+
+    std::pair<float, MDCO::Error_t> MDCO::getVelocity()
+    {
+        Error_t err = readSDO((*m_od)[0x606C]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading Velocity");
+            return {0.0f, err};
+        }
+
+        i32   velocityRaw = (i32)(open_types::INTEGER32_t)(*m_od)[0x606C];
+        float velocity    = velocityRaw;
+
+        return {velocity, err};
+    }
+
+    std::pair<float, MDCO::Error_t> MDCO::getTorque()
+    {
+        Error_t err = readSDO((*m_od)[0x6077]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading Torque");
+            return {0.0f, err};
+        }
+
+        i16   torqueRaw = (i16)(open_types::INTEGER16_t)(*m_od)[0x6077];
+        float torque    = torqueRaw / 1000.0f;
+
+        return {torque, err};
+    }
+
+    std::pair<float, MDCO::Error_t> MDCO::getOutputEncoderPosition()
+    {
+        Error_t err = readSDO((*m_od)[0x2200][0x1]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading Output Encoder Position");
+            return {0.0f, err};
+        }
+
+        i32   positionRaw = (i32)(open_types::INTEGER32_t)(*m_od)[0x2200][0x1];
+        float position    = positionRaw / 1000000.0f;
+
+        return {position, err};
+    }
+
+    std::pair<float, MDCO::Error_t> MDCO::getOutputEncoderVelocity()
+    {
+        Error_t err = readSDO((*m_od)[0x2200][0x2]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading Output Encoder Velocity");
+            return {0.0f, err};
+        }
+
+        i32   velocityRaw = (i32)(open_types::INTEGER32_t)(*m_od)[0x2200][0x2];
+        float velocity    = velocityRaw / 1000000.0f;
+
+        return {velocity, err};
+    }
+
+    std::pair<u8, MDCO::Error_t> MDCO::getTemperature()
+    {
+        Error_t err = readSDO((*m_od)[0x2300]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading Temperature");
+            return {0, err};
+        }
+
+        u8 temperature = (u8)(open_types::UNSIGNED8_t)(*m_od)[0x2300];
+
+        return {temperature, err};
+    }
+
+    std::pair<bool, MDCO::Error_t> MDCO::targetReached()
+    {
+        Error_t err = readSDO((*m_od)[0x6041]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error reading status word!");
+            return {false, err};
+        }
+
+        bool reached = (open_types::UNSIGNED16_t)(*m_od)[0x6041] & (1 << 10);
+
+        return {reached, err};
+    }
+
+    MDCO::Error_t MDCO::readSDO(EDSEntry& edsEntry) const
+    {
+        std::vector<std::byte> result;
+        if (!edsEntry.getValueMetaData().has_value())
+        {
+            return Error_t::UNKNOWN_OBJECT;
+        }
+
+        if (edsEntry.valueSize() <= 4 &&
+            edsEntry.getEntryMetaData().edsValueMeta.value().dataType !=
+                EDSEntry::DataType_E::VISIBLE_STRING)
+        {
+            // using expedited transfer
+            std::vector<u8> transmitFrame = {
+                INITIATE_SDO_UPLOAD_REQUEST,
+                (u8)edsEntry.getEntryMetaData().address.first,
+                (u8)(edsEntry.getEntryMetaData().address.first >> 8),
+                (u8)(edsEntry.getEntryMetaData().address.second.value_or(0))};
+            transmitFrame.resize(8, 0);
+
+            auto [response, error] = transferCanOpenFrame(
+                SDO_REQUEST_BASE + m_canId, transmitFrame, transmitFrame.size());
+
+            if (error != candleTypes::Error_t::OK)
+            {
+                m_log.error("Failed upload SDO 0x%x", SDO_REQUEST_BASE + m_canId);
+                return Error_t::TRANSFER_FAILED;
+            }
+            m_log.debug("Address: 0x%x", edsEntry.getEntryMetaData().address.first);
+
+            // Verify expedited response (bit 1 == 1)
+            if ((response[0] & 0x40) == 0)
+            {
+                m_log.error("Invalid expedited download response");
+
+                return Error_t::TRANSFER_FAILED;
+            }
+
+            // Number of unused bytes (bits 2-3)
+            u8     emptyBytes = (response[0] >> 2) & 0x03;
+            size_t dataSize   = 4 - emptyBytes;
+
+            result.reserve(dataSize);
+
+            for (size_t i = 0; i < dataSize; ++i)
+            {
+                result.push_back(static_cast<std::byte>(response[4 + i]));
+            }
         }
         else
         {
-            m_log.error("Error in the register write response!");
-            return Error_t::TRANSFER_FAILED;
+            // using segmented transfer
+
+            std::vector<u8> transmitFrame = {
+                INITIATE_SDO_UPLOAD_REQUEST,
+                (u8)edsEntry.getEntryMetaData().address.first,
+                (u8)(edsEntry.getEntryMetaData().address.first >> 8),
+                (u8)(edsEntry.getEntryMetaData().address.second.value_or(0))};
+            transmitFrame.resize(8, 0);
+
+            auto [response, error] = transferCanOpenFrame(
+                SDO_REQUEST_BASE + m_canId, transmitFrame, transmitFrame.size());
+
+            if (error != candleTypes::Error_t::OK)
+            {
+                m_log.error("Failed initiate segmented upload SDO 0x%x",
+                            SDO_REQUEST_BASE + m_canId);
+                return Error_t::TRANSFER_FAILED;
+            }
+
+            // If server responds with expedited transfer, handle it here
+            if ((response[0] & 0x02) != 0)
+            {
+                // Size indicated must be set for expedited upload
+                if ((response[0] & 0x01) == 0)
+                {
+                    m_log.error("Expedited upload without size indication");
+                    return Error_t::TRANSFER_FAILED;
+                }
+
+                u8     emptyBytes = (response[0] >> 2) & 0x03;
+                size_t dataSize   = 4 - emptyBytes;
+
+                result.reserve(dataSize);
+
+                for (size_t i = 0; i < dataSize; ++i)
+                {
+                    result.push_back(static_cast<std::byte>(response[4 + i]));
+                }
+
+                // Store value and return immediately (no segmented loop)
+                if (edsEntry.setSerializedValue(result) == EDSEntry::Error_t::OK)
+                    return Error_t::OK;
+
+                m_log.error("EDS parsing failed with code: %d",
+                            edsEntry.setSerializedValue(result));
+                return Error_t::REQUEST_INVALID;
+            }
+
+            std::vector<u8> completeData;
+            bool            lastSegment = false;
+            u8              toggle      = 0;
+
+            while (!lastSegment)
+            {
+                std::vector<u8> segmentRequest(8, 0);
+                segmentRequest[0] = 0x60 | (toggle << 4);
+
+                auto [segmentResponse, segError] = transferCanOpenFrame(
+                    SDO_REQUEST_BASE + m_canId, segmentRequest, segmentRequest.size());
+
+                if (segError != candleTypes::Error_t::OK)
+                {
+                    m_log.error("Segment upload failed SDO 0x%x", SDO_REQUEST_BASE + m_canId);
+                    return Error_t::TRANSFER_FAILED;
+                }
+
+                lastSegment   = (segmentResponse[0] & 0x01);
+                u8 emptyBytes = (segmentResponse[0] >> 1) & 0x07;
+
+                size_t dataSize = 7 - emptyBytes;
+
+                completeData.insert(completeData.end(),
+                                    segmentResponse.begin() + 1,
+                                    segmentResponse.begin() + 1 + dataSize);
+
+                toggle ^= 1;
+            }
+
+            // Move into result as std::byte
+            result.reserve(completeData.size());
+            for (u8 b : completeData)
+            {
+                result.push_back(static_cast<std::byte>(b));
+            }
+        }
+        if (edsEntry.setSerializedValue(result) == EDSEntry::Error_t::OK)
+            return Error_t::OK;
+        else
+        {
+            m_log.error("EDS parsing failed with code: %d", edsEntry.setSerializedValue(result));
+            return Error_t::REQUEST_INVALID;
         }
     }
 
-    MDCO::Error_t MDCO::sendCustomData(i16 index, std::vector<u8> data)
+    MDCO::Error_t MDCO::writeSDO(EDSEntry& edsEntry) const
     {
-        m_log.debug("Writing Custom data...");
-        transferCanOpenFrameNoRespondExpected(index, data, data.size());
+        if (!edsEntry.getValueMetaData().has_value())
+        {
+            return Error_t::UNKNOWN_OBJECT;
+        }
+        if (edsEntry.getValueMetaData().value().accessType == EDSEntry::AccessRights_E::READ_ONLY)
+        {
+            m_log.error("Coudl not write to %s as it is a read-only object!",
+                        edsEntry.getEntryMetaData().parameterName.c_str());
+        }
+
+        const std::vector<std::byte>& data        = edsEntry.getSerializedValue();
+        const size_t                  payloadSize = edsEntry.valueSize();
+        const size_t                  size        = data.size();
+
+        if (payloadSize <= 4)
+        {
+            // -------- Expedited download --------
+            std::vector<u8> transmitFrame(8, 0);
+
+            transmitFrame[0] = INITIATE_SDO_DOWNLOAD_REQUEST;
+            transmitFrame[1] = (u8)edsEntry.getEntryMetaData().address.first;
+            transmitFrame[2] = (u8)(edsEntry.getEntryMetaData().address.first >> 8);
+            transmitFrame[3] = (u8)(edsEntry.getEntryMetaData().address.second.value_or(0));
+
+            for (size_t i = 0; i < payloadSize; ++i)
+            {
+                transmitFrame[4 + i] = static_cast<u8>(data[i]);
+            }
+
+            auto [response, error] = transferCanOpenFrame(
+                SDO_REQUEST_BASE + m_canId, transmitFrame, transmitFrame.size());
+
+            if (error != candleTypes::Error_t::OK)
+            {
+                m_log.error("Failed expedited download SDO 0x%x", SDO_REQUEST_BASE + m_canId);
+                return Error_t::TRANSFER_FAILED;
+            }
+            m_log.debug("Address: 0x%x", edsEntry.getEntryMetaData().address.first);
+            m_log.debug("Lenght: 0x%x", payloadSize);
+
+            // Expect initiate download response (0x60)
+            if ((response[0] & 0xE0) != 0x60)
+            {
+                m_log.error("Invalid expedited download response");
+                return Error_t::TRANSFER_FAILED;
+            }
+        }
+        else
+        {
+            // -------- Segmented download --------
+
+            // ---- Initiate segmented download ----
+            std::vector<u8> transmitFrame(8, 0);
+
+            // 0x20 = initiate download (no expedited, no size indicated here)
+            transmitFrame[0] = 0x20;
+            transmitFrame[1] = (u8)edsEntry.getEntryMetaData().address.first;
+            transmitFrame[2] = (u8)(edsEntry.getEntryMetaData().address.first >> 8);
+            transmitFrame[3] = (u8)(edsEntry.getEntryMetaData().address.second.value_or(0));
+
+            auto [response, error] = transferCanOpenFrame(
+                SDO_REQUEST_BASE + m_canId, transmitFrame, transmitFrame.size());
+
+            if (error != candleTypes::Error_t::OK)
+            {
+                m_log.error("Failed initiate segmented download SDO 0x%x",
+                            SDO_REQUEST_BASE + m_canId);
+                return Error_t::TRANSFER_FAILED;
+            }
+
+            if ((response[0] & 0xE0) != 0x60)
+            {
+                m_log.error("Invalid initiate segmented download response");
+                return Error_t::TRANSFER_FAILED;
+            }
+
+            // ---- Send segments ----
+            size_t offset      = 0;
+            u8     toggle      = 0;
+            bool   lastSegment = false;
+
+            while (!lastSegment)
+            {
+                std::vector<u8> segmentFrame(8, 0);
+
+                size_t remaining = size - offset;
+                size_t chunkSize = (remaining > 7) ? 7 : remaining;
+
+                lastSegment = (remaining <= 7);
+
+                u8 emptyBytes = static_cast<u8>(7 - chunkSize);
+
+                // 0x00 = download segment
+                // bit 4 = toggle
+                // bit 0 = last segment
+                // bits 1-3 = number of unused bytes (only valid for last segment)
+                segmentFrame[0] = (toggle << 4) | (lastSegment ? 0x01 : 0x00) |
+                                  (lastSegment ? (emptyBytes << 1) : 0x00);
+
+                for (size_t i = 0; i < chunkSize; ++i)
+                {
+                    segmentFrame[1 + i] = static_cast<u8>(data[offset + i]);
+                }
+
+                auto [segmentResponse, segError] = transferCanOpenFrame(
+                    SDO_REQUEST_BASE + m_canId, segmentFrame, segmentFrame.size());
+
+                if (segError != candleTypes::Error_t::OK)
+                {
+                    m_log.error("Segment download failed SDO 0x%x", SDO_REQUEST_BASE + m_canId);
+                    return Error_t::TRANSFER_FAILED;
+                }
+
+                // Expect segment response (0x20 | toggle<<4)
+                if ((segmentResponse[0] & 0xE0) != 0x20)
+                {
+                    m_log.error("Invalid segment download response");
+                    return Error_t::TRANSFER_FAILED;
+                }
+
+                offset += chunkSize;
+                toggle ^= 1;
+            }
+        }
+
         return Error_t::OK;
     }
 
-    std::vector<canId_t> MDCO::discoverOpenMDs(Candle* candle)
+    MDCO::Error_t MDCO::resetNMT() const
+    {
+        // NMT Reset Node command (0x81) to this node ID
+        std::vector<u8> frame(8, 0);
+        frame[0] = 0x81;     // Reset Node command
+        frame[1] = m_canId;  // Target node ID
+
+        auto [response, error] = transferCanOpenFrame(0x000, frame, 2);
+
+        if (error != candleTypes::Error_t::OK)
+        {
+            m_log.error("Failed to send NMT Reset to node %d", m_canId);
+            return Error_t::TRANSFER_FAILED;
+        }
+
+        return Error_t::OK;
+    }
+
+    std::vector<canId_t> MDCO::discoverOpenMDs(Candle*                              candle,
+                                               std::shared_ptr<EDSObjectDictionary> od)
     {
         constexpr canId_t MIN_VALID_ID = 0x01;  // ids less than that are reserved for special
         constexpr canId_t MAX_VALID_ID = 0x7F;  // 0x600-0x580=0x7F
@@ -1257,7 +1064,7 @@ namespace mab
             Logger::Verbosity_E prevVerbosity =
                 Logger::g_m_verbosity.value_or(Logger::Verbosity_E::VERBOSITY_1);
             Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
-            MDCO md(id, candle);
+            MDCO md(id, candle, od);
             auto [response, error] = md.transferCanOpenFrame(0x600 + id, frame, frame.size());
 
             if (response[4] == 0x92)
@@ -1274,5 +1081,65 @@ namespace mab
 
         log.warn("Have not found any MD devices on the CAN bus!");
         return ids;
+    }
+    MDCO::Error_t MDCO::enterConfigMode() const
+    {
+        Error_t err = MDCO::Error_t::OK;
+
+        (*m_od)[0x6040] = (open_types::UNSIGNED16_t)0x8;
+        err             = writeSDO((*m_od)[0x6040]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error sending control word cmd!");
+            return err;
+        }
+        (*m_od)[0x6040] = (open_types::UNSIGNED16_t)0x6;
+        err             = writeSDO((*m_od)[0x6040]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error sending control word cmd!");
+            return err;
+        }
+
+        (*m_od)[0x6040] = (open_types::UNSIGNED16_t)0xf;
+        err             = writeSDO((*m_od)[0x6040]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error sending control word cmd!");
+            return err;
+        }
+        err            = readSDO((*m_od)[0x6041]);
+        u16 statusWord = (u16)(open_types::UNSIGNED16_t)(*m_od)[0x6041];
+        m_log.debug("Statusword: 0x%x", statusWord);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting config mode!");
+            return err;
+        }
+
+        (*m_od)[0x6060] = (open_types::INTEGER8_t)-2;
+        err             = writeSDO((*m_od)[0x6060]);
+        if (err != Error_t::OK)
+        {
+            m_log.error("Error setting config mode!");
+            return err;
+        }
+        usleep(3'000);
+
+        err = readSDO((*m_od)[0x6061]);
+        if ((i8)(open_types::INTEGER8_t)(*m_od)[0x6061] != -1)
+        {
+            m_log.error("Coudl not enter service mode");
+            m_log.error("Current mode: %i", (i8)(open_types::INTEGER8_t)((*m_od)[0x6061]));
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        err = readSDO((*m_od)[0x6060]);
+        if ((i8)(open_types::INTEGER8_t)(*m_od)[0x6060] != -2)
+        {
+            m_log.error("Coudl not enter service mode");
+            m_log.error("Current mode: %i", (i8)(open_types::INTEGER8_t)((*m_od)[0x6061]));
+        }
+        return err;
     }
 }  // namespace mab

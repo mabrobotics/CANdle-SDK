@@ -1,5 +1,6 @@
 #include "candle.hpp"
 #include "MDCO.hpp"
+#include "edsParser.hpp"
 
 using namespace mab;
 
@@ -17,47 +18,56 @@ int main()
     mab::Candle* candle = mab::attachCandle(
         mab::CANdleDatarate_E::CAN_DATARATE_1M, mab::candleTypes::busTypes_t::USB, true);
 
+    auto od = EDSParser::load(
+                  "/home/pawel/mab-github/CANdle-SDK/candletool/template_package/etc/candletool/"
+                  "config/eds/"
+                  "MDv1.0.0.eds")
+                  .first;
+
     // Look for MAB devices present on the can network
-    auto ids = mab::MDCO::discoverOpenMDs(candle);
+    auto ids = mab::MDCO::discoverOpenMDs(candle, od);
 
-    if (ids.size() == 0)
-    {
-        log.error("No driver found with CANopen communication");
-        return EXIT_SUCCESS;
-    }
+    MDCO mdco(10, candle, od);
 
-    // Get first md that was detected (the one with the lowest id).
-    MDCO mdco(ids[0], candle);
+    // if (ids.size() == 0)
+    // {
+    //     log.error("No driver found with CANopen communication");
+    //     return EXIT_SUCCESS;
+    // }
 
-    // Display the value contain in the object 0x6064:0 in the terminal
-    mdco.readOpenRegisters(0x6064, 0x00);
+    // // Get first md that was detected (the one with the lowest id).
+    // MDCO mdco(ids[0], candle);
 
-    // You can write value with SDO, you can use register name or register address
-    // You can find all register detail in the object dictionary:
-    // https://mabrobotics.github.io/MD80-x-CANdle-Documentation/md_canopen/OD.html
-    mdco.writeOpenRegisters("Controlword", 15);
-    mdco.writeOpenRegisters(0x6040, 0x00, 15);
+    // // Display the value contain in the object 0x6064:0 in the terminal
+    // mdco.readOpenRegisters(0x6064, 0x00);
 
-    // You can get value from a register
-    long returnValue = mdco.getValueFromOpenRegister(0x6064, 0x00);
-    if (returnValue > 0)
-        log.info("The position of the motor is positive");
+    // // You can write value with SDO, you can use register name or register address
+    // // You can find all register detail in the object dictionary:
+    // // https://mabrobotics.github.io/MD80-x-CANdle-Documentation/md_canopen/OD.html
+    // mdco.writeOpenRegisters("Controlword", 15);
+    // mdco.writeOpenRegisters(0x6040, 0x00, 15);
 
-    // You can use SDO segmented transfer for register with a size over 4 bytes
-    std::vector<u8> MotorNameBefore;
-    std::vector<u8> MotorNameAfter;
-    mdco.readLongOpenRegisters(0x2006, 0x06, MotorNameBefore);
-    mdco.writeLongOpenRegisters(0x2006, 0x06, "My Custom Motor Name");
-    mdco.readLongOpenRegisters(0x2006, 0x06, MotorNameAfter);
+    // // You can get value from a register
+    // long returnValue = mdco.getValueFromOpenRegister(0x6064, 0x00);
+    // if (returnValue > 0)
+    //     log.info("The position of the motor is positive");
 
-    // you can also use PDO for faster communication
-    std::vector<u8> frame = {0x00, 0x0f};
-    mdco.writeOpenPDORegisters(0x200 + ids[0], frame);
+    // // You can use SDO segmented transfer for register with a size over 4 bytes
+    // std::vector<u8> MotorNameBefore;
+    // std::vector<u8> MotorNameAfter;
+    // mdco.readLongOpenRegisters(0x2006, 0x06, MotorNameBefore);
+    // mdco.writeLongOpenRegisters(0x2006, 0x06, "My Custom Motor Name");
+    // mdco.readLongOpenRegisters(0x2006, 0x06, MotorNameAfter);
 
-    // you can use this method for every other message who don't need answer (NMT,TimeStamp,etc.).
-    // e.g. send a NMT reset node message to the motor drive with the lowest id
-    std::vector<u8> data = {0x81, (u8)ids[0]};
-    mdco.sendCustomData(0x000, data);
+    // // you can also use PDO for faster communication
+    // std::vector<u8> frame = {0x00, 0x0f};
+    // mdco.writeOpenPDORegisters(0x200 + ids[0], frame);
+
+    // // you can use this method for every other message who don't need answer
+    // (NMT,TimeStamp,etc.).
+    // // e.g. send a NMT reset node message to the motor drive with the lowest id
+    // std::vector<u8> data = {0x81, (u8)ids[0]};
+    // mdco.sendCustomData(0x000, data);
 
     return EXIT_SUCCESS;
 }

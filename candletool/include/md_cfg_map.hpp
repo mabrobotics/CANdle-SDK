@@ -275,7 +275,6 @@ namespace mab
         [](const std::string_view value) -> std::string
     {
         std::string output = trim(value);
-        std::cout << "ENCODER MODE RAW: '" << output << "'" << std::endl;
         return MDAuxEncoderModeValue_S::toReadable(std::stoll(output)).value_or("NOT FOUND");
     };
 

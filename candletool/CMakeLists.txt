@@ -22,6 +22,8 @@ set(CANDLETOOL_SOURCES
   src/web_file_module/flasher.cpp
   src/md_cli.cpp
   src/mdco_cli.cpp
+  src/mdco_cli.cpp
+  src/mdco_config_adapter.cpp
   src/mab_crc.cpp
   src/mabFileParser.cpp
   src/main.cpp
@@ -86,20 +88,26 @@ set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_SOURCE_DIR}/README.md)
 set(CPACK_MONOLITHIC_INSTALL ON)
 
 if(WIN32)
-  add_executable(candle-win-driver IMPORTED
+    add_executable(candle-win-driver IMPORTED
                  ${CMAKE_CURRENT_SOURCE_DIR}/tools/candlesdk-win-driver.exe)
 
-  install(PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/tools/candlesdk-win-driver.exe
+    install(PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/tools/candlesdk-win-driver.exe
           TYPE BIN)
-  install(TARGETS candletool RUNTIME COMPONENT candletool)
+    install(TARGETS candletool RUNTIME COMPONENT candletool)
 
-  install(
+    install(
     DIRECTORY
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/motors
     DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
     COMPONENT _configs)
 
-  install(
+    install(
+    DIRECTORY
+      ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/eds
+    DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
+    COMPONENT _eds)
+
+    install(
     FILES
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletoolco.ini
@@ -108,11 +116,11 @@ if(WIN32)
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
                 WORLD_WRITE
     COMPONENT _configs)
-  set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
-  set(CPACK_NSIS_MODIFY_PATH ON)
-  set(CPACK_NSIS_MUI_ICON "${CMAKE_CURRENT_SOURCE_DIR}/MAB.ico")
-  set(CPACK_NSIS_MUI_UNIICON "${CMAKE_CURRENT_SOURCE_DIR}/MAB.ico")
-  target_link_libraries(
+    set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
+    set(CPACK_NSIS_MODIFY_PATH ON)
+    set(CPACK_NSIS_MUI_ICON "${CMAKE_CURRENT_SOURCE_DIR}/MAB.ico")
+    set(CPACK_NSIS_MUI_UNIICON "${CMAKE_CURRENT_SOURCE_DIR}/MAB.ico")
+    target_link_libraries(
     candletool
     -static
     candle
@@ -121,20 +129,26 @@ if(WIN32)
     -static
     logger)
 
-  add_compile_definitions(
+    add_compile_definitions(
     DEFAULT_CANDLETOOL_CONFIG_DIR="${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
   )
 elseif(UNIX)
 
-  install(TARGETS candletool RUNTIME COMPONENT candletool)
+    install(TARGETS candletool RUNTIME COMPONENT candletool)
 
-  install(
+    install(
     DIRECTORY
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/motors
     DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
     COMPONENT _configs)
 
-  install(
+    install(
+    DIRECTORY
+      ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/eds
+    DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
+    COMPONENT _configs)
+
+    install(
     FILES
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletoolco.ini
@@ -144,32 +158,32 @@ elseif(UNIX)
                 WORLD_WRITE
     COMPONENT _configs)
 
-  set(CPACK_GENERATOR "DEB")
-  set(CPACK_DEBIAN_PACKAGE_MAINTAINER "MAB Robotics <contact@mabrobotics.pl>")
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS libusb-1.0-0)
-  set(CPACK_DEBIAN_PACKAGE_VERSION)
+    set(CPACK_GENERATOR "DEB")
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "MAB Robotics <contact@mabrobotics.pl>")
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS libusb-1.0-0)
+    set(CPACK_DEBIAN_PACKAGE_VERSION)
 
-  if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
+    if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
 
-    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "arm64")
+        set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "arm64")
 
-  elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "armhf")
+    elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "armhf")
 
-    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "armhf")
+        set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "armhf")
 
-  endif()
-  message(CPACK_DEBIAN_PACKAGE_ARCHITECTURE =
+    endif()
+    message(CPACK_DEBIAN_PACKAGE_ARCHITECTURE =
           ${CPACK_DEBIAN_PACKAGE_ARCHITECTURE})
 
-  set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
+    set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
       "${CMAKE_CURRENT_SOURCE_DIR}/template_package/postinst")
 
-  install(
+    install(
     FILES
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/udev/rules.d/99-candletool.rules
     DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/")
 
-  install(
+    install(
     FILES
       "${PROJECT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini"
       "${PROJECT_SOURCE_DIR}/template_package/etc/candletool/config/candletoolco.ini"
@@ -178,15 +192,15 @@ elseif(UNIX)
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
                 WORLD_WRITE
     EXCLUDE_FROM_ALL)
-  add_compile_definitions(DEFAULT_CANDLETOOL_CONFIG_DIR="/etc/candletool/")
+    add_compile_definitions(DEFAULT_CANDLETOOL_CONFIG_DIR="/${CMAKE_INSTALL_SYSCONFDIR}/candletool")
 else()
-  message(FATAL_ERROR "System not unix nor windows, can not compile!")
-  message()
+    message(FATAL_ERROR "System not unix nor windows, can not compile!")
+    message()
 
 endif()
 
 if(MAKE_TESTS)
-  enable_testing()
+    enable_testing()
 endif()
 
 include(CPack)

@@ -1,5 +1,11 @@
+#include <unistd.h>
+#include <chrono>
+#include <cstdlib>
+#include <thread>
 #include "candle.hpp"
 #include "MDCO.hpp"
+#include "edsEntry.hpp"
+#include "edsParser.hpp"
 
 using namespace mab;
 
@@ -11,61 +17,81 @@ int main()
     // This parameters sets global internal logging level
     Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_1;
 
-    // Attach Candle is an AIO method to get ready to use candle handle that corresponds to the real
-    // CANdle USB-CAN converter. Its a main object so should have the longest lifetime of all
-    // objects from the library.
+    auto od = EDSParser::load("/etc/candletool/config/eds/MDv1.0.0.eds").first;
+
+    std::cout << od->size() << '\n';
+    // for (const auto& entry : *od)
+    // {
+    //     if (entry.second.getEntryMetaData().objectType == mab::EDSEntry::ObjectType_E::VALUE)
+    //         std::cout << entry.first << " - " << entry.second.getAsString() << '\n';
+    //     else
+    //     {
+    //         for (u8 i = 0; i < entry.second.getContainerMetaData().value().numberOfSubindices;
+    //         i++)
+    //         {
+    //             std::cout << entry.first << "[" << (int)i << "]" << " - "
+    //                       << entry.second[i].getAsString() << '\n';
+    //         }
+    //     }
+    // }
+
     mab::Candle* candle = mab::attachCandle(
         mab::CANdleDatarate_E::CAN_DATARATE_1M, mab::candleTypes::busTypes_t::USB, true);
 
-    // Look for MAB devices present on the can network
-    auto ids = mab::MDCO::discoverOpenMDs(candle);
+    // Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_2;
 
-    if (ids.size() == 0)
+    MDCO mdco(10, candle, od);
+    if (mdco.init() != MDCO::Error_t::OK)
     {
-        log.error("No driver found with CANopen communication");
-        return EXIT_SUCCESS;
+        log.error("MDCO exited with %d", mdco.init());
     }
 
-    // Get first md that was detected (the one with the lowest id).
-    MDCO mdco(ids[0], candle);
+    // mdco.readSDO((*od)[0x6064]);
+    // log.info("%s: %d",
+    //          (*od)[0x6064].getEntryMetaData().parameterName.c_str(),
+    //          (open_types::INTEGER32_t)(*od)[0x6064]);
 
-    // Enter the limit of your motor
-    moveParameter MyMotorParam;
-    // Rated Current is in mA
-    MyMotorParam.RatedCurrent = 1000;
-    // Max current is in Rated Current *10^(-3)
-    MyMotorParam.MaxCurrent = 500;
-    // Rated torque is in mN*m
-    MyMotorParam.RatedTorque = 1000;
-    // Max torque is in rated torque *10^(-3)
-    MyMotorParam.MaxTorque = 500;
-    // Max speed is RPM
-    MyMotorParam.MaxSpeed = 1000;
+    // mdco.blink();
+    // (*od)[0x6076] = (open_types::UNSIGNED16_t)1000;
+    // (*od)[0x6075] = (open_types::UNSIGNED16_t)10000;
 
-    // Send the motor parameter to the MD
-    mdco.setProfileParameters(MyMotorParam);
+    // (*od)[0x6072] = (open_types::UNSIGNED16_t)10000;
+    // (*od)[0x6073] = (open_types::UNSIGNED16_t)10000;
 
-    // set the motor in the cyclic velocity mode
-    mdco.enableDriver(CyclicSyncVelocity);
+    // mdco.writeSDO((*od)[0x6076]);
+    // mdco.writeSDO((*od)[0x6075]);
+    // mdco.writeSDO((*od)[0x6072]);
+    // mdco.writeSDO((*od)[0x6073]);
+    // mdco.enterConfigMode();
+    // (*od)[0x2003][0x3] = (open_types::BOOLEAN_t)1;
+    // mdco.writeSDO((*od)[0x2003][0x3]);
+    // mdco.save();
+    // mdco.zero();
+    // mdco.reset();
+    // usleep(5'000'000);
 
-    // loop parameter
-    auto start      = std::chrono::steady_clock::now();
-    auto lastSend   = start;
-    auto timeout    = std::chrono::seconds(5);
-    auto sendPeriod = std::chrono::milliseconds(10);
-
-    while (std::chrono::steady_clock::now() - start < timeout)
+    if (mdco.enable() != MDCO::Error_t::OK)
     {
-        auto now = std::chrono::steady_clock::now();
-        if (now - lastSend >= sendPeriod)
-        {
-            mdco.writeOpenRegisters("Target Velocity", 20);
-            lastSend = now;
-        }
+        return EXIT_FAILURE;
+    }
+    if (mdco.setOperationMode(mab::ModesOfOperation::CyclicSyncVelocity) != MDCO::Error_t::OK)
+    {
+        return EXIT_FAILURE;
+    }
+    auto start = std::chrono::steady_clock::now();
+    while (start + std::chrono::milliseconds(10'000) > std::chrono::steady_clock::now())
+    {
+        mdco.setTargetVelocity(2.0f);
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        auto pos = mdco.getPosition().first;
+        std::cout << "Pos: " << pos << '\n';
+        mdco.setTargetVelocity(2.1f);  // get driver unstuck from quickstop
     }
 
-    // enter idle mode and leave Enable operation state
-    mdco.disableDriver();
+    if (mdco.disable() != MDCO::Error_t::OK)
+    {
+        return EXIT_FAILURE;
+    }
 
     return EXIT_SUCCESS;
 }
