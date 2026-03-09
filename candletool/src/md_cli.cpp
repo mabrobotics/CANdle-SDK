@@ -1299,7 +1299,7 @@ namespace mab
 
                     if (result != MD::Error_t::OK)
                     {
-                        m_logger.error("Failed to write register %d", reg.m_regAddress);
+                        m_logger.error("Failed to write register 0x%04X", reg.m_regAddress);
                         return;
                     }
                     m_logger.success("Writing register %s successful!", reg.m_name.data());
@@ -1312,13 +1312,13 @@ namespace mab
                         strV = std::get<std::string>(regValue).c_str();
                     else
                     {
-                        m_logger.error("Invalid value type for register %d", reg.m_regAddress);
+                        m_logger.error("Invalid value type for register 0x%04X", reg.m_regAddress);
                         return;
                     }
 
                     if (strV.length() > sizeof(reg.value) + 1)
                     {
-                        m_logger.error("Value too long for register %d", reg.m_regAddress);
+                        m_logger.error("Value too long for register 0x%04X", reg.m_regAddress);
                         return;
                     }
 
@@ -1328,7 +1328,7 @@ namespace mab
 
                     if (result != MD::Error_t::OK)
                     {
-                        m_logger.error("Failed to write register %d", reg.m_regAddress);
+                        m_logger.error("Failed to write register 0x%04X", reg.m_regAddress);
                         return;
                     }
                     m_logger.success("Writing register %s successful!", reg.m_name.data());
@@ -1338,12 +1338,12 @@ namespace mab
         regs.forEachRegister(setRegValueByAdress);
         if (!foundRegister)
         {
-            m_logger.error("Register %d not found", regAdress);
+            m_logger.error("Register 0x%04X not found", regAdress);
             return false;
         }
         if (!registerCompatible)
         {
-            m_logger.error("Register %d not compatible with value %s", regAdress, value.c_str());
+            m_logger.error("Register 0x%04X not compatible with value %s", regAdress, value.c_str());
             return false;
         }
         return true;
@@ -1364,7 +1364,7 @@ namespace mab
                     auto result = md.readRegister(reg);
                     if (result != MD::Error_t::OK)
                     {
-                        m_logger.error("Failed to read register %d", regAdress);
+                        m_logger.error("Failed to read register 0x%04X", regAdress);
                         return false;
                     }
                     std::string value   = std::to_string(reg.value);
@@ -1378,7 +1378,7 @@ namespace mab
                     auto result = md.readRegisters(reg);
                     if (result != MD::Error_t::OK)
                     {
-                        m_logger.error("Failed to read register %d", regAdress);
+                        m_logger.error("Failed to read register 0x%04X", regAdress);
                         return false;
                     }
                     const char* value   = reg.value;

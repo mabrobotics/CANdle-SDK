@@ -44,8 +44,10 @@ target_include_directories(
          ${CMAKE_CURRENT_SOURCE_DIR}/src/web_file_module
          ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src)
 
-
-target_compile_options(candletool PRIVATE -g)
+target_compile_options(candletool PRIVATE -g -Wno-unused-parameter -Wno-missing-field-initializers)
+if(SUPPRESS_WARN)
+    target_compile_options(candletool PRIVATE -w)
+endif()
 
 set_target_properties(candletool PROPERTIES OUTPUT_NAME "candletool")
 
@@ -181,7 +183,8 @@ elseif(UNIX)
     install(
     FILES
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/udev/rules.d/99-candletool.rules
-    DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/")
+    DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/"
+    COMPONENT rules)
 
     install(
     FILES
@@ -193,6 +196,8 @@ elseif(UNIX)
                 WORLD_WRITE
     EXCLUDE_FROM_ALL)
     add_compile_definitions(DEFAULT_CANDLETOOL_CONFIG_DIR="/${CMAKE_INSTALL_SYSCONFDIR}/candletool")
+    add_custom_target(install_rules
+    COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_BINARY_DIR}" --component rules)
 else()
     message(FATAL_ERROR "System not unix nor windows, can not compile!")
     message()

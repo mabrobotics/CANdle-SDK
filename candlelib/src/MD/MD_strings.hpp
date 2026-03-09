@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <string>
 #include <mab_types.hpp>
+#include "md_types.hpp"
 #include <map>
 #include <optional>
 
@@ -41,17 +42,24 @@ namespace mab
         static inline const std::map<u32, std::string_view> fromNumericMap{{0, "NONE"},
                                                                            {1, "ME_AS_CENTER"},
                                                                            {2, "ME_AS_OFFAXIS"},
-                                                                           {3, "MB053SFA17BENT00"},
+                                                                           {3, "RLS_17B_RS422"},
                                                                            {4, "CM_OFFAXIS"},
                                                                            {5, "M24B_CENTER"},
-                                                                           {6, "M24B_OFFAXIS"}};
+                                                                           {6, "M24B_OFFAXIS"},
+                                                                           {7, "DUAL_ENCODER"},
+                                                                           {8, "ONBOARD"},
+                                                                           {9, "RLS_17B_SPI"}};
         static inline const std::map<std::string_view, u32> toNumericMap{{"NONE", 0},
                                                                          {"ME_AS_CENTER", 1},
                                                                          {"ME_AS_OFFAXIS", 2},
-                                                                         {"MB053SFA17BENT00", 3},
+                                                                         {"RLS_17B_RS422", 3},
+                                                                         {"MB053SFA17BENT00", 3}, // deprecated
                                                                          {"CM_OFFAXIS", 4},
                                                                          {"M24B_CENTER", 5},
-                                                                         {"M24B_OFFAXIS", 6}};
+                                                                         {"M24B_OFFAXIS", 6},
+                                                                         {"DUAL_ENCODER", 7},
+                                                                         {"ONBOARD", 8},
+                                                                         {"RLS_17B_SPI", 9}};
 
         static std::optional<u32> toNumeric(const std::string_view val)
         {
@@ -248,6 +256,29 @@ namespace mab
                 default:
                     return "UNKNOWN";
             }
+        }
+    };
+    struct MDRegisterAccessError_S
+    {
+        static std::string toReadable(mab::MdRegisterAccessErrorCode code)
+        {
+            switch(code)
+            {
+                case mab::MdRegisterAccessErrorCode::NONE:
+                    return "NO ERROR";
+                case mab::MdRegisterAccessErrorCode::ACCESS:
+                    return "ACCESS (read/write not permitted)";
+                case mab::MdRegisterAccessErrorCode::DEPRECATED:
+                    return "DEPRECATED (register no longer used)";
+                case mab::MdRegisterAccessErrorCode::INVALID:
+                    return "INVALID (request/format not valid)";
+                case mab::MdRegisterAccessErrorCode::OUT_OF_RANGE:
+                    return "OUT OF RANGE";
+                case mab::MdRegisterAccessErrorCode::UNKNOWN:
+                    return "UNKNOWN (undefined)";
+
+            }
+            return "ERROR_CODE_UNKNOWN";
         }
     };
 }  // namespace mab
