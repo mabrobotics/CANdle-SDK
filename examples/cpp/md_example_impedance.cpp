@@ -50,13 +50,13 @@ int main()
     // Enable the drive. From this point on it is our objective to send regular messages to the MD,
     // otherwise it will timeout via watchdog and disable itself.
     md.enable();
+    md.setImpedanceParams(0.055, 0.02);
+    // constexpr float stepSize       = 0.05f;
+    float targetPosition = 0.0f;
 
-    constexpr float stepSize       = 0.05f;
-    float           targetPosition = 0.0f;
-
-    for (u16 i = 0; i < 100; i++)
+    for (u16 i = 0; i < 1000; i++)
     {
-        targetPosition += stepSize;
+        // targetPosition += stepSize;
         // Providing new target position
         md.setTargetPosition(targetPosition);
         ;
