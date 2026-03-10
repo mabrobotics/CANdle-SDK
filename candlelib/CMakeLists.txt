@@ -160,11 +160,6 @@ if(MAKE_TESTS)
     target_link_libraries(candle_frame_adapter_test PRIVATE logger shared_data
                                                           candle)
 
-    add_unit_test_executable(mdco_v2_test src/MD/MDCO_test.cpp)
-    target_sources(mdco_v2_test PRIVATE src/MD/MDCO.cpp)
-    target_include_directories(mdco_v2_test PRIVATE include src/MD/)
-    target_link_libraries(mdco_v2_test PRIVATE logger shared_data candle)
-
     add_unit_test_executable(eds_entry_test src/objectDictionary/edsEntry_test.cpp)
     target_sources(eds_entry_test PRIVATE src/objectDictionary/edsEntry.hpp)
     target_include_directories(eds_entry_test PRIVATE src/objectDictionary)

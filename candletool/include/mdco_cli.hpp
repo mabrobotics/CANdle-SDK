@@ -115,7 +115,7 @@ namespace mab
             {
                 rootCli
                     ->add_option(
-                        "-p, --position", *position, "Absolute position to reach [encoder ticks].")
+                        "position", *position, "Absolute position to reach [encoder ticks].")
                     ->required();
             }
             const std::shared_ptr<i32>          position;

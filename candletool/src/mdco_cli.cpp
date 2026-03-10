@@ -61,42 +61,48 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     std::filesystem::path configFilePath =
         m_ctx.packageEtcPath->string() + "/config/candletool.ini";
 
-    if (!std::filesystem::exists(configFilePath))
+    auto loadEDS =
+        [this,
+         configFilePath]() -> std::pair<std::shared_ptr<EDSObjectDictionary>, EDSParser::Error_t>
     {
-        m_log.error(
-            "Coudl not locate candletool.ini configuration file in %s. Is the candletool installed "
-            "properly?",
-            configFilePath.c_str());
-        throw std::runtime_error(
-            "Coudl not locate candletool.ini configuration file. Is the candletool installed "
-            "properly?");
-    }
+        if (!std::filesystem::exists(configFilePath))
+        {
+            m_log.error(
+                "Coudl not locate candletool.ini configuration file in %s. Is the candletool "
+                "installed "
+                "properly?",
+                configFilePath.c_str());
+            throw std::runtime_error(
+                "Coudl not locate candletool.ini configuration file. Is the candletool installed "
+                "properly?");
+        }
 
-    mINI::INIFile      configFile(configFilePath);
-    mINI::INIStructure configStruct;
+        mINI::INIFile      configFile(configFilePath);
+        mINI::INIStructure configStruct;
 
-    configFile.read(configStruct);
+        configFile.read(configStruct);
 
-    std::filesystem::path edsPath = configStruct["eds"]["path"];
+        std::filesystem::path edsPath = configStruct["eds"]["path"];
+        if (edsPath.empty() || !std::filesystem::exists(edsPath))
+        {
+            m_log.error(
+                "Coudl not locate .eds file. Please check the %s file for eds section and fill it "
+                "properly. Currently read path is: %s",
+                configFilePath.c_str(),
+                edsPath.c_str());
+            throw std::runtime_error(
+                "Coudl not locate .eds file. Please check the config file for eds section and fill "
+                "it "
+                "properly.");
+        }
 
-    if (edsPath.empty() || !std::filesystem::exists(edsPath))
-    {
-        m_log.error(
-            "Coudl not locate .eds file. Please check the %s file for eds section and fill it "
-            "properly. Currently read path is: %s",
-            configFilePath.c_str(),
-            edsPath.c_str());
-        throw std::runtime_error(
-            "Coudl not locate .eds file. Please check the config file for eds section and fill it "
-            "properly.");
-    }
-
-    auto odPair = EDSParser::load(edsPath);
-    if (odPair.second != EDSParser::Error_t::OK)
-    {
-        m_log.warn("EDS parsing failed!");
-    }
-    auto od = odPair.first;
+        auto odPair = EDSParser::load(edsPath);
+        if (odPair.second != EDSParser::Error_t::OK)
+        {
+            m_log.warn("EDS parsing failed!");
+        }
+        return odPair;
+    };
 
     CLI::App* mdco = m_rootCli.add_subcommand("mdco", "Send CANopen command instead of CAN FD.");
     const std::shared_ptr<canId_t> mdCanId = std::make_shared<canId_t>(10);
@@ -108,8 +114,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     CLI::App* blink =
         mdco->add_subcommand("blink", "Blink LEDs on MD drive.")->needs(mdCanIdOption);
     blink->callback(
-        [this, mdCanId, od]()
+        [this, mdCanId, loadEDS]()
         {
+            auto od   = loadEDS().first;
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
                 m_log.error("Failed to conect to mdco!");
@@ -123,15 +130,15 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
 
     // CAN ============================================================================
 
-    CLI::App* can =
-        mdco->add_subcommand("can", "Configure CAN network parameters id, datarate and timeout.")
-            ->needs(mdCanIdOption)
-            ->require_option();
+    CLI::App* can = mdco->add_subcommand("can", "Configure CAN id of the driver.")
+                        ->needs(mdCanIdOption)
+                        ->require_option();
     CanOptions canOptions(can);
     can->callback(
-        [this, mdCanId, canOptions, od]()
+        [this, mdCanId, canOptions, loadEDS]()
         {
             constexpr std::string_view canIdName = "Can ID";
+            auto                       od        = loadEDS().first;
             auto                       mdco      = getMdco(mdCanId, od);
             if (*canOptions.canId < 1 || *canOptions.canId > 31)
             {
@@ -169,7 +176,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         });
 
     // CONFIG ===========================================================================
-    auto* config = mdco->add_subcommand("config", "Configure MD drive.")
+    auto* config = mdco->add_subcommand("config", "Manage configuration of the driver.")
                        ->needs(mdCanIdOption)
                        ->require_subcommand();
     // Download configuration file
@@ -179,8 +186,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     ConfigOptions downloadConfigOptions(downloadConfig);
 
     downloadConfig->callback(
-        [this, od, mdCanId, downloadConfigOptions]()
+        [this, loadEDS, mdCanId, downloadConfigOptions]()
         {
+            auto od = loadEDS().first;
             auto md = getMdco(mdCanId, od);
             if (md == nullptr)
             {
@@ -254,8 +262,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     ConfigOptions uploadConfigOptions(uploadConfig);
 
     uploadConfig->callback(
-        [this, od, mdCanId, uploadConfigOptions]()
+        [this, loadEDS, mdCanId, uploadConfigOptions]()
         {
+            auto od = loadEDS().first;
             auto md = getMdco(mdCanId, od);
             if (md == nullptr)
             {
@@ -328,8 +337,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     CLI::App* clear =
         mdco->add_subcommand("clear", "Clear MD drive errors and warnings.")->needs(mdCanIdOption);
     clear->callback(
-        [this, mdCanId, od]()
+        [this, mdCanId, loadEDS]()
         {
+            auto od   = loadEDS().first;
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
                 m_log.error("Failed to conect to mdco!");
@@ -347,12 +357,13 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                              ->excludes(mdCanIdOption);
 
     discover->callback(
-        [this, od]()
+        [this, loadEDS]()
         {
             auto candle = std::unique_ptr<Candle>(
                 attachCandle(*(m_candleBuilder->datarate), *(m_candleBuilder->busType), true));
             std::vector<canId_t> mdIds;
-            mdIds = MDCO::discoverOpenMDs(candle.get(), od);
+            auto                 od = loadEDS().first;
+            mdIds                   = MDCO::discoverOpenMDs(candle.get(), od);
             m_log.info("Discovered MDCOs: ");
             for (const auto& id : mdIds)
             {
@@ -366,8 +377,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     // ENCODER display
     CLI::App* encoderDisplay = encoder->add_subcommand("display", "Display MD motor position.");
     encoderDisplay->callback(
-        [this, mdCanId, od]()
+        [this, mdCanId, loadEDS]()
         {
+            auto          od   = loadEDS().first;
             auto          mdco = getMdco(mdCanId, od);
             MDCO::Error_t err  = mdco->readSDO(((*od)[0x6064]));
             if (err != MDCO::Error_t::OK)
@@ -389,8 +401,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     ReadOptions readOption(sdoRead);
 
     sdoRead->callback(
-        [this, mdCanId, readOption, od]()
+        [this, mdCanId, readOption, loadEDS]()
         {
+            auto od   = loadEDS().first;
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
                 m_log.error("Failed to conect to mdco!");
@@ -440,8 +453,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     WriteOptions writeOption(sdoWrite);
 
     sdoWrite->callback(
-        [this, mdCanId, writeOption, od]()
+        [this, mdCanId, writeOption, loadEDS]()
         {
+            auto od   = loadEDS().first;
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
                 m_log.error("Failed to conect to mdco!");
@@ -491,8 +505,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     // RESET ============================================================================
     CLI::App* reset = mdco->add_subcommand("reset", "Reset MD drive.")->needs(mdCanIdOption);
     reset->callback(
-        [this, mdCanId, od]()
+        [this, mdCanId, loadEDS]()
         {
+            auto          od  = loadEDS().first;
             auto          md  = getMdco(mdCanId, od);
             MDCO::Error_t err = md->reset();
             if (err != MDCO::Error_t::OK)
@@ -508,13 +523,14 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
 
     CalibrationOptions calibrationOptions(setupCalib);
     setupCalib->callback(
-        [this, mdCanId, od, calibrationOptions]()
+        [this, mdCanId, loadEDS, calibrationOptions]()
         {
             std::string calibrationName =
                 *calibrationOptions.calibrationOfEncoder == std::string_view("main")
                     ? "Run Calibration"
                     : "Run Output Encoder Calibration";
             m_log.debug("Running cal with: %s", calibrationName.c_str());
+            auto od   = loadEDS().first;
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
                 m_log.error("Failed to conect to mdco!");
@@ -543,8 +559,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     // SETUP info
     CLI::App* info = mdco->add_subcommand("info", "Display info about the MD drive.");
     info->callback(
-        [this, mdCanId, od]()
+        [this, mdCanId, loadEDS]()
         {
+            auto od   = loadEDS().first;
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
                 m_log.error("Failed to conect to mdco!");
@@ -608,8 +625,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     CLI::App* save =
         mdco->add_subcommand("save", "Save registers to persistant memory and reset the driver.");
     save->callback(
-        [this, mdCanId, od]()
+        [this, mdCanId, loadEDS]()
         {
+            auto od   = loadEDS().first;
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
             {
@@ -640,8 +658,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     MoveOptions moveOptionsAbs(testMoveAbs);
 
     testMoveAbs->callback(
-        [this, mdCanId, od, moveOptionsAbs]()
+        [this, mdCanId, loadEDS, moveOptionsAbs]()
         {
+            auto od   = loadEDS().first;
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
                 m_log.error("Failed to conect to mdco!");
@@ -685,8 +704,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     MoveOptions moveOptionsRel(testMoveRel);
 
     testMoveRel->callback(
-        [this, mdCanId, od, moveOptionsRel]()
+        [this, mdCanId, loadEDS, moveOptionsRel]()
         {
+            auto od   = loadEDS().first;
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
                 m_log.error("Failed to conect to mdco!");
