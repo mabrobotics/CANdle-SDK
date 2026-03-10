@@ -43,6 +43,7 @@
     MD_REG(auxEncoderPosition, float, 0x024, RO)     \
     MD_REG(auxEncoderMode, u8, 0x025, RW)            \
     MD_REG(auxEncoderCalibrationMode, u8, 0x026, RW) \
+    MD_REG(dualEncoderRevoltion, f32, 0x027, RO)     \
                                                      \
     MD_REG(motorPosPidKp, float, 0x030, RW)          \
     MD_REG(motorPosPidKi, float, 0x031, RW)          \

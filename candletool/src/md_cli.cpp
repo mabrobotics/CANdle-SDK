@@ -790,6 +790,10 @@ namespace mab
                              << readableRegisters.auxEncoderPosition.value << " rad" << std::endl;
                     m_logger << "   - aux encoder velocity: "
                              << readableRegisters.auxEncoderVelocity.value << " rad/s" << std::endl;
+                    if (readableRegisters.auxEncoderMode.value ==
+                        MDAuxEncoderModeValue_S::toNumeric("DUAL"))
+                        m_logger << "   - dual encoder abs revolution count: "
+                                 << (int)readableRegisters.dualEncoderRevoltion.value << std::endl;
                 }
 
                 m_logger << "- motion limits: " << std::endl;
