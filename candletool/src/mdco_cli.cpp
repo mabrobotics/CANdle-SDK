@@ -94,8 +94,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     auto odPair = EDSParser::load(edsPath);
     if (odPair.second != EDSParser::Error_t::OK)
     {
-        m_log.error("EDS parsing failed!");
-        throw std::runtime_error("EDS parsing failed!");
+        m_log.warn("EDS parsing failed!");
     }
     auto od = odPair.first;
 
@@ -112,6 +111,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         [this, mdCanId, od]()
         {
             auto mdco = getMdco(mdCanId, od);
+            if (mdco == nullptr)
+                m_log.error("Failed to conect to mdco!");
             if (mdco->blink() != MDCO::Error_t::OK)
             {
                 m_log.error("Failed to blink MD device with ID %d", *mdCanId);
@@ -330,6 +331,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         [this, mdCanId, od]()
         {
             auto mdco = getMdco(mdCanId, od);
+            if (mdco == nullptr)
+                m_log.error("Failed to conect to mdco!");
             if (mdco->clearErrors() != MDCO::Error_t::OK)
             {
                 m_log.error("Failed to clear errors!");
@@ -389,6 +392,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         [this, mdCanId, readOption, od]()
         {
             auto mdco = getMdco(mdCanId, od);
+            if (mdco == nullptr)
+                m_log.error("Failed to conect to mdco!");
 
             if (readOption.subindex->has_value())
             {
@@ -438,6 +443,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         [this, mdCanId, writeOption, od]()
         {
             auto mdco = getMdco(mdCanId, od);
+            if (mdco == nullptr)
+                m_log.error("Failed to conect to mdco!");
 
             if (writeOption.subindex->has_value())
             {
@@ -493,7 +500,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error("Error resetting MD device with ID %d", *mdCanId);
                 return;
             }
-            m_log.success("Driver %d is restarting", (uint)*mdCanId);
+            m_log.success("Driver %d is restarting", (unsigned int)*mdCanId);
         });
 
     // Calibration
@@ -509,6 +516,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                     : "Run Output Encoder Calibration";
             m_log.debug("Running cal with: %s", calibrationName.c_str());
             auto mdco = getMdco(mdCanId, od);
+            if (mdco == nullptr)
+                m_log.error("Failed to conect to mdco!");
             if (mdco->enterConfigMode() != MDCO::Error_t::OK)
             {
                 m_log.error("Could not enter config mode!");
@@ -537,6 +546,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         [this, mdCanId, od]()
         {
             auto mdco = getMdco(mdCanId, od);
+            if (mdco == nullptr)
+                m_log.error("Failed to conect to mdco!");
 
             for (auto& object : *od)
             {
@@ -632,6 +643,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         [this, mdCanId, od, moveOptionsAbs]()
         {
             auto mdco = getMdco(mdCanId, od);
+            if (mdco == nullptr)
+                m_log.error("Failed to conect to mdco!");
             if (mdco->enable() != MDCO::Error_t::OK)
             {
                 m_log.error("Failed move");
@@ -675,6 +688,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         [this, mdCanId, od, moveOptionsRel]()
         {
             auto mdco = getMdco(mdCanId, od);
+            if (mdco == nullptr)
+                m_log.error("Failed to conect to mdco!");
             if (mdco->zero() != MDCO::Error_t::OK)
             {
                 m_log.error("Failed move");
