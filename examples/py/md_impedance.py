@@ -1,5 +1,6 @@
-import pyCandle as pc
 import time
+
+import pyCandle as pc
 
 # Uncomment this for debugging the CANdlelib stack
 # pc.logVerbosity(pc.Verbosity_E.VERBOSITY_3)
@@ -38,9 +39,9 @@ if err == pc.MD_Error_t.OK:
 
             # Check exerted torque via a register
             torque = pc.readRegisterFloat(md, "motorTorque")[0]
-            print(f"Exerting torque: {round(torque,2)} Nm")
+            print(f"Exerting torque: {round(torque, 2)} Nm")
             print(
-                f"Position: {round(pos,2)}, Target position: {round(t,2)} Error: {err}"
+                f"Position: {round(pos, 2)}, Target position: {round(t, 2)} Error: {err}"
             )
 
         # Sleep less than wdg timer

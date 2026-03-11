@@ -476,7 +476,7 @@ PYBIND11_MODULE(pyCandle, m)
           &mab::pyAttachCandle,
           py::arg("datarate"),
           py::arg("busType"),
-          py::arg("useRegularCANFrames"),
+          py::arg("useRegularCANFrames") = true,
           py::return_value_policy::take_ownership,
           "Attach a CANdle device to the system.");
 
