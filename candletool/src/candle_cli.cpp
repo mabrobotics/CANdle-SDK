@@ -34,14 +34,15 @@ namespace mab
             {
                 m_logger.info("Performing Candle firmware update.");
 
+                std::filesystem::path filepath;
+
                 if (updateOptions.pathToMabFile->empty())
                 {
                     if (updateOptions.fwVersion->empty())
                     {
                         m_logger.error(
                             "Please provide version of fw or \"latest\" keyword in the argument!");
-                        m_logger.error(
-                            "For example candletool candle update latest");
+                        m_logger.error("For example candletool candle update latest");
                         return;
                     }
                     std::string fallbackPath = ctx.packageEtcPath->generic_string();
@@ -56,7 +57,7 @@ namespace mab
                     mINI::INIFile fallbackMetadataFile(fallbackPath);
                     CurlHandler   curl(fallbackMetadataFile);
 
-                    std::string fileId = "MAB_USB_FLASHER_";
+                    std::string fileId = "MAB_USB_MABFILE_";
                     fileId += *updateOptions.fwVersion;
                     auto curlResult = curl.downloadFile(fileId);
                     if (curlResult.first != CurlHandler::CurlError_E::OK)
@@ -64,32 +65,34 @@ namespace mab
                         m_logger.error("Error on curl download request!");
                         return;
                     }
-                    Flasher flasher(curlResult.second);
-                    auto    flashResult = flasher.flash();
-                    if (flashResult != Flasher::Error_E::OK)
+                    auto file = curlResult.second;
+                    if (file.m_type != WebFile_S::Type_E::MAB_FILE)
                     {
-                        m_logger.error("Error while flashing firmware!");
+                        m_logger.error("Downloaded file is not a MAB file!");
                         return;
                     }
+                    filepath = curlResult.second.m_path;
+                    m_logger.info("Downloaded firmware to %s", filepath.c_str());
                 }
                 else
                 {
-                    MabFileParser candleFirmware(*updateOptions.pathToMabFile,
-                                                 MabFileParser::TargetDevice_E::CANDLE);
+                    filepath = *updateOptions.pathToMabFile;
+                }
+                MabFileParser candleFirmware(filepath.string(),
+                                             MabFileParser::TargetDevice_E::CANDLE);
 
-                    auto candle_bootloader = attachCandleBootloader();
-                    for (size_t i = 0; i < candleFirmware.m_fwEntry.size;
-                         i += CandleBootloader::PAGE_SIZE_STM32G474)
+                auto candle_bootloader = attachCandleBootloader();
+                for (size_t i = 0; i < candleFirmware.m_fwEntry.size;
+                     i += CandleBootloader::PAGE_SIZE_STM32G474)
+                {
+                    std::array<u8, CandleBootloader::PAGE_SIZE_STM32G474> page;
+                    std::memcpy(
+                        page.data(), &candleFirmware.m_fwEntry.data->data()[i], page.size());
+                    u32 crc = candleCRC::crc32(page.data(), page.size());
+                    if (candle_bootloader->writePage(page, crc) != candleTypes::Error_t::OK)
                     {
-                        std::array<u8, CandleBootloader::PAGE_SIZE_STM32G474> page;
-                        std::memcpy(
-                            page.data(), &candleFirmware.m_fwEntry.data->data()[i], page.size());
-                        u32 crc = candleCRC::crc32(page.data(), page.size());
-                        if (candle_bootloader->writePage(page, crc) != candleTypes::Error_t::OK)
-                        {
-                            m_logger.error("Candle flashing failed!");
-                            break;
-                        }
+                        m_logger.error("Candle flashing failed!");
+                        break;
                     }
                 }
             });

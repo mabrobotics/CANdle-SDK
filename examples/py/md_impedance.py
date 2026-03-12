@@ -32,7 +32,7 @@ if err == pc.MD_Error_t.OK:
         t = i * 0.05
         # Set desired position
         md.setTargetPosition(t)
-        if (i % 2 == 0):
+        if i % 2 == 0:
             # Recieve achieved position
             pos, err = md.getPosition()
 
@@ -40,7 +40,8 @@ if err == pc.MD_Error_t.OK:
             torque = pc.readRegisterFloat(md, "motorTorque")[0]
             print(f"Exerting torque: {round(torque,2)} Nm")
             print(
-                f"Position: {round(pos,2)}, Target position: {round(t,2)} Error: {err}")
+                f"Position: {round(pos,2)}, Target position: {round(t,2)} Error: {err}"
+            )
 
         # Sleep less than wdg timer
         time.sleep(0.02)

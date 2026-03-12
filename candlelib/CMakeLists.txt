@@ -46,6 +46,7 @@ target_sources(
   PRIVATE src/crc.cpp
           src/can_bootloader/can_bootloader.cpp
           src/communication_device/candle.cpp
+          src/communication_device/candle_frame_adapter.cpp
           src/communication_device/candle_bootloader.cpp
           ${UNIX_ONLY_SOURCES}
           src/communication_interface/USB.cpp
@@ -78,7 +79,11 @@ else()
                         ${LIBUSB_WINDOWS_STATIC} -static)
 
 endif()
-target_compile_options(candle PRIVATE -Wall -Wextra -Wpedantic)
+if(NOT SUPPRESS_WARN)
+target_compile_options(candle PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-missing-field-initializers)
+else()
+target_compile_options(candle PRIVATE -w)
+endif()
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   target_compile_options(candle PRIVATE -g3)
 else()
@@ -138,5 +143,15 @@ if(MAKE_TESTS)
   target_sources(md_v2_test PRIVATE src/MD/MD.cpp)
   target_include_directories(md_v2_test PRIVATE include src/MD/)
   target_link_libraries(md_v2_test PRIVATE logger shared_data candle)
+
+  add_unit_test_executable(
+    candle_frame_adapter_test
+    src/communication_device/candle_frame_adapter_test.cpp)
+  target_sources(candle_frame_adapter_test
+                 PRIVATE src/communication_device/candle_frame_adapter.cpp)
+  target_include_directories(candle_frame_adapter_test
+                             PRIVATE include src src/communication_device)
+  target_link_libraries(candle_frame_adapter_test PRIVATE logger shared_data
+                                                          candle)
 
 endif()

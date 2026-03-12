@@ -14,4 +14,8 @@ add_subdirectory(unit_test_runner)
 if(MAKE_TESTS)
   add_unit_test_executable(logger_test logger/logger_test.cpp)
   target_link_libraries(logger_test PUBLIC logger)
+
+  add_unit_test_executable(candle_frame_dto_test
+                           candle_frame_dto_test/candle_frame_dto_test.cpp)
+  target_link_libraries(candle_frame_dto_test PUBLIC shared_data)
 endif()

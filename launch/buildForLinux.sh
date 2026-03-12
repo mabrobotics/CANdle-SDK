@@ -1,18 +1,23 @@
 #!/bin/bash
 set -e
-BUILD_DIRECTORY=build
-start_dir=$(pwd)
-base_dir="$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE}")")")"
-cd ${base_dir}
 
-mkdir $BUILD_DIRECTORY -p
-cd $BUILD_DIRECTORY
-chmod -R a+rw ${base_dir}/${BUILD_DIRECTORY}
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+BUILD_DIRECTORY="$PROJECT_ROOT/build"
+
+cd "$PROJECT_ROOT"
+
+mkdir -p "$BUILD_DIRECTORY"
+cd "$BUILD_DIRECTORY"
+
+chmod -R a+rw "$BUILD_DIRECTORY"
+
 cmake -DCMAKE_INSTALL_SYSCONFDIR=/etc ..
-chmod -R a+rw ${base_dir}/${BUILD_DIRECTORY}
-make -j4
-chmod -R a+rw ${base_dir}/${BUILD_DIRECTORY}
-cpack -G DEB
-chmod -R a+rw ${base_dir}/${BUILD_DIRECTORY}
+chmod -R a+rw "$BUILD_DIRECTORY"
 
-cd ${start_dir}
+make -j4
+chmod -R a+rw "$BUILD_DIRECTORY"
+
+cpack -G DEB
+chmod -R a+rw "$BUILD_DIRECTORY"

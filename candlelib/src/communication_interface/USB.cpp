@@ -64,6 +64,7 @@ namespace mab
           m_outEndpointAddress(outEndpointAddress),
           m_peek(peek)
     {
+        std::unique_lock lock(m_transferMux);
         if (m_dev == nullptr)
         {
             std::string message = "Empty libusb device provided to handler!";
@@ -147,6 +148,7 @@ namespace mab
 
     libusb_error LibusbDevice::transmit(u8* data, const size_t length, const u32 timeout)
     {
+        std::unique_lock lock(m_transferMux);
         if (data == nullptr)
         {
             std::string message = "Data does not exist!";
@@ -158,6 +160,7 @@ namespace mab
     }
     libusb_error LibusbDevice::receive(u8* data, const size_t length, const u32 timeout)
     {
+        std::unique_lock lock(m_transferMux);
         if (data == nullptr)
         {
             std::string message = "Data does not exist!";

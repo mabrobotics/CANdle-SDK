@@ -123,7 +123,7 @@
     MD_REG(shuntResistance, float, 0x700, RW)        \
                                                      \
     MD_REG(uniqueID, char[12], 0x7FE, RO)            \
-    MD_REG(hardwareType, hardwareType_S, 0x7FF, RO)  \
+    MD_REG(hardwareType, u8, 0x7FF, RO)              \
     MD_REG(buildDate, u32, 0x800, RO)                \
     MD_REG(commitHash, char[8], 0x801, RO)           \
     MD_REG(firmwareVersion, u32, 0x802, RO)          \
@@ -160,6 +160,16 @@ namespace mab
         WRITE_REGISTER_CAN_2_0 = 0x44,
         RESPONSE_LEGACY        = 0xA0,
         RESPONSE_ERROR         = 0xA1
+    };
+    
+    enum MdRegisterAccessErrorCode : i8
+    {
+        NONE = 0,
+        DEPRECATED = -1,
+        INVALID = -2,
+        UNKNOWN = -3,
+        OUT_OF_RANGE = -4,
+        ACCESS = -5,
     };
 
     enum class RegisterAccessLevel_E : u8
@@ -217,9 +227,14 @@ namespace mab
             return reg.value;
         }
 
-        constexpr size_t getSize()
+        constexpr size_t getSize() const
         {
             return sizeof(T);
+        }
+
+        constexpr size_t getSerializedSize() const
+        {
+            return sizeof(T) + sizeof(m_regAddress);
         }
 
         const std::array<u8, sizeof(value) + sizeof(m_regAddress)>* getSerializedRegister()
@@ -234,6 +249,8 @@ namespace mab
         bool setSerializedRegister(std::vector<u8>& data)
         {
             // Frame layout <8bits per chunk> [LSB address, MSB address, Payload ...]
+            if (data.size() < getSerializedSize() || data.data() == nullptr)
+                return false;
             u16 addressFromSerial = 0;
             std::memcpy(&addressFromSerial, data.data(), sizeof(m_regAddress));
             if (addressFromSerial == m_regAddress)
@@ -290,6 +307,13 @@ namespace mab
             return *this;
         }
 
+        MDRegisterEntry_S& operator=(const T* otherValue)
+        {
+            memcpy(value, otherValue, N);
+
+            return *this;
+        }
+
         const T* operator=(MDRegisterEntry_S& reg) const
         {
             return value;
@@ -298,6 +322,11 @@ namespace mab
         constexpr size_t getSize() const
         {
             return sizeof(T[N]);
+        }
+
+        constexpr size_t getSerializedSize() const
+        {
+            return sizeof(T[N]) + sizeof(m_regAddress);
         }
 
         const std::array<u8, sizeof(value) + sizeof(m_regAddress)>* getSerializedRegister()
@@ -312,6 +341,8 @@ namespace mab
         bool setSerializedRegister(std::vector<u8>& data)
         {
             // Frame layout <8bits per chunk> [LSB address, MSB address, Payload ...]
+            if (data.size() < getSerializedSize())
+                return false;
             u16 addressFromSerial = 0;
             std::memcpy(&addressFromSerial, data.data(), sizeof(m_regAddress));
             if (addressFromSerial == m_regAddress)

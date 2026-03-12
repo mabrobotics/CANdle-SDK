@@ -5,9 +5,10 @@ namespace mab
 
     MD::Error_t MD::init()
     {
-        // TODO: add new hw struct support CS-36
-        //  m_mdRegisters.hardwareType.value.deviceType = deviceType_E::UNKNOWN_DEVICE;
-        //  auto mfDataResult                           = readRegister(m_mdRegisters.hardwareType);
+        // TODO: add call std::call_once for deferring initialization
+        //  TODO: add new hw struct support CS-36
+        //   m_mdRegisters.hardwareType.value.deviceType = deviceType_E::UNKNOWN_DEVICE;
+        //   auto mfDataResult                           = readRegister(m_mdRegisters.hardwareType);
 
         // if (mfDataresult == Error_t::OK)
         // {
@@ -18,6 +19,22 @@ namespace mab
         //     if (devType != deviceType_E::UNKNOWN_DEVICE)
         //         return Error_t::OK;
         // }
+        auto candleVersionOpt = m_candle->getCandleVersion();
+
+        if (!candleVersionOpt.has_value())
+            m_log.error("Could not read candle version!");
+        else if (candleVersionOpt.value().s.major < 2 ||
+                 (candleVersionOpt.value().s.major == 2 && candleVersionOpt.value().s.minor < 4))
+        {
+            m_log.error(
+                "You are using old CANdle firmware version. This firmware version will not work "
+                "with asynchronous API!");
+            m_log.error(
+                "Go to the"
+                "https://mabrobotics.github.io/MD80-x-CANdle-Documentation/Downloads/intro.html "
+                "for latest firmware and more information.");
+        }
+
         m_mdRegisters.legacyHardwareVersion = 0;
 
         auto mfLegacydataResult = readRegister(m_mdRegisters.legacyHardwareVersion);
@@ -282,6 +299,30 @@ namespace mab
         return MD::Error_t::OK;
     }
 
+    MD::Error_t MD::setProfileDeceleration(float profileDeceleration /*s^-2*/)
+    {
+        m_mdRegisters.profileDeceleration = profileDeceleration;
+        if (writeRegisters(m_mdRegisters.profileDeceleration) != MD::Error_t::OK)
+        {
+            m_log.error("Profile deceleration setting failed!");
+            return MD::Error_t::TRANSFER_FAILED;
+        }
+        m_log.info("Profile deceleration set to value %.2f", profileDeceleration);
+        return MD::Error_t::OK;
+    }
+
+    MD::Error_t MD::setPositionWindow(float windowSize /*rad*/)
+    {
+        m_mdRegisters.positionWindow = windowSize;
+        if (writeRegisters(m_mdRegisters.positionWindow) != MD::Error_t::OK)
+        {
+            m_log.error("Position window setting failed!");
+            return MD::Error_t::TRANSFER_FAILED;
+        }
+        m_log.info("Position window set to value %.2f", windowSize);
+        return MD::Error_t::OK;
+    }
+
     MD::Error_t MD::setTargetPosition(float position /*rad*/)
     {
         m_mdRegisters.targetPosition = position;
@@ -328,7 +369,7 @@ namespace mab
             m_log.error("Could not read quick status vector!");
             return std::make_pair(m_status.quickStatus, result);
         }
-        MDStatus::toMap(m_mdRegisters.quickStatus.value, m_status.quickStatus);
+        MDStatus::decode(m_mdRegisters.quickStatus.value, m_status.quickStatus);
         return std::make_pair(m_status.quickStatus, result);
     }
 
@@ -342,7 +383,7 @@ namespace mab
             m_log.error("Could not read main encoder errors!");
             return std::make_pair(m_status.encoderStatus, result);
         }
-        MDStatus::toMap(m_mdRegisters.mainEncoderStatus.value, m_status.encoderStatus);
+        MDStatus::decode(m_mdRegisters.mainEncoderStatus.value, m_status.encoderStatus);
         return std::make_pair(m_status.encoderStatus, result);
     }
 
@@ -356,7 +397,7 @@ namespace mab
             m_log.error("Could not read output encoder errors!");
             return std::make_pair(m_status.encoderStatus, result);
         }
-        MDStatus::toMap(m_mdRegisters.auxEncoderStatus.value, m_status.encoderStatus);
+        MDStatus::decode(m_mdRegisters.auxEncoderStatus.value, m_status.encoderStatus);
         return std::make_pair(m_status.encoderStatus, result);
     }
 
@@ -370,7 +411,7 @@ namespace mab
             m_log.error("Could not read ");
             return std::make_pair(m_status.calibrationStatus, result);
         }
-        MDStatus::toMap(m_mdRegisters.calibrationStatus.value, m_status.calibrationStatus);
+        MDStatus::decode(m_mdRegisters.calibrationStatus.value, m_status.calibrationStatus);
         return std::make_pair(m_status.calibrationStatus, result);
     }
 
@@ -384,7 +425,7 @@ namespace mab
             m_log.error("Could not read ");
             return std::make_pair(m_status.bridgeStatus, result);
         }
-        MDStatus::toMap(m_mdRegisters.bridgeStatus.value, m_status.bridgeStatus);
+        MDStatus::decode(m_mdRegisters.bridgeStatus.value, m_status.bridgeStatus);
         return std::make_pair(m_status.bridgeStatus, result);
     }
 
@@ -398,7 +439,7 @@ namespace mab
             m_log.error("Could not read ");
             return std::make_pair(m_status.hardwareStatus, result);
         }
-        MDStatus::toMap(m_mdRegisters.hardwareStatus.value, m_status.hardwareStatus);
+        MDStatus::decode(m_mdRegisters.hardwareStatus.value, m_status.hardwareStatus);
         return std::make_pair(m_status.hardwareStatus, result);
     }
 
@@ -412,7 +453,7 @@ namespace mab
             m_log.error("Could not read ");
             return std::make_pair(m_status.communicationStatus, result);
         }
-        MDStatus::toMap(m_mdRegisters.communicationStatus.value, m_status.communicationStatus);
+        MDStatus::decode(m_mdRegisters.communicationStatus.value, m_status.communicationStatus);
         return std::make_pair(m_status.communicationStatus, result);
     }
 
@@ -426,7 +467,7 @@ namespace mab
             m_log.error("Could not read ");
             return std::make_pair(m_status.motionStatus, result);
         }
-        MDStatus::toMap(m_mdRegisters.motionStatus.value, m_status.motionStatus);
+        MDStatus::decode(m_mdRegisters.motionStatus.value, m_status.motionStatus);
         return std::make_pair(m_status.motionStatus, result);
     }
 
