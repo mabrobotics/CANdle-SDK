@@ -1,6 +1,7 @@
 #include <tuple>
 #include "candle.hpp"
 #include "MD.hpp"
+
 enum userChoice_IMPED
 {
     STANDARD,
@@ -21,18 +22,14 @@ enum motionMode
     POSITION,
     IMPEDANCE
 };
+///
 
-enum motorType
-{
-    GL_30,
-    GL_35
-};
-void runImpedance(mab::MD&, Logger, int, int);
+void runImpedance(mab::MD&, Logger, int);
 void runVelocity(mab::MD&, Logger, int);
 void runPosition(mab::MD&, Logger, int, mab::MDRegisters_S&);
-void runConfigurations(int, int, int, mab::MD&, mab::MDRegisters_S&);
-int  getMotorType(mab::MD&, mab::MDRegisters_S*);
+void runConfigurations(int, int, mab::MD&, mab::MDRegisters_S&);
 
+///
 void updateProgressBar(int current, int total, int width = 50)
 {
     int pos = (current * width) / total;
@@ -51,10 +48,9 @@ std::tuple<int, int> getUserChoice()
 {
     int choice;
     int motionMode;
-    // int maxChoice     = 5;
+
     int maxMotionMode = 3;
-    // int maxVelocityMode = 2;
-    // int maxPositionMode = 0;
+
     int min = 1;
 
     while (true)
@@ -99,6 +95,10 @@ std::tuple<int, int> getUserChoice()
                     continue;
                 }
             case POSITION:
+                std::cout
+                    << "\033[1mThe Position Mode allows to controll the position of the motor and "
+                       "hold it with a given torque. It also allows to controll the behaviour of "
+                       "the motor when moved out of the desired position\33[0m \n";
                 return std::make_tuple(choice - 1, motionMode - 1);
                 continue;
 
@@ -152,88 +152,36 @@ int main()
     mab::Candle* candle = mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M,
                                             mab::candleTypes::busTypes_t::USB);
 
-    // The code below is an easy explenation OF how to use auto detection of md modules, it can be
-    // also found in the md_example_impedance.cpp file
-
-    // Look for MAB devices present on the can network
-    // auto ids = mab::MD::discoverMDs(candle);
-
-    // This method provides you with memory-safe map handle which you can assign MDs too manually
-    // via addMD method or via discoverDevices
-    // std::vector<mab::MD> mds;
-    // for (auto id : ids)
-    // {
-    //     mab::MD md(id, candle);
-    //     if (md.init() == mab::MD::Error_t::OK)
-    //         mds.push_back(md);
-    // }
-
-    // if (mds.size() == 0)
-    // {
-    //     log.error("No MDs found!");
-    //     return EXIT_FAILURE;
-    // }
-
-    // Get first md that was detected. This is not a memory safe handle so it should not be moved a
-    // lot in this form.
-    // mab::MD md = mds[0];
-
-    // You can also hardcode the ID of the device you are using
     constexpr mab::canId_t id = 968;  // 968;  // hardcoded ID
     mab::MD md(id, candle);  // create MD object with your motors id and attach it to the candle
 
-    // Selecting motion mode to be impedance. Important note is that motion mode resets every time
-    // MD is disabled or timed out
-    int                choice, motionMode;
-    int                motorType;
+    int choice, motionMode;
+
     mab::MDRegisters_S registerBuffer;
-    motorType = getMotorType(md, &registerBuffer);
-    std::cout << "Motor type: " << motorType << "\n";
+
     while (true)
     {
         std::tie(choice, motionMode) = getUserChoice();
         if (choice == EXIT)
             break;
-        runConfigurations(motionMode, choice, motorType, md, registerBuffer);
+        runConfigurations(motionMode, choice, md, registerBuffer);
     }
 
     mab::detachCandle(candle);
     return EXIT_SUCCESS;
 }
 
-///
-int getMotorType(mab::MD& md, mab::MDRegisters_S* registerBuffer)
+void runConfigurations(int motionMode, int choice, mab::MD& md, mab::MDRegisters_S& registerBuffer)
 {
-    char             tmp[3];
-    mab::MD::Error_t err          = md.readRegister(registerBuffer->motorName);
-    std::string      actuatorName = std::string(registerBuffer->motorName.value);
-
-    if (err != mab::MD::Error_t::OK)
-    {
-        std::cout << "Error reading registers: " << static_cast<u8>(err) << "\n";
-        return EXIT_FAILURE;
-    }
-    else
-        std::cout << "Motor name: " << std::string(registerBuffer->motorName.value) << "\n";
-    tmp[0] = actuatorName[7];
-    tmp[1] = actuatorName[8];
-    tmp[2] = '\0';
-    if (std::atoi(tmp) == 35)
-        return GL_35;
-
-    return GL_30;
-}
-///
-
-void runConfigurations(
-    int motionMode, int choice, int motorType, mab::MD& md, mab::MDRegisters_S& registerBuffer)
-{
-    // This parameters sets global internal logging level
+    // These parameters sets global internal logging level
     Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_1;
     Logger log(Logger::ProgramLayer_E::TOP, "User Program");
 
+    // Selecting motion mode to IDLE Important note is that motion mode resets every time
+    // MD is disabled or timed out
     md.setMotionMode(mab::MdMode_E::IDLE);
-    md.setMaxVelocity(0.f);
+    md.setMaxVelocity(0.f);  // sets max velocity in rads/s
+
     switch (motionMode)
     {
         case VELOCITY:
@@ -243,7 +191,7 @@ void runConfigurations(
             runPosition(md, log, choice, registerBuffer);
             break;
         case IMPEDANCE:
-            runImpedance(md, log, choice, motorType);
+            runImpedance(md, log, choice);
             break;
 
         default:
@@ -272,19 +220,22 @@ void runVelocity(mab::MD& md, Logger log, int choice)
     float maxSpeed       = 350.f;
     float lowSpeed       = 10.f;
     float speedChange    = 8.f;
-    float maxVelocity    = 500.f;
+    float maxVelocity    = 400.f;
 
     md.zero();
-    // md.setProfileVelocity(targetVelocity);
+    ///
+
     md.setVelocityPIDparam(kp, ki, kd, windup);
     md.setMaxTorque(maxTorque);
     md.setMaxVelocity(maxVelocity);
+
+    ///
     bool upRamp = true;  // logic value to check if the current behavior is set to acceleration or
                          // deceleration
-    constexpr int iterations = 10'000;
+    constexpr int ITERATIONS = 10'000;
 
     md.enable();
-    for (int i = 0; i < iterations; i++)
+    for (int i = 0; i < ITERATIONS; i++)
     {
         md.setTargetVelocity(targetVelocity);
         if (!(i % 100))
@@ -335,8 +286,8 @@ void runPosition(mab::MD& md, Logger log, int choice, mab::MDRegisters_S& regist
     float windup_vel = 0.25f;
 
     ///
-    float         targetPosition = 50.24f;
-    constexpr int iterations     = 5'000;
+    float         targetPosition = 6.24f;
+    constexpr int ITERATIONS     = 5'000;
     float         maxVelocity    = 10.f;
 
     md.setMotionMode(mab::MdMode_E::POSITION_PID);
@@ -347,7 +298,7 @@ void runPosition(mab::MD& md, Logger log, int choice, mab::MDRegisters_S& regist
     md.setTargetTorque(0.2);
     md.zero();
     md.enable();
-    for (int i = 0; i < iterations; i++)
+    for (int i = 0; i < ITERATIONS; i++)
     {
         md.setTargetPosition(targetPosition);
         if (i % 500)
@@ -364,50 +315,33 @@ void runPosition(mab::MD& md, Logger log, int choice, mab::MDRegisters_S& regist
     }
 }
 ///
-void runImpedance(mab::MD& md, Logger log, int choice, int motorType)
+void runImpedance(mab::MD& md, Logger log, int choice)
 {
-    md.setMaxVelocity(50.f);
+    // The code below is Impedance Mode example provided by MAB Robotics team, you can change the kp
+    // and kd bear in mind that regulation with random values (or exaggerated values) might lead to
+    // sustained oscillations and/or to uncontrolled acceleration of the motor
+
+    md.setMaxVelocity(20.f);
     md.setMaxTorque(0.2);
+
     // kp and kd values are stored in the vectors below for easy access
     std::vector<float> kp_values = {0.055, 0.05, 0.02, 0};
     std::vector<float> kd_values = {0.0015, 0.0001, 0.002, 0.005};
-    // std::vector<std::vector<float>> kp_values = {
-    //     {0.055, 0.05, 0.02, 0},  // values for gl-30
-    //     {0.02, 0.05, 0.01, 0}    // values for gl-35
-    // };
-    // std::vector<std::vector<float>> kd_values = {
-    //     {0.0015, 0.0001, 0.002, 0.005},  // values for gl-30
-    //     {0.0005, 0.0001, 0.002, 0.005}   // values for gl-35
-    // };
-    // float newTargetVelocity       = 1.0f;
-    // registerBuffer.targetVelocity = newTargetVelocity;
-    // md.writeRegister(registerBuffer.targetVelocity);
-    // Logger is a standalone builtin class for handling output from different modules
-
-    // md.readRegister(0x010, motorName, sizeof(motorName);
 
     md.setMotionMode(mab::MdMode_E::IMPEDANCE);
     md.setImpedanceParams(kp_values[choice], kd_values[choice]);
-    // md.setImpedanceParams(0.055, 0.0015);
-
-    //  md.setImpedanceParams(0.0015f, 0.00005f);
-    //  Enable the drive. From this point on it is our objective to send regular messages to the MD,
-    //  otherwise it will timeout via watchdog and disable itself.
 
     // Set the target position (rad)
     float targetPosition = 6.28f;  // approximate of 360 degrees
     float histeresis     = 0.1f;
 
-    // md.setTargetVelocity(0.1f);
-
     // zero the md position
     md.zero();
+
+    ///
+    // simple state flags to determine movement status
     bool isMovementFinished = false;
     bool messageFlag        = false;
-
-    // The code below is an example provided by MAB Robotics team, you can change the kp and kd
-    // values but do it carefully, when regulated with random values (or exaggerated values) might
-    // lead to sustained oscillations and/or to uncontrolled acceleration of the motor
 
     if (choice == KP_LOW)
     {
@@ -424,11 +358,17 @@ void runImpedance(mab::MD& md, Logger log, int choice, int motorType)
 
     sleep(4);  // if you wish to add sleep functions to the code, do not do it after enabling
                // (md.enable) the driver
-    constexpr int iterations = 5'000;
+
+    ///
+    constexpr int ITERATIONS = 5'000;
     md.enable();
-    for (int i = 0; i < iterations; i++)
+    for (int i = 0; i < ITERATIONS; i++)
     {
-        if (choice != HIGH_KD)
+        if (choice !=
+            HIGH_KD)  // The if statement handles an exception in which we only have kd value with
+                      // kp = 0, in such case setting target position is pointless and movement will
+                      // be determined only by the target torque (the motor will run at constant
+                      // speed with constant torque generated)
         {
             md.setTargetPosition(targetPosition);
             if ((md.getPosition().first + histeresis) >= targetPosition)
@@ -451,15 +391,12 @@ void runImpedance(mab::MD& md, Logger log, int choice, int motorType)
                     messageFlag = true;
                 }
                 else
-                    updateProgressBar(i, iterations);
+                    updateProgressBar(i, ITERATIONS);
             }
         }
 
         else
         {
-            // md.setTargetVelocity(3);
-            // md.setTargetPosition(targetPosition);
-
             md.setTargetTorque(0.2);
             if (i % 125 == 0 && !isMovementFinished)
             {
