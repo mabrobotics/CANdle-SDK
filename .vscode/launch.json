@@ -185,7 +185,7 @@
             "name": "PDS Example",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/../build/CANdleSDK/examples/pds_example_1",
+            "program": "${workspaceFolder}/../examples/pds_example_braking_resistor",
             // "program": "${workspaceFolder}/../build/CANdleSDK/examples/pds_example_1b",
             // "program": "${workspaceFolder}/../build/CANdleSDK/examples/pds_example_2",
             // "program": "${workspaceFolder}/../build/CANdleSDK/examples/pds_example_3",

@@ -228,12 +228,11 @@ int getMotorType(mab::MD& md, mab::MDRegisters_S* registerBuffer)
 void runConfigurations(
     int motionMode, int choice, int motorType, mab::MD& md, mab::MDRegisters_S* registerBuffer)
 {
+    // This parameters sets global internal logging level
     Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_1;
     Logger log(Logger::ProgramLayer_E::TOP, "User Program");
     if (registerBuffer != nullptr)
     {
-        // This parameters sets global internal logging level
-
         md.setMotionMode(mab::MdMode_E::IDLE);
         switch (motionMode)
         {
@@ -287,7 +286,8 @@ void runVelocity(mab::MD& md, Logger log, int choice)
     md.setMaxTorque(maxTorque);
     bool upRamp = true;  // logic value to check if the current behavior is set to acceleration or
                          // deceleration
-    for (int i = 0; i < 10000; i++)
+    constexpr int iterations = 10'000;
+    for (int i = 0; i < iterations; i++)
     {
         md.setTargetVelocity(targetVelocity);
         if (!(i % 100))
@@ -325,17 +325,18 @@ void runVelocity(mab::MD& md, Logger log, int choice)
 ///
 void runImpedance(mab::MD& md, Logger log, int choice, int motorType)
 {
-    md.enable();
     md.setMaxTorque(0.2);
     // kp and kd values are stored in the vectors below for easy access
-    std::vector<std::vector<float>> kp_values = {
-        {0.055, 0.05, 0.02, 0},  // values for gl-30
-        {0.02, 0.05, 0.01, 0}    // values for gl-35
-    };
-    std::vector<std::vector<float>> kd_values = {
-        {0.0015, 0.0001, 0.002, 0.005},  // values for gl-30
-        {0.0005, 0.0001, 0.002, 0.005}   // values for gl-35
-    };
+    std::vector<float> kp_values = {0.055, 0.05, 0.02, 0};
+    std::vector<float> kd_values = {0.0015, 0.0001, 0.002, 0.005};
+    // std::vector<std::vector<float>> kp_values = {
+    //     {0.055, 0.05, 0.02, 0},  // values for gl-30
+    //     {0.02, 0.05, 0.01, 0}    // values for gl-35
+    // };
+    // std::vector<std::vector<float>> kd_values = {
+    //     {0.0015, 0.0001, 0.002, 0.005},  // values for gl-30
+    //     {0.0005, 0.0001, 0.002, 0.005}   // values for gl-35
+    // };
     // float newTargetVelocity       = 1.0f;
     // registerBuffer.targetVelocity = newTargetVelocity;
     // md.writeRegister(registerBuffer.targetVelocity);
@@ -344,8 +345,8 @@ void runImpedance(mab::MD& md, Logger log, int choice, int motorType)
     // md.readRegister(0x010, motorName, sizeof(motorName);
 
     md.setMotionMode(mab::MdMode_E::IMPEDANCE);
-    // md->setImpedanceParams(kp_values[0][choice], kd_values[0][choice]);
-    md.setImpedanceParams(0.055, 0.0015);
+    md.setImpedanceParams(kp_values[choice], kd_values[choice]);
+    // md.setImpedanceParams(0.055, 0.0015);
 
     //  md.setImpedanceParams(0.0015f, 0.00005f);
     //  Enable the drive. From this point on it is our objective to send regular messages to the MD,
@@ -379,10 +380,11 @@ void runImpedance(mab::MD& md, Logger log, int choice, int motorType)
             "once the movement settles");
     }
 
-    sleep(4);
-    int placeHolder = 5000;
-
-    for (int i = 0; i < placeHolder; i++)
+    sleep(4);  // if you wish to add sleep functions to the code, do not do it after enabling
+               // (md.enable) the driver
+    constexpr int iterations = 5'000;
+    md.enable();
+    for (int i = 0; i < iterations; i++)
     {
         if (choice != HIGH_KD)
         {
@@ -407,7 +409,7 @@ void runImpedance(mab::MD& md, Logger log, int choice, int motorType)
                     messageFlag = true;
                 }
                 else
-                    updateProgressBar(i, placeHolder);
+                    updateProgressBar(i, iterations);
             }
         }
 
