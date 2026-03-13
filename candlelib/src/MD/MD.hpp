@@ -138,6 +138,11 @@ namespace mab
         /// @return
         Error_t setImpedanceParams(float kp, float kd);
 
+        /// @brief Set max velocity to be output by the motor
+        /// @param maxTorque max velocity value in rad/s
+        /// @return
+        Error_t setMaxVelocity(float maxVelocity /*rad/s*/);
+
         /// @brief Set max torque to be output by the controller
         /// @param maxTorque max torque value in Nm
         /// @return
@@ -343,8 +348,8 @@ namespace mab
             frame.reserve(frame.size() + payload.size());
             for (auto byte : payload)
                 frame.push_back(byte);
-            auto readRegResult = transferCanFrame(frame, frame.size());
-            MdFrameId_E frameId = (MdFrameId_E)readRegResult.first.at(0);
+            auto        readRegResult = transferCanFrame(frame, frame.size());
+            MdFrameId_E frameId       = (MdFrameId_E)readRegResult.first.at(0);
             if (readRegResult.second != candleTypes::Error_t::OK)
             {
                 m_log.error("Error while reading register!");

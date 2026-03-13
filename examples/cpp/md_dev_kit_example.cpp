@@ -29,8 +29,8 @@ enum motorType
 };
 void runImpedance(mab::MD&, Logger, int, int);
 void runVelocity(mab::MD&, Logger, int);
-void runPosition();
-void runConfigurations(int, int, int, mab::MD&, mab::MDRegisters_S*);
+void runPosition(mab::MD&, Logger, int, mab::MDRegisters_S&);
+void runConfigurations(int, int, int, mab::MD&, mab::MDRegisters_S&);
 int  getMotorType(mab::MD&, mab::MDRegisters_S*);
 
 void updateProgressBar(int current, int total, int width = 50)
@@ -99,7 +99,7 @@ std::tuple<int, int> getUserChoice()
                     continue;
                 }
             case POSITION:
-
+                return std::make_tuple(choice - 1, motionMode - 1);
                 continue;
 
             case IMPEDANCE:
@@ -194,7 +194,7 @@ int main()
         std::tie(choice, motionMode) = getUserChoice();
         if (choice == EXIT)
             break;
-        runConfigurations(motionMode, choice, motorType, md, &registerBuffer);
+        runConfigurations(motionMode, choice, motorType, md, registerBuffer);
     }
 
     mab::detachCandle(candle);
@@ -226,47 +226,40 @@ int getMotorType(mab::MD& md, mab::MDRegisters_S* registerBuffer)
 ///
 
 void runConfigurations(
-    int motionMode, int choice, int motorType, mab::MD& md, mab::MDRegisters_S* registerBuffer)
+    int motionMode, int choice, int motorType, mab::MD& md, mab::MDRegisters_S& registerBuffer)
 {
     // This parameters sets global internal logging level
     Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_1;
     Logger log(Logger::ProgramLayer_E::TOP, "User Program");
-    if (registerBuffer != nullptr)
-    {
-        md.setMotionMode(mab::MdMode_E::IDLE);
-        switch (motionMode)
-        {
-            case VELOCITY:
-                runVelocity(md, log, choice);
-                break;
-            case POSITION:
-                // runPosition();
-                break;
-            case IMPEDANCE:
-                runImpedance(md, log, choice, motorType);
-                break;
 
-            default:
-                log.info("MOTION MODE ERROR");
-                break;
-        }
-
-        log.info("\n");
-        md.disable();
-        return;
-    }
-    else
+    md.setMotionMode(mab::MdMode_E::IDLE);
+    md.setMaxVelocity(0.f);
+    switch (motionMode)
     {
-        log.info("Program Error");
-        return;
+        case VELOCITY:
+            runVelocity(md, log, choice);
+            break;
+        case POSITION:
+            runPosition(md, log, choice, registerBuffer);
+            break;
+        case IMPEDANCE:
+            runImpedance(md, log, choice, motorType);
+            break;
+
+        default:
+            log.info("MOTION MODE ERROR");
+            break;
     }
+
+    log.info("\n");
+    md.disable();
+    return;
 }
 
 ////
 
 void runVelocity(mab::MD& md, Logger log, int choice)
 {
-    md.enable();
     md.setMotionMode(mab::MdMode_E::VELOCITY_PID);
 
     // regulator parameters and movement velocity limits
@@ -279,14 +272,18 @@ void runVelocity(mab::MD& md, Logger log, int choice)
     float maxSpeed       = 350.f;
     float lowSpeed       = 10.f;
     float speedChange    = 8.f;
+    float maxVelocity    = 500.f;
 
     md.zero();
-    md.setProfileVelocity(targetVelocity);
+    // md.setProfileVelocity(targetVelocity);
     md.setVelocityPIDparam(kp, ki, kd, windup);
     md.setMaxTorque(maxTorque);
+    md.setMaxVelocity(maxVelocity);
     bool upRamp = true;  // logic value to check if the current behavior is set to acceleration or
                          // deceleration
     constexpr int iterations = 10'000;
+
+    md.enable();
     for (int i = 0; i < iterations; i++)
     {
         md.setTargetVelocity(targetVelocity);
@@ -321,10 +318,55 @@ void runVelocity(mab::MD& md, Logger log, int choice)
         usleep(2'000);
     }
 }
+void runPosition(mab::MD& md, Logger log, int choice, mab::MDRegisters_S& registerBuffer)
+{
+    ///
 
+    float kp_pos     = 25.1f;
+    float ki_pos     = 2.8f;
+    float kd_pos     = 0.f;
+    float windup_pos = 5.0f;
+
+    ///
+
+    float kp_vel     = 0.003f;
+    float ki_vel     = 0.0005f;
+    float kd_vel     = 0.0f;
+    float windup_vel = 0.25f;
+
+    ///
+    float         targetPosition = 50.24f;
+    constexpr int iterations     = 5'000;
+    float         maxVelocity    = 10.f;
+
+    md.setMotionMode(mab::MdMode_E::POSITION_PID);
+    md.setPositionPIDparam(kp_pos, ki_pos, kd_pos, windup_pos);
+    md.setVelocityPIDparam(kp_vel, ki_vel, kd_vel, windup_vel);
+    md.setMaxVelocity(maxVelocity);
+    md.setMaxTorque(0.05);
+    md.setTargetTorque(0.2);
+    md.zero();
+    md.enable();
+    for (int i = 0; i < iterations; i++)
+    {
+        md.setTargetPosition(targetPosition);
+        if (i % 500)
+        {
+            log.info(
+                "Target position: %.3f | Current position: %.3f | Torque %.3f | Velocity: %.3f",
+                targetPosition,
+                md.getPosition().first /*Request positional data*/,
+                md.getTorque().first,
+                md.getVelocity().first);
+        }
+
+        usleep(2'000);
+    }
+}
 ///
 void runImpedance(mab::MD& md, Logger log, int choice, int motorType)
 {
+    md.setMaxVelocity(50.f);
     md.setMaxTorque(0.2);
     // kp and kd values are stored in the vectors below for easy access
     std::vector<float> kp_values = {0.055, 0.05, 0.02, 0};
