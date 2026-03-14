@@ -39,16 +39,19 @@ namespace mab
     };
     struct MDAuxEncoderValue_S
     {
-        static inline const std::map<u32, std::string_view> fromNumericMap{{0, "NONE"},
-                                                                           {1, "ME_AS_CENTER"},
-                                                                           {2, "ME_AS_OFFAXIS"},
-                                                                           {3, "RLS_17B_RS422"},
-                                                                           {4, "CM_OFFAXIS"},
-                                                                           {5, "M24B_CENTER"},
-                                                                           {6, "M24B_OFFAXIS"},
-                                                                           {7, "DUAL_ENCODER"},
-                                                                           {8, "ONBOARD"},
-                                                                           {9, "RLS_17B_SPI"}};
+        static inline const std::map<u32, std::string_view> fromNumericMap{
+            {0, "NONE"},
+            {1, "ME_AS_CENTER"},
+            {2, "ME_AS_OFFAXIS"},
+            {3, "RLS_17B_RS422"},
+            {4, "CM_OFFAXIS"},
+            {5, "M24B_CENTER"},
+            {6, "M24B_OFFAXIS"},
+            {7, "DUAL_ENCODER"},
+            {8, "ONBOARD"},
+            {9, "RLS_17B_SPI"},
+            {10, "RLS_ORBIS_RS422"},
+        };
         static inline const std::map<std::string_view, u32> toNumericMap{
             {"NONE", 0},
             {"ME_AS_CENTER", 1},
@@ -60,7 +63,9 @@ namespace mab
             {"M24B_OFFAXIS", 6},
             {"DUAL_ENCODER", 7},
             {"ONBOARD", 8},
-            {"RLS_17B_SPI", 9}};
+            {"RLS_17B_SPI", 9},
+            {"RLS_ORBIS_RS422", 10},
+        };
 
         static std::optional<u32> toNumeric(const std::string_view val)
         {
