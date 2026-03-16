@@ -17,7 +17,7 @@ using namespace mab;
 std::pair<std::shared_ptr<EDSObjectDictionary>, EDSParser::Error_t> EDSParser::load(
     const std::filesystem::path& edsFilePath)
 {
-    Logger                                 log(Logger::ProgramLayer_E::TOP, "EDS Parser");
+    Logger                                 log(Logger::ProgramLayer_E::LAYER_2, "EDS Parser");
     std::map<u16, EDSEntry>                odMap;
     std::map<std::pair<u16, u8>, EDSEntry> subEntryMap;
 
