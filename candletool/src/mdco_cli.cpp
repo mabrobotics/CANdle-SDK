@@ -72,9 +72,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 "installed "
                 "properly?",
                 configFilePath.c_str());
-            throw std::runtime_error(
-                "Coudl not locate candletool.ini configuration file. Is the candletool installed "
-                "properly?");
+            exit(1);
         }
 
         mINI::INIFile      configFile(configFilePath);
@@ -90,10 +88,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 "properly. Currently read path is: %s",
                 configFilePath.c_str(),
                 edsPath.c_str());
-            throw std::runtime_error(
-                "Coudl not locate .eds file. Please check the config file for eds section and fill "
-                "it "
-                "properly.");
+            exit(1);
         }
 
         auto odPair = EDSParser::load(edsPath);
