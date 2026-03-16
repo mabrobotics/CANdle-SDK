@@ -27,9 +27,9 @@ namespace mab
 {
     Candle* pyAttachCandle(const CANdleDatarate_E  datarate,
                            candleTypes::busTypes_t busType,
-                           bool                    useRegularCANFrames)
+                           bool                    dontUseFDCANFrames)
     {
-        return attachCandle(datarate, busType, useRegularCANFrames);
+        return attachCandle(datarate, busType, dontUseFDCANFrames);
     }
 
     MD createMD(int canId, std::shared_ptr<Candle> candle)
@@ -476,7 +476,7 @@ PYBIND11_MODULE(pyCandle, m)
           &mab::pyAttachCandle,
           py::arg("datarate"),
           py::arg("busType"),
-          py::arg("useRegularCANFrames") = true,
+          py::arg("dontUseFDCANFrames") = true,
           py::return_value_policy::take_ownership,
           "Attach a CANdle device to the system.");
 
