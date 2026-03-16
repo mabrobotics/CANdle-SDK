@@ -64,7 +64,7 @@ namespace mab
         auto                         blinkOpt  = m_od->getEntryByName(blinkName);
         if (!blinkOpt.has_value())
         {
-            m_log.error("Coudl not locate %s object!", blinkName.c_str());
+            m_log.error("could not locate %s object!", blinkName.c_str());
             return Error_t::UNKNOWN_OBJECT;
         }
         auto& blinkObj = blinkOpt.value().get();
@@ -108,7 +108,7 @@ namespace mab
         auto                              zeroOpt  = m_od->getEntryByName(zeroName);
         if (!zeroOpt.has_value())
         {
-            m_log.error("Coudl not locate %s object!", zeroName.data());
+            m_log.error("could not locate %s object!", zeroName.data());
             return Error_t::UNKNOWN_OBJECT;
         }
         auto& zeroObj = zeroOpt.value().get();
@@ -129,7 +129,7 @@ namespace mab
         auto                              resetOpt  = m_od->getEntryByName(resetName);
         if (!resetOpt.has_value())
         {
-            m_log.error("Coudl not locate %s object!", resetName.data());
+            m_log.error("could not locate %s object!", resetName.data());
             return Error_t::UNKNOWN_OBJECT;
         }
         auto& resetObj = resetOpt.value().get();
@@ -150,7 +150,7 @@ namespace mab
         auto                              clearErrorOpt  = m_od->getEntryByName(clearErrorName);
         if (!clearErrorOpt.has_value())
         {
-            m_log.error("Coudl not locate %s object!", clearErrorName.data());
+            m_log.error("could not locate %s object!", clearErrorName.data());
             return Error_t::UNKNOWN_OBJECT;
         }
         auto& clearErrorObj = clearErrorOpt.value().get();
@@ -888,7 +888,7 @@ namespace mab
         }
         if (edsEntry.getValueMetaData().value().accessType == EDSEntry::AccessRights_E::READ_ONLY)
         {
-            m_log.error("Coudl not write to %s as it is a read-only object!",
+            m_log.error("could not write to %s as it is a read-only object!",
                         edsEntry.getEntryMetaData().parameterName.c_str());
         }
 
@@ -1129,7 +1129,7 @@ namespace mab
         err = readSDO((*m_od)[0x6061]);
         if ((i8)(open_types::INTEGER8_t)(*m_od)[0x6061] != -1)
         {
-            m_log.error("Coudl not enter service mode");
+            m_log.error("could not enter service mode");
             m_log.error("Current mode: %i", (i8)(open_types::INTEGER8_t)((*m_od)[0x6061]));
         }
 
@@ -1137,7 +1137,7 @@ namespace mab
         err = readSDO((*m_od)[0x6060]);
         if ((i8)(open_types::INTEGER8_t)(*m_od)[0x6060] != -2)
         {
-            m_log.error("Coudl not enter service mode");
+            m_log.error("could not enter service mode");
             m_log.error("Current mode: %i", (i8)(open_types::INTEGER8_t)((*m_od)[0x6061]));
         }
         return err;

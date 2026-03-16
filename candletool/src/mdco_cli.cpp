@@ -68,7 +68,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         if (!std::filesystem::exists(configFilePath))
         {
             m_log.error(
-                "Coudl not locate candletool.ini configuration file in %s. Is the candletool "
+                "could not locate candletool.ini configuration file in %s. Is the candletool "
                 "installed "
                 "properly?",
                 configFilePath.c_str());
@@ -84,7 +84,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         if (edsPath.empty() || !std::filesystem::exists(edsPath))
         {
             m_log.error(
-                "Coudl not locate .eds file. Please check the %s file for eds section and fill it "
+                "could not locate .eds file. Please check the %s file for eds section and fill it "
                 "properly. Currently read path is: %s",
                 configFilePath.c_str(),
                 edsPath.c_str());
@@ -217,7 +217,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                                                   : objOpt.value().get();
                 if (md->readSDO(obj) != MDCO::Error_t::OK)
                 {
-                    m_log.error("Obj %s coudl not be read from md!", objName.data());
+                    m_log.error("Obj %s could not be read from md!", objName.data());
                     continue;
                 }
             }
@@ -227,7 +227,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                                                   : (*od)[objAddress];
                 if (md->readSDO(obj) != MDCO::Error_t::OK)
                 {
-                    m_log.error("Obj %d coudl not be read from md!", objAddress);
+                    m_log.error("Obj %d could not be read from md!", objAddress);
                     continue;
                 }
             }
@@ -414,7 +414,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 auto err = mdco->readSDO((*od)[*readOption.index][readOption.subindex->value()]);
                 if (err != MDCO::Error_t::OK)
                 {
-                    m_log.error("Coudl not read this sdo!");
+                    m_log.error("could not read this sdo!");
                     return;
                 }
                 m_log.success(
@@ -433,7 +433,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 auto err = mdco->readSDO((*od)[*readOption.index]);
                 if (err != MDCO::Error_t::OK)
                 {
-                    m_log.error("Coudl not read this sdo!");
+                    m_log.error("could not read this sdo!");
                     return;
                 }
                 m_log.success("%s = %s",
@@ -468,7 +468,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 auto err = mdco->writeSDO((*od)[*writeOption.index][writeOption.subindex->value()]);
                 if (err != MDCO::Error_t::OK)
                 {
-                    m_log.error("Coudl not write this sdo!");
+                    m_log.error("could not write this sdo!");
                     return;
                 }
                 m_log.success(
@@ -488,7 +488,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 auto err = mdco->writeSDO((*od)[*writeOption.index]);
                 if (err != MDCO::Error_t::OK)
                 {
-                    m_log.error("Coudl not write this sdo!");
+                    m_log.error("could not write this sdo!");
                     return;
                 }
                 m_log.success("%s = %s",
@@ -588,7 +588,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                     {
                         if (mdco->readSDO(*subobject.second) != MDCO::Error_t::OK)
                         {
-                            m_log.error("Coudl not read object %s",
+                            m_log.error("could not read object %s",
                                         subobject.second->getEntryMetaData().parameterName.c_str());
                             continue;
                         }
@@ -604,7 +604,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 }
                 if (mdco->readSDO(object.second) != MDCO::Error_t::OK)
                 {
-                    m_log.error("Coudl not read object %s",
+                    m_log.error("could not read object %s",
                                 object.second.getEntryMetaData().parameterName.c_str());
                     continue;
                 }
@@ -626,7 +626,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
             {
-                m_log.error("Coudl not connect to MD via CANopen!");
+                m_log.error("could not connect to MD via CANopen!");
                 return;
             }
             if (mdco->save() != MDCO::Error_t::OK)
