@@ -771,9 +771,15 @@ namespace mab
             // Verify expedited response (bit 1 == 1)
             if ((response[0] & 0x40) == 0)
             {
-                m_log.error("Invalid expedited download response");
-
-                return Error_t::TRANSFER_FAILED;
+                // retry
+                response = transferCanOpenFrame(
+                               SDO_REQUEST_BASE + m_canId, transmitFrame, transmitFrame.size())
+                               .first;
+                if ((response[0] & 0x40) == 0)
+                {
+                    m_log.error("Invalid expedited download response");
+                    return Error_t::TRANSFER_FAILED;
+                }
             }
 
             // Number of unused bytes (bits 2-3)

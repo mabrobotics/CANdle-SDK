@@ -174,7 +174,7 @@ namespace mab
                 return {{}, candleTypes::Error_t::DEVICE_NOT_CONNECTED};
             }
             auto result = m_candle->transferCANFrame(
-                Id, frameToSend, responseSize, m_timeout.value_or(DEFAULT_CAN_TIMEOUT));
+                Id, frameToSend, responseSize, m_timeout.value_or(DEFAULT_CAN_TIMEOUT + 1));
 
             if (result.second != candleTypes::Error_t::OK)
             {
