@@ -20,22 +20,22 @@ namespace mab
 
     Candle::Candle(const CANdleDatarate_E                           canDatarate,
                    std::unique_ptr<mab::I_CommunicationInterface>&& bus,
-                   bool                                             useRegularCANFrames)
+                   bool                                             dontUseFDCANFrames)
         : m_canDatarate(canDatarate),
           m_bus(std::move(bus)),
-          m_useRegularCanFrames(useRegularCANFrames),
-          m_maxCANFrameSize(useRegularCANFrames ? 8 : 64),
+          m_dontUseFDCANFrames(dontUseFDCANFrames),
+          m_maxCANFrameSize(dontUseFDCANFrames ? 8 : 64),
           m_cfsync(std::make_shared<std::function<void(void)>>()),
           m_cfAdapter(m_cfsync)
     {
-        if (m_useRegularCanFrames)
+        if (m_dontUseFDCANFrames)
             m_log.debug("CANdle initialized with regular CAN format, max frame size is %u",
                         m_maxCANFrameSize);
         else
             m_log.debug("CANdle initialized with CAN-FD format, max frame size is %u",
                         m_maxCANFrameSize);
 
-        if (canDatarate != CANdleDatarate_E::CAN_DATARATE_1M && useRegularCANFrames)
+        if (canDatarate != CANdleDatarate_E::CAN_DATARATE_1M && dontUseFDCANFrames)
         {
             throw std::runtime_error(
                 "Regular CAN does not support datarate above 1Mbps. Either use CAN-FD or lower the "
@@ -110,7 +110,7 @@ namespace mab
     }
     std::optional<version_ut> Candle::getCandleVersion() const
     {
-        auto buffer       = datarateCommandFrame(m_canDatarate, m_useRegularCanFrames);
+        auto buffer       = datarateCommandFrame(m_canDatarate, m_dontUseFDCANFrames);
         auto dataResponse = busTransfer(&buffer, 6);
         if (dataResponse != candleTypes::Error_t::OK || buffer.size() < 6)
         {
@@ -255,8 +255,7 @@ namespace mab
             busTransfer(&buffer,
                         64 /*TODO: this is legacy Candle stuff*/ + 2 /*response header size*/,
                         timeoutMs + 1);
-
-        if (buffer.at(1) != 0x01)
+        if (!m_dontUseFDCANFrames && buffer.at(1) != 0x01)
         {
             m_log.error("CAN frame did not reach target device with id: %d!", canId);
             return std::pair<std::vector<u8>, candleTypes::Error_t>(
@@ -278,7 +277,7 @@ namespace mab
     // TODO: this must be changed to something less invasive
     candleTypes::Error_t Candle::legacyCheckConnection()
     {
-        auto datarateFrame = datarateCommandFrame(m_canDatarate, m_useRegularCanFrames);
+        auto datarateFrame = datarateCommandFrame(m_canDatarate, m_dontUseFDCANFrames);
 
         auto testConnectionFrame = std::vector<u8>(datarateFrame.begin(), datarateFrame.end());
 
