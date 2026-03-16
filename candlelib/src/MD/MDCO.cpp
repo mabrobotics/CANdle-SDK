@@ -23,7 +23,7 @@ namespace mab
     {
         // set the mode of operation and enable the driver, log an error message if transfer failed
         Error_t err;
-        (*m_od)[0x6040] = (open_types::UNSIGNED16_t)6;
+        (*m_od)[0x6040] = (canopen_types::UNSIGNED16_t)6;
         err             = writeSDO((*m_od)[0x6040]);
         if (err != Error_t::OK)
         {
@@ -31,7 +31,7 @@ namespace mab
             return err;
         }
         usleep(2'000);
-        (*m_od)[0x6040] = (open_types::UNSIGNED16_t)15;
+        (*m_od)[0x6040] = (canopen_types::UNSIGNED16_t)15;
         err             = writeSDO((*m_od)[0x6040]);
         if (err != Error_t::OK)
         {
@@ -46,7 +46,7 @@ namespace mab
     {
         // disable the driver, log an error message if transfer failed
         Error_t err;
-        (*m_od)[0x6040] = (open_types::UNSIGNED16_t)6;
+        (*m_od)[0x6040] = (canopen_types::UNSIGNED16_t)6;
         err             = writeSDO((*m_od)[0x6040]);
         if (err != Error_t::OK)
         {
@@ -68,7 +68,7 @@ namespace mab
             return Error_t::UNKNOWN_OBJECT;
         }
         auto& blinkObj = blinkOpt.value().get();
-        blinkObj       = (open_types::BOOLEAN_t)1;
+        blinkObj       = (canopen_types::BOOLEAN_t)1;
         err            = writeSDO(blinkObj);
         if (err != Error_t::OK)
         {
@@ -81,15 +81,15 @@ namespace mab
     MDCO::Error_t MDCO::save()
     {
         Error_t err     = MDCO::Error_t::OK;
-        (*m_od)[0x6060] = (open_types::INTEGER8_t)6;
+        (*m_od)[0x6060] = (canopen_types::INTEGER8_t)6;
         err             = writeSDO((*m_od)[0x6060]);
         if (err != Error_t::OK)
         {
             m_log.error("Error sending shutdown cmd!");
             return err;
         }
-        (*m_od)[0x1010][0x1] =
-            (open_types::UNSIGNED32_t)0x65766173;  // 0x65766173="save" in ASCII and little endian
+        (*m_od)[0x1010][0x1] = (canopen_types::UNSIGNED32_t)0x65766173;  // 0x65766173="save" in
+                                                                         // ASCII and little endian
         err = writeSDO((*m_od)[0x1010][0x1]);
         if (err != Error_t::OK)
         {
@@ -112,7 +112,7 @@ namespace mab
             return Error_t::UNKNOWN_OBJECT;
         }
         auto& zeroObj = zeroOpt.value().get();
-        zeroObj       = (open_types::BOOLEAN_t)1;
+        zeroObj       = (canopen_types::BOOLEAN_t)1;
         err           = writeSDO(zeroObj);
         if (err != Error_t::OK)
         {
@@ -133,7 +133,7 @@ namespace mab
             return Error_t::UNKNOWN_OBJECT;
         }
         auto& resetObj = resetOpt.value().get();
-        resetObj       = (open_types::BOOLEAN_t)1;
+        resetObj       = (canopen_types::BOOLEAN_t)1;
         err            = writeSDO(resetObj);
         if (err != Error_t::OK)
         {
@@ -154,7 +154,7 @@ namespace mab
             return Error_t::UNKNOWN_OBJECT;
         }
         auto& clearErrorObj = clearErrorOpt.value().get();
-        clearErrorObj       = (open_types::BOOLEAN_t)1;
+        clearErrorObj       = (canopen_types::BOOLEAN_t)1;
         err                 = writeSDO(clearErrorObj);
         if (err != Error_t::OK)
         {
@@ -166,9 +166,9 @@ namespace mab
 
     MDCO::Error_t MDCO::setCurrentLimit(float currentLimit /*A*/)
     {
-        static constexpr std::string_view         setCurrentLimitName    = "Motor Rated Current";
-        static constexpr std::string_view         setCurrentMaxLimitName = "Max Current";
-        static constexpr open_types::UNSIGNED16_t setMaxLimit            = 1'000;
+        static constexpr std::string_view            setCurrentLimitName    = "Motor Rated Current";
+        static constexpr std::string_view            setCurrentMaxLimitName = "Max Current";
+        static constexpr canopen_types::UNSIGNED16_t setMaxLimit            = 1'000;
         auto setCurrentLimitOpt = m_od->getEntryByName(setCurrentLimitName);
         if (!setCurrentLimitOpt.has_value())
         {
@@ -176,7 +176,7 @@ namespace mab
             return Error_t::UNKNOWN_OBJECT;
         }
         auto& setCurrentLimitObj = setCurrentLimitOpt.value().get();
-        setCurrentLimitObj       = (open_types::UNSIGNED16_t)(currentLimit * 1'000);
+        setCurrentLimitObj       = (canopen_types::UNSIGNED16_t)(currentLimit * 1'000);
         Error_t err              = writeSDO(setCurrentLimitObj);
         if (err != Error_t::OK)
         {
@@ -216,7 +216,7 @@ namespace mab
             return Error_t::UNKNOWN_OBJECT;
         }
         auto& setTorqueBandwidthObj = setTorqueBandwidthOpt.value().get();
-        setTorqueBandwidthObj       = (open_types::UNSIGNED16_t)torqueBandwidth;
+        setTorqueBandwidthObj       = (canopen_types::UNSIGNED16_t)torqueBandwidth;
         err                         = writeSDO(setTorqueBandwidthObj);
         if (err != Error_t::OK)
         {
@@ -231,7 +231,7 @@ namespace mab
             return Error_t::UNKNOWN_OBJECT;
         }
         auto& reconfigureCANObj = reconfigureCANOpt.value().get();
-        reconfigureCANObj       = (open_types::BOOLEAN_t)1;
+        reconfigureCANObj       = (canopen_types::BOOLEAN_t)1;
         err                     = writeSDO(reconfigureCANObj);
         if (err != Error_t::OK)
         {
@@ -252,7 +252,7 @@ namespace mab
             return Error_t::UNKNOWN_OBJECT;
         }
         auto& operationModeObj = operationModeOpt.value().get();
-        operationModeObj       = (open_types::INTEGER8_t)mode;
+        operationModeObj       = (canopen_types::INTEGER8_t)mode;
         Error_t err            = writeSDO(operationModeObj);
         if (err != Error_t::OK)
         {
@@ -268,7 +268,7 @@ namespace mab
         Error_t   err     = enterConfigMode();
         const u16 address = m_od->getAdressByName("Position PID Controller").value().first;
 
-        (*m_od)[address][0x1] = (open_types::REAL32_t)kp;
+        (*m_od)[address][0x1] = (canopen_types::REAL32_t)kp;
         err                   = writeSDO((*m_od)[address][0x1]);
         if (err != Error_t::OK)
         {
@@ -276,7 +276,7 @@ namespace mab
             return err;
         }
 
-        (*m_od)[address][0x2] = (open_types::REAL32_t)ki;
+        (*m_od)[address][0x2] = (canopen_types::REAL32_t)ki;
         err                   = writeSDO((*m_od)[address][0x2]);
         if (err != Error_t::OK)
         {
@@ -284,7 +284,7 @@ namespace mab
             return err;
         }
 
-        (*m_od)[address][0x3] = (open_types::REAL32_t)kd;
+        (*m_od)[address][0x3] = (canopen_types::REAL32_t)kd;
         err                   = writeSDO((*m_od)[address][0x3]);
         if (err != Error_t::OK)
         {
@@ -292,7 +292,7 @@ namespace mab
             return err;
         }
 
-        (*m_od)[address][0x4] = (open_types::REAL32_t)integralMax;
+        (*m_od)[address][0x4] = (canopen_types::REAL32_t)integralMax;
         err                   = writeSDO((*m_od)[address][0x4]);
         if (err != Error_t::OK)
         {
@@ -308,7 +308,7 @@ namespace mab
         Error_t   err     = enterConfigMode();
         const u16 address = m_od->getAdressByName("Velocity PID Controller").value().first;
 
-        (*m_od)[address][0x1] = (open_types::REAL32_t)kp;
+        (*m_od)[address][0x1] = (canopen_types::REAL32_t)kp;
         err                   = writeSDO((*m_od)[address][0x1]);
         if (err != Error_t::OK)
         {
@@ -316,7 +316,7 @@ namespace mab
             return err;
         }
 
-        (*m_od)[address][0x2] = (open_types::REAL32_t)ki;
+        (*m_od)[address][0x2] = (canopen_types::REAL32_t)ki;
         err                   = writeSDO((*m_od)[address][0x2]);
         if (err != Error_t::OK)
         {
@@ -324,7 +324,7 @@ namespace mab
             return err;
         }
 
-        (*m_od)[address][0x3] = (open_types::REAL32_t)kd;
+        (*m_od)[address][0x3] = (canopen_types::REAL32_t)kd;
         err                   = writeSDO((*m_od)[address][0x3]);
         if (err != Error_t::OK)
         {
@@ -332,7 +332,7 @@ namespace mab
             return err;
         }
 
-        (*m_od)[address][0x4] = (open_types::REAL32_t)integralMax;
+        (*m_od)[address][0x4] = (canopen_types::REAL32_t)integralMax;
         err                   = writeSDO((*m_od)[address][0x4]);
         if (err != Error_t::OK)
         {
@@ -348,7 +348,7 @@ namespace mab
         Error_t   err     = enterConfigMode();
         const u16 address = m_od->getAdressByName("Impedance PD Controller").value().first;
 
-        (*m_od)[address][0x1] = (open_types::REAL32_t)kp;
+        (*m_od)[address][0x1] = (canopen_types::REAL32_t)kp;
         err                   = writeSDO((*m_od)[address][0x1]);
         if (err != Error_t::OK)
         {
@@ -356,7 +356,7 @@ namespace mab
             return err;
         }
 
-        (*m_od)[address][0x2] = (open_types::REAL32_t)kd;
+        (*m_od)[address][0x2] = (canopen_types::REAL32_t)kd;
         err                   = writeSDO((*m_od)[address][0x2]);
         if (err != Error_t::OK)
         {
@@ -369,8 +369,8 @@ namespace mab
 
     MDCO::Error_t MDCO::setMaxTorque(float maxTorque /*Nm*/)
     {
-        (*m_od)[0x6076] = (open_types::UNSIGNED16_t)(maxTorque * 1000);
-        (*m_od)[0x6072] = (open_types::UNSIGNED16_t)1000;
+        (*m_od)[0x6076] = (canopen_types::UNSIGNED16_t)(maxTorque * 1000);
+        (*m_od)[0x6072] = (canopen_types::UNSIGNED16_t)1000;
         Error_t err     = writeSDO((*m_od)[0x6072]);
         if (err != Error_t::OK)
         {
@@ -388,7 +388,7 @@ namespace mab
 
     MDCO::Error_t MDCO::setProfileVelocity(float profileVelocity /*s^-1*/)
     {
-        (*m_od)[0x6081] = (open_types::UNSIGNED32_t)(profileVelocity * 1000);
+        (*m_od)[0x6081] = (canopen_types::UNSIGNED32_t)(profileVelocity * 1000);
         Error_t err     = writeSDO((*m_od)[0x6081]);
         if (err != Error_t::OK)
         {
@@ -400,7 +400,7 @@ namespace mab
 
     MDCO::Error_t MDCO::setProfileAcceleration(float profileAcceleration /*s^-2*/)
     {
-        (*m_od)[0x6083] = (open_types::UNSIGNED32_t)(profileAcceleration * 1000);
+        (*m_od)[0x6083] = (canopen_types::UNSIGNED32_t)(profileAcceleration * 1000);
         Error_t err     = writeSDO((*m_od)[0x6083]);
         if (err != Error_t::OK)
         {
@@ -412,7 +412,7 @@ namespace mab
 
     MDCO::Error_t MDCO::setProfileDeceleration(float profileDeceleration /*s^-2*/)
     {
-        (*m_od)[0x6084] = (open_types::UNSIGNED32_t)(profileDeceleration * 1000);
+        (*m_od)[0x6084] = (canopen_types::UNSIGNED32_t)(profileDeceleration * 1000);
         Error_t err     = writeSDO((*m_od)[0x6084]);
         if (err != Error_t::OK)
         {
@@ -424,7 +424,7 @@ namespace mab
 
     MDCO::Error_t MDCO::setPositionWindow(u32 windowSize /*encode tics*/)
     {
-        (*m_od)[0x6067] = (open_types::UNSIGNED32_t)(windowSize);
+        (*m_od)[0x6067] = (canopen_types::UNSIGNED32_t)(windowSize);
         Error_t err     = writeSDO((*m_od)[0x6067]);
         if (err != Error_t::OK)
         {
@@ -436,7 +436,7 @@ namespace mab
 
     MDCO::Error_t MDCO::setTargetPosition(i32 position /*encoder ticks*/)
     {
-        (*m_od)[0x607A] = (open_types::INTEGER32_t)(position);
+        (*m_od)[0x607A] = (canopen_types::INTEGER32_t)(position);
         Error_t err     = writeSDO((*m_od)[0x607A]);
         if (err != Error_t::OK)
         {
@@ -448,7 +448,7 @@ namespace mab
 
     MDCO::Error_t MDCO::setTargetVelocity(float velocity /*rad/s*/)
     {
-        (*m_od)[0x60FF] = (open_types::INTEGER32_t)(velocity * 60 / (M_PI * 2));
+        (*m_od)[0x60FF] = (canopen_types::INTEGER32_t)(velocity * 60 / (M_PI * 2));
         Error_t err     = writeSDO((*m_od)[0x60FF]);
         if (err != Error_t::OK)
         {
@@ -460,7 +460,7 @@ namespace mab
 
     MDCO::Error_t MDCO::setTargetTorque(float torque /*Nm*/)
     {
-        (*m_od)[0x6074] = (open_types::INTEGER16_t)(torque * 1000);
+        (*m_od)[0x6074] = (canopen_types::INTEGER16_t)(torque * 1000);
         Error_t err     = writeSDO((*m_od)[0x6074]);
         if (err != Error_t::OK)
         {
@@ -489,7 +489,8 @@ namespace mab
             m_log.error("Error reading %s",
                         encoderStatusObj.getEntryMetaData().parameterName.c_str());
         }
-        mab::MDStatus::decode((open_types::UNSIGNED32_t)encoderStatusObj, statuses.encoderStatus);
+        mab::MDStatus::decode((canopen_types::UNSIGNED32_t)encoderStatusObj,
+                              statuses.encoderStatus);
         return {statuses.encoderStatus, err};
     }
 
@@ -512,7 +513,8 @@ namespace mab
             m_log.error("Error reading %s",
                         encoderStatusObj.getEntryMetaData().parameterName.c_str());
         }
-        mab::MDStatus::decode((open_types::UNSIGNED32_t)encoderStatusObj, statuses.encoderStatus);
+        mab::MDStatus::decode((canopen_types::UNSIGNED32_t)encoderStatusObj,
+                              statuses.encoderStatus);
         return {statuses.encoderStatus, err};
     }
 
@@ -535,7 +537,7 @@ namespace mab
             m_log.error("Error reading %s",
                         calibrationStatusObj.getEntryMetaData().parameterName.c_str());
         }
-        mab::MDStatus::decode((open_types::UNSIGNED32_t)calibrationStatusObj,
+        mab::MDStatus::decode((canopen_types::UNSIGNED32_t)calibrationStatusObj,
                               statuses.calibrationStatus);
         return {statuses.calibrationStatus, err};
     }
@@ -559,7 +561,7 @@ namespace mab
             m_log.error("Error reading %s",
                         bridgeStatusObj.getEntryMetaData().parameterName.c_str());
         }
-        mab::MDStatus::decode((open_types::UNSIGNED32_t)bridgeStatusObj, statuses.bridgeStatus);
+        mab::MDStatus::decode((canopen_types::UNSIGNED32_t)bridgeStatusObj, statuses.bridgeStatus);
         return {statuses.bridgeStatus, err};
     }
 
@@ -582,7 +584,8 @@ namespace mab
             m_log.error("Error reading %s",
                         hardwareStatusObj.getEntryMetaData().parameterName.c_str());
         }
-        mab::MDStatus::decode((open_types::UNSIGNED32_t)hardwareStatusObj, statuses.hardwareStatus);
+        mab::MDStatus::decode((canopen_types::UNSIGNED32_t)hardwareStatusObj,
+                              statuses.hardwareStatus);
         return {statuses.hardwareStatus, err};
     }
 
@@ -605,7 +608,7 @@ namespace mab
             m_log.error("Error reading %s",
                         communicationStatusObj.getEntryMetaData().parameterName.c_str());
         }
-        mab::MDStatus::decode((open_types::UNSIGNED32_t)communicationStatusObj,
+        mab::MDStatus::decode((canopen_types::UNSIGNED32_t)communicationStatusObj,
                               statuses.communicationStatus);
         return {statuses.communicationStatus, err};
     }
@@ -629,7 +632,7 @@ namespace mab
             m_log.error("Error reading %s",
                         motionStatusObj.getEntryMetaData().parameterName.c_str());
         }
-        mab::MDStatus::decode((open_types::UNSIGNED32_t)motionStatusObj, statuses.motionStatus);
+        mab::MDStatus::decode((canopen_types::UNSIGNED32_t)motionStatusObj, statuses.motionStatus);
         return {statuses.motionStatus, err};
     }
 
@@ -642,7 +645,7 @@ namespace mab
             return {0.0f, err};
         }
 
-        i32 positionRaw = (i32)(open_types::INTEGER32_t)(*m_od)[0x6064];
+        i32 positionRaw = (i32)(canopen_types::INTEGER32_t)(*m_od)[0x6064];
 
         return {positionRaw, err};
     }
@@ -656,7 +659,7 @@ namespace mab
             return {0.0f, err};
         }
 
-        i32   velocityRaw = (i32)(open_types::INTEGER32_t)(*m_od)[0x606C];
+        i32   velocityRaw = (i32)(canopen_types::INTEGER32_t)(*m_od)[0x606C];
         float velocity    = velocityRaw;
 
         return {velocity, err};
@@ -671,7 +674,7 @@ namespace mab
             return {0.0f, err};
         }
 
-        i16   torqueRaw = (i16)(open_types::INTEGER16_t)(*m_od)[0x6077];
+        i16   torqueRaw = (i16)(canopen_types::INTEGER16_t)(*m_od)[0x6077];
         float torque    = torqueRaw / 1000.0f;
 
         return {torque, err};
@@ -686,7 +689,7 @@ namespace mab
             return {0.0f, err};
         }
 
-        i32   positionRaw = (i32)(open_types::INTEGER32_t)(*m_od)[0x2200][0x1];
+        i32   positionRaw = (i32)(canopen_types::INTEGER32_t)(*m_od)[0x2200][0x1];
         float position    = positionRaw / 1000000.0f;
 
         return {position, err};
@@ -701,7 +704,7 @@ namespace mab
             return {0.0f, err};
         }
 
-        i32   velocityRaw = (i32)(open_types::INTEGER32_t)(*m_od)[0x2200][0x2];
+        i32   velocityRaw = (i32)(canopen_types::INTEGER32_t)(*m_od)[0x2200][0x2];
         float velocity    = velocityRaw / 1000000.0f;
 
         return {velocity, err};
@@ -716,7 +719,7 @@ namespace mab
             return {0, err};
         }
 
-        u8 temperature = (u8)(open_types::UNSIGNED8_t)(*m_od)[0x2300];
+        u8 temperature = (u8)(canopen_types::UNSIGNED8_t)(*m_od)[0x2300];
 
         return {temperature, err};
     }
@@ -730,7 +733,7 @@ namespace mab
             return {false, err};
         }
 
-        bool reached = (open_types::UNSIGNED16_t)(*m_od)[0x6041] & (1 << 10);
+        bool reached = (canopen_types::UNSIGNED16_t)(*m_od)[0x6041] & (1 << 10);
 
         return {reached, err};
     }
@@ -1086,14 +1089,14 @@ namespace mab
     {
         Error_t err = MDCO::Error_t::OK;
 
-        (*m_od)[0x6040] = (open_types::UNSIGNED16_t)0x8;
+        (*m_od)[0x6040] = (canopen_types::UNSIGNED16_t)0x8;
         err             = writeSDO((*m_od)[0x6040]);
         if (err != Error_t::OK)
         {
             m_log.error("Error sending control word cmd!");
             return err;
         }
-        (*m_od)[0x6040] = (open_types::UNSIGNED16_t)0x6;
+        (*m_od)[0x6040] = (canopen_types::UNSIGNED16_t)0x6;
         err             = writeSDO((*m_od)[0x6040]);
         if (err != Error_t::OK)
         {
@@ -1101,7 +1104,7 @@ namespace mab
             return err;
         }
 
-        (*m_od)[0x6040] = (open_types::UNSIGNED16_t)0xf;
+        (*m_od)[0x6040] = (canopen_types::UNSIGNED16_t)0xf;
         err             = writeSDO((*m_od)[0x6040]);
         if (err != Error_t::OK)
         {
@@ -1109,7 +1112,7 @@ namespace mab
             return err;
         }
         err            = readSDO((*m_od)[0x6041]);
-        u16 statusWord = (u16)(open_types::UNSIGNED16_t)(*m_od)[0x6041];
+        u16 statusWord = (u16)(canopen_types::UNSIGNED16_t)(*m_od)[0x6041];
         m_log.debug("Statusword: 0x%x", statusWord);
         if (err != Error_t::OK)
         {
@@ -1117,7 +1120,7 @@ namespace mab
             return err;
         }
 
-        (*m_od)[0x6060] = (open_types::INTEGER8_t)-2;
+        (*m_od)[0x6060] = (canopen_types::INTEGER8_t)-2;
         err             = writeSDO((*m_od)[0x6060]);
         if (err != Error_t::OK)
         {
@@ -1127,18 +1130,18 @@ namespace mab
         usleep(3'000);
 
         err = readSDO((*m_od)[0x6061]);
-        if ((i8)(open_types::INTEGER8_t)(*m_od)[0x6061] != -1)
+        if ((i8)(canopen_types::INTEGER8_t)(*m_od)[0x6061] != -1)
         {
             m_log.error("could not enter service mode");
-            m_log.error("Current mode: %i", (i8)(open_types::INTEGER8_t)((*m_od)[0x6061]));
+            m_log.error("Current mode: %i", (i8)(canopen_types::INTEGER8_t)((*m_od)[0x6061]));
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(2));
         err = readSDO((*m_od)[0x6060]);
-        if ((i8)(open_types::INTEGER8_t)(*m_od)[0x6060] != -2)
+        if ((i8)(canopen_types::INTEGER8_t)(*m_od)[0x6060] != -2)
         {
             m_log.error("could not enter service mode");
-            m_log.error("Current mode: %i", (i8)(open_types::INTEGER8_t)((*m_od)[0x6061]));
+            m_log.error("Current mode: %i", (i8)(canopen_types::INTEGER8_t)((*m_od)[0x6061]));
         }
         return err;
     }

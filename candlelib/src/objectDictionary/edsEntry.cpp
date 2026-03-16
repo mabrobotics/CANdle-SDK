@@ -75,37 +75,38 @@ namespace mab
         if (!m_edsEntryMetaData.edsValueMeta.has_value() || !m_value.has_value())
             return {};
 
-        if (std::holds_alternative<open_types::INTEGER8_t>(m_value.value()) ||
-            std::holds_alternative<open_types::INTEGER16_t>(m_value.value()) ||
-            std::holds_alternative<open_types::INTEGER32_t>(m_value.value()) ||
-            std::holds_alternative<open_types::INTEGER64_t>(m_value.value()))
+        if (std::holds_alternative<canopen_types::INTEGER8_t>(m_value.value()) ||
+            std::holds_alternative<canopen_types::INTEGER16_t>(m_value.value()) ||
+            std::holds_alternative<canopen_types::INTEGER32_t>(m_value.value()) ||
+            std::holds_alternative<canopen_types::INTEGER64_t>(m_value.value()))
         {
             auto v =
-                std::as_bytes(std::span(&std::get<open_types::INTEGER64_t>(m_value.value()), 1));
+                std::as_bytes(std::span(&std::get<canopen_types::INTEGER64_t>(m_value.value()), 1));
             return std::vector<std::byte>(v.begin(), v.end());
         }
-        else if (std::holds_alternative<open_types::BOOLEAN_t>(m_value.value()) ||
-                 std::holds_alternative<open_types::UNSIGNED8_t>(m_value.value()) ||
-                 std::holds_alternative<open_types::UNSIGNED16_t>(m_value.value()) ||
-                 std::holds_alternative<open_types::UNSIGNED32_t>(m_value.value()) ||
-                 std::holds_alternative<open_types::UNSIGNED64_t>(m_value.value()))
+        else if (std::holds_alternative<canopen_types::BOOLEAN_t>(m_value.value()) ||
+                 std::holds_alternative<canopen_types::UNSIGNED8_t>(m_value.value()) ||
+                 std::holds_alternative<canopen_types::UNSIGNED16_t>(m_value.value()) ||
+                 std::holds_alternative<canopen_types::UNSIGNED32_t>(m_value.value()) ||
+                 std::holds_alternative<canopen_types::UNSIGNED64_t>(m_value.value()))
+        {
+            auto v = std::as_bytes(
+                std::span(&std::get<canopen_types::UNSIGNED64_t>(m_value.value()), 1));
+            return std::vector<std::byte>(v.begin(), v.end());
+        }
+        else if (std::holds_alternative<canopen_types::REAL32_t>(m_value.value()))
         {
             auto v =
-                std::as_bytes(std::span(&std::get<open_types::UNSIGNED64_t>(m_value.value()), 1));
+                std::as_bytes(std::span(&std::get<canopen_types::REAL32_t>(m_value.value()), 1));
             return std::vector<std::byte>(v.begin(), v.end());
         }
-        else if (std::holds_alternative<open_types::REAL32_t>(m_value.value()))
+        else if (std::holds_alternative<canopen_types::DOMAIN_t>(m_value.value()))
         {
-            auto v = std::as_bytes(std::span(&std::get<open_types::REAL32_t>(m_value.value()), 1));
-            return std::vector<std::byte>(v.begin(), v.end());
+            return std::get<canopen_types::DOMAIN_t>(m_value.value());
         }
-        else if (std::holds_alternative<open_types::DOMAIN_t>(m_value.value()))
+        else if (std::holds_alternative<canopen_types::VISIBLE_STRING_t>(m_value.value()))
         {
-            return std::get<open_types::DOMAIN_t>(m_value.value());
-        }
-        else if (std::holds_alternative<open_types::VISIBLE_STRING_t>(m_value.value()))
-        {
-            const std::string&     str = std::get<open_types::VISIBLE_STRING_t>(m_value.value());
+            const std::string&     str = std::get<canopen_types::VISIBLE_STRING_t>(m_value.value());
             std::vector<std::byte> result;
             for (const char& c : str)
             {
@@ -126,57 +127,57 @@ namespace mab
         switch (m_edsEntryMetaData.edsValueMeta.value().dataType)
         {
             case DataType_E::BOOLEAN:
-                m_value = *std::bit_cast<const open_types::BOOLEAN_t*>(bytes.data());
-                m_value =
-                    (open_types::BOOLEAN_t)(bool)std::get<open_types::BOOLEAN_t>(m_value.value());
+                m_value = *std::bit_cast<const canopen_types::BOOLEAN_t*>(bytes.data());
+                m_value = (canopen_types::BOOLEAN_t)(bool)std::get<canopen_types::BOOLEAN_t>(
+                    m_value.value());
                 break;
             case DataType_E::INTEGER8:
-                m_value = *std::bit_cast<const open_types::INTEGER8_t*>(bytes.data());
-                m_value =
-                    (open_types::INTEGER8_t)(i8)std::get<open_types::INTEGER8_t>(m_value.value());
+                m_value = *std::bit_cast<const canopen_types::INTEGER8_t*>(bytes.data());
+                m_value = (canopen_types::INTEGER8_t)(i8)std::get<canopen_types::INTEGER8_t>(
+                    m_value.value());
                 break;
             case DataType_E::INTEGER16:
-                m_value = *std::bit_cast<const open_types::INTEGER16_t*>(bytes.data());
-                m_value = (open_types::INTEGER16_t)(i16)std::get<open_types::INTEGER16_t>(
+                m_value = *std::bit_cast<const canopen_types::INTEGER16_t*>(bytes.data());
+                m_value = (canopen_types::INTEGER16_t)(i16)std::get<canopen_types::INTEGER16_t>(
                     m_value.value());
                 break;
             case DataType_E::INTEGER32:
-                m_value = *std::bit_cast<const open_types::INTEGER32_t*>(bytes.data());
-                m_value = (open_types::INTEGER32_t)(i32)std::get<open_types::INTEGER32_t>(
+                m_value = *std::bit_cast<const canopen_types::INTEGER32_t*>(bytes.data());
+                m_value = (canopen_types::INTEGER32_t)(i32)std::get<canopen_types::INTEGER32_t>(
                     m_value.value());
                 break;
             case DataType_E::INTEGER64:
-                m_value = *std::bit_cast<const open_types::INTEGER64_t*>(bytes.data());
-                m_value = (open_types::INTEGER64_t)(i64)std::get<open_types::INTEGER64_t>(
+                m_value = *std::bit_cast<const canopen_types::INTEGER64_t*>(bytes.data());
+                m_value = (canopen_types::INTEGER64_t)(i64)std::get<canopen_types::INTEGER64_t>(
                     m_value.value());
                 break;
             case DataType_E::UNSIGNED8:
-                m_value = *std::bit_cast<const open_types::UNSIGNED8_t*>(bytes.data());
-                m_value =
-                    (open_types::UNSIGNED8_t)(u8)std::get<open_types::UNSIGNED8_t>(m_value.value());
+                m_value = *std::bit_cast<const canopen_types::UNSIGNED8_t*>(bytes.data());
+                m_value = (canopen_types::UNSIGNED8_t)(u8)std::get<canopen_types::UNSIGNED8_t>(
+                    m_value.value());
                 break;
             case DataType_E::UNSIGNED16:
-                m_value = *std::bit_cast<const open_types::UNSIGNED16_t*>(bytes.data());
-                m_value = (open_types::UNSIGNED16_t)(u16)std::get<open_types::UNSIGNED16_t>(
+                m_value = *std::bit_cast<const canopen_types::UNSIGNED16_t*>(bytes.data());
+                m_value = (canopen_types::UNSIGNED16_t)(u16)std::get<canopen_types::UNSIGNED16_t>(
                     m_value.value());
                 break;
             case DataType_E::UNSIGNED32:
-                m_value = *std::bit_cast<const open_types::UNSIGNED32_t*>(bytes.data());
-                m_value = (open_types::UNSIGNED32_t)(u32)std::get<open_types::UNSIGNED32_t>(
+                m_value = *std::bit_cast<const canopen_types::UNSIGNED32_t*>(bytes.data());
+                m_value = (canopen_types::UNSIGNED32_t)(u32)std::get<canopen_types::UNSIGNED32_t>(
                     m_value.value());
                 break;
             case DataType_E::UNSIGNED64:
-                m_value = *std::bit_cast<const open_types::UNSIGNED64_t*>(bytes.data());
-                m_value = (open_types::UNSIGNED64_t)(u64)std::get<open_types::UNSIGNED64_t>(
+                m_value = *std::bit_cast<const canopen_types::UNSIGNED64_t*>(bytes.data());
+                m_value = (canopen_types::UNSIGNED64_t)(u64)std::get<canopen_types::UNSIGNED64_t>(
                     m_value.value());
                 break;
             case DataType_E::REAL32:
-                m_value = *std::bit_cast<const open_types::REAL32_t*>(bytes.data());
-                m_value =
-                    (open_types::REAL32_t)(f32)std::get<open_types::REAL32_t>(m_value.value());
+                m_value = *std::bit_cast<const canopen_types::REAL32_t*>(bytes.data());
+                m_value = (canopen_types::REAL32_t)(f32)std::get<canopen_types::REAL32_t>(
+                    m_value.value());
                 break;
             case DataType_E::DOMAIN_TYPE:
-                m_value = open_types::DOMAIN_t(bytes.begin(), bytes.end());
+                m_value = canopen_types::DOMAIN_t(bytes.begin(), bytes.end());
                 break;
             case DataType_E::VISIBLE_STRING:
             {
@@ -239,16 +240,16 @@ namespace mab
                 size = 8;
                 break;
             case mab::EDSEntry::DataType_E::VISIBLE_STRING:
-                size = std::get<open_types::VISIBLE_STRING_t>(m_value.value()).size();
+                size = std::get<canopen_types::VISIBLE_STRING_t>(m_value.value()).size();
                 break;
             case mab::EDSEntry::DataType_E::OCTET_STRING:
-                size = std::get<open_types::OCTET_STRING_t>(m_value.value()).size();
+                size = std::get<canopen_types::OCTET_STRING_t>(m_value.value()).size();
                 break;
             case mab::EDSEntry::DataType_E::UNICODE_STRING:
-                size = std::get<open_types::UNICODE_STRING_t>(m_value.value()).size();
+                size = std::get<canopen_types::UNICODE_STRING_t>(m_value.value()).size();
                 break;
             case mab::EDSEntry::DataType_E::DOMAIN_TYPE:
-                size = std::get<open_types::DOMAIN_t>(m_value.value()).size();
+                size = std::get<canopen_types::DOMAIN_t>(m_value.value()).size();
                 break;
         }
         return size;
@@ -263,43 +264,47 @@ namespace mab
             case DataType_E::BOOLEAN:
                 if (val.empty())
                     return {};
-                return str == "TRUE" ? open_types::BOOLEAN_t(true) : open_types::BOOLEAN_t(false);
+                return str == "TRUE" ? canopen_types::BOOLEAN_t(true)
+                                     : canopen_types::BOOLEAN_t(false);
             case DataType_E::INTEGER8:
                 if (val.empty())
-                    return open_types::INTEGER8_t(0);
-                return open_types::INTEGER8_t(std::stoi(std::string(str).c_str(), nullptr, 0));
+                    return canopen_types::INTEGER8_t(0);
+                return canopen_types::INTEGER8_t(std::stoi(std::string(str).c_str(), nullptr, 0));
             case DataType_E::INTEGER16:
                 if (val.empty())
-                    return open_types::INTEGER16_t(0);
-                return open_types::INTEGER16_t(std::stoi(std::string(str).c_str(), nullptr, 0));
+                    return canopen_types::INTEGER16_t(0);
+                return canopen_types::INTEGER16_t(std::stoi(std::string(str).c_str(), nullptr, 0));
             case DataType_E::INTEGER32:
                 if (val.empty())
-                    return open_types::INTEGER32_t(0);
-                return open_types::INTEGER32_t(std::stoll(std::string(str).c_str(), nullptr, 0));
+                    return canopen_types::INTEGER32_t(0);
+                return canopen_types::INTEGER32_t(std::stoll(std::string(str).c_str(), nullptr, 0));
             case DataType_E::INTEGER64:
                 if (val.empty())
-                    return open_types::INTEGER64_t(0);
-                return open_types::INTEGER64_t(std::stoll(std::string(str).c_str(), nullptr, 0));
+                    return canopen_types::INTEGER64_t(0);
+                return canopen_types::INTEGER64_t(std::stoll(std::string(str).c_str(), nullptr, 0));
             case DataType_E::UNSIGNED8:
                 if (val.empty())
-                    return open_types::UNSIGNED8_t(0);
-                return open_types::UNSIGNED8_t(std::stoul(std::string(str).c_str(), nullptr, 0));
+                    return canopen_types::UNSIGNED8_t(0);
+                return canopen_types::UNSIGNED8_t(std::stoul(std::string(str).c_str(), nullptr, 0));
             case DataType_E::UNSIGNED16:
                 if (val.empty())
-                    return open_types::UNSIGNED16_t(0);
-                return open_types::UNSIGNED16_t(std::stoul(std::string(str).c_str(), nullptr, 0));
+                    return canopen_types::UNSIGNED16_t(0);
+                return canopen_types::UNSIGNED16_t(
+                    std::stoul(std::string(str).c_str(), nullptr, 0));
             case DataType_E::UNSIGNED32:
                 if (val.empty())
-                    return open_types::UNSIGNED32_t(0);
-                return open_types::UNSIGNED32_t(std::stoul(std::string(str).c_str(), nullptr, 0));
+                    return canopen_types::UNSIGNED32_t(0);
+                return canopen_types::UNSIGNED32_t(
+                    std::stoul(std::string(str).c_str(), nullptr, 0));
             case DataType_E::UNSIGNED64:
                 if (val.empty())
-                    return open_types::UNSIGNED64_t(0);
-                return open_types::UNSIGNED64_t(std::stoull(std::string(str).c_str(), nullptr, 0));
+                    return canopen_types::UNSIGNED64_t(0);
+                return canopen_types::UNSIGNED64_t(
+                    std::stoull(std::string(str).c_str(), nullptr, 0));
             case DataType_E::REAL32:
                 if (val.empty())
-                    return open_types::REAL32_t(0);
-                return open_types::REAL32_t(std::stof(std::string(str).c_str()));
+                    return canopen_types::REAL32_t(0);
+                return canopen_types::REAL32_t(std::stof(std::string(str).c_str()));
             case DataType_E::REAL64:
                 if (val.empty())
                     return {};
@@ -330,35 +335,35 @@ namespace mab
         switch (dataType)
         {
             case DataType_E::BOOLEAN:
-                return std::to_string((bool)std::get<open_types::BOOLEAN_t>(val));
+                return std::to_string((bool)std::get<canopen_types::BOOLEAN_t>(val));
             case DataType_E::INTEGER8:
-                return std::to_string((i8)std::get<open_types::INTEGER8_t>(val));
+                return std::to_string((i8)std::get<canopen_types::INTEGER8_t>(val));
             case DataType_E::INTEGER16:
-                return std::to_string((i16)std::get<open_types::INTEGER16_t>(val));
+                return std::to_string((i16)std::get<canopen_types::INTEGER16_t>(val));
             case DataType_E::INTEGER32:
-                return std::to_string((i32)std::get<open_types::INTEGER32_t>(val));
+                return std::to_string((i32)std::get<canopen_types::INTEGER32_t>(val));
             case DataType_E::INTEGER64:
-                return std::to_string((i64)std::get<open_types::INTEGER64_t>(val));
+                return std::to_string((i64)std::get<canopen_types::INTEGER64_t>(val));
             case DataType_E::UNSIGNED8:
-                return std::to_string((u8)std::get<open_types::UNSIGNED8_t>(val));
+                return std::to_string((u8)std::get<canopen_types::UNSIGNED8_t>(val));
             case DataType_E::UNSIGNED16:
-                return std::to_string((u16)std::get<open_types::UNSIGNED16_t>(val));
+                return std::to_string((u16)std::get<canopen_types::UNSIGNED16_t>(val));
             case DataType_E::UNSIGNED32:
-                return std::to_string((u32)std::get<open_types::UNSIGNED32_t>(val));
+                return std::to_string((u32)std::get<canopen_types::UNSIGNED32_t>(val));
             case DataType_E::UNSIGNED64:
-                return std::to_string((u64)std::get<open_types::UNSIGNED64_t>(val));
+                return std::to_string((u64)std::get<canopen_types::UNSIGNED64_t>(val));
             case DataType_E::REAL32:
-                return std::to_string((float)std::get<open_types::REAL32_t>(val));
+                return std::to_string((float)std::get<canopen_types::REAL32_t>(val));
             case DataType_E::REAL64:
                 return {};
             case DataType_E::VISIBLE_STRING:
-                return std::get<open_types::VISIBLE_STRING_t>(val);
+                return std::get<canopen_types::VISIBLE_STRING_t>(val);
             case DataType_E::UNICODE_STRING:
                 return {};
             case DataType_E::OCTET_STRING:
                 return {};  // todo: case on its own can not support it
             case DataType_E::DOMAIN_TYPE:
-                std::vector<std::byte> bytes = std::get<open_types::DOMAIN_t>(val);
+                std::vector<std::byte> bytes = std::get<canopen_types::DOMAIN_t>(val);
                 std::string            result;
                 for (auto byte : bytes)
                 {

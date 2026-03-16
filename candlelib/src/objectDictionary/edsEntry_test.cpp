@@ -8,7 +8,7 @@
 #include "edsEntry.hpp"
 
 using namespace mab;
-using namespace open_types;
+using namespace canopen_types;
 
 class EdsEntry_test : public ::testing::Test
 {

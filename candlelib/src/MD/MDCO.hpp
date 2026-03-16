@@ -23,10 +23,9 @@ namespace mab
     /// @brief Software representation of MD device on the can network
     class MDCO
     {
-        static constexpr size_t DEFAULT_RESPONSE_SIZE         = 23;
-        static constexpr u16    SDO_REQUEST_BASE              = 0x600;
-        static constexpr u8     INITIATE_SDO_UPLOAD_REQUEST   = 0x40;
-        static constexpr u8     INITIATE_SDO_DOWNLOAD_REQUEST = 0x22;
+        static constexpr u16 SDO_REQUEST_BASE              = 0x600;
+        static constexpr u8  INITIATE_SDO_UPLOAD_REQUEST   = 0x40;
+        static constexpr u8  INITIATE_SDO_DOWNLOAD_REQUEST = 0x22;
 
         Logger m_log;
 
@@ -41,6 +40,7 @@ namespace mab
         /// @brief Possible errors present in this class
         enum class Error_t
         {
+            UNKNOWN_ERROR,
             OK,
             REQUEST_INVALID,
             TRANSFER_FAILED,

@@ -18,10 +18,10 @@
 
 namespace mab
 {
-    /// @namespace open_types
+    /// @namespace canopen_types
     /// @brief this namespace shoudl be used along with EDSEntryVal class for type compatibility
     /// with the variants
-    namespace open_types
+    namespace canopen_types
     {
         using BOOLEAN_t        = u64;
         using INTEGER8_t       = i64;
@@ -37,7 +37,7 @@ namespace mab
         using OCTET_STRING_t   = std::vector<std::byte>;
         using UNICODE_STRING_t = std::vector<std::byte>;
         using DOMAIN_t         = std::vector<std::byte>;
-    }  // namespace open_types
+    }  // namespace canopen_types
 
     /// @class EDSEntry
     /// @brief Base class representing an EDS entry

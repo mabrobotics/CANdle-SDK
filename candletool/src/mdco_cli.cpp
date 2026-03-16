@@ -153,7 +153,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             if (!canOptions.optionsMap.at("id")->empty() && !(*canOptions.canId == *mdCanId))
             {
                 // set new can id
-                canIdObj = (open_types::UNSIGNED32_t)(*canOptions.canId);
+                canIdObj = (canopen_types::UNSIGNED32_t)(*canOptions.canId);
                 if (mdco->writeSDO(canIdObj) != MDCO::Error_t::OK)
                 {
                     m_log.error("Failed setting id of %d", *canOptions.canId);
@@ -382,7 +382,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error("Error reading encoder value");
             }
             m_log.success("The value of the encoder is: %i",
-                          (i32)(open_types::INTEGER32_t)((*od)[0x6064]));
+                          (i32)(canopen_types::INTEGER32_t)((*od)[0x6064]));
         });
 
     // SDO ============================================================================
@@ -542,7 +542,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             }
 
             auto& calibrationObj = calibrationOpt.value().get();
-            calibrationObj       = (open_types::BOOLEAN_t)1;
+            calibrationObj       = (canopen_types::BOOLEAN_t)1;
             if (mdco->writeSDO(calibrationObj) != MDCO::Error_t::OK)
             {
                 m_log.error("Could not write SDO calibration command!");
