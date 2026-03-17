@@ -272,13 +272,12 @@ void runVelocity(mab::MD& md, Logger log, int choice)
 void runPosition(mab::MD& md, Logger log, int choice, mab::MDRegisters_S& registerBuffer)
 {
     ///
-
+    // Due to the cascade PID controller used for the Position PID mode this mode needs parameters
+    // for both Velocity and Position PID
     float kp_pos     = 25.1f;
     float ki_pos     = 2.8f;
     float kd_pos     = 0.f;
     float windup_pos = 5.0f;
-
-    ///
 
     float kp_vel     = 0.003f;
     float ki_vel     = 0.0005f;
@@ -294,7 +293,7 @@ void runPosition(mab::MD& md, Logger log, int choice, mab::MDRegisters_S& regist
     md.setPositionPIDparam(kp_pos, ki_pos, kd_pos, windup_pos);
     md.setVelocityPIDparam(kp_vel, ki_vel, kd_vel, windup_vel);
     md.setMaxVelocity(maxVelocity);
-    md.setMaxTorque(0.05);
+    md.setMaxTorque(0.25);
     md.setTargetTorque(0.2);
     md.zero();
     md.enable();
