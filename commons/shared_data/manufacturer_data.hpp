@@ -18,6 +18,9 @@ namespace mab
         MD80HV         = 0x03,
         PDS            = 0x04,
         MD80DE         = 0x05,
+        MD80EC         = 0x06,
+
+        MD0004 = 0xB0,
 
         UNKNOWN_DEVICE_2 = 0xA0,
         CANDLE           = 0xA1,
@@ -33,6 +36,10 @@ namespace mab
             return mab::deviceType_E::MD80HV;
         if (strcmp(cstr, "md80de") == 0)
             return mab::deviceType_E::MD80DE;
+        if (strcmp(cstr, "md80ec") == 0)
+            return mab::deviceType_E::MD80EC;
+        if (strcmp(cstr, "md0004") == 0)
+            return mab::deviceType_E::MD0004;
         if (strcmp(cstr, "candle") == 0)
             return mab::deviceType_E::CANDLE;
         if (strcmp(cstr, "candlehat") == 0)
@@ -53,6 +60,10 @@ namespace mab
                 return (char*)"md80hv";
             case mab::deviceType_E::MD80DE:
                 return (char*)"md80de";
+            case mab::deviceType_E::MD80EC:
+                return (char*)"md80ec";
+            case mab::deviceType_E::MD0004:
+                return (char*)"md0004";
             case mab::deviceType_E::CANDLE:
                 return (char*)"candle";
             case mab::deviceType_E::CANDLE_HAT:

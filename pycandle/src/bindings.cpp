@@ -25,9 +25,11 @@ namespace py = pybind11;
 
 namespace mab
 {
-    Candle* pyAttachCandle(const CANdleDatarate_E datarate, candleTypes::busTypes_t busType)
+    Candle* pyAttachCandle(const CANdleDatarate_E  datarate,
+                           candleTypes::busTypes_t busType,
+                           bool                    dontUseFDCANFrames)
     {
-        return attachCandle(datarate, busType);
+        return attachCandle(datarate, busType, dontUseFDCANFrames);
     }
 
     MD createMD(int canId, std::shared_ptr<Candle> candle)
@@ -171,7 +173,6 @@ namespace mab
     }
 
     // PDS Wrapper Functions
-
     // Pds class wrappers
     std::pair<pdsFwMetadata_S, PdsModule::error_E> pdsFwMetadataWrapper(Pds& pds)
     {
@@ -475,6 +476,7 @@ PYBIND11_MODULE(pyCandle, m)
           &mab::pyAttachCandle,
           py::arg("datarate"),
           py::arg("busType"),
+          py::arg("dontUseFDCANFrames") = true,
           py::return_value_policy::take_ownership,
           "Attach a CANdle device to the system.");
 
