@@ -68,7 +68,7 @@ namespace mab
 
         std::string getReadable() const
         {
-            if (m_parserFunctions.m_verify(m_value).has_value())
+            if (!m_value.empty() && m_parserFunctions.m_verify(m_value).has_value())
             {
                 Logger logger(Logger::ProgramLayer_E::TOP, "Config Parser");
                 logger.error("%s", m_parserFunctions.m_verify(m_value).value().c_str());
@@ -80,10 +80,10 @@ namespace mab
         {
             if (m_parserFunctions.m_fromReadable(value).has_value())
             {
-                if (m_parserFunctions.m_verify(m_value).has_value())
+                if (!value.empty() && m_parserFunctions.m_verify(value).has_value())
                 {
                     Logger logger(Logger::ProgramLayer_E::TOP, "Config Parser");
-                    logger.error("%s", m_parserFunctions.m_verify(m_value).value().c_str());
+                    logger.error("%s", m_parserFunctions.m_verify(value).value().c_str());
                 }
                 m_value = m_parserFunctions.m_fromReadable(value).value();
                 return true;
@@ -261,7 +261,7 @@ namespace mab
     };
 
     inline const MDCfgElement::ParserFunctions_S::verify_t MDConfigMap::verifyPlaceholder =
-        [](std::string_view value) -> std::optional<std::string> { return ""; };
+        [](std::string_view value) -> std::optional<std::string> { return {}; };
 
     // Special case for encoder type
     inline const std::function<std::optional<std::string>(const std::string_view)>
