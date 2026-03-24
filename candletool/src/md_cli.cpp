@@ -484,18 +484,19 @@ namespace mab
                     return;
                 }
 
-                std::string configFilePath = *downloadConfigOptions.configFile;
+                std::filesystem::path configFilePath = *downloadConfigOptions.configFile;
                 if (configFilePath.empty())
                 {
                     m_logger.error("Configuration file path is empty!");
                     return;
                 }
                 // If the path is not specified, prepend the standard path
-                if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
-                    configFilePath.end() || std::find(configFilePath.begin(), configFilePath.end(), '\\') ==
-                        configFilePath.end())
+                std::string matchString = configFilePath.string();
+                if (std::find(matchString.begin(), matchString.end(), '/') ==
+                    matchString.end() || std::find(matchString.begin(), matchString.end(), '\\') ==
+                        matchString.end())
                 {
-                    configFilePath = std::string(DEFAULT_CANDLETOOL_CONFIG_DIR) + "/config/motors/" + configFilePath;
+                    configFilePath = std::filesystem::path(DEFAULT_CANDLETOOL_CONFIG_DIR) / std::filesystem::path("/config/motors/") / configFilePath;
                 }
 
                 MDConfigMap cfgMap;
@@ -537,18 +538,19 @@ namespace mab
                     return;
                 }
 
-                std::string configFilePath = *uploadConfigOptions.configFile;
+                std::filesystem::path configFilePath = *uploadConfigOptions.configFile;
                 if (configFilePath.empty())
                 {
                     m_logger.error("Configuration file path is empty!");
                     return;
                 }
                 // If the path is not specified, prepend the standard path
-                if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
-                    configFilePath.end() || std::find(configFilePath.begin(), configFilePath.end(), '\\') ==
-                        configFilePath.end())
+                std::string matchString = configFilePath.string();
+                if (std::find(matchString.begin(), matchString.end(), '/') ==
+                    matchString.end() || std::find(matchString.begin(), matchString.end(), '\\') ==
+                        matchString.end())
                 {
-                    configFilePath = std::string(DEFAULT_CANDLETOOL_CONFIG_DIR) + "/config/motors/" + configFilePath;
+                    configFilePath = DEFAULT_CANDLETOOL_CONFIG_DIR / "/config/motors/" / configFilePath;
                 }
 
                 mINI::INIFile      configFile(configFilePath);
