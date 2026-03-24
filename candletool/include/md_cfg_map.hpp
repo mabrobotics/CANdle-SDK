@@ -1,11 +1,13 @@
 #pragma once
 
+#include "logger.hpp"
 #include "mab_types.hpp"
 #include "md_types.hpp"
 #include "MD_strings.hpp"
 #include "utilities.hpp"
 
 #include <cctype>
+#include <optional>
 #include <stdexcept>
 #include <map>
 #include <string>
@@ -17,39 +19,63 @@ namespace mab
     struct MDCfgElement
     {
       public:
+        struct ParserFunctions_S
+        {
+            using toReadable_t = const std::function<std::string(std::string_view)>;
+            using fromReadable_t =
+                const std::function<std::optional<std::string>(std::string_view)>;
+            using verify_t = const std::function<std::optional<std::string>(std::string_view)>;
+
+            toReadable_t   m_toReadable;
+            fromReadable_t m_fromReadable;
+            verify_t       m_verify;
+            ParserFunctions_S()
+                : m_toReadable([](std::string_view value) { return std::string(value); }),
+                  m_fromReadable([](std::string_view value) { return std::string(value); }),
+                  m_verify([](std::string_view value) -> std::optional<std::string> { return {}; })
+            {
+            }
+
+            ParserFunctions_S(toReadable_t toReadable, fromReadable_t fromReadable, verify_t verify)
+                : m_toReadable(toReadable), m_fromReadable(fromReadable), m_verify(verify)
+            {
+            }
+
+            ParserFunctions_S(verify_t verify)
+                : m_toReadable([](std::string_view value) { return std::string(value); }),
+                  m_fromReadable([](std::string_view value) { return std::string(value); }),
+                  m_verify(verify)
+            {
+            }
+        };
+
         const std::string_view m_tomlSection;
         const std::string_view m_tomlKey;
 
-        const std::function<std::string(std::string_view)>                m_toReadable;
-        const std::function<std::optional<std::string>(std::string_view)> m_fromReadable;
+        const ParserFunctions_S m_parserFunctions;
 
         std::string m_value;
 
-        MDCfgElement(
-            std::string_view&&                                 section,
-            std::string_view&&                                 key,
-            std::function<std::string(const std::string_view)> toReadable =
-                [](std::string_view value) { return std::string(value); },
-            std::function<std::optional<std::string>(const std::string_view)> fromReadable =
-                [](std::string_view value) { return std::string(value); })
+        MDCfgElement(std::string_view&& section,
+                     std::string_view&& key,
+                     ParserFunctions_S  parserFunctions = ParserFunctions_S())
             : m_tomlSection(section),
               m_tomlKey(key),
-              m_toReadable(toReadable),
-              m_fromReadable(fromReadable),
+              m_parserFunctions(parserFunctions),
               m_value("")
         {
         }
 
         std::string getReadable() const
         {
-            return m_toReadable(m_value);
+            return m_parserFunctions.m_toReadable(m_value);
         }
         [[nodiscard("Info on parsing state")]] bool setFromReadable(
             const std::string_view value) noexcept
         {
-            if (m_fromReadable(value).has_value())
+            if (m_parserFunctions.m_fromReadable(value).has_value())
             {
-                m_value = m_fromReadable(value).value();
+                m_value = m_parserFunctions.m_fromReadable(value).value();
                 return true;
             }
             else
@@ -105,25 +131,29 @@ namespace mab
             {0x01E,
              MDCfgElement("motor",
                           "calibration mode",
-                          mainEncoderCalibrationModeToReadable,
-                          mainEncoderCalibrationModeFromReadable)},
+                          MDCfgElement::ParserFunctions_S(mainEncoderCalibrationModeToReadable,
+                                                          mainEncoderCalibrationModeFromReadable,
+                                                          verifyPlaceholder))},
             {0x808, MDCfgElement("motor", "shutdown temp")},
             {0x600, MDCfgElement("motor", "reverse direction")},
 
             // Encoder parameters
             {0x020,
-             MDCfgElement(
-                 "output encoder", "output encoder", encoderToReadable, encoderFromReadable)},
+             MDCfgElement("output encoder",
+                          "output encoder",
+                          MDCfgElement::ParserFunctions_S(
+                              encoderToReadable, encoderFromReadable, verifyPlaceholder))},
             {0x025,
              MDCfgElement("output encoder",
                           "output encoder mode",
-                          encoderModeToReadable,
-                          encoderModeFromReadable)},
+                          MDCfgElement::ParserFunctions_S(
+                              encoderModeToReadable, encoderModeFromReadable, verifyPlaceholder))},
             {0x026,
              MDCfgElement("output encoder",
                           "output encoder calibration mode",
-                          encoderCalibrationModeToReadable,
-                          encoderCalibrationModeFromReadable)},
+                          MDCfgElement::ParserFunctions_S(encoderCalibrationModeToReadable,
+                                                          encoderCalibrationModeFromReadable,
+                                                          verifyPlaceholder))},
 
             // PID parameters
             {0x030, MDCfgElement("position PID", "kp")},
@@ -153,7 +183,11 @@ namespace mab
 
             // Hardware configuration
             {0x700, MDCfgElement("hardware", "shunt resistance")},
-            {0x160, MDCfgElement("GPIO", "mode", GPIOModeToReadable, GPIOModeFromReadable)}};
+            {0x160,
+             MDCfgElement("GPIO",
+                          "mode",
+                          MDCfgElement::ParserFunctions_S(
+                              GPIOModeToReadable, GPIOModeFromReadable, verifyPlaceholder))}};
 
         // Function to get the value of a specific register by address
         std::string getValueByAddress(u16 address) const
@@ -161,6 +195,8 @@ namespace mab
             auto it = m_map.find(address);
             if (it != m_map.end())
             {
+                Logger logger(Logger::ProgramLayer_E::TOP, "Config Parser");
+                
                 return it->second.m_value;
             }
             throw std::runtime_error("MDConfigMap: Address " + std::to_string(address) +
@@ -181,6 +217,9 @@ namespace mab
                                          " not found in configuration map.");
             }
         }
+
+        // TODO remove placeholder
+        static const MDCfgElement::ParserFunctions_S::verify_t verifyPlaceholder;
 
         // special cases for parsing
         static const std::function<std::string(std::string_view)> encoderToReadable;
@@ -212,6 +251,9 @@ namespace mab
       private:
         MDRegisters_S registers;  // only for verification purposes
     };
+
+    inline const MDCfgElement::ParserFunctions_S::verify_t MDConfigMap::verifyPlaceholder =
+        [](std::string_view value) -> std::optional<std::string> { return {}; };
 
     // Special case for encoder type
     inline const std::function<std::optional<std::string>(const std::string_view)>
