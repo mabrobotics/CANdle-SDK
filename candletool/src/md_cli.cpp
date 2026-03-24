@@ -550,7 +550,7 @@ namespace mab
                     matchString.end() || std::find(matchString.begin(), matchString.end(), '\\') ==
                         matchString.end())
                 {
-                    configFilePath = DEFAULT_CANDLETOOL_CONFIG_DIR / "/config/motors/" / configFilePath;
+                    configFilePath = std::filesystem::path(DEFAULT_CANDLETOOL_CONFIG_DIR) / std::filesystem::path("/config/motors/") / configFilePath;
                 }
 
                 mINI::INIFile      configFile(configFilePath);
