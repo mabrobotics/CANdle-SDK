@@ -492,9 +492,10 @@ namespace mab
                 }
                 // If the path is not specified, prepend the standard path
                 if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
-                    configFilePath.end())
+                    configFilePath.end() || std::find(configFilePath.begin(), configFilePath.end(), '\\') ==
+                        configFilePath.end())
                 {
-                    configFilePath = "/etc/candletool/config/motors/" + configFilePath;
+                    configFilePath = std::string(DEFAULT_CANDLETOOL_CONFIG_DIR) + "/config/motors/" + configFilePath;
                 }
 
                 MDConfigMap cfgMap;
@@ -532,7 +533,7 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
 
@@ -546,7 +547,7 @@ namespace mab
                 if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
                     configFilePath.end())
                 {
-                    configFilePath = "/etc/candletool/config/motors/" + configFilePath;
+                    configFilePath = std::string(DEFAULT_CANDLETOOL_CONFIG_DIR) + "/config/motors/" + configFilePath;
                 }
 
                 mINI::INIFile      configFile(configFilePath);
