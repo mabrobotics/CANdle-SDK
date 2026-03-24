@@ -545,7 +545,8 @@ namespace mab
                 }
                 // If the path is not specified, prepend the standard path
                 if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
-                    configFilePath.end())
+                    configFilePath.end() || std::find(configFilePath.begin(), configFilePath.end(), '\\') ==
+                        configFilePath.end())
                 {
                     configFilePath = std::string(DEFAULT_CANDLETOOL_CONFIG_DIR) + "/config/motors/" + configFilePath;
                 }
