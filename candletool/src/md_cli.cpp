@@ -1169,7 +1169,7 @@ namespace mab
                 else
                 {
                     m_logger.info("Overriding download of file. Using local provided path.");
-                    MabFileParser mabFile(*updateOptions.pathToMabFile,
+                    MabFileParser mabFile(updateOptions.pathToMabFile->string(),
                                           MabFileParser::TargetDevice_E::MD);
 
                     if (*(updateOptions.recovery) == false)
