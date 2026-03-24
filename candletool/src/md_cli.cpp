@@ -505,7 +505,7 @@ namespace mab
                     cfgElement.m_value = registerRead(*md, regAddress).value_or("NOT FOUND");
                 }
                 // Write the configuration to the file
-                mINI::INIFile      configFile(configFilePath);
+                mINI::INIFile      configFile(configFilePath.string());
                 mINI::INIStructure ini;
                 for (const auto& [regAddress, cfgElement] : cfgMap.m_map)
                 {
@@ -553,7 +553,7 @@ namespace mab
                     configFilePath = std::filesystem::path(DEFAULT_CANDLETOOL_CONFIG_DIR) / std::filesystem::path("/config/motors/") / configFilePath;
                 }
 
-                mINI::INIFile      configFile(configFilePath);
+                mINI::INIFile      configFile(configFilePath.string());
                 mINI::INIStructure ini;
                 if (!configFile.read(ini))
                 {
