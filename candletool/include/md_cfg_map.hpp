@@ -68,6 +68,11 @@ namespace mab
 
         std::string getReadable() const
         {
+            if (m_parserFunctions.m_verify(m_value).has_value())
+            {
+                Logger logger(Logger::ProgramLayer_E::TOP, "Config Parser");
+                logger.error("%s", m_parserFunctions.m_verify(m_value).value().c_str());
+            }
             return m_parserFunctions.m_toReadable(m_value);
         }
         [[nodiscard("Info on parsing state")]] bool setFromReadable(
@@ -75,6 +80,11 @@ namespace mab
         {
             if (m_parserFunctions.m_fromReadable(value).has_value())
             {
+                if (m_parserFunctions.m_verify(m_value).has_value())
+                {
+                    Logger logger(Logger::ProgramLayer_E::TOP, "Config Parser");
+                    logger.error("%s", m_parserFunctions.m_verify(m_value).value().c_str());
+                }
                 m_value = m_parserFunctions.m_fromReadable(value).value();
                 return true;
             }
@@ -195,8 +205,6 @@ namespace mab
             auto it = m_map.find(address);
             if (it != m_map.end())
             {
-                Logger logger(Logger::ProgramLayer_E::TOP, "Config Parser");
-                
                 return it->second.m_value;
             }
             throw std::runtime_error("MDConfigMap: Address " + std::to_string(address) +
@@ -253,7 +261,7 @@ namespace mab
     };
 
     inline const MDCfgElement::ParserFunctions_S::verify_t MDConfigMap::verifyPlaceholder =
-        [](std::string_view value) -> std::optional<std::string> { return {}; };
+        [](std::string_view value) -> std::optional<std::string> { return ""; };
 
     // Special case for encoder type
     inline const std::function<std::optional<std::string>(const std::string_view)>
