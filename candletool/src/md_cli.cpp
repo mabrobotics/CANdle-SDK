@@ -24,12 +24,24 @@
 #include "flasher.hpp"
 #include "web_file.hpp"
 
-/* ERROR COLORING NOTE: may not work on all terminals! */
+
+#ifndef WIN32
+
 #define REDSTART    "\033[1;31m"
 #define GREENSTART  "\033[1;32m"
 #define YELLOWSTART "\033[1;33m"
 #define BLUESTART   "\x1b[38;5;33m"
 #define RESETTEXT   "\033[0m"
+
+#else
+
+#define REDSTART    ""
+#define GREENSTART  ""
+#define YELLOWSTART ""
+#define BLUESTART   ""
+#define RESETTEXT   ""
+
+#endif
 
 #define RED__(x) REDSTART x RESETTEXT
 #define RED_(x)  REDSTART + x + RESETTEXT
