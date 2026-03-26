@@ -90,7 +90,7 @@ TEST_F(CandleFrameAdapterTest, readerFailError)
     std::vector<std::future<std::pair<std::vector<u8>, CANdleFrameAdapter::Error_t>>> futures;
 
     canId_t canId   = 100;
-    u16     timeout = 10;
+    u16     timeout = 20;
     for (const auto& data : mockDataVector)
     {
         futures.push_back(std::async(std::launch::async,

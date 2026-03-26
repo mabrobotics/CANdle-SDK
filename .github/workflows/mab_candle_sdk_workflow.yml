@@ -73,6 +73,11 @@ jobs:
         with:
           python-version: "3.13"
 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-dev python3.13-dev build-essential
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -140,7 +145,7 @@ jobs:
 
       - name: Build
         run: cmake --build ./build -j$(nproc)
-      
+
       - name: Rename artifact to arch dependant name
         run: |
           mv build/candlelib/libcandle.so build/candlelib/libcandle-x86_64.so
@@ -255,10 +260,10 @@ jobs:
       - name: CMake configure
         run: |
           cmake -DCMAKE_BUILD_TYPE=Release -DCANDLE_BUILD_STATIC=OFF --toolchain ./cmake/linux.armhf.toolchain.cmake ./ -B build -G "Unix Makefiles" .
-      
+
       - name: Build
         run: cmake --build ./build -j$(nproc)
-      
+
       - name: Rename artifact to arch dependant name
         run: |
           mv build/candlelib/libcandle.so build/candlelib/libcandle-armhf.so
