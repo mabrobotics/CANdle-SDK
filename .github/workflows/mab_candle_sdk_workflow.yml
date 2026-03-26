@@ -66,9 +66,6 @@ jobs:
           fi
   build-candleSDK-python-linux:
     runs-on: ubuntu-latest
-    container:
-      image: mabroboticsofficial/mab_build_environment:v3
-      options: --user root
 
     steps:
       - name: Setup Python
