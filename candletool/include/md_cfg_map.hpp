@@ -103,7 +103,7 @@ namespace mab
         std::optional<mINI::INIStructure> m_mdConfigSchema;
 
       public:
-        MDConfigMap(std::optional<mINI::INIStructure> mdConfigSchema = std::nullopt)
+        MDConfigMap(std::optional<mINI::INIStructure> mdConfigSchema = {})
             : m_mdConfigSchema(mdConfigSchema)
         {
             // Verify that all the keys are actual registers
@@ -128,82 +128,6 @@ namespace mab
             }
         }
         ~MDConfigMap() = default;
-
-        // ADD NEW CONFIGURATION PARAMETERS HERE
-        std::map<u16, MDCfgElement> m_map{
-            // Motor parameters
-            {0x010, MDCfgElement("motor", "name")},
-            {0x011, MDCfgElement("motor", "pole pairs")},
-            {0x012, MDCfgElement("motor", "torque constant")},
-            {0x016, MDCfgElement("motor", "max current")},
-            {0x017, MDCfgElement("motor", "gear ratio")},
-            {0x018, MDCfgElement("motor", "torque bandwidth")},
-            {0x01D, MDCfgElement("motor", "KV")},
-            {0x013, MDCfgElement("motor", "torque constant a")},
-            {0x014, MDCfgElement("motor", "torque constant b")},
-            {0x015, MDCfgElement("motor", "torque constant c")},
-            {0x019, MDCfgElement("motor", "dynamic friction")},
-            {0x01A, MDCfgElement("motor", "static friction")},
-            {0x01E,
-             MDCfgElement("motor",
-                          "calibration mode",
-                          MDCfgElement::ParserFunctions_S(mainEncoderCalibrationModeToReadable,
-                                                          mainEncoderCalibrationModeFromReadable,
-                                                          verifyPlaceholder))},
-            {0x808, MDCfgElement("motor", "shutdown temp")},
-            {0x600, MDCfgElement("motor", "reverse direction")},
-
-            // Encoder parameters
-            {0x020,
-             MDCfgElement("output encoder",
-                          "output encoder",
-                          MDCfgElement::ParserFunctions_S(
-                              encoderToReadable, encoderFromReadable, verifyPlaceholder))},
-            {0x025,
-             MDCfgElement("output encoder",
-                          "output encoder mode",
-                          MDCfgElement::ParserFunctions_S(
-                              encoderModeToReadable, encoderModeFromReadable, verifyPlaceholder))},
-            {0x026,
-             MDCfgElement("output encoder",
-                          "output encoder calibration mode",
-                          MDCfgElement::ParserFunctions_S(encoderCalibrationModeToReadable,
-                                                          encoderCalibrationModeFromReadable,
-                                                          verifyPlaceholder))},
-
-            // PID parameters
-            {0x030, MDCfgElement("position PID", "kp")},
-            {0x031, MDCfgElement("position PID", "ki")},
-            {0x032, MDCfgElement("position PID", "kd")},
-            {0x034, MDCfgElement("position PID", "windup")},
-            {0x040, MDCfgElement("velocity PID", "kp")},
-            {0x041, MDCfgElement("velocity PID", "ki")},
-            {0x042, MDCfgElement("velocity PID", "kd")},
-            {0x044, MDCfgElement("velocity PID", "windup")},
-            {0x050, MDCfgElement("impedance PD", "kp")},
-            {0x051, MDCfgElement("impedance PD", "kd")},
-
-            // Limits
-            {0x112, MDCfgElement("limits", "max torque")},
-            {0x110, MDCfgElement("limits", "max position")},
-            {0x111, MDCfgElement("limits", "min position")},
-            {0x113, MDCfgElement("limits", "max velocity")},
-            {0x114, MDCfgElement("limits", "max acceleration")},
-            {0x115, MDCfgElement("limits", "max deceleration")},
-
-            // Motion profile
-            {0x120, MDCfgElement("profile", "velocity")},
-            {0x121, MDCfgElement("profile", "acceleration")},
-            {0x122, MDCfgElement("profile", "deceleration")},
-            {0x123, MDCfgElement("profile", "quick stop deceleration")},
-
-            // Hardware configuration
-            {0x700, MDCfgElement("hardware", "shunt resistance")},
-            {0x160,
-             MDCfgElement("GPIO",
-                          "mode",
-                          MDCfgElement::ParserFunctions_S(
-                              GPIOModeToReadable, GPIOModeFromReadable, verifyPlaceholder))}};
 
         // Function to get the value of a specific register by address
         std::string getValueByAddress(u16 address) const
@@ -234,7 +158,12 @@ namespace mab
 
         // TODO remove placeholder
         const MDCfgElement::ParserFunctions_S::verify_t verifyPlaceholder =
-            [](std::string_view value) -> std::optional<std::string> { return {}; };
+            [this](std::string_view value) -> std::optional<std::string>
+        {
+            if (!this->m_mdConfigSchema.has_value())
+                return {};
+            return {"Verifying..."};
+        };
 
         // special cases for parsing
         const std::function<std::string(std::string_view)> encoderToReadable =
@@ -325,6 +254,82 @@ namespace mab
             std::string output = trim(value);
             return std::to_string(MDUserGpioConfigurationValue_S::toNumeric(output).value_or(0));
         };
+
+        // ADD NEW CONFIGURATION PARAMETERS HERE
+        std::map<u16, MDCfgElement> m_map{
+            // Motor parameters
+            {0x010, MDCfgElement("motor", "name")},
+            {0x011, MDCfgElement("motor", "pole pairs")},
+            {0x012, MDCfgElement("motor", "torque constant")},
+            {0x016, MDCfgElement("motor", "max current")},
+            {0x017, MDCfgElement("motor", "gear ratio")},
+            {0x018, MDCfgElement("motor", "torque bandwidth")},
+            {0x01D, MDCfgElement("motor", "KV")},
+            {0x013, MDCfgElement("motor", "torque constant a")},
+            {0x014, MDCfgElement("motor", "torque constant b")},
+            {0x015, MDCfgElement("motor", "torque constant c")},
+            {0x019, MDCfgElement("motor", "dynamic friction")},
+            {0x01A, MDCfgElement("motor", "static friction")},
+            {0x01E,
+             MDCfgElement("motor",
+                          "calibration mode",
+                          MDCfgElement::ParserFunctions_S(mainEncoderCalibrationModeToReadable,
+                                                          mainEncoderCalibrationModeFromReadable,
+                                                          verifyPlaceholder))},
+            {0x808, MDCfgElement("motor", "shutdown temp")},
+            {0x600, MDCfgElement("motor", "reverse direction")},
+
+            // Encoder parameters
+            {0x020,
+             MDCfgElement("output encoder",
+                          "output encoder",
+                          MDCfgElement::ParserFunctions_S(
+                              encoderToReadable, encoderFromReadable, verifyPlaceholder))},
+            {0x025,
+             MDCfgElement("output encoder",
+                          "output encoder mode",
+                          MDCfgElement::ParserFunctions_S(
+                              encoderModeToReadable, encoderModeFromReadable, verifyPlaceholder))},
+            {0x026,
+             MDCfgElement("output encoder",
+                          "output encoder calibration mode",
+                          MDCfgElement::ParserFunctions_S(encoderCalibrationModeToReadable,
+                                                          encoderCalibrationModeFromReadable,
+                                                          verifyPlaceholder))},
+
+            // PID parameters
+            {0x030, MDCfgElement("position PID", "kp")},
+            {0x031, MDCfgElement("position PID", "ki")},
+            {0x032, MDCfgElement("position PID", "kd")},
+            {0x034, MDCfgElement("position PID", "windup")},
+            {0x040, MDCfgElement("velocity PID", "kp")},
+            {0x041, MDCfgElement("velocity PID", "ki")},
+            {0x042, MDCfgElement("velocity PID", "kd")},
+            {0x044, MDCfgElement("velocity PID", "windup")},
+            {0x050, MDCfgElement("impedance PD", "kp")},
+            {0x051, MDCfgElement("impedance PD", "kd")},
+
+            // Limits
+            {0x112, MDCfgElement("limits", "max torque")},
+            {0x110, MDCfgElement("limits", "max position")},
+            {0x111, MDCfgElement("limits", "min position")},
+            {0x113, MDCfgElement("limits", "max velocity")},
+            {0x114, MDCfgElement("limits", "max acceleration")},
+            {0x115, MDCfgElement("limits", "max deceleration")},
+
+            // Motion profile
+            {0x120, MDCfgElement("profile", "velocity")},
+            {0x121, MDCfgElement("profile", "acceleration")},
+            {0x122, MDCfgElement("profile", "deceleration")},
+            {0x123, MDCfgElement("profile", "quick stop deceleration")},
+
+            // Hardware configuration
+            {0x700, MDCfgElement("hardware", "shunt resistance")},
+            {0x160,
+             MDCfgElement("GPIO",
+                          "mode",
+                          MDCfgElement::ParserFunctions_S(
+                              GPIOModeToReadable, GPIOModeFromReadable, verifyPlaceholder))}};
 
       private:
         MDRegisters_S registers;  // only for verification purposes
