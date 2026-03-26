@@ -4,6 +4,7 @@
 #include "mab_types.hpp"
 #include "md_types.hpp"
 #include "MD_strings.hpp"
+#include "mini/ini.h"
 #include "utilities.hpp"
 
 #include <cctype>
@@ -19,6 +20,8 @@ namespace mab
     struct MDCfgElement
     {
       public:
+        static constexpr std::string_view MIN_SUFFIX = "_min";
+        static constexpr std::string_view MAX_SUFFIX = "_max";
         struct ParserFunctions_S
         {
             using toReadable_t = const std::function<std::string(std::string_view)>;
@@ -97,8 +100,11 @@ namespace mab
 
     class MDConfigMap
     {
+        std::optional<mINI::INIStructure> m_mdConfigSchema;
+
       public:
-        MDConfigMap()
+        MDConfigMap(std::optional<mINI::INIStructure> mdConfigSchema = std::nullopt)
+            : m_mdConfigSchema(mdConfigSchema)
         {
             // Verify that all the keys are actual registers
 
@@ -227,147 +233,101 @@ namespace mab
         }
 
         // TODO remove placeholder
-        static const MDCfgElement::ParserFunctions_S::verify_t verifyPlaceholder;
+        const MDCfgElement::ParserFunctions_S::verify_t verifyPlaceholder =
+            [](std::string_view value) -> std::optional<std::string> { return {}; };
 
         // special cases for parsing
-        static const std::function<std::string(std::string_view)> encoderToReadable;
-        static const std::function<std::optional<std::string>(const std::string_view)>
-            encoderFromReadable;
+        const std::function<std::string(std::string_view)> encoderToReadable =
+            [](const std::string_view value) -> std::string
+        {
+            std::string output = trim(value);
+            return MDAuxEncoderValue_S::toReadable(std::stoll(value.data())).value_or("NOT FOUND");
+        };
 
-        static const std::function<std::string(std::string_view)>
-            mainEncoderCalibrationModeToReadable;
-        static const std::function<std::optional<std::string>(const std::string_view)>
-            mainEncoderCalibrationModeFromReadable;
+        const std::function<std::optional<std::string>(const std::string_view)>
+            encoderFromReadable = [](const std::string_view value) -> std::optional<std::string>
+        {
+            std::string output = trim(value);
+            return std::to_string(MDAuxEncoderValue_S::toNumeric(output).value_or(0));
+        };
 
-        static const std::function<std::string(std::string_view)>
-            auxEncoderCalibrationModeToReadable;
-        static const std::function<std::optional<std::string>(const std::string_view)>
-            auxEncoderCalibrationModeFromReadable;
+        const std::function<std::string(std::string_view)> mainEncoderCalibrationModeToReadable =
+            [](const std::string_view value) -> std::string
+        {
+            std::string output = trim(value);
+            return MDMainEncoderCalibrationModeValue_S::toReadable(std::stoll(output))
+                .value_or("NOT FOUND");
+        };
+        const std::function<std::optional<std::string>(const std::string_view)>
+            mainEncoderCalibrationModeFromReadable =
+                [](const std::string_view value) -> std::optional<std::string>
+        {
+            std::string output = trim(value);
+            return std::to_string(
+                MDMainEncoderCalibrationModeValue_S::toNumeric(value.data()).value_or(0));
+        };
 
-        static const std::function<std::string(std::string_view)> encoderModeToReadable;
-        static const std::function<std::optional<std::string>(const std::string_view)>
-            encoderModeFromReadable;
+        const std::function<std::string(std::string_view)> auxEncoderCalibrationModeToReadable =
+            [](const std::string_view value) -> std::string
+        {
+            std::string output = trim(value);
+            return MDAuxEncoderCalibrationModeValue_S::toReadable(std::stoll(output))
+                .value_or("NOT FOUND");
+        };
+        const std::function<std::optional<std::string>(const std::string_view)>
+            auxEncoderCalibrationModeFromReadable =
+                [](const std::string_view value) -> std::optional<std::string>
+        {
+            std::string output = trim(value);
+            return std::to_string(
+                MDAuxEncoderCalibrationModeValue_S::toNumeric(value.data()).value_or(0));
+        };
 
-        static const std::function<std::string(std::string_view)> encoderCalibrationModeToReadable;
-        static const std::function<std::optional<std::string>(const std::string_view)>
-            encoderCalibrationModeFromReadable;
+        const std::function<std::string(std::string_view)> encoderModeToReadable =
+            [](const std::string_view value) -> std::string
+        {
+            std::string output = trim(value);
+            return MDAuxEncoderModeValue_S::toReadable(std::stoll(output)).value_or("NOT FOUND");
+        };
+        const std::function<std::optional<std::string>(const std::string_view)>
+            encoderModeFromReadable = [](const std::string_view value) -> std::optional<std::string>
+        {
+            std::string output = trim(value);
+            return std::to_string(MDAuxEncoderModeValue_S::toNumeric(value.data()).value_or(0));
+        };
 
-        static const std::function<std::string(std::string_view)> GPIOModeToReadable;
-        static const std::function<std::optional<std::string>(const std::string_view)>
-            GPIOModeFromReadable;
+        const std::function<std::string(std::string_view)> encoderCalibrationModeToReadable =
+            [](const std::string_view value) -> std::string
+        {
+            std::string output = trim(value);
+            return MDAuxEncoderCalibrationModeValue_S::toReadable(std::stoll(output))
+                .value_or("NOT FOUND");
+        };
+        const std::function<std::optional<std::string>(const std::string_view)>
+            encoderCalibrationModeFromReadable =
+                [](const std::string_view value) -> std::optional<std::string>
+        {
+            std::string output = trim(value);
+            return std::to_string(
+                MDAuxEncoderCalibrationModeValue_S::toNumeric(value.data()).value_or(0));
+        };
+
+        const std::function<std::string(std::string_view)> GPIOModeToReadable =
+            [](const std::string_view value) -> std::string
+        {
+            std::string output = trim(value);
+            return MDUserGpioConfigurationValue_S::toReadable(std::stoll(value.data()))
+                .value_or("NOT FOUND");
+        };
+        const std::function<std::optional<std::string>(const std::string_view)>
+            GPIOModeFromReadable = [](const std::string_view value) -> std::optional<std::string>
+        {
+            std::string output = trim(value);
+            return std::to_string(MDUserGpioConfigurationValue_S::toNumeric(output).value_or(0));
+        };
 
       private:
         MDRegisters_S registers;  // only for verification purposes
-    };
-
-    inline const MDCfgElement::ParserFunctions_S::verify_t MDConfigMap::verifyPlaceholder =
-        [](std::string_view value) -> std::optional<std::string> { return {}; };
-
-    // Special case for encoder type
-    inline const std::function<std::optional<std::string>(const std::string_view)>
-        MDConfigMap::encoderFromReadable =
-            [](const std::string_view value) -> std::optional<std::string>
-    {
-        std::string output = trim(value);
-        return std::to_string(MDAuxEncoderValue_S::toNumeric(output).value_or(0));
-    };
-
-    inline const std::function<std::string(std::string_view)> MDConfigMap::encoderToReadable =
-        [](const std::string_view value) -> std::string
-    {
-        std::string output = trim(value);
-        return MDAuxEncoderValue_S::toReadable(std::stoll(value.data())).value_or("NOT FOUND");
-    };
-
-    // Special case for main encoder calibration mode
-
-    inline const std::function<std::string(std::string_view)>
-        MDConfigMap::mainEncoderCalibrationModeToReadable =
-            [](const std::string_view value) -> std::string
-    {
-        std::string output = trim(value);
-        return MDMainEncoderCalibrationModeValue_S::toReadable(std::stoll(output))
-            .value_or("NOT FOUND");
-    };
-
-    inline const std::function<std::optional<std::string>(const std::string_view)>
-        MDConfigMap::mainEncoderCalibrationModeFromReadable =
-            [](const std::string_view value) -> std::optional<std::string>
-    {
-        std::string output = trim(value);
-        return std::to_string(
-            MDMainEncoderCalibrationModeValue_S::toNumeric(value.data()).value_or(0));
-    };
-
-    // Special case for aux encoder calibration mode
-
-    inline const std::function<std::string(std::string_view)>
-        MDConfigMap::auxEncoderCalibrationModeToReadable =
-            [](const std::string_view value) -> std::string
-    {
-        std::string output = trim(value);
-        return MDAuxEncoderCalibrationModeValue_S::toReadable(std::stoll(output))
-            .value_or("NOT FOUND");
-    };
-
-    inline const std::function<std::optional<std::string>(const std::string_view)>
-        MDConfigMap::auxEncoderCalibrationModeFromReadable =
-            [](const std::string_view value) -> std::optional<std::string>
-    {
-        std::string output = trim(value);
-        return std::to_string(
-            MDAuxEncoderCalibrationModeValue_S::toNumeric(value.data()).value_or(0));
-    };
-
-    // Special case for aux encoder mode
-    inline const std::function<std::string(std::string_view)> MDConfigMap::encoderModeToReadable =
-        [](const std::string_view value) -> std::string
-    {
-        std::string output = trim(value);
-        return MDAuxEncoderModeValue_S::toReadable(std::stoll(output)).value_or("NOT FOUND");
-    };
-
-    inline const std::function<std::optional<std::string>(const std::string_view)>
-        MDConfigMap::encoderModeFromReadable =
-            [](const std::string_view value) -> std::optional<std::string>
-    {
-        std::string output = trim(value);
-        return std::to_string(MDAuxEncoderModeValue_S::toNumeric(value.data()).value_or(0));
-    };
-
-    // Special case for encoder calibration mode
-    inline const std::function<std::string(std::string_view)>
-        MDConfigMap::encoderCalibrationModeToReadable =
-            [](const std::string_view value) -> std::string
-    {
-        std::string output = trim(value);
-        return MDAuxEncoderCalibrationModeValue_S::toReadable(std::stoll(output))
-            .value_or("NOT FOUND");
-    };
-
-    inline const std::function<std::optional<std::string>(const std::string_view)>
-        MDConfigMap::encoderCalibrationModeFromReadable =
-            [](const std::string_view value) -> std::optional<std::string>
-    {
-        std::string output = trim(value);
-        return std::to_string(
-            MDAuxEncoderCalibrationModeValue_S::toNumeric(value.data()).value_or(0));
-    };
-
-    // Special case for GPIO mode
-    inline const std::function<std::string(std::string_view)> MDConfigMap::GPIOModeToReadable =
-        [](const std::string_view value) -> std::string
-    {
-        std::string output = trim(value);
-        return MDUserGpioConfigurationValue_S::toReadable(std::stoll(value.data()))
-            .value_or("NOT FOUND");
-    };
-    inline const std::function<std::optional<std::string>(const std::string_view)>
-        MDConfigMap::GPIOModeFromReadable =
-            [](const std::string_view value) -> std::optional<std::string>
-    {
-        std::string output = trim(value);
-        return std::to_string(MDUserGpioConfigurationValue_S::toNumeric(output).value_or(0));
     };
 
 }  // namespace mab
