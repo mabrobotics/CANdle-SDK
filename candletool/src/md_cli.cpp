@@ -591,6 +591,37 @@ namespace mab
                 m_logger.success("MD drive reset successfully!");
             });
 
+        // Verify
+        auto* verifyCfg =
+            config->add_subcommand("vefify", "Verifies config file using installed schema.");
+        ConfigOptions verifyConfigOptions(verifyCfg);
+
+        verifyCfg->callback(
+            [this, verifyConfigOptions, ctx]()
+            {
+                const std::filesystem::path schemaPathSuf = "config/md_config_schema.cfg";
+                const std::filesystem::path schemaPath    = *ctx.packageEtcPath / schemaPathSuf;
+                m_logger.debug("Looking at schema: %s", schemaPath.c_str());
+                if (!std::filesystem::exists(schemaPath))
+                {
+                    m_logger.error("Schema does not exist here: %s", schemaPath.c_str());
+                    return;
+                }
+                if (!std::filesystem::exists(*verifyConfigOptions.configFile))
+                {
+                    m_logger.error("Config file does not exist here: %s",
+                                   (*verifyConfigOptions.configFile).c_str());
+                    return;
+                }
+                mINI::INIFile      schemaFile(schemaPath);
+                mINI::INIStructure schemaStruct;
+                if (!schemaFile.read(schemaStruct))
+                {
+                    m_logger.error("Error while loading schema file: %s", schemaPath.c_str());
+                    return;
+                }
+            });
+
         // Discover ============================================================================
         auto* discover = mdCLi
                              ->add_subcommand("discover",
@@ -1343,7 +1374,8 @@ namespace mab
         }
         if (!registerCompatible)
         {
-            m_logger.error("Register 0x%04X not compatible with value %s", regAdress, value.c_str());
+            m_logger.error(
+                "Register 0x%04X not compatible with value %s", regAdress, value.c_str());
             return false;
         }
         return true;
