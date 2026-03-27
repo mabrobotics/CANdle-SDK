@@ -449,12 +449,11 @@ namespace mab
             });
 
         // Config  ===========================================================
-        auto* config = mdCLi->add_subcommand("config", "Configure MD drive.")
-                           ->needs(mdCanIdOption)
-                           ->require_subcommand();
+        auto* config = mdCLi->add_subcommand("config", "Configure MD drive.")->require_subcommand();
         // Download configuration file
         auto* downloadConfig =
-            config->add_subcommand("download", "Download configuration from MD drive.");
+            config->add_subcommand("download", "Download configuration from MD drive.")
+                ->needs(mdCanIdOption);
 
         ConfigOptions downloadConfigOptions(downloadConfig);
 
@@ -589,6 +588,64 @@ namespace mab
                     return;
                 }
                 m_logger.success("MD drive reset successfully!");
+            });
+
+        // Verify
+        auto* verifyCfg =
+            config->add_subcommand("verify", "Verifies config file using installed schema.");
+        ConfigOptions verifyConfigOptions(verifyCfg);
+
+        verifyCfg->callback(
+            [this, verifyConfigOptions, ctx]()
+            {
+                const std::filesystem::path schemaPathSuf = "config/md_config_schema.ini";
+                const std::filesystem::path schemaPath    = *ctx.packageEtcPath / schemaPathSuf;
+                m_logger.debug("Looking at schema: %s", schemaPath.c_str());
+                if (!std::filesystem::exists(schemaPath))
+                {
+                    m_logger.error("Schema does not exist here: %s", schemaPath.c_str());
+                    return;
+                }
+                if (!std::filesystem::exists(*verifyConfigOptions.configFile))
+                {
+                    m_logger.error("Config file does not exist here: %s",
+                                   (*verifyConfigOptions.configFile).c_str());
+                    return;
+                }
+                mINI::INIFile      schemaFile(schemaPath);
+                mINI::INIStructure schemaStruct;
+                if (!schemaFile.read(schemaStruct))
+                {
+                    m_logger.error("Error while loading schema file: %s", schemaPath.c_str());
+                    return;
+                }
+                MDConfigMap        mdCfgMap(std::move(schemaStruct));
+                mINI::INIFile      configFile(*verifyConfigOptions.configFile);
+                mINI::INIStructure cfgini;
+                if (!configFile.read(cfgini))
+                {
+                    m_logger.error("Error while loading schema file: %s", schemaPath.c_str());
+                    return;
+                }
+
+                for (auto& [address, toml] : mdCfgMap.m_map)
+                {
+                    auto it = cfgini[toml.m_tomlSection.data()][toml.m_tomlKey.data()];
+                    if (it.empty())
+                    {
+                        m_logger.warn("Key %s.%s not found in configuration file. Skipping.",
+                                      toml.m_tomlSection.data(),
+                                      toml.m_tomlKey.data());
+                        continue;
+                    }
+                    if (!toml.setFromReadable(it))
+                    {
+                        m_logger.error("Could not set value for %s.%s",
+                                       toml.m_tomlSection.data(),
+                                       toml.m_tomlKey.data());
+                        return;
+                    }
+                }
             });
 
         // Discover ============================================================================
@@ -1343,7 +1400,8 @@ namespace mab
         }
         if (!registerCompatible)
         {
-            m_logger.error("Register 0x%04X not compatible with value %s", regAdress, value.c_str());
+            m_logger.error(
+                "Register 0x%04X not compatible with value %s", regAdress, value.c_str());
             return false;
         }
         return true;
