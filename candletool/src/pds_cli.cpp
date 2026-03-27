@@ -373,17 +373,18 @@ void PdsCli::parse()
 
         else if (m_discovery->parsed())
         {
-            auto candle = m_candleBuilder->build();
-            if (!candle.has_value())
+            auto pdsIdAndRates = Pds::discoverPDS(*m_candleBuilder->busType);
+            if (pdsIdAndRates.empty())
             {
-                m_log.error("Could not connect candle!");
+                m_log.error("No PDS found");
             }
-            auto ids = Pds::discoverPDS(candle.value());
-            if (ids.empty())
-                m_log.error("No PDS found on this datarate!");
-            for (const auto& id : ids)
+            else
             {
-                m_log.success("Found PDS with ID %d", id);
+                m_log.success("Found PDS: ");
+                for (const auto& pdsData : pdsIdAndRates)
+                {
+                    m_log.info("ID: %d, datarate: %dM", pdsData.id, pdsData.datarate);
+                }
             }
         }
 
