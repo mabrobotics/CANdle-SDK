@@ -6,6 +6,7 @@
 #include "MD.hpp"
 #include "utilities.hpp"
 #include <algorithm>
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <candle_types.hpp>
@@ -103,7 +104,7 @@ namespace mab
 
         struct ConfigOptions
         {
-            ConfigOptions(CLI::App* rootCli) : configFile(std::make_shared<std::string>(""))
+            ConfigOptions(CLI::App* rootCli) : configFile(std::make_shared<std::filesystem::path>(""))
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
                     {"file",
@@ -116,7 +117,7 @@ namespace mab
                          ->required()}};
             }
 
-            const std::shared_ptr<std::string>  configFile;
+            const std::shared_ptr<std::filesystem::path>  configFile;
             std::map<std::string, CLI::Option*> optionsMap;
         };
 
@@ -168,7 +169,7 @@ namespace mab
         {
             UpdateOptions(CLI::App* rootCli)
                 : fwVersion(std::make_shared<std::string>("")),
-                  pathToMabFile(std::make_shared<std::string>("")),
+                  pathToMabFile(std::make_shared<std::filesystem::path>("")),
                   recovery(std::make_shared<bool>(false)),
                   metadataFile(std::make_shared<std::string>(""))
             {
@@ -191,7 +192,7 @@ namespace mab
                                          "File with file metadata for managing downloads.")}};
             }
             const std::shared_ptr<std::string>  fwVersion;
-            const std::shared_ptr<std::string>  pathToMabFile;
+            const std::shared_ptr<std::filesystem::path>  pathToMabFile;
             const std::shared_ptr<bool>         recovery;
             const std::shared_ptr<std::string>  metadataFile;
             std::map<std::string, CLI::Option*> optionsMap;

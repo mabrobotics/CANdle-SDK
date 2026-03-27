@@ -641,6 +641,8 @@ PYBIND11_MODULE(pyCandle, m)
           py::arg("regName"),
           py::arg("value"),
           "Write a register to the MD device.");
+    m.def("discoverMDs", &mab::MD::discoverMDs, "Discover MD devices connected to the system.");
+    
 
     // Logger
     py::enum_<Logger::Verbosity_E>(m, "Verbosity_E")
