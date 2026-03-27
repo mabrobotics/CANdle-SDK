@@ -8,6 +8,7 @@
 #include "utilities.hpp"
 
 #include <cctype>
+#include <charconv>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
@@ -161,15 +162,62 @@ namespace mab
 
         const MDCfgElement::ParserFunctions_S::verify_t verifyMinMaxType =
             [this](const MDCfgElement* mdCfgElem,
-                   std::string_view    value) -> std::optional<std::string>
+                   std::string_view    valueStr) -> std::optional<std::string>
         {
             if (!this->m_mdConfigSchema.has_value())
                 return {};
 
-            std::stringstream ss;
-            ss << "Verifying min/max: [" << mdCfgElem->m_tomlKey << "] ["
-               << mdCfgElem->m_tomlSection << "] = " << value;
-            return ss.str();
+            // double used as a comparison value
+            double val;
+            std::from_chars(valueStr.data(), valueStr.data() + valueStr.length(), val);
+
+            std::string minKey;
+            std::string maxKey;
+            minKey.append(mdCfgElem->m_tomlSection);
+            maxKey.append(mdCfgElem->m_tomlSection);
+            minKey.append(MDCfgElement::MIN_SUFFIX);
+            minKey.append(MDCfgElement::MAX_SUFFIX);
+
+            auto* schemaStruct = &this->m_mdConfigSchema.value();
+
+            if (!schemaStruct->has(std::string(mdCfgElem->m_tomlSection)))
+            {
+                std::string output;
+                output.append("No section for [");
+                output.append(mdCfgElem->m_tomlSection);
+                output.append("]");
+                return {output};
+            }
+
+            auto schemaSectionStruct = schemaStruct->get(std::string(mdCfgElem->m_tomlSection));
+
+            if (schemaSectionStruct.has(minKey))
+            {
+                double      minVal;
+                std::string minStr = schemaSectionStruct.get(minKey);
+                std::from_chars(minStr.c_str(), minStr.c_str() + minStr.length(), minVal);
+                if (val < minVal)
+                {
+                    std::stringstream ss;
+                    ss << "Value is below minimum: [" << mdCfgElem->m_tomlKey << "] ["
+                       << mdCfgElem->m_tomlSection << "] = " << valueStr << " < " << minVal;
+                    return ss.str();
+                }
+            }
+            if (schemaSectionStruct.has(maxKey))
+            {
+                double      maxVal;
+                std::string maxStr = schemaSectionStruct.get(maxKey);
+                std::from_chars(maxStr.c_str(), maxStr.c_str() + maxStr.length(), maxVal);
+                if (val > maxVal)
+                {
+                    std::stringstream ss;
+                    ss << "Value is above maximum: [" << mdCfgElem->m_tomlKey << "] ["
+                       << mdCfgElem->m_tomlSection << "] = " << valueStr << " > " << maxVal;
+                    return ss.str();
+                }
+            }
+            return {};
         };
 
         const MDCfgElement::ParserFunctions_S::verify_t verifyEnum =
