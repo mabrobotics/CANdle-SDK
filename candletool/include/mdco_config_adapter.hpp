@@ -93,7 +93,6 @@ namespace mab
 
                 {0x017, "Gear Ratio", {}},
                 {0x018, "Torque Bandwidth", {}},
-                {0x01D, "Torque constant", {}},
                 {0x01E, "Calibration Mode", {}},
                 {0x808, "Motor Shutdown Temperature", {}},
                 // {0x600, "Reverse Direction", {}}, removed for safety
