@@ -49,15 +49,15 @@ namespace mab
 
         static constexpr auto toRPM = [](std::string_view x) -> std::string
         {
-            i64 xInt;
-            std::from_chars(x.begin(), x.end(), xInt);
-            return std::to_string(static_cast<i64>(xInt * 60.f / (2 * M_PI)));
+            f32 xFloat;
+            std::from_chars(x.begin(), x.end(), xFloat);
+            return std::to_string(static_cast<i64>(xFloat * 60.f / (2 * M_PI)));
         };
         static constexpr auto fromRPM = [](std::string_view x) -> std::string
         {
-            f32 xFloat;
-            std::from_chars(x.begin(), x.end(), xFloat);
-            return std::to_string(xFloat * 2 * M_PI / 60.f);
+            i64 xInt;
+            std::from_chars(x.begin(), x.end(), xInt);
+            return std::to_string(xInt * 2 * M_PI / 60.f);
         };
 
         MDCOConfigAdapter()
