@@ -9,6 +9,7 @@
 
 #include <cctype>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <map>
 #include <string>
@@ -27,7 +28,8 @@ namespace mab
             using toReadable_t = const std::function<std::string(std::string_view)>;
             using fromReadable_t =
                 const std::function<std::optional<std::string>(std::string_view)>;
-            using verify_t = const std::function<std::optional<std::string>(std::string_view)>;
+            using verify_t = const std::function<std::optional<std::string>(
+                const MDCfgElement* mdCfgElem, std::string_view)>;
 
             toReadable_t   m_toReadable;
             fromReadable_t m_fromReadable;
@@ -35,7 +37,8 @@ namespace mab
             ParserFunctions_S()
                 : m_toReadable([](std::string_view value) { return std::string(value); }),
                   m_fromReadable([](std::string_view value) { return std::string(value); }),
-                  m_verify([](std::string_view value) -> std::optional<std::string> { return {}; })
+                  m_verify([](const MDCfgElement* mdCfgElem,
+                              std::string_view value) -> std::optional<std::string> { return {}; })
             {
             }
 
@@ -71,10 +74,10 @@ namespace mab
 
         std::string getReadable() const
         {
-            if (!m_value.empty() && m_parserFunctions.m_verify(m_value).has_value())
+            if (!m_value.empty() && m_parserFunctions.m_verify(this, m_value).has_value())
             {
                 Logger logger(Logger::ProgramLayer_E::TOP, "Config Parser");
-                logger.error("%s", m_parserFunctions.m_verify(m_value).value().c_str());
+                logger.error("%s", m_parserFunctions.m_verify(this, m_value).value().c_str());
             }
             return m_parserFunctions.m_toReadable(m_value);
         }
@@ -83,10 +86,10 @@ namespace mab
         {
             if (m_parserFunctions.m_fromReadable(value).has_value())
             {
-                if (!value.empty() && m_parserFunctions.m_verify(value).has_value())
+                if (!value.empty() && m_parserFunctions.m_verify(this, value).has_value())
                 {
                     Logger logger(Logger::ProgramLayer_E::TOP, "Config Parser");
-                    logger.error("%s", m_parserFunctions.m_verify(value).value().c_str());
+                    logger.error("%s", m_parserFunctions.m_verify(this, value).value().c_str());
                 }
                 m_value = m_parserFunctions.m_fromReadable(value).value();
                 return true;
@@ -156,13 +159,26 @@ namespace mab
             }
         }
 
-        // TODO remove placeholder
-        const MDCfgElement::ParserFunctions_S::verify_t verifyPlaceholder =
-            [this](std::string_view value) -> std::optional<std::string>
+        const MDCfgElement::ParserFunctions_S::verify_t verifyMinMaxType =
+            [this](const MDCfgElement* mdCfgElem,
+                   std::string_view    value) -> std::optional<std::string>
         {
             if (!this->m_mdConfigSchema.has_value())
                 return {};
-            return {"Verifying..."};
+
+            std::stringstream ss;
+            ss << "Verifying min/max: [" << mdCfgElem->m_tomlKey << "] ["
+               << mdCfgElem->m_tomlSection << "] = " << value;
+            return ss.str();
+        };
+
+        const MDCfgElement::ParserFunctions_S::verify_t verifyEnum =
+            [this](const MDCfgElement* mdCfgElem,
+                   std::string_view    value) -> std::optional<std::string>
+        {
+            if (!this->m_mdConfigSchema.has_value())
+                return {};
+            return {"Verifying enum..."};
         };
 
         // special cases for parsing
@@ -258,24 +274,45 @@ namespace mab
         // ADD NEW CONFIGURATION PARAMETERS HERE
         std::map<u16, MDCfgElement> m_map{
             // Motor parameters
-            {0x010, MDCfgElement("motor", "name")},
-            {0x011, MDCfgElement("motor", "pole pairs")},
-            {0x012, MDCfgElement("motor", "torque constant")},
-            {0x016, MDCfgElement("motor", "max current")},
-            {0x017, MDCfgElement("motor", "gear ratio")},
-            {0x018, MDCfgElement("motor", "torque bandwidth")},
-            {0x01D, MDCfgElement("motor", "KV")},
-            {0x013, MDCfgElement("motor", "torque constant a")},
-            {0x014, MDCfgElement("motor", "torque constant b")},
-            {0x015, MDCfgElement("motor", "torque constant c")},
-            {0x019, MDCfgElement("motor", "dynamic friction")},
-            {0x01A, MDCfgElement("motor", "static friction")},
+            {0x010,
+             MDCfgElement("motor", "name", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x011,
+             MDCfgElement(
+                 "motor", "pole pairs", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x012,
+             MDCfgElement(
+                 "motor", "torque constant", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x016,
+             MDCfgElement(
+                 "motor", "max current", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x017,
+             MDCfgElement(
+                 "motor", "gear ratio", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x018,
+             MDCfgElement(
+                 "motor", "torque bandwidth", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x01D, MDCfgElement("motor", "KV", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x013,
+             MDCfgElement(
+                 "motor", "torque constant a", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x014,
+             MDCfgElement(
+                 "motor", "torque constant b", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x015,
+             MDCfgElement(
+                 "motor", "torque constant c", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x019,
+             MDCfgElement(
+                 "motor", "dynamic friction", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x01A,
+             MDCfgElement(
+                 "motor", "static friction", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
             {0x01E,
              MDCfgElement("motor",
                           "calibration mode",
                           MDCfgElement::ParserFunctions_S(mainEncoderCalibrationModeToReadable,
                                                           mainEncoderCalibrationModeFromReadable,
-                                                          verifyPlaceholder))},
+                                                          verifyEnum))},
             {0x808, MDCfgElement("motor", "shutdown temp")},
             {0x600, MDCfgElement("motor", "reverse direction")},
 
@@ -284,52 +321,88 @@ namespace mab
              MDCfgElement("output encoder",
                           "output encoder",
                           MDCfgElement::ParserFunctions_S(
-                              encoderToReadable, encoderFromReadable, verifyPlaceholder))},
+                              encoderToReadable, encoderFromReadable, verifyEnum))},
             {0x025,
              MDCfgElement("output encoder",
                           "output encoder mode",
                           MDCfgElement::ParserFunctions_S(
-                              encoderModeToReadable, encoderModeFromReadable, verifyPlaceholder))},
+                              encoderModeToReadable, encoderModeFromReadable, verifyEnum))},
             {0x026,
              MDCfgElement("output encoder",
                           "output encoder calibration mode",
                           MDCfgElement::ParserFunctions_S(encoderCalibrationModeToReadable,
                                                           encoderCalibrationModeFromReadable,
-                                                          verifyPlaceholder))},
+                                                          verifyEnum))},
 
             // PID parameters
-            {0x030, MDCfgElement("position PID", "kp")},
-            {0x031, MDCfgElement("position PID", "ki")},
-            {0x032, MDCfgElement("position PID", "kd")},
-            {0x034, MDCfgElement("position PID", "windup")},
-            {0x040, MDCfgElement("velocity PID", "kp")},
-            {0x041, MDCfgElement("velocity PID", "ki")},
-            {0x042, MDCfgElement("velocity PID", "kd")},
-            {0x044, MDCfgElement("velocity PID", "windup")},
-            {0x050, MDCfgElement("impedance PD", "kp")},
-            {0x051, MDCfgElement("impedance PD", "kd")},
+            {0x030,
+             MDCfgElement("position PID", "kp", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x031,
+             MDCfgElement("position PID", "ki", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x032,
+             MDCfgElement("position PID", "kd", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x034,
+             MDCfgElement(
+                 "position PID", "windup", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x040,
+             MDCfgElement("velocity PID", "kp", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x041,
+             MDCfgElement("velocity PID", "ki", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x042,
+             MDCfgElement("velocity PID", "kd", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x044,
+             MDCfgElement(
+                 "velocity PID", "windup", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x050,
+             MDCfgElement("impedance PD", "kp", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x051,
+             MDCfgElement("impedance PD", "kd", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
 
             // Limits
-            {0x112, MDCfgElement("limits", "max torque")},
-            {0x110, MDCfgElement("limits", "max position")},
-            {0x111, MDCfgElement("limits", "min position")},
-            {0x113, MDCfgElement("limits", "max velocity")},
-            {0x114, MDCfgElement("limits", "max acceleration")},
-            {0x115, MDCfgElement("limits", "max deceleration")},
+            {0x112,
+             MDCfgElement(
+                 "limits", "max torque", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x110,
+             MDCfgElement(
+                 "limits", "max position", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x111,
+             MDCfgElement(
+                 "limits", "min position", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x113,
+             MDCfgElement(
+                 "limits", "max velocity", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x114,
+             MDCfgElement(
+                 "limits", "max acceleration", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x115,
+             MDCfgElement(
+                 "limits", "max deceleration", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
 
             // Motion profile
-            {0x120, MDCfgElement("profile", "velocity")},
-            {0x121, MDCfgElement("profile", "acceleration")},
-            {0x122, MDCfgElement("profile", "deceleration")},
-            {0x123, MDCfgElement("profile", "quick stop deceleration")},
+            {0x120,
+             MDCfgElement(
+                 "profile", "velocity", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x121,
+             MDCfgElement(
+                 "profile", "acceleration", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x122,
+             MDCfgElement(
+                 "profile", "deceleration", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x123,
+             MDCfgElement("profile",
+                          "quick stop deceleration",
+                          MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
 
             // Hardware configuration
-            {0x700, MDCfgElement("hardware", "shunt resistance")},
+            {0x700,
+             MDCfgElement("hardware",
+                          "shunt resistance",
+                          MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
             {0x160,
              MDCfgElement("GPIO",
                           "mode",
                           MDCfgElement::ParserFunctions_S(
-                              GPIOModeToReadable, GPIOModeFromReadable, verifyPlaceholder))}};
+                              GPIOModeToReadable, GPIOModeFromReadable, verifyEnum))}};
 
       private:
         MDRegisters_S registers;  // only for verification purposes
