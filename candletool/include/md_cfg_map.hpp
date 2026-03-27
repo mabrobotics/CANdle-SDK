@@ -9,6 +9,7 @@
 
 #include <cctype>
 #include <charconv>
+#include <iostream>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
@@ -173,10 +174,10 @@ namespace mab
 
             std::string minKey;
             std::string maxKey;
-            minKey.append(mdCfgElem->m_tomlSection);
-            maxKey.append(mdCfgElem->m_tomlSection);
+            minKey.append(mdCfgElem->m_tomlKey);
+            maxKey.append(mdCfgElem->m_tomlKey);
             minKey.append(MDCfgElement::MIN_SUFFIX);
-            minKey.append(MDCfgElement::MAX_SUFFIX);
+            maxKey.append(MDCfgElement::MAX_SUFFIX);
 
             auto* schemaStruct = &this->m_mdConfigSchema.value();
 
