@@ -1,5 +1,6 @@
 #include "md_cli.hpp"
 #include <cstdint>
+#include <cstdlib>
 #include <ios>
 #include <memory>
 #include <stdexcept>
@@ -604,20 +605,20 @@ namespace mab
                 if (!std::filesystem::exists(schemaPath))
                 {
                     m_logger.error("Schema does not exist here: %s", schemaPath.c_str());
-                    return;
+                    exit(1);
                 }
                 if (!std::filesystem::exists(*verifyConfigOptions.configFile))
                 {
                     m_logger.error("Config file does not exist here: %s",
                                    (*verifyConfigOptions.configFile).c_str());
-                    return;
+                    exit(1);
                 }
                 mINI::INIFile      schemaFile(schemaPath);
                 mINI::INIStructure schemaStruct;
                 if (!schemaFile.read(schemaStruct))
                 {
                     m_logger.error("Error while loading schema file: %s", schemaPath.c_str());
-                    return;
+                    exit(1);
                 }
                 MDConfigMap        mdCfgMap(std::move(schemaStruct));
                 mINI::INIFile      configFile(*verifyConfigOptions.configFile);
@@ -625,7 +626,7 @@ namespace mab
                 if (!configFile.read(cfgini))
                 {
                     m_logger.error("Error while loading schema file: %s", schemaPath.c_str());
-                    return;
+                    exit(1);
                 }
 
                 for (auto& [address, toml] : mdCfgMap.m_map)
@@ -638,12 +639,9 @@ namespace mab
                                       toml.m_tomlKey.data());
                         continue;
                     }
-                    if (!toml.setFromReadable(it))
+                    if (!toml.verify())
                     {
-                        m_logger.error("Could not set value for %s.%s",
-                                       toml.m_tomlSection.data(),
-                                       toml.m_tomlKey.data());
-                        return;
+                        exit(1);
                     }
                 }
             });

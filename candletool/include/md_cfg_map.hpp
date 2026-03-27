@@ -74,6 +74,17 @@ namespace mab
         {
         }
 
+        bool verify() const
+        {
+            if (m_parserFunctions.m_verify(this, m_value).has_value())
+            {
+                Logger logger(Logger::ProgramLayer_E::TOP, "Config Parser");
+                logger.error("%s", m_parserFunctions.m_verify(this, m_value).value().c_str());
+                return false;
+            }
+            return true;
+        }
+
         std::string getReadable() const
         {
             if (!m_value.empty() && m_parserFunctions.m_verify(this, m_value).has_value())
