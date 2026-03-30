@@ -22,6 +22,8 @@ namespace mab
         mab::Candle*         m_candle;
         const mab::canId_t   m_canId;
         Logger               m_log;
+
+        static constexpr u32 LEGACY_CONFIG_ADDRESS = 0x801b800;
     };
 
 }  // namespace mab
