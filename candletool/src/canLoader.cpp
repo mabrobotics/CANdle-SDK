@@ -27,7 +27,7 @@ namespace mab
     {
     }
 
-    bool CanLoader::flashAndBoot()
+    bool CanLoader::flashAndBoot(bool forceFactoryReset)
     {
         if (m_candle == nullptr)
         {
@@ -53,14 +53,12 @@ namespace mab
             return false;
         }
 
-        // If firmware was repeatatly changed between legacy and new (2.x.x vs 3.x.x) back and
-        // forth, some config memory can be corrupted, causeing crc fails. In that case, the
-        // bootloader may be confused which config to use (attempt to reuse legacy [corrupted] or
-        // create new). This fix forces the bootloder to create new empty config, if new firmware is
-        // uploaded and the config crc does not match, instead of attepting to use legacy config.
-        if (m_mabFile->m_fwEntry.targetDevice == MabFileParser::TargetDevice_E::MD &&
-            _isFwVersion3(m_mabFile->m_fwEntry.version))
-            bootloader.erase(LEGACY_CONFIG_ADDRESS, 4);
+        // force config cleanups for both legacy firmware and regular firmware
+        if (forceFactoryReset)
+        {
+            bootloader.erase(ADDRESS_CONFIG, 4);
+            bootloader.erase(ADDRESS_CONFIG_LEGACY, 4);
+        }
 
         // Clearing memory
         if (bootloader.erase(swAddress, appSize) != CanBootloader::Error_t::OK)
