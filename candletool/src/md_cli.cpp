@@ -631,16 +631,25 @@ namespace mab
 
                 for (auto& [address, toml] : mdCfgMap.m_map)
                 {
-                    auto it = cfgini[toml.m_tomlSection.data()][toml.m_tomlKey.data()];
-                    if (it.empty())
+                    std::string val = cfgini[toml.m_tomlSection.data()][toml.m_tomlKey.data()];
+                    if (val.empty())
                     {
                         m_logger.warn("Key %s.%s not found in configuration file. Skipping.",
                                       toml.m_tomlSection.data(),
                                       toml.m_tomlKey.data());
                         continue;
                     }
+                    if (!toml.setFromReadable(val))
+                    {
+                        m_logger.error(
+                            "Can not set %s.%s", toml.m_tomlSection.data(), toml.m_tomlKey.data());
+                        continue;
+                    }
                     if (!toml.verify())
                     {
+                        m_logger.error("Found invalid parameter %s.%s",
+                                       toml.m_tomlSection.data(),
+                                       toml.m_tomlKey.data());
                         exit(1);
                     }
                 }

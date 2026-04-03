@@ -211,8 +211,8 @@ namespace mab
                 if (val < minVal)
                 {
                     std::stringstream ss;
-                    ss << "Value is below minimum: [" << mdCfgElem->m_tomlKey << "] ["
-                       << mdCfgElem->m_tomlSection << "] = " << valueStr << " < " << minVal;
+                    ss << "Value is below minimum: [" << mdCfgElem->m_tomlSection << "] ["
+                       << mdCfgElem->m_tomlKey << "] = " << valueStr << " < " << minVal;
                     return ss.str();
                 }
             }
