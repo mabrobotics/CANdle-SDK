@@ -46,7 +46,7 @@ target_include_directories(
 
 target_compile_options(candletool PRIVATE -g -Wno-unused-parameter -Wno-missing-field-initializers)
 if(WIN32)
-  target_compile_options(candletool PRIVATE -Wa,mbig-obj)
+  target_compile_options(candletool PRIVATE -Wa,-mbig-obj)
 endif()
 if(SUPPRESS_WARN)
   target_compile_options(candletool PRIVATE -w)
