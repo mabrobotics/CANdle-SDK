@@ -23,10 +23,12 @@ namespace mab
 {
     struct MDCfgElement
     {
+        Logger m_log = Logger(Logger::ProgramLayer_E::TOP, "Config Parser");
+
       public:
-        static constexpr std::string_view MIN_SUFFIX      = "_min";
-        static constexpr std::string_view MAX_SUFFIX      = "_max";
-        static constexpr std::string_view REQUIRED_SUFFIX = "_required";
+        static constexpr std::string_view MIN_SUFFIX = "_min";
+        static constexpr std::string_view MAX_SUFFIX = "_max";
+
         struct ParserFunctions_S
         {
             using toReadable_t = const std::function<std::string(std::string_view)>;
@@ -80,8 +82,7 @@ namespace mab
         {
             if (m_parserFunctions.m_verify(this, m_value).has_value())
             {
-                Logger logger(Logger::ProgramLayer_E::TOP, "Config Parser");
-                logger.error("%s", m_parserFunctions.m_verify(this, m_value).value().c_str());
+                m_log.error("%s", m_parserFunctions.m_verify(this, m_value).value().c_str());
                 return false;
             }
             return true;

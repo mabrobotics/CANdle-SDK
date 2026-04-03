@@ -599,6 +599,8 @@ namespace mab
         verifyCfg->callback(
             [this, verifyConfigOptions, ctx]()
             {
+                static constexpr std::string_view REQUIRED_SUFFIX = "_required";
+
                 const std::filesystem::path schemaPathSuf = "config/md_config_schema.ini";
                 const std::filesystem::path schemaPath    = *ctx.packageEtcPath / schemaPathSuf;
                 m_logger.debug("Looking at schema: %s", schemaPath.c_str());
@@ -620,7 +622,7 @@ namespace mab
                     m_logger.error("Error while loading schema file: %s", schemaPath.c_str());
                     exit(1);
                 }
-                MDConfigMap        mdCfgMap(std::move(schemaStruct));
+                MDConfigMap        mdCfgMap(schemaStruct);
                 mINI::INIFile      configFile(*verifyConfigOptions.configFile);
                 mINI::INIStructure cfgini;
                 if (!configFile.read(cfgini))
@@ -637,6 +639,14 @@ namespace mab
                         m_logger.warn("Key %s.%s not found in configuration file. Skipping.",
                                       toml.m_tomlSection.data(),
                                       toml.m_tomlKey.data());
+                        std::string reqKey(toml.m_tomlKey);
+                        reqKey.append(REQUIRED_SUFFIX);
+                        if (schemaStruct[std::string(toml.m_tomlSection)][reqKey] == "true")
+                        {
+                            m_logger.error("This key is required for proper MD operation!");
+                            exit(1);
+                        }
+
                         continue;
                     }
                     if (!toml.setFromReadable(val))
