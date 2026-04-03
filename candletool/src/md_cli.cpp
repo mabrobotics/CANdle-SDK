@@ -607,6 +607,7 @@ namespace mab
                 if (!std::filesystem::exists(schemaPath))
                 {
                     m_logger.error("Schema does not exist here: %s", schemaPath.c_str());
+                    m_logger.info("Please install candletool package properly.");
                     exit(1);
                 }
                 if (!std::filesystem::exists(*verifyConfigOptions.configFile))
@@ -663,6 +664,7 @@ namespace mab
                         exit(1);
                     }
                 }
+                m_logger.success("The config file is valid!");
             });
 
         // Discover ============================================================================
