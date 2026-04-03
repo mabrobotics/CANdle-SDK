@@ -17,6 +17,7 @@
 #include <string>
 #include <memory>
 #include <string_view>
+#include <regex>
 
 namespace mab
 {
@@ -238,7 +239,38 @@ namespace mab
         {
             if (!this->m_mdConfigSchema.has_value())
                 return {};
-            return {"Verifying enum..."};
+
+            auto* schemaStruct = &this->m_mdConfigSchema.value();
+
+            if (!schemaStruct->has(std::string(mdCfgElem->m_tomlSection)))
+                return {};
+
+            std::vector<std::string> availableKeys;
+            std::string              enumKeySuffix(mdCfgElem->m_tomlKey);
+            enumKeySuffix.append("_\\d+");
+            const std::regex keyMatch(enumKeySuffix);
+            for (const auto& keyValPair : schemaStruct->get(std::string(mdCfgElem->m_tomlSection)))
+            {
+                // std::cout << "Matching [" << keyValPair.first << "] against regex ["
+                //           << enumKeySuffix << "] for enum verification" << std::endl;
+                if (std::regex_search(keyValPair.first, keyMatch))
+                {
+                    // std::cout << "Matched key: [" << keyValPair.first << "] with value ["
+                    //           << keyValPair.second << "]" << std::endl;
+                    availableKeys.push_back(keyValPair.first);
+                    continue;
+                }
+                // std::cout << "No match\n";
+            }
+            if (availableKeys.empty())
+            {
+                std::stringstream ss;
+                ss << "No enum values found for [" << mdCfgElem->m_tomlSection << "] ["
+                   << mdCfgElem->m_tomlKey << "]";
+                return ss.str();
+            }
+
+            return {};
         };
 
         // special cases for parsing
