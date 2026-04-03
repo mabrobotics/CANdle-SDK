@@ -24,8 +24,9 @@ namespace mab
     struct MDCfgElement
     {
       public:
-        static constexpr std::string_view MIN_SUFFIX = "_min";
-        static constexpr std::string_view MAX_SUFFIX = "_max";
+        static constexpr std::string_view MIN_SUFFIX      = "_min";
+        static constexpr std::string_view MAX_SUFFIX      = "_max";
+        static constexpr std::string_view REQUIRED_SUFFIX = "_required";
         struct ParserFunctions_S
         {
             using toReadable_t = const std::function<std::string(std::string_view)>;
