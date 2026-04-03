@@ -245,32 +245,34 @@ namespace mab
             if (!schemaStruct->has(std::string(mdCfgElem->m_tomlSection)))
                 return {};
 
-            std::vector<std::string> availableKeys;
-            std::string              enumKeySuffix(mdCfgElem->m_tomlKey);
-            enumKeySuffix.append("_\\d+");
+            std::string enumKeySuffix(mdCfgElem->m_tomlKey);
+            enumKeySuffix.append("_(\\d+)");  // capture the digits after the key
             const std::regex keyMatch(enumKeySuffix);
+
+            bool hasKeys = false;
             for (const auto& keyValPair : schemaStruct->get(std::string(mdCfgElem->m_tomlSection)))
             {
-                // std::cout << "Matching [" << keyValPair.first << "] against regex ["
-                //           << enumKeySuffix << "] for enum verification" << std::endl;
-                if (std::regex_search(keyValPair.first, keyMatch))
+                std::smatch digiMatch;
+                if (std::regex_search(keyValPair.first, digiMatch, keyMatch))
                 {
-                    // std::cout << "Matched key: [" << keyValPair.first << "] with value ["
-                    //           << keyValPair.second << "]" << std::endl;
-                    availableKeys.push_back(keyValPair.first);
-                    continue;
+                    hasKeys = true;
+                    if (value == keyValPair.second)
+                        return {};
+                    std::string idx = digiMatch[1].str();
+                    if (value == idx)
+                    {
+                        return {};
+                    }
                 }
-                // std::cout << "No match\n";
             }
-            if (availableKeys.empty())
+            if (!hasKeys)
             {
-                std::stringstream ss;
-                ss << "No enum values found for [" << mdCfgElem->m_tomlSection << "] ["
-                   << mdCfgElem->m_tomlKey << "]";
-                return ss.str();
+                return {};
             }
-
-            return {};
+            std::stringstream ss;
+            ss << "Invalid enum value for [" << mdCfgElem->m_tomlSection << "] ["
+               << mdCfgElem->m_tomlKey << "] = " << value << "\n";
+            return ss.str();
         };
 
         // special cases for parsing
