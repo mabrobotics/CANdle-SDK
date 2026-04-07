@@ -78,7 +78,7 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 md->blink();
@@ -100,7 +100,7 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 MDRegisters_S registers;
@@ -181,7 +181,7 @@ namespace mab
                     md                         = getMd(newCanId, newCandleBuilder);
                     if (md == nullptr)
                     {
-                        m_logger.error("Coudl not connect to MD!");
+                        m_logger.error("Could not connect to MD!");
                         return;
                     }
                     // Save the new can parameters to the MD
@@ -220,7 +220,7 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 MDRegisters_S registers;
@@ -243,7 +243,7 @@ namespace mab
                 // Determine if output encoder is present
                 if (md->readRegisters(registers.auxEncoder) != MD::Error_t::OK)
                 {
-                    m_logger.error("Could not read auxilary encoder presence from MD!");
+                    m_logger.error("Could not read auxiliary encoder presence from MD!");
                     return;
                 }
                 // Determine types of calibration that will be performed
@@ -257,7 +257,7 @@ namespace mab
                     if (registers.auxEncoder.value == 0)
                     {
                         m_logger.warn(
-                            "Auxilary encoder not present, skipping aux encoder "
+                            "Auxiliary encoder not present, skipping aux encoder "
                             "calibration!");
                     }
                     else
@@ -436,7 +436,7 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 MDRegisters_S registers;
@@ -480,7 +480,7 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
 
@@ -601,7 +601,7 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 MDRegisters_S registers;
@@ -659,7 +659,7 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 if (md->save() != MD::Error_t::OK)
@@ -893,7 +893,7 @@ namespace mab
                 std::string registerStr = *(regReadOptions.registerAddressOrName);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 if (std::string("0x").compare(registerStr.substr(0, 2)) == 0)
@@ -947,7 +947,7 @@ namespace mab
 
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 if (std::string("0x").compare(registerStr.substr(0, 2)) == 0)
@@ -1028,7 +1028,7 @@ namespace mab
                     auto md = getMd(mdCanId, candleBuilder);
                     if (md == nullptr)
                     {
-                        m_logger.error("Coudl not connect to MD!");
+                        m_logger.error("Could not connect to MD!");
                         return;
                     }
                     md->reset();
@@ -1052,7 +1052,7 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 if (md->isMDError(md->setTargetPosition(*absoluteTestOptions.target)))
@@ -1087,7 +1087,7 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 if (*relativeTestOptions.target > 10.0f)
@@ -1218,7 +1218,7 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
                 MDRegisters_S regs;
