@@ -47,10 +47,15 @@ namespace mab
         const u32                     swAddress      = m_mabFile->m_fwEntry.bootAddress;
 
         // Verify communication
-        if (bootloader.init(swAddress, appSize) != CanBootloader::Error_t::OK)
+        for (int retries = 0; retries < 10; retries++)
         {
-            m_log.error("Failed to initialize bootloader");
-            return false;
+            if (bootloader.init(swAddress, appSize) == CanBootloader::Error_t::OK)
+                break;
+            if (retries == 9)
+            {
+                m_log.error("Failed to initialize bootloader");
+                return false;
+            }
         }
 
         // force config cleanups for both legacy firmware and regular firmware
