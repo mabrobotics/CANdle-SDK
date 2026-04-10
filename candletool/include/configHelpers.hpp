@@ -1,51 +1,57 @@
+#pragma once
+
 #include <string>
 #include <filesystem>
+#include <optional>
 #include "mab_types.hpp"
-
 #include "mini/ini.h"
+
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 namespace mab
 {
 
-    inline std::string getDefaultConfigDir()
+    inline std::filesystem::path getDefaultConfigDir()
     {
 #ifdef WIN32
         char path[256];
         GetModuleFileName(NULL, path, 256);
         return std::filesystem::path(path).remove_filename().string() + std::string("config\\");
 #else
-        return std::string(DEFAULT_CANDLETOOL_CONFIG_DIR) + std::string("/");
+        return std::filesystem::path(DEFAULT_CANDLETOOL_CONFIG_DIR) + std::string("/");
 #endif
     }
 
-    inline std::string getMotorsConfigPath()
+    inline std::filesystem::path getMotorsConfigPath()
     {
 #ifdef WIN32
-        return getDefaultConfigDir() + "motors\\";
+        return getDefaultConfigDir() / "motors\\";
 #else
-        return getDefaultConfigDir() + "motors/";
+        return getDefaultConfigDir() / "motors/";
 #endif
     }
 
-    inline std::string getDefaultConfigPath()
+    inline std::filesystem::path getDefaultConfigPath()
     {
-        return getMotorsConfigPath() + "default.cfg";
+        return getMotorsConfigPath() / "default.cfg";
     }
 
-    inline std::string getCandletoolConfigPath()
+    inline std::filesystem::path getCandletoolConfigPath()
     {
-        return getDefaultConfigDir() + "candletool.ini";
+        return getDefaultConfigDir() / "candletool.ini";
     }
 
-    inline bool fileExists(const std::string& filepath)
+    inline bool fileExists(const std::filesystem::path& filepath)
     {
         std::ifstream fileStream(filepath);
         return fileStream.good();
     }
 
-    inline bool isConfigValid(const std::string& pathToConfig)
+    inline bool isConfigValid(const std::filesystem::path& pathToConfig)
     {
-        std::string fileExtension = std::filesystem::path(pathToConfig).extension().string();
+        std::string fileExtension = pathToConfig.extension().string();
         if (!(fileExtension == ".cfg"))
             return false;
         std::error_code   ec;

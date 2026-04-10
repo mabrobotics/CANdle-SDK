@@ -120,4 +120,4 @@ target_link_libraries(myCandleProject candle)
 
 ## Documentation
 
-For more information check out our documentation page [here](https://mabrobotics.github.io/MD80-x-CANdle-Documentation/software_package/Software.html).
+For more information check out our documentation page [here](https://mabrobotics.github.io/MD80-x-CANdle-Documentation/CANdle-SDK/intro.html#candlesdk).

@@ -1,7 +1,9 @@
 
+#include <memory>
 #include <vector>
 
 #include "candle_cli.hpp"
+#include "candle.hpp"
 #include "mabFileParser.hpp"
 #include "candle_bootloader.hpp"
 #include "mab_crc.hpp"
@@ -94,7 +96,10 @@ namespace mab
                         m_logger.error("Candle flashing failed!");
                         break;
                     }
+                    m_logger.progress((double)(i) / candleFirmware.m_fwEntry.size);
                 }
+                m_logger.progress(1.0);
+                m_logger.success("CANdle firmware was updated succesffuly!");
             });
         // Version
         auto* version = candleCli->add_subcommand("version", "Get CANdle device version.");

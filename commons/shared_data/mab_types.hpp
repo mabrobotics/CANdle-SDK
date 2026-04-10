@@ -81,6 +81,18 @@ namespace mab
         VELOCITY_PROFILE = 8, /*!< Velocity PID with trapezoidal profile (constant acceleration) */
     };
 
+    /// @brief Modes of operation for the MD device cf. 0x6060 in the CANopen object dictionary
+    enum ModesOfOperation : i8
+    {
+        Impedance          = -3,
+        Service            = -2,
+        Idle               = 0,
+        ProfilePosition    = 1,
+        ProfileVelocity    = 3,
+        CyclicSyncPosition = 8,
+        CyclicSyncVelocity = 9,
+    };
+
     enum BusDeviceType_E : uint8_t
     {
         DEVICE_TYPE_UNKNOWN = 0x00,
