@@ -72,6 +72,11 @@ macro(add_unit_test_executable test_name)
 
 endmacro(add_unit_test_executable)
 
+if(UNIX)
+  add_compile_definitions(
+    DEFAULT_CANDLETOOL_CONFIG_DIR="${CMAKE_INSTALL_FULL_SYSCONFDIR}/candletool/config")
+endif()
+
 add_subdirectory(commons)
 add_subdirectory(candlelib)
 if(CANDLESDK_BUILD_PYTHON)
