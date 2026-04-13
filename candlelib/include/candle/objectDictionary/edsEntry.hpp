@@ -13,7 +13,7 @@
 #include <variant>
 #include <vector>
 #include <map>
-#include "logger.hpp"
+#include "candle/logger/logger.hpp"
 #include "candle/types/mab_types.hpp"
 
 namespace mab

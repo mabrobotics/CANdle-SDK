@@ -6,7 +6,7 @@
 #include "candletool/candle_cli.hpp"
 #include "candle/communication_device/candle_types.hpp"
 #include "candletool/configHelpers.hpp"
-#include "logger.hpp"
+#include "candle/logger/logger.hpp"
 #include "candle/types/mab_types.hpp"
 #include "candletool/md_cli.hpp"
 #include "CLI/CLI.hpp"

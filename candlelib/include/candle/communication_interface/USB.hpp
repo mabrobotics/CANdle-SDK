@@ -8,7 +8,7 @@
 #include <utility>
 
 #include <candle/types/mab_types.hpp>
-#include <logger.hpp>
+#include "candle/logger/logger.hpp"
 #include "candle/communication_interface/I_communication_interface.hpp"
 
 #pragma GCC diagnostic push

@@ -12,7 +12,7 @@
 #include "candle/MD/MDStatus.hpp"
 #include "candletool/canLoader.hpp"
 #include "candle/communication_device/candle.hpp"
-#include "logger.hpp"
+#include "candle/logger/logger.hpp"
 #include "candle/types/mab_types.hpp"
 #include "candle/types/md_types.hpp"
 #include "candle/communication_device/candle_types.hpp"

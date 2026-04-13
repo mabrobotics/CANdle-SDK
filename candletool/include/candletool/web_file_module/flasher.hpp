@@ -3,7 +3,7 @@
 #include "web_file.hpp"
 #include "candle/types/mab_types.hpp"
 #include "candletool/utilities.hpp"
-#include "logger.hpp"
+#include "candle/logger/logger.hpp"
 
 namespace mab
 {

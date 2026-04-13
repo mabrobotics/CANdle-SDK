@@ -4,7 +4,7 @@
 #include <array>
 #include "candletool/iLoader.hpp"
 #include "candle/communication_device/candle.hpp"
-#include "logger.hpp"
+#include "candle/logger/logger.hpp"
 #include "candle/types/mab_types.hpp"
 #include "candle/can_bootloader/can_bootloader.hpp"
 

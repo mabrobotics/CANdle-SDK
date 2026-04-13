@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "logger.hpp"
+#include "candle/logger/logger.hpp"
 
 #include "candle/types/pds_types.hpp"
 #include "candle/communication_device/candle_types.hpp"

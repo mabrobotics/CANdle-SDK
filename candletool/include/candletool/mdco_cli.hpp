@@ -2,7 +2,7 @@
 
 #include "CLI/CLI.hpp"
 #include "candle/objectDictionary/edsEntry.hpp"
-#include "logger.hpp"
+#include "candle/logger/logger.hpp"
 #include "candle/MD/MDCO.hpp"
 #include "candle/communication_device/candle.hpp"
 #include "mini/ini.h"

@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 #include "candle/types/pds_types.hpp"
-#include "logger.hpp"
+#include "candle/logger/logger.hpp"
 #include "candle/types/mab_types.hpp"
 #include <string.h>
 #include <vector>

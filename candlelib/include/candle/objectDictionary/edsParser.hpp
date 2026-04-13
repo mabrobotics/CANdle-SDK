@@ -9,9 +9,9 @@
 #include <filesystem>
 #include <algorithm>
 #include <cctype>
-#include "configHelpers.hpp"
+#include "candletool/configHelpers.hpp"
 #include "candle/types/mab_types.hpp"
-#include "logger.hpp"
+#include "candle/logger/logger.hpp"
 #include "candle/objectDictionary/edsEntry.hpp"
 #include "mini/ini.h"
 

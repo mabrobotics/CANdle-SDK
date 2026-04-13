@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include "candle/objectDictionary/edsEntry.hpp"
 #include "candle/types/mab_types.hpp"
-#include "logger.hpp"
+#include "candle/logger/logger.hpp"
 #include "candle/types/manufacturer_data.hpp"
 #include "candle/communication_device/candle_types.hpp"
 #include "candle/communication_device/candle.hpp"

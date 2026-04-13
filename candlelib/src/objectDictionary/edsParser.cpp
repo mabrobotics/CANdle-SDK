@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
-#include "logger.hpp"
+#include "candle/logger/logger.hpp"
 #include "mini/ini.h"
 
 using namespace mab;

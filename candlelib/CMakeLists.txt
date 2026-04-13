@@ -50,6 +50,7 @@ target_sources(
           src/communication_device/candle_bootloader.cpp
           ${UNIX_ONLY_SOURCES}
           src/communication_interface/USB.cpp
+          src/logger/logger.cpp
           src/MD/MD.cpp
           src/MD/MDCO.cpp
           src/pds/pds.cpp
@@ -68,16 +69,15 @@ target_include_directories(
   candle
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../candletool/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../candletool/3rd_party/mINI/src>
     $<BUILD_INTERFACE:${LIBUSB_INCLUDE_DIR}>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 target_include_directories(candle SYSTEM PRIVATE ${LIBUSB_INCLUDE_DIR})
 if(UNIX)
-    target_link_libraries(candle PRIVATE logger pthread ${LIBUSB_LIBRARY})
+    target_link_libraries(candle PRIVATE pthread ${LIBUSB_LIBRARY})
 else()
-    target_link_libraries(candle PRIVATE logger pthread ${LIBUSB_WINDOWS_STATIC} -static)
+    target_link_libraries(candle PRIVATE pthread ${LIBUSB_WINDOWS_STATIC} -static)
 
 endif()
 if(NOT SUPPRESS_WARN)
@@ -103,35 +103,38 @@ if(MAKE_TESTS)
     enable_testing()
 
     add_unit_test_executable(pds_protocol_test test/pds/pds_protocol_test.cpp)
-    target_link_libraries(pds_protocol_test PRIVATE logger candle)
+    target_link_libraries(pds_protocol_test PRIVATE candle)
 
     add_unit_test_executable(candle_v2_test test/communication_device/candle_test.cpp)
-    target_link_libraries(candle_v2_test PRIVATE logger candle)
+    target_link_libraries(candle_v2_test PRIVATE candle)
 
     add_unit_test_executable(candle_bootloader_test
       test/communication_device/candle_bootloader_test.cpp)
-    target_link_libraries(candle_bootloader_test PRIVATE logger candle)
+    target_link_libraries(candle_bootloader_test PRIVATE candle)
 
     add_unit_test_executable(usb_v2_test test/communication_interface/USB_test.cpp)
-    target_link_libraries(usb_v2_test PRIVATE logger candle)
+    target_link_libraries(usb_v2_test PRIVATE candle)
 
     if(UNIX)
         add_unit_test_executable(spi_v2_test
           test/communication_interface/SPI_test.cpp)
-        target_link_libraries(spi_v2_test PRIVATE logger candle)
+        target_link_libraries(spi_v2_test PRIVATE candle)
     endif()
 
     add_unit_test_executable(md_v2_test test/MD/MD_test.cpp)
-    target_link_libraries(md_v2_test PRIVATE logger candle)
+    target_link_libraries(md_v2_test PRIVATE candle)
 
     add_unit_test_executable(candle_frame_adapter_test
       test/communication_device/candle_frame_adapter_test.cpp)
-    target_link_libraries(candle_frame_adapter_test PRIVATE logger candle)
+    target_link_libraries(candle_frame_adapter_test PRIVATE candle)
 
     add_unit_test_executable(eds_entry_test test/objectDictionary/edsEntry_test.cpp)
-    target_link_libraries(eds_entry_test PRIVATE logger candle)
+    target_link_libraries(eds_entry_test PRIVATE candle)
 
     add_unit_test_executable(candle_frame_dto_test test/types/candle_frame_dto_test.cpp)
     target_link_libraries(candle_frame_dto_test PRIVATE candle)
+
+    add_unit_test_executable(logger_test test/logger/logger_test.cpp)
+    target_link_libraries(logger_test PRIVATE candle)
 
 endif()

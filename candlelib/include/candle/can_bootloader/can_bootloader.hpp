@@ -5,7 +5,7 @@
 #include <string_view>
 #include <span>
 #include "candle/communication_device/candle.hpp"
-#include "logger.hpp"
+#include "candle/logger/logger.hpp"
 #include "candle/types/mab_def.hpp"
 #include "candle/types/mab_types.hpp"
 

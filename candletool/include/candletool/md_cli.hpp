@@ -2,7 +2,7 @@
 #include "CLI/CLI.hpp"
 #include "candle/communication_device/candle.hpp"
 #include "candle/types/mab_types.hpp"
-#include "logger.hpp"
+#include "candle/logger/logger.hpp"
 #include "candle/MD/MD.hpp"
 #include "candletool/utilities.hpp"
 #include <algorithm>

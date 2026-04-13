@@ -12,7 +12,7 @@
 #include "candle/communication_device/candle_types.hpp"
 #include "candle/communication_device/candle.hpp"
 #include "candle/MD/MD.hpp"
-#include "logger.hpp"
+#include "candle/logger/logger.hpp"
 #include "candle/pds/pds.hpp"
 #include "candle/pds/pds_module.hpp"
 #include "candle/types/pds_types.hpp"

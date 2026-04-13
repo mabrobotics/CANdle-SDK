@@ -8,7 +8,7 @@
 #include <limits>
 #include <cmath>
 #include "CLI/CLI.hpp"
-#include "logger.hpp"
+#include "candle/logger/logger.hpp"
 #include "candle/candlelib.hpp"
 
 namespace mab

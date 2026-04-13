@@ -12,7 +12,7 @@
 #include <mutex>
 
 #include "candle/communication_device/candle_types.hpp"
-#include "logger.hpp"
+#include "candle/logger/logger.hpp"
 #include "candle/communication_interface/I_communication_interface.hpp"
 #include "candle/communication_interface/USB.hpp"
 #include "candle/communication_interface/SPI.hpp"

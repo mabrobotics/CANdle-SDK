@@ -1,6 +1,6 @@
 #pragma once
 
-#include "logger.hpp"
+#include "candle/logger/logger.hpp"
 #include "candletool/md_cfg_map.hpp"
 #include "candle/objectDictionary/edsEntry.hpp"
 #include "candle/MD/MDCO.hpp"

@@ -36,7 +36,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_executable(candletool ${CANDLETOOL_SOURCES})
 
-target_link_libraries(candletool candle logger)
+target_link_libraries(candletool candle)
 
 target_include_directories(
   candletool
@@ -128,8 +128,7 @@ if(WIN32)
     candle
     -static-libstdc++
     -static-libgcc
-    -static
-    logger)
+    -static)
 
     add_compile_definitions(
     DEFAULT_CANDLETOOL_CONFIG_DIR="${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
