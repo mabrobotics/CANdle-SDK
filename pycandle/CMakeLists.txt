@@ -9,5 +9,5 @@ add_subdirectory(3rd_party/pybind11)
 message(${CMAKE_SOURCE_DIR})
 pybind11_add_module(pyCandle MODULE src/bindings.cpp)
 
-target_link_libraries(pyCandle PUBLIC candle)
+target_link_libraries(pyCandle PRIVATE candle)
 install(TARGETS pyCandle LIBRARY DESTINATION .)
