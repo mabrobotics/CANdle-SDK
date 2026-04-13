@@ -1,11 +1,12 @@
-#include "canLoader.hpp"
+#include "candletool/pds_cli.hpp"
+
+#include "candletool/canLoader.hpp"
 #include "candle/communication_device/candle.hpp"
-#include "mabFileParser.hpp"
+#include "candletool/mabFileParser.hpp"
 #include "candle/types/mab_types.hpp"
 #include "candle/pds/pds.hpp"
-#include "pds_cli.hpp"
 #include "candle/types/mab_def.hpp"
-#include "configHelpers.hpp"
+#include "candletool/configHelpers.hpp"
 #include "candle/types/pds_types.hpp"
 
 /*

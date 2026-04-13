@@ -1,4 +1,5 @@
-#include "md_cli.hpp"
+#include "candletool/md_cli.hpp"
+
 #include <cstdint>
 #include <ios>
 #include <memory>
@@ -7,22 +8,23 @@
 #include <string_view>
 #include <filesystem>
 #include <variant>
+
 #include "candle/MD/MDStatus.hpp"
-#include "canLoader.hpp"
+#include "candletool/canLoader.hpp"
 #include "candle/communication_device/candle.hpp"
 #include "logger.hpp"
 #include "candle/types/mab_types.hpp"
 #include "candle/types/md_types.hpp"
 #include "candle/communication_device/candle_types.hpp"
-#include "mabFileParser.hpp"
-#include "md_cfg_map.hpp"
-#include "utilities.hpp"
+#include "candletool/mabFileParser.hpp"
+#include "candletool/md_cfg_map.hpp"
+#include "candletool/utilities.hpp"
 #include "candle/MD/MDStatus.hpp"
 #include "mini/ini.h"
-#include "configHelpers.hpp"
-#include "curl_handler.hpp"
-#include "flasher.hpp"
-#include "web_file.hpp"
+#include "candletool/configHelpers.hpp"
+#include "candletool/web_file_module/curl_handler.hpp"
+#include "candletool/web_file_module/flasher.hpp"
+#include "candletool/web_file_module/web_file.hpp"
 
 /* ERROR COLORING NOTE: may not work on all terminals! */
 #define REDSTART    "\033[1;31m"

@@ -4,7 +4,7 @@
 #include "candle/types/mab_types.hpp"
 #include "logger.hpp"
 #include "candle/communication_device/candle_types.hpp"
-#include "utilities.hpp"
+#include "candletool/utilities.hpp"
 
 namespace mab
 {

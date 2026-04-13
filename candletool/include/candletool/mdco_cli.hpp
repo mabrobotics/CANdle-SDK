@@ -6,10 +6,10 @@
 #include "candle/MD/MDCO.hpp"
 #include "candle/communication_device/candle.hpp"
 #include "mini/ini.h"
-#include "configHelpers.hpp"
+#include "candletool/configHelpers.hpp"
 #include "candle/objectDictionary/edsParser.hpp"
 #include "candle/types/mab_types.hpp"
-#include "utilities.hpp"
+#include "candletool/utilities.hpp"
 
 #include <filesystem>
 #include <limits>

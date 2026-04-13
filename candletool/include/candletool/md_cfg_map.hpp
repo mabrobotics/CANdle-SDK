@@ -3,7 +3,7 @@
 #include "candle/types/mab_types.hpp"
 #include "candle/types/md_types.hpp"
 #include "candle/MD/MD_strings.hpp"
-#include "utilities.hpp"
+#include "candletool/utilities.hpp"
 
 #include <cctype>
 #include <stdexcept>

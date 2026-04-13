@@ -1,7 +1,8 @@
 #include "uploader.hpp"
 
 #include <cstring>
-#include "canLoader.hpp"
+
+#include "candletool/canLoader.hpp"
 #include "usbLoader.hpp"
 
 namespace mab
