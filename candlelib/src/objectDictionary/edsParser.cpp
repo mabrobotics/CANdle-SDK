@@ -14,6 +14,8 @@
 
 using namespace mab;
 
+static EDSEntry::EDSValueMetaData parseValueMetadata(mINI::INIMap<std::string>& entry);
+
 std::pair<std::shared_ptr<EDSObjectDictionary>, EDSParser::Error_t> EDSParser::load(
     const std::filesystem::path& edsFilePath)
 {
@@ -176,7 +178,7 @@ std::pair<std::shared_ptr<EDSObjectDictionary>, EDSParser::Error_t> EDSParser::l
         std::make_shared<EDSObjectDictionary>(EDSObjectDictionary(std::move(odMap))), OK);
 }
 
-EDSEntry::EDSValueMetaData EDSParser::parseValueMetadata(mINI::INIMap<std::string>& entry)
+static EDSEntry::EDSValueMetaData parseValueMetadata(mINI::INIMap<std::string>& entry)
 {
     EDSEntry::EDSValueMetaData edsValueMetadata;
     edsValueMetadata.defaultValueStr = entry["DefaultValue"];

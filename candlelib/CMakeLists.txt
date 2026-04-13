@@ -69,15 +69,13 @@ target_include_directories(
   candle
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../candletool/include>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../candletool/3rd_party/mINI/src>
     $<BUILD_INTERFACE:${LIBUSB_INCLUDE_DIR}>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 target_include_directories(candle SYSTEM PRIVATE ${LIBUSB_INCLUDE_DIR})
 if(UNIX)
-    target_link_libraries(candle PRIVATE pthread ${LIBUSB_LIBRARY})
+    target_link_libraries(candle PUBLIC pthread ${LIBUSB_LIBRARY} PRIVATE $<BUILD_INTERFACE:mINI>)
 else()
-    target_link_libraries(candle PRIVATE pthread ${LIBUSB_WINDOWS_STATIC} -static)
+    target_link_libraries(candle PUBLIC pthread ${LIBUSB_WINDOWS_STATIC} -static PRIVATE $<BUILD_INTERFACE:mINI>)
 
 endif()
 if(NOT SUPPRESS_WARN)

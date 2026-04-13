@@ -36,13 +36,11 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_executable(candletool ${CANDLETOOL_SOURCES})
 
-target_link_libraries(candletool candle)
+target_link_libraries(candletool candle mINI)
 
 target_include_directories(
   candletool
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/web_file_module
-         ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src)
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 target_compile_options(candletool PRIVATE -g -Wno-unused-parameter -Wno-missing-field-initializers)
 if(SUPPRESS_WARN)
