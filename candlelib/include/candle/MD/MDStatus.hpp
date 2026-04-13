@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include <mab_types.hpp>
+#include <candle/types/mab_types.hpp>
 
 namespace mab
 {

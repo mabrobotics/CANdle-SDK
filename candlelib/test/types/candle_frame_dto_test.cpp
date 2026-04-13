@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "candle_frame_dto.hpp"
+#include "candle/types/candle_frame_dto.hpp"
 #include <iostream>
 
 class CandleFrameDTOTest : public ::testing::Test

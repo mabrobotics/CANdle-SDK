@@ -9,7 +9,7 @@
 #include <thread>
 
 #include "candle/communication_device/candle_frame_adapter.hpp"
-#include "candle_frame_dto.hpp"
+#include "candle/types/candle_frame_dto.hpp"
 #include "candle/crc.hpp"
 
 using namespace mab;

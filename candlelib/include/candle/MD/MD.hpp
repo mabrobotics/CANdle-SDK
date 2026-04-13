@@ -1,9 +1,9 @@
 #pragma once
 
-#include "mab_types.hpp"
-#include "md_types.hpp"
+#include "candle/types/mab_types.hpp"
+#include "candle/types/md_types.hpp"
 #include "logger.hpp"
-#include "manufacturer_data.hpp"
+#include "candle/types/manufacturer_data.hpp"
 #include "candle/communication_device/candle_types.hpp"
 #include "candle/MD/MDStatus.hpp"
 #include "candle/MD/MD_strings.hpp"

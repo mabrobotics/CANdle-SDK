@@ -8,7 +8,7 @@
 #include "mini/ini.h"
 #include "configHelpers.hpp"
 #include "candle/objectDictionary/edsParser.hpp"
-#include "mab_types.hpp"
+#include "candle/types/mab_types.hpp"
 #include "utilities.hpp"
 
 #include <filesystem>

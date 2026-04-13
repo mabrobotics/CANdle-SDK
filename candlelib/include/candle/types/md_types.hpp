@@ -13,8 +13,8 @@
 #include <tuple>
 #include <vector>
 
-#include "mab_types.hpp"
-#include "manufacturer_data.hpp"
+#include "candle/types/mab_types.hpp"
+#include "candle/types/manufacturer_data.hpp"
 
 // DEFINE ALL OF THE MD REGISTERS HERE
 #define REGISTER_LIST                                \

@@ -6,8 +6,8 @@
 #include <span>
 #include "candle/communication_device/candle.hpp"
 #include "logger.hpp"
-#include "mab_def.hpp"
-#include "mab_types.hpp"
+#include "candle/types/mab_def.hpp"
+#include "candle/types/mab_types.hpp"
 
 namespace mab
 {

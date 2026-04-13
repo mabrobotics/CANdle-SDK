@@ -1,6 +1,6 @@
 #pragma once
 
-#include "mab_types.hpp"
+#include "candle/types/mab_types.hpp"
 #include <vector>
 
 #ifdef WIN32

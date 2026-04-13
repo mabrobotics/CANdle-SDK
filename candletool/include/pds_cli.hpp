@@ -2,8 +2,8 @@
 
 #include <CLI/App.hpp>
 #include "CLI/CLI.hpp"
-#include "mab_types.hpp"
-#include "pds_types.hpp"
+#include "candle/types/mab_types.hpp"
+#include "candle/types/pds_types.hpp"
 /*#include "candletool.hpp"*/
 #include "candle/pds/pds.hpp"
 #include "candle/communication_device/candle.hpp"

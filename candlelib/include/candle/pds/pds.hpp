@@ -5,13 +5,13 @@
 #include "candle/communication_device/candle.hpp"
 #include "logger.hpp"
 
-#include "mab_types.hpp"
+#include "candle/types/mab_types.hpp"
 #include "candle/pds/pds_module.hpp"
 #include "candle/pds/power_stage.hpp"
 #include "candle/pds/brake_resistor.hpp"
 #include "candle/pds/isolated_converter.hpp"
 
-#include "pds_types.hpp"
+#include "candle/types/pds_types.hpp"
 
 namespace mab
 {

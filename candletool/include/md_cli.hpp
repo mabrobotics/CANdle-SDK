@@ -1,7 +1,7 @@
 #pragma once
 #include "CLI/CLI.hpp"
 #include "candle/communication_device/candle.hpp"
-#include "mab_types.hpp"
+#include "candle/types/mab_types.hpp"
 #include "logger.hpp"
 #include "candle/MD/MD.hpp"
 #include "utilities.hpp"

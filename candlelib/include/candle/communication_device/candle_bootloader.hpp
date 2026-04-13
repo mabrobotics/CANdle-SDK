@@ -6,7 +6,7 @@
 #include "candle/communication_interface/I_communication_interface.hpp"
 #include "candle/communication_interface/USB.hpp"
 #include "logger.hpp"
-#include "mab_types.hpp"
+#include "candle/types/mab_types.hpp"
 #include "candle/communication_device/candle_types.hpp"
 #include "candle/communication_device/candle.hpp"
 namespace mab

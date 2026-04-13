@@ -5,7 +5,7 @@
 #include "iLoader.hpp"
 #include "candle/communication_device/candle.hpp"
 #include "logger.hpp"
-#include "mab_types.hpp"
+#include "candle/types/mab_types.hpp"
 #include "candle/can_bootloader/can_bootloader.hpp"
 
 namespace mab

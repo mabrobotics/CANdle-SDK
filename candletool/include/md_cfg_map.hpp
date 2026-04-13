@@ -1,7 +1,7 @@
 #pragma once
 
-#include "mab_types.hpp"
-#include "md_types.hpp"
+#include "candle/types/mab_types.hpp"
+#include "candle/types/md_types.hpp"
 #include "candle/MD/MD_strings.hpp"
 #include "utilities.hpp"
 

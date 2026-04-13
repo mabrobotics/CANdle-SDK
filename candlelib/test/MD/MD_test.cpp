@@ -7,8 +7,8 @@
 #include "candle/MD/MD.hpp"
 #include "candle/communication_device/candle.hpp"
 #include "gmock/gmock.h"
-#include "mab_types.hpp"
-#include "md_types.hpp"
+#include "candle/types/mab_types.hpp"
+#include "candle/types/md_types.hpp"
 
 using testing::_;
 using testing::Return;

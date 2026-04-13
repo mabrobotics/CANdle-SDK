@@ -2,9 +2,9 @@
 
 #include <unistd.h>
 #include "candle/objectDictionary/edsEntry.hpp"
-#include "mab_types.hpp"
+#include "candle/types/mab_types.hpp"
 #include "logger.hpp"
-#include "manufacturer_data.hpp"
+#include "candle/types/manufacturer_data.hpp"
 #include "candle/communication_device/candle_types.hpp"
 #include "candle/communication_device/candle.hpp"
 #include "candle/MD/MDStatus.hpp"

@@ -7,7 +7,7 @@
 */
 
 #include "candle/communication_device/candle.hpp"
-#include "mab_types.hpp"
+#include "candle/types/mab_types.hpp"
 #include "candle/pds/pds.hpp"
 
 using namespace mab;
