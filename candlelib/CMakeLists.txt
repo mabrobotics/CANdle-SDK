@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.5)
 
 project(candlelib)
 
+include(GNUInstallDirs)
+
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(CANDLESDK_BUILD_PYTHON)
@@ -10,7 +12,6 @@ endif()
 
 if(UNIX)
     set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
-    include(${CMAKE_MODULE_PATH}/Findlibusb.cmake)
     find_package(libusb REQUIRED)
 endif()
 if(WIN32)
@@ -69,14 +70,11 @@ target_include_directories(
   candle
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<BUILD_INTERFACE:${LIBUSB_INCLUDE_DIR}>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-target_include_directories(candle SYSTEM PRIVATE ${LIBUSB_INCLUDE_DIR})
 if(UNIX)
-    target_link_libraries(candle PUBLIC pthread ${LIBUSB_LIBRARY} PRIVATE $<BUILD_INTERFACE:mINI>)
+    target_link_libraries(candle PUBLIC pthread libusb::libusb PRIVATE $<BUILD_INTERFACE:mINI>)
 else()
     target_link_libraries(candle PUBLIC pthread ${LIBUSB_WINDOWS_STATIC} -static PRIVATE $<BUILD_INTERFACE:mINI>)
-
 endif()
 if(NOT SUPPRESS_WARN)
     target_compile_options(candle PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-missing-field-initializers)
@@ -96,6 +94,41 @@ target_compile_definitions(
   PRIVATE CANDLE_VMINOR=${CMAKE_MATCH_2}
   PRIVATE CANDLE_VREVISION=${CMAKE_MATCH_3}
   PRIVATE CANDLE_VTAG=${CANDLESDK_VERSION_TAG})
+
+# Install headers
+install(
+  DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+# Export targets for downstream usage
+install(
+  TARGETS candle
+  EXPORT candleTargets
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(
+  EXPORT candleTargets
+  FILE candleTargets.cmake
+  NAMESPACE candle::
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/candle/cmake)
+
+# Create and install package config files for downstream usage with find_package
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/candleConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/candleConfig.cmake
+  INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/candle/cmake)
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/candleConfigVersion.cmake
+  VERSION ${CANDLESDK_VERSION}
+  COMPATIBILITY SameMajorVersion)
+install(
+  FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/candleConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/candleConfigVersion.cmake
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/Findlibusb.cmake
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/candle/cmake)
 
 if(MAKE_TESTS)
     enable_testing()
