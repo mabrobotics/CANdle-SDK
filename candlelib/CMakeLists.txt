@@ -10,6 +10,8 @@ if(CANDLESDK_BUILD_PYTHON)
     set(CANDLE_BUILD_STATIC ON)
 endif()
 
+find_package(Threads REQUIRED)
+
 if(UNIX)
     set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
     find_package(libusb REQUIRED)
@@ -72,9 +74,9 @@ target_include_directories(
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 if(UNIX)
-    target_link_libraries(candle PUBLIC pthread libusb::libusb PRIVATE $<BUILD_INTERFACE:mINI>)
+    target_link_libraries(candle PUBLIC Threads::Threads libusb::libusb PRIVATE $<BUILD_INTERFACE:mINI>)
 else()
-    target_link_libraries(candle PUBLIC pthread ${LIBUSB_WINDOWS_STATIC} -static PRIVATE $<BUILD_INTERFACE:mINI>)
+    target_link_libraries(candle PUBLIC Threads::Threads ${LIBUSB_WINDOWS_STATIC} -static PRIVATE $<BUILD_INTERFACE:mINI>)
 endif()
 if(NOT SUPPRESS_WARN)
     target_compile_options(candle PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-missing-field-initializers)
