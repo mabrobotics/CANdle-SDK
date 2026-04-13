@@ -1,7 +1,9 @@
-#include "candle_frame_adapter.hpp"
+#include "candle/communication_device/candle_frame_adapter.hpp"
+
 #include "algorithm"
 #include "chrono"
-#include "crc.hpp"
+#include "candle/crc.hpp"
+
 namespace mab
 {
     std::pair<std::vector<u8>, CANdleFrameAdapter::Error_t> CANdleFrameAdapter::accumulateFrame(

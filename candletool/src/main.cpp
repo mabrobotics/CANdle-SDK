@@ -1,9 +1,9 @@
 #include <cstdlib>
 #include <memory>
 #include <string>
-#include "candle.hpp"
+#include "candle/communication_device/candle.hpp"
 #include "candle_cli.hpp"
-#include "candle_types.hpp"
+#include "candle/communication_device/candle_types.hpp"
 #include "configHelpers.hpp"
 #include "logger.hpp"
 #include "mab_types.hpp"

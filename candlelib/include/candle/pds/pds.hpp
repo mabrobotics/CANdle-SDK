@@ -2,14 +2,14 @@
 
 #include <stdint.h>
 
-#include "candle.hpp"
+#include "candle/communication_device/candle.hpp"
 #include "logger.hpp"
 
 #include "mab_types.hpp"
-#include "pds_module.hpp"
-#include "power_stage.hpp"
-#include "brake_resistor.hpp"
-#include "isolated_converter.hpp"
+#include "candle/pds/pds_module.hpp"
+#include "candle/pds/power_stage.hpp"
+#include "candle/pds/brake_resistor.hpp"
+#include "candle/pds/isolated_converter.hpp"
 
 #include "pds_types.hpp"
 

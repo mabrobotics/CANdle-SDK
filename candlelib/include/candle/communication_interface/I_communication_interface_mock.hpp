@@ -1,5 +1,5 @@
 #pragma once
-#include "I_communication_interface.hpp"
+#include "candle/communication_interface/I_communication_interface.hpp"
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>

@@ -12,9 +12,9 @@
 #include <thread>
 
 #include "mab_types.hpp"
-#include "I_communication_interface.hpp"
+#include "candle/communication_interface/I_communication_interface.hpp"
 #include "logger.hpp"
-#include "crc.hpp"
+#include "candle/crc.hpp"
 
 namespace mab
 {

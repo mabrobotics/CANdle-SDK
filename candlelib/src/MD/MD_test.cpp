@@ -2,10 +2,10 @@
 #include <gmock/gmock.h>
 #include <functional>
 
-#include "I_communication_interface.hpp"
-#include "I_communication_interface_mock.hpp"
-#include "MD.hpp"
-#include "candle.hpp"
+#include "candle/communication_interface/I_communication_interface.hpp"
+#include "candle/communication_interface/I_communication_interface_mock.hpp"
+#include "candle/MD/MD.hpp"
+#include "candle/communication_device/candle.hpp"
 #include "gmock/gmock.h"
 #include "mab_types.hpp"
 #include "md_types.hpp"

@@ -2,8 +2,8 @@
 
 #include "logger.hpp"
 #include "md_cfg_map.hpp"
-#include "edsEntry.hpp"
-#include "MDCO.hpp"
+#include "candle/objectDictionary/edsEntry.hpp"
+#include "candle/MD/MDCO.hpp"
 
 #include <array>
 #include <charconv>

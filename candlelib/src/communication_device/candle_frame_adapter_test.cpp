@@ -8,9 +8,9 @@
 #include <semaphore>
 #include <thread>
 
-#include "candle_frame_adapter.hpp"
+#include "candle/communication_device/candle_frame_adapter.hpp"
 #include "candle_frame_dto.hpp"
-#include "crc.hpp"
+#include "candle/crc.hpp"
 
 using namespace mab;
 class CandleFrameAdapterTest : public ::testing::Test

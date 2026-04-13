@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-#include "SPI.hpp"
+#include "candle/communication_interface/SPI.hpp"
 
 class SPITest : public ::testing::Test
 {

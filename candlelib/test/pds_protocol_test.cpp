@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
-#include "pds_protocol.hpp"
-#include "pds_module.hpp"
-#include "power_stage.hpp"
-#include "brake_resistor.hpp"
+#include "candle/pds/pds_protocol.hpp"
+#include "candle/pds/pds_module.hpp"
+#include "candle/pds/power_stage.hpp"
+#include "candle/pds/brake_resistor.hpp"
 #include <string>
 #include <cstring>
 

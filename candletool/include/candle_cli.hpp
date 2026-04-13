@@ -1,9 +1,9 @@
 #pragma once
 #include "CLI/CLI.hpp"
-#include "candle.hpp"
+#include "candle/communication_device/candle.hpp"
 #include "mab_types.hpp"
 #include "logger.hpp"
-#include "candle_types.hpp"
+#include "candle/communication_device/candle_types.hpp"
 #include "utilities.hpp"
 
 namespace mab

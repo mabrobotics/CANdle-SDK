@@ -4,9 +4,9 @@
 #include "logger.hpp"
 
 #include "pds_types.hpp"
-#include "candle_types.hpp"
-#include "pds_protocol.hpp"
-#include "candle.hpp"
+#include "candle/communication_device/candle_types.hpp"
+#include "candle/pds/pds_protocol.hpp"
+#include "candle/communication_device/candle.hpp"
 #include <cstring>
 #include <memory>
 

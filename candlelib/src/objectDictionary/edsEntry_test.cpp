@@ -5,7 +5,7 @@
 #include <string>
 #include <utility>
 #include <span>
-#include "edsEntry.hpp"
+#include "candle/objectDictionary/edsEntry.hpp"
 
 using namespace mab;
 using namespace canopen_types;

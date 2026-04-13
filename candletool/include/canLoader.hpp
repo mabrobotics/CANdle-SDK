@@ -3,10 +3,11 @@
 
 #include <array>
 #include "iLoader.hpp"
-#include "candle.hpp"
+#include "candle/communication_device/candle.hpp"
 #include "logger.hpp"
 #include "mab_types.hpp"
-#include "can_bootloader.hpp"
+#include "candle/can_bootloader/can_bootloader.hpp"
+
 namespace mab
 {
     class CanLoader

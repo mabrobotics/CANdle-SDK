@@ -12,7 +12,7 @@
 #include "configHelpers.hpp"
 #include "mab_types.hpp"
 #include "logger.hpp"
-#include "edsEntry.hpp"
+#include "candle/objectDictionary/edsEntry.hpp"
 #include "mini/ini.h"
 
 namespace mab

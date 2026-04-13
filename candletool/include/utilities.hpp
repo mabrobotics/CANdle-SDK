@@ -9,7 +9,7 @@
 #include <cmath>
 #include "CLI/CLI.hpp"
 #include "logger.hpp"
-#include "candlelib.hpp"
+#include "candle/candlelib.hpp"
 
 namespace mab
 {

@@ -1,13 +1,13 @@
 #pragma once
 
 #include <unistd.h>
-#include "edsEntry.hpp"
+#include "candle/objectDictionary/edsEntry.hpp"
 #include "mab_types.hpp"
 #include "logger.hpp"
 #include "manufacturer_data.hpp"
-#include "candle_types.hpp"
-#include "candle.hpp"
-#include "MDStatus.hpp"
+#include "candle/communication_device/candle_types.hpp"
+#include "candle/communication_device/candle.hpp"
+#include "candle/MD/MDStatus.hpp"
 
 #include <cstring>
 

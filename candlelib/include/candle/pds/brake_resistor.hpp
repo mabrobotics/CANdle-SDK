@@ -1,6 +1,6 @@
 #pragma once
 
-#include "pds_module.hpp"
+#include "candle/pds/pds_module.hpp"
 
 namespace mab
 {

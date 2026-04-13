@@ -4,7 +4,7 @@
 #include <cstring>
 #include <string_view>
 #include <span>
-#include "candle.hpp"
+#include "candle/communication_device/candle.hpp"
 #include "logger.hpp"
 #include "mab_def.hpp"
 #include "mab_types.hpp"

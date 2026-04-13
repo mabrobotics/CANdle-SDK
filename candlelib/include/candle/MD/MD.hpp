@@ -4,10 +4,10 @@
 #include "md_types.hpp"
 #include "logger.hpp"
 #include "manufacturer_data.hpp"
-#include "candle_types.hpp"
-#include "MDStatus.hpp"
-#include "MD_strings.hpp"
-#include "candle.hpp"
+#include "candle/communication_device/candle_types.hpp"
+#include "candle/MD/MDStatus.hpp"
+#include "candle/MD/MD_strings.hpp"
+#include "candle/communication_device/candle.hpp"
 
 #include <cstring>
 

@@ -14,11 +14,11 @@
 #include <thread>
 #include <vector>
 #include "CLI/CLI.hpp"
-#include "MDCO.hpp"
-#include "candle.hpp"
-#include "candle_types.hpp"
-#include "edsEntry.hpp"
-#include "edsParser.hpp"
+#include "candle/MD/MDCO.hpp"
+#include "candle/communication_device/candle.hpp"
+#include "candle/communication_device/candle_types.hpp"
+#include "candle/objectDictionary/edsEntry.hpp"
+#include "candle/objectDictionary/edsParser.hpp"
 #include "mab_types.hpp"
 #include "md_cfg_map.hpp"
 #include "mini/ini.h"

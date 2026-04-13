@@ -66,17 +66,13 @@ if(UNIX)
 endif()
 target_include_directories(
   candle
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/MD
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/pds
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/can_bootloader
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_device
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_interface
-         ${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger
-         ${CMAKE_CURRENT_SOURCE_DIR}/../candletool/include
-         ${CMAKE_CURRENT_SOURCE_DIR}/../candletool/3rd_party/mINI/src
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/objectDictionary
-         ${LIBUSB_INCLUDE_DIR})
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../candletool/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../candletool/3rd_party/mINI/src>
+    $<BUILD_INTERFACE:${LIBUSB_INCLUDE_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 target_include_directories(candle SYSTEM PRIVATE ${LIBUSB_INCLUDE_DIR})
 if(UNIX)
     target_link_libraries(candle shared_data logger pthread ${LIBUSB_LIBRARY})
@@ -161,7 +157,7 @@ if(MAKE_TESTS)
                                                           candle)
 
     add_unit_test_executable(eds_entry_test src/objectDictionary/edsEntry_test.cpp)
-    target_sources(eds_entry_test PRIVATE src/objectDictionary/edsEntry.hpp)
+    target_sources(eds_entry_test PRIVATE include/candle/objectDictionary/edsEntry.hpp)
     target_include_directories(eds_entry_test PRIVATE src/objectDictionary)
     target_link_libraries(eds_entry_test PRIVATE logger shared_data candle)
 
