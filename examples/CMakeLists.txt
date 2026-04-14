@@ -12,7 +12,6 @@ foreach(testsourcefile ${APP_SOURCES})
     )
 
     target_link_libraries(${executable} PRIVATE
-        pthread
         candle
         -static-libstdc++
         -static-libgcc
