@@ -1,3 +1,5 @@
+#include "candle/objectDictionary/edsEntry.hpp"
+
 #include <cstddef>
 #include <functional>
 #include <optional>
@@ -6,8 +8,6 @@
 #include <utility>
 #include <stdexcept>
 #include <variant>
-
-#include "edsEntry.hpp"
 
 namespace mab
 {

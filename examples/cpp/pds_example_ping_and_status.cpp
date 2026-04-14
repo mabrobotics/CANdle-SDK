@@ -9,8 +9,8 @@
         * DC Bus voltage
         * Submodules Info
 */
-#include "candle.hpp"
-#include "pds.hpp"
+#include "candle/communication_device/candle.hpp"
+#include "candle/pds/pds.hpp"
 
 using namespace mab;
 

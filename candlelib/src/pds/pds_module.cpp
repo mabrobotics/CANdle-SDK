@@ -1,5 +1,5 @@
-#include "pds_module.hpp"
-#include "pds_protocol.hpp"
+#include "candle/pds/pds_module.hpp"
+#include "candle/pds/pds_protocol.hpp"
 
 namespace mab
 {

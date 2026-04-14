@@ -1,4 +1,4 @@
-#include "MDCO.hpp"
+#include "candle/MD/MDCO.hpp"
 #include <unistd.h>
 #include <cmath>
 #include <cstddef>
@@ -6,10 +6,10 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include "MDStatus.hpp"
-#include "candle_types.hpp"
-#include "edsEntry.hpp"
-#include "mab_types.hpp"
+#include "candle/MD/MDStatus.hpp"
+#include "candle/communication_device/candle_types.hpp"
+#include "candle/objectDictionary/edsEntry.hpp"
+#include "candle/types/mab_types.hpp"
 
 namespace mab
 {

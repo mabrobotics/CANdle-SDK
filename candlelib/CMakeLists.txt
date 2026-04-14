@@ -2,15 +2,18 @@ cmake_minimum_required(VERSION 3.5)
 
 project(candlelib)
 
+include(GNUInstallDirs)
+
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(CANDLESDK_BUILD_PYTHON)
     set(CANDLE_BUILD_STATIC ON)
 endif()
 
+find_package(Threads REQUIRED)
+
 if(UNIX)
     set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
-    include(${CMAKE_MODULE_PATH}/Findlibusb.cmake)
     find_package(libusb REQUIRED)
 endif()
 if(WIN32)
@@ -50,6 +53,7 @@ target_sources(
           src/communication_device/candle_bootloader.cpp
           ${UNIX_ONLY_SOURCES}
           src/communication_interface/USB.cpp
+          src/logger/logger.cpp
           src/MD/MD.cpp
           src/MD/MDCO.cpp
           src/pds/pds.cpp
@@ -66,24 +70,14 @@ if(UNIX)
 endif()
 target_include_directories(
   candle
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/MD
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/pds
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/can_bootloader
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_device
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_interface
-         ${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger
-         ${CMAKE_CURRENT_SOURCE_DIR}/../candletool/include
-         ${CMAKE_CURRENT_SOURCE_DIR}/../candletool/3rd_party/mINI/src
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/objectDictionary
-         ${LIBUSB_INCLUDE_DIR})
-target_include_directories(candle SYSTEM PRIVATE ${LIBUSB_INCLUDE_DIR})
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 if(UNIX)
-    target_link_libraries(candle shared_data logger pthread ${LIBUSB_LIBRARY})
+    target_link_libraries(candle PUBLIC Threads::Threads libusb::libusb PRIVATE $<BUILD_INTERFACE:mINI>)
 else()
-    target_link_libraries(candle shared_data logger pthread
-                        ${LIBUSB_WINDOWS_STATIC} -static)
-
+    target_include_directories(candle PUBLIC $<BUILD_INTERFACE:${LIBUSB_INCLUDE_DIR}>)
+    target_link_libraries(candle PUBLIC Threads::Threads ${LIBUSB_WINDOWS_STATIC} -static PRIVATE $<BUILD_INTERFACE:mINI>)
 endif()
 if(NOT SUPPRESS_WARN)
     target_compile_options(candle PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-missing-field-initializers)
@@ -104,65 +98,77 @@ target_compile_definitions(
   PRIVATE CANDLE_VREVISION=${CMAKE_MATCH_3}
   PRIVATE CANDLE_VTAG=${CANDLESDK_VERSION_TAG})
 
+# Install headers
+install(
+  DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+# Export targets for downstream usage
+install(
+  TARGETS candle
+  EXPORT candleTargets
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(
+  EXPORT candleTargets
+  FILE candleTargets.cmake
+  NAMESPACE candle::
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/candle/cmake)
+
+# Create and install package config files for downstream usage with find_package
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/candleConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/candleConfig.cmake
+  INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/candle/cmake)
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/candleConfigVersion.cmake
+  VERSION ${CANDLESDK_VERSION}
+  COMPATIBILITY SameMajorVersion)
+install(
+  FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/candleConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/candleConfigVersion.cmake
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/Findlibusb.cmake
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/candle/cmake)
+
 if(MAKE_TESTS)
     enable_testing()
 
-    add_unit_test_executable(pds_protocol_test test/pds_protocol_test.cpp)
-    target_sources(pds_protocol_test PRIVATE src/pds/pds_protocol.cpp)
-    target_include_directories(pds_protocol_test PRIVATE include src/pds)
-    target_link_libraries(pds_protocol_test PRIVATE logger shared_data candle)
+    add_unit_test_executable(pds_protocol_test test/pds/pds_protocol_test.cpp)
+    target_link_libraries(pds_protocol_test PRIVATE candle)
 
-    add_unit_test_executable(candle_v2_test
-                           src/communication_device/candle_test.cpp)
-    target_sources(candle_v2_test PRIVATE src/communication_device/candle.cpp)
-    target_include_directories(
-    candle_v2_test PRIVATE include src/communication_device
-                           src/communication_interface)
-    target_link_libraries(candle_v2_test PRIVATE logger shared_data candle)
+    add_unit_test_executable(candle_v2_test test/communication_device/candle_test.cpp)
+    target_link_libraries(candle_v2_test PRIVATE candle)
 
     add_unit_test_executable(candle_bootloader_test
-                           src/communication_device/candle_bootloader_test.cpp)
-    target_sources(candle_bootloader_test
-                 PRIVATE src/communication_device/candle_bootloader_test.cpp)
-    target_include_directories(
-    candle_bootloader_test PRIVATE include src/communication_device
-                                   src/communication_interface)
-    target_link_libraries(candle_bootloader_test PRIVATE logger shared_data
-                                                       candle)
+      test/communication_device/candle_bootloader_test.cpp)
+    target_link_libraries(candle_bootloader_test PRIVATE candle)
 
-    add_unit_test_executable(usb_v2_test src/communication_interface/USB_test.cpp)
-    target_sources(usb_v2_test PRIVATE src/communication_interface/USB.cpp)
-    target_include_directories(usb_v2_test PRIVATE include
-                                                 src/communication_interface/)
-    target_link_libraries(usb_v2_test PRIVATE logger shared_data candle)
+    add_unit_test_executable(usb_v2_test test/communication_interface/USB_test.cpp)
+    target_link_libraries(usb_v2_test PRIVATE candle)
 
     if(UNIX)
         add_unit_test_executable(spi_v2_test
-                             src/communication_interface/SPI_test.cpp)
-        target_sources(spi_v2_test PRIVATE src/communication_interface/SPI.cpp)
-        target_include_directories(spi_v2_test PRIVATE include
-                                                   src/communication_interface/)
-        target_link_libraries(spi_v2_test PRIVATE logger shared_data candle)
+          test/communication_interface/SPI_test.cpp)
+        target_link_libraries(spi_v2_test PRIVATE candle)
     endif()
 
-    add_unit_test_executable(md_v2_test src/MD/MD_test.cpp)
-    target_sources(md_v2_test PRIVATE src/MD/MD.cpp)
-    target_include_directories(md_v2_test PRIVATE include src/MD/)
-    target_link_libraries(md_v2_test PRIVATE logger shared_data candle)
+    add_unit_test_executable(md_v2_test test/MD/MD_test.cpp)
+    target_link_libraries(md_v2_test PRIVATE candle)
 
-    add_unit_test_executable(
-    candle_frame_adapter_test
-    src/communication_device/candle_frame_adapter_test.cpp)
-    target_sources(candle_frame_adapter_test
-                 PRIVATE src/communication_device/candle_frame_adapter.cpp)
-    target_include_directories(candle_frame_adapter_test
-                             PRIVATE include src src/communication_device)
-    target_link_libraries(candle_frame_adapter_test PRIVATE logger shared_data
-                                                          candle)
+    add_unit_test_executable(candle_frame_adapter_test
+      test/communication_device/candle_frame_adapter_test.cpp)
+    target_link_libraries(candle_frame_adapter_test PRIVATE candle)
 
-    add_unit_test_executable(eds_entry_test src/objectDictionary/edsEntry_test.cpp)
-    target_sources(eds_entry_test PRIVATE src/objectDictionary/edsEntry.hpp)
-    target_include_directories(eds_entry_test PRIVATE src/objectDictionary)
-    target_link_libraries(eds_entry_test PRIVATE logger shared_data candle)
+    add_unit_test_executable(eds_entry_test test/objectDictionary/edsEntry_test.cpp)
+    target_link_libraries(eds_entry_test PRIVATE candle)
+
+    add_unit_test_executable(candle_frame_dto_test test/types/candle_frame_dto_test.cpp)
+    target_link_libraries(candle_frame_dto_test PRIVATE candle)
+
+    add_unit_test_executable(logger_test test/logger/logger_test.cpp)
+    target_link_libraries(logger_test PRIVATE candle)
 
 endif()
