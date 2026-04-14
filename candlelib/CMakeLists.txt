@@ -76,6 +76,7 @@ target_include_directories(
 if(UNIX)
     target_link_libraries(candle PUBLIC Threads::Threads libusb::libusb PRIVATE $<BUILD_INTERFACE:mINI>)
 else()
+    target_include_directories(candle PUBLIC $<BUILD_INTERFACE:${LIBUSB_INCLUDE_DIR}>)
     target_link_libraries(candle PUBLIC Threads::Threads ${LIBUSB_WINDOWS_STATIC} -static PRIVATE $<BUILD_INTERFACE:mINI>)
 endif()
 if(NOT SUPPRESS_WARN)
