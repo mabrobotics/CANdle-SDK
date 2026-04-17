@@ -1,7 +1,12 @@
 #include <tuple>
 #include "candle.hpp"
 #include "MD.hpp"
-
+void                 updateProgressBar(int, int, Logger&);
+void                 runConfigurations(int, int, mab::MD&, mab::MDRegisters_S&, Logger&);
+void                 runVelocity(mab::MD&, Logger, int);
+void                 runPosition(mab::MD&, Logger, int, mab::MDRegisters_S&);
+void                 runImpedance(mab::MD&, Logger, int);
+std::tuple<int, int> getUserChoice(Logger&);
 enum userChoice_IMPED
 {
     STANDARD,
@@ -24,126 +29,6 @@ enum motionMode
 };
 ///
 
-void runImpedance(mab::MD&, Logger, int);
-void runVelocity(mab::MD&, Logger, int);
-void runPosition(mab::MD&, Logger, int, mab::MDRegisters_S&);
-void runConfigurations(int, int, mab::MD&, mab::MDRegisters_S&);
-
-///
-void updateProgressBar(int current, int total, int width = 50)
-{
-    int pos = (current * width) / total;
-    std::cout << "\r[";
-    for (int i = 0; i < width; ++i)
-    {
-        if (i < pos)
-            std::cout << "=";
-        else
-            std::cout << " ";
-    }
-    std::cout << "] " << (current * 100) / total << "%";
-    std::cout.flush();
-}
-std::tuple<int, int> getUserChoice()
-{
-    int choice;
-    int motionMode;
-
-    int maxMotionMode = 3;
-
-    int min = 1;
-
-    while (true)
-    {
-        std::cout << "\033[1mChoose motion mode:\33[0m \n";
-        std::cout << "1. Velocity\n";
-        std::cout << "2. Position\n";
-        std::cout << "3. Impedance\n";
-        if (!(std::cin >> motionMode))
-        {
-            std::cout
-                << "[\033[31mERROR\033[0m] Invalid input. Please enter a whole number (1-3)\n";
-            std::cin.clear();
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            continue;
-        }
-
-        if (motionMode < min || motionMode > maxMotionMode)
-        {
-            std::cout << "[\033[31mERROR\033[0m] Please enter a number in range (1-3)\n";
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            continue;
-        }
-        std::cout << motionMode << "\n";
-        switch (motionMode - 1)
-        {
-            case VELOCITY:
-                std::cout
-                    << "\033[1mThe Velocity Mode allows to controll the velocity of the motor with "
-                       "a torque limit which can be used as a safety feature\33[0m \n";
-                std::cout << "\033[1mChoose test scenario by inserting a number (1-2):\33[0m \n";
-                std::cout << "1. Constant speed limited by torque \n";
-                std::cout << "2. Ramp speed mode (linear acceleration) \n";
-                std::cin >> choice;
-                if (choice >= 1 && choice <= 2)
-                {
-                    return std::make_tuple(choice - 1, motionMode - 1);
-                }
-                else
-                {
-                    std::cout << "[ERROR] Out of range. Please enter 1-2.\n";
-                    continue;
-                }
-            case POSITION:
-                std::cout
-                    << "\033[1mThe Position Mode allows to controll the position of the motor and "
-                       "hold it with a given torque. It also allows to controll the behaviour of "
-                       "the motor when moved out of the desired position\33[0m \n";
-                return std::make_tuple(choice - 1, motionMode - 1);
-                continue;
-
-            case IMPEDANCE:
-                std::cout << "\033[1mChoose test scenario by inserting a number (1-5):\33[0m \n";
-                std::cout << "1. Balanced mode: Kp and Kd tuned for fine performance\n";
-                std::cout << "2. Oscillation mode: High Kp, low Kd (spring with little damping)\n";
-                std::cout
-                    << "3. Soft mode: Low Kp, high Kd, might result in big positioning error\n";
-                std::cout << "4. Kd only mode, only the velocity error is beig regulated\n";
-                std::cout << "5. EXIT\n";
-                std::cout
-                    << "You can always stop the program by using \033[1mCTRL+C\33[0m combination "
-                       "in the terminal "
-                       "window\n";
-
-                // Check if input failed (non-numeric or overflow)
-                if (!(std::cin >> choice))
-                {
-                    std::cin.clear();
-                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-                    std::cout
-                        << "[\033[31mERROR\033[0m] Invalid input. Please enter a whole number "
-                           "between 1 and 4. To "
-                           "exit enter 5.\n\n";
-                    continue;
-                }
-
-                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
-                if (choice >= 1 && choice <= 5 && motionMode >= 1 && motionMode)
-                {
-                    return std::make_tuple(choice - 1, motionMode - 1);
-                }
-
-                else
-                {
-                    std::cout << "[\033[31mERROR\033[0m] Out of range. Please enter 1-5.\n";
-                }
-                break;
-            default:
-                std::cout << "[\033[31mERROR\033[0m] Motion mode selection failed /n";
-        }
-    }
-}
 int main()
 {
     // Attach Candle is an AIO method to get ready to use candle handle that corresponds to the real
@@ -152,31 +37,30 @@ int main()
     mab::Candle* candle = mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M,
                                             mab::candleTypes::busTypes_t::USB);
 
-    constexpr mab::canId_t id = 968;  // 968;  // hardcoded ID
+    constexpr mab::canId_t id = 968;  // hardcoded MD ID
     mab::MD md(id, candle);  // create MD object with your motors id and attach it to the candle
-
-    int choice, motionMode;
+    // These parameters sets global internal logging level
+    Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_1;
+    Logger log;
+    int    choice, motionMode;
 
     mab::MDRegisters_S registerBuffer;
 
     while (true)
     {
-        std::tie(choice, motionMode) = getUserChoice();
+        std::tie(choice, motionMode) = getUserChoice(log);
         if (choice == EXIT)
             break;
-        runConfigurations(motionMode, choice, md, registerBuffer);
+        runConfigurations(motionMode, choice, md, registerBuffer, log);
     }
 
     mab::detachCandle(candle);
     return EXIT_SUCCESS;
 }
 
-void runConfigurations(int motionMode, int choice, mab::MD& md, mab::MDRegisters_S& registerBuffer)
+void runConfigurations(
+    int motionMode, int choice, mab::MD& md, mab::MDRegisters_S& registerBuffer, Logger& log)
 {
-    // These parameters sets global internal logging level
-    Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_1;
-    Logger log(Logger::ProgramLayer_E::TOP, "User Program");
-
     // Selecting motion mode to IDLE Important note is that motion mode resets every time
     // MD is disabled or timed out
     md.setMotionMode(mab::MdMode_E::IDLE);
@@ -230,10 +114,11 @@ void runVelocity(mab::MD& md, Logger log, int choice)
     md.setMaxVelocity(maxVelocity);
 
     ///
-    bool upRamp = true;  // logic value to check if the current behavior is set to acceleration or
-                         // deceleration
-    constexpr int ITERATIONS = 10'000;
+    bool          isAcceleration = true;
+    constexpr int ITERATIONS     = 10'000;
+    ///
 
+    ///
     md.enable();
     for (int i = 0; i < ITERATIONS; i++)
     {
@@ -246,13 +131,13 @@ void runVelocity(mab::MD& md, Logger log, int choice)
                      md.getTorque().first);
             if (choice == userChoice_VEL::ACCELERATION)
             {
-                if (upRamp)
+                if (isAcceleration)  // The acceleration is a simple linear function
                 {
                     targetVelocity += speedChange;
                     if (targetVelocity >= maxSpeed)
                     {
                         targetVelocity = maxSpeed;
-                        upRamp         = false;
+                        isAcceleration = false;
                     }
                 }
                 else
@@ -261,7 +146,7 @@ void runVelocity(mab::MD& md, Logger log, int choice)
                     if (targetVelocity <= lowSpeed)
                     {
                         targetVelocity = lowSpeed;
-                        upRamp         = true;
+                        isAcceleration = true;
                     }
                 }
             }
@@ -323,7 +208,9 @@ void runImpedance(mab::MD& md, Logger log, int choice)
     md.setMaxVelocity(20.f);
     md.setMaxTorque(0.2);
 
-    // kp and kd values are stored in the vectors below for easy access
+    // kp and kd values are stored in the vectors below
+    // You are free to change the values or add your own (for each new kp there must be a new kd
+    // value)
     std::vector<float> kp_values = {0.055, 0.05, 0.02, 0};
     std::vector<float> kd_values = {0.0015, 0.0001, 0.002, 0.005};
 
@@ -337,10 +224,9 @@ void runImpedance(mab::MD& md, Logger log, int choice)
     // zero the md position
     md.zero();
 
-    ///
-    // simple state flags to determine movement status
+    /// s
     bool isMovementFinished = false;
-    bool messageFlag        = false;
+    bool messageFlag        = false;  // UX flag
 
     if (choice == KP_LOW)
     {
@@ -363,11 +249,10 @@ void runImpedance(mab::MD& md, Logger log, int choice)
     md.enable();
     for (int i = 0; i < ITERATIONS; i++)
     {
-        if (choice !=
-            HIGH_KD)  // The if statement handles an exception in which we only have kd value with
-                      // kp = 0, in such case setting target position is pointless and movement will
-                      // be determined only by the target torque (the motor will run at constant
-                      // speed with constant torque generated)
+        if (choice != HIGH_KD)  // HIGH_KD state uses kp = 0, movement in this mode movement is
+                                // determined only by the target torque
+        // the motor will run at a constant speed with software limited (maximum allowed) torque
+
         {
             md.setTargetPosition(targetPosition);
             if ((md.getPosition().first + histeresis) >= targetPosition)
@@ -390,7 +275,7 @@ void runImpedance(mab::MD& md, Logger log, int choice)
                     messageFlag = true;
                 }
                 else
-                    updateProgressBar(i, ITERATIONS);
+                    updateProgressBar(i, ITERATIONS, log);
             }
         }
 
@@ -404,5 +289,120 @@ void runImpedance(mab::MD& md, Logger log, int choice)
             }
         }
         usleep(2'000);
+    }
+}
+///
+
+/// Below are standard UX functions
+void updateProgressBar(int current, int total, Logger& log)
+{
+    int width = 50;
+    int pos   = (current * width) / total;
+    log.info("\r[");
+    for (int i = 0; i < width; ++i)
+    {
+        if (i < pos)
+            log.info("=");
+        else
+            log.info(" ");
+    }
+    log.info("] %i %", (current * 100) / total);
+    std::cout.flush();
+}
+std::tuple<int, int> getUserChoice(Logger& log)
+{
+    int choice;
+    int motionMode;
+
+    int maxMotionMode = 3;
+
+    int min = 1;
+
+    while (true)
+    {
+        log.info("\033[1mChoose motion mode:\33[0m \n");
+        log.info("1. Velocity\n");
+        log.info("2. Position\n");
+        log.info("3. Impedance\n");
+        if (!(std::cin >> motionMode))
+        {
+            log.info("[\033[31mERROR\033[0m] Invalid input. Please enter a whole number (1-3)\n");
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            continue;
+        }
+
+        if (motionMode < min || motionMode > maxMotionMode)
+        {
+            log.info("[\033[31mERROR\033[0m] Please enter a number in range (1-3)\n");
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            continue;
+        }
+        log.info("%i\n", motionMode);
+        switch (motionMode - 1)
+        {
+            case VELOCITY:
+                log.info(
+                    "\033[1mThe Velocity Mode allows to controll the velocity of the motor with "
+                    "a torque limit which can be used as a safety feature\33[0m \n");
+                log.info("\033[1mChoose test scenario by inserting a number (1-2):\33[0m \n");
+                log.info("1. Constant speed limited by torque \n");
+                log.info("2. Ramp speed mode (linear acceleration) \n");
+                std::cin >> choice;
+                if (choice >= 1 && choice <= 2)
+                {
+                    return std::make_tuple(choice - 1, motionMode - 1);
+                }
+                else
+                {
+                    log.info("[ERROR] Out of range. Please enter 1-2.\n");
+                    continue;
+                }
+            case POSITION:
+                log.info(
+                    "\033[1mThe Position Mode allows to controll the position of the motor and "
+                    "hold it with a given torque. It also allows to controll the behaviour of "
+                    "the motor when moved out of the desired position\33[0m \n");
+                return std::make_tuple(choice - 1, motionMode - 1);
+                continue;
+
+            case IMPEDANCE:
+                log.info("\033[1mChoose test scenario by inserting a number (1-5):\33[0m \n");
+                log.info("1. Balanced mode: Kp and Kd tuned for fine performance\n");
+                log.info("2. Oscillation mode: High Kp, low Kd (spring with little damping)\n");
+                log.info("3. Soft mode: Low Kp, high Kd, might result in big positioning error\n");
+                log.info("4. Kd only mode, only the velocity error is beig regulated\n");
+                log.info("5. EXIT\n");
+                log.info(
+                    "You can always stop the program by using \033[1mCTRL+C\33[0m combination "
+                    "in the terminal "
+                    "window\n");
+
+                if (!(std::cin >> choice))
+                {
+                    std::cin.clear();
+                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                    log.info(
+                        "[\033[31mERROR\033[0m] Invalid input. Please enter a whole number "
+                        "between 1 and 4. To "
+                        "exit enter 5.\n\n");
+                    continue;
+                }
+
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+                if (choice >= 1 && choice <= 5 && motionMode >= 1 && motionMode)
+                {
+                    return std::make_tuple(choice - 1, motionMode - 1);
+                }
+
+                else
+                {
+                    log.info("[\033[31mERROR\033[0m] Out of range. Please enter 1-5.\n");
+                }
+                break;
+            default:
+                log.info("[\033[31mERROR\033[0m] Motion mode selection failed /n");
+        }
     }
 }
