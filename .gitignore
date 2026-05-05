@@ -9,7 +9,7 @@ venv
 wheelhouse
 *.cache*
 *compile_commands.json
-
+.vscode*
 # Prerequisites
 *.d
 
@@ -44,3 +44,6 @@ wheelhouse
 !candlesdk-win-driver.exe 
 *.out
 *.app
+
+
+
