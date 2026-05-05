@@ -30,8 +30,6 @@ namespace mab
     /// @brief Software representation of MD device on the can network
     class MD
     {
-        static constexpr size_t DEFAULT_RESPONSE_SIZE = 23;
-
         Logger m_log;
 
         manufacturerData_S m_mfData;
@@ -519,6 +517,7 @@ namespace mab
             auto readRegResult = transferCanFrame(frame, frame.size());
 
             MdFrameId_E frameId = (MdFrameId_E)readRegResult.first.at(0);
+
             if (frameId == MdFrameId_E::RESPONSE_LEGACY || frameId == MdFrameId_E::WRITE_REGISTER)
                 return Error_t::OK;  // TODO: Possible do smth with received data?
             else if (frameId == MdFrameId_E::RESPONSE_ERROR)

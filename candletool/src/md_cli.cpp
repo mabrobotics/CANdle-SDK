@@ -606,7 +606,7 @@ namespace mab
         auto* discover = mdCLi
                              ->add_subcommand("discover",
                                               "Discover MD drives on the"
-                                              "network.")
+                                              " network.")
                              ->excludes(mdCanIdOption);
 
         discover->callback(

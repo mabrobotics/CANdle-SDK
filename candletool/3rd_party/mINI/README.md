@@ -1,13 +1,13 @@
-# mINI
+# mINI <img align="left" src="icon.png?raw=true" height="96">
 
-v0.9.14
+v0.9.18
 
 ## Info
 
 This is a tiny, header only C++ library for manipulating INI files.
 
 It conforms to the following format:
-- section and key names are case insensitive
+- section and key names are case insensitive by default
 - whitespace around sections, keys and values is ignored
 - empty section and key names are allowed
 - keys that do not belong to a section are ignored
@@ -16,7 +16,8 @@ It conforms to the following format:
 - every entry exists on a single line and multiline is not supported
 
 
-```
+```INI
+; comment
 [section]
 key = value
 ```
@@ -178,7 +179,7 @@ std::string& value = ini["section"]["key"];
 std::string value = ini.get("section").get("key");
 ```
 
-The difference between `[]` and `get()` operations is that `[]` returns a reference to **real** data (that you may modify) and creates a new item automatically if it does not yet exist, whereas `get()` returns a **copy** of the data and does not create new items in the structure. Use `has()` before doing any operations with `[]` if you wish to avoid altering the structure.
+The difference between `[]` and `get()` operations is that `[]` returns a reference to **real** data (that you may modify) and creates a new item automatically if one does not already exist, whereas `get()` returns a **copy** of the data and doesn't create new items in the structure. Use `has()` before doing any operations with `[]` if you wish to avoid altering the structure.
 
 You may combine usage of `[]` and `get()`.
 
@@ -306,7 +307,7 @@ for (auto const& it : ini)
 	for (auto const& it2 : collection)
 	{
 		auto const& key = it2.first;
-		ini[section][key] = "banana";
+		ini[section][key] = "banana"; // O(1) because hashmaps
 	}
 }
 ```
@@ -327,6 +328,6 @@ This will affect reading and writing from files and access to the structure.
 
 ## License
 
-Copyright (c) 2018 Danijel Durakovic
+Copyright &copy; 2018 Danijel Durakovic
 
-MIT License
+Licensed under the terms of the [MIT license](LICENSE)
