@@ -9,9 +9,6 @@ venv
 wheelhouse
 *.cache*
 *compile_commands.json
-.vscode*
-# Prerequisites
-*.d
 
 # Compiled Object files
 *.slo
@@ -41,7 +38,7 @@ wheelhouse
 # Executables
 *.exe
 # With exception for a driver
-!candlesdk-win-driver.exe 
+!candlesdk-win-driver.exe
 *.out
 *.app
 
