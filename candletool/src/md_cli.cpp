@@ -1187,7 +1187,7 @@ namespace mab
                             return;
                         }
                         md->reset();
-                        usleep(200'000);
+                        // usleep(50'000);
                     }
                     else
                     {
@@ -1202,8 +1202,11 @@ namespace mab
                         return;
                     }
                     CanLoader canLoader(candle, &mabFile, *mdCanId);
-                    if (canLoader.flashAndBoot())
+                    if (canLoader.flashAndBoot(*(updateOptions.forceClear)))
                     {
+                        usleep(500'000);
+                        auto md = getMd(mdCanId, candleBuilder);
+                        md->reset();
                         m_logger.success("Update complete for MD @ %d", *mdCanId);
                     }
                     else

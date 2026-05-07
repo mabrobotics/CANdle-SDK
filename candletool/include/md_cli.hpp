@@ -170,7 +170,8 @@ namespace mab
                 : fwVersion(std::make_shared<std::string>("")),
                   pathToMabFile(std::make_shared<std::string>("")),
                   recovery(std::make_shared<bool>(false)),
-                  metadataFile(std::make_shared<std::string>(""))
+                  metadataFile(std::make_shared<std::string>("")),
+                  forceClear(std::make_shared<bool>(false))
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
                     {"version",
@@ -186,12 +187,16 @@ namespace mab
                     {"meta_file",
                      rootCli->add_option("-m,--meta-file",
                                          *metadataFile,
-                                         "File with file metadata for managing downloads.")}};
+                                         "File with file metadata for managing downloads.")},
+                    {"force_clear",
+                     rootCli->add_flag(
+                         "-f,--force-clear", *forceClear, "Force clearing configuration")}};
             }
             const std::shared_ptr<std::string>  fwVersion;
             const std::shared_ptr<std::string>  pathToMabFile;
             const std::shared_ptr<bool>         recovery;
             const std::shared_ptr<std::string>  metadataFile;
+            const std::shared_ptr<bool>         forceClear;
             std::map<std::string, CLI::Option*> optionsMap;
         };  // namespace mab
     };

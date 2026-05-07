@@ -12,7 +12,10 @@
 
 namespace mab
 {
-
+    bool _isFwVersion3(const u8 version[16])
+    {
+        return version[0] >= '3';
+    }
     CanLoader::CanLoader(mab::Candle* candle, MabFileParser* mabFile, mab::canId_t canId)
         : m_mabFile(mabFile), m_candle(candle), m_canId(canId)
     {
@@ -24,7 +27,7 @@ namespace mab
     {
     }
 
-    bool CanLoader::flashAndBoot()
+    bool CanLoader::flashAndBoot(bool forceFactoryReset)
     {
         if (m_candle == nullptr)
         {
@@ -44,10 +47,22 @@ namespace mab
         const u32                     swAddress      = m_mabFile->m_fwEntry.bootAddress;
 
         // Verify communication
-        if (bootloader.init(swAddress, appSize) != CanBootloader::Error_t::OK)
+        for (int retries = 0; retries < 10; retries++)
         {
-            m_log.error("Failed to initialize bootloader");
-            return false;
+            if (bootloader.init(swAddress, appSize) == CanBootloader::Error_t::OK)
+                break;
+            if (retries == 9)
+            {
+                m_log.error("Failed to initialize bootloader");
+                return false;
+            }
+        }
+
+        // force config cleanups for both legacy firmware and regular firmware
+        if (forceFactoryReset)
+        {
+            bootloader.erase(ADDRESS_CONFIG, 4);
+            bootloader.erase(ADDRESS_CONFIG_LEGACY, 4);
         }
 
         // Clearing memory
