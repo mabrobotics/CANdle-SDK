@@ -10,9 +10,6 @@ wheelhouse
 *.cache*
 *compile_commands.json
 
-# Prerequisites
-*.d
-
 # Compiled Object files
 *.slo
 *.lo
@@ -41,6 +38,9 @@ wheelhouse
 # Executables
 *.exe
 # With exception for a driver
-!candlesdk-win-driver.exe 
+!candlesdk-win-driver.exe
 *.out
 *.app
+
+
+

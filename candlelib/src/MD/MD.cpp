@@ -262,7 +262,17 @@ namespace mab
         m_log.info("Impedance parameters set to value: kp - %.2f, kd - %.2f", kp, kd);
         return MD::Error_t::OK;
     }
-
+    MD::Error_t MD::setMaxVelocity(float maxVelocity)
+    {
+        m_mdRegisters.maxVelocity = maxVelocity;
+        if (writeRegisters(m_mdRegisters.maxVelocity) != MD::Error_t::OK)
+        {
+            m_log.error("Maximal velocity setting failed!");
+            return MD::Error_t::TRANSFER_FAILED;
+        }
+        m_log.info("Maximal torque set to value %.2f", maxVelocity);
+        return MD::Error_t::OK;
+    }
     MD::Error_t MD::setMaxTorque(float maxTorque /*Nm*/)
     {
         m_mdRegisters.maxTorque = maxTorque;

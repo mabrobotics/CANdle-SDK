@@ -140,7 +140,10 @@ namespace mab
         /// @param maxTorque max torque value in Nm
         /// @return
         Error_t setMaxTorque(float maxTorque /*Nm*/);
-
+        /// @brief Set max velocity to be output by the motor
+        /// @param maxTorque max velocity value in rad/s
+        /// @return
+        Error_t setMaxVelocity(float maxVelocity /*rad/s*/);
         /// @brief Set target velocity of the profile movement
         /// @param profileVelocity
         /// @return
