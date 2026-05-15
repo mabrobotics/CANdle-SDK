@@ -37,7 +37,7 @@ int main()
     mab::Candle* candle = mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M,
                                             mab::candleTypes::busTypes_t::USB);
 
-    constexpr mab::canId_t id = 968;  // hardcoded MD ID
+    constexpr mab::canId_t id = 100;  // hardcoded MD ID
     mab::MD md(id, candle);  // create MD object with your motors id and attach it to the candle
     // These parameters sets global internal logging level
     Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_1;
@@ -103,7 +103,7 @@ void runVelocity(mab::MD& md, Logger log, int choice)
     float maxTorque      = 0.03f;
     float maxSpeed       = 350.f;
     float lowSpeed       = 10.f;
-    float speedChange    = 8.f;
+    float speedChange    = 0.2f;
     float maxVelocity    = 400.f;
 
     md.zero();
@@ -129,25 +129,25 @@ void runVelocity(mab::MD& md, Logger log, int choice)
                      md.getPosition().first,
                      md.getVelocity().first,
                      md.getTorque().first);
-            if (choice == userChoice_VEL::ACCELERATION)
+        }
+        if (choice == userChoice_VEL::ACCELERATION)
+        {
+            if (isAcceleration)  // The acceleration is a simple linear function
             {
-                if (isAcceleration)  // The acceleration is a simple linear function
+                targetVelocity += speedChange;
+                if (targetVelocity >= maxSpeed)
                 {
-                    targetVelocity += speedChange;
-                    if (targetVelocity >= maxSpeed)
-                    {
-                        targetVelocity = maxSpeed;
-                        isAcceleration = false;
-                    }
+                    targetVelocity = maxSpeed;
+                    isAcceleration = false;
                 }
-                else
+            }
+            else
+            {
+                targetVelocity -= speedChange;
+                if (targetVelocity <= lowSpeed)
                 {
-                    targetVelocity -= speedChange;
-                    if (targetVelocity <= lowSpeed)
-                    {
-                        targetVelocity = lowSpeed;
-                        isAcceleration = true;
-                    }
+                    targetVelocity = lowSpeed;
+                    isAcceleration = true;
                 }
             }
         }
@@ -164,7 +164,7 @@ void runPosition(mab::MD& md, Logger log, int choice, mab::MDRegisters_S& regist
     float kd_pos     = 0.f;
     float windup_pos = 5.0f;
 
-    float kp_vel     = 0.003f;
+    float kp_vel     = 0.006f;
     float ki_vel     = 0.0005f;
     float kd_vel     = 0.0f;
     float windup_vel = 0.25f;
@@ -173,7 +173,9 @@ void runPosition(mab::MD& md, Logger log, int choice, mab::MDRegisters_S& regist
     float         targetPosition = 6.24f;
     constexpr int ITERATIONS     = 5'000;
     float         maxVelocity    = 10.f;
-
+    log.info("The driver will drive the motor to desired position (%.2f) and try to maintain it",
+             targetPosition);
+    sleep(1);
     md.setMotionMode(mab::MdMode_E::POSITION_PID);
     md.setPositionPIDparam(kp_pos, ki_pos, kd_pos, windup_pos);
     md.setVelocityPIDparam(kp_vel, ki_vel, kd_vel, windup_vel);
