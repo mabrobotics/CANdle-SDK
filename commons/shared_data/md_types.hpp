@@ -42,7 +42,7 @@
     MD_REG(motorThermistorType, u8, 0x01F, RW)       \
                                                      \
     MD_REG(auxEncoder, u8, 0x020, RW)                \
-    MD_REG(auxEncoderDir, u8, 0x021, WO)             \
+    MD_REG(auxEncoderDir, float, 0x021, WO)             \
     MD_REG(auxEncoderDefaultBaud, u32, 0x022, RW)    \
     MD_REG(auxEncoderVelocity, float, 0x023, RO)     \
     MD_REG(auxEncoderPosition, float, 0x024, RO)     \
@@ -161,15 +161,15 @@ namespace mab
         RESPONSE_LEGACY        = 0xA0,
         RESPONSE_ERROR         = 0xA1
     };
-    
+
     enum MdRegisterAccessErrorCode : i8
     {
-        NONE = 0,
-        DEPRECATED = -1,
-        INVALID = -2,
-        UNKNOWN = -3,
+        NONE         = 0,
+        DEPRECATED   = -1,
+        INVALID      = -2,
+        UNKNOWN      = -3,
         OUT_OF_RANGE = -4,
-        ACCESS = -5,
+        ACCESS       = -5,
     };
 
     enum class RegisterAccessLevel_E : u8
@@ -182,7 +182,8 @@ namespace mab
     enum class MDRegisterAddress_E : u16
     {
 #define MD_REG(name, type, addr, access) name = addr,
-        REGISTER_LIST
+        REGISTER_LIST \
+        REGISTER_LIST_DEV
 #undef MD_REG
     };
 
