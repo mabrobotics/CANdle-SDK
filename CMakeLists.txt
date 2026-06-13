@@ -45,7 +45,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(NOT SUPPRESS_WARN)
   add_compile_options(-Wfatal-errors -Wall -Wextra -Wpedantic
                       -Wno-unused-parameter -Wno-missing-field-initializers)
-
   if(NOT WIN32)
     add_compile_options(-Werror)
     add_compile_definitions(WIN32_MEAN_AND_LEAN) # This define is needed for
@@ -55,17 +54,17 @@ endif()
 
 if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64" OR ${CMAKE_SYSTEM_PROCESSOR}
                                                    STREQUAL "armhf")
-  add_compile_options(-Wno-array-bounds -Wno-stringop-overread
+    add_compile_options(-Wno-array-bounds -Wno-stringop-overread
                       -Wno-stringop-overflow)
 endif()
 
 set(mINI_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/mINI/inc/)
 
 macro(add_unit_test_executable test_name)
-  message("Adding unit test executable ${test_name}")
-  add_executable(${test_name} ${ARGN})
-  target_link_libraries(${test_name} PRIVATE Unit_test)
-  set_target_properties(
+    message("Adding unit test executable ${test_name}")
+    add_executable(${test_name} ${ARGN})
+    target_link_libraries(${test_name} PRIVATE Unit_test)
+    set_target_properties(
     ${test_name}
     PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/ut_runners/
                OUTPUT_NAME test_${test_name})
@@ -75,12 +74,12 @@ endmacro(add_unit_test_executable)
 add_subdirectory(commons)
 add_subdirectory(candlelib)
 if(CANDLESDK_BUILD_PYTHON)
-  add_subdirectory(pycandle)
+    add_subdirectory(pycandle)
 else()
-  if(CANDLESDK_BUILD_CANDLETOOL)
-    add_subdirectory(candletool)
-  endif()
-  if(CANDLESDK_BUILD_EXAMPLES)
-    add_subdirectory(examples)
-  endif()
+    if(CANDLESDK_BUILD_CANDLETOOL)
+        add_subdirectory(candletool)
+    endif()
+    if(CANDLESDK_BUILD_EXAMPLES)
+        add_subdirectory(examples)
+    endif()
 endif()

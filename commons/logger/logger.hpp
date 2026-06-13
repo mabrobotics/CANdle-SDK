@@ -36,7 +36,7 @@
 #define ORANGE   ""
 #define GREY     ""
 #define RESETCLR ""
-#define NEW_LINE "\r\n"
+#define NEW_LINE "\n"
 
 #endif
 
