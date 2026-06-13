@@ -559,7 +559,17 @@ namespace mab
                         return;
                     }
                     // Write the value to the MD
-                    registerWrite(*md, address, toml.m_value);
+                    if (address == (u16)MDRegisterAddress_E::firmwareVersion)
+                    {
+                        // For firmware 2.6+ shunt resistance is read only, thus we ommit it.
+                        md->readRegister(md->m_mdRegisters.firmwareVersion);
+                        version_ut fwVersion;
+                        fwVersion.i = md->m_mdRegisters.firmwareVersion.value;
+                        if (fwVersion.s.major >= 2 && fwVersion.s.minor >= 6)
+                            continue;
+                    }
+                    else
+                        registerWrite(*md, address, toml.m_value);
                 }
 
                 if (md->save() != MD::Error_t::OK)
@@ -762,10 +772,6 @@ namespace mab
                 m_logger << "- actuator name: " << readableRegisters.motorName.value << std::endl;
                 m_logger << "- CAN speed: " << readableRegisters.canBaudrate.value / 1000000 << " M"
                          << std::endl;
-                m_logger << "- CAN termination resistor: "
-                         << ((readableRegisters.canTermination.value == true) ? "enabled"
-                                                                              : "disabled")
-                         << std::endl;
                 m_logger << "- gear ratio: " << std::setprecision(5)
                          << readableRegisters.motorGearRatio.value << std::endl;
                 mab::version_ut firmwareVersion = {{0, 0, 0, 0}};
@@ -787,8 +793,6 @@ namespace mab
                          << std::endl;  // TODO: printable format
                 m_logger << "- max current: " << std::setprecision(1)
                          << readableRegisters.motorIMax.value << " A" << std::endl;
-                m_logger << "- bridge type: " << std::to_string(readableRegisters.bridgeType.value)
-                         << std::endl;
                 m_logger << "- shunt resistance: " << std::setprecision(4)
                          << readableRegisters.shuntResistance.value << " Ohm" << std::endl;
                 m_logger << "- pole pairs: "

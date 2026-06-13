@@ -4,17 +4,12 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
-#include <optional>
-#include <string>
 #include <string_view>
-#include <functional>
 #include <type_traits>
-#include <utility>
 #include <tuple>
 #include <vector>
 
 #include "mab_types.hpp"
-#include "manufacturer_data.hpp"
 
 // DEFINE ALL OF THE MD REGISTERS HERE
 #define REGISTER_LIST                                \
@@ -22,19 +17,13 @@
     MD_REG(canID, u32, 0x001, RW)                    \
     MD_REG(canBaudrate, u32, 0x002, RW)              \
     MD_REG(canWatchdog, u16, 0x003, RW)              \
-    MD_REG(canTermination, u8, 0x004, RW)            \
                                                      \
     MD_REG(motorName, char[24], 0x010, RW)           \
     MD_REG(motorPolePairs, u32, 0x011, RW)           \
     MD_REG(motorKt, float, 0x012, RW)                \
-    MD_REG(motorKtPhaseA, float, 0x013, RW)          \
-    MD_REG(motorKtPhaseB, float, 0x014, RW)          \
-    MD_REG(motorKtPhaseC, float, 0x015, RW)          \
     MD_REG(motorIMax, float, 0x016, RW)              \
     MD_REG(motorGearRatio, float, 0x017, RW)         \
     MD_REG(motorTorqueBandwidth, u16, 0x018, RW)     \
-    MD_REG(motorFriction, float, 0x019, RW)          \
-    MD_REG(motorStiction, float, 0x01A, RW)          \
     MD_REG(motorResistance, float, 0x01B, RO)        \
     MD_REG(motorInductance, float, 0x01C, RO)        \
     MD_REG(motorKV, u16, 0x01D, RW)                  \
@@ -42,8 +31,7 @@
     MD_REG(motorThermistorType, u8, 0x01F, RW)       \
                                                      \
     MD_REG(auxEncoder, u8, 0x020, RW)                \
-    MD_REG(auxEncoderDir, float, 0x021, WO)             \
-    MD_REG(auxEncoderDefaultBaud, u32, 0x022, RW)    \
+    MD_REG(auxEncoderDir, float, 0x021, WO)          \
     MD_REG(auxEncoderVelocity, float, 0x023, RO)     \
     MD_REG(auxEncoderPosition, float, 0x024, RO)     \
     MD_REG(auxEncoderMode, u8, 0x025, RW)            \
@@ -118,8 +106,6 @@
     MD_REG(userGpioConfiguration, u8, 0x160, RW)     \
     MD_REG(userGpioState, u16, 0x161, RO)            \
                                                      \
-    MD_REG(reverseDirection, u8, 0x600, RW)          \
-                                                     \
     MD_REG(shuntResistance, float, 0x700, RW)        \
                                                      \
     MD_REG(uniqueID, char[12], 0x7FE, RO)            \
@@ -128,7 +114,6 @@
     MD_REG(commitHash, char[8], 0x801, RO)           \
     MD_REG(firmwareVersion, u32, 0x802, RO)          \
     MD_REG(legacyHardwareVersion, u8, 0x803, RO)     \
-    MD_REG(bridgeType, u8, 0x804, RO)                \
     MD_REG(quickStatus, u16, 0x805, RO)              \
     MD_REG(mosfetTemperature, f32, 0x806, RO)        \
     MD_REG(motorTemperature, f32, 0x807, RO)         \
@@ -142,7 +127,6 @@
     MD_REG(homingStatus, u32, 0x80F, RO)             \
     MD_REG(motionStatus, u32, 0x810, RO)             \
     MD_REG(dcBusVoltage, f32, 0x811, RO)             \
-    MD_REG(bootloaderFixed, u8, 0x812, RO)           \
     MD_REG(miscStatus, u32, 0x813, RO)
 
 namespace mab
@@ -182,8 +166,7 @@ namespace mab
     enum class MDRegisterAddress_E : u16
     {
 #define MD_REG(name, type, addr, access) name = addr,
-        REGISTER_LIST \
-        REGISTER_LIST_DEV
+        REGISTER_LIST REGISTER_LIST_DEV
 #undef MD_REG
     };
 
