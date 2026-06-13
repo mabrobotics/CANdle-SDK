@@ -23,20 +23,20 @@ namespace mab
 
         static constexpr auto toMili = [](std::string_view x) -> std::string
         {
-            i64 xInt;
+            i64 xInt = 0;
             std::from_chars(x.begin(), x.end(), xInt);
             return std::to_string(static_cast<i64>(xInt * 1000));
         };
         static constexpr auto fromMili = [](std::string_view x) -> std::string
         {
-            float xFloat;
+            float xFloat = 0.f;
             std::from_chars(x.begin(), x.end(), xFloat);
             return std::to_string(xFloat / 1000.f);
         };
 
         static constexpr auto toEncTick = [](std::string_view x) -> std::string
         {
-            i64 xInt;
+            i64 xInt = 0;
             std::from_chars(x.begin(), x.end(), xInt);
             return std::to_string(static_cast<i64>(xInt * 16384 / (2 * M_PI)));
         };
@@ -49,13 +49,13 @@ namespace mab
 
         static constexpr auto toRPM = [](std::string_view x) -> std::string
         {
-            f32 xFloat;
+            f32 xFloat = 0.f;
             std::from_chars(x.begin(), x.end(), xFloat);
             return std::to_string(static_cast<i64>(xFloat * 60.f / (2 * M_PI)));
         };
         static constexpr auto fromRPM = [](std::string_view x) -> std::string
         {
-            i64 xInt;
+            i64 xInt = 0;
             std::from_chars(x.begin(), x.end(), xInt);
             return std::to_string(xInt * 2 * M_PI / 60.f);
         };
