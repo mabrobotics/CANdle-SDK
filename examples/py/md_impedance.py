@@ -8,8 +8,10 @@ import pyCandle as pc
 # Initialize CANdle on the USB bus (SPI bus not supported yet)
 candle = pc.attachCandle(pc.CANdleDatarate_E.CAN_DATARATE_1M, pc.busTypes_t.USB)
 
-# Create virtual MD representation
-md = pc.MD(100, candle)
+md_id = pc.discoverMDs(candle)[0]  # Discover MDs and take the first one
+
+# Create virual MD representation
+md = pc.MD(md_id, candle)
 
 # Initialize it to see if it connects
 err = md.init()

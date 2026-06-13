@@ -6,6 +6,7 @@
 #include <utility>
 #include <stdexcept>
 #include <variant>
+#include <bit>
 
 #include "edsEntry.hpp"
 

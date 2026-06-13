@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <algorithm>
 #include <cctype>
+#include <charconv>
 #include "configHelpers.hpp"
 #include "mab_types.hpp"
 #include "logger.hpp"

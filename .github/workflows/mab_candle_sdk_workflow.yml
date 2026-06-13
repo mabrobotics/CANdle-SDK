@@ -73,6 +73,11 @@ jobs:
         with:
           python-version: "3.13"
 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-dev
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -125,7 +130,7 @@ jobs:
   build-candleSDK-linux-shared:
     runs-on: ubuntu-24.04
     container:
-      image: mabroboticsofficial/mab_build_environment:v2
+      image: mabroboticsofficial/mab_build_environment:v3
       options: --user root
 
     steps:
@@ -140,7 +145,7 @@ jobs:
 
       - name: Build
         run: cmake --build ./build -j$(nproc)
-      
+
       - name: Rename artifact to arch dependant name
         run: |
           mv build/candlelib/libcandle.so build/candlelib/libcandle-x86_64.so
@@ -155,7 +160,7 @@ jobs:
   build-candleSDK-linux-static:
     runs-on: ubuntu-24.04
     container:
-      image: mabroboticsofficial/mab_build_environment:v2
+      image: mabroboticsofficial/mab_build_environment:v3
       options: --user root
 
     steps:
@@ -184,7 +189,7 @@ jobs:
   build-candleSDK-linux-arm64-shared:
     runs-on: ubuntu-latest
     container:
-      image: mabroboticsofficial/mab_build_environment_arm64_cross-compile:v2
+      image: mabroboticsofficial/mab_build_environment_arm64_cross-compile:v3
       options: --user root
 
     steps:
@@ -214,7 +219,7 @@ jobs:
   build-candleSDK-linux-arm64-static:
     runs-on: ubuntu-24.04
     container:
-      image: mabroboticsofficial/mab_build_environment_arm64_cross-compile:v2
+      image: mabroboticsofficial/mab_build_environment_arm64_cross-compile:v3
       options: --user root
 
     steps:
@@ -243,7 +248,7 @@ jobs:
   build-candleSDK-linux-armhf-shared:
     runs-on: ubuntu-latest
     container:
-      image: mabroboticsofficial/mab_build_environment_armhf_cross-compile:v2
+      image: mabroboticsofficial/mab_build_environment_armhf_cross-compile:v3
       options: --user root
 
     steps:
@@ -255,10 +260,10 @@ jobs:
       - name: CMake configure
         run: |
           cmake -DCMAKE_BUILD_TYPE=Release -DCANDLE_BUILD_STATIC=OFF --toolchain ./cmake/linux.armhf.toolchain.cmake ./ -B build -G "Unix Makefiles" .
-      
+
       - name: Build
         run: cmake --build ./build -j$(nproc)
-      
+
       - name: Rename artifact to arch dependant name
         run: |
           mv build/candlelib/libcandle.so build/candlelib/libcandle-armhf.so
@@ -273,7 +278,7 @@ jobs:
   build-candleSDK-linux-armhf-static:
     runs-on: ubuntu-24.04
     container:
-      image: mabroboticsofficial/mab_build_environment_armhf_cross-compile:v2
+      image: mabroboticsofficial/mab_build_environment_armhf_cross-compile:v3
       options: --user root
 
     steps:
