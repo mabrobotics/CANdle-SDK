@@ -14,7 +14,6 @@
 #include "logger.hpp"
 #include "mab_types.hpp"
 #include "md_types.hpp"
-#include "candle_types.hpp"
 #include "mabFileParser.hpp"
 #include "md_cfg_map.hpp"
 #include "utilities.hpp"
@@ -23,7 +22,6 @@
 #include "configHelpers.hpp"
 #include "curl_handler.hpp"
 #include "flasher.hpp"
-#include "web_file.hpp"
 
 #ifndef WIN32
 
@@ -773,45 +771,45 @@ namespace mab
                 readableRegisters.forEachRegister(readReadableRegs);
 
                 m_logger << std::fixed;
-                m_logger << "Drive " << *mdCanId << ":" << std::endl;
-                m_logger << "- actuator name: " << readableRegisters.motorName.value << std::endl;
-                m_logger << "- CAN speed: " << readableRegisters.canBaudrate.value / 1000000 << " M"
-                         << std::endl;
-                m_logger << "- gear ratio: " << std::setprecision(5)
-                         << readableRegisters.motorGearRatio.value << std::endl;
+                m_logger << "Actuator `" << readableRegisters.motorName.value << "`@" << *mdCanId
+                         << ":" << std::endl;
+
+                m_logger << "[Firmware]" << std::endl;
                 mab::version_ut firmwareVersion = {{0, 0, 0, 0}};
                 firmwareVersion.i               = readableRegisters.firmwareVersion.value;
-                m_logger << "- firmware version: v" << (int)firmwareVersion.s.major << "."
+                m_logger << "- version: v" << (int)firmwareVersion.s.major << "."
                          << (int)firmwareVersion.s.minor << "." << (int)firmwareVersion.s.revision
                          << "." << firmwareVersion.s.tag << std::endl;
-                m_logger << "- hardware version(legacy): " << "Not implemented yet" << std::endl;
-                m_logger << "- hardware type: "
+                m_logger << "- build: " << readableRegisters.commitHash.value << std::endl;
+                m_logger << "- date: "
+                         << MDBuildDateValue_S::toReadable(readableRegisters.buildDate.value)
+                                .value_or("Unknown")
+                         << std::endl;
+
+                m_logger << "[Driver]" << std::endl;
+                m_logger << "- type(legacy): "
                          << MDLegacyHwVersion_S::toReadable(
                                 readableRegisters.legacyHardwareVersion.value)
                                 .value_or("Unknown")
                          << std::endl;
-                m_logger << "- build date: "
-                         << MDBuildDateValue_S::toReadable(readableRegisters.buildDate.value)
-                                .value_or("Unknown")
+                m_logger << "- shunt resistance: " << std::setprecision(1)
+                         << readableRegisters.shuntResistance.value * 1000.f << " mOhm"
                          << std::endl;
-                m_logger << "- commit hash: " << readableRegisters.commitHash.value
-                         << std::endl;  // TODO: printable format
-                m_logger << "- max current: " << std::setprecision(1)
-                         << readableRegisters.motorIMax.value << " A" << std::endl;
-                m_logger << "- shunt resistance: " << std::setprecision(4)
-                         << readableRegisters.shuntResistance.value << " Ohm" << std::endl;
+                m_logger << "- CAN datarate: " << readableRegisters.canBaudrate.value / 1000000
+                         << " M" << std::endl;
+                m_logger << "- CAN timeout: " << readableRegisters.canWatchdog.value << " ms"
+                         << std::endl;
+                m_logger << "- GPIO mode: "
+                         << MDUserGpioConfigurationValue_S::toReadable(
+                                readableRegisters.userGpioConfiguration.value)
+                                .value_or("OFF")
+                         << std::endl;
+
+                m_logger << "[Actuator]" << std::endl;
                 m_logger << "- pole pairs: "
                          << std::to_string(readableRegisters.motorPolePairs.value) << std::endl;
                 m_logger << "- KV rating: " << std::to_string(readableRegisters.motorKV.value)
                          << " rpm/V" << std::endl;
-                m_logger << "- motor shutdown temperature: "
-                         << std::to_string(readableRegisters.motorShutdownTemp.value) << " *C"
-                         << std::endl;
-                m_logger << "- motor calibration mode: "
-                         << MDMainEncoderCalibrationModeValue_S::toReadable(
-                                readableRegisters.motorCalibrationMode.value)
-                                .value_or("Unknown")
-                         << std::endl;
                 m_logger << "- motor torque constant: " << std::setprecision(4)
                          << readableRegisters.motorKt.value << " Nm/A" << std::endl;
                 m_logger << std::fixed << "- d-axis resistance: " << std::setprecision(3)
@@ -820,61 +818,68 @@ namespace mab
                          << readableRegisters.motorInductance.value << " H\n";
                 m_logger << "- torque bandwidth: " << readableRegisters.motorTorqueBandwidth.value
                          << " Hz" << std::endl;
-                m_logger << "- CAN watchdog: " << readableRegisters.canWatchdog.value << " ms"
+                m_logger << "- max current: " << std::setprecision(1)
+                         << readableRegisters.motorIMax.value << " A" << std::endl;
+                m_logger << "- gear ratio: " << std::setprecision(5)
+                         << readableRegisters.motorGearRatio.value << "(~" << std::setprecision(0)
+                         << 1.f / readableRegisters.motorGearRatio.value << ":1)" << std::endl;
+                m_logger << "- shutdown temperature: "
+                         << std::to_string(readableRegisters.motorShutdownTemp.value) << " *C"
                          << std::endl;
-                m_logger << "- GPIO mode: "
-                         << MDUserGpioConfigurationValue_S::toReadable(
-                                readableRegisters.userGpioConfiguration.value)
+                m_logger << "- calibration mode: "
+                         << MDMainEncoderCalibrationModeValue_S::toReadable(
+                                readableRegisters.motorCalibrationMode.value)
                                 .value_or("Unknown")
                          << std::endl;
-
                 m_logger << "- auxilary encoder: "
                          << MDAuxEncoderValue_S::toReadable(readableRegisters.auxEncoder.value)
                                 .value_or("Unknown")
                          << std::endl;
-
                 if (readableRegisters.auxEncoder.value != 0)
-                {
-                    m_logger << "   - aux encoder mode: "
-                             << MDAuxEncoderModeValue_S::toReadable(
-                                    readableRegisters.auxEncoderMode.value)
-                                    .value_or("Unknown")
-                             << std::endl;
-                    m_logger << "   - aux encoder calibration mode: "
+                    m_logger << " - auxilary calibration mode: "
                              << MDAuxEncoderCalibrationModeValue_S::toReadable(
                                     readableRegisters.auxEncoderCalibrationMode.value)
                                     .value_or("Unknown")
                              << std::endl;
-                    m_logger << "   - aux encoder position: "
-                             << readableRegisters.auxEncoderPosition.value << " rad" << std::endl;
-                    m_logger << "   - aux encoder velocity: "
-                             << readableRegisters.auxEncoderVelocity.value << " rad/s" << std::endl;
-                }
 
-                m_logger << "- motion limits: " << std::endl;
-                m_logger << "   - max torque: " << std::setprecision(2)
+                m_logger << "[Motion]" << std::endl;
+                m_logger << " - max torque: " << std::setprecision(2)
                          << readableRegisters.maxTorque.value << " Nm" << std::endl;
-                m_logger << "   - max acceleration: " << std::setprecision(2)
+                m_logger << " - max acceleration: " << std::setprecision(2)
                          << readableRegisters.maxAcceleration.value << " rad/s^2" << std::endl;
-                m_logger << "   - max deceleration: " << std::setprecision(2)
+                m_logger << " - max deceleration: " << std::setprecision(2)
                          << readableRegisters.maxDeceleration.value << " rad/s^2" << std::endl;
-                m_logger << "   - max velocity: " << std::setprecision(2)
+                m_logger << " - max velocity: " << std::setprecision(2)
                          << readableRegisters.maxVelocity.value << " rad/s" << std::endl;
-                m_logger << "   - position limit min: " << std::setprecision(2)
+                m_logger << " - position limit min: " << std::setprecision(2)
                          << as_inf(readableRegisters.positionLimitMin.value) << " rad" << std::endl;
-                m_logger << "   - position limit max: " << std::setprecision(2)
+                m_logger << " - position limit max: " << std::setprecision(2)
                          << as_inf(readableRegisters.positionLimitMax.value) << " rad" << std::endl;
 
+                m_logger << "[State]" << std::endl;
                 m_logger << "- position: " << std::setprecision(2)
                          << readableRegisters.mainEncoderPosition.value << " rad" << std::endl;
-                m_logger << "- velocity: " << std::setprecision(2)
+                m_logger << "- velocity: " << std::setprecision(1)
                          << readableRegisters.mainEncoderVelocity.value << " rad/s" << std::endl;
                 m_logger << "- torque: " << std::setprecision(2)
                          << readableRegisters.motorTorque.value << " Nm" << std::endl;
-                m_logger << "- MOSFET temperature: " << std::fixed << std::setprecision(2)
+                m_logger << "- driver temperature: " << std::fixed << std::setprecision(2)
                          << readableRegisters.mosfetTemperature.value << " *C" << std::endl;
                 m_logger << "- motor temperature: " << std::fixed << std::setprecision(2)
                          << readableRegisters.motorTemperature.value << " *C" << std::endl;
+                if (readableRegisters.auxEncoder.value != 0)
+                {
+                    m_logger << "[AUX encoder]" << std::endl;
+                    m_logger << " - mode: "
+                             << MDAuxEncoderModeValue_S::toReadable(
+                                    readableRegisters.auxEncoderMode.value)
+                                    .value_or("Unknown")
+                             << std::endl;
+                    m_logger << " - position: " << readableRegisters.auxEncoderPosition.value
+                             << " rad" << std::endl;
+                    m_logger << " - velocity: " << readableRegisters.auxEncoderVelocity.value
+                             << " rad/s" << std::endl;
+                }
                 m_logger << std::endl;
                 auto statusToString =
                     []<typename T>(
