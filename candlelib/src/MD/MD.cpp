@@ -536,6 +536,11 @@ namespace mab
         }
         return std::make_pair(m_mdRegisters.motorTemperature.value, result);
     }
+    
+    void MD::setLogLevel(Logger::LogLevel_E level)
+    {
+        m_log.m_optionalLevel = Logger::LogLevel_E::SILENT;
+    }
 
     /// @brief This test should be performed with 1M datarate on CAN network
     void MD::testLatency()

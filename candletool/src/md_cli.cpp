@@ -25,7 +25,6 @@
 #include "flasher.hpp"
 #include "web_file.hpp"
 
-
 #ifndef WIN32
 
 #define REDSTART    "\033[1;31m"
@@ -486,11 +485,11 @@ namespace mab
                 }
                 // If the path is not specified, prepend the standard path
                 std::string matchString = configFilePath.string();
-                if (std::find(matchString.begin(), matchString.end(), '/') ==
-                    matchString.end() || std::find(matchString.begin(), matchString.end(), '\\') ==
-                        matchString.end())
+                if (std::find(matchString.begin(), matchString.end(), '/') == matchString.end() ||
+                    std::find(matchString.begin(), matchString.end(), '\\') == matchString.end())
                 {
-                    configFilePath = std::filesystem::path(DEFAULT_CANDLETOOL_CONFIG_DIR) / std::filesystem::path("/config/motors/") / configFilePath;
+                    configFilePath = std::filesystem::path(DEFAULT_CANDLETOOL_CONFIG_DIR) /
+                                     std::filesystem::path("/config/motors/") / configFilePath;
                 }
 
                 MDConfigMap cfgMap;
@@ -540,11 +539,11 @@ namespace mab
                 }
                 // If the path is not specified, prepend the standard path
                 std::string matchString = configFilePath.string();
-                if (std::find(matchString.begin(), matchString.end(), '/') ==
-                    matchString.end() || std::find(matchString.begin(), matchString.end(), '\\') ==
-                        matchString.end())
+                if (std::find(matchString.begin(), matchString.end(), '/') == matchString.end() ||
+                    std::find(matchString.begin(), matchString.end(), '\\') == matchString.end())
                 {
-                    configFilePath = std::filesystem::path(DEFAULT_CANDLETOOL_CONFIG_DIR) / std::filesystem::path("/config/motors/") / configFilePath;
+                    configFilePath = std::filesystem::path(DEFAULT_CANDLETOOL_CONFIG_DIR) /
+                                     std::filesystem::path("/config/motors/") / configFilePath;
                 }
 
                 mINI::INIFile      configFile(configFilePath.string());
@@ -754,31 +753,21 @@ namespace mab
         info->callback(
             [this, candleBuilder, mdCanId]()
             {
-                auto          md = getMd(mdCanId, candleBuilder);
-                MDRegisters_S readableRegisters;
+                std::unique_ptr<MD, std::function<void(MD*)>> md = getMd(mdCanId, candleBuilder);
+                MDRegisters_S                                 readableRegisters;
 
+                md->setLogLevel(Logger::LogLevel_E::SILENT);
                 auto readReadableRegs = [&]<typename T>(MDRegisterEntry_S<T>& reg)
                 {
-                    // TODO: skipping new registers for now
-                    if ((reg.m_regAddress < 0x800 && reg.m_regAddress > 0x700) ||
-                        reg.m_regAddress > 0x810)
+                    if (reg.m_accessLevel == RegisterAccessLevel_E::WO)
                         return;
-                    if (reg.m_accessLevel != RegisterAccessLevel_E::WO)
-                    {
-                        auto fault = md->readRegisters(reg);
-                        if (fault != MD::Error_t::OK)
-                            m_logger.error("Error while reading register %s", reg.m_name.data());
-
-                        if constexpr (std::is_integral_v<decltype(reg.value)>)
-                        {
-                            m_logger.debug(
-                                "Read register %s, Value: %d", reg.m_name.data(), reg.value);
-                        }
-                        else
-                        {
-                            m_logger.debug("Read register %s", reg.m_name.data());
-                        }
-                    }
+                    auto fault = md->readRegisterWithExtResponse(reg);
+                    if (fault.first == MD::Error_t::TRANSFER_FAILED)
+                        m_logger.error("Error while reading register %s", reg.m_name.data());
+                    if constexpr (std::is_integral_v<decltype(reg.value)>)
+                        m_logger.debug("Read register %s, Value: %d", reg.m_name.data(), reg.value);
+                    else
+                        m_logger.debug("Read register %s", reg.m_name.data());
                 };
 
                 readableRegisters.forEachRegister(readReadableRegs);
