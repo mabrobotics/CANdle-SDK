@@ -481,14 +481,6 @@ namespace mab
                     m_logger.error("Configuration file path is empty!");
                     return;
                 }
-                // If the path is not specified, prepend the standard path
-                std::string matchString = configFilePath.string();
-                if (std::find(matchString.begin(), matchString.end(), '/') == matchString.end() ||
-                    std::find(matchString.begin(), matchString.end(), '\\') == matchString.end())
-                {
-                    configFilePath = std::filesystem::path(DEFAULT_CANDLETOOL_CONFIG_DIR) /
-                                     std::filesystem::path("/config/motors/") / configFilePath;
-                }
 
                 MDConfigMap cfgMap;
                 for (auto& [regAddress, cfgElement] : cfgMap.m_map)
@@ -535,14 +527,11 @@ namespace mab
                     m_logger.error("Configuration file path is empty!");
                     return;
                 }
-                // If the path is not specified, prepend the standard path
-                std::string matchString = configFilePath.string();
-                if (std::find(matchString.begin(), matchString.end(), '/') == matchString.end() ||
-                    std::find(matchString.begin(), matchString.end(), '\\') == matchString.end())
-                {
-                    configFilePath = std::filesystem::path(DEFAULT_CANDLETOOL_CONFIG_DIR) /
-                                     std::filesystem::path("/config/motors/") / configFilePath;
-                }
+
+                // Allows using absolute paths, relative path to cwd (with `./`), relative path to
+                // getMotorsConfigPath
+                if (!configFilePath.is_absolute() && !configFilePath.string().starts_with("./"))
+                    configFilePath = getMotorsConfigPath() / configFilePath;
 
                 mINI::INIFile      configFile(configFilePath.string());
                 mINI::INIStructure ini;
@@ -572,7 +561,7 @@ namespace mab
                         return;
                     }
                     // Write the value to the MD
-                    if (address == (u16)MDRegisterAddress_E::firmwareVersion)
+                    if (address == (u16)MDRegisterAddress_E::shuntResistance)
                     {
                         // For firmware 2.6+ shunt resistance is read only, thus we ommit it.
                         md->readRegister(md->m_mdRegisters.firmwareVersion);
