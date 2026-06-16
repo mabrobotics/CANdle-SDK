@@ -1247,6 +1247,27 @@ namespace mab
                                            *mdCanId);
                             return;
                         }
+                        version_ut fw = getMdFirmwareVersion(*md);
+                        if (fw.s.major <= 2 && fw.s.minor <= 5)
+                        {
+                            m_logger.warn(
+                                "You are attempting to update MD from version v%d.%d.%d to version "
+                                "%s. This comes with braking changes that will require "
+                                "performing a *FACTORY RESET* of the drive. You will need to:\n"
+                                "- reapply .cfg file,\n"
+                                "- perform calibration,\n"
+                                "- set zero offset (optional).\n"
+                                "Continue? [y/n]",
+                                fw.s.major,
+                                fw.s.minor,
+                                fw.s.revision,
+                                mabFile.m_fwEntry.version);
+                            char c;
+                            std::cin >> c;
+                            if (c != 'y' && c != 'Y')
+                                return;
+                        }
+
                         md->reset();
                         usleep(300'000);
                     }
@@ -1254,7 +1275,7 @@ namespace mab
                     {
                         m_logger.warn("Recovery mode...");
                         m_logger.warn(
-                            "Please make sure driver is in the bootload phase (rebooting)");
+                            "Please make sure driver is in the bootloader phase (rebooting)");
                     }
                     auto candle = candleBuilder->build().value_or(nullptr);
                     if (candle == nullptr)
@@ -1263,7 +1284,7 @@ namespace mab
                         return;
                     }
                     CanLoader canLoader(candle, &mabFile, *mdCanId);
-                    if (canLoader.flashAndBoot())
+                    if (canLoader.flashAndBoot(*(updateOptions.recovery)))
                     {
                         m_logger.success("Update complete for MD @ %d", *mdCanId);
                     }

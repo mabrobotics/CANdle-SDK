@@ -8,7 +8,6 @@
 #include <cmath>
 #include <cstring>
 #include <string>
-#include <algorithm>
 
 namespace mab
 {
@@ -24,7 +23,7 @@ namespace mab
     {
     }
 
-    bool CanLoader::flashAndBoot()
+    bool CanLoader::flashAndBoot(bool recovery)
     {
         if (m_candle == nullptr)
         {
@@ -43,12 +42,21 @@ namespace mab
         const std::span<const u8, 32> firmwareSHA256 = (m_mabFile->m_fwEntry.checksum);
         const u32                     swAddress      = m_mabFile->m_fwEntry.bootAddress;
 
-        // Verify communication
-        if (bootloader.init(swAddress, appSize) != CanBootloader::Error_t::OK)
+        do
         {
-            m_log.error("Failed to initialize bootloader");
-            return false;
-        }
+            // Estabilish communication
+            if (bootloader.init(swAddress, appSize) != CanBootloader::Error_t::OK)
+            {
+                if (!recovery)
+                {
+                    m_log.error("Failed to initialize bootloader");
+                    return false;
+                }
+                usleep(250'000);
+            }
+            else
+                break;
+        } while (recovery);
 
         // Clearing memory
         if (bootloader.erase(swAddress, appSize) != CanBootloader::Error_t::OK)
