@@ -55,6 +55,12 @@
 
 namespace mab
 {
+    version_ut getMdFirmwareVersion(MD& md)
+    {
+        md.readRegister(md.m_mdRegisters.firmwareVersion);
+        return {.i = md.m_mdRegisters.firmwareVersion.value};
+    }
+
     MDCli::MDCli(CLI::App* rootCli, CANdleToolCtx_S ctx)
     {
         if (ctx.candleBranchVec.empty())
@@ -277,13 +283,15 @@ namespace mab
                         m_logger.error("Main encoder calibration failed!");
                         return;
                     }
-                    constexpr int CALIBRATION_TIME = 40;  // seconds
-                    for (int seconds = 0; seconds < CALIBRATION_TIME; seconds++)
+                    int calibrationTime = 40;  // seconds
+                    version_ut fwVersion = getMdFirmwareVersion(*md);
+                    if (fwVersion.s.major >= 2 && fwVersion.s.minor >= 6)
+                        calibrationTime = 16;
+                    for (int seconds = 0; seconds < calibrationTime; seconds++)
                     {
                         m_logger.progress(static_cast<double>(seconds) /
-                                          static_cast<double>(CALIBRATION_TIME));
-                        usleep(1'000'000);  // Wait for the MD to calibrate, TODO: change it when
-                                            // routines are ready
+                                          static_cast<double>(calibrationTime));
+                        usleep(1'000'000);  
                     }
                     m_logger.progress(1.0f);  // Ensure progress is at 100%
 
