@@ -283,15 +283,15 @@ namespace mab
                         m_logger.error("Main encoder calibration failed!");
                         return;
                     }
-                    int calibrationTime = 40;  // seconds
-                    version_ut fwVersion = getMdFirmwareVersion(*md);
+                    int        calibrationTime = 40;  // seconds
+                    version_ut fwVersion       = getMdFirmwareVersion(*md);
                     if (fwVersion.s.major >= 2 && fwVersion.s.minor >= 6)
                         calibrationTime = 16;
                     for (int seconds = 0; seconds < calibrationTime; seconds++)
                     {
                         m_logger.progress(static_cast<double>(seconds) /
                                           static_cast<double>(calibrationTime));
-                        usleep(1'000'000);  
+                        usleep(1'000'000);
                     }
                     m_logger.progress(1.0f);  // Ensure progress is at 100%
 
@@ -848,10 +848,18 @@ namespace mab
                          << readableRegisters.maxDeceleration.value << " rad/s^2" << std::endl;
                 m_logger << " - max velocity: " << std::setprecision(2)
                          << readableRegisters.maxVelocity.value << " rad/s" << std::endl;
-                m_logger << " - position limit min: " << std::setprecision(2)
-                         << as_inf(readableRegisters.positionLimitMin.value) << " rad" << std::endl;
-                m_logger << " - position limit max: " << std::setprecision(2)
-                         << as_inf(readableRegisters.positionLimitMax.value) << " rad" << std::endl;
+                if (readableRegisters.positionLimitMin.value == 0.f &&
+                    readableRegisters.positionLimitMax.value == 0.f)
+                    m_logger << " - position limit: off" << std::endl;
+                else
+                {
+                    m_logger << " - position limit min: " << std::setprecision(2)
+                             << as_inf(readableRegisters.positionLimitMin.value) << " rad"
+                             << std::endl;
+                    m_logger << " - position limit max: " << std::setprecision(2)
+                             << as_inf(readableRegisters.positionLimitMax.value) << " rad"
+                             << std::endl;
+                }
 
                 m_logger << "[State]" << std::endl;
                 m_logger << "- position: " << std::setprecision(2)
