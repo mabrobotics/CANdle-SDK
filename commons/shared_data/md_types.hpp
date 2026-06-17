@@ -31,7 +31,7 @@
     MD_REG(motorThermistorType, u8, 0x01F, RW)       \
                                                      \
     MD_REG(auxEncoder, u8, 0x020, RW)                \
-    MD_REG(auxEncoderDir, float, 0x021, WO)          \
+    MD_REG(auxEncoderDir, float, 0x021, RW)          \
     MD_REG(auxEncoderVelocity, float, 0x023, RO)     \
     MD_REG(auxEncoderPosition, float, 0x024, RO)     \
     MD_REG(auxEncoderMode, u8, 0x025, RW)            \
