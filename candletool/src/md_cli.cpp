@@ -1,5 +1,6 @@
 #include "md_cli.hpp"
 #include <cstdint>
+#include <cstdlib>
 #include <ios>
 #include <memory>
 #include <stdexcept>
@@ -78,7 +79,6 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
                     return;
                 }
                 md->blink();
@@ -100,7 +100,6 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
                     return;
                 }
                 MDRegisters_S registers;
@@ -181,7 +180,6 @@ namespace mab
                     md                         = getMd(newCanId, newCandleBuilder);
                     if (md == nullptr)
                     {
-                        m_logger.error("Coudl not connect to MD!");
                         return;
                     }
                     // Save the new can parameters to the MD
@@ -220,7 +218,6 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
                     return;
                 }
                 MDRegisters_S registers;
@@ -436,7 +433,6 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
                     return;
                 }
                 MDRegisters_S registers;
@@ -465,12 +461,11 @@ namespace mab
             });
 
         // Config  ===========================================================
-        auto* config = mdCLi->add_subcommand("config", "Configure MD drive.")
-                           ->needs(mdCanIdOption)
-                           ->require_subcommand();
+        auto* config = mdCLi->add_subcommand("config", "Configure MD drive.")->require_subcommand();
         // Download configuration file
         auto* downloadConfig =
-            config->add_subcommand("download", "Download configuration from MD drive.");
+            config->add_subcommand("download", "Download configuration from MD drive.")
+                ->needs(mdCanIdOption);
 
         ConfigOptions downloadConfigOptions(downloadConfig);
 
@@ -480,7 +475,6 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
                     return;
                 }
 
@@ -601,7 +595,6 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
                     return;
                 }
                 MDRegisters_S registers;
@@ -614,11 +607,87 @@ namespace mab
                 m_logger.success("MD drive reset successfully!");
             });
 
+        // Verify
+        auto* verifyCfg =
+            config->add_subcommand("verify", "Verifies config file using installed schema.");
+        ConfigOptions verifyConfigOptions(verifyCfg);
+
+        verifyCfg->callback(
+            [this, verifyConfigOptions, ctx]()
+            {
+                static constexpr std::string_view REQUIRED_SUFFIX = "_required";
+
+                const std::filesystem::path schemaPathSuf = "config/md_config_schema.ini";
+                const std::filesystem::path schemaPath    = *ctx.packageEtcPath / schemaPathSuf;
+                m_logger.debug("Looking at schema: %s", schemaPath.c_str());
+                if (!std::filesystem::exists(schemaPath))
+                {
+                    m_logger.error("Schema does not exist here: %s", schemaPath.c_str());
+                    m_logger.info("Please install candletool package properly.");
+                    exit(1);
+                }
+                if (!std::filesystem::exists(*verifyConfigOptions.configFile))
+                {
+                    m_logger.error("Config file does not exist here: %s",
+                                   (*verifyConfigOptions.configFile).c_str());
+                    exit(1);
+                }
+                mINI::INIFile      schemaFile(schemaPath);
+                mINI::INIStructure schemaStruct;
+                if (!schemaFile.read(schemaStruct))
+                {
+                    m_logger.error("Error while loading schema file: %s", schemaPath.c_str());
+                    exit(1);
+                }
+                MDConfigMap        mdCfgMap(schemaStruct);
+                mINI::INIFile      configFile(*verifyConfigOptions.configFile);
+                mINI::INIStructure cfgini;
+                if (!configFile.read(cfgini))
+                {
+                    m_logger.error("Error while loading schema file: %s", schemaPath.c_str());
+                    exit(1);
+                }
+
+                for (auto& [address, toml] : mdCfgMap.m_map)
+                {
+                    std::string val = cfgini[toml.m_tomlSection.data()][toml.m_tomlKey.data()];
+                    if (val.empty())
+                    {
+                        m_logger.warn("Key %s.%s not found in configuration file. Skipping.",
+                                      toml.m_tomlSection.data(),
+                                      toml.m_tomlKey.data());
+                        std::string reqKey(toml.m_tomlKey);
+                        reqKey.append(REQUIRED_SUFFIX);
+                        if (schemaStruct[std::string(toml.m_tomlSection)][reqKey] == "true")
+                        {
+                            m_logger.error("This key is required for proper MD operation!");
+                            exit(1);
+                        }
+
+                        continue;
+                    }
+                    if (!toml.setFromReadable(val))
+                    {
+                        m_logger.error(
+                            "Can not set %s.%s", toml.m_tomlSection.data(), toml.m_tomlKey.data());
+                        continue;
+                    }
+                    if (!toml.verify())
+                    {
+                        m_logger.error("Found invalid parameter %s.%s",
+                                       toml.m_tomlSection.data(),
+                                       toml.m_tomlKey.data());
+                        exit(1);
+                    }
+                }
+                m_logger.success("The config file is valid!");
+            });
+
         // Discover ============================================================================
         auto* discover = mdCLi
                              ->add_subcommand("discover",
                                               "Discover MD drives on the"
-                                              "network.")
+                                              " network.")
                              ->excludes(mdCanIdOption);
 
         discover->callback(
@@ -659,7 +728,6 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
                     return;
                 }
                 if (md->save() != MD::Error_t::OK)
@@ -800,9 +868,9 @@ namespace mab
                 m_logger << "   - max velocity: " << std::setprecision(2)
                          << readableRegisters.maxVelocity.value << " rad/s" << std::endl;
                 m_logger << "   - position limit min: " << std::setprecision(2)
-                         << readableRegisters.positionLimitMin.value << " rad" << std::endl;
+                         << as_inf(readableRegisters.positionLimitMin.value) << " rad" << std::endl;
                 m_logger << "   - position limit max: " << std::setprecision(2)
-                         << readableRegisters.positionLimitMax.value << " rad" << std::endl;
+                         << as_inf(readableRegisters.positionLimitMax.value) << " rad" << std::endl;
 
                 m_logger << "- position: " << std::setprecision(2)
                          << readableRegisters.mainEncoderPosition.value << " rad" << std::endl;
@@ -893,7 +961,6 @@ namespace mab
                 std::string registerStr = *(regReadOptions.registerAddressOrName);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
                     return;
                 }
                 if (std::string("0x").compare(registerStr.substr(0, 2)) == 0)
@@ -947,7 +1014,6 @@ namespace mab
 
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
                     return;
                 }
                 if (std::string("0x").compare(registerStr.substr(0, 2)) == 0)
@@ -1028,7 +1094,6 @@ namespace mab
                     auto md = getMd(mdCanId, candleBuilder);
                     if (md == nullptr)
                     {
-                        m_logger.error("Coudl not connect to MD!");
                         return;
                     }
                     md->reset();
@@ -1052,7 +1117,6 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
                     return;
                 }
                 if (md->isMDError(md->setTargetPosition(*absoluteTestOptions.target)))
@@ -1087,7 +1151,6 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
                     return;
                 }
                 if (*relativeTestOptions.target > 10.0f)
@@ -1210,7 +1273,9 @@ namespace mab
                 }
             });
         // Version
-        auto* version = mdCLi->add_subcommand("version", "Check version of the MD device.");
+        auto* version = mdCLi->add_subcommand("version", "Check version of the MD device.")
+                            ->needs(mdCanIdOption);
+        ;
 
         version->callback(
             [this, candleBuilder, mdCanId]()
@@ -1218,7 +1283,6 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
-                    m_logger.error("Coudl not connect to MD!");
                     return;
                 }
                 MDRegisters_S regs;
@@ -1239,6 +1303,28 @@ namespace mab
                               MDLegacyHwVersion_S::toReadable(regs.legacyHardwareVersion.value)
                                   .value_or("Unknown")
                                   .c_str());
+            });
+        // Zero
+        auto* zero = mdCLi->add_subcommand("zero", "Zero the drive's position (encoder).")
+                         ->needs(mdCanIdOption);
+        ;
+
+        zero->callback(
+            [this, candleBuilder, mdCanId]()
+            {
+                auto md = getMd(mdCanId, candleBuilder);
+                if (md == nullptr)
+                {
+                    return;
+                }
+                if (md->zero() == MD::Error_t::OK)
+                {
+                    m_logger.success("Successfully zeroed MD!");
+                }
+                else
+                {
+                    m_logger.error("Failed to zero MD!");
+                }
             });
     }
 
@@ -1262,6 +1348,7 @@ namespace mab
             return md;
         else
         {
+            m_logger.error("Could not connect to MD!");
             return nullptr;
         }
     }
@@ -1306,7 +1393,7 @@ namespace mab
 
                     if (result != MD::Error_t::OK)
                     {
-                        m_logger.error("Failed to write register %d", reg.m_regAddress);
+                        m_logger.error("Failed to write register 0x%04X", reg.m_regAddress);
                         return;
                     }
                     m_logger.success("Writing register %s successful!", reg.m_name.data());
@@ -1319,13 +1406,13 @@ namespace mab
                         strV = std::get<std::string>(regValue).c_str();
                     else
                     {
-                        m_logger.error("Invalid value type for register %d", reg.m_regAddress);
+                        m_logger.error("Invalid value type for register 0x%04X", reg.m_regAddress);
                         return;
                     }
 
                     if (strV.length() > sizeof(reg.value) + 1)
                     {
-                        m_logger.error("Value too long for register %d", reg.m_regAddress);
+                        m_logger.error("Value too long for register 0x%04X", reg.m_regAddress);
                         return;
                     }
 
@@ -1335,7 +1422,7 @@ namespace mab
 
                     if (result != MD::Error_t::OK)
                     {
-                        m_logger.error("Failed to write register %d", reg.m_regAddress);
+                        m_logger.error("Failed to write register 0x%04X", reg.m_regAddress);
                         return;
                     }
                     m_logger.success("Writing register %s successful!", reg.m_name.data());
@@ -1345,12 +1432,13 @@ namespace mab
         regs.forEachRegister(setRegValueByAdress);
         if (!foundRegister)
         {
-            m_logger.error("Register %d not found", regAdress);
+            m_logger.error("Register 0x%04X not found", regAdress);
             return false;
         }
         if (!registerCompatible)
         {
-            m_logger.error("Register %d not compatible with value %s", regAdress, value.c_str());
+            m_logger.error(
+                "Register 0x%04X not compatible with value %s", regAdress, value.c_str());
             return false;
         }
         return true;
@@ -1371,7 +1459,7 @@ namespace mab
                     auto result = md.readRegister(reg);
                     if (result != MD::Error_t::OK)
                     {
-                        m_logger.error("Failed to read register %d", regAdress);
+                        m_logger.error("Failed to read register 0x%04X", regAdress);
                         return false;
                     }
                     std::string value   = std::to_string(reg.value);
@@ -1385,7 +1473,7 @@ namespace mab
                     auto result = md.readRegisters(reg);
                     if (result != MD::Error_t::OK)
                     {
-                        m_logger.error("Failed to read register %d", regAdress);
+                        m_logger.error("Failed to read register 0x%04X", regAdress);
                         return false;
                     }
                     const char* value   = reg.value;

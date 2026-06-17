@@ -123,7 +123,7 @@
     MD_REG(shuntResistance, float, 0x700, RW)        \
                                                      \
     MD_REG(uniqueID, char[12], 0x7FE, RO)            \
-    MD_REG(hardwareType, hardwareType_S, 0x7FF, RO)  \
+    MD_REG(hardwareType, u8, 0x7FF, RO)              \
     MD_REG(buildDate, u32, 0x800, RO)                \
     MD_REG(commitHash, char[8], 0x801, RO)           \
     MD_REG(firmwareVersion, u32, 0x802, RO)          \
@@ -160,6 +160,16 @@ namespace mab
         WRITE_REGISTER_CAN_2_0 = 0x44,
         RESPONSE_LEGACY        = 0xA0,
         RESPONSE_ERROR         = 0xA1
+    };
+    
+    enum MdRegisterAccessErrorCode : i8
+    {
+        NONE = 0,
+        DEPRECATED = -1,
+        INVALID = -2,
+        UNKNOWN = -3,
+        OUT_OF_RANGE = -4,
+        ACCESS = -5,
     };
 
     enum class RegisterAccessLevel_E : u8

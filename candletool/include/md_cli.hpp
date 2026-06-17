@@ -131,7 +131,7 @@ namespace mab
                      rootCli
                          ->add_option("register",
                                       *registerAddressOrName,
-                                      "Name or adress (must start with 0x and be in hex) of a "
+                                      "Name or address (must start with 0x and be in hex) of a "
                                       "register to interact with")
                          ->required()}};
             }
@@ -178,11 +178,9 @@ namespace mab
                      rootCli->add_option("version",
                                          *fwVersion,
                                          "Version of fw to download (\"latest\" or X.X.X format). "
-                                        "For example:  candletool md update latest")},
+                                         "For example:  candletool md update latest")},
                     {"path",
-                     rootCli->add_option("-p,--path",
-                                         *pathToMabFile,
-                                         "Local path to .mab file")},
+                     rootCli->add_option("-p,--path", *pathToMabFile, "Local path to .mab file")},
                     {"recovery",
                      rootCli->add_flag(
                          "-r,--recovery", *recovery, "Driver recovery after failed flashing")},

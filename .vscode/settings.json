@@ -87,7 +87,8 @@
     "cSpell.words": [
         "Bootloader",
         "Candletool",
-        "Devcontainers"
+        "Devcontainers",
+        "MDCO"
     ],
     "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
 }

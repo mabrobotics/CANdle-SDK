@@ -9,7 +9,9 @@
 namespace mab
 {
 
-    CanBootloader::CanBootloader(const canId_t id, Candle* candle) : m_id(id), mp_candle(candle) {};
+    CanBootloader::CanBootloader(const canId_t id, Candle* candle) : m_id(id), mp_candle(candle)
+    {
+    }
 
     CanBootloader::~CanBootloader()
     {

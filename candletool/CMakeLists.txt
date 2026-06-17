@@ -16,16 +16,21 @@ set(CANDLETOOL_VERSION_FULL
 add_subdirectory(3rd_party/CLI11)
 
 set(CANDLETOOL_SOURCES
-    src/candle_cli.cpp
-    src/canLoader.cpp
-    src/web_file_module/curl_handler.cpp
-    src/web_file_module/flasher.cpp
-    src/md_cli.cpp
-    src/mab_crc.cpp
-    src/mabFileParser.cpp
-    src/main.cpp
-    src/pds_cli.cpp
-    src/utilities.cpp)
+  src/candle_cli.cpp
+  src/canLoader.cpp
+  src/web_file_module/curl_handler.cpp
+  src/web_file_module/flasher.cpp
+  src/md_cli.cpp
+  src/mdco_cli.cpp
+  src/mdco_cli.cpp
+  src/mdco_config_adapter.cpp
+  src/mab_crc.cpp
+  src/mabFileParser.cpp
+  src/main.cpp
+  src/pds_cli.cpp
+  src/utilities.cpp
+  )
+
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -39,7 +44,13 @@ target_include_directories(
          ${CMAKE_CURRENT_SOURCE_DIR}/src/web_file_module
          ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src)
 
-target_compile_options(candletool PRIVATE -g)
+target_compile_options(candletool PRIVATE -g -Wno-unused-parameter -Wno-missing-field-initializers)
+if(WIN32)
+  target_compile_options(candletool PRIVATE -Wa,-mbig-obj)
+endif()
+if(SUPPRESS_WARN)
+  target_compile_options(candletool PRIVATE -w)
+endif()
 
 set_target_properties(candletool PROPERTIES OUTPUT_NAME "candletool")
 
@@ -96,8 +107,16 @@ if(WIN32)
     COMPONENT _configs)
 
   install(
+    DIRECTORY
+      ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/eds
+    DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
+    COMPONENT _eds)
+
+  install(
     FILES
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini
+      ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletoolco.ini
+      ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/md_config_schema.ini
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/web_files_metadata.ini
     DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
@@ -130,8 +149,16 @@ elseif(UNIX)
     COMPONENT _configs)
 
   install(
+    DIRECTORY
+      ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/eds
+    DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
+    COMPONENT _configs)
+
+  install(
     FILES
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini
+      ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletoolco.ini
+      ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/md_config_schema.ini
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/web_files_metadata.ini
     DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
@@ -161,17 +188,21 @@ elseif(UNIX)
   install(
     FILES
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/udev/rules.d/99-candletool.rules
-    DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/")
+    DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/"
+    COMPONENT rules)
 
   install(
     FILES
       "${PROJECT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini"
+      "${PROJECT_SOURCE_DIR}/template_package/etc/candletool/config/candletoolco.ini"
       "${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/web_files_metadata.ini"
     DESTINATION "/etc/candletool/"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
                 WORLD_WRITE
     EXCLUDE_FROM_ALL)
-  add_compile_definitions(DEFAULT_CANDLETOOL_CONFIG_DIR="/etc/candletool/")
+  add_compile_definitions(DEFAULT_CANDLETOOL_CONFIG_DIR="/${CMAKE_INSTALL_SYSCONFDIR}/candletool")
+  add_custom_target(install_rules
+    COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_BINARY_DIR}" --component rules)
 else()
   message(FATAL_ERROR "System not unix nor windows, can not compile!")
   message()

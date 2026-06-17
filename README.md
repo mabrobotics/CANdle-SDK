@@ -4,6 +4,24 @@ A toolkit for developing applications using MAB Robotics MD motor controllers an
 
 ## Dependencies & Requirements
 
+Aquire the repository via git clone:
+
+```
+git clone https://github.com/mabrobotics/CANdle-SDK.git
+cd CANdle-SDK
+git submodule update --init --recursive
+```
+
+or
+
+```
+git clone git@github.com:mabrobotics/CANdle-SDK.git
+cd CANdle-SDK
+git submodule update --init --recursive
+```
+
+Zipped project download will not work as the repository uses submodules.
+
 ### Linux
 
 ```
@@ -102,4 +120,4 @@ target_link_libraries(myCandleProject candle)
 
 ## Documentation
 
-For more information check out our documentation page [here](https://mabrobotics.github.io/MD80-x-CANdle-Documentation/software_package/Software.html).
+For more information check out our documentation page [here](https://mabrobotics.github.io/MD80-x-CANdle-Documentation/CANdle-SDK/intro.html#candlesdk).

@@ -53,7 +53,7 @@ namespace mab
         /// @param bus Initialized communication interface
         explicit Candle(const CANdleDatarate_E                           canDatarate,
                         std::unique_ptr<mab::I_CommunicationInterface>&& bus,
-                        bool useRegularCANFrames = false);
+                        bool dontUseFDCANFrames = false);
 
         /// @brief Method for transfering CAN packets via CANdle device
         /// @param canId Target CAN node ID
@@ -129,9 +129,9 @@ namespace mab
 
         std::unique_ptr<mab::I_CommunicationInterface> m_bus;
 
-        bool         m_isInitialized       = false;
-        const bool   m_useRegularCanFrames = false;
-        const size_t m_maxCANFrameSize     = 64;
+        bool         m_isInitialized      = false;
+        const bool   m_dontUseFDCANFrames = false;
+        const size_t m_maxCANFrameSize    = 64;
 
         mutable std::mutex                         m_cfSyncMux;
         std::shared_ptr<std::function<void(void)>> m_cfsync;
@@ -191,7 +191,8 @@ namespace mab
     /// @param bus Initialized CANdle communication interface
     /// @return Configured candle object or nullptr
     inline mab::Candle* attachCandle(const CANdleDatarate_E                      datarate,
-                                     std::unique_ptr<I_CommunicationInterface>&& bus)
+                                     std::unique_ptr<I_CommunicationInterface>&& bus,
+                                     bool dontUseFDCANFrames = false)
     {
         Logger log(Logger::ProgramLayer_E::TOP, "CANDLE_BUILDER");
         if (bus == nullptr)
@@ -200,7 +201,7 @@ namespace mab
             return {};
         }
 
-        mab::Candle* candle = new mab::Candle(datarate, std::move(bus));
+        mab::Candle* candle = new mab::Candle(datarate, std::move(bus), dontUseFDCANFrames);
         if (candle == nullptr || candle->init() != candleTypes::Error_t::OK)
         {
             log.error("Could not initialize CANdle device!");
@@ -214,7 +215,8 @@ namespace mab
     /// @param bus Initialized CANdle communication interface
     /// @return Configured candle object or nullptr
     inline mab::Candle* attachCandle(const CANdleDatarate_E  datarate,
-                                     candleTypes::busTypes_t busType)
+                                     candleTypes::busTypes_t busType,
+                                     bool                    dontUseFDCANFrames = false)
     {
         std::unique_ptr<mab::I_CommunicationInterface> bus;
         switch (busType)
@@ -223,12 +225,12 @@ namespace mab
                 bus = std::make_unique<mab::USB>(mab::Candle::CANDLE_VID, mab::Candle::CANDLE_PID);
                 if (bus->connect() != mab::I_CommunicationInterface::Error_t::OK)
                     throw std::runtime_error("Could not connect USB device!");
-                return attachCandle(datarate, std::move(bus));
+                return attachCandle(datarate, std::move(bus), dontUseFDCANFrames);
             case candleTypes::busTypes_t::SPI:
                 bus = std::make_unique<mab::SPI>();
                 if (bus->connect() != mab::I_CommunicationInterface::Error_t::OK)
                     throw std::runtime_error("Could not connect SPI device!");
-                return attachCandle(datarate, std::move(bus));
+                return attachCandle(datarate, std::move(bus), dontUseFDCANFrames);
             default:
                 throw std::runtime_error("Wrong communication interface provided!");
                 return {};
@@ -253,6 +255,7 @@ namespace mab
         std::shared_ptr<CANdleDatarate_E>        datarate = nullptr;
         std::shared_ptr<candleTypes::busTypes_t> busType  = nullptr;
         std::optional<std::string_view>          pathOrId;
+        std::optional<bool>                      useCAN20Frames;
 
         std::function<void()> preBuildTask = []() {};
 
@@ -290,7 +293,7 @@ namespace mab
                     m_logger.error("Unimplemented bus type");
                     return {};
             }
-            Candle* candle = new Candle(*datarate, std::move(bus));
+            Candle* candle = new Candle(*datarate, std::move(bus), useCAN20Frames.value_or(false));
             if (candle == nullptr || candle->init() != candleTypes::Error_t::OK)
             {
                 m_logger.error("Could not initialize CANdle device!");
