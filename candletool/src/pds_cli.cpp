@@ -563,11 +563,13 @@ void PdsCli::parse()
 
             result = pds->bindBrakeResistor(brSocket);
 
-            if (result != PdsModule::error_E::OK)
+            if (result != PdsModule::error_E::OK){
                 m_log.error("Binding Brake Resistor failed [ %s ]",
                             PdsModule::error2String(result));
-            else
-                m_log.success("Brake Resistor bound to socket [ %u ]", m_brSocket);
+            }else{
+                if (m_brSocket != 0)
+                    m_log.success("Brake Resistor bound to socket [ %u ]", m_brSocket);
+            }
         }
 
         else if (m_ctrlGetBrCmd->parsed())
@@ -868,33 +870,28 @@ void PdsCli::powerStageCmdParse(void)
     {
         // Notice that the m_brSocket is a numeric value, and brSocket is a enum value
         socketIndex_E brSocket = decodeSocketIndex(m_brSocket);
-
-        auto pds = getPDS(m_canId);
-        if (pds == nullptr)
+        if (m_brSocket == 0)
         {
-            m_log.error("Could not initialize PDS!");
-            return;
+            m_log.warn("Unbinding Brake Resistor from the Power Stage");
         }
-        if (!pds->verifyModuleSocket(moduleType_E::BRAKE_RESISTOR, brSocket))
-        {
-            if (m_brSocket == 0)
-            {
-                m_log.warn("Unbinding Brake Resistor from the Power Stage");
-            }
-            else
+        else{
+            if (!pds->verifyModuleSocket(moduleType_E::BRAKE_RESISTOR, brSocket))
             {
                 m_log.error("Invalid socket number for Brake Resistor submodule");
                 return;
             }
         }
-
         result = ps->bindBrakeResistor(decodeSocketIndex(m_brSocket));
 
         if (result != PdsModule::error_E::OK)
+        {
             m_log.error("Power Stage set brake resistor failed [ %s ]",
                         PdsModule::error2String(result));
-        else
-            m_log.success("Brake resistor set");
+        }
+        else{
+            if(m_brSocket != 0)
+                m_log.success("Brake resistor set");
+        }
     }
 
     else if (m_psGetBrCmd->parsed())
