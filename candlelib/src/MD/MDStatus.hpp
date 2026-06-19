@@ -163,6 +163,19 @@ namespace mab
             {MotionStatusBits::WarningVelocity, StatusItem_S("Warning Velocity", false)},
             {MotionStatusBits::WarningPosition, StatusItem_S("Warning Position", false)}};
 
+        enum class MiscStatusBits : bitPos
+        {
+            ErrorOTPMemoryCorrupted = 0,
+            WarnRestartRequired     = 29,
+            WarnRoutineInProgress   = 30
+        };
+        std::unordered_map<MiscStatusBits, StatusItem_S> miscStatus = {
+            {MiscStatusBits::ErrorOTPMemoryCorrupted, StatusItem_S("Error OTP Memory Corrupted", true)},
+            {MiscStatusBits::WarnRestartRequired, StatusItem_S("Restart Required", false)},
+            {MiscStatusBits::WarnRoutineInProgress, StatusItem_S("Routine in progress", false)},
+        };
+
+
         static std::vector<std::string> getStatusString(
             std::unordered_map<bitPos, StatusItem_S> errors)
         {

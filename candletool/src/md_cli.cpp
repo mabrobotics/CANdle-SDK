@@ -943,6 +943,9 @@ namespace mab
                 m_logger << "- motion status: 	0x" << std::hex
                          << readableRegisters.motionStatus.value << std::dec << " ("
                          << statusToString(md->getMotionStatus().first) << ")" << std::endl;
+                m_logger << "- misc status: 	0x" << std::hex
+                         << readableRegisters.miscStatus.value << std::dec << " ("
+                         << statusToString(md->getMiscStatus().first) << ")" << std::endl;
             });
 
         // Register =======================================================================

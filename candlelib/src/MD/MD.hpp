@@ -222,6 +222,12 @@ namespace mab
                   Error_t>
         getMotionStatus();
 
+        /// @brief Request misc status
+        /// @return Misc status map with bit positions as ids
+        std::pair<const std::unordered_map<MDStatus::MiscStatusBits, MDStatus::StatusItem_S>,
+                  Error_t>
+        getMiscStatus();
+
         /// @brief Request position of the MD
         /// @return Position in radians
         std::pair<float, Error_t> getPosition();
@@ -257,7 +263,7 @@ namespace mab
         template <class T>
         inline Error_t readRegister(MDRegisterEntry_S<T>& reg)
         {
-            auto result   = readRegisterWithExtResponse(reg);
+            auto result = readRegisterWithExtResponse(reg);
             return result.first;
         }
 
@@ -267,7 +273,8 @@ namespace mab
         /// overwritten by received data)
         /// @return Error type on failure
         template <class T>
-        inline std::pair<Error_t, MdRegisterAccessErrorCode> readRegisterWithExtResponse(MDRegisterEntry_S<T>& reg)
+        inline std::pair<Error_t, MdRegisterAccessErrorCode> readRegisterWithExtResponse(
+            MDRegisterEntry_S<T>& reg)
         {
             auto regTuple = std::make_tuple(std::reference_wrapper(reg));
             auto result   = readRegistersWithExtResponse(regTuple);

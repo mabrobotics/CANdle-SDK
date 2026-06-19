@@ -127,7 +127,8 @@
     MD_REG(homingStatus, u32, 0x80F, RO)             \
     MD_REG(motionStatus, u32, 0x810, RO)             \
     MD_REG(dcBusVoltage, f32, 0x811, RO)             \
-    MD_REG(miscStatus, u32, 0x813, RO)
+    MD_REG(miscStatus, u32, 0x813, RO)               \
+    MD_REG(configStatus, u32, 0x814, RO)
 
 namespace mab
 {
