@@ -1189,7 +1189,7 @@ namespace mab
 
         // Relative
         auto* velocity =
-            test->add_subcommand("velocity", "Move with set velocity, using Velocity PID mode")
+            test->add_subcommand("velocity", "Move with set velocity, using velocity profile")
                 ->require_option();
 
         TestOptions velocityTestOptions(velocity);
