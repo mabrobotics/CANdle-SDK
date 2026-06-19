@@ -1187,6 +1187,36 @@ namespace mab
                 m_logger.success("Movement ended.");
             });
 
+        // Relative
+        auto* velocity =
+            test->add_subcommand("velocity", "Move with set velocity, using Velocity PID mode")
+                ->require_option();
+
+        TestOptions velocityTestOptions(velocity);
+
+        velocity->callback(
+            [this, candleBuilder, mdCanId, velocityTestOptions]()
+            {
+                auto md = getMd(mdCanId, candleBuilder);
+                if (md == nullptr)
+                {
+                    return;
+                }
+
+                md->setMotionMode(mab::MdMode_E::VELOCITY_PROFILE);
+                md->enable();
+
+                while (1)
+                {
+                    md->setTargetVelocity(*velocityTestOptions.target);
+                    m_logger.info("Velocity: %4.1f", md->getVelocity().first);
+                    usleep(30000);
+                }
+
+                md->disable();
+                m_logger.success("Movement ended.");
+            });
+
         // Update
         auto* update =
             mdCLi->add_subcommand("update", "Update firmware on MD drive.")->needs(mdCanIdOption);
