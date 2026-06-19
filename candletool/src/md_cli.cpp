@@ -946,6 +946,9 @@ namespace mab
                 m_logger << "- misc status: 	0x" << std::hex
                          << readableRegisters.miscStatus.value << std::dec << " ("
                          << statusToString(md->getMiscStatus().first) << ")" << std::endl;
+                m_logger << "- config status: 	0x" << std::hex
+                         << readableRegisters.configStatus.value << std::dec << " ("
+                         << statusToString(md->getConfigStatus().first) << ")" << std::endl;
             });
 
         // Register =======================================================================

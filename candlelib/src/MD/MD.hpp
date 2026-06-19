@@ -227,6 +227,12 @@ namespace mab
         std::pair<const std::unordered_map<MDStatus::MiscStatusBits, MDStatus::StatusItem_S>,
                   Error_t>
         getMiscStatus();
+        
+        /// @brief Request config status
+        /// @return Config status map with bit positions as ids
+        std::pair<const std::unordered_map<MDStatus::ConfigStatusBits, MDStatus::StatusItem_S>,
+                  Error_t>
+        getConfigStatus();
 
         /// @brief Request position of the MD
         /// @return Position in radians

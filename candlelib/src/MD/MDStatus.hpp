@@ -170,11 +170,29 @@ namespace mab
             WarnRoutineInProgress   = 30
         };
         std::unordered_map<MiscStatusBits, StatusItem_S> miscStatus = {
-            {MiscStatusBits::ErrorOTPMemoryCorrupted, StatusItem_S("Error OTP Memory Corrupted", true)},
+            {MiscStatusBits::ErrorOTPMemoryCorrupted,
+             StatusItem_S("Error OTP Memory Corrupted", true)},
             {MiscStatusBits::WarnRestartRequired, StatusItem_S("Restart Required", false)},
             {MiscStatusBits::WarnRoutineInProgress, StatusItem_S("Routine in progress", false)},
         };
 
+        enum class ConfigStatusBits : bitPos
+        {
+            ErrorSave                 = 1,
+            ErrorMotorParams          = 2,
+            ErrorLimits               = 3,
+            WarnBootloaderInfoMissing = 29,
+            WarnConfigEntryMissing    = 30
+        };
+        std::unordered_map<ConfigStatusBits, StatusItem_S> configStatus = {
+            {ConfigStatusBits::ErrorSave, StatusItem_S("Error during Saving", true)},
+            {ConfigStatusBits::ErrorMotorParams, StatusItem_S("Invalid Motor Parameters", true)},
+            {ConfigStatusBits::ErrorLimits, StatusItem_S("Invalid Limits", true)},
+            {ConfigStatusBits::WarnBootloaderInfoMissing,
+             StatusItem_S("Bootloader Information Missing", false)},
+            {ConfigStatusBits::WarnConfigEntryMissing,
+             StatusItem_S("Missing Config Entry (Default used)", false)},
+        };
 
         static std::vector<std::string> getStatusString(
             std::unordered_map<bitPos, StatusItem_S> errors)

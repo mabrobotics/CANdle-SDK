@@ -484,6 +484,19 @@ namespace mab
         MDStatus::decode(m_mdRegisters.miscStatus.value, m_status.miscStatus);
         return std::make_pair(m_status.miscStatus, result);
     }
+    std::pair<const std::unordered_map<MDStatus::ConfigStatusBits, MDStatus::StatusItem_S>,
+              MD::Error_t>
+    MD::getConfigStatus()
+    {
+        auto result = readRegister(m_mdRegisters.configStatus);
+        if (result != Error_t::OK)
+        {
+            m_log.error("Could not read ");
+            return std::make_pair(m_status.configStatus, result);
+        }
+        MDStatus::decode(m_mdRegisters.configStatus.value, m_status.configStatus);
+        return std::make_pair(m_status.configStatus, result);
+    }
 
     std::pair<float, MD::Error_t> MD::getPosition()
     {
