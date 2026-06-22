@@ -265,7 +265,7 @@ namespace mab
 
                     f32        calibrationTime = 40;  // seconds
                     version_ut fwVersion       = getMdFirmwareVersion(*md);
-                    if (fwVersion.s.major >= 2 && fwVersion.s.minor >= 6)
+                    if (fwVersion.s.major >= 2 || fwVersion.s.minor >= 6)
                         calibrationTime = 15;
                     f32 dt = 0.25;
                     for (f32 seconds = 0.; seconds < calibrationTime; seconds += dt)
@@ -301,14 +301,7 @@ namespace mab
                     if (md->writeRegister(registers.runCalibrateAuxEncoderCmd) != MD::Error_t::OK)
                         return;
 
-                    constexpr double AUX_CALIBRATION_TIME_COEFF = 2.8;  // seconds
-
-                    // Calculate calibration time based on gear ratio
-                    const int auxCalibrationTime =
-                        static_cast<int>((1.0 / registers.motorGearRatio.value) *
-                                         AUX_CALIBRATION_TIME_COEFF) +
-                        AUX_CALIBRATION_TIME_COEFF;
-
+                    f32 auxCalibrationTime = 30.f;
                     f32 dt = 0.25;
                     for (f32 seconds = 0.; seconds < auxCalibrationTime; seconds += dt)
                     {
