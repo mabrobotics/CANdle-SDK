@@ -74,9 +74,9 @@ namespace mab
                                       "Type of encoder calibration to perform. "
                                       "Possible values: all, main, aux.")
                          ->default_str("all")},
-                    {"run-tests",
+                    {"test",
                      rootCli->add_flag(
-                         "-t,--run-tests", *runTests, "Run accuracy tests after calibration. ")}};
+                         "-t,--test", *runTests, "Run accuracy tests after calibration. ")}};
             }
 
             const std::shared_ptr<std::string>  calibrationOfEncoder;

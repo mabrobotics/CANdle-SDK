@@ -247,71 +247,47 @@ namespace mab
                     return;
                 }
                 // Determine types of calibration that will be performed
-                bool performMainEncoderCalibration = false;
-                bool performAuxEncoderCalibration  = false;
+                bool doOnMainEncoder = true;
+                bool doOnAuxEncoder  = true;
 
-                // Check if aux encoder will be calibrated
-                if (*calibrationOptions.calibrationOfEncoder == "aux" ||
-                    *calibrationOptions.calibrationOfEncoder == "all")
-                {
-                    if (registers.auxEncoder.value == 0)
-                    {
-                        m_logger.warn(
-                            "Auxilary encoder not present, skipping aux encoder "
-                            "calibration!");
-                    }
-                    else
-                    {
-                        performAuxEncoderCalibration = true;
-                    }
-                }
-
-                // Check if main encoder will be calibrated
-                if (*calibrationOptions.calibrationOfEncoder == "main" ||
-                    *calibrationOptions.calibrationOfEncoder == "all")
-                {
-                    performMainEncoderCalibration = true;
-                }
+                if (*calibrationOptions.calibrationOfEncoder == "aux")
+                    doOnMainEncoder = false;
+                if (*calibrationOptions.calibrationOfEncoder == "main")
+                    doOnAuxEncoder = false;
 
                 // Perform main encoder calibration
-                if (performMainEncoderCalibration)
+                if (doOnMainEncoder && !*calibrationOptions.runTests)
                 {
                     m_logger.info("Starting main encoder calibration...");
                     registers.runCalibrateCmd = 1;  // Set flag to run main encoder calibration
                     if (md->writeRegister(registers.runCalibrateCmd) != MD::Error_t::OK)
-                    {
                         m_logger.error("Main encoder calibration failed!");
-                        return;
-                    }
-                    int        calibrationTime = 40;  // seconds
+
+                    f32        calibrationTime = 40;  // seconds
                     version_ut fwVersion       = getMdFirmwareVersion(*md);
                     if (fwVersion.s.major >= 2 && fwVersion.s.minor >= 6)
-                        calibrationTime = 16;
-                    for (int seconds = 0; seconds < calibrationTime; seconds++)
+                        calibrationTime = 15;
+                    f32 dt = 0.25;
+                    for (f32 seconds = 0.; seconds < calibrationTime; seconds += dt)
                     {
-                        m_logger.progress(static_cast<double>(seconds) /
-                                          static_cast<double>(calibrationTime));
-                        usleep(1'000'000);
+                        m_logger.progress(seconds / (f32)calibrationTime);
+                        usleep(dt * 1'000'000);
                     }
                     m_logger.progress(1.0f);  // Ensure progress is at 100%
 
                     // Check if main encoder calibration was successful
                     auto mainEncoderStatus = md->getMainEncoderStatus();
                     if (mainEncoderStatus.second != MD::Error_t::OK)
-                    {
-                        m_logger.error("Could not get calibration status from MD!");
                         return;
-                    }
                     if (mainEncoderStatus.first.at(MDStatus::EncoderStatusBits::ErrorCalibration)
                             .isSet())
-                    {
                         m_logger.error("Main encoder calibration failed!");
-                        return;
-                    }
-                    m_logger.success("Main encoder calibration completed successfully!");
+                    else
+                        m_logger.success("Main encoder calibration completed!");
                 }
+
                 // Perform aux encoder calibration
-                if (performAuxEncoderCalibration)
+                if (doOnAuxEncoder && !*calibrationOptions.runTests)
                 {
                     m_logger.info("Starting aux encoder calibration...");
                     // get gear ratio
@@ -321,13 +297,9 @@ namespace mab
                         return;
                     }
                     // Calibrate
-                    registers.runCalibrateAuxEncoderCmd =
-                        1;  // Set flag to run aux encoder calibration
+                    registers.runCalibrateAuxEncoderCmd = 1;
                     if (md->writeRegister(registers.runCalibrateAuxEncoderCmd) != MD::Error_t::OK)
-                    {
-                        m_logger.error("Aux encoder calibration failed!");
                         return;
-                    }
 
                     constexpr double AUX_CALIBRATION_TIME_COEFF = 2.8;  // seconds
 
@@ -337,12 +309,11 @@ namespace mab
                                          AUX_CALIBRATION_TIME_COEFF) +
                         AUX_CALIBRATION_TIME_COEFF;
 
-                    for (int seconds = 0; seconds < auxCalibrationTime; seconds++)
+                    f32 dt = 0.25;
+                    for (f32 seconds = 0.; seconds < auxCalibrationTime; seconds += dt)
                     {
-                        m_logger.progress(static_cast<double>(seconds) /
-                                          static_cast<double>(auxCalibrationTime));
-                        usleep(1'000'000);  // Wait for the MD to calibrate, TODO: change it when
-                                            // routines are ready
+                        m_logger.progress(seconds / (f32)auxCalibrationTime);
+                        usleep(dt * 1'000'000);
                     }
                     m_logger.progress(1.0f);  // Ensure progress is at 100%
 
@@ -360,23 +331,53 @@ namespace mab
                         return;
                     }
                     m_logger.success("Aux encoder calibration completed successfully!");
+                }
 
-                    // Testing aux encoder accuracy
-                    if (*calibrationOptions.runTests)
+                // Testing aux encoder accuracy
+                constexpr f32 RAD_TO_DEG = 180.0 / M_PI;
+                constexpr f32 dt         = 0.25;
+                if (*calibrationOptions.runTests)
+                {
+                    if (doOnMainEncoder)
+                    {
+                        registers.runTestMainEncoderCmd = 1;
+                        if (md->writeRegister(registers.runTestMainEncoderCmd) != MD::Error_t::OK)
+                            return;
+                        f32 testTime = 5.f;
+                        f32 dt       = 0.25;
+                        for (f32 seconds = 0.; seconds < testTime; seconds += dt)
+                        {
+                            m_logger.progress(seconds / testTime);
+                            usleep(dt * 1'000'000);
+                        }
+                        m_logger.progress(1.0f);  // Ensure progress is at 100%
+
+                        if (md->readRegisters(registers.calMainEncoderStdDev,
+                                              registers.calMainEncoderMinE,
+                                              registers.calMainEncoderMaxE) != MD::Error_t::OK)
+                            return;
+                        m_logger.info("Main encoder accuracy test results:");
+                        m_logger.info("  Standard deviation: %.6f rad  (%.4f deg)",
+                                      registers.calMainEncoderStdDev.value,
+                                      RAD_TO_DEG * registers.calMainEncoderStdDev.value);
+                        m_logger.info("  Lowest error:      %.6f rad (%.4f deg)",
+                                      registers.calMainEncoderMinE.value,
+                                      RAD_TO_DEG * registers.calMainEncoderMinE.value);
+                        m_logger.info("  Highest error:      %.6f rad  (%.4f deg)",
+                                      registers.calMainEncoderMaxE.value,
+                                      RAD_TO_DEG * registers.calMainEncoderMaxE.value);
+                    }
+                    if (doOnAuxEncoder)
                     {
                         m_logger.info("Starting aux encoder accuracy test...");
-                        registers.runTestAuxEncoderCmd =
-                            1;  // Set flag to run aux encoder accuracy test
+                        registers.runTestAuxEncoderCmd = 1;
                         if (md->writeRegister(registers.runTestAuxEncoderCmd) != MD::Error_t::OK)
-                        {
-                            m_logger.error("Aux encoder accuracy test failed!");
                             return;
-                        }
-                        for (int seconds = 0; seconds < auxCalibrationTime; seconds++)
+                        f32 testTime = 5.f;
+                        for (f32 seconds = 0.; seconds < testTime; seconds += dt)
                         {
-                            m_logger.progress(static_cast<double>(seconds) / auxCalibrationTime);
-                            usleep(1'000'000);  // Wait for the MD to test, TODO: change it when
-                                                // routines are ready
+                            m_logger.progress(seconds / testTime);
+                            usleep(dt * 1'000'000);
                         }
                         m_logger.progress(1.0f);  // Ensure progress is at 100%
 
@@ -387,7 +388,6 @@ namespace mab
                             m_logger.error("Could not read aux encoder accuracy test results!");
                             return;
                         }
-                        constexpr double RAD_TO_DEG = 180.0 / M_PI;
                         m_logger.info("Aux encoder accuracy test results:");
                         m_logger.info("  Standard deviation: %.6f rad  (%.4f deg)",
                                       registers.calAuxEncoderStdDev.value,
@@ -400,6 +400,7 @@ namespace mab
                                       RAD_TO_DEG * registers.calAuxEncoderMaxE.value);
                     }
                 }
+
                 auto quickStatus = md->getQuickStatus().first;
                 if (quickStatus.at(MDStatus::QuickStatusBits::CalibrationEncoderStatus))
                 {
