@@ -565,7 +565,7 @@ void PdsCli::parse()
                     if(i!=m_submoduleSocketNumber)
                     {
                         socketIndex_E socketCheck;
-                        bool isPS;
+                        bool isPS = false;
                         if(i==0)
                         {
                             isPS = false;
@@ -917,7 +917,7 @@ void PdsCli::powerStageCmdParse(void)
                 if(i!=m_submoduleSocketNumber)
                 {
                     socketIndex_E socketCheck;
-                    bool isPS;
+                    bool isPS = false;
                     if(i==0)
                     {
                         pds->getBindBrakeResistor(socketCheck);
