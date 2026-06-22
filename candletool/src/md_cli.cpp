@@ -1174,14 +1174,13 @@ namespace mab
                 *relativeTestOptions.target += pos;
                 md->enable();
 
-                for (f32 t = 0.f; t < 1.f; t += 0.01f)
+                for (f32 t = 0.f; t < 1.f; t += 0.001f)
                 {
                     f32 target = std::lerp(pos, *relativeTestOptions.target, t);
                     md->setTargetPosition(target);
                     m_logger.info("Position: %4.2f, Velocity: %4.1f",
                                   md->getPosition().first,
                                   md->getVelocity().first);
-                    usleep(30000);
                 }
 
                 md->disable();
