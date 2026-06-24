@@ -91,14 +91,16 @@ namespace mab
         m_log.progress(1.0);  // Transfering finish indication
 
         // Transfering metadata about firmware
-        if (bootloader.transferMetadata(true, firmwareSHA256) != CanBootloader::Error_t::OK)
+        if (bootloader.init(swAddress, appSize) != CanBootloader::Error_t::OK ||
+            bootloader.transferMetadata(true, firmwareSHA256) != CanBootloader::Error_t::OK)
         {
             m_log.error("Failed to transfer metadata");
             return false;
         }
 
         // Send boot cmd
-        if (bootloader.boot(swAddress))
+        bootloader.boot(swAddress);
+        if (bootloader.boot(swAddress) != CanBootloader::Error_t::OK)
         {
             m_log.error("Failed to boot");
             return false;

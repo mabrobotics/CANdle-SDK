@@ -6,16 +6,24 @@ int main()
 {
     // Logger is a standalone builtin class for handling output from different modules
     Logger log(Logger::ProgramLayer_E::TOP, "User Program");
+    log.g_m_verbosity = Logger::Verbosity_E::VERBOSITY_3;
 
-    // This parameters sets global internal logging level
-    Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_1;
-
-    // Attach Candle is an AIO method to get ready to use candle handle that corresponds to the real
-    // CANdle USB-CAN converter. Its a main object so should have the longest lifetime of all
-    // objects from the library.
     mab::Candle* candle = mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M,
                                             mab::candleTypes::busTypes_t::USB);
 
+    std::vector<u8> payload;
+    payload.resize(26, 0);
+    payload[0]  = 0x40;
+    payload[2]  = 0x50;
+    payload[8]  = 0x51;
+    payload[14] = 0x50;
+    payload[15] = 0x01;
+    payload[20] = 0x51;
+    payload[21] = 0x01;
+    //[26]  40 00 50 00 00 00 80 3F 51 00 00 00 00 00 50 01 00 00 00 00 51 01 00 00 00 00
+    //       0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
+    candle->transferCANFrame(100, payload, 24);
+    return 1;
     // Look for MAB devices present on the can network
     auto ids = mab::MD::discoverMDs(candle);
 

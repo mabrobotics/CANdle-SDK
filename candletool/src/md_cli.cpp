@@ -302,7 +302,7 @@ namespace mab
                         return;
 
                     f32 auxCalibrationTime = 30.f;
-                    f32 dt = 0.25;
+                    f32 dt                 = 0.25;
                     for (f32 seconds = 0.; seconds < auxCalibrationTime; seconds += dt)
                     {
                         m_logger.progress(seconds / (f32)auxCalibrationTime);
@@ -1313,11 +1313,7 @@ namespace mab
                         return;
                     }
                     CanLoader canLoader(candle, &mabFile, *mdCanId);
-                    if (canLoader.flashAndBoot(*(updateOptions.recovery)))
-                    {
-                        m_logger.success("Update complete for MD @ %d", *mdCanId);
-                    }
-                    else
+                    if (!canLoader.flashAndBoot(*(updateOptions.recovery)))
                     {
                         m_logger.error("MD flashing failed!");
                         return;

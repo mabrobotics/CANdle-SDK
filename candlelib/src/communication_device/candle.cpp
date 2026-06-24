@@ -235,7 +235,7 @@ namespace mab
                                                                     communicationStatus);
 
         m_log.debug("SEND");
-        // frameDump(dataToSend);  // can be enabled for in depth debugging
+        frameDump(dataToSend);  // can be enabled for in depth debugging
 
         if (dataToSend.size() > m_maxCANFrameSize)
         {
@@ -257,7 +257,7 @@ namespace mab
                         timeoutMs + 1);
         if (!m_dontUseFDCANFrames && buffer.at(1) != 0x01)
         {
-            m_log.error("CAN frame did not reach target device with id: %d!", canId);
+            m_log.debug("CAN frame did not reach target device with id: %d!", canId);
             return std::pair<std::vector<u8>, candleTypes::Error_t>(
                 dataToSend, candleTypes::Error_t::CAN_DEVICE_NOT_RESPONDING);
         }
@@ -268,8 +268,8 @@ namespace mab
         auto response = buffer;
 
         m_log.debug("Expected received len: %d", responseSize);
-        m_log.debug("RECEIVE");
-        // frameDump(response);
+        m_log.debug("RECEIVED %d", response.size());
+        frameDump(response);
 
         return std::pair<std::vector<u8>, candleTypes::Error_t>(response, communicationStatus);
     }
