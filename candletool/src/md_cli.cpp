@@ -641,12 +641,6 @@ namespace mab
                                    datarateToStr(*(candleBuilder->datarate))
                                        .value_or("NOT A DATARATE")
                                        .c_str());
-                else
-                {
-                    m_logger.info("Found following MDs:");
-                    for (const auto& id : ids)
-                        m_logger.info("- %d", id);
-                }
                 detachCandle(candle);
             });
         // Save ============================================================================

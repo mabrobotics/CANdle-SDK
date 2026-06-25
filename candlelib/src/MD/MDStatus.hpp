@@ -181,6 +181,7 @@ namespace mab
             ErrorSave                 = 1,
             ErrorMotorParams          = 2,
             ErrorLimits               = 3,
+            WarnSavingRequired        = 28,
             WarnBootloaderInfoMissing = 29,
             WarnConfigEntryMissing    = 30
         };
@@ -188,6 +189,7 @@ namespace mab
             {ConfigStatusBits::ErrorSave, StatusItem_S("Error during Saving", true)},
             {ConfigStatusBits::ErrorMotorParams, StatusItem_S("Invalid Motor Parameters", true)},
             {ConfigStatusBits::ErrorLimits, StatusItem_S("Invalid Limits", true)},
+            {ConfigStatusBits::WarnSavingRequired, StatusItem_S("Saving required", false)},
             {ConfigStatusBits::WarnBootloaderInfoMissing,
              StatusItem_S("Bootloader Information Missing", false)},
             {ConfigStatusBits::WarnConfigEntryMissing,

@@ -623,13 +623,13 @@ namespace mab
 
         log.info("Looking for MDs");
 
+        // workaround for ping error spam
+        Logger::Verbosity_E prevVerbosity =
+            Logger::g_m_verbosity.value_or(Logger::Verbosity_E::VERBOSITY_1);
         for (canId_t id = MIN_VAILID_ID; id < MAX_VAILID_ID; id++)
         {
             log.debug("Trying to bind MD with id %d", id);
             log.progress(float(id) / float(MAX_VAILID_ID));
-            // workaround for ping error spam
-            Logger::Verbosity_E prevVerbosity =
-                Logger::g_m_verbosity.value_or(Logger::Verbosity_E::VERBOSITY_1);
             Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
             MD md(id, candle);
             if (md.init() == MD::Error_t::OK)
@@ -638,19 +638,10 @@ namespace mab
                 md.readRegister(md.m_mdRegisters.motorName);
                 Logger::g_m_verbosity = prevVerbosity;
                 log.info("\r - Found '%s' at @%d" END_LINE, md.m_mdRegisters.motorName.value, id);
-                Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
             }
-
             Logger::g_m_verbosity = prevVerbosity;
         }
-        for (canId_t id : ids)
-        {
-            log.info("Discovered MD device with ID: %d", id);
-        }
-        if (ids.size() > 0)
-            return ids;
-
-        log.warn("Have not found any MD devices on the CAN bus!");
+        log.progress(1.);
         return ids;
     }
 }  // namespace mab
