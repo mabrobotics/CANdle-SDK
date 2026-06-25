@@ -60,6 +60,12 @@ namespace mab
         md.readRegister(md.m_mdRegisters.firmwareVersion);
         return {.i = md.m_mdRegisters.firmwareVersion.value};
     }
+    bool isMinimalVersion(version_ut fwVersion, int major, int minor, int rev)
+    {
+        if (fwVersion.s.major < major || fwVersion.s.minor < minor || fwVersion.s.revision < rev)
+            return false;
+        return true;
+    }
 
     MDCli::MDCli(CLI::App* rootCli, CANdleToolCtx_S ctx)
     {
@@ -220,9 +226,8 @@ namespace mab
                 }
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
-                {
                     return;
-                }
+
                 MDRegisters_S registers;
                 // Determine if setup error are present
                 auto calibrationStatus = md->getCalibrationStatus();
@@ -256,21 +261,20 @@ namespace mab
                     doOnAuxEncoder = false;
 
                 // Perform main encoder calibration
-                if (doOnMainEncoder && !*calibrationOptions.runTests)
+                f32 calibrationTime = 40;  // seconds
+                if (isMinimalVersion(getMdFirmwareVersion(*md), 3, 0, 0))
+                    calibrationTime = 15;
+                if (doOnMainEncoder)
                 {
                     m_logger.info("Starting main encoder calibration...");
                     registers.runCalibrateCmd = 1;  // Set flag to run main encoder calibration
                     if (md->writeRegister(registers.runCalibrateCmd) != MD::Error_t::OK)
                         m_logger.error("Main encoder calibration failed!");
 
-                    f32        calibrationTime = 40;  // seconds
-                    version_ut fwVersion       = getMdFirmwareVersion(*md);
-                    if (fwVersion.s.major >= 2 || fwVersion.s.minor >= 6)
-                        calibrationTime = 15;
                     f32 dt = 0.25;
-                    for (f32 seconds = 0.; seconds < calibrationTime; seconds += dt)
+                    for (f32 t = 0.; t < calibrationTime; t += dt)
                     {
-                        m_logger.progress(seconds / (f32)calibrationTime);
+                        m_logger.progress(t / (f32)calibrationTime);
                         usleep(dt * 1'000'000);
                     }
                     m_logger.progress(1.0f);  // Ensure progress is at 100%
@@ -287,7 +291,7 @@ namespace mab
                 }
 
                 // Perform aux encoder calibration
-                if (doOnAuxEncoder && !*calibrationOptions.runTests)
+                if (doOnAuxEncoder)
                 {
                     m_logger.info("Starting aux encoder calibration...");
                     // get gear ratio
@@ -301,11 +305,10 @@ namespace mab
                     if (md->writeRegister(registers.runCalibrateAuxEncoderCmd) != MD::Error_t::OK)
                         return;
 
-                    f32 auxCalibrationTime = 30.f;
-                    f32 dt                 = 0.25;
-                    for (f32 seconds = 0.; seconds < auxCalibrationTime; seconds += dt)
+                    f32 dt = 0.25;
+                    for (f32 t = 0.; t < calibrationTime; t += dt)
                     {
-                        m_logger.progress(seconds / (f32)auxCalibrationTime);
+                        m_logger.progress(t / (f32)calibrationTime);
                         usleep(dt * 1'000'000);
                     }
                     m_logger.progress(1.0f);  // Ensure progress is at 100%
@@ -324,74 +327,6 @@ namespace mab
                         return;
                     }
                     m_logger.success("Aux encoder calibration completed successfully!");
-                }
-
-                // Testing aux encoder accuracy
-                constexpr f32 RAD_TO_DEG = 180.0 / M_PI;
-                constexpr f32 dt         = 0.25;
-                if (*calibrationOptions.runTests)
-                {
-                    if (doOnMainEncoder)
-                    {
-                        registers.runTestMainEncoderCmd = 1;
-                        if (md->writeRegister(registers.runTestMainEncoderCmd) != MD::Error_t::OK)
-                            return;
-                        f32 testTime = 5.f;
-                        f32 dt       = 0.25;
-                        for (f32 seconds = 0.; seconds < testTime; seconds += dt)
-                        {
-                            m_logger.progress(seconds / testTime);
-                            usleep(dt * 1'000'000);
-                        }
-                        m_logger.progress(1.0f);  // Ensure progress is at 100%
-
-                        if (md->readRegisters(registers.calMainEncoderStdDev,
-                                              registers.calMainEncoderMinE,
-                                              registers.calMainEncoderMaxE) != MD::Error_t::OK)
-                            return;
-                        m_logger.info("Main encoder accuracy test results:");
-                        m_logger.info("  Standard deviation: %.6f rad  (%.4f deg)",
-                                      registers.calMainEncoderStdDev.value,
-                                      RAD_TO_DEG * registers.calMainEncoderStdDev.value);
-                        m_logger.info("  Lowest error:      %.6f rad (%.4f deg)",
-                                      registers.calMainEncoderMinE.value,
-                                      RAD_TO_DEG * registers.calMainEncoderMinE.value);
-                        m_logger.info("  Highest error:      %.6f rad  (%.4f deg)",
-                                      registers.calMainEncoderMaxE.value,
-                                      RAD_TO_DEG * registers.calMainEncoderMaxE.value);
-                    }
-                    if (doOnAuxEncoder)
-                    {
-                        m_logger.info("Starting aux encoder accuracy test...");
-                        registers.runTestAuxEncoderCmd = 1;
-                        if (md->writeRegister(registers.runTestAuxEncoderCmd) != MD::Error_t::OK)
-                            return;
-                        f32 testTime = 5.f;
-                        for (f32 seconds = 0.; seconds < testTime; seconds += dt)
-                        {
-                            m_logger.progress(seconds / testTime);
-                            usleep(dt * 1'000'000);
-                        }
-                        m_logger.progress(1.0f);  // Ensure progress is at 100%
-
-                        if (md->readRegisters(registers.calAuxEncoderStdDev,
-                                              registers.calAuxEncoderMinE,
-                                              registers.calAuxEncoderMaxE) != MD::Error_t::OK)
-                        {
-                            m_logger.error("Could not read aux encoder accuracy test results!");
-                            return;
-                        }
-                        m_logger.info("Aux encoder accuracy test results:");
-                        m_logger.info("  Standard deviation: %.6f rad  (%.4f deg)",
-                                      registers.calAuxEncoderStdDev.value,
-                                      RAD_TO_DEG * registers.calAuxEncoderStdDev.value);
-                        m_logger.info("  Lowest error:      %.6f rad (%.4f deg)",
-                                      registers.calAuxEncoderMinE.value,
-                                      RAD_TO_DEG * registers.calAuxEncoderMinE.value);
-                        m_logger.info("  Highest error:      %.6f rad  (%.4f deg)",
-                                      registers.calAuxEncoderMaxE.value,
-                                      RAD_TO_DEG * registers.calAuxEncoderMaxE.value);
-                    }
                 }
 
                 auto quickStatus = md->getQuickStatus().first;
@@ -532,7 +467,8 @@ namespace mab
 
                 // Allows using absolute paths, relative path to cwd (with `./`), relative path to
                 // getMotorsConfigPath
-                if (!configFilePath.is_absolute() && !configFilePath.string().starts_with("./"))
+                if (!configFilePath.is_absolute() && !configFilePath.string().starts_with("./") &&
+                    !configFilePath.string().starts_with("../"))
                     configFilePath = getMotorsConfigPath() / configFilePath;
 
                 mINI::INIFile      configFile(configFilePath.string());
@@ -1110,7 +1046,7 @@ namespace mab
         auto* absolute =
             test->add_subcommand("absolute", "Move to target utilizing trapezoidal profile")
                 ->require_option();
-        TestOptions absoluteTestOptions(absolute);
+        MoveTestOptions absoluteTestOptions(absolute);
 
         absolute->callback(
             [this, candleBuilder, mdCanId, absoluteTestOptions]()
@@ -1144,7 +1080,7 @@ namespace mab
         auto* relative =
             test->add_subcommand("relative", "Move relative to current position")->require_option();
 
-        TestOptions relativeTestOptions(relative);
+        MoveTestOptions relativeTestOptions(relative);
 
         relative->callback(
             [this, candleBuilder, mdCanId, relativeTestOptions]()
@@ -1183,7 +1119,7 @@ namespace mab
             test->add_subcommand("velocity", "Move with set velocity, using velocity profile")
                 ->require_option();
 
-        TestOptions velocityTestOptions(velocity);
+        MoveTestOptions velocityTestOptions(velocity);
 
         velocity->callback(
             [this, candleBuilder, mdCanId, velocityTestOptions]()
@@ -1206,6 +1142,63 @@ namespace mab
 
                 md->disable();
                 m_logger.success("Movement ended.");
+            });
+
+        // md test encoder
+        auto* encoderTest =
+            test->add_subcommand("encoder", "Test encoder accuracy")->require_option();
+
+        EncoderTestOptions encoderTestOptions(encoderTest);
+
+        encoderTest->callback(
+            [this, candleBuilder, mdCanId, encoderTestOptions]()
+            {
+                auto md = getMd(mdCanId, candleBuilder);
+                if (md == nullptr)
+                    return;
+                bool testMain = true;
+                if (*encoderTestOptions.encoder == "aux")
+                    testMain = false;
+
+                auto& regs = md->m_mdRegisters;
+                if (testMain)
+                {
+                    regs.runTestMainEncoderCmd = true;
+                    md->writeRegister(regs.runTestMainEncoderCmd);
+                }
+                else
+                {
+                    md->readRegister(regs.auxEncoder);
+                    if (regs.auxEncoder.value == 0)
+                    {
+                        m_logger.warn("Cannot start Aux encoder test. There is no Aux encoder!");
+                        return;
+                    }
+                    md->m_mdRegisters.runTestAuxEncoderCmd = true;
+                    md->writeRegister(md->m_mdRegisters.runTestAuxEncoderCmd);
+                }
+
+                f32 testTime = 6;
+                f32 dt       = 0.25;
+                for (f32 t = 0.f; t < testTime; t += dt)
+                {
+                    m_logger.progress(t / testTime);
+                    usleep(dt * 1'000'000);
+                }
+                m_logger.progress(1.);
+                md->disable();
+                if (testMain)
+                    md->readRegisters(regs.calMainEncoderMaxE, regs.calMainEncoderStdDev);
+                else
+                    md->readRegisters(regs.calAuxEncoderMaxE, regs.calAuxEncoderStdDev);
+                m_logger.info("Test Completed");
+                m_logger.info("[%s Encoder]", testMain ? "Main" : "Aux");
+                m_logger.info(
+                    " - error stddev: %.4f rad",
+                    testMain ? regs.calMainEncoderStdDev.value : regs.calAuxEncoderStdDev.value);
+                m_logger.info(
+                    " - error max: %.4f rad",
+                    testMain ? regs.calMainEncoderMaxE.value : regs.calAuxEncoderMaxE.value);
             });
 
         // Update
