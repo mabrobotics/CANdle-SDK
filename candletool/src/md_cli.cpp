@@ -351,8 +351,8 @@ namespace mab
                             MDStatus::CalibrationStatusBits::ErrorPolePairDetection))
                         m_logger.error("Pole pair detection failed!");
                 }
-                else if (quickStatus.at(MDStatus::QuickStatusBits::MainEncoderStatus) ||
-                         quickStatus.at(MDStatus::QuickStatusBits::OutputEncoderStatus))
+                if (quickStatus.at(MDStatus::QuickStatusBits::MainEncoderStatus) ||
+                    quickStatus.at(MDStatus::QuickStatusBits::OutputEncoderStatus))
                 {
                     m_logger.debug("Calibration failed at %s encoder error correction",
                                    quickStatus.at(MDStatus::QuickStatusBits::OutputEncoderStatus)
