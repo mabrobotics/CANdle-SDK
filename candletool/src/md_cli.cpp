@@ -60,7 +60,7 @@ namespace mab
         md.readRegister(md.m_mdRegisters.firmwareVersion);
         return {.i = md.m_mdRegisters.firmwareVersion.value};
     }
-    bool isMinimalVersion(version_ut fwVersion, int major, int minor, int rev)
+    bool isVersionAtLeast(version_ut fwVersion, int major, int minor, int rev)
     {
         if (fwVersion.s.major < major || fwVersion.s.minor < minor || fwVersion.s.revision < rev)
             return false;
@@ -210,12 +210,21 @@ namespace mab
         calibration->callback(
             [this, candleBuilder, mdCanId, calibrationOptions]()
             {
+                auto md = getMd(mdCanId, candleBuilder);
+                if (md == nullptr)
+                    return;
+
+                bool calibrationRequired = md->getCalibrationStatus().first.empty() ||
+                                           md->getMainEncoderStatus().first.empty() ||
+                                           md->getOutputEncoderStatus().first.empty();
                 m_logger.info(
                     "Calibration requires about 20W of power, please ensure that the "
-                    "power supply is sufficient!");
-                m_logger.warn(
-                    "The motor will rotate during calibration, "
-                    "are you sure you want to proceed?");
+                    "power supply is sufficient! The motor will rotate during calibration. ");
+                if (!calibrationRequired)
+                    m_logger.warn(
+                        "It appears the drive does not require a calibration. Are you sure you "
+                        "want to proceed?");
+
                 std::string answer;
                 std::cout << "Type 'Y' to continue: ";
                 std::getline(std::cin, answer);
@@ -224,9 +233,6 @@ namespace mab
                     m_logger.error("Calibration aborted by user!");
                     return;
                 }
-                auto md = getMd(mdCanId, candleBuilder);
-                if (md == nullptr)
-                    return;
 
                 MDRegisters_S registers;
                 // Determine if setup error are present
@@ -262,7 +268,7 @@ namespace mab
 
                 // Perform main encoder calibration
                 f32 calibrationTime = 40;  // seconds
-                if (isMinimalVersion(getMdFirmwareVersion(*md), 3, 0, 0))
+                if (isVersionAtLeast(getMdFirmwareVersion(*md), 3, 0, 0))
                     calibrationTime = 15;
                 if (doOnMainEncoder)
                 {
@@ -1261,16 +1267,16 @@ namespace mab
                                            *mdCanId);
                             return;
                         }
-                        version_ut fw = getMdFirmwareVersion(*md);
-                        if (fw.s.major <= 2 && fw.s.minor <= 5)
+                        auto fw = getMdFirmwareVersion(*md);
+                        if (!isVersionAtLeast(fw, 3, 0, 0))
                         {
                             m_logger.warn(
                                 "You are attempting to update MD from version v%d.%d.%d to version "
-                                "%s. This comes with braking changes that will require "
-                                "performing a *FACTORY RESET* of the drive. You will need to:\n"
+                                "%s.\n This comes with changes, that in specific conditions "
+                                "(motor+encoder combinations) may require you to:\n"
                                 "- reapply .cfg file,\n"
                                 "- perform calibration,\n"
-                                "- set zero offset (optional).\n"
+                                "- set zero offset.\n"
                                 "Continue? [y/n]",
                                 fw.s.major,
                                 fw.s.minor,
