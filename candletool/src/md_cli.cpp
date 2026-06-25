@@ -701,19 +701,15 @@ namespace mab
                 auto    ids    = MD::discoverMDs(candle);
 
                 if (ids.empty())
-                {
                     m_logger.error("No MD found on the bus for data %s",
                                    datarateToStr(*(candleBuilder->datarate))
                                        .value_or("NOT A DATARATE")
                                        .c_str());
-                }
                 else
                 {
                     m_logger.info("Found following MDs:");
-                }
-                for (const auto& id : ids)
-                {
-                    m_logger.info("- %d", id);
+                    for (const auto& id : ids)
+                        m_logger.info("- %d", id);
                 }
                 detachCandle(candle);
             });
@@ -752,7 +748,7 @@ namespace mab
                         return;
                     auto fault = md->readRegisterWithExtResponse(reg);
                     if (fault.first == MD::Error_t::TRANSFER_FAILED)
-                        m_logger.error("Error while reading register %s", reg.m_name.data());
+                        m_logger.debug("Error while reading register %s", reg.m_name.data());
                     if constexpr (std::is_integral_v<decltype(reg.value)>)
                         m_logger.debug("Read register %s, Value: %d", reg.m_name.data(), reg.value);
                     else
@@ -822,16 +818,29 @@ namespace mab
                                 readableRegisters.motorCalibrationMode.value)
                                 .value_or("Unknown")
                          << std::endl;
-                m_logger << "- auxilary encoder: "
+
+                m_logger << "[AUX encoder]" << std::endl;
+                m_logger << " - auxilary encoder: "
                          << MDAuxEncoderValue_S::toReadable(readableRegisters.auxEncoder.value)
                                 .value_or("Unknown")
                          << std::endl;
                 if (readableRegisters.auxEncoder.value != 0)
-                    m_logger << " - auxilary calibration mode: "
+                {
+                    m_logger << " - calibration mode: "
                              << MDAuxEncoderCalibrationModeValue_S::toReadable(
                                     readableRegisters.auxEncoderCalibrationMode.value)
                                     .value_or("Unknown")
                              << std::endl;
+                    m_logger << " - operation mode: "
+                             << MDAuxEncoderModeValue_S::toReadable(
+                                    readableRegisters.auxEncoderMode.value)
+                                    .value_or("Unknown")
+                             << std::endl;
+                    m_logger << " - position: " << std::setprecision(2)
+                             << readableRegisters.auxEncoderPosition.value << " rad" << std::endl;
+                    m_logger << " - velocity: " << std::setprecision(1)
+                             << readableRegisters.auxEncoderVelocity.value << " rad/s" << std::endl;
+                }
 
                 m_logger << "[Motion]" << std::endl;
                 m_logger << " - max torque: " << std::setprecision(2)
@@ -862,23 +871,12 @@ namespace mab
                          << readableRegisters.mainEncoderVelocity.value << " rad/s" << std::endl;
                 m_logger << "- torque: " << std::setprecision(2)
                          << readableRegisters.motorTorque.value << " Nm" << std::endl;
-                m_logger << "- driver temperature: " << std::fixed << std::setprecision(2)
+                m_logger << "- driver temperature: " << std::fixed << std::setprecision(1)
                          << readableRegisters.mosfetTemperature.value << " *C" << std::endl;
-                m_logger << "- motor temperature: " << std::fixed << std::setprecision(2)
-                         << readableRegisters.motorTemperature.value << " *C" << std::endl;
-                if (readableRegisters.auxEncoder.value != 0)
-                {
-                    m_logger << "[AUX encoder]" << std::endl;
-                    m_logger << " - mode: "
-                             << MDAuxEncoderModeValue_S::toReadable(
-                                    readableRegisters.auxEncoderMode.value)
-                                    .value_or("Unknown")
-                             << std::endl;
-                    m_logger << " - position: " << readableRegisters.auxEncoderPosition.value
-                             << " rad" << std::endl;
-                    m_logger << " - velocity: " << readableRegisters.auxEncoderVelocity.value
-                             << " rad/s" << std::endl;
-                }
+                if (readableRegisters.motorTemperature.value > 0.)
+                    m_logger << "- motor  temperature: " << std::fixed << std::setprecision(1)
+                             << readableRegisters.motorTemperature.value << " *C" << std::endl;
+
                 m_logger << std::endl;
                 auto statusToString =
                     []<typename T>(
