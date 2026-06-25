@@ -633,7 +633,13 @@ namespace mab
             Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
             MD md(id, candle);
             if (md.init() == MD::Error_t::OK)
+            {
                 ids.push_back(id);
+                md.readRegister(md.m_mdRegisters.motorName);
+                Logger::g_m_verbosity = prevVerbosity;
+                log.info("\r - Found '%s' at @%d" END_LINE, md.m_mdRegisters.motorName.value, id);
+                Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
+            }
 
             Logger::g_m_verbosity = prevVerbosity;
         }
