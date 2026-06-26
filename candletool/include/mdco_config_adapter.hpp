@@ -61,9 +61,7 @@ namespace mab
         };
 
         MDCOConfigAdapter()
-            : cfgToOdUnitConversions({{0x016, toMili},
-                                      {0x112, toMili},
-                                      {0x110, toEncTick},
+            : cfgToOdUnitConversions({{0x110, toEncTick},
                                       {0x111, toEncTick},
                                       {0x113, toRPM},
                                       {0x114, toRPM},
@@ -72,9 +70,7 @@ namespace mab
                                       {0x121, toRPM},
                                       {0x122, toRPM},
                                       {0x123, toRPM}}),
-              odToCfgUnitConversions({{0x016, fromMili},
-                                      {0x112, fromMili},
-                                      {0x110, fromEncTick},
+              odToCfgUnitConversions({{0x110, fromEncTick},
                                       {0x111, fromEncTick},
                                       {0x113, fromRPM},
                                       {0x114, fromRPM},
@@ -119,8 +115,10 @@ namespace mab
 
         static constexpr auto standardRegMaping =
             std::to_array<std::tuple<u16, u16, std::optional<u8>>>({
-                {0x016, 0x6075, {}},  // Motor rated current
-                {0x112, 0x6076, {}},  // Motor rated torque
+                {0x117, 0x6075, {}},  // Motor rated current
+                {0x116, 0x6076, {}},  // Motor rated torque
+                {0x016, 0X6073, {}},  // Motor max current
+                {0x112, 0X6072, {}},  // Motor max torque
 
                 {0x110, 0x607D, 2},  // Max position
                 {0x111, 0x607D, 1},  // Min position

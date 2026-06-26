@@ -87,6 +87,8 @@
     MD_REG(maxVelocity, float, 0x113, RW)            \
     MD_REG(maxAcceleration, float, 0x114, RW)        \
     MD_REG(maxDeceleration, float, 0x115, RW)        \
+    MD_REG(ratedTorque, float, 0x116, RW)            \
+    MD_REG(ratedCurrent, float, 0x117, RW)           \
                                                      \
     MD_REG(profileVelocity, f32, 0x120, RW)          \
     MD_REG(profileAcceleration, f32, 0x121, RW)      \

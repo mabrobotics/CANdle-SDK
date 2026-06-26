@@ -457,7 +457,12 @@ namespace mab
             {0x115,
              MDCfgElement(
                  "limits", "max deceleration", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
-
+            {0x116,
+             MDCfgElement(
+                 "limits", "rated torque", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x117,
+             MDCfgElement(
+                 "limits", "rated current", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
             // Motion profile
             {0x120,
              MDCfgElement(
