@@ -669,6 +669,7 @@ namespace mab
             });
 
         // Info ============================================================================
+        // candletool md info
         auto* info = mdCLi->add_subcommand("info", "Get information about the MD drive.")
                          ->needs(mdCanIdOption);
         info->callback(
@@ -753,6 +754,12 @@ namespace mab
                          << MDMainEncoderCalibrationModeValue_S::toReadable(
                                 readableRegisters.motorCalibrationMode.value)
                                 .value_or("Unknown")
+                         << std::endl;
+                
+                m_logger << "[MAIN encoder]" << std::endl;
+                m_logger << " - main encoder: "
+                         << MDAuxEncoderValue_S::toReadable(readableRegisters.mainEncoder.value)
+                                .value_or("Onboard or Legacy Aux in MAIN mode")
                          << std::endl;
 
                 m_logger << "[AUX encoder]" << std::endl;
