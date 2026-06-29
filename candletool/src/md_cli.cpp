@@ -757,9 +757,12 @@ namespace mab
                          << std::endl;
 
                 m_logger << "[MAIN encoder]" << std::endl;
+                bool auxAsMain = readableRegisters.auxEncoder.value != 0 &&
+                                 readableRegisters.auxEncoderMode.value ==
+                                     (u8)MDAuxEncoderModeValue_S::toNumeric("MAIN").value();
                 m_logger << " - main encoder: "
                          << (readableRegisters.mainEncoder.value == 0
-                                 ? "ONBOARD"
+                                 ? (auxAsMain ? "Aux as MAIN" : "ONBOARD")
                                  : MDAuxEncoderValue_S::toReadable(
                                        readableRegisters.mainEncoder.value == 0)
                                        .value_or("Onboard or Legacy Aux in MAIN mode"))
@@ -782,10 +785,15 @@ namespace mab
                                     readableRegisters.auxEncoderMode.value)
                                     .value_or("Unknown")
                              << std::endl;
-                    m_logger << " - position: " << std::setprecision(2)
-                             << readableRegisters.auxEncoderPosition.value << " rad" << std::endl;
-                    m_logger << " - velocity: " << std::setprecision(1)
-                             << readableRegisters.auxEncoderVelocity.value << " rad/s" << std::endl;
+                    if (!auxAsMain)
+                    {
+                        m_logger << " - position: " << std::setprecision(2)
+                                 << readableRegisters.auxEncoderPosition.value << " rad"
+                                 << std::endl;
+                        m_logger << " - velocity: " << std::setprecision(1)
+                                 << readableRegisters.auxEncoderVelocity.value << " rad/s"
+                                 << std::endl;
+                    }
                 }
 
                 m_logger << "[Motion]" << std::endl;
