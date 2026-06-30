@@ -902,7 +902,7 @@ namespace mab
                         ->needs(mdCanIdOption)
                         ->require_subcommand();
 
-        // Register read
+        // candletool md register read
         auto regRead = reg->add_subcommand("read", "Read register value.");
 
         RegisterReadOption regReadOptions(regRead);
@@ -952,7 +952,7 @@ namespace mab
                     "Register %s has a value of %s", registerStr.c_str(), result.c_str());
             });
 
-        // Register write
+        // candletool md register write
         auto regWrite = reg->add_subcommand("write", "Write register value to MD");
 
         RegisterWriteOption registerWriteOption(regWrite);

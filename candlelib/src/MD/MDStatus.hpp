@@ -158,10 +158,10 @@ namespace mab
         std::unordered_map<MotionStatusBits, StatusItem_S> motionStatus = {
             {MotionStatusBits::ErrorPositionLimit, StatusItem_S("Error Position Limit", true)},
             {MotionStatusBits::ErrorVelocityLimit, StatusItem_S("Error Velocity Limit", true)},
-            {MotionStatusBits::WarningAcceleration, StatusItem_S("Warning Acceleration", false)},
-            {MotionStatusBits::WarningTorque, StatusItem_S("Warning Torque", false)},
-            {MotionStatusBits::WarningVelocity, StatusItem_S("Warning Velocity", false)},
-            {MotionStatusBits::WarningPosition, StatusItem_S("Warning Position", false)}};
+            {MotionStatusBits::WarningAcceleration, StatusItem_S("Warning Acceleration Clipped", false)},
+            {MotionStatusBits::WarningTorque, StatusItem_S("Warning Torque Clipped", false)},
+            {MotionStatusBits::WarningVelocity, StatusItem_S("Warning Velocity Target Clipped", false)},
+            {MotionStatusBits::WarningPosition, StatusItem_S("Warning Position Target Clipped", false)}};
 
         enum class MiscStatusBits : bitPos
         {
