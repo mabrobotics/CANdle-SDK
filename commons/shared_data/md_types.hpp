@@ -53,14 +53,12 @@
     MD_REG(motorImpPidKp, float, 0x050, RW)          \
     MD_REG(motorImpPidKd, float, 0x051, RW)          \
                                                      \
+    MD_REG(velocity, float, 0x062, RO)               \
+    MD_REG(position, float, 0x063, RO)               \
+    MD_REG(torque, float, 0x064, RO)                 \
     MD_REG(mainEncoderVelocity, float, 0x062, RO)    \
     MD_REG(mainEncoderPosition, float, 0x063, RO)    \
     MD_REG(motorTorque, float, 0x064, RO)            \
-                                                     \
-    MD_REG(homingMode, u8, 0x070, RW)                \
-    MD_REG(homingMaxTravel, float, 0x071, RW)        \
-    MD_REG(homingVelocity, float, 0x072, RW)         \
-    MD_REG(homingTorque, float, 0x073, RW)           \
                                                      \
     MD_REG(runSaveCmd, u8, 0x080, WO)                \
     MD_REG(runTestMainEncoderCmd, u8, 0x081, WO)     \
@@ -68,7 +66,6 @@
     MD_REG(runCalibrateCmd, u8, 0x083, WO)           \
     MD_REG(runCalibrateAuxEncoderCmd, u8, 0x084, WO) \
     MD_REG(runCalibratePiGains, u8, 0x085, WO)       \
-    MD_REG(runHoming, u8, 0x086, WO)                 \
     MD_REG(runRestoreFactoryConfig, u8, 0x087, WO)   \
     MD_REG(runReset, u8, 0x088, WO)                  \
     MD_REG(runClearWarnings, u8, 0x089, WO)          \
@@ -84,6 +81,8 @@
     MD_REG(calMainEncoderMinE, float, 0x104, RO)     \
     MD_REG(calMainEncoderMaxE, float, 0x105, RO)     \
                                                      \
+    MD_REG(maxPosition, float, 0x110, RW)            \
+    MD_REG(minPosition, float, 0x111, RW)            \
     MD_REG(positionLimitMax, float, 0x110, RW)       \
     MD_REG(positionLimitMin, float, 0x111, RW)       \
     MD_REG(maxTorque, float, 0x112, RW)              \
@@ -110,9 +109,15 @@
     MD_REG(userGpioState, u16, 0x161, RO)            \
                                                      \
     MD_REG(shuntResistance, float, 0x700, RW)        \
+    MD_REG(maxDriverCurrent, float, 0x701, RO)       \
                                                      \
-    MD_REG(uniqueID, char[12], 0x7FE, RO)            \
+    MD_REG(productionDate, char[6], 0x7FB, RO)       \
+    MD_REG(productionBatch, char[24], 0x7FC, RO)     \
+    MD_REG(uniqueID, char[12], 0x7FD, RO)            \
+    MD_REG(hardwareRev, u8, 0x7FE, RO)               \
     MD_REG(hardwareType, u8, 0x7FF, RO)              \
+    MD_REG(firmwareBuildDate, u32, 0x800, RO)        \
+    MD_REG(firmwareHash, char[8], 0x801, RO)         \
     MD_REG(buildDate, u32, 0x800, RO)                \
     MD_REG(commitHash, char[8], 0x801, RO)           \
     MD_REG(firmwareVersion, u32, 0x802, RO)          \
@@ -121,13 +126,13 @@
     MD_REG(mosfetTemperature, f32, 0x806, RO)        \
     MD_REG(motorTemperature, f32, 0x807, RO)         \
     MD_REG(motorShutdownTemp, u8, 0x808, RW)         \
+                                                     \
     MD_REG(mainEncoderStatus, u32, 0x809, RO)        \
     MD_REG(auxEncoderStatus, u32, 0x80A, RO)         \
     MD_REG(calibrationStatus, u32, 0x80B, RO)        \
     MD_REG(bridgeStatus, u32, 0x80C, RO)             \
     MD_REG(hardwareStatus, u32, 0x80D, RO)           \
     MD_REG(communicationStatus, u32, 0x80E, RO)      \
-    MD_REG(homingStatus, u32, 0x80F, RO)             \
     MD_REG(motionStatus, u32, 0x810, RO)             \
     MD_REG(dcBusVoltage, f32, 0x811, RO)             \
     MD_REG(miscStatus, u32, 0x813, RO)               \
