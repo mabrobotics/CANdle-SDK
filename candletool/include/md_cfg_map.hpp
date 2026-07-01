@@ -122,6 +122,8 @@ namespace mab
         std::optional<mINI::INIStructure> m_mdConfigSchema;
 
       public:
+        u8 encoderType = 0;
+
         MDConfigMap(std::optional<mINI::INIStructure> mdConfigSchema = {})
             : m_mdConfigSchema(mdConfigSchema)
         {
@@ -488,6 +490,7 @@ namespace mab
                           "mode",
                           MDCfgElement::ParserFunctions_S(
                               GPIOModeToReadable, GPIOModeFromReadable, verifyEnum))}};
+        ///
 
       private:
         MDRegisters_S registers;  // only for verification purposes

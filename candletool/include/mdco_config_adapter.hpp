@@ -15,11 +15,18 @@
 
 namespace mab
 {
+
     struct MDCOConfigAdapter
     {
         std::vector<std::reference_wrapper<EDSEntry>> configToOd(
             MDConfigMap& config, std::shared_ptr<EDSObjectDictionary> od);
         void configFromOd(std::shared_ptr<EDSObjectDictionary> od, MDConfigMap& config);
+
+        static inline u32 CPR;
+        void              setCPR(std::string_view _CPR)
+        {
+            std::from_chars(_CPR.data(), _CPR.data() + _CPR.size(), CPR);
+        }
 
         static constexpr auto toMili = [](std::string_view x) -> std::string
         {
@@ -38,13 +45,14 @@ namespace mab
         {
             i64 xInt = 0;
             std::from_chars(x.begin(), x.end(), xInt);
-            return std::to_string(static_cast<i64>(xInt * 16384 / (2 * M_PI)));
+            std::string encTick = std::to_string(static_cast<i64>(xInt * CPR / (2 * M_PI)));
+            return encTick;
         };
         static constexpr auto fromEncTick = [](std::string_view x) -> std::string
         {
             f32 xFloat;
             std::from_chars(x.begin(), x.end(), xFloat);
-            return std::to_string(xFloat * 2 * M_PI / 16384.f);
+            return std::to_string(xFloat * 2 * M_PI / (CPR * 1.0f));
         };
 
         static constexpr auto toRPM = [](std::string_view x) -> std::string
@@ -61,7 +69,11 @@ namespace mab
         };
 
         MDCOConfigAdapter()
-            : cfgToOdUnitConversions({{0x110, toEncTick},
+            : cfgToOdUnitConversions({{0x016, toMili},
+                                      {0x112, toMili},
+                                      {0x117, toMili},
+                                      {0x116, toMili},
+                                      {0x110, toEncTick},
                                       {0x111, toEncTick},
                                       {0x113, toRPM},
                                       {0x114, toRPM},
@@ -70,7 +82,11 @@ namespace mab
                                       {0x121, toRPM},
                                       {0x122, toRPM},
                                       {0x123, toRPM}}),
-              odToCfgUnitConversions({{0x110, fromEncTick},
+              odToCfgUnitConversions({{0x016, fromMili},
+                                      {0x112, fromMili},
+                                      {0x117, fromMili},
+                                      {0x116, fromMili},
+                                      {0x110, fromEncTick},
                                       {0x111, fromEncTick},
                                       {0x113, fromRPM},
                                       {0x114, fromRPM},
