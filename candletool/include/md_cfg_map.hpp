@@ -122,6 +122,13 @@ namespace mab
         std::optional<mINI::INIStructure> m_mdConfigSchema;
 
       public:
+        u8 getValueAsNumber(u16 _address)
+        {
+            std::string_view conversionTypeS = getValueByAddress(_address);
+            u8               conversionTypeU;
+            std::from_chars(conversionTypeS.begin(), conversionTypeS.end(), conversionTypeU);
+            return conversionTypeU;
+        }
         u8 encoderType = 0;
 
         MDConfigMap(std::optional<mINI::INIStructure> mdConfigSchema = {})

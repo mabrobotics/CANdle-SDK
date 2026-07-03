@@ -125,9 +125,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
 
     // CAN ============================================================================
 
-    CLI::App* can = mdco->add_subcommand("can", "Configure CAN id of the driver.")
-                        ->needs(mdCanIdOption)
-                        ->require_option();
+    CLI::App*  can = mdco->add_subcommand("can", "Configure CAN id of the driver.")
+                         ->needs(mdCanIdOption)
+                         ->require_option();
     CanOptions canOptions(can);
     can->callback(
         [this, mdCanId, canOptions, loadEDS]()
@@ -205,6 +205,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
 
             MDConfigMap       cfgMap;
             MDCOConfigAdapter odCfgAdapter;
+            // MDCOConfigAdapter odCfgAdapter(static_cast<mab::MDAuxEncoderValue_S::EncoderTypes>(
+            //     cfgMap.getValueAsNumber(0x025)));
+
             for (auto& [regAddr, objName, subidxOpt] : odCfgAdapter.manufacturerRegMaping)
             {
                 auto objOpt = od->getEntryByName(objName);
@@ -221,6 +224,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                     continue;
                 }
             }
+
             for (auto& [regAddr, objAddress, subidxOpt] : odCfgAdapter.standardRegMaping)
             {
                 auto& obj = subidxOpt.has_value() ? (*od)[objAddress][subidxOpt.value()]
@@ -287,7 +291,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 return;
             }
 
-            MDConfigMap       cfgMap;
+            MDConfigMap cfgMap;
+
             MDCOConfigAdapter odCfgAdapter;
 
             for (auto& [address, toml] : cfgMap.m_map)
@@ -307,8 +312,10 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                                 toml.m_tomlKey.data());
                     return;
                 }
-            }
-
+            };
+            odCfgAdapter.setCPR(
+                static_cast<mab::MDAuxEncoderValue_S::EncoderTypes>(cfgMap.getValueAsNumber(0x020)),
+                cfgMap.getValueAsNumber(0x025));
             auto entries = odCfgAdapter.configToOd(cfgMap, od);
 
             for (auto& entry : entries)

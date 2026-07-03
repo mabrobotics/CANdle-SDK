@@ -1,5 +1,4 @@
 #include "mdco_config_adapter.hpp"
-#include "conversionHelpers.hpp"
 
 namespace mab
 {
@@ -10,11 +9,12 @@ namespace mab
         std::vector<std::reference_wrapper<EDSEntry>> result;
         Logger                                        log(Logger::ProgramLayer_E::TOP, "MDCO CFG");
         // CPR for encoder ticks calculations
-        setCPR(getCPRFromCfg(config));
 
         ///
 
         // Manufacturer part parsing
+        // volatile u8 test = config.getValueAsNumber(0x025);
+        // setCPR(static_cast<mab::MDAuxEncoderValue_S::EncoderTypes>(test));
         for (const auto& [regAddr, objName, subIdx] : manufacturerRegMaping)
         {
             const std::string cfgValue =

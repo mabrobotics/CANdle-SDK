@@ -37,36 +37,66 @@ namespace mab
             return std::nullopt;
         }
     };
+
     struct MDAuxEncoderValue_S
     {
-        static inline const std::map<u32, std::string_view> fromNumericMap{
-            {0, "NONE"},
-            {1, "ME_AS_CENTER"},
-            {2, "ME_AS_OFFAXIS"},
-            {3, "RLS_17B_RS422"},
-            {4, "CM_OFFAXIS"},
-            {5, "M24B_CENTER"},
-            {6, "M24B_OFFAXIS"},
-            {7, "DUAL_ENCODER"},
-            {8, "ONBOARD"},
-            {9, "RLS_17B_SPI"},
-            {10, "RLS_ORBIS_RS422"},
-            {11, "CE300"},
+        enum class EncoderTypes : u8
+        {
+            NONE            = 0,
+            ME_AS_CENTER    = 1,
+            ME_AS_OFFAXIS   = 2,
+            RLS_17B_RS422   = 3,
+            CM_OFFAXIS      = 4,
+            M24B_CENTER     = 5,
+            M24B_OFFAXIS    = 6,
+            DUAL_ENCODER    = 7,
+            ONBOARD         = 8,
+            RLS_17B_SPI     = 9,
+            RLS_ORBIS_RS422 = 10,
+            CE300           = 11,
         };
-        static inline const std::map<std::string_view, u32> toNumericMap{
-            {"NONE", 0},
-            {"ME_AS_CENTER", 1},
-            {"ME_AS_OFFAXIS", 2},
-            {"RLS_17B_RS422", 3},
-            {"MB053SFA17BENT00", 3},  // deprecated
-            {"CM_OFFAXIS", 4},
-            {"M24B_CENTER", 5},
-            {"M24B_OFFAXIS", 6},
-            {"DUAL_ENCODER", 7},
-            {"ONBOARD", 8},
-            {"RLS_17B_SPI", 9},
-            {"RLS_ORBIS_RS422", 10},
-            {"CE300", 11},
+        static inline const std::map<EncoderTypes, u32> encoderCPR{
+            {EncoderTypes::NONE, 16384},
+            {EncoderTypes::ME_AS_CENTER, 16384},
+            {EncoderTypes::ME_AS_OFFAXIS, 16384},
+            {EncoderTypes::RLS_17B_RS422, 131072},
+            {EncoderTypes::CM_OFFAXIS, 131072},
+            {EncoderTypes::M24B_CENTER, 16777216},
+            {EncoderTypes::M24B_OFFAXIS, 16777216},
+            {EncoderTypes::DUAL_ENCODER, 16384},
+            {EncoderTypes::ONBOARD, 16384},
+            {EncoderTypes::RLS_17B_SPI, 131072},
+            {EncoderTypes::RLS_ORBIS_RS422, 131072},
+            {EncoderTypes::CE300, 0},
+        };
+        static inline const std::map<EncoderTypes, std::string_view> fromNumericMap{
+            {EncoderTypes::NONE, "NONE"},
+            {EncoderTypes::ME_AS_CENTER, "ME_AS_CENTER"},
+            {EncoderTypes::ME_AS_OFFAXIS, "ME_AS_OFFAXIS"},
+            {EncoderTypes::RLS_17B_RS422, "RLS_17B_RS422"},
+            {EncoderTypes::CM_OFFAXIS, "CM_OFFAXIS"},
+            {EncoderTypes::M24B_CENTER, "M24B_CENTER"},
+            {EncoderTypes::M24B_OFFAXIS, "M24B_OFFAXIS"},
+            {EncoderTypes::DUAL_ENCODER, "DUAL_ENCODER"},
+            {EncoderTypes::ONBOARD, "ONBOARD"},
+            {EncoderTypes::RLS_17B_SPI, "RLS_17B_SPI"},
+            {EncoderTypes::RLS_ORBIS_RS422, "RLS_ORBIS_RS422"},
+            {EncoderTypes::CE300, "CE300"},
+        };
+        static inline const std::map<std::string_view, EncoderTypes> toNumericMap{
+            {"NONE", EncoderTypes::NONE},
+            {"ME_AS_CENTER", EncoderTypes::ME_AS_CENTER},
+            {"ME_AS_OFFAXIS", EncoderTypes::ME_AS_OFFAXIS},
+            {"RLS_17B_RS422", EncoderTypes::RLS_17B_RS422},
+            {"MB053SFA17BENT00", EncoderTypes::NONE},  // deprecated
+            {"CM_OFFAXIS", EncoderTypes::CM_OFFAXIS},
+            {"M24B_CENTER", EncoderTypes::M24B_CENTER},
+            {"M24B_OFFAXIS", EncoderTypes::M24B_OFFAXIS},
+            {"DUAL_ENCODER", EncoderTypes::DUAL_ENCODER},
+            {"ONBOARD", EncoderTypes::ONBOARD},
+            {"RLS_17B_SPI", EncoderTypes::RLS_17B_SPI},
+            {"RLS_ORBIS_RS422", EncoderTypes::RLS_ORBIS_RS422},
+            {"CE300", EncoderTypes::CE300},
         };
 
         static std::optional<u32> toNumeric(const std::string_view val)
@@ -76,14 +106,14 @@ namespace mab
             auto it = toNumericMap.find(val);
             if (it != toNumericMap.end())
             {
-                return it->second;
+                return static_cast<u32>(it->second);
             }
             return std::nullopt;
         }
 
         static std::optional<std::string> toReadable(u32 val)
         {
-            auto it = fromNumericMap.find(val);
+            auto it = fromNumericMap.find(static_cast<EncoderTypes>(val));
             if (it != fromNumericMap.end())
             {
                 return std::string(it->second);

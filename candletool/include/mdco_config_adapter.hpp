@@ -22,12 +22,20 @@ namespace mab
             MDConfigMap& config, std::shared_ptr<EDSObjectDictionary> od);
         void configFromOd(std::shared_ptr<EDSObjectDictionary> od, MDConfigMap& config);
 
-        static inline u32 CPR;
-        void              setCPR(std::string_view _CPR)
-        {
-            std::from_chars(_CPR.data(), _CPR.data() + _CPR.size(), CPR);
-        }
+        static inline u32 CPR = 0;
 
+        void setCPR(mab::MDAuxEncoderValue_S::EncoderTypes _type, u8 _mode)
+        {
+            if (_mode == 4)
+            {
+                this->CPR = mab::MDAuxEncoderValue_S::encoderCPR.at(_type);
+            }
+            else
+            {
+                this->CPR = mab::MDAuxEncoderValue_S::encoderCPR.at(
+                    mab::MDAuxEncoderValue_S::EncoderTypes::NONE);
+            }
+        };
         static constexpr auto toMili = [](std::string_view x) -> std::string
         {
             i64 xInt = 0;
