@@ -58,6 +58,9 @@ namespace mab
                 break;
         } while (recovery);
 
+        m_log.info("Bootloader Connected!");
+        sleep(1);
+
         // Clearing memory
         if (bootloader.erase(swAddress, appSize) != CanBootloader::Error_t::OK)
         {

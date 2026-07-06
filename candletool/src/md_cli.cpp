@@ -1307,7 +1307,7 @@ namespace mab
                         }
 
                         md->reset();
-                        usleep(300'000);
+                        usleep(200'000);
                     }
                     else
                     {
