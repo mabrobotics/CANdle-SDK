@@ -123,6 +123,9 @@ namespace mab
 
         if (sendCommand(Command_t::META, payload))
         {
+            // old workaround for CANdle limitation, of having max timeout of ~250ish ms.
+            // META message does saveing in flash, so it takes slightly longer than that, and we must 
+            // send another frame to get *actual* response for the command.
             std::vector<u8> dummy;
             return sendFrame(dummy);
         }
