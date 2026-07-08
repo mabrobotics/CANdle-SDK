@@ -52,10 +52,18 @@ namespace mab
 
         static constexpr auto toEncTick = [](std::string_view x) -> std::string
         {
-            i64 xInt = 0;
+            i64 xInt   = 0;
+            i32 result = 0;
             std::from_chars(x.begin(), x.end(), xInt);
-            xInt                = xInt * CPR / (2 * M_PI);
-            std::string encTick = std::to_string(static_cast<i64>(xInt));
+
+            if (__builtin_mul_overflow(xInt, CPR, &result))
+            {
+                result = (xInt > 0) ? INT32_MAX : INT32_MIN;
+            }
+            else
+                result = xInt * CPR / (2 * M_PI);
+
+            std::string encTick = std::to_string(static_cast<i64>(result));
 
             return encTick;
         };

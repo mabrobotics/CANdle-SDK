@@ -566,6 +566,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             MDCOConfigAdapter odCfgAdapter;
             mdco->readSDO((*od)[0x2005][0x3]);
             mdco->readSDO((*od)[0x2005][0x1]);
+
             u8 mode = (u8)(canopen_types::UNSIGNED8_t)(*od)[0x2005][0x3];
             u8 type = (u8)(canopen_types::UNSIGNED8_t)(*od)[0x2005][0x1];
 
@@ -603,36 +604,31 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                     m_log.info("%s", ss.str().c_str());
                     for (auto& subobject : object.second)
                     {
+                        unsigned int subIdx =
+                            subobject.second->getEntryMetaData().address.second.value();
                         if (mdco->readSDO(*subobject.second) != MDCO::Error_t::OK)
                         {
                             m_log.error("could not read object %s",
                                         subobject.second->getEntryMetaData().parameterName.c_str());
                             continue;
                         }
-                        // auto              ob = od->getEntryByName("Encoder CPR");
-                        // auto& obTest =  ob.value().get()[.value()]
 
                         std::stringstream ss;
-                        if (idx == 0x607d)
+                        if (idx == 0x607d && subIdx > 0)
                         {
                             std::string positionInRad = mab::MDCOConfigAdapter::fromEncTick(
                                 subobject.second->getAsString());
-                            //     odCfgAdapter.fromEncTick(subobject.second->getAsString());
 
-                            ss << "[0x" << std::hex << idx << "]" << "[0x"
-                               << (unsigned int)subobject.second->getEntryMetaData()
-                                      .address.second.value()
-                               << "]" << subobject.second->getEntryMetaData().parameterName << " = "
-                               << subobject.second->getAsString()
-                               << "[Encoder ticks] non converted " << positionInRad << "[rad]";
+                            ss << "[0x" << std::hex << idx << "]" << "[0x" << subIdx << "]"
+                               << subobject.second->getEntryMetaData().parameterName << " = "
+                               << subobject.second->getAsString() << "[Encoder ticks],  "
+                               << positionInRad << "[rad]";
                             m_log.info("%s", ss.str().c_str());
                         }
                         else
                         {
-                            ss << "[0x" << std::hex << idx << "]" << "[0x"
-                               << (unsigned int)subobject.second->getEntryMetaData()
-                                      .address.second.value()
-                               << "]" << subobject.second->getEntryMetaData().parameterName << " = "
+                            ss << "[0x" << std::hex << idx << "]" << "[0x" << subIdx << "]"
+                               << subobject.second->getEntryMetaData().parameterName << " = "
                                << subobject.second->getAsString();
                             m_log.info("%s", ss.str().c_str());
                         }

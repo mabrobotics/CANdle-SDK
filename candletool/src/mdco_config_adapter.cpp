@@ -8,27 +8,9 @@ namespace mab
     {
         std::vector<std::reference_wrapper<EDSEntry>> result;
         Logger                                        log(Logger::ProgramLayer_E::TOP, "MDCO CFG");
-        // CPR for encoder ticks calculations
 
-        ///
-
-        // Manufacturer part parsing
-        // volatile u8 test = config.getValueAsNumber(0x025);
-        // setCPR(static_cast<mab::MDAuxEncoderValue_S::EncoderTypes>(test));
         for (const auto& [regAddr, objName, subIdx] : manufacturerRegMaping)
         {
-            // const std::string cfgValue = [&]()
-            // {
-            //     if (regAddr == 0x162)
-            //         return std::to_string(MDCOConfigAdapter::CPR);
-            //     else
-            //         return (
-            //             cfgToOdUnitConversions.find(regAddr) != cfgToOdUnitConversions.end()
-            //                 ?
-            //                 cfgToOdUnitConversions.at(regAddr)(config.getValueByAddress(regAddr))
-            //                 : config.getValueByAddress(regAddr));
-            // }();
-
             const std::string cfgValue =
                 cfgToOdUnitConversions.find(regAddr) != cfgToOdUnitConversions.end()
                     ? cfgToOdUnitConversions.at(regAddr)(config.getValueByAddress(regAddr))

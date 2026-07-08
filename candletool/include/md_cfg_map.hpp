@@ -389,7 +389,7 @@ namespace mab
                  "motor", "torque constant", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
             {0x016,
              MDCfgElement(
-                 "motor", "max current", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+                 "limits", "max current", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
             {0x017,
              MDCfgElement(
                  "motor", "gear ratio", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
