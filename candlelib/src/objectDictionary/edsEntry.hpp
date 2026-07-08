@@ -65,7 +65,8 @@ namespace mab
             UNKNOWN,
             OK,
             PARSING_FAILED,
-            INCORRECT_USE
+            INCORRECT_USE,
+
         };
 
         enum class AccessRights_E
