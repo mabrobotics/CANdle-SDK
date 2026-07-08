@@ -1,3 +1,4 @@
+
 #include <cstddef>
 #include <functional>
 #include <optional>
@@ -371,6 +372,7 @@ namespace mab
                     result += std::to_string(static_cast<int>(byte));
                     result += " ";
                 }
+                // MDCOConfigAdapter::toEncTick(result);
                 return result;
         }
         return nullptr;

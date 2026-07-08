@@ -492,11 +492,15 @@ namespace mab
              MDCfgElement("hardware",
                           "shunt resistance",
                           MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+
             {0x160,
              MDCfgElement("GPIO",
                           "mode",
                           MDCfgElement::ParserFunctions_S(
-                              GPIOModeToReadable, GPIOModeFromReadable, verifyEnum))}};
+                              GPIOModeToReadable, GPIOModeFromReadable, verifyEnum))}
+
+        };
+
         ///
 
       private:

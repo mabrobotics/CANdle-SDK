@@ -205,8 +205,6 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
 
             MDConfigMap       cfgMap;
             MDCOConfigAdapter odCfgAdapter;
-            // MDCOConfigAdapter odCfgAdapter(static_cast<mab::MDAuxEncoderValue_S::EncoderTypes>(
-            //     cfgMap.getValueAsNumber(0x025)));
 
             for (auto& [regAddr, objName, subidxOpt] : odCfgAdapter.manufacturerRegMaping)
             {
@@ -563,11 +561,19 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     info->callback(
         [this, mdCanId, loadEDS]()
         {
-            auto od   = loadEDS().first;
-            auto mdco = getMdco(mdCanId, od);
-            if (mdco == nullptr)
-                m_log.error("Failed to conect to mdco!");
+            auto              od   = loadEDS().first;
+            auto              mdco = getMdco(mdCanId, od);
+            MDCOConfigAdapter odCfgAdapter;
+            mdco->readSDO((*od)[0x2005][0x3]);
+            mdco->readSDO((*od)[0x2005][0x1]);
+            u8 mode = (u8)(canopen_types::UNSIGNED8_t)(*od)[0x2005][0x3];
+            u8 type = (u8)(canopen_types::UNSIGNED8_t)(*od)[0x2005][0x1];
 
+            odCfgAdapter.setCPR(static_cast<mab::MDAuxEncoderValue_S::EncoderTypes>(type), mode);
+
+            if (mdco == nullptr)
+
+                m_log.error("Failed to conect to mdco!");
             for (auto& object : *od)
             {
                 u32 idx = object.first;
@@ -584,7 +590,11 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                         break;
                 }
                 if (skip)
+                {
+                    (void)mode;
+                    (void)type;
                     continue;
+                }
                 if (object.second.getContainerMetaData().has_value())
                 {
                     std::stringstream ss;
@@ -599,13 +609,33 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                                         subobject.second->getEntryMetaData().parameterName.c_str());
                             continue;
                         }
+                        // auto              ob = od->getEntryByName("Encoder CPR");
+                        // auto& obTest =  ob.value().get()[.value()]
+
                         std::stringstream ss;
-                        ss << "[0x" << std::hex << idx << "]" << "[0x"
-                           << (unsigned int)subobject.second->getEntryMetaData()
-                                  .address.second.value()
-                           << "]" << subobject.second->getEntryMetaData().parameterName << " = "
-                           << subobject.second->getAsString();
-                        m_log.info("%s", ss.str().c_str());
+                        if (idx == 0x607d)
+                        {
+                            std::string positionInRad = mab::MDCOConfigAdapter::fromEncTick(
+                                subobject.second->getAsString());
+                            //     odCfgAdapter.fromEncTick(subobject.second->getAsString());
+
+                            ss << "[0x" << std::hex << idx << "]" << "[0x"
+                               << (unsigned int)subobject.second->getEntryMetaData()
+                                      .address.second.value()
+                               << "]" << subobject.second->getEntryMetaData().parameterName << " = "
+                               << subobject.second->getAsString()
+                               << "[Encoder ticks] non converted " << positionInRad << "[rad]";
+                            m_log.info("%s", ss.str().c_str());
+                        }
+                        else
+                        {
+                            ss << "[0x" << std::hex << idx << "]" << "[0x"
+                               << (unsigned int)subobject.second->getEntryMetaData()
+                                      .address.second.value()
+                               << "]" << subobject.second->getEntryMetaData().parameterName << " = "
+                               << subobject.second->getAsString();
+                            m_log.info("%s", ss.str().c_str());
+                        }
                     }
                     continue;
                 }
@@ -621,6 +651,12 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                    << object.second.getAsString();
                 m_log.info("%s", ss.str().c_str());
             }
+            //(void)_mode;
+            // (void)t;
+            // (void)t2;
+            // (void)t3;
+
+            //(void)t2;
         });
 
     // Save

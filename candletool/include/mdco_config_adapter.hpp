@@ -24,9 +24,10 @@ namespace mab
 
         static inline u32 CPR = 0;
 
-        void setCPR(mab::MDAuxEncoderValue_S::EncoderTypes _type, u8 _mode)
+        void setCPR(mab::MDAuxEncoderValue_S::EncoderTypes _type, u32 _mode)
         {
-            if (_mode == 4)
+            auto& modeMap = mab::MDAuxEncoderModeValue_S::fromNumericMap;
+            if (modeMap.at(_mode) == "MAIN")
             {
                 this->CPR = mab::MDAuxEncoderValue_S::encoderCPR.at(_type);
             }
@@ -53,7 +54,9 @@ namespace mab
         {
             i64 xInt = 0;
             std::from_chars(x.begin(), x.end(), xInt);
-            std::string encTick = std::to_string(static_cast<i64>(xInt * CPR / (2 * M_PI)));
+            xInt                = xInt * CPR / (2 * M_PI);
+            std::string encTick = std::to_string(static_cast<i64>(xInt));
+
             return encTick;
         };
         static constexpr auto fromEncTick = [](std::string_view x) -> std::string
@@ -109,6 +112,7 @@ namespace mab
         static constexpr auto manufacturerRegMaping =
             std::to_array<std::tuple<u16, std::string_view, std::optional<u8>>>({
                 {0x010, "Motor Name", {}},
+                {0x011, "Pole pairs", {}},
                 {0x012, "Torque constant", {}},
 
                 {0x017, "Gear Ratio", {}},

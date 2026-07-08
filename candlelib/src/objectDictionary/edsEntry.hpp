@@ -3,6 +3,7 @@
 // easy to iterate through, enables safe access it's acctual value, and holds onto neccesary
 // meta-data about the object itself.
 #pragma once
+
 #include <cstddef>
 #include <iterator>
 #include <span>
