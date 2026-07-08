@@ -413,7 +413,7 @@ namespace mab
 
         for (size_t i = 0; i < datarates.size(); i++)
         {
-            auto candle = attachCandle(values[i], busType);
+            auto candle = attachCandle(datarates[i], busType);
 
             pdsFwMetadata_S ver;
 
@@ -429,7 +429,7 @@ namespace mab
                 Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
                 Pds pds(id, candle);
                 if (pds.getFwMetadata(ver) == Pds::error_E::OK)
-                    ids.push_back({id, values[i]});
+                    ids.push_back({id, datarates[i]});
 
                 Logger::g_m_verbosity = prevVerbosity;
             }
