@@ -405,13 +405,13 @@ namespace mab
         Logger                    log(Logger::ProgramLayer_E::TOP, "PDS_DISCOVERY");
         std::vector<canIdAndRate> ids;
 
-        constexpr std::array<CANdleDatarate_E, 4> values = {CANdleDatarate_E::CAN_DATARATE_1M,
-                                                            CANdleDatarate_E::CAN_DATARATE_2M,
-                                                            CANdleDatarate_E::CAN_DATARATE_5M,
-                                                            CANdleDatarate_E::CAN_DATARATE_8M};
+        constexpr std::array<CANdleDatarate_E, 4> datarates = {CANdleDatarate_E::CAN_DATARATE_1M,
+                                                               CANdleDatarate_E::CAN_DATARATE_2M,
+                                                               CANdleDatarate_E::CAN_DATARATE_5M,
+                                                               CANdleDatarate_E::CAN_DATARATE_8M};
         log.info("Looking for PDS");
 
-        for (size_t i = 0; i < values.size(); i++)
+        for (size_t i = 0; i < datarates.size(); i++)
         {
             auto candle = attachCandle(values[i], busType);
 
