@@ -9,6 +9,7 @@ venv
 wheelhouse
 *.cache*
 *compile_commands.json
+customConfigs
 
 # Compiled Object files
 *.slo
