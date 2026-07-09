@@ -6,6 +6,7 @@
 #include "pds_cli.hpp"
 #include "mab_def.hpp"
 #include "configHelpers.hpp"
+#include "pds_properties.hpp"
 #include "pds_types.hpp"
 
 /*
@@ -373,17 +374,18 @@ void PdsCli::parse()
 
         else if (m_discovery->parsed())
         {
-            auto candle = m_candleBuilder->build();
-            if (!candle.has_value())
+            auto pdsIdAndRates = Pds::discoverPDS(*m_candleBuilder->busType);
+            if (pdsIdAndRates.empty())
             {
-                m_log.error("Could not connect candle!");
+                m_log.error("No PDS found");
             }
-            auto ids = Pds::discoverPDS(candle.value());
-            if (ids.empty())
-                m_log.error("No PDS found on this datarate!");
-            for (const auto& id : ids)
+            else
             {
-                m_log.success("Found PDS with ID %d", id);
+                m_log.success("Found PDS: ");
+                for (const auto& pdsData : pdsIdAndRates)
+                {
+                    m_log.info("ID: %d, datarate: %dM", pdsData.id, pdsData.datarate);
+                }
             }
         }
 
@@ -548,28 +550,56 @@ void PdsCli::parse()
                 return;
             }
 
-            if (!pds->verifyModuleSocket(moduleType_E::BRAKE_RESISTOR, brSocket))
+            if (m_brSocket == 0)
+                m_log.warn("Unbinding Brake Resistor from the Control Board");
+            else if (!pds->verifyModuleSocket(moduleType_E::BRAKE_RESISTOR, brSocket))
             {
-                if (m_brSocket == 0)
+                m_log.error("Invalid socket number for Brake Resistor submodule");
+                return;
+            }
+            else
+            {
+                for (int i = 1; i < 7; i++)
                 {
-                    m_log.warn("Unbinding Brake Resistor from the Control Board");
-                }
-                else
-                {
-                    m_log.error("Invalid socket number for Brake Resistor submodule");
-                    return;
+                    if (i == m_submoduleSocketNumber)
+                        continue;
+                    socketIndex_E socketCheck;
+                    bool          isPS = false;
+                    if (i == 0)
+                    {
+                        isPS = false;
+                        pds->getBindBrakeResistor(socketCheck);
+                    }
+                    else if (pds->verifyModuleSocket(moduleType_E::POWER_STAGE,
+                                                     decodeSocketIndex(i)))
+                    {
+                        isPS     = true;
+                        auto ps1 = pds->attachPowerStage(decodeSocketIndex(i));
+                        ps1->getBindBrakeResistor(socketCheck);
+                    }
+                    if (socketCheck == brSocket)
+                    {
+                        if (isPS)
+                            m_log.warn("Brake resistor is already bound to Power Stage [ %u ]", i);
+                        else
+                            m_log.warn("Brake resistor is already bound to Control Board");
+                        return;
+                    }
                 }
             }
 
             result = pds->bindBrakeResistor(brSocket);
-
             if (result != PdsModule::error_E::OK)
+            {
                 m_log.error("Binding Brake Resistor failed [ %s ]",
                             PdsModule::error2String(result));
+            }
             else
-                m_log.success("Brake Resistor bound to socket [ %u ]", m_brSocket);
+            {
+                if (m_brSocket != 0)
+                    m_log.success("Brake Resistor bound to socket [ %u ]", m_brSocket);
+            }
         }
-
         else if (m_ctrlGetBrCmd->parsed())
         {
             auto pds = getPDS(m_canId);
@@ -581,10 +611,17 @@ void PdsCli::parse()
             socketIndex_E brSocket = socketIndex_E::UNASSIGNED;
             result                 = pds->getBindBrakeResistor(brSocket);
             if (result != PdsModule::error_E::OK)
+            {
                 m_log.error("Getting Brake Resistor failed [ %s ]",
                             PdsModule::error2String(result));
+            }
             else
-                m_log.success("Brake Resistor bound to socket [ %u ]", (u8)brSocket);
+            {
+                if (brSocket == socketIndex_E::UNASSIGNED)
+                    m_log.info("Brake Resistor is not bound");
+                else
+                    m_log.success("Brake Resistor bound to socket [ %u ]", (u8)brSocket);
+            }
         }
 
         else if (m_ctrlSetBrTriggerCmd->parsed())
@@ -866,46 +903,77 @@ void PdsCli::powerStageCmdParse(void)
 
     else if (m_psSetBrCmd->parsed())
     {
-        // Notice that the m_brSocket is a numeric value, and brSocket is a enum value
+        // Notice that the m_brSocket is a numeric value, and brSocket is an enum value
         socketIndex_E brSocket = decodeSocketIndex(m_brSocket);
-
-        auto pds = getPDS(m_canId);
-        if (pds == nullptr)
+        if (m_brSocket == 0)
         {
-            m_log.error("Could not initialize PDS!");
+            m_log.warn("Unbinding Brake Resistor from the Power Stage");
+        }
+        else if (!pds->verifyModuleSocket(moduleType_E::BRAKE_RESISTOR, brSocket))
+        {
+            m_log.error("Invalid socket number for Brake Resistor submodule");
             return;
         }
-        if (!pds->verifyModuleSocket(moduleType_E::BRAKE_RESISTOR, brSocket))
+        else
         {
-            if (m_brSocket == 0)
+            for (int i = 0; i < 7; i++)
             {
-                m_log.warn("Unbinding Brake Resistor from the Power Stage");
-            }
-            else
-            {
-                m_log.error("Invalid socket number for Brake Resistor submodule");
-                return;
+                if (i != m_submoduleSocketNumber)
+                {
+                    socketIndex_E socketCheck;
+                    bool          isPS = false;
+                    if (i == 0)
+                    {
+                        pds->getBindBrakeResistor(socketCheck);
+                        isPS = false;
+                    }
+                    else if (pds->verifyModuleSocket(moduleType_E::POWER_STAGE,
+                                                     decodeSocketIndex(i)))
+                    {
+                        isPS     = true;
+                        auto ps1 = pds->attachPowerStage(decodeSocketIndex(i));
+                        ps1->getBindBrakeResistor(socketCheck);
+                    }
+                    if (socketCheck == brSocket)
+                    {
+                        isPS ? m_log.warn(
+                                   "Brake resistor is already bound to Power Stage at [ %u ]", i)
+                             : m_log.warn("Brake resistor is already bound to Control Board");
+                        return;
+                    }
+                }
             }
         }
 
         result = ps->bindBrakeResistor(decodeSocketIndex(m_brSocket));
 
         if (result != PdsModule::error_E::OK)
+        {
             m_log.error("Power Stage set brake resistor failed [ %s ]",
                         PdsModule::error2String(result));
+        }
         else
-            m_log.success("Brake resistor set");
+        {
+            if (m_brSocket != 0)
+                m_log.success("Brake resistor set");
+        }
     }
-
     else if (m_psGetBrCmd->parsed())
     {
         socketIndex_E brSocket = socketIndex_E::UNASSIGNED;
         result                 = ps->getBindBrakeResistor(brSocket);
         if (result != PdsModule::error_E::OK)
+        {
             m_log.error("Power Stage get brake resistor failed [ %s ]",
                         PdsModule::error2String(result));
+        }
         else
-            m_log.info("Brake resistor socket [ %u ]", (u8)brSocket);
+        {
+            if (brSocket == socketIndex_E::UNASSIGNED)
+                m_log.info("Brake Resistor is not bound");
+            else
+                m_log.info("Brake resistor socket [ %u ]", (u8)brSocket);
+        }
     }
 
     else if (m_psSetBrTriggerCmd->parsed())

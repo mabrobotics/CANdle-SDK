@@ -1,5 +1,6 @@
 #include "md_cli.hpp"
 #include <cstdint>
+#include <cstdlib>
 #include <ios>
 #include <memory>
 #include <stdexcept>
@@ -24,12 +25,24 @@
 #include "flasher.hpp"
 #include "web_file.hpp"
 
-/* ERROR COLORING NOTE: may not work on all terminals! */
+
+#ifndef WIN32
+
 #define REDSTART    "\033[1;31m"
 #define GREENSTART  "\033[1;32m"
 #define YELLOWSTART "\033[1;33m"
 #define BLUESTART   "\x1b[38;5;33m"
 #define RESETTEXT   "\033[0m"
+
+#else
+
+#define REDSTART    ""
+#define GREENSTART  ""
+#define YELLOWSTART ""
+#define BLUESTART   ""
+#define RESETTEXT   ""
+
+#endif
 
 #define RED__(x) REDSTART x RESETTEXT
 #define RED_(x)  REDSTART + x + RESETTEXT
@@ -135,7 +148,6 @@ namespace mab
                 if (!canChanged)
                 {
                     m_logger.warn("No CAN parameters changed, skipping write!");
-                    return;
                 }
 
                 registers.runCanReinit = 1;  // Set flag to reinitialize CAN
@@ -449,12 +461,11 @@ namespace mab
             });
 
         // Config  ===========================================================
-        auto* config = mdCLi->add_subcommand("config", "Configure MD drive.")
-                           ->needs(mdCanIdOption)
-                           ->require_subcommand();
+        auto* config = mdCLi->add_subcommand("config", "Configure MD drive.")->require_subcommand();
         // Download configuration file
         auto* downloadConfig =
-            config->add_subcommand("download", "Download configuration from MD drive.");
+            config->add_subcommand("download", "Download configuration from MD drive.")
+                ->needs(mdCanIdOption);
 
         ConfigOptions downloadConfigOptions(downloadConfig);
 
@@ -467,18 +478,19 @@ namespace mab
                     return;
                 }
 
-                std::string configFilePath = *downloadConfigOptions.configFile;
+                std::filesystem::path configFilePath = *downloadConfigOptions.configFile;
                 if (configFilePath.empty())
                 {
                     m_logger.error("Configuration file path is empty!");
                     return;
                 }
                 // If the path is not specified, prepend the standard path
-                if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
-                    configFilePath.end())
+                std::string matchString = configFilePath.string();
+                if (std::find(matchString.begin(), matchString.end(), '/') ==
+                    matchString.end() || std::find(matchString.begin(), matchString.end(), '\\') ==
+                        matchString.end())
                 {
-                    configFilePath =
-                        (*ctx.packageEtcPath / "motors" / configFilePath).generic_string();
+                    configFilePath = std::filesystem::path(DEFAULT_CANDLETOOL_CONFIG_DIR) / std::filesystem::path("/config/motors/") / configFilePath;
                 }
 
                 MDConfigMap cfgMap;
@@ -487,7 +499,7 @@ namespace mab
                     cfgElement.m_value = registerRead(*md, regAddress).value_or("NOT FOUND");
                 }
                 // Write the configuration to the file
-                mINI::INIFile      configFile(configFilePath);
+                mINI::INIFile      configFile(configFilePath.string());
                 mINI::INIStructure ini;
                 for (const auto& [regAddress, cfgElement] : cfgMap.m_map)
                 {
@@ -516,24 +528,26 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
 
-                std::string configFilePath = *uploadConfigOptions.configFile;
+                std::filesystem::path configFilePath = *uploadConfigOptions.configFile;
                 if (configFilePath.empty())
                 {
                     m_logger.error("Configuration file path is empty!");
                     return;
                 }
                 // If the path is not specified, prepend the standard path
-                if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
-                    configFilePath.end())
+                std::string matchString = configFilePath.string();
+                if (std::find(matchString.begin(), matchString.end(), '/') ==
+                    matchString.end() || std::find(matchString.begin(), matchString.end(), '\\') ==
+                        matchString.end())
                 {
-                    configFilePath =
-                        (*ctx.packageEtcPath / "motors" / configFilePath).generic_string();
+                    configFilePath = std::filesystem::path(DEFAULT_CANDLETOOL_CONFIG_DIR) / std::filesystem::path("/config/motors/") / configFilePath;
                 }
 
-                mINI::INIFile      configFile(configFilePath);
+                mINI::INIFile      configFile(configFilePath.string());
                 mINI::INIStructure ini;
                 if (!configFile.read(ini))
                 {
@@ -591,6 +605,82 @@ namespace mab
                     return;
                 }
                 m_logger.success("MD drive reset successfully!");
+            });
+
+        // Verify
+        auto* verifyCfg =
+            config->add_subcommand("verify", "Verifies config file using installed schema.");
+        ConfigOptions verifyConfigOptions(verifyCfg);
+
+        verifyCfg->callback(
+            [this, verifyConfigOptions, ctx]()
+            {
+                static constexpr std::string_view REQUIRED_SUFFIX = "_required";
+
+                const std::filesystem::path schemaPathSuf = "config/md_config_schema.ini";
+                const std::filesystem::path schemaPath    = *ctx.packageEtcPath / schemaPathSuf;
+                m_logger.debug("Looking at schema: %s", schemaPath.c_str());
+                if (!std::filesystem::exists(schemaPath))
+                {
+                    m_logger.error("Schema does not exist here: %s", schemaPath.c_str());
+                    m_logger.info("Please install candletool package properly.");
+                    exit(1);
+                }
+                if (!std::filesystem::exists(*verifyConfigOptions.configFile))
+                {
+                    m_logger.error("Config file does not exist here: %s",
+                                   (*verifyConfigOptions.configFile).c_str());
+                    exit(1);
+                }
+                mINI::INIFile      schemaFile(schemaPath);
+                mINI::INIStructure schemaStruct;
+                if (!schemaFile.read(schemaStruct))
+                {
+                    m_logger.error("Error while loading schema file: %s", schemaPath.c_str());
+                    exit(1);
+                }
+                MDConfigMap        mdCfgMap(schemaStruct);
+                mINI::INIFile      configFile(*verifyConfigOptions.configFile);
+                mINI::INIStructure cfgini;
+                if (!configFile.read(cfgini))
+                {
+                    m_logger.error("Error while loading schema file: %s", schemaPath.c_str());
+                    exit(1);
+                }
+
+                for (auto& [address, toml] : mdCfgMap.m_map)
+                {
+                    std::string val = cfgini[toml.m_tomlSection.data()][toml.m_tomlKey.data()];
+                    if (val.empty())
+                    {
+                        m_logger.warn("Key %s.%s not found in configuration file. Skipping.",
+                                      toml.m_tomlSection.data(),
+                                      toml.m_tomlKey.data());
+                        std::string reqKey(toml.m_tomlKey);
+                        reqKey.append(REQUIRED_SUFFIX);
+                        if (schemaStruct[std::string(toml.m_tomlSection)][reqKey] == "true")
+                        {
+                            m_logger.error("This key is required for proper MD operation!");
+                            exit(1);
+                        }
+
+                        continue;
+                    }
+                    if (!toml.setFromReadable(val))
+                    {
+                        m_logger.error(
+                            "Can not set %s.%s", toml.m_tomlSection.data(), toml.m_tomlKey.data());
+                        continue;
+                    }
+                    if (!toml.verify())
+                    {
+                        m_logger.error("Found invalid parameter %s.%s",
+                                       toml.m_tomlSection.data(),
+                                       toml.m_tomlKey.data());
+                        exit(1);
+                    }
+                }
+                m_logger.success("The config file is valid!");
             });
 
         // Discover ============================================================================
@@ -1083,6 +1173,8 @@ namespace mab
                                   md->getVelocity().first);
                     usleep(30000);
                 }
+
+                md->disable();
                 m_logger.success("Movement ended.");
             });
 
@@ -1141,7 +1233,7 @@ namespace mab
                 else
                 {
                     m_logger.info("Overriding download of file. Using local provided path.");
-                    MabFileParser mabFile(*updateOptions.pathToMabFile,
+                    MabFileParser mabFile(updateOptions.pathToMabFile->string(),
                                           MabFileParser::TargetDevice_E::MD);
 
                     if (*(updateOptions.recovery) == false)
@@ -1346,7 +1438,8 @@ namespace mab
         }
         if (!registerCompatible)
         {
-            m_logger.error("Register 0x%04X not compatible with value %s", regAdress, value.c_str());
+            m_logger.error(
+                "Register 0x%04X not compatible with value %s", regAdress, value.c_str());
             return false;
         }
         return true;
