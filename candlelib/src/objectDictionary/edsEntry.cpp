@@ -8,6 +8,7 @@
 #include <utility>
 #include <stdexcept>
 #include <variant>
+#include <bit>
 
 namespace mab
 {

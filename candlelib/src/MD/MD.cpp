@@ -26,10 +26,10 @@ namespace mab
         else if (candleVersionOpt.value().s.major < 2 ||
                  (candleVersionOpt.value().s.major == 2 && candleVersionOpt.value().s.minor < 4))
         {
-            m_log.error(
+            m_log.warn(
                 "You are using old CANdle firmware version. This firmware version will not work "
                 "with asynchronous API!");
-            m_log.error(
+            m_log.warn(
                 "Go to the"
                 "https://mabrobotics.github.io/MD80-x-CANdle-Documentation/Downloads/intro.html "
                 "for latest firmware and more information.");

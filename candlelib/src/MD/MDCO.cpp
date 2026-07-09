@@ -59,12 +59,12 @@ namespace mab
     MDCO::Error_t MDCO::blink()
     {
         // blink the motor led, log an error message if transfer failed
-        Error_t                      err       = enterConfigMode();
-        static constexpr std::string blinkName = "Blink LEDs";
-        auto                         blinkOpt  = m_od->getEntryByName(blinkName);
+        Error_t                           err       = enterConfigMode();
+        static constexpr std::string_view blinkName = "Blink LEDs";
+        auto                              blinkOpt  = m_od->getEntryByName(blinkName);
         if (!blinkOpt.has_value())
         {
-            m_log.error("could not locate %s object!", blinkName.c_str());
+            m_log.error("could not locate %s object!", blinkName);
             return Error_t::UNKNOWN_OBJECT;
         }
         auto& blinkObj = blinkOpt.value().get();

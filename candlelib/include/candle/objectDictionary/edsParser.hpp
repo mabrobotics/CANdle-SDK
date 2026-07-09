@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <algorithm>
 #include <cctype>
+#include <charconv>
 #include "candle/types/mab_types.hpp"
 #include "candle/logger/logger.hpp"
 #include "candle/objectDictionary/edsEntry.hpp"

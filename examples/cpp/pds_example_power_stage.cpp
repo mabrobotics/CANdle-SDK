@@ -72,5 +72,7 @@ int main()
 
     powerStage->disable();
 
+    detachCandle(candle);
+
     return EXIT_SUCCESS;
 }

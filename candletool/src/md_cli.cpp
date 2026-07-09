@@ -27,12 +27,24 @@
 #include "candletool/web_file_module/flasher.hpp"
 #include "candletool/web_file_module/web_file.hpp"
 
-/* ERROR COLORING NOTE: may not work on all terminals! */
+
+#ifndef WIN32
+
 #define REDSTART    "\033[1;31m"
 #define GREENSTART  "\033[1;32m"
 #define YELLOWSTART "\033[1;33m"
 #define BLUESTART   "\x1b[38;5;33m"
 #define RESETTEXT   "\033[0m"
+
+#else
+
+#define REDSTART    ""
+#define GREENSTART  ""
+#define YELLOWSTART ""
+#define BLUESTART   ""
+#define RESETTEXT   ""
+
+#endif
 
 #define RED__(x) REDSTART x RESETTEXT
 #define RED_(x)  REDSTART + x + RESETTEXT
@@ -138,7 +150,6 @@ namespace mab
                 if (!canChanged)
                 {
                     m_logger.warn("No CAN parameters changed, skipping write!");
-                    return;
                 }
 
                 registers.runCanReinit = 1;  // Set flag to reinitialize CAN
@@ -469,17 +480,19 @@ namespace mab
                     return;
                 }
 
-                std::string configFilePath = *downloadConfigOptions.configFile;
+                std::filesystem::path configFilePath = *downloadConfigOptions.configFile;
                 if (configFilePath.empty())
                 {
                     m_logger.error("Configuration file path is empty!");
                     return;
                 }
                 // If the path is not specified, prepend the standard path
-                if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
-                    configFilePath.end())
+                std::string matchString = configFilePath.string();
+                if (std::find(matchString.begin(), matchString.end(), '/') ==
+                    matchString.end() || std::find(matchString.begin(), matchString.end(), '\\') ==
+                        matchString.end())
                 {
-                    configFilePath = "/etc/candletool/config/motors/" + configFilePath;
+                    configFilePath = std::filesystem::path(DEFAULT_CANDLETOOL_CONFIG_DIR) / std::filesystem::path("/config/motors/") / configFilePath;
                 }
 
                 MDConfigMap cfgMap;
@@ -488,7 +501,7 @@ namespace mab
                     cfgElement.m_value = registerRead(*md, regAddress).value_or("NOT FOUND");
                 }
                 // Write the configuration to the file
-                mINI::INIFile      configFile(configFilePath);
+                mINI::INIFile      configFile(configFilePath.string());
                 mINI::INIStructure ini;
                 for (const auto& [regAddress, cfgElement] : cfgMap.m_map)
                 {
@@ -517,23 +530,26 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
+                    m_logger.error("Could not connect to MD!");
                     return;
                 }
 
-                std::string configFilePath = *uploadConfigOptions.configFile;
+                std::filesystem::path configFilePath = *uploadConfigOptions.configFile;
                 if (configFilePath.empty())
                 {
                     m_logger.error("Configuration file path is empty!");
                     return;
                 }
                 // If the path is not specified, prepend the standard path
-                if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
-                    configFilePath.end())
+                std::string matchString = configFilePath.string();
+                if (std::find(matchString.begin(), matchString.end(), '/') ==
+                    matchString.end() || std::find(matchString.begin(), matchString.end(), '\\') ==
+                        matchString.end())
                 {
-                    configFilePath = "/etc/candletool/config/motors/" + configFilePath;
+                    configFilePath = std::filesystem::path(DEFAULT_CANDLETOOL_CONFIG_DIR) / std::filesystem::path("/config/motors/") / configFilePath;
                 }
 
-                mINI::INIFile      configFile(configFilePath);
+                mINI::INIFile      configFile(configFilePath.string());
                 mINI::INIStructure ini;
                 if (!configFile.read(ini))
                 {
@@ -1159,6 +1175,8 @@ namespace mab
                                   md->getVelocity().first);
                     usleep(30000);
                 }
+
+                md->disable();
                 m_logger.success("Movement ended.");
             });
 
@@ -1216,7 +1234,7 @@ namespace mab
                 else
                 {
                     m_logger.info("Overriding download of file. Using local provided path.");
-                    MabFileParser mabFile(*updateOptions.pathToMabFile,
+                    MabFileParser mabFile(updateOptions.pathToMabFile->string(),
                                           MabFileParser::TargetDevice_E::MD);
 
                     if (*(updateOptions.recovery) == false)
