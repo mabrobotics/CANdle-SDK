@@ -51,5 +51,7 @@ int main()
     _log.info("Temperature :: [ %.2f °C ]", temperature);
     _log.info("Temperature limit :: [ %.2f °C ]", temperatureLimit);
 
+    detachCandle(candle);
+
     return EXIT_SUCCESS;
 }
