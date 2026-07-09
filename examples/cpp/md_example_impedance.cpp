@@ -1,6 +1,6 @@
 
-#include "candle.hpp"
-#include "MD.hpp"
+#include "candle/communication_device/candle.hpp"
+#include "candle/MD/MD.hpp"
 
 int main()
 {

@@ -7,7 +7,7 @@
 /// of the asynchronous functions in order to verify that the frames were properly sent and
 /// received, as well as calling .get() on promises after <30 requests have been made.
 
-#include "candlelib.hpp"
+#include "candle/candlelib.hpp"
 
 #include <array>
 

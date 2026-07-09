@@ -1,4 +1,4 @@
-#include <USB.hpp>
+#include "candle/communication_interface/USB.hpp"
 #include <cstring>
 #include <string>
 #ifdef WIN32

@@ -1,0 +1,24 @@
+#pragma once
+#include "candle/types/mab_types.hpp"
+
+class Crc
+{
+  public:
+    uint32_t    addCrcToBuf(char* buffer, uint32_t dataLength);
+    bool        checkCrcBuf(char* buffer, uint32_t dataLength);
+    std::size_t getCrcLen()
+    {
+        return crcLen;
+    };
+
+    static uint32_t calcCrc(const char* pData, uint32_t dataLength);
+
+  private:
+    static const uint32_t crcLen = 4;
+
+    typedef union
+    {
+        char     u8[4];
+        uint32_t u32;
+    } CRC_ut;
+};

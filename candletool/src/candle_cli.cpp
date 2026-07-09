@@ -1,16 +1,16 @@
+#include "candletool/candle_cli.hpp"
 
 #include <memory>
 #include <vector>
 
-#include "candle_cli.hpp"
-#include "candle.hpp"
-#include "mabFileParser.hpp"
-#include "candle_bootloader.hpp"
-#include "mab_crc.hpp"
-#include "curl_handler.hpp"
-#include "web_file.hpp"
-#include "flasher.hpp"
-#include "utilities.hpp"
+#include "candle/communication_device/candle.hpp"
+#include "candletool/mabFileParser.hpp"
+#include "candle/communication_device/candle_bootloader.hpp"
+#include "candletool/mab_crc.hpp"
+#include "candletool/web_file_module/curl_handler.hpp"
+#include "candletool/web_file_module/web_file.hpp"
+#include "candletool/web_file_module/flasher.hpp"
+#include "candletool/utilities.hpp"
 
 #ifdef WIN32
 #include <windows.h>
