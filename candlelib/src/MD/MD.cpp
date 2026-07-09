@@ -566,7 +566,7 @@ namespace mab
 
     void MD::setLogLevel(Logger::LogLevel_E level)
     {
-        m_log.m_optionalLevel = Logger::LogLevel_E::SILENT;
+        m_log.m_optionalLevel = level;
     }
 
     /// @brief This test should be performed with 1M datarate on CAN network

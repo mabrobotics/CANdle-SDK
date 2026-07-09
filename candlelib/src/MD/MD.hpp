@@ -277,7 +277,7 @@ namespace mab
         /// @tparam T Register entry underlying type (should be deducible)
         /// @param reg Register entry reference to be read from memory (reference is
         /// overwritten by received data)
-        /// @return Error type on failure
+        /// @return Error type and MD Error Access Code on failure
         template <class T>
         inline std::pair<Error_t, MdRegisterAccessErrorCode> readRegisterWithExtResponse(
             MDRegisterEntry_S<T>& reg)
@@ -312,7 +312,7 @@ namespace mab
         /// @tparam ...T Register underlying types
         /// @param ...regs References to the registers to be read from the MD memory (overwritten by
         /// read)
-        /// @return Error type on failure
+        /// @return Error type and MD Error Access Code on failure
         template <class... T>
         inline std::pair<Error_t, MdRegisterAccessErrorCode> readRegistersWithExtResponse(
             std::tuple<MDRegisterEntry_S<T>&...>& regs)
