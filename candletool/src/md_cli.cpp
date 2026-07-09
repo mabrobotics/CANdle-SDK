@@ -695,8 +695,8 @@ namespace mab
                 readableRegisters.forEachRegister(readReadableRegs);
 
                 m_logger << std::fixed;
-                m_logger << "Actuator `" << readableRegisters.motorName.value << "`@" << *mdCanId
-                         << ":" << std::endl;
+                m_logger << "Actuator `" << readableRegisters.motorName.value << "` at CAN ID " << *mdCanId
+                         << " (0x" << std::hex << *mdCanId << "):" << std::dec << std::endl;
 
                 m_logger << "[Firmware]" << std::endl;
                 mab::version_ut firmwareVersion = {{0, 0, 0, 0}};
