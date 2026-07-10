@@ -9,6 +9,9 @@ namespace mab
         std::vector<std::reference_wrapper<EDSEntry>> result;
         Logger                                        log(Logger::ProgramLayer_E::TOP, "MDCO CFG");
 
+        setCPR(static_cast<mab::MDAuxEncoderValue_S::EncoderTypes>(config.getValueAsNumber(0x020)),
+               config.getValueAsNumber(0x025));
+
         for (const auto& [regAddr, objName, subIdx] : manufacturerRegMaping)
         {
             const std::string cfgValue =
@@ -64,13 +67,13 @@ namespace mab
                       obj.getAsString().c_str());
             result.push_back(obj);
         }
-
         return result;
     }
     void MDCOConfigAdapter::configFromOd(std::shared_ptr<EDSObjectDictionary> od,
                                          MDConfigMap&                         config)
     {
         Logger log(Logger::ProgramLayer_E::TOP, "MDCO CFG");
+
         for (const auto& [regAddr, objName, subIdx] : manufacturerRegMaping)
         {
             auto objOpt = od->getEntryByName(objName);
@@ -95,8 +98,11 @@ namespace mab
                           .c_str(),
                       obj.getAsString().c_str());
         }
+
         for (const auto& [regAddr, objAddress, subIdx] : standardRegMaping)
         {
+            if (regSkip(regAddr))
+                continue;
             EDSEntry& obj =
                 subIdx.has_value() ? (*od)[objAddress][subIdx.value()] : (*od)[objAddress];
             config.setValueByAddress(

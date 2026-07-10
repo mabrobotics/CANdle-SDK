@@ -311,11 +311,12 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                     return;
                 }
             };
-            odCfgAdapter.setCPR(
-                static_cast<mab::MDAuxEncoderValue_S::EncoderTypes>(cfgMap.getValueAsNumber(0x020)),
-                cfgMap.getValueAsNumber(0x025));
-            auto entries = odCfgAdapter.configToOd(cfgMap, od);
 
+            auto entries = odCfgAdapter.configToOd(cfgMap, od);
+            if (odCfgAdapter.positionOverflow)
+            {
+                m_log.warn("Min/Max position overflow, set to 2'147'483'647 encoder ticks");
+            }
             for (auto& entry : entries)
             {
                 if (md->writeSDO(entry.get()) != MDCO::Error_t::OK)
@@ -564,36 +565,40 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             auto              od   = loadEDS().first;
             auto              mdco = getMdco(mdCanId, od);
             MDCOConfigAdapter odCfgAdapter;
+
             mdco->readSDO((*od)[0x2005][0x3]);
             mdco->readSDO((*od)[0x2005][0x1]);
 
             u8 mode = (u8)(canopen_types::UNSIGNED8_t)(*od)[0x2005][0x3];
             u8 type = (u8)(canopen_types::UNSIGNED8_t)(*od)[0x2005][0x1];
-
             odCfgAdapter.setCPR(static_cast<mab::MDAuxEncoderValue_S::EncoderTypes>(type), mode);
 
+            // auto u = (*od).getEntryByName("Profile Velocity").value().get();
+            // u.getAsString();
+            // u.getContainerMetaData().value().numberOfSubindices;
             if (mdco == nullptr)
-
                 m_log.error("Failed to conect to mdco!");
             for (auto& object : *od)
             {
                 u32 idx = object.first;
                 // error fields skipped
                 bool skip = false;
+
                 switch (idx)
                 {
                     case 0x1003:
+
                     case 0x1801:
                         skip = true;
                         break;
+
                     default:
                         skip = false;
+
                         break;
                 }
                 if (skip)
                 {
-                    (void)mode;
-                    (void)type;
                     continue;
                 }
                 if (object.second.getContainerMetaData().has_value())
@@ -614,24 +619,18 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                         }
 
                         std::stringstream ss;
-                        if (idx == 0x607d && subIdx > 0)
-                        {
-                            std::string positionInRad = mab::MDCOConfigAdapter::fromEncTick(
-                                subobject.second->getAsString());
 
-                            ss << "[0x" << std::hex << idx << "]" << "[0x" << subIdx << "]"
-                               << subobject.second->getEntryMetaData().parameterName << " = "
-                               << subobject.second->getAsString() << "[Encoder ticks],  "
-                               << positionInRad << "[rad]";
-                            m_log.info("%s", ss.str().c_str());
-                        }
-                        else
-                        {
-                            ss << "[0x" << std::hex << idx << "]" << "[0x" << subIdx << "]"
-                               << subobject.second->getEntryMetaData().parameterName << " = "
-                               << subobject.second->getAsString();
-                            m_log.info("%s", ss.str().c_str());
-                        }
+                        ss << "[0x" << std::hex << idx << "]" << "[0x" << subIdx << "]"
+                           << subobject.second->getEntryMetaData().parameterName << " = "
+                           << subobject.second->getAsString();
+                        if (idx == 0x607d && subIdx > 0)
+
+                            ss << " [Encoder Ticks] "
+                               << mab::MDCOConfigAdapter::fromEncTick(
+                                      subobject.second->getAsString())
+                               << " [rad]";
+
+                        m_log.info("%s", ss.str().c_str());
                     }
                     continue;
                 }
@@ -641,18 +640,19 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                                 object.second.getEntryMetaData().parameterName.c_str());
                     continue;
                 }
+
                 std::stringstream ss;
                 ss << "[0x" << std::hex << idx << "] "
                    << object.second.getEntryMetaData().parameterName << " = "
                    << object.second.getAsString();
+
+                odCfgAdapter.convertedPrintHandler(ss, idx, object.second);
+
                 m_log.info("%s", ss.str().c_str());
             }
-            //(void)_mode;
-            // (void)t;
-            // (void)t2;
-            // (void)t3;
 
-            //(void)t2;
+            /// (void)y_chuj;
+            //(void)x_sub;
         });
 
     // Save

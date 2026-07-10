@@ -396,7 +396,11 @@ namespace mab
             {0x018,
              MDCfgElement(
                  "motor", "torque bandwidth", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
-            {0x01D, MDCfgElement("motor", "KV", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x01D,
+             MDCfgElement("motor",
+                          "KV",
+                          MDCfgElement::ParserFunctions_S(
+                              verifyMinMaxType))},  // currently not handled in md80_firmware
             {0x01E,
              MDCfgElement("motor",
                           "calibration mode",

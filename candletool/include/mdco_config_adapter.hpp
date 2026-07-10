@@ -22,7 +22,8 @@ namespace mab
             MDConfigMap& config, std::shared_ptr<EDSObjectDictionary> od);
         void configFromOd(std::shared_ptr<EDSObjectDictionary> od, MDConfigMap& config);
 
-        static inline u32 CPR = 0;
+        static inline u32  CPR = 0;
+        static inline bool positionOverflow;
 
         void setCPR(mab::MDAuxEncoderValue_S::EncoderTypes _type, u32 _mode)
         {
@@ -58,10 +59,14 @@ namespace mab
 
             if (__builtin_mul_overflow(xInt, CPR, &result))
             {
-                result = (xInt > 0) ? INT32_MAX : INT32_MIN;
+                result           = (xInt > 0) ? INT32_MAX : INT32_MIN;
+                positionOverflow = true;
             }
+
             else
+            {
                 result = xInt * CPR / (2 * M_PI);
+            }
 
             std::string encTick = std::to_string(static_cast<i64>(result));
 
@@ -172,7 +177,35 @@ namespace mab
         const std::unordered_map<u16, std::function<std::string(std::string_view)>>
             cfgToOdUnitConversions;
         const std::unordered_map<u16, std::function<std::string(std::string_view)>>
-            odToCfgUnitConversions;
+             odToCfgUnitConversions;
+        bool regSkip(u16 _id)
+        {
+            return (_id == 0x114 || _id == 0x115) ? true : false;
+        }
+        void convertedPrintHandler(std::stringstream& ss, u16 idx, mab::EDSEntry& objSecond)
+        {
+            switch (idx)
+            {
+                case 0x6080:  // max motor speed
+                case 0x6081:  // profile velocity
+                    ss << " [rpm], " << fromRPM(objSecond.getAsString()) << " [rad/s]";
+                    break;
+
+                case 0x6083:  // profile acceleration
+                case 0x6084:  // profile deceleration
+                case 0x6085:  // quieck stop deceleration
+                    ss << " [rpm/s], " << fromRPM(objSecond.getAsString()) << " [rad/s^2]";
+                    break;
+                default:
+                    break;
+            }
+        }
+        // template <class T_Result, class T1, class T2>
+        // bool detectOverflow(T1 a, T2 b)
+        // {
+        //     T_Result result;
+        //     return (__builtin_mul_overflow(a, b, &result)) ? true : false;
+        // }
     };
 
 }  // namespace mab
