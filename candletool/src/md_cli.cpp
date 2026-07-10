@@ -693,14 +693,15 @@ namespace mab
                 };
 
                 readableRegisters.forEachRegister(readReadableRegs);
-
-                m_logger << std::fixed;
-                m_logger << "Actuator `" << readableRegisters.motorName.value << "` at CAN ID " << *mdCanId
-                         << " (0x" << std::hex << *mdCanId << "):" << std::dec << std::endl;
-
-                m_logger << "[Firmware]" << std::endl;
                 mab::version_ut firmwareVersion = {{0, 0, 0, 0}};
                 firmwareVersion.i               = readableRegisters.firmwareVersion.value;
+
+                m_logger << std::fixed;
+                m_logger << "Actuator `" << readableRegisters.motorName.value << "` at CAN ID "
+                         << *mdCanId << " (0x" << std::hex << *mdCanId << "):" << std::dec
+                         << std::endl;
+
+                m_logger << "[Firmware]" << std::endl;
                 m_logger << "- version: v" << (int)firmwareVersion.s.major << "."
                          << (int)firmwareVersion.s.minor << "." << (int)firmwareVersion.s.revision
                          << "." << firmwareVersion.s.tag << std::endl;
@@ -756,17 +757,27 @@ namespace mab
                                 .value_or("Unknown")
                          << std::endl;
 
-                m_logger << "[MAIN encoder]" << std::endl;
                 bool auxAsMain = readableRegisters.auxEncoder.value != 0 &&
                                  readableRegisters.auxEncoderMode.value ==
                                      (u8)MDAuxEncoderModeValue_S::toNumeric("MAIN").value();
-                m_logger << " - main encoder: "
-                         << (readableRegisters.mainEncoder.value == 0
-                                 ? (auxAsMain ? "Aux as MAIN" : "ONBOARD")
-                                 : MDAuxEncoderValue_S::toReadable(
-                                       readableRegisters.mainEncoder.value == 0)
-                                       .value_or("Onboard or Legacy Aux in MAIN mode"))
-                         << std::endl;
+                m_logger << "[MAIN encoder]" << std::endl;
+                if (isVersionAtLeast(firmwareVersion, 3, 0, 0))
+                {
+                    m_logger << " - main encoder: "
+                             << MDAuxEncoderValue_S::toReadable(readableRegisters.mainEncoder.value)
+                                    .value_or("UNKNOWN")
+                             << std::endl;
+                }
+                else
+                {
+                    m_logger << " - main encoder: "
+                             << (readableRegisters.mainEncoder.value == 0
+                                     ? (auxAsMain ? "Aux as MAIN" : "ONBOARD")
+                                     : MDAuxEncoderValue_S::toReadable(
+                                           readableRegisters.mainEncoder.value == 0)
+                                           .value_or("Onboard or Legacy Aux in MAIN mode"))
+                             << std::endl;
+                }
 
                 m_logger << "[AUX encoder]" << std::endl;
                 m_logger << " - auxilary encoder: "
