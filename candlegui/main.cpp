@@ -99,6 +99,53 @@ static void drawPIDtunerPosition(ImGuiIO& io)
     ImGui::PopStyleColor(4);
 }
 
+static void drawTunerImpedance(ImGuiIO& io)
+{
+    ImGui::Separator();
+    CenterText("Impedance PD tuner");
+    ImGui::Spacing();
+
+    // Change this to whatever width fits your sidebar best
+    float sliderWidth = leftMenuBar_width - 75.f;
+
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)mabColor);
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+    ImGui::SetNextItemWidth(sliderWidth);
+    ImGui::SliderFloat("Kp Imp", &Kp_imp, 0.0f, 10.0f);
+
+    ImGui::SetNextItemWidth(sliderWidth);
+    ImGui::SliderFloat("Kd Imp", &Kd_imp, 0.0f, 10.0f);
+
+    ImGui::PopStyleColor(4);
+}
+
+static void addMD100(ImGuiIO& io, mab::Candle* candle)
+{
+    mdV.clear();
+    mdV.push_back(mab::MD(100, candle));
+
+    if (mdV[0].init() != mab::MD::Error_t::OK)
+    {
+        std::cout << "MD not initialized\n";
+    }
+
+    mdV[0].zero();
+
+    if (mdV[0].setMotionMode(mab::MdMode_E::IMPEDANCE) != mab::MD::Error_t::OK)
+    {
+        std::cout << "MD mode setting failed \n";
+    }
+
+    // downloadParameters();
+
+    mdV[0].enable();
+
+    mdV[0].setImpedanceParams(Kp_imp, Kd_imp);
+}
+
 static void drawLeftMenuBar(ImGuiIO& io, mab::Candle* candle)
 {
     if (candle == nullptr)
@@ -129,6 +176,19 @@ static void drawLeftMenuBar(ImGuiIO& io, mab::Candle* candle)
 
                 drawPIDtunerVelocity(io);
                 drawPIDtunerPosition(io);
+                drawTunerImpedance(io);
+
+                ImGui::Separator();
+                ImGui::InputFloat("Target Position",
+                                  &targetPositionSlider,
+                                  step,
+                                  step_fast,
+                                  "%.2f",
+                                  ImGuiInputTextFlags_None);
+
+                drawTestButton(io, candle);
+                drawEndTestButton(io, candle);
+
                 ImGui::EndTabItem();
             }
             if (ImGui::BeginTabItem("Config"))
@@ -217,8 +277,58 @@ static void drawLeftMenuBar(ImGuiIO& io, mab::Candle* candle)
                 }
             }
         }
+
+        if (testStarted)
+        {
+            testMD(io, candle);
+        }
     }
     ImGui::End();
+}
+
+static void drawTestButton(ImGuiIO& io, mab::Candle* candle)
+{
+    if (candle == nullptr)
+    {
+        return;
+    }
+
+    ImGui::SetCursorPosX(margin);
+    if (ImGui::Button("Test", ImVec2(leftMenuBar_width - (margin * 2.0f), 80.0f)))
+    {
+        testStarted = true;
+        addMD100(io, candle);
+    }
+}
+
+static void drawEndTestButton(ImGuiIO& io, mab::Candle* candle)
+{
+    if (candle == nullptr)
+    {
+        return;
+    }
+
+    ImGui::SetCursorPosX(margin);
+    if (ImGui::Button("End test", ImVec2(leftMenuBar_width - (margin * 2.0f), 80.0f)))
+    {
+        testStarted = false;
+    }
+}
+
+static void testMD(ImGuiIO& io, mab::Candle* candle)
+{
+    if (!testStarted)
+        return;
+
+    targetPosition = targetPositionSlider;
+
+    for (u16 i = 0; i < 100; i++)
+    {
+        mdV[0].setTargetPosition(targetPosition);
+    }
+    mdV.clear();
+
+    testStarted = false;
 }
 
 static void drawVelocityPlot(ImGuiIO& io, mab::Candle* candle)
@@ -228,36 +338,38 @@ static void drawVelocityPlot(ImGuiIO& io, mab::Candle* candle)
         return;
     }
 
-    const int buffer_size = 120;
+    static const int buffer_size = 500;
 
-    static float values[buffer_size] = {};
+    static float timeValues[buffer_size]        = {0};
+    static float measurementValues[buffer_size] = {0};
 
-    static int values_offset = 0;
-
-    static float phase = 0.0f;
+    static int    offset       = 0;
+    static float  t            = 0.0f;
+    static double refresh_time = 0.0;
 
     if (refresh_time == 0.0)
         refresh_time = ImGui::GetTime();
 
     while (refresh_time < ImGui::GetTime())
     {
-        // values[values_offset]  = sinf(phase);
-        values[values_offset] = mdV[0].getVelocity().first;
+        t += 1.0f / 60.0f;
 
-        values_offset = (values_offset + 1) % buffer_size;
+        timeValues[offset]        = t;
+        measurementValues[offset] = mdV[0].getVelocity().first;
 
-        phase += 0.1f;
+        offset = (offset + 1) % buffer_size;
+
         refresh_time += 1.0f / 60.0f;
     }
 
     ImPlotSpec spec;
-    spec.Offset = values_offset;
+    spec.Offset = offset;
 
     if (ImPlot::BeginPlot("##VelocityPlot", ImVec2(-1, 250.0f)))
     {
-        ImPlot::SetupAxisLimits(ImAxis_Y1, 0.0, buffer_size, ImPlotCond_Once);
+        ImPlot::SetupAxisLimits(ImAxis_X1, t - timeWindow, t, ImPlotCond_Always);
 
-        ImPlot::PlotLine("Velocity(t)", values, buffer_size, 1.0, 0.0, spec);
+        ImPlot::PlotLine("Velocity(t)", timeValues, measurementValues, buffer_size, spec);
 
         ImPlot::EndPlot();
     }
@@ -270,33 +382,82 @@ static void drawPositionPlot(ImGuiIO& io, mab::Candle* candle)
         return;
     }
 
-    const int buffer_size = 120;
+    static const int buffer_size = 500;
 
-    static float values[buffer_size] = {};
+    static float timeValues[buffer_size]        = {0};
+    static float measurementValues[buffer_size] = {0};
+    static float targetValues[buffer_size]      = {0};
 
-    static int values_offset = 0;
+    static int    offset       = 0;
+    static float  t            = 0.0f;
+    static double refresh_time = 0.0;
 
-    static float phase = 0.0f;
+    static bool targetWasAchieved = false;
+    float       currentPos        = mdV[0].getPosition().first;
 
-    if (refresh_time == 0.0)
+    bool targetAchieved = std::abs(currentPos - targetPosition) <= 0.5f;
+
+    if (targetAchieved)
+    {
         refresh_time = ImGui::GetTime();
 
-    while (refresh_time < ImGui::GetTime())
+        if (!targetWasAchieved)
+        {
+            t      = 0.0f;
+            offset = 0;
+            for (int i = 0; i < buffer_size; ++i)
+            {
+                timeValues[i]        = 0.0f;
+                measurementValues[i] = 0.0f;
+                targetValues[i]      = 0.0f;
+            }
+            targetWasAchieved = true;
+        }
+
+        turnOFFMD = targetAchieved;
+    }
+    else
     {
-        values[values_offset] = mdV[0].getPosition().first;
-        values_offset         = (values_offset + 1) % buffer_size;
-        phase += 0.1f;
-        refresh_time += 1.0f / 60.0f;
+        targetWasAchieved = false;
+
+        if (refresh_time == 0.0)
+            refresh_time = ImGui::GetTime();
+
+        while (refresh_time < ImGui::GetTime())
+        {
+            t += 1.0f / 60.0f;
+
+            timeValues[offset]        = t;
+            measurementValues[offset] = mdV[0].getPosition().first;
+            targetValues[offset]      = targetPosition;
+
+            offset = (offset + 1) % buffer_size;
+
+            refresh_time += 1.0f / 60.0f;
+        }
     }
 
     ImPlotSpec spec;
-    spec.Offset = values_offset;
+    spec.Offset = offset;
 
     if (ImPlot::BeginPlot("##PositionPlot", ImVec2(-1, 250.0f)))
     {
-        ImPlot::SetupAxisLimits(ImAxis_Y1, 0.0, buffer_size, ImPlotCond_Once);
+        if (targetAchieved)
+        {
+            ImPlot::SetupAxisLimits(ImAxis_X1, 0.0, timeWindow, ImPlotCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_Y1, 0.0, 100.0, ImPlotCond_Always);
 
-        ImPlot::PlotLine("Position(t)", values, buffer_size, 1.0, 0.0, spec);
+            ImPlot::PlotLine("Position(t)", timeValues, measurementValues, buffer_size, spec);
+            ImPlot::PlotStairs("Target Position", timeValues, targetValues, buffer_size, spec);
+        }
+        else
+        {
+            ImPlot::SetupAxisLimits(ImAxis_X1, t - timeWindow, t, ImPlotCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_Y1, 0.0, 100.0, ImPlotCond_Always);
+
+            ImPlot::PlotLine("Position(t)", timeValues, measurementValues, buffer_size, spec);
+            ImPlot::PlotStairs("Target Position", timeValues, targetValues, buffer_size, spec);
+        }
 
         ImPlot::EndPlot();
     }
@@ -308,33 +469,38 @@ static void drawTorquePlot(ImGuiIO& io, mab::Candle* candle)
     {
         return;
     }
+    static const int buffer_size = 500;
 
-    const int    buffer_size         = 120;
-    static float values[buffer_size] = {};
-    static int   values_offset       = 0;
-    static float phase               = 0.0f;
+    static float timeValues[buffer_size]        = {0};
+    static float measurementValues[buffer_size] = {0};
+
+    static int    offset       = 0;
+    static float  t            = 0.0f;
+    static double refresh_time = 0.0;
 
     if (refresh_time == 0.0)
         refresh_time = ImGui::GetTime();
 
     while (refresh_time < ImGui::GetTime())
     {
-        values[values_offset] = mdV[0].getTorque().first;  // TODO dynamic choosing
+        t += 1.0f / 60.0f;
 
-        values_offset = (values_offset + 1) % buffer_size;
+        timeValues[offset]        = t;
+        measurementValues[offset] = mdV[0].getPosition().first;
 
-        phase += 0.1f;
+        offset = (offset + 1) % buffer_size;
+
         refresh_time += 1.0f / 60.0f;
     }
 
     ImPlotSpec spec;
-    spec.Offset = values_offset;
+    spec.Offset = offset;
 
     if (ImPlot::BeginPlot("##TorquePlot", ImVec2(-1, 250.0f)))
     {
-        ImPlot::SetupAxisLimits(ImAxis_Y1, 0.0, buffer_size, ImPlotCond_Once);
+        ImPlot::SetupAxisLimits(ImAxis_X1, t - timeWindow, t, ImPlotCond_Always);
 
-        ImPlot::PlotLine("Torque(t)", values, buffer_size, 1.0, 0.0, spec);
+        ImPlot::PlotLine("Torque(t)", timeValues, measurementValues, buffer_size, spec);
 
         ImPlot::EndPlot();
     }
@@ -480,6 +646,12 @@ static void CenterText(const char* text)
     ImGui::TextUnformatted(text);
 }
 
+// static void downloadParameters()
+// {
+//     mab::MD::Error_t err = mdV[0].readRegisters(registers.motorImpPidKp,
+//     registers.motorImpPidKd);
+// }
+
 // Main code
 int main(int, char**)
 {
@@ -556,6 +728,8 @@ int main(int, char**)
     // Candle setup
     auto candle = mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M,
                                     mab::candleTypes::busTypes_t::USB);
+
+    addMD100(io, candle);
 
     // Main loop
     while (!glfwWindowShouldClose(window))
