@@ -25,9 +25,9 @@ static bool detectMD          = false;
 static bool displayDetectedMD = false;
 static bool testStarted       = false;
 
-int   monitorX, monitorY;
-float leftMenuBarWidth = 500.0f;
-float margin           = 10.f;
+static int   monitorX, monitorY;
+static float leftMenuBarWidth = 500.0f;
+static float margin           = 10.f;
 // Back menu settings
 ImGuiWindowFlags flagsBackMenu = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
                                  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
@@ -42,36 +42,49 @@ ImColor mabColor = ImColor::HSV(0.078f, 1.0f, 1.0f);
 
 // MAB
 std::vector<mab::MD> mdV;
-mab::MDRegisters_S   registers;
 mab::canId_t         chosenID;
+mab::MDRegisters_S   registers;
+mab::MDRegisters_S   registers2;
 
 mab::MdMode_E currentMode = mab::MdMode_E::IDLE;
 
-float Kp_vel = 0.0f;
-float Ki_vel = 0.0f;
-float Kd_vel = 0.0f;
+// MAXIMUM VALUES
+static float maxVelocityClamp     = 0.0f;
+static float maxPositionClamp     = 0.0f;
+static float minPositionClamp     = 0.0f;
+static float maxTorqueClamp       = 0.0f;
+static float maxAccelerationClamp = 0.0f;
+static float maxDecelerationClamp = 0.0f;
 
-float Kp_pos = 0.0f;
-float Ki_pos = 0.0f;
-float Kd_pos = 0.0f;
+// TUNING GAINS
+static float Kp_vel = 0.0f;
+static float Ki_vel = 0.0f;
+static float Kd_vel = 0.0f;
 
-float Kp_imp = 0.0f;
-float Kd_imp = 0.0f;
+static float Kp_pos = 0.0f;
+static float Ki_pos = 0.0f;
+static float Kd_pos = 0.0f;
 
-float timeWindow = 1.0f;
+static float Kp_imp = 0.0f;
+static float Kd_imp = 0.0f;
 
-float       targetVelocitySlider     = 0.0f;
-float       targetVelocity           = 0.0f;
-float       targetPositionSlider     = 0.0f;
-float       targetPosition           = 0.0f;
-float       targetTorqueSlider       = 0.0f;
-float       targetTorque             = 0.0f;
-float       targetAccelerationSlider = 0.0f;
-float       targetAcceleration       = 0.0f;
-float       targetDecelrationSlider  = 0.0f;
-float       targetDecelration        = 0.0f;
-const float step                     = 0.1f;
-const float step_fast                = 1.0f;
+static float positionWindowSlider = 0.0f;
+static float positionWindow       = 0.1f;
+static float velocityWindowSlider = 0.0f;
+static float velocityWindow       = 0.5f;
+
+static float targetVelocitySlider     = 0.0f;
+static float targetVelocity           = 0.0f;
+static float targetPositionSlider     = 0.0f;
+static float targetPosition           = 0.0f;
+static float targetTorqueSlider       = 0.0f;
+static float targetTorque             = 0.0f;
+static float targetAccelerationSlider = 0.0f;
+static float targetAcceleration       = 0.0f;
+static float targetDecelrationSlider  = 0.0f;
+static float targetDecelration        = 0.0f;
+const float  step                     = 0.1f;
+const float  step_fast                = 1.0f;
 
 // functions
 static void drawMenuTopBar(ImGuiIO& io);
@@ -92,6 +105,8 @@ static void drawSetTargetPosition();
 static void drawSetTargetTorque();
 static void drawSetTargetAcceleration();
 static void drawSetTargetDeceleration();
+static void drawSetPositionWindow();
+static void drawSetVelocityWindow();
 
 static void drawTestButton(mab::Candle* candle);
 static void drawEndTestButton(mab::Candle* candle);
@@ -100,7 +115,6 @@ static void drawEnableMDButton(mab::Candle* candle);
 static void drawDisableMDButton(mab::Candle* candle);
 static void drawToggleButton(mab::Candle* candle);
 static void drawSelectModeButton();
-// static void downloadParameters();
 
 static void CenterText(const char* text);
 const char* getModeName(mab::MdMode_E mode);
@@ -113,4 +127,5 @@ static bool drawOrangeInputFloat(const char* label,
                                  const char* format    = "%.3f");
 
 static void testMD();
+static void downloadParameters();
 static void addMD100(mab::Candle* candle);
