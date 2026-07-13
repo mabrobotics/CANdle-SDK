@@ -47,103 +47,32 @@ static void drawMenuTopBar(ImGuiIO& io)
     }
 }
 
-static void drawPIDtunerVelocity(ImGuiIO& io)
+static void drawMainMenu(ImGuiIO& io, mab::Candle* candle)
 {
-    ImGui::Separator();
-    CenterText("Velocity loop - PID tuning parameters");
-    ImGui::Spacing();
+    const ImGuiViewport* mainMenuViewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(mainMenuViewport->WorkPos, ImGuiCond_Always);
 
-    // Change this to whatever width fits your sidebar best
-    float sliderWidth = leftMenuBar_width - 75.f;
+    ImVec2 mainPos =
+        ImVec2(mainMenuViewport->WorkPos.x + leftMenuBarWidth, mainMenuViewport->WorkPos.y);
+    ImGui::SetNextWindowPos(mainPos, ImGuiCond_Always);
 
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)mabColor);
-    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+    ImVec2 mainSize =
+        ImVec2(mainMenuViewport->WorkSize.x - leftMenuBarWidth, mainMenuViewport->WorkSize.y);
+    ImGui::SetNextWindowSize(mainSize, ImGuiCond_Always);
 
-    ImGui::SetNextItemWidth(sliderWidth);
-    ImGui::SliderFloat("Kp Vel", &Kp_vel, 0.0f, 1.0f);
-
-    ImGui::SetNextItemWidth(sliderWidth);
-    ImGui::SliderFloat("Ki Vel", &Ki_vel, 0.0f, 1.0f);
-
-    ImGui::SetNextItemWidth(sliderWidth);
-    ImGui::SliderFloat("Kd Vel", &Kd_vel, 0.0f, 1.0f);
-
-    ImGui::PopStyleColor(4);
-}
-
-static void drawPIDtunerPosition(ImGuiIO& io)
-{
-    ImGui::Separator();
-    CenterText("Position loop - PID tuning parameters");
-    ImGui::Spacing();
-
-    // Change this to whatever width fits your sidebar best
-    float sliderWidth = leftMenuBar_width - 75.f;
-
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)mabColor);
-    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-
-    ImGui::SetNextItemWidth(sliderWidth);
-    ImGui::SliderFloat("Kp Pos", &Kp_pos, 0.0f, 1.0f);
-
-    ImGui::SetNextItemWidth(sliderWidth);
-    ImGui::SliderFloat("Ki Pos", &Ki_pos, 0.0f, 1.0f);
-
-    ImGui::SetNextItemWidth(sliderWidth);
-    ImGui::SliderFloat("Kd Pos", &Kd_pos, 0.0f, 1.0f);
-
-    ImGui::PopStyleColor(4);
-}
-
-static void drawTunerImpedance(ImGuiIO& io)
-{
-    ImGui::Separator();
-    CenterText("Impedance PD tuner");
-    ImGui::Spacing();
-
-    // Change this to whatever width fits your sidebar best
-    float sliderWidth = leftMenuBar_width - 75.f;
-
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)mabColor);
-    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-
-    ImGui::SetNextItemWidth(sliderWidth);
-    ImGui::SliderFloat("Kp Imp", &Kp_imp, 0.0f, 10.0f);
-
-    ImGui::SetNextItemWidth(sliderWidth);
-    ImGui::SliderFloat("Kd Imp", &Kd_imp, 0.0f, 10.0f);
-
-    ImGui::PopStyleColor(4);
-}
-
-static void addMD100(ImGuiIO& io, mab::Candle* candle)
-{
-    mdV.clear();
-    mdV.push_back(mab::MD(100, candle));
-
-    if (mdV[0].init() != mab::MD::Error_t::OK)
+    if (ImGui::Begin("Main menu", nullptr, flagsBackMenu))
     {
-        std::cout << "MD not initialized\n";
+        ImGui::Checkbox("Demo Window", &show_demo_window);
+
+        if (systemON)
+        {
+            drawVelocityPlot(io, candle);
+            drawPositionPlot(io, candle);
+            drawTorquePlot(io, candle);
+        }
     }
 
-    mdV[0].zero();
-
-    if (mdV[0].setMotionMode(mab::MdMode_E::IMPEDANCE) != mab::MD::Error_t::OK)
-    {
-        std::cout << "MD mode setting failed \n";
-    }
-
-    // downloadParameters();
-
-    mdV[0].enable();
-
-    mdV[0].setImpedanceParams(Kp_imp, Kd_imp);
+    ImGui::End();
 }
 
 static void drawLeftMenuBar(ImGuiIO& io, mab::Candle* candle)
@@ -156,7 +85,7 @@ static void drawLeftMenuBar(ImGuiIO& io, mab::Candle* candle)
     const ImGuiViewport* leftMenuViewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(leftMenuViewport->WorkPos, ImGuiCond_Always);
 
-    ImVec2 windowSize = ImVec2(leftMenuBar_width, leftMenuViewport->WorkSize.y);
+    ImVec2 windowSize = ImVec2(leftMenuBarWidth, leftMenuViewport->WorkSize.y);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
 
     if (ImGui::Begin("Tuning params!", nullptr, flagsBackMenu))
@@ -165,29 +94,56 @@ static void drawLeftMenuBar(ImGuiIO& io, mab::Candle* candle)
         {
             if (ImGui::BeginTabItem("Main Menu"))
             {
-                drawToggleButton(candle);  // Switch button
-
-                ImGui::ColorEdit3("clear color",
-                                  (float*)&clear_color);  // Edit 3 floats representing a color
+                drawToggleButton(candle);
 
                 ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
                             1000.0f / io.Framerate,
                             io.Framerate);
 
-                drawPIDtunerVelocity(io);
-                drawPIDtunerPosition(io);
-                drawTunerImpedance(io);
+                drawSelectModeButton();
 
                 ImGui::Separator();
-                ImGui::InputFloat("Target Position",
-                                  &targetPositionSlider,
-                                  step,
-                                  step_fast,
-                                  "%.2f",
-                                  ImGuiInputTextFlags_None);
+                drawTestButton(candle);
+                drawEndTestButton(candle);
 
-                drawTestButton(io, candle);
-                drawEndTestButton(io, candle);
+                switch (currentMode)
+                {
+                    case mab::MdMode_E::IDLE:
+                        break;
+                    case mab::MdMode_E::VELOCITY_PID:
+                        drawPIDtunerVelocity();
+                        drawSetTargetVelocity();
+                        break;
+                    case mab::MdMode_E::POSITION_PID:
+                        drawPIDtunerPosition();
+                        drawSetTargetPosition();
+                        break;
+                    case mab::MdMode_E::IMPEDANCE:
+                        drawPDtunerImpedance();
+                        drawSetTargetPosition();
+                        break;
+                    case mab::MdMode_E::RAW_TORQUE:
+                        drawSetTargetTorque();
+                        break;
+                    case mab::MdMode_E::VELOCITY_PROFILE:
+                        drawPIDtunerVelocity();
+                        drawPIDtunerPosition();
+                        drawSetTargetVelocity();
+                        drawSetTargetPosition();
+                        drawSetTargetAcceleration();
+                        drawSetTargetDeceleration();
+                        break;
+                    case mab::MdMode_E::POSITION_PROFILE:
+                        drawPIDtunerVelocity();
+                        drawPIDtunerPosition();
+                        drawSetTargetVelocity();
+                        drawSetTargetPosition();
+                        drawSetTargetAcceleration();
+                        drawSetTargetDeceleration();
+                        break;
+                    default:
+                        break;
+                }
 
                 ImGui::EndTabItem();
             }
@@ -212,18 +168,6 @@ static void drawLeftMenuBar(ImGuiIO& io, mab::Candle* candle)
                 drawEnableMDButton(candle);
                 ImGui::SameLine();
                 drawDisableMDButton(candle);
-
-                float sliderWidth = leftMenuBar_width - 75.f;
-
-                ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)mabColor);
-                ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
-                ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
-                ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-
-                ImGui::SetNextItemWidth(sliderWidth);
-                ImGui::SliderFloat("Velocity", &Velocity, 0.0f, 100.0f);
-
-                ImGui::PopStyleColor(4);
 
                 if (ImGui::BeginPopup("my_select_popup"))
                 {
@@ -254,7 +198,7 @@ static void drawLeftMenuBar(ImGuiIO& io, mab::Candle* candle)
                 {
                     if (displayDetectedMD)
                     {
-                        targetVelocity = Velocity;
+                        targetVelocity = targetVelocitySlider;
                     }
                 }
 
@@ -280,55 +224,81 @@ static void drawLeftMenuBar(ImGuiIO& io, mab::Candle* candle)
 
         if (testStarted)
         {
-            testMD(io, candle);
+            testMD();
         }
     }
     ImGui::End();
 }
 
-static void drawTestButton(ImGuiIO& io, mab::Candle* candle)
+static void drawPIDtunerVelocity()
 {
-    if (candle == nullptr)
-    {
-        return;
-    }
+    ImGui::Separator();
+    CenterText("Velocity loop - PID tuning parameters");
+    ImGui::Spacing();
 
-    ImGui::SetCursorPosX(margin);
-    if (ImGui::Button("Test", ImVec2(leftMenuBar_width - (margin * 2.0f), 80.0f)))
+    float sliderWidth = leftMenuBarWidth - 75.f;
+
+    ImGui::SetNextItemWidth(sliderWidth);
+    drawOrangeInputFloat("Kp Vel", &Kp_vel, 0.01f, 0.1f);
+
+    ImGui::SetNextItemWidth(sliderWidth);
+    drawOrangeInputFloat("Ki Vel", &Ki_vel, 0.01f, 0.1f);
+
+    ImGui::SetNextItemWidth(sliderWidth);
+    drawOrangeInputFloat("Kd Vel", &Kd_vel, 0.01f, 0.1f);
+
+    if (ImGui::Button("Reset Velocity Parameters", ImVec2(leftMenuBarWidth / 2.0f, 40.0f)))
     {
-        testStarted = true;
-        addMD100(io, candle);
+        Kp_vel = 0.0f;
+        Ki_vel = 0.0f;
+        Kd_vel = 0.0f;
     }
 }
 
-static void drawEndTestButton(ImGuiIO& io, mab::Candle* candle)
+static void drawPIDtunerPosition()
 {
-    if (candle == nullptr)
-    {
-        return;
-    }
+    ImGui::Separator();
+    CenterText("Position loop - PID tuning parameters");
+    ImGui::Spacing();
 
-    ImGui::SetCursorPosX(margin);
-    if (ImGui::Button("End test", ImVec2(leftMenuBar_width - (margin * 2.0f), 80.0f)))
+    float sliderWidth = leftMenuBarWidth - 75.f;
+
+    ImGui::SetNextItemWidth(sliderWidth);
+    drawOrangeInputFloat("Kp Pos", &Kp_pos, 0.01f, 0.1f);
+
+    ImGui::SetNextItemWidth(sliderWidth);
+    drawOrangeInputFloat("Ki Pos", &Ki_pos, 0.01f, 0.1f);
+
+    ImGui::SetNextItemWidth(sliderWidth);
+    drawOrangeInputFloat("Kd Pos", &Kd_pos, 0.01f, 0.1f);
+
+    if (ImGui::Button("Reset Position Parameters", ImVec2(leftMenuBarWidth / 2.0f, 40.0f)))
     {
-        testStarted = false;
+        Kp_pos = 0.0f;
+        Ki_pos = 0.0f;
+        Kd_pos = 0.0f;
     }
 }
 
-static void testMD(ImGuiIO& io, mab::Candle* candle)
+static void drawPDtunerImpedance()
 {
-    if (!testStarted)
-        return;
+    ImGui::Separator();
+    CenterText("Impedance PD tuner");
+    ImGui::Spacing();
 
-    targetPosition = targetPositionSlider;
+    float sliderWidth = leftMenuBarWidth - 75.f;
 
-    for (u16 i = 0; i < 100; i++)
+    ImGui::SetNextItemWidth(sliderWidth);
+    drawOrangeInputFloat("Kp Imp", &Kp_imp, 0.01f, 0.1f);
+
+    ImGui::SetNextItemWidth(sliderWidth);
+    drawOrangeInputFloat("Kd Imp", &Kd_imp, 0.01f, 0.1f);
+
+    if (ImGui::Button("Reset Impedance Parameters", ImVec2(leftMenuBarWidth / 2.0f, 40.0f)))
     {
-        mdV[0].setTargetPosition(targetPosition);
+        Kp_imp = 0.0f;
+        Kd_imp = 0.0f;
     }
-    mdV.clear();
-
-    testStarted = false;
 }
 
 static void drawVelocityPlot(ImGuiIO& io, mab::Candle* candle)
@@ -338,28 +308,84 @@ static void drawVelocityPlot(ImGuiIO& io, mab::Candle* candle)
         return;
     }
 
-    static const int buffer_size = 500;
+    static const int buffer_size = 10000;
 
     static float timeValues[buffer_size]        = {0};
     static float measurementValues[buffer_size] = {0};
+    static float targetValues[buffer_size]      = {0};
 
     static int    offset       = 0;
     static float  t            = 0.0f;
-    static double refresh_time = 0.0;
+    static double refresh_time = 0.0f;
 
-    if (refresh_time == 0.0)
-        refresh_time = ImGui::GetTime();
+    static bool  lastTestStarted    = false;
+    static bool  isTargetAchieved   = false;
+    static float timeInTargetWindow = 0.0f;
 
-    while (refresh_time < ImGui::GetTime())
+    static float maxMeasured = 0.0f;
+    static float minMeasured = 0.0f;
+
+    if (testStarted && !lastTestStarted)
     {
-        t += 1.0f / 60.0f;
+        t                  = 0.0f;
+        offset             = 0.0f;
+        isTargetAchieved   = false;
+        timeInTargetWindow = 0.0f;
+        refresh_time       = ImGui::GetTime();
 
-        timeValues[offset]        = t;
-        measurementValues[offset] = mdV[0].getVelocity().first;
+        minMeasured = (targetVelocity < 0.0f) ? targetVelocity : 0.0f;
+        maxMeasured = (targetVelocity > 0.0f) ? targetVelocity : 0.0f;
 
-        offset = (offset + 1) % buffer_size;
+        for (int i = 0; i < buffer_size; ++i)
+        {
+            timeValues[i]        = 0.0f;
+            measurementValues[i] = 0.0f;
+            targetValues[i]      = 0.0f;
+        }
+    }
+    lastTestStarted = testStarted;
 
-        refresh_time += 1.0f / 60.0f;
+    float currentVel = mdV[0].getVelocity().first;
+
+    if (testStarted && !isTargetAchieved)
+    {
+        if (currentVel > maxMeasured)
+            maxMeasured = currentVel;
+        if (currentVel < minMeasured)
+            minMeasured = currentVel;
+
+        bool inTargetWindow = std::abs(currentVel - targetVelocity) <= 0.1f;
+
+        if (inTargetWindow)
+        {
+            timeInTargetWindow += io.DeltaTime;
+
+            if (timeInTargetWindow >= 0.25f)
+            {
+                isTargetAchieved = true;
+                testStarted      = false;
+                mdV[0].disable();
+            }
+        }
+        else
+        {
+            timeInTargetWindow = 0.0f;
+        }
+
+        if (refresh_time == 0.0f)
+            refresh_time = ImGui::GetTime();
+
+        while (refresh_time < ImGui::GetTime())
+        {
+            t += 1.0f / 60.0f;
+
+            timeValues[offset]        = t;
+            measurementValues[offset] = currentVel;
+            targetValues[offset]      = targetVelocity;
+
+            offset = (offset + 1) % buffer_size;
+            refresh_time += 1.0f / 60.0f;
+        }
     }
 
     ImPlotSpec spec;
@@ -367,9 +393,27 @@ static void drawVelocityPlot(ImGuiIO& io, mab::Candle* candle)
 
     if (ImPlot::BeginPlot("##VelocityPlot", ImVec2(-1, 250.0f)))
     {
-        ImPlot::SetupAxisLimits(ImAxis_X1, t - timeWindow, t, ImPlotCond_Always);
+        ImPlotCond limitCondition = testStarted ? ImPlotCond_Always : ImPlotCond_Once;
+
+        ImPlot::SetupAxisLimits(ImAxis_X1, 0.0f, t, limitCondition);
+
+        float bottomY = (minMeasured < 0.0f) ? (minMeasured - margin) : 0.0f;
+        float topY    = (maxMeasured > 0.0f) ? (maxMeasured + margin) : 0.0f;
+
+        if (topY == 0.0f && bottomY == 0.0f)
+        {
+            topY    = margin;
+            bottomY = -margin;
+        }
+
+        ImPlot::SetupAxisLimits(ImAxis_Y1, bottomY, topY, limitCondition);
 
         ImPlot::PlotLine("Velocity(t)", timeValues, measurementValues, buffer_size, spec);
+
+        if (currentMode == mab::MdMode_E::VELOCITY_PID ||
+            currentMode == mab::MdMode_E::VELOCITY_PROFILE ||
+            currentMode == mab::MdMode_E::POSITION_PROFILE)
+            ImPlot::PlotStairs("Target Velocity", timeValues, targetValues, buffer_size, spec);
 
         ImPlot::EndPlot();
     }
@@ -382,7 +426,7 @@ static void drawPositionPlot(ImGuiIO& io, mab::Candle* candle)
         return;
     }
 
-    static const int buffer_size = 500;
+    static const int buffer_size = 10000;
 
     static float timeValues[buffer_size]        = {0};
     static float measurementValues[buffer_size] = {0};
@@ -390,37 +434,63 @@ static void drawPositionPlot(ImGuiIO& io, mab::Candle* candle)
 
     static int    offset       = 0;
     static float  t            = 0.0f;
-    static double refresh_time = 0.0;
+    static double refresh_time = 0.0f;
 
-    static bool targetWasAchieved = false;
-    float       currentPos        = mdV[0].getPosition().first;
+    static bool  lastTestStarted    = false;
+    static bool  isTargetAchieved   = false;
+    static float timeInTargetWindow = 0.0f;
 
-    bool targetAchieved = std::abs(currentPos - targetPosition) <= 0.5f;
+    static float maxMeasured = 0.0f;
+    static float minMeasured = 0.0f;
 
-    if (targetAchieved)
+    if (testStarted && !lastTestStarted)
     {
-        refresh_time = ImGui::GetTime();
+        t                  = 0.0f;
+        offset             = 0.0f;
+        isTargetAchieved   = false;
+        timeInTargetWindow = 0.0f;
+        refresh_time       = ImGui::GetTime();
 
-        if (!targetWasAchieved)
+        minMeasured = (targetPosition < 0.0f) ? targetPosition : 0.0f;
+        maxMeasured = (targetPosition > 0.0f) ? targetPosition : 0.0f;
+
+        for (int i = 0; i < buffer_size; ++i)
         {
-            t      = 0.0f;
-            offset = 0;
-            for (int i = 0; i < buffer_size; ++i)
+            timeValues[i]        = 0.0f;
+            measurementValues[i] = 0.0f;
+            targetValues[i]      = 0.0f;
+        }
+    }
+    lastTestStarted = testStarted;
+
+    float currentPos = mdV[0].getPosition().first;
+
+    if (testStarted && !isTargetAchieved)
+    {
+        if (currentPos > maxMeasured)
+            maxMeasured = currentPos;
+        if (currentPos < minMeasured)
+            minMeasured = currentPos;
+
+        bool inTargetWindow = std::abs(currentPos - targetPosition) <= 0.5f;
+
+        if (inTargetWindow)
+        {
+            timeInTargetWindow += io.DeltaTime;
+
+            if (timeInTargetWindow >= 0.25f)
             {
-                timeValues[i]        = 0.0f;
-                measurementValues[i] = 0.0f;
-                targetValues[i]      = 0.0f;
+                isTargetAchieved = true;
+                testStarted      = false;
+                mdV[0].disable();
             }
-            targetWasAchieved = true;
+        }
+        else
+        {
+            timeInTargetWindow = 0.0f;
         }
 
-        turnOFFMD = targetAchieved;
-    }
-    else
-    {
-        targetWasAchieved = false;
-
-        if (refresh_time == 0.0)
+        if (refresh_time == 0.0f)
             refresh_time = ImGui::GetTime();
 
         while (refresh_time < ImGui::GetTime())
@@ -428,11 +498,10 @@ static void drawPositionPlot(ImGuiIO& io, mab::Candle* candle)
             t += 1.0f / 60.0f;
 
             timeValues[offset]        = t;
-            measurementValues[offset] = mdV[0].getPosition().first;
+            measurementValues[offset] = currentPos;
             targetValues[offset]      = targetPosition;
 
             offset = (offset + 1) % buffer_size;
-
             refresh_time += 1.0f / 60.0f;
         }
     }
@@ -442,22 +511,28 @@ static void drawPositionPlot(ImGuiIO& io, mab::Candle* candle)
 
     if (ImPlot::BeginPlot("##PositionPlot", ImVec2(-1, 250.0f)))
     {
-        if (targetAchieved)
-        {
-            ImPlot::SetupAxisLimits(ImAxis_X1, 0.0, timeWindow, ImPlotCond_Always);
-            ImPlot::SetupAxisLimits(ImAxis_Y1, 0.0, 100.0, ImPlotCond_Always);
+        ImPlotCond limitCondition = testStarted ? ImPlotCond_Always : ImPlotCond_Once;
 
-            ImPlot::PlotLine("Position(t)", timeValues, measurementValues, buffer_size, spec);
-            ImPlot::PlotStairs("Target Position", timeValues, targetValues, buffer_size, spec);
-        }
-        else
-        {
-            ImPlot::SetupAxisLimits(ImAxis_X1, t - timeWindow, t, ImPlotCond_Always);
-            ImPlot::SetupAxisLimits(ImAxis_Y1, 0.0, 100.0, ImPlotCond_Always);
+        ImPlot::SetupAxisLimits(ImAxis_X1, 0.0f, t, limitCondition);
 
-            ImPlot::PlotLine("Position(t)", timeValues, measurementValues, buffer_size, spec);
-            ImPlot::PlotStairs("Target Position", timeValues, targetValues, buffer_size, spec);
+        float bottomY = (minMeasured < 0.0f) ? (minMeasured - margin) : 0.0f;
+        float topY    = (maxMeasured > 0.0f) ? (maxMeasured + margin) : 0.0f;
+
+        if (topY == 0.0f && bottomY == 0.0f)
+        {
+            topY    = margin;
+            bottomY = -margin;
         }
+
+        ImPlot::SetupAxisLimits(ImAxis_Y1, bottomY, topY, limitCondition);
+
+        ImPlot::PlotLine("Position(t)", timeValues, measurementValues, buffer_size, spec);
+
+        if (currentMode == mab::MdMode_E::POSITION_PID ||
+            currentMode == mab::MdMode_E::POSITION_PROFILE ||
+            currentMode == mab::MdMode_E::IMPEDANCE ||
+            currentMode == mab::MdMode_E::VELOCITY_PROFILE)
+            ImPlot::PlotStairs("Target Position", timeValues, targetValues, buffer_size, spec);
 
         ImPlot::EndPlot();
     }
@@ -469,28 +544,63 @@ static void drawTorquePlot(ImGuiIO& io, mab::Candle* candle)
     {
         return;
     }
-    static const int buffer_size = 500;
+
+    static const int buffer_size = 10000;
 
     static float timeValues[buffer_size]        = {0};
     static float measurementValues[buffer_size] = {0};
+    static float targetValues[buffer_size]      = {0};
 
     static int    offset       = 0;
     static float  t            = 0.0f;
-    static double refresh_time = 0.0;
+    static double refresh_time = 0.0f;
 
-    if (refresh_time == 0.0)
+    static bool lastTestStarted = false;
+
+    static float maxMeasured = 0.0f;
+    static float minMeasured = 0.0f;
+
+    if (testStarted && !lastTestStarted)
+    {
+        t            = 0.0f;
+        offset       = 0.0f;
         refresh_time = ImGui::GetTime();
 
-    while (refresh_time < ImGui::GetTime())
+        minMeasured = (targetTorque < 0.0f) ? targetTorque : 0.0f;
+        maxMeasured = (targetTorque > 0.0f) ? targetTorque : 0.0f;
+
+        for (int i = 0; i < buffer_size; ++i)
+        {
+            timeValues[i]        = 0.0f;
+            measurementValues[i] = 0.0f;
+            targetValues[i]      = 0.0f;
+        }
+    }
+    lastTestStarted = testStarted;
+
+    float currentTorque = mdV[0].getTorque().first;
+
+    if (testStarted)
     {
-        t += 1.0f / 60.0f;
+        if (currentTorque > maxMeasured)
+            maxMeasured = currentTorque;
+        if (currentTorque < minMeasured)
+            minMeasured = currentTorque;
 
-        timeValues[offset]        = t;
-        measurementValues[offset] = mdV[0].getPosition().first;
+        if (refresh_time == 0.0f)
+            refresh_time = ImGui::GetTime();
 
-        offset = (offset + 1) % buffer_size;
+        while (refresh_time < ImGui::GetTime())
+        {
+            t += 1.0f / 60.0f;
 
-        refresh_time += 1.0f / 60.0f;
+            timeValues[offset]        = t;
+            measurementValues[offset] = currentTorque;
+            targetValues[offset]      = targetTorque;
+
+            offset = (offset + 1) % buffer_size;
+            refresh_time += 1.0f / 60.0f;
+        }
     }
 
     ImPlotSpec spec;
@@ -498,42 +608,153 @@ static void drawTorquePlot(ImGuiIO& io, mab::Candle* candle)
 
     if (ImPlot::BeginPlot("##TorquePlot", ImVec2(-1, 250.0f)))
     {
-        ImPlot::SetupAxisLimits(ImAxis_X1, t - timeWindow, t, ImPlotCond_Always);
+        ImPlotCond limitCondition = testStarted ? ImPlotCond_Always : ImPlotCond_Once;
+
+        ImPlot::SetupAxisLimits(ImAxis_X1, 0.0f, t, limitCondition);
+
+        float bottomY = (minMeasured < 0.0f) ? (minMeasured - margin) : 0.0f;
+        float topY    = (maxMeasured > 0.0f) ? (maxMeasured + margin) : 0.0f;
+
+        if (topY == 0.0f && bottomY == 0.0f)
+        {
+            topY    = margin;
+            bottomY = -margin;
+        }
+
+        ImPlot::SetupAxisLimits(ImAxis_Y1, bottomY, topY, limitCondition);
 
         ImPlot::PlotLine("Torque(t)", timeValues, measurementValues, buffer_size, spec);
+
+        if (currentMode == mab::MdMode_E::RAW_TORQUE || currentMode == mab::MdMode_E::IMPEDANCE)
+            ImPlot::PlotStairs("Target Torque", timeValues, targetValues, buffer_size, spec);
 
         ImPlot::EndPlot();
     }
 }
 
-static void drawMainMenu(ImGuiIO& io, mab::Candle* candle)
+static void drawSetTargetVelocity()
 {
-    const ImGuiViewport* mainMenuViewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(mainMenuViewport->WorkPos, ImGuiCond_Always);
+    ImGui::Separator();
+    drawBigInputFloat("Target Velocity", &targetVelocitySlider, 1.0f, 2.0f, "%.2f");
+}
 
-    ImVec2 mainPos =
-        ImVec2(mainMenuViewport->WorkPos.x + leftMenuBar_width, mainMenuViewport->WorkPos.y);
-    ImGui::SetNextWindowPos(mainPos, ImGuiCond_Always);
+static void drawSetTargetPosition()
+{
+    ImGui::Separator();
+    drawBigInputFloat("Target Position", &targetPositionSlider, 1.0f, 2.0f, "%.2f");
+}
 
-    ImVec2 mainSize =
-        ImVec2(mainMenuViewport->WorkSize.x - leftMenuBar_width, mainMenuViewport->WorkSize.y);
-    ImGui::SetNextWindowSize(mainSize, ImGuiCond_Always);
+static void drawSetTargetTorque()
+{
+    ImGui::Separator();
+    drawBigInputFloat("Target Torque", &targetTorqueSlider, 1.0f, 2.0f, "%.2f");
+}
 
-    if (ImGui::Begin("Main menu", nullptr, flagsBackMenu))
+static void drawSetTargetAcceleration()
+{
+    ImGui::Separator();
+    drawBigInputFloat("Acceleration", &targetAccelerationSlider, step, step_fast, "%.2f");
+}
+
+static void drawSetTargetDeceleration()
+{
+    ImGui::Separator();
+    drawBigInputFloat("Deceleration", &targetDecelrationSlider, step, step_fast, "%.2f");
+}
+
+static void drawTestButton(mab::Candle* candle)
+{
+    if (candle == nullptr)
     {
-        ImGui::Text("This is some useful text.");
-        ImGui::Checkbox("Demo Window", &show_demo_window);
-        ImGui::Checkbox("Another Window", &show_another_window);
-
-        if (systemON)
-        {
-            drawVelocityPlot(io, candle);
-            drawPositionPlot(io, candle);
-            drawTorquePlot(io, candle);
-        }
+        return;
     }
 
-    ImGui::End();
+    ImGui::SetCursorPosX(margin);
+    if (ImGui::Button("Test", ImVec2(leftMenuBarWidth - (margin * 2.0f), 80.0f)))
+    {
+        testStarted = true;
+        addMD100(candle);
+    }
+}
+
+static void drawEndTestButton(mab::Candle* candle)
+{
+    if (candle == nullptr)
+    {
+        return;
+    }
+
+    ImGui::SetCursorPosX(margin);
+    if (ImGui::Button("End test", ImVec2(leftMenuBarWidth - (margin * 2.0f), 80.0f)))
+    {
+        testStarted = false;
+        mdV[0].disable();
+        mdV.clear();
+    }
+}
+
+static void drawDiscoverMDButton(mab::Candle* candle)
+{
+    if (candle == nullptr)
+    {
+        return;
+    }
+
+    ImGui::SetCursorPosX(margin);
+    if (ImGui::Button("Discover MD", ImVec2(leftMenuBarWidth - (margin * 2.0f), 80.0f)))
+    {
+        detectMD = !detectMD;
+
+        mdV.clear();
+
+        for (const auto& id : mab::MD::discoverMDs(candle))
+        {
+            mdV.emplace_back(id, candle);
+            mdV.back().init();
+        }
+
+        if (!mdV.empty())
+            displayDetectedMD = true;
+        else
+            displayDetectedMD = false;
+    }
+}
+
+static void drawEnableMDButton(mab::Candle* candle)
+{
+    if (candle == nullptr)
+    {
+        return;
+    }
+    ImGui::SetCursorPosX(margin);
+    if (ImGui::Button("Enable MD's", ImVec2(leftMenuBarWidth / 2 - (margin * 2.0f), 80.0f)))
+    {
+        for (auto& id : mdV)
+        {
+            if (id.setMotionMode(mab::MdMode_E::VELOCITY_PID) != mab::MD::Error_t::OK)
+            {
+                std::cout << "MD mode setting failed \n";
+            }
+            id.enable();
+        }
+    }
+}
+
+static void drawDisableMDButton(mab::Candle* candle)
+{
+    if (candle == nullptr)
+    {
+        return;
+    }
+    ImGui::SetCursorPosX(margin + leftMenuBarWidth / 2);
+    if (ImGui::Button("Disable MD's", ImVec2(leftMenuBarWidth / 2 - (margin * 2.0f), 80.0f)))
+    {
+        targetVelocity = 0.0f;
+        for (auto& id : mdV)
+        {
+            id.disable();
+        }
+    }
 }
 
 static void drawToggleButton(mab::Candle* candle)
@@ -564,7 +785,7 @@ static void drawToggleButton(mab::Candle* candle)
 
     ImGui::SetCursorPosX(margin);
     if (ImGui::Button(systemON ? "SYSTEM OFF" : "SYSTEM ON",
-                      ImVec2(leftMenuBar_width - (margin * 2.0f), 80.0f)))
+                      ImVec2(leftMenuBarWidth - (margin * 2.0f), 80.0f)))
     {
         systemON = !systemON;
     }
@@ -573,67 +794,78 @@ static void drawToggleButton(mab::Candle* candle)
     ImGui::PopStyleVar(1);
 }
 
-static void drawDiscoverMDButton(mab::Candle* candle)
+static void drawSelectModeButton()
 {
-    if (candle == nullptr)
+    ImGui::Separator();
+
+    if (ImGui::BeginCombo("MD Motion Mode", getModeName(currentMode)))
     {
-        return;
-    }
+        if (ImGui::Selectable("None", currentMode == mab::MdMode_E::IDLE))
+            currentMode = mab::MdMode_E::IDLE;
+        if (ImGui::Selectable("Velocity PID", currentMode == mab::MdMode_E::VELOCITY_PID))
+            currentMode = mab::MdMode_E::VELOCITY_PID;
+        if (ImGui::Selectable("Position PID", currentMode == mab::MdMode_E::POSITION_PID))
+            currentMode = mab::MdMode_E::POSITION_PID;
+        if (ImGui::Selectable("Impedance PD", currentMode == mab::MdMode_E::IMPEDANCE))
+            currentMode = mab::MdMode_E::IMPEDANCE;
+        if (ImGui::Selectable("Raw Torque", currentMode == mab::MdMode_E::RAW_TORQUE))
+            currentMode = mab::MdMode_E::RAW_TORQUE;
+        if (ImGui::Selectable("Velocity Profile", currentMode == mab::MdMode_E::VELOCITY_PROFILE))
+            currentMode = mab::MdMode_E::VELOCITY_PROFILE;
+        if (ImGui::Selectable("Position Profile", currentMode == mab::MdMode_E::POSITION_PROFILE))
+            currentMode = mab::MdMode_E::POSITION_PROFILE;
 
-    ImGui::SetCursorPosX(margin);
-    if (ImGui::Button("Discover MD", ImVec2(leftMenuBar_width - (margin * 2.0f), 80.0f)))
-    {
-        detectMD = !detectMD;
-
-        mdV.clear();
-
-        for (const auto& id : mab::MD::discoverMDs(candle))
-        {
-            mdV.emplace_back(id, candle);
-            mdV.back().init();
-        }
-
-        if (!mdV.empty())
-            displayDetectedMD = true;
-        else
-            displayDetectedMD = false;
+        ImGui::EndCombo();
     }
 }
 
-static void drawEnableMDButton(mab::Candle* candle)
+static void testMD()
 {
-    if (candle == nullptr)
+    switch (currentMode)
     {
-        return;
-    }
-    ImGui::SetCursorPosX(margin);
-    if (ImGui::Button("Enable MD's", ImVec2(leftMenuBar_width / 2 - (margin * 2.0f), 80.0f)))
-    {
-        for (auto& id : mdV)
-        {
-            if (id.setMotionMode(mab::MdMode_E::VELOCITY_PID) != mab::MD::Error_t::OK)
-            {
-                std::cout << "MD mode setting failed \n";
-            }
-            id.enable();
-        }
-    }
-}
+        case mab::MdMode_E::IDLE:
 
-static void drawDisableMDButton(mab::Candle* candle)
-{
-    if (candle == nullptr)
-    {
-        return;
-    }
-    ImGui::SetCursorPosX(margin + leftMenuBar_width / 2);
-    if (ImGui::Button("Disable MD's", ImVec2(leftMenuBar_width / 2 - (margin * 2.0f), 80.0f)))
-    {
-        targetVelocity = 0.0f;
-        for (auto& id : mdV)
-        {
-            id.disable();
-        }
+            break;
+        case mab::MdMode_E::VELOCITY_PID:
+            targetVelocity = targetVelocitySlider;
+            targetPosition = 0.0f;
+            mdV[0].setTargetVelocity(targetVelocity);
+            break;
+        case mab::MdMode_E::POSITION_PID:
+            targetPosition = targetPositionSlider;
+            targetVelocity = 0.0f;
+            mdV[0].setTargetPosition(targetPosition);
+            break;
+        case mab::MdMode_E::IMPEDANCE:
+            targetPosition = targetPositionSlider;
+            mdV[0].setTargetPosition(targetPosition);
+            break;
+        case mab::MdMode_E::RAW_TORQUE:
+            targetTorque = targetTorqueSlider;
+            mdV[0].setTargetTorque(targetTorque);
+            break;
+        case mab::MdMode_E::VELOCITY_PROFILE:
+            targetPosition     = targetPositionSlider;
+            targetVelocity     = targetVelocitySlider;
+            targetAcceleration = targetAccelerationSlider;
+            targetDecelration  = targetDecelrationSlider;
+            mdV[0].setTargetPosition(targetPosition);
+            mdV[0].setTargetVelocity(targetVelocity);
+            mdV[0].setProfileAcceleration(targetAcceleration);
+            mdV[0].setProfileDeceleration(targetDecelration);
+            break;
+        case mab::MdMode_E::POSITION_PROFILE:
+            targetPosition     = targetPositionSlider;
+            targetVelocity     = targetVelocitySlider;
+            targetAcceleration = targetAccelerationSlider;
+            targetDecelration  = targetDecelrationSlider;
+            mdV[0].setTargetPosition(targetPosition);
+            mdV[0].setTargetVelocity(targetVelocity);
+            mdV[0].setProfileAcceleration(targetAcceleration);
+            mdV[0].setProfileDeceleration(targetDecelration);
+            break;
+        default:
+            break;
     }
 }
 
@@ -646,6 +878,86 @@ static void CenterText(const char* text)
     ImGui::TextUnformatted(text);
 }
 
+const char* getModeName(mab::MdMode_E mode)
+{
+    switch (mode)
+    {
+        case mab::MdMode_E::IDLE:
+            return "None";
+        case mab::MdMode_E::VELOCITY_PID:
+            return "Velocity PID";
+        case mab::MdMode_E::POSITION_PID:
+            return "Position PID";
+        case mab::MdMode_E::IMPEDANCE:
+            return "Impedance PD";
+        case mab::MdMode_E::RAW_TORQUE:
+            return "Raw torque";
+        case mab::MdMode_E::VELOCITY_PROFILE:
+            return "Velocity Profile";
+        case mab::MdMode_E::POSITION_PROFILE:
+            return "Position Profile";
+        default:
+            return "Unknown mode";
+    }
+}
+
+static bool drawBigInputFloat(
+    const char* label, float* v, float step, float step_fast, const char* format)
+{
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12.0f, 12.0f));
+
+    bool valueChanged =
+        ImGui::InputFloat(label, v, step, step_fast, format, ImGuiInputTextFlags_None);
+
+    ImGui::PopStyleVar();
+    ImGui::SetWindowFontScale(1.0f);
+
+    return valueChanged;
+}
+
+static bool drawOrangeInputFloat(
+    const char* label, float* v, float step, float step_fast, const char* format)
+{
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12.0f, 12.0f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)mabColor);
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
+    bool valueChanged = ImGui::InputFloat(label, v, step, step_fast, format);
+
+    if (*v < 0.0f)
+    {
+        *v           = 0.0f;
+        valueChanged = true;
+    }
+
+    ImGui::PopStyleColor(3);
+    ImGui::PopStyleVar();
+    return valueChanged;
+}
+
+static void addMD100(mab::Candle* candle)
+{
+    mdV.clear();
+    mdV.push_back(mab::MD(100, candle));
+
+    if (mdV[0].init() != mab::MD::Error_t::OK)
+    {
+        std::cout << "MD not initialized\n";
+    }
+
+    mdV[0].zero();
+
+    if (mdV[0].setMotionMode(currentMode) != mab::MD::Error_t::OK)
+    {
+        std::cout << "MD mode setting failed \n";
+    }
+
+    // downloadParameters();
+
+    mdV[0].enable();
+
+    mdV[0].setImpedanceParams(Kp_imp, Kd_imp);
+}
 // static void downloadParameters()
 // {
 //     mab::MD::Error_t err = mdV[0].readRegisters(registers.motorImpPidKp,
@@ -708,10 +1020,7 @@ int main(int, char**)
     (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
-
-    // Setup Dear ImGui style
     ImGui::StyleColorsDark();
-    // ImGui::StyleColorsLight();
 
     // Setup scaling
     // ImGuiStyle& style = ImGui::GetStyle();
@@ -729,7 +1038,7 @@ int main(int, char**)
     auto candle = mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M,
                                     mab::candleTypes::busTypes_t::USB);
 
-    addMD100(io, candle);
+    addMD100(candle);
 
     // Main loop
     while (!glfwWindowShouldClose(window))
@@ -752,18 +1061,6 @@ int main(int, char**)
 
         if (show_demo_window)
             ImGui::ShowDemoWindow(&show_demo_window);
-
-        if (show_another_window)
-        {
-            ImGui::Begin(
-                "Another Window",
-                &show_another_window);  // Pass a pointer to our bool variable (the window will have
-                                        // a closing button that will clear the bool when clicked)
-            ImGui::Text("Hello from another window!");
-            if (ImGui::Button("Close Me"))
-                show_another_window = false;
-            ImGui::End();
-        }
 
         // Rendering
         ImGui::Render();
