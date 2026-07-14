@@ -57,16 +57,19 @@ static float maxAccelerationClamp = 0.0f;
 static float maxDecelerationClamp = 0.0f;
 
 // TUNING GAINS
-static float Kp_vel = 0.0f;
-static float Ki_vel = 0.0f;
-static float Kd_vel = 0.0f;
+static float Kp_vel          = 0.0f;
+static float Ki_vel          = 0.0f;
+static float Kd_vel          = 0.0f;
+static float integralMax_vel = 0.0f;
 
-static float Kp_pos = 0.0f;
-static float Ki_pos = 0.0f;
-static float Kd_pos = 0.0f;
+static float Kp_pos          = 0.0f;
+static float Ki_pos          = 0.0f;
+static float Kd_pos          = 0.0f;
+static float integralMax_pos = 0.0f;
 
 static float Kp_imp = 0.0f;
 static float Kd_imp = 0.0f;
+// static float integralMax_imp = 0.0f;
 
 static float positionWindowSlider = 0.0f;
 static float positionWindow       = 0.1f;

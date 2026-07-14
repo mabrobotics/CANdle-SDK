@@ -122,7 +122,7 @@ static void drawLeftMenuBar(ImGuiIO& io, mab::Candle* candle)
                         drawPDtunerImpedance();
                         drawSetTargetPosition();
                         break;
-                    case mab::MdMode_E::RAW_TORQUE:
+                    case mab::MdMode_E::RAW_TORQUE:  // case unused
                         drawSetTargetTorque();
                         break;
                     case mab::MdMode_E::VELOCITY_PROFILE:
@@ -257,11 +257,18 @@ static void drawPIDtunerVelocity()
         Kd_vel = std::clamp(Kd_vel, 0.0f, 100.f);
     }
 
+    ImGui::SetNextItemWidth(sliderWidth);
+    if (drawOrangeInputFloat("Windup Vel", &integralMax_vel, 0.01f, 0.1f))
+    {
+        integralMax_vel = std::clamp(integralMax_vel, 0.0f, 100.f);
+    }
+
     if (ImGui::Button("Reset Velocity Parameters", ImVec2(leftMenuBarWidth / 2.0f, 40.0f)))
     {
-        Kp_vel = 0.0f;
-        Ki_vel = 0.0f;
-        Kd_vel = 0.0f;
+        Kp_vel          = 0.0f;
+        Ki_vel          = 0.0f;
+        Kd_vel          = 0.0f;
+        integralMax_vel = 0.0f;
     }
 }
 
@@ -291,11 +298,18 @@ static void drawPIDtunerPosition()
         Kd_pos = std::clamp(Kd_pos, 0.0f, 100.f);
     }
 
+    ImGui::SetNextItemWidth(sliderWidth);
+    if (drawOrangeInputFloat("Windup Pos", &integralMax_pos, 0.01f, 0.1f))
+    {
+        integralMax_pos = std::clamp(integralMax_pos, 0.0f, 100.f);
+    }
+
     if (ImGui::Button("Reset Position Parameters", ImVec2(leftMenuBarWidth / 2.0f, 40.0f)))
     {
-        Kp_pos = 0.0f;
-        Ki_pos = 0.0f;
-        Kd_pos = 0.0f;
+        Kp_pos          = 0.0f;
+        Ki_pos          = 0.0f;
+        Kd_pos          = 0.0f;
+        integralMax_pos = 0.0f;
     }
 }
 
@@ -655,7 +669,7 @@ static void drawTorquePlot(ImGuiIO& io, mab::Candle* candle)
 
         ImPlot::PlotLine("Torque(t)", timeValues, measurementValues, buffer_size, spec);
 
-        if (currentMode == mab::MdMode_E::RAW_TORQUE || currentMode == mab::MdMode_E::IMPEDANCE)
+        if (currentMode == mab::MdMode_E::IMPEDANCE)
             ImPlot::PlotStairs("Target Torque", timeValues, targetValues, buffer_size, spec);
 
         ImPlot::EndPlot();
@@ -732,6 +746,52 @@ static void drawTestButton(mab::Candle* candle)
     if (ImGui::Button("Test", ImVec2(leftMenuBarWidth - (margin * 2.0f), 80.0f)))
     {
         testStarted = true;
+
+        switch (currentMode)
+        {
+            case mab::MdMode_E::IDLE:
+                break;
+            case mab::MdMode_E::VELOCITY_PID:
+                targetVelocity = targetVelocitySlider;
+                targetPosition = 0.0f;
+                positionWindow = 0.01;
+                velocityWindow = velocityWindowSlider;
+                mdV[0].setVelocityPIDparam(Kp_vel, Kd_vel, Ki_vel, integralMax_vel);
+                break;
+            case mab::MdMode_E::POSITION_PID:
+                targetPosition = targetPositionSlider;
+                targetVelocity = 0.0f;
+                velocityWindow = 0.01;
+                positionWindow = positionWindowSlider;
+                mdV[0].setPositionPIDparam(Kp_pos, Kd_pos, Ki_pos, integralMax_pos);
+                break;
+            case mab::MdMode_E::IMPEDANCE:
+                targetPosition = targetPositionSlider;
+                mdV[0].setImpedanceParams(Kp_imp, Kd_imp);
+                break;
+            case mab::MdMode_E::RAW_TORQUE:  // case unused
+                break;
+            case mab::MdMode_E::VELOCITY_PROFILE:
+                targetPosition     = targetPositionSlider;
+                targetVelocity     = targetVelocitySlider;
+                targetAcceleration = targetAccelerationSlider;
+                targetDecelration  = targetDecelrationSlider;
+                positionWindow     = 0.01;
+                velocityWindow     = velocityWindowSlider;
+                mdV[0].setVelocityPIDparam(Kp_vel, Kd_vel, Ki_vel, integralMax_vel);
+                mdV[0].setPositionPIDparam(Kp_pos, Kd_pos, Ki_pos, integralMax_pos);
+                break;
+            case mab::MdMode_E::POSITION_PROFILE:
+                targetPosition     = targetPositionSlider;
+                targetVelocity     = targetVelocitySlider;
+                targetAcceleration = targetAccelerationSlider;
+                targetDecelration  = targetDecelrationSlider;
+                velocityWindow     = 0.01;
+                positionWindow     = positionWindowSlider;
+                mdV[0].setVelocityPIDparam(Kp_vel, Kd_vel, Ki_vel, integralMax_vel);
+                mdV[0].setPositionPIDparam(Kp_pos, Kd_pos, Ki_pos, integralMax_pos);
+                break;
+        }
         addMD100(candle);
     }
 }
@@ -867,8 +927,8 @@ static void drawSelectModeButton()
             currentMode = mab::MdMode_E::POSITION_PID;
         if (ImGui::Selectable("Impedance PD", currentMode == mab::MdMode_E::IMPEDANCE))
             currentMode = mab::MdMode_E::IMPEDANCE;
-        if (ImGui::Selectable("Raw Torque", currentMode == mab::MdMode_E::RAW_TORQUE))
-            currentMode = mab::MdMode_E::RAW_TORQUE;
+        // if (ImGui::Selectable("Raw Torque", currentMode == mab::MdMode_E::RAW_TORQUE))
+        //     currentMode = mab::MdMode_E::RAW_TORQUE; // IN PURPOSE OF DEVELOPMENT
         if (ImGui::Selectable("Velocity Profile", currentMode == mab::MdMode_E::VELOCITY_PROFILE))
             currentMode = mab::MdMode_E::VELOCITY_PROFILE;
         if (ImGui::Selectable("Position Profile", currentMode == mab::MdMode_E::POSITION_PROFILE))
@@ -883,49 +943,27 @@ static void testMD()
     switch (currentMode)
     {
         case mab::MdMode_E::IDLE:
-
             break;
         case mab::MdMode_E::VELOCITY_PID:
-            targetVelocity = targetVelocitySlider;
-            targetPosition = 0.0f;
-            positionWindow = 0.01;
-            velocityWindow = velocityWindowSlider;
             mdV[0].setTargetVelocity(targetVelocity);
             break;
         case mab::MdMode_E::POSITION_PID:
-            targetPosition = targetPositionSlider;
-            targetVelocity = 0.0f;
-            velocityWindow = 0.01;
-            positionWindow = positionWindowSlider;
             mdV[0].setTargetPosition(targetPosition);
             break;
         case mab::MdMode_E::IMPEDANCE:
-            targetPosition = targetPositionSlider;
             mdV[0].setTargetPosition(targetPosition);
             break;
-        case mab::MdMode_E::RAW_TORQUE:
+        case mab::MdMode_E::RAW_TORQUE:  // case unused
             targetTorque = targetTorqueSlider;
             mdV[0].setTargetTorque(targetTorque);
             break;
         case mab::MdMode_E::VELOCITY_PROFILE:
-            targetPosition     = targetPositionSlider;
-            targetVelocity     = targetVelocitySlider;
-            targetAcceleration = targetAccelerationSlider;
-            targetDecelration  = targetDecelrationSlider;
-            positionWindow     = 0.01;
-            velocityWindow     = velocityWindowSlider;
             mdV[0].setTargetPosition(targetPosition);
             mdV[0].setTargetVelocity(targetVelocity);
             mdV[0].setProfileAcceleration(targetAcceleration);
             mdV[0].setProfileDeceleration(targetDecelration);
             break;
         case mab::MdMode_E::POSITION_PROFILE:
-            targetPosition     = targetPositionSlider;
-            targetVelocity     = targetVelocitySlider;
-            targetAcceleration = targetAccelerationSlider;
-            targetDecelration  = targetDecelrationSlider;
-            velocityWindow     = 0.01;
-            positionWindow     = positionWindowSlider;
             mdV[0].setTargetPosition(targetPosition);
             mdV[0].setTargetVelocity(targetVelocity);
             mdV[0].setProfileAcceleration(targetAcceleration);
@@ -957,8 +995,8 @@ const char* getModeName(mab::MdMode_E mode)
             return "Position PID";
         case mab::MdMode_E::IMPEDANCE:
             return "Impedance PD";
-        case mab::MdMode_E::RAW_TORQUE:
-            return "Raw torque";
+        case mab::MdMode_E::RAW_TORQUE:  // case unused
+            return "Raw Torque";
         case mab::MdMode_E::VELOCITY_PROFILE:
             return "Velocity Profile";
         case mab::MdMode_E::POSITION_PROFILE:
@@ -1034,7 +1072,9 @@ static void downloadParameters()
                                                  registers.positionLimitMin,
                                                  registers.maxTorque,
                                                  registers.maxAcceleration,
-                                                 registers.maxDeceleration);
+                                                 registers.maxDeceleration,
+                                                 registers.motorVelPidWindup,
+                                                 registers.motorPosPidWindup);
 
     if (err != mab::MD::Error_t::OK && err2 != mab::MD::Error_t::OK)
     {
@@ -1042,13 +1082,15 @@ static void downloadParameters()
     }
     else
     {
-        Kp_vel = float(registers.motorVelPidKp.value);
-        Ki_vel = float(registers.motorVelPidKi.value);
-        Kd_vel = float(registers.motorVelPidKd.value);
+        Kp_vel          = float(registers.motorVelPidKp.value);
+        Ki_vel          = float(registers.motorVelPidKi.value);
+        Kd_vel          = float(registers.motorVelPidKd.value);
+        integralMax_vel = float(registers.motorVelPidWindup.value);
 
-        Kp_pos = float(registers.motorPosPidKp.value);
-        Ki_pos = float(registers.motorPosPidKi.value);
-        Kd_pos = float(registers.motorPosPidKd.value);
+        Kp_pos          = float(registers.motorPosPidKp.value);
+        Ki_pos          = float(registers.motorPosPidKi.value);
+        Kd_pos          = float(registers.motorPosPidKd.value);
+        integralMax_pos = float(registers.motorPosPidWindup.value);
 
         Kp_imp = float(registers.motorImpPidKp.value);
         Kd_imp = float(registers.motorImpPidKd.value);
