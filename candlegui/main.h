@@ -58,11 +58,30 @@ struct CommonMemory
     bool testStarted             = false;
     bool buttonDiscoverMdPressed = false;
     bool updateParametersTest    = false;
+    bool selectedMDid            = false;
 };
 
-static bool show_demo_window = false;
-static bool systemON         = true;
-// static bool displayDetectedMD = false;
+struct TableData
+{
+    float Kp_vel          = 0.0f;
+    float Ki_vel          = 0.0f;
+    float Kd_vel          = 0.0f;
+    float integralMax_vel = 0.0f;
+
+    float Kp_pos          = 0.0f;
+    float Ki_pos          = 0.0f;
+    float Kd_pos          = 0.0f;
+    float integralMax_pos = 0.0f;
+
+    float Kp_imp = 0.0f;
+    float Kd_imp = 0.0f;
+};
+TableData tableData;
+
+static bool systemON        = true;
+static bool selectedMD      = false;
+static bool selectedMode    = false;
+static bool discoverOngoing = false;
 
 static int   monitorX, monitorY;
 static float leftMenuBarWidth = 500.0f;
@@ -80,6 +99,8 @@ ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 ImColor mabColor = ImColor::HSV(0.078f, 1.0f, 1.0f);
 
+std::string chosenIDstr = "Select Your MD";
+
 // MAB
 mab::MDRegisters_S registers;
 mab::MDRegisters_S registers2;
@@ -91,8 +112,6 @@ static float minPositionClamp     = 0.0f;
 static float maxTorqueClamp       = 0.0f;
 static float maxAccelerationClamp = 0.0f;
 static float maxDecelerationClamp = 0.0f;
-
-// static float integralMax_imp = 0.0f;
 
 static float positionWindowSlider = 0.0f;
 static float positionWindow       = 0.1f;
@@ -144,8 +163,7 @@ static void drawSetVelocityWindow();
 static void drawTestButton(CommonMemory& memory);
 static void drawEndTestButton(CommonMemory& memory);
 static void drawDiscoverMDButton(CommonMemory& memory);
-// static void drawEnableMDButton(CommonMemory& memory);
-// static void drawDisableMDButton(CommonMemory& memory);
+static void drawParametersTable();
 static void drawToggleButton();
 static void drawSelectModeButton(CommonMemory& memory);
 static void drawSelectMDButton(CommonMemory& memory);
@@ -160,14 +178,12 @@ static bool drawOrangeInputFloat(const char* label,
                                  float       step_fast = 0.0f,
                                  const char* format    = "%.3f");
 
-static void testMD(CommonMemory& memory, std::vector<mab::MD>& mdv, mab::Candle* candle);
-static void downloadParameters(CommonMemory& memory, std::vector<mab::MD>& mdv);
+static void testMD(CommonMemory& memory, mab::MD& md);
+static void downloadParameters(CommonMemory& memory, mab::MD& md);
 
 static void updateVelParameters(CommonMemory& memory);
 static void updatePosParameters(CommonMemory& memory);
 static void updateImpParameters(CommonMemory& memory);
-
-static void addMD100(CommonMemory& memory, std::vector<mab::MD>& mdv, mab::Candle* candle);
 
 // hardware thread loop
 void candleLoop(CommonMemory& memory, std::atomic<bool>& isRunning);
