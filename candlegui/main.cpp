@@ -1146,18 +1146,22 @@ static void downloadParameters(CommonMemory& memory, mab::MD& md)
         Kd_impSlider = memory.Kd_imp;
 
         // Write them on into Table
-        tableData.Kp_vel          = memory.Kp_vel;
-        tableData.Ki_vel          = memory.Ki_vel;
-        tableData.Kd_vel          = memory.Kd_vel;
-        tableData.integralMax_vel = memory.integralMax_vel;
+        if (memory.firstDownload)
+        {
+            memory.firstDownload      = false;
+            tableData.Kp_vel          = memory.Kp_vel;
+            tableData.Ki_vel          = memory.Ki_vel;
+            tableData.Kd_vel          = memory.Kd_vel;
+            tableData.integralMax_vel = memory.integralMax_vel;
 
-        tableData.Kp_pos          = memory.Kp_pos;
-        tableData.Ki_pos          = memory.Ki_pos;
-        tableData.Kd_pos          = memory.Kd_pos;
-        tableData.integralMax_pos = memory.integralMax_pos;
+            tableData.Kp_pos          = memory.Kp_pos;
+            tableData.Ki_pos          = memory.Ki_pos;
+            tableData.Kd_pos          = memory.Kd_pos;
+            tableData.integralMax_pos = memory.integralMax_pos;
 
-        tableData.Kp_imp = memory.Kp_imp;
-        tableData.Kd_imp = memory.Kd_imp;
+            tableData.Kp_imp = memory.Kp_imp;
+            tableData.Kd_imp = memory.Kd_imp;
+        }
     }
 }
 

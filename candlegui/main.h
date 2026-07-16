@@ -59,6 +59,7 @@ struct CommonMemory
     bool buttonDiscoverMdPressed = false;
     bool updateParametersTest    = false;
     bool selectedMDid            = false;
+    bool firstDownload           = true;
 };
 
 struct TableData
