@@ -13,6 +13,7 @@
 #include "candle.hpp"
 #include "logger.hpp"
 #include "mab_types.hpp"
+#include "manufacturer_data.hpp"
 #include "md_types.hpp"
 #include "mabFileParser.hpp"
 #include "md_cfg_map.hpp"
@@ -705,43 +706,60 @@ namespace mab
                 m_logger << "[Firmware]" << std::endl;
                 m_logger << "- version: v" << (int)firmwareVersion.s.major << "."
                          << (int)firmwareVersion.s.minor << "." << (int)firmwareVersion.s.revision
-                         << "." << firmwareVersion.s.tag << std::endl;
-                m_logger << "- build: " << readableRegisters.commitHash.value << std::endl;
-                m_logger << "- date: "
+                         << "." << firmwareVersion.s.tag << "_"
+                         << readableRegisters.commitHash.value << "_"
                          << MDBuildDateValue_S::toReadable(readableRegisters.buildDate.value)
                                 .value_or("Unknown")
                          << std::endl;
 
-                m_logger << "[Driver]" << std::endl;
-                m_logger << "- type(legacy): "
-                         << MDLegacyHwVersion_S::toReadable(
-                                readableRegisters.legacyHardwareVersion.value)
-                                .value_or("Unknown")
-                         << std::endl;
+                if (isVersionAtLeast(firmwareVersion, 3, 0, 0))
+                {
+                    m_logger << "[Driver]" << std::endl;
+                    m_logger << "- type: "
+                             << deviceTypeToCstring(
+                                    (deviceType_E)readableRegisters.hardwareType.value)
+                             << "_"
+                             << MDDeviceRev_S::toReadable(readableRegisters.hardwareRev.value)
+                                    .value_or("Unknown")
+                             << "_"
+                             << MDLegacyHwVersion_S::toReadable(
+                                    readableRegisters.legacyHardwareVersion.value)
+                                    .value_or("Unknown")
+                             << std::endl;
+                }
+                else
+                {
+                    m_logger << "[Driver]" << std::endl;
+                    m_logger << "- type (legacy): "
+                             << MDLegacyHwVersion_S::toReadable(
+                                    readableRegisters.legacyHardwareVersion.value)
+                                    .value_or("Unknown")
+                             << std::endl;
+                }
                 m_logger << "- shunt resistance: " << std::setprecision(1)
                          << readableRegisters.shuntResistance.value * 1000.f << " mOhm"
-                         << std::endl;
-                m_logger << "- CAN datarate: " << readableRegisters.canBaudrate.value / 1000000
-                         << " M" << std::endl;
-                m_logger << "- CAN timeout: " << readableRegisters.canWatchdog.value << " ms"
                          << std::endl;
                 m_logger << "- GPIO mode: "
                          << MDUserGpioConfigurationValue_S::toReadable(
                                 readableRegisters.userGpioConfiguration.value)
                                 .value_or("OFF")
                          << std::endl;
+                m_logger << "[CAN]" << std::endl;
+                m_logger << "- datarate: " << readableRegisters.canBaudrate.value / 1000000 << " M"
+                         << std::endl;
+                m_logger << "- timeout: " << readableRegisters.canWatchdog.value << " ms"
+                         << std::endl;
 
                 m_logger << "[Actuator]" << std::endl;
                 m_logger << "- pole pairs: "
                          << std::to_string(readableRegisters.motorPolePairs.value) << std::endl;
-                m_logger << "- KV rating: " << std::to_string(readableRegisters.motorKV.value)
+                m_logger << "- Kt: " << std::setprecision(4) << readableRegisters.motorKt.value
+                         << " Nm/A" << " (KV: " << std::to_string(readableRegisters.motorKV.value)
                          << " rpm/V" << std::endl;
-                m_logger << "- motor torque constant: " << std::setprecision(4)
-                         << readableRegisters.motorKt.value << " Nm/A" << std::endl;
-                m_logger << std::fixed << "- d-axis resistance: " << std::setprecision(3)
-                         << readableRegisters.motorResistance.value << " Ohm\n";
-                m_logger << std::fixed << "- d-axis inductance: " << std::setprecision(6)
-                         << readableRegisters.motorInductance.value << " H\n";
+                m_logger << std::fixed << "- R: " << std::setprecision(3)
+                         << readableRegisters.motorResistance.value
+                         << " Ohm. L: " << std::setprecision(6)
+                         << readableRegisters.motorInductance.value << " H";
                 m_logger << "- torque bandwidth: " << readableRegisters.motorTorqueBandwidth.value
                          << " Hz" << std::endl;
                 m_logger << "- max current: " << std::setprecision(1)
@@ -749,7 +767,7 @@ namespace mab
                 m_logger << "- gear ratio: " << std::setprecision(5)
                          << readableRegisters.motorGearRatio.value << "(~" << std::setprecision(0)
                          << 1.f / readableRegisters.motorGearRatio.value << ":1)" << std::endl;
-                m_logger << "- shutdown temperature: "
+                m_logger << "- max motor temperature: "
                          << std::to_string(readableRegisters.motorShutdownTemp.value) << " *C"
                          << std::endl;
                 m_logger << "- calibration mode: "
@@ -1072,7 +1090,7 @@ namespace mab
                          ->needs(mdCanIdOption)
                          ->require_subcommand();
 
-        // candletool md test absolute 
+        // candletool md test absolute
         auto* absolute =
             test->add_subcommand("absolute", "Move to target utilizing trapezoidal profile")
                 ->require_option();
@@ -1106,7 +1124,7 @@ namespace mab
                 m_logger.info("TARGET REACHED!");
             });
 
-        // candletool md test relative 
+        // candletool md test relative
         auto* relative =
             test->add_subcommand("relative", "Move relative to current position")->require_option();
 
@@ -1144,7 +1162,7 @@ namespace mab
                 m_logger.success("Movement ended.");
             });
 
-        // candletool md test velocity 
+        // candletool md test velocity
         auto* velocity =
             test->add_subcommand("velocity", "Move with set velocity, using velocity profile")
                 ->require_option();
