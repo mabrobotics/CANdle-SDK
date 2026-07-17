@@ -1448,17 +1448,12 @@ int main(int, char**)
 
     std::atomic<bool> isRunning{true};
 
-    // int i   = 0;
-    // int sum = 0;
-
     // Initialization ofo candlehardware thread
     std::thread hardware(candleLoop, std::ref(m_common), std::ref(isRunning));
 
     // Main loop
     while (!glfwWindowShouldClose(window))
     {
-        // auto start_time = std::chrono::high_resolution_clock::now();
-
         glfwPollEvents();
         if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0)
         {
@@ -1489,21 +1484,6 @@ int main(int, char**)
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window);
-
-        // i++;
-        // auto end_time = std::chrono::high_resolution_clock::now();
-
-        // auto duration =
-        //     std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-
-        // sum += int(duration.count());
-
-        // if (i == 10)
-        // {
-        //     std::cout << "Loop execution took: " << sum / 10 << " milliseconds.\n";
-        //     i   = 0;
-        //     sum = 0;
-        // }
     }
 
     // Cleanup

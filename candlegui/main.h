@@ -23,12 +23,13 @@
 
 struct CommonMemory
 {
-    std::mutex mtx;
-    float      targetVelocity     = 0.0f;
-    float      targetPosition     = 0.0f;
-    float      targetTorque       = 0.0f;
-    float      targetAcceleration = 0.0f;
-    float      targetDeceleration = 0.0f;
+    std::atomic<int> actual_thread_hz{0};
+    std::mutex       mtx;
+    float            targetVelocity     = 0.0f;
+    float            targetPosition     = 0.0f;
+    float            targetTorque       = 0.0f;
+    float            targetAcceleration = 0.0f;
+    float            targetDeceleration = 0.0f;
 
     // TUNING GAINS
     float Kp_vel          = 0.0f;
