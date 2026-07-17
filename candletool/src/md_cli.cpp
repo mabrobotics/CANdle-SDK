@@ -201,7 +201,7 @@ namespace mab
                 m_logger.success("MD CAN parameters updated successfully!");
             });
 
-        // Calibration  ====================================================================
+        // candletool md calibration
         auto* calibration =
             mdCLi->add_subcommand("calibration", "Calibrate the MD drive.")->needs(mdCanIdOption);
 
@@ -269,7 +269,7 @@ namespace mab
                 // Perform main encoder calibration
                 f32 calibrationTime = 40;  // seconds
                 if (isVersionAtLeast(getMdFirmwareVersion(*md), 3, 0, 0))
-                    calibrationTime = 15;
+                    calibrationTime = 20;
                 if (doOnMainEncoder)
                 {
                     m_logger.info("Starting main encoder calibration...");
