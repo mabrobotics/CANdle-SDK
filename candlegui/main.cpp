@@ -538,9 +538,9 @@ static void drawSetTargetAcceleration()
 static void drawSetTargetDeceleration()
 {
     ImGui::Separator();
-    if (drawBigInputFloat("Deceleration", &targetDecelrationSlider, step, step_fast, "%.2f"))
+    if (drawBigInputFloat("Deceleration", &targetDecelerationSlider, step, step_fast, "%.2f"))
     {
-        targetDecelrationSlider = std::clamp(targetDecelrationSlider, 0.0f, maxDecelerationClamp);
+        targetDecelerationSlider = std::clamp(targetDecelerationSlider, 0.0f, maxDecelerationClamp);
     }
 }
 
@@ -607,7 +607,7 @@ static void drawTestButton(CommonMemory& memory)
                 memory.targetPosition     = targetPositionSlider;
                 memory.targetVelocity     = targetVelocitySlider;
                 memory.targetAcceleration = targetAccelerationSlider;
-                memory.targetDecelration  = targetDecelrationSlider;
+                memory.targetDeceleration = targetDecelerationSlider;
                 positionWindow            = 0.01;
                 velocityWindow            = velocityWindowSlider;
                 updateVelParameters(memory);
@@ -617,7 +617,7 @@ static void drawTestButton(CommonMemory& memory)
                 memory.targetPosition     = targetPositionSlider;
                 memory.targetVelocity     = targetVelocitySlider;
                 memory.targetAcceleration = targetAccelerationSlider;
-                memory.targetDecelration  = targetDecelrationSlider;
+                memory.targetDeceleration = targetDecelerationSlider;
                 velocityWindow            = 0.01;
                 positionWindow            = positionWindowSlider;
                 updateVelParameters(memory);
@@ -978,7 +978,7 @@ static void drawSelectMDButton(CommonMemory& memory)
     std::string               chosenIDname = "";
 
     {
-        std::lock_guard<std::mutex> lock(memory.mtx);
+        std::lock_guard<std::mutex> lock(memory.mtx_mab);
         mdIDs    = memory.mdIDs;
         chosenID = memory.chosenID;
     }
@@ -1065,13 +1065,13 @@ static void testMD(CommonMemory& memory, mab::MD& md)
             md.setTargetPosition(memory.targetPosition);
             md.setTargetVelocity(memory.targetVelocity);
             md.setProfileAcceleration(memory.targetAcceleration);
-            md.setProfileDeceleration(memory.targetDecelration);
+            md.setProfileDeceleration(memory.targetDeceleration);
             break;
         case mab::MdMode_E::POSITION_PROFILE:
             md.setTargetPosition(memory.targetPosition);
             md.setTargetVelocity(memory.targetVelocity);
             md.setProfileAcceleration(memory.targetAcceleration);
-            md.setProfileDeceleration(memory.targetDecelration);
+            md.setProfileDeceleration(memory.targetDeceleration);
             break;
         default:
             break;
@@ -1235,34 +1235,26 @@ void candleLoop(CommonMemory& memory, std::atomic<bool>& isRunning)
     auto candle = mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M,
                                     mab::candleTypes::busTypes_t::USB);
 
-    mab::canId_t min      = 0;
-    mab::canId_t max      = 100;
-    mab::canId_t chosenID = 0;
+    mab::canId_t min = 0;
+    mab::canId_t max = 100;
 
     constexpr mab::canId_t MAX_VALID_ID = 0x7FF;
 
     while (isRunning)
     {
-        bool          testStarted             = false;
-        bool          testOngoing             = false;
-        bool          updateParametersTest    = false;
-        bool          buttonDiscoverMdPressed = false;
-        bool          selectedMDid            = false;
-        mab::MdMode_E currentMode             = mab::MdMode_E::IDLE;
+        bool testStarted = memory.testStarted.load();
+        bool testOngoing = memory.testOngoing.load();
 
+        bool updateParametersTest    = memory.updateParametersTest.exchange(false);
+        bool buttonDiscoverMdPressed = memory.buttonDiscoverMdPressed.exchange(false);
+        bool selectedMDid            = memory.selectedMDid.exchange(false);
+
+        mab::MdMode_E currentMode;
+        mab::canId_t  chosenID;
         {
-            std::lock_guard<std::mutex> lock(memory.mtx);
-            testStarted             = memory.testStarted;
-            testOngoing             = memory.testOngoing;
-            updateParametersTest    = memory.updateParametersTest;
-            buttonDiscoverMdPressed = memory.buttonDiscoverMdPressed;
-            selectedMDid            = memory.selectedMDid;
-            currentMode             = memory.currentMode;
-            chosenID                = memory.chosenID;
-
-            memory.updateParametersTest    = false;
-            memory.buttonDiscoverMdPressed = false;
-            memory.selectedMDid            = false;
+            std::lock_guard<std::mutex> lock(memory.mtx_mab);
+            currentMode = memory.currentMode;
+            chosenID    = memory.chosenID;
         }
 
         for (auto& id : memory.mdIDs)
@@ -1334,10 +1326,7 @@ void candleLoop(CommonMemory& memory, std::atomic<bool>& isRunning)
 
                 if ((testStarted && currentMode != mab::MdMode_E::IDLE) || testOngoing)
                 {
-                    {
-                        std::lock_guard<std::mutex> lock(memory.mtx);
-                        memory.testOngoing = true;
-                    }
+                    memory.testOngoing = true;
 
                     testMD(memory, md);
 

@@ -24,12 +24,11 @@
 struct CommonMemory
 {
     std::mutex mtx;
-
-    float targetVelocity     = 0.0f;
-    float targetPosition     = 0.0f;
-    float targetTorque       = 0.0f;
-    float targetAcceleration = 0.0f;
-    float targetDecelration  = 0.0f;
+    float      targetVelocity     = 0.0f;
+    float      targetPosition     = 0.0f;
+    float      targetTorque       = 0.0f;
+    float      targetAcceleration = 0.0f;
+    float      targetDeceleration = 0.0f;
 
     // TUNING GAINS
     float Kp_vel          = 0.0f;
@@ -51,16 +50,17 @@ struct CommonMemory
     float currentTorqueMeasured = 0.0f;
 
     // MAB
+    std::mutex                mtx_mab;
     mab::MdMode_E             currentMode = mab::MdMode_E::IDLE;
     std::vector<mab::canId_t> mdIDs;
     mab::canId_t              chosenID = 0;
 
     // Logic
-    bool testStarted             = false;
-    bool buttonDiscoverMdPressed = false;
-    bool updateParametersTest    = false;
-    bool selectedMDid            = false;
-    bool testOngoing             = false;
+    std::atomic<bool> testStarted{false};
+    std::atomic<bool> buttonDiscoverMdPressed{false};
+    std::atomic<bool> updateParametersTest{false};
+    std::atomic<bool> selectedMDid{false};
+    std::atomic<bool> testOngoing{false};
 };
 
 static bool systemON        = true;
@@ -119,7 +119,7 @@ static float targetVelocitySlider     = 0.0f;
 static float targetPositionSlider     = 0.0f;
 static float targetTorqueSlider       = 0.0f;
 static float targetAccelerationSlider = 0.0f;
-static float targetDecelrationSlider  = 0.0f;
+static float targetDecelerationSlider = 0.0f;
 const float  step                     = 0.1f;
 const float  step_fast                = 1.0f;
 
