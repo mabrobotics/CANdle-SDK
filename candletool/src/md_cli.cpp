@@ -623,7 +623,7 @@ namespace mab
                 m_logger.success("The config file is valid!");
             });
 
-        // Discover ============================================================================
+        // candletool md discover
         auto* discover = mdCLi
                              ->add_subcommand("discover",
                                               "Discover MD drives on the"
@@ -649,7 +649,8 @@ namespace mab
                                        .c_str());
                 detachCandle(candle);
             });
-        // Save ============================================================================
+
+        // candletool md save
         auto* save = mdCLi->add_subcommand("save", "Save MD drive configuration to flash memory.")
                          ->needs(mdCanIdOption);
         save->callback(
@@ -1052,7 +1053,7 @@ namespace mab
                     m_logger.success("Writen value to write-only register %s", registerStr.c_str());
                 }
             });
-        // Reset
+        // candletool md reset
         mdCLi->add_subcommand("reset", "Reboot the MD drive")
             ->callback(
                 [this, candleBuilder, mdCanId]()
@@ -1071,7 +1072,7 @@ namespace mab
                          ->needs(mdCanIdOption)
                          ->require_subcommand();
 
-        // Absolute
+        // candletool md test absolute 
         auto* absolute =
             test->add_subcommand("absolute", "Move to target utilizing trapezoidal profile")
                 ->require_option();
@@ -1105,7 +1106,7 @@ namespace mab
                 m_logger.info("TARGET REACHED!");
             });
 
-        // Relative
+        // candletool md test relative 
         auto* relative =
             test->add_subcommand("relative", "Move relative to current position")->require_option();
 
@@ -1143,7 +1144,7 @@ namespace mab
                 m_logger.success("Movement ended.");
             });
 
-        // Relative
+        // candletool md test velocity 
         auto* velocity =
             test->add_subcommand("velocity", "Move with set velocity, using velocity profile")
                 ->require_option();
@@ -1230,7 +1231,7 @@ namespace mab
                     testMain ? regs.calMainEncoderMaxE.value : regs.calAuxEncoderMaxE.value);
             });
 
-        // Update
+        // candletool md update
         auto* update =
             mdCLi->add_subcommand("update", "Update firmware on MD drive.")->needs(mdCanIdOption);
         UpdateOptions updateOptions(update);
