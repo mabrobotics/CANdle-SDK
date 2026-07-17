@@ -78,10 +78,10 @@ static void drawLeftMenuBar(CommonMemory& memory, ImGuiIO& io)
     const ImGuiViewport* leftMenuViewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(leftMenuViewport->WorkPos, ImGuiCond_Always);
 
-    ImVec2 windowSize = ImVec2(leftMenuBarWidth, leftMenuViewport->WorkSize.y);
+    ImVec2 windowSize = ImVec2(leftMenuBarWidth, leftMenuViewport->WorkSize.y - testMenuBarHeight);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
 
-    if (ImGui::Begin("Tuning params!", nullptr, flagsBackMenu))
+    if (ImGui::Begin("Main Menu", nullptr, flagsBackMenu))
     {
         if (ImGui::BeginTabBar("##TabBar"))
         {
@@ -93,48 +93,46 @@ static void drawLeftMenuBar(CommonMemory& memory, ImGuiIO& io)
                             1000.0f / io.Framerate,
                             io.Framerate);
 
-                ImGui::Separator();
+                if (memory.testOngoing)
+                {
+                    ImGui::BeginDisabled();
+                }
                 drawDiscoverMDButton(memory);
-
                 drawSelectMDButton(memory);
                 drawSelectModeButton(memory);
-
-                ImGui::Separator();
-                drawTestButton(memory);
-                drawEndTestButton(memory);
 
                 switch (memory.currentMode)
                 {
                     case mab::MdMode_E::IDLE:
                         break;
                     case mab::MdMode_E::VELOCITY_PID:
-                        drawPIDtunerVelocity();
+                        drawParametersVelocity(memory);
                         drawSetTargetVelocity();
                         drawSetVelocityWindow();
                         break;
                     case mab::MdMode_E::POSITION_PID:
-                        drawPIDtunerPosition();
+                        drawParametersPosition(memory);
                         drawSetTargetPosition();
                         drawSetPositionWindow();
                         break;
                     case mab::MdMode_E::IMPEDANCE:
-                        drawPDtunerImpedance();
+                        drawParametersImpedance(memory);
                         drawSetTargetPosition();
                         break;
                     case mab::MdMode_E::RAW_TORQUE:  // case unused
                         drawSetTargetTorque();
                         break;
                     case mab::MdMode_E::VELOCITY_PROFILE:
-                        drawPIDtunerVelocity();
-                        drawPIDtunerPosition();
+                        drawParametersVelocity(memory);
+                        drawParametersPosition(memory);
                         drawSetTargetVelocity();
                         drawSetTargetPosition();
                         drawSetTargetAcceleration();
                         drawSetTargetDeceleration();
                         break;
                     case mab::MdMode_E::POSITION_PROFILE:
-                        drawPIDtunerVelocity();
-                        drawPIDtunerPosition();
+                        drawParametersVelocity(memory);
+                        drawParametersPosition(memory);
                         drawSetTargetVelocity();
                         drawSetTargetPosition();
                         drawSetTargetAcceleration();
@@ -143,12 +141,11 @@ static void drawLeftMenuBar(CommonMemory& memory, ImGuiIO& io)
                     default:
                         break;
                 }
+                if (memory.testOngoing)
+                {
+                    ImGui::EndDisabled();
+                }
 
-                ImGui::EndTabItem();
-            }
-            if (ImGui::BeginTabItem("Config"))
-            {
-                drawParametersTable();
                 ImGui::EndTabItem();
             }
             ImGui::EndTabBar();
@@ -157,113 +154,25 @@ static void drawLeftMenuBar(CommonMemory& memory, ImGuiIO& io)
     ImGui::End();
 }
 
-static void drawPIDtunerVelocity()
+static void drawTestMenuBar(CommonMemory& memory, ImGuiIO& io)
 {
-    ImGui::Separator();
-    CenterText("Velocity loop - PID tuning parameters");
-    ImGui::Spacing();
+    const ImGuiViewport* testMenuViewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(testMenuViewport->WorkPos, ImGuiCond_Always);
 
-    float sliderWidth = leftMenuBarWidth - 75.f;
+    ImVec2 testPos =
+        ImVec2(testMenuViewport->WorkPos.x,
+               testMenuViewport->WorkPos.y + testMenuViewport->WorkSize.y - testMenuBarHeight);
+    ImGui::SetNextWindowPos(testPos, ImGuiCond_Always);
 
-    ImGui::SetNextItemWidth(sliderWidth);
-    if (drawOrangeInputFloat("Kp Vel", &Kp_velSlider, 0.01f, 0.1f))
+    ImVec2 windowSize = ImVec2(leftMenuBarWidth, testMenuBarHeight);
+    ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
+
+    if (ImGui::Begin("Test menu", nullptr, flagsBackMenu))
     {
-        Kp_velSlider = std::clamp(Kp_velSlider, 0.0f, 100.f);
+        drawTestButton(memory);
+        drawEndTestButton(memory);
     }
-
-    ImGui::SetNextItemWidth(sliderWidth);
-    if (drawOrangeInputFloat("Ki Vel", &Ki_velSlider, 0.01f, 0.1f))
-    {
-        Ki_velSlider = std::clamp(Ki_velSlider, 0.0f, 100.f);
-    }
-
-    ImGui::SetNextItemWidth(sliderWidth);
-    if (drawOrangeInputFloat("Kd Vel", &Kd_velSlider, 0.01f, 0.1f))
-    {
-        Kd_velSlider = std::clamp(Kd_velSlider, 0.0f, 100.f);
-    }
-
-    ImGui::SetNextItemWidth(sliderWidth);
-    if (drawOrangeInputFloat("Windup Vel", &integralMax_velSlider, 0.01f, 0.1f))
-    {
-        integralMax_velSlider = std::clamp(integralMax_velSlider, 0.0f, 100.f);
-    }
-
-    if (ImGui::Button("Reset Velocity Parameters", ImVec2(leftMenuBarWidth / 2.0f, 40.0f)))
-    {
-        Kp_velSlider          = 0.0f;
-        Ki_velSlider          = 0.0f;
-        Kd_velSlider          = 0.0f;
-        integralMax_velSlider = 0.0f;
-    }
-}
-
-static void drawPIDtunerPosition()
-{
-    ImGui::Separator();
-    CenterText("Position loop - PID tuning parameters");
-    ImGui::Spacing();
-
-    float sliderWidth = leftMenuBarWidth - 75.f;
-
-    ImGui::SetNextItemWidth(sliderWidth);
-    if (drawOrangeInputFloat("Kp Pos", &Kp_posSlider, 0.01f, 0.1f))
-    {
-        Kp_posSlider = std::clamp(Kp_posSlider, 0.0f, 100.f);
-    }
-
-    ImGui::SetNextItemWidth(sliderWidth);
-    if (drawOrangeInputFloat("Ki Pos", &Ki_posSlider, 0.01f, 0.1f))
-    {
-        Ki_posSlider = std::clamp(Ki_posSlider, 0.0f, 100.f);
-    }
-
-    ImGui::SetNextItemWidth(sliderWidth);
-    if (drawOrangeInputFloat("Kd Pos", &Kd_posSlider, 0.01f, 0.1f))
-    {
-        Kd_posSlider = std::clamp(Kd_posSlider, 0.0f, 100.f);
-    }
-
-    ImGui::SetNextItemWidth(sliderWidth);
-    if (drawOrangeInputFloat("Windup Pos", &integralMax_posSlider, 0.01f, 0.1f))
-    {
-        integralMax_posSlider = std::clamp(integralMax_posSlider, 0.0f, 100.f);
-    }
-
-    if (ImGui::Button("Reset Position Parameters", ImVec2(leftMenuBarWidth / 2.0f, 40.0f)))
-    {
-        Kp_posSlider          = 0.0f;
-        Ki_posSlider          = 0.0f;
-        Kd_posSlider          = 0.0f;
-        integralMax_posSlider = 0.0f;
-    }
-}
-
-static void drawPDtunerImpedance()
-{
-    ImGui::Separator();
-    CenterText("Impedance PD tuner");
-    ImGui::Spacing();
-
-    float sliderWidth = leftMenuBarWidth - 75.f;
-
-    ImGui::SetNextItemWidth(sliderWidth);
-    if (drawOrangeInputFloat("Kp Imp", &Kp_impSlider, 0.01f, 0.1f))
-    {
-        Kp_impSlider = std::clamp(Kp_impSlider, 0.0f, 100.f);
-    }
-
-    ImGui::SetNextItemWidth(sliderWidth);
-    if (drawOrangeInputFloat("Kd Imp", &Kd_impSlider, 0.01f, 0.1f))
-    {
-        Kd_impSlider = std::clamp(Kd_impSlider, 0.0f, 100.f);
-    }
-
-    if (ImGui::Button("Reset Impedance Parameters", ImVec2(leftMenuBarWidth / 2.0f, 40.0f)))
-    {
-        Kp_impSlider = 0.0f;
-        Kd_impSlider = 0.0f;
-    }
+    ImGui::End();
 }
 
 static void drawVelocityPlot(CommonMemory& memory, ImGuiIO& io)
@@ -322,8 +231,10 @@ static void drawVelocityPlot(CommonMemory& memory, ImGuiIO& io)
 
             if (timeInTargetWindow >= 0.25f)
             {
-                isTargetAchieved   = true;
+                isTargetAchieved = true;
+                std::lock_guard<std::mutex> lock(memory.mtx);
                 memory.testStarted = false;
+                memory.testOngoing = false;
             }
         }
         else
@@ -336,14 +247,14 @@ static void drawVelocityPlot(CommonMemory& memory, ImGuiIO& io)
 
         while (refresh_time < ImGui::GetTime())
         {
-            t += 1.0f / 60.0f;
+            t += 1.0f / refreshRate;
 
             timeValues[offset]        = t;
             measurementValues[offset] = currentVel;
             targetValues[offset]      = memory.targetVelocity;
 
             offset = (offset + 1) % buffer_size;
-            refresh_time += 1.0f / 60.0f;
+            refresh_time += 1.0f / refreshRate;
         }
     }
 
@@ -438,6 +349,7 @@ static void drawPositionPlot(CommonMemory& memory, ImGuiIO& io)
             {
                 isTargetAchieved   = true;
                 memory.testStarted = false;
+                memory.testOngoing = false;
             }
         }
         else
@@ -450,14 +362,14 @@ static void drawPositionPlot(CommonMemory& memory, ImGuiIO& io)
 
         while (refresh_time < ImGui::GetTime())
         {
-            t += 1.0f / 60.0f;
+            t += 1.0f / refreshRate;
 
             timeValues[offset]        = t;
             measurementValues[offset] = currentPos;
             targetValues[offset]      = memory.targetPosition;
 
             offset = (offset + 1) % buffer_size;
-            refresh_time += 1.0f / 60.0f;
+            refresh_time += 1.0f / refreshRate;
         }
     }
 
@@ -544,14 +456,14 @@ static void drawTorquePlot(CommonMemory& memory, ImGuiIO& io)
 
         while (refresh_time < ImGui::GetTime())
         {
-            t += 1.0f / 60.0f;
+            t += 1.0f / refreshRate;
 
             timeValues[offset]        = t;
             measurementValues[offset] = currentTorque;
             targetValues[offset]      = memory.targetTorque;
 
             offset = (offset + 1) % buffer_size;
-            refresh_time += 1.0f / 60.0f;
+            refresh_time += 1.0f / refreshRate;
         }
     }
 
@@ -650,8 +562,13 @@ static void drawTestButton(CommonMemory& memory)
     {
         ImGui::BeginDisabled();
     }
+    else if (memory.testOngoing)
+    {
+        ImGui::BeginDisabled();
+    }
+
     ImGui::SetCursorPosX(margin);
-    if (ImGui::Button("Test", ImVec2(leftMenuBarWidth - (margin * 2.0f), 80.0f)))
+    if (ImGui::Button("Test", ImVec2(leftMenuBarWidth - (margin * 2.0f), 40.0f)))
     {
         {
             std::lock_guard<std::mutex> lock(memory.mtx);
@@ -661,6 +578,7 @@ static void drawTestButton(CommonMemory& memory)
             memory.currentVelMeasured    = 0.0f;
             memory.currentTorqueMeasured = 0.0f;
         }
+
         switch (memory.currentMode)
         {
             case mab::MdMode_E::IDLE:
@@ -711,6 +629,10 @@ static void drawTestButton(CommonMemory& memory)
     {
         ImGui::EndDisabled();
     }
+    else if (memory.testOngoing)
+    {
+        ImGui::EndDisabled();
+    }
 }
 
 static void drawEndTestButton(CommonMemory& memory)
@@ -719,24 +641,33 @@ static void drawEndTestButton(CommonMemory& memory)
     {
         ImGui::BeginDisabled();
     }
+
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
+
     ImGui::SetCursorPosX(margin);
-    if (ImGui::Button("End test", ImVec2(leftMenuBarWidth - (margin * 2.0f), 80.0f)))
+    if (ImGui::Button("End test", ImVec2(leftMenuBarWidth - (margin * 2.0f), 40.0f)))
     {
+        std::lock_guard<std::mutex> lock(memory.mtx);
         memory.testStarted = false;
+        memory.testOngoing = false;
     }
     if (!selectedMode || memory.currentMode == mab::MdMode_E::IDLE)
     {
         ImGui::EndDisabled();
     }
+    ImGui::PopStyleColor();
 }
 
 static void drawDiscoverMDButton(CommonMemory& memory)
 {
-    ImGui::SetCursorPosX(margin);
+    ImGui::Separator();
+
     if (discoverOngoing)
     {
         ImGui::BeginDisabled();
     }
+
+    ImGui::SetCursorPosX(margin);
     if (ImGui::Button("Discover MD", ImVec2(leftMenuBarWidth - (margin * 2.0f), 20.0f)))
     {
         memory.buttonDiscoverMdPressed = true;
@@ -748,82 +679,207 @@ static void drawDiscoverMDButton(CommonMemory& memory)
     }
 }
 
-static void drawParametersTable()
+static void drawParametersVelocity(CommonMemory& memory)
 {
     static ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
 
-    const int numberOfColumns = 2;
+    const int numberOfColumns = 3;
 
-    ImGui::Text("Downloaded config");
+    ImGui::Separator();
 
-    if (ImGui::BeginTable("ParamTable", numberOfColumns, flags))
+    ImGui::Spacing();
+    CenterText("Velocity loop - PID tuning parameters");
+    ImGui::Spacing();
+
+    if (ImGui::BeginTable("ParamTableVelocity", numberOfColumns, flags))
     {
-        ImGui::TableSetupColumn("Parameters name");
-        ImGui::TableSetupColumn("Value");
+        ImGui::TableSetupColumn("Variable name");
+        ImGui::TableSetupColumn("Read value");
+        ImGui::TableSetupColumn("Write value");
         ImGui::TableHeadersRow();
 
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
-        ImGui::Text("Kp Velocity");
+        ImGui::Text("Kp velocity");
         ImGui::TableNextColumn();
-        ImGui::Text("%.2f", tableData.Kp_vel);
+        ImGui::Text("%.3f", memory.Kp_vel);
+        ImGui::TableNextColumn();
+        ImGui::PushID(1);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::InputFloat("##hidden_label", &Kp_velSlider, 0.0f, 0.0f, "%.3f");
+        ImGui::PopID();
 
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
-        ImGui::Text("Ki Velocity");
+        ImGui::Text("Ki velocity");
         ImGui::TableNextColumn();
-        ImGui::Text("%.2f", tableData.Ki_vel);
+        ImGui::Text("%.3f", memory.Ki_vel);
+        ImGui::TableNextColumn();
+        ImGui::PushID(2);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::InputFloat("##hidden_label", &Ki_velSlider, 0.0f, 0.0f, "%.3f");
+        ImGui::PopID();
 
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
-        ImGui::Text("Kd Velocity");
+        ImGui::Text("Kd velocity");
         ImGui::TableNextColumn();
-        ImGui::Text("%.2f", tableData.Kd_vel);
+        ImGui::Text("%.3f", memory.Kd_vel);
+        ImGui::TableNextColumn();
+        ImGui::PushID(3);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::InputFloat("##hidden_label", &Kd_velSlider, 0.0f, 0.0f, "%.3f");
+        ImGui::PopID();
 
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
-        ImGui::Text("Windup Velocity");
+        ImGui::Text("Integral Windup");
         ImGui::TableNextColumn();
-        ImGui::Text("%.2f", tableData.integralMax_vel);
-
-        ImGui::TableNextRow();
+        ImGui::Text("%.3f", memory.integralMax_vel);
         ImGui::TableNextColumn();
-        ImGui::Text("Kp Position");
-        ImGui::TableNextColumn();
-        ImGui::Text("%.2f", tableData.Kp_pos);
-
-        ImGui::TableNextRow();
-        ImGui::TableNextColumn();
-        ImGui::Text("Ki Position");
-        ImGui::TableNextColumn();
-        ImGui::Text("%.2f", tableData.Ki_pos);
-
-        ImGui::TableNextRow();
-        ImGui::TableNextColumn();
-        ImGui::Text("Kd Position");
-        ImGui::TableNextColumn();
-        ImGui::Text("%.2f", tableData.Kd_pos);
-
-        ImGui::TableNextRow();
-        ImGui::TableNextColumn();
-        ImGui::Text("Windup Position");
-        ImGui::TableNextColumn();
-        ImGui::Text("%.2f", tableData.integralMax_pos);
-
-        ImGui::TableNextRow();
-        ImGui::TableNextColumn();
-        ImGui::Text("Kp Impedance");
-        ImGui::TableNextColumn();
-        ImGui::Text("%.2f", tableData.Kp_imp);
-
-        ImGui::TableNextRow();
-        ImGui::TableNextColumn();
-        ImGui::Text("Kd Impedance");
-        ImGui::TableNextColumn();
-        ImGui::Text("%.2f", tableData.Kd_imp);
+        ImGui::PushID(4);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::InputFloat("##hidden_label", &integralMax_velSlider, 0.0f, 0.0f, "%.3f");
+        ImGui::PopID();
 
         ImGui::EndTable();
     }
+    ImGui::Spacing();
+    if (ImGui::Button("Reset Velocity Parameters", ImVec2(leftMenuBarWidth / 2.0f, 40.0f)))
+    {
+        Kp_velSlider          = 0.0f;
+        Ki_velSlider          = 0.0f;
+        Kd_velSlider          = 0.0f;
+        integralMax_velSlider = 0.0f;
+    }
+
+    ImGui::Spacing();
+}
+
+static void drawParametersPosition(CommonMemory& memory)
+{
+    static ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
+
+    const int numberOfColumns = 3;
+    ImGui::Separator();
+
+    ImGui::Spacing();
+    CenterText("Position loop - PID tuning parameters");
+    ImGui::Spacing();
+
+    if (ImGui::BeginTable("ParamTablePosition", numberOfColumns, flags))
+    {
+        ImGui::TableSetupColumn("Variable name");
+        ImGui::TableSetupColumn("Read value");
+        ImGui::TableSetupColumn("Write value");
+        ImGui::TableHeadersRow();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Kp position");
+        ImGui::TableNextColumn();
+        ImGui::Text("%.3f", memory.Kp_pos);
+        ImGui::TableNextColumn();
+        ImGui::PushID(1);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::InputFloat("##hidden_label", &Kp_posSlider, 0.0f, 0.0f, "%.3f");
+        ImGui::PopID();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Ki position");
+        ImGui::TableNextColumn();
+        ImGui::Text("%.3f", memory.Ki_pos);
+        ImGui::TableNextColumn();
+        ImGui::PushID(2);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::InputFloat("##hidden_label", &Ki_posSlider, 0.0f, 0.0f, "%.3f");
+        ImGui::PopID();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Kd position");
+        ImGui::TableNextColumn();
+        ImGui::Text("%.3f", memory.Kd_pos);
+        ImGui::TableNextColumn();
+        ImGui::PushID(3);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::InputFloat("##hidden_label", &Kd_posSlider, 0.0f, 0.0f, "%.3f");
+        ImGui::PopID();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Integral Windup");
+        ImGui::TableNextColumn();
+        ImGui::Text("%.3f", memory.integralMax_pos);
+        ImGui::TableNextColumn();
+        ImGui::PushID(4);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::InputFloat("##hidden_label", &integralMax_posSlider, 0.0f, 0.0f, "%.3f");
+        ImGui::PopID();
+
+        ImGui::EndTable();
+    }
+    ImGui::Spacing();
+    if (ImGui::Button("Reset Position Parameters", ImVec2(leftMenuBarWidth / 2.0f, 40.0f)))
+    {
+        Kp_posSlider          = 0.0f;
+        Ki_posSlider          = 0.0f;
+        Kd_posSlider          = 0.0f;
+        integralMax_posSlider = 0.0f;
+    }
+    ImGui::Spacing();
+}
+
+static void drawParametersImpedance(CommonMemory& memory)
+{
+    static ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
+
+    const int numberOfColumns = 3;
+    ImGui::Separator();
+
+    ImGui::Spacing();
+    CenterText("Impedance PD tuner");
+    ImGui::Spacing();
+
+    if (ImGui::BeginTable("ParamTablePosition", numberOfColumns, flags))
+    {
+        ImGui::TableSetupColumn("Variable name");
+        ImGui::TableSetupColumn("Read value");
+        ImGui::TableSetupColumn("Write value");
+        ImGui::TableHeadersRow();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Kp impedance");
+        ImGui::TableNextColumn();
+        ImGui::Text("%.3f", memory.Kp_imp);
+        ImGui::TableNextColumn();
+        ImGui::PushID(1);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::InputFloat("##hidden_label", &Kp_impSlider, 0.0f, 0.0f, "%.3f");
+        ImGui::PopID();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Kd impedance");
+        ImGui::TableNextColumn();
+        ImGui::Text("%.3f", memory.Kd_imp);
+        ImGui::TableNextColumn();
+        ImGui::PushID(2);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::InputFloat("##hidden_label", &Kd_impSlider, 0.0f, 0.0f, "%.3f");
+        ImGui::PopID();
+
+        ImGui::EndTable();
+    }
+    ImGui::Spacing();
+    if (ImGui::Button("Reset Impedance Parameters", ImVec2(leftMenuBarWidth / 2.0f, 40.0f)))
+    {
+        Kp_impSlider = 0.0f;
+        Kd_impSlider = 0.0f;
+    }
+    ImGui::Spacing();
 }
 
 static void drawToggleButton()
@@ -918,7 +974,8 @@ static void drawSelectMDButton(CommonMemory& memory)
     ImGui::Separator();
 
     std::vector<mab::canId_t> mdIDs;
-    mab::canId_t              chosenID = 0;
+    mab::canId_t              chosenID     = 0;
+    std::string               chosenIDname = "";
 
     {
         std::lock_guard<std::mutex> lock(memory.mtx);
@@ -926,24 +983,24 @@ static void drawSelectMDButton(CommonMemory& memory)
         chosenID = memory.chosenID;
     }
 
-    if (discoverOngoing)
+    if (mdIDs.empty())
     {
         selectedMD   = false;
         selectedMode = false;
     }
 
-    if (discoverOngoing)
+    if (discoverOngoing && mdIDs.empty())
     {
         double time       = ImGui::GetTime();
         int    dotCounter = (int)(time * 2.5) % 4;
 
         chosenIDstr = "Discover ongoing" + std::string("...").substr(0, dotCounter);
+        selectedMD  = false;
         ImGui::BeginDisabled();
     }
     else if (mdIDs.empty())
     {
         chosenIDstr = "No MDs available.";
-        selectedMD  = false;
         ImGui::BeginDisabled();
     }
     else if (!selectedMD)
@@ -951,9 +1008,13 @@ static void drawSelectMDButton(CommonMemory& memory)
 
     if (ImGui::BeginCombo("MD Select", chosenIDstr.c_str()))
     {
+        if (ImGui::Selectable("None"))
+        {
+            selectedMD = false;
+        }
         for (const auto& id : mdIDs)
         {
-            std::string chosenIDname = "MD" + std::to_string(int((id)));
+            chosenIDname = "MD" + std::to_string(int((id)));
 
             bool selectedID = (chosenID == id);
 
@@ -962,20 +1023,20 @@ static void drawSelectMDButton(CommonMemory& memory)
                 std::lock_guard<std::mutex> lock(memory.mtx);
                 memory.chosenID     = id;
                 memory.selectedMDid = true;
-                chosenIDstr         = chosenIDname;
                 selectedMD          = true;
+                chosenIDstr         = chosenIDname;
+                discoverOngoing     = false;
             }
             if (selectedID)
                 ImGui::SetItemDefaultFocus();
         }
         ImGui::EndCombo();
     }
-
-    if (mdIDs.empty())
+    if (discoverOngoing && mdIDs.empty())
     {
         ImGui::EndDisabled();
     }
-    else if (discoverOngoing)
+    else if (mdIDs.empty())
     {
         ImGui::EndDisabled();
     }
@@ -1063,41 +1124,41 @@ static bool drawBigInputFloat(
     return valueChanged;
 }
 
-static bool drawOrangeInputFloat(
-    const char* label, float* v, float step, float step_fast, const char* format)
-{
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12.0f, 12.0f));
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)mabColor);
-    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
-    bool valueChanged = ImGui::InputFloat(label, v, step, step_fast, format);
+// static bool drawOrangeInputFloat(
+//     const char* label, float* v, float step, float step_fast, const char* format)
+// {
+//     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(12.0f, 12.0f));
+//     ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)mabColor);
+//     ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
+//     ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
+//     bool valueChanged = ImGui::InputFloat(label, v, step, step_fast, format);
 
-    ImGui::PopStyleColor(3);
-    ImGui::PopStyleVar();
-    return valueChanged;
-}
+//     ImGui::PopStyleColor(3);
+//     ImGui::PopStyleVar();
+//     return valueChanged;
+// }
 
 static void downloadParameters(CommonMemory& memory, mab::MD& md)
 {
-    mab::MD::Error_t err = md.readRegisters(registers.motorImpPidKp,
-                                            registers.motorImpPidKd,
-                                            registers.motorVelPidKp,
-                                            registers.motorVelPidKi,
-                                            registers.motorVelPidKd,
-                                            registers.motorPosPidKp,
-                                            registers.motorPosPidKi,
-                                            registers.motorPosPidKd,
-                                            registers.positionWindow,
-                                            registers.velocityWindow);
+    mab::MD::Error_t err = md.readRegisters(md.m_mdRegisters.motorImpPidKp,
+                                            md.m_mdRegisters.motorImpPidKd,
+                                            md.m_mdRegisters.motorVelPidKp,
+                                            md.m_mdRegisters.motorVelPidKi,
+                                            md.m_mdRegisters.motorVelPidKd,
+                                            md.m_mdRegisters.motorPosPidKp,
+                                            md.m_mdRegisters.motorPosPidKi,
+                                            md.m_mdRegisters.motorPosPidKd,
+                                            md.m_mdRegisters.positionWindow,
+                                            md.m_mdRegisters.velocityWindow);
 
-    mab::MD::Error_t err2 = md.readRegisters(registers.maxVelocity,
-                                             registers.positionLimitMax,
-                                             registers.positionLimitMin,
-                                             registers.maxTorque,
-                                             registers.maxAcceleration,
-                                             registers.maxDeceleration,
-                                             registers.motorVelPidWindup,
-                                             registers.motorPosPidWindup);
+    mab::MD::Error_t err2 = md.readRegisters(md.m_mdRegisters.maxVelocity,
+                                             md.m_mdRegisters.positionLimitMax,
+                                             md.m_mdRegisters.positionLimitMin,
+                                             md.m_mdRegisters.maxTorque,
+                                             md.m_mdRegisters.maxAcceleration,
+                                             md.m_mdRegisters.maxDeceleration,
+                                             md.m_mdRegisters.motorVelPidWindup,
+                                             md.m_mdRegisters.motorPosPidWindup);
 
     if (err != mab::MD::Error_t::OK && err2 != mab::MD::Error_t::OK)
     {
@@ -1107,29 +1168,29 @@ static void downloadParameters(CommonMemory& memory, mab::MD& md)
     {
         {
             std::lock_guard<std::mutex> lock(memory.mtx);
-            memory.Kp_vel          = float(registers.motorVelPidKp.value);
-            memory.Ki_vel          = float(registers.motorVelPidKi.value);
-            memory.Kd_vel          = float(registers.motorVelPidKd.value);
-            memory.integralMax_vel = float(registers.motorVelPidWindup.value);
+            memory.Kp_vel          = float(md.m_mdRegisters.motorVelPidKp.value);
+            memory.Ki_vel          = float(md.m_mdRegisters.motorVelPidKi.value);
+            memory.Kd_vel          = float(md.m_mdRegisters.motorVelPidKd.value);
+            memory.integralMax_vel = float(md.m_mdRegisters.motorVelPidWindup.value);
 
-            memory.Kp_pos          = float(registers.motorPosPidKp.value);
-            memory.Ki_pos          = float(registers.motorPosPidKi.value);
-            memory.Kd_pos          = float(registers.motorPosPidKd.value);
-            memory.integralMax_pos = float(registers.motorPosPidWindup.value);
+            memory.Kp_pos          = float(md.m_mdRegisters.motorPosPidKp.value);
+            memory.Ki_pos          = float(md.m_mdRegisters.motorPosPidKi.value);
+            memory.Kd_pos          = float(md.m_mdRegisters.motorPosPidKd.value);
+            memory.integralMax_pos = float(md.m_mdRegisters.motorPosPidWindup.value);
 
-            memory.Kp_imp = float(registers.motorImpPidKp.value);
-            memory.Kd_imp = float(registers.motorImpPidKd.value);
+            memory.Kp_imp = float(md.m_mdRegisters.motorImpPidKp.value);
+            memory.Kd_imp = float(md.m_mdRegisters.motorImpPidKd.value);
         }
 
-        positionWindowSlider = float(registers.positionWindow.value);
-        velocityWindowSlider = float(registers.velocityWindow.value);
+        positionWindowSlider = float(md.m_mdRegisters.positionWindow.value);
+        velocityWindowSlider = float(md.m_mdRegisters.velocityWindow.value);
 
-        maxVelocityClamp     = float(registers.maxVelocity.value);
-        maxPositionClamp     = float(registers.positionLimitMax.value);
-        minPositionClamp     = float(registers.positionLimitMin.value);
-        maxTorqueClamp       = float(registers.maxTorque.value);
-        maxAccelerationClamp = float(registers.maxAcceleration.value);
-        maxDecelerationClamp = float(registers.maxDeceleration.value);
+        maxVelocityClamp     = float(md.m_mdRegisters.maxVelocity.value);
+        maxPositionClamp     = float(md.m_mdRegisters.positionLimitMax.value);
+        minPositionClamp     = float(md.m_mdRegisters.positionLimitMin.value);
+        maxTorqueClamp       = float(md.m_mdRegisters.maxTorque.value);
+        maxAccelerationClamp = float(md.m_mdRegisters.maxAcceleration.value);
+        maxDecelerationClamp = float(md.m_mdRegisters.maxDeceleration.value);
 
         // Write them on init to sliders
         Kp_velSlider          = memory.Kp_vel;
@@ -1144,24 +1205,6 @@ static void downloadParameters(CommonMemory& memory, mab::MD& md)
 
         Kp_impSlider = memory.Kp_imp;
         Kd_impSlider = memory.Kd_imp;
-
-        // Write them on into Table
-        if (memory.firstDownload)
-        {
-            memory.firstDownload      = false;
-            tableData.Kp_vel          = memory.Kp_vel;
-            tableData.Ki_vel          = memory.Ki_vel;
-            tableData.Kd_vel          = memory.Kd_vel;
-            tableData.integralMax_vel = memory.integralMax_vel;
-
-            tableData.Kp_pos          = memory.Kp_pos;
-            tableData.Ki_pos          = memory.Ki_pos;
-            tableData.Kd_pos          = memory.Kd_pos;
-            tableData.integralMax_pos = memory.integralMax_pos;
-
-            tableData.Kp_imp = memory.Kp_imp;
-            tableData.Kd_imp = memory.Kd_imp;
-        }
     }
 }
 
@@ -1192,20 +1235,25 @@ void candleLoop(CommonMemory& memory, std::atomic<bool>& isRunning)
     auto candle = mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M,
                                     mab::candleTypes::busTypes_t::USB);
 
-    std::vector<mab::MD> mdV;
+    mab::canId_t min      = 0;
+    mab::canId_t max      = 100;
+    mab::canId_t chosenID = 0;
+
+    constexpr mab::canId_t MAX_VALID_ID = 0x7FF;
 
     while (isRunning)
     {
         bool          testStarted             = false;
+        bool          testOngoing             = false;
         bool          updateParametersTest    = false;
         bool          buttonDiscoverMdPressed = false;
         bool          selectedMDid            = false;
         mab::MdMode_E currentMode             = mab::MdMode_E::IDLE;
-        mab::canId_t  chosenID                = 0;
 
         {
             std::lock_guard<std::mutex> lock(memory.mtx);
             testStarted             = memory.testStarted;
+            testOngoing             = memory.testOngoing;
             updateParametersTest    = memory.updateParametersTest;
             buttonDiscoverMdPressed = memory.buttonDiscoverMdPressed;
             selectedMDid            = memory.selectedMDid;
@@ -1217,12 +1265,17 @@ void candleLoop(CommonMemory& memory, std::atomic<bool>& isRunning)
             memory.selectedMDid            = false;
         }
 
-        for (auto& md : mdV)
+        for (auto& id : memory.mdIDs)
         {
-            if (md.m_canId == chosenID)
+            if (id == chosenID)
             {
+                mab::MD md(id, candle);
                 if (selectedMDid)
+                {
+                    md.init();
                     downloadParameters(memory, md);
+                }
+
                 if (updateParametersTest)
                 {
                     md.zero();  // ZEROING FOR SAFETY TODO
@@ -1279,19 +1332,24 @@ void candleLoop(CommonMemory& memory, std::atomic<bool>& isRunning)
                     md.enable();
                 }
 
-                if (testStarted && currentMode != mab::MdMode_E::IDLE)
+                if ((testStarted && currentMode != mab::MdMode_E::IDLE) || testOngoing)
                 {
+                    {
+                        std::lock_guard<std::mutex> lock(memory.mtx);
+                        memory.testOngoing = true;
+                    }
+
                     testMD(memory, md);
 
-                    auto localVel = md.getVelocity().first;
-                    auto localPos = md.getPosition().first;
-                    auto localTrq = md.getTorque().first;
+                    md.readRegisters(md.m_mdRegisters.velocity,
+                                     md.m_mdRegisters.position,
+                                     md.m_mdRegisters.torque);
 
                     {
                         std::lock_guard<std::mutex> lock(memory.mtx);
-                        memory.currentVelMeasured    = localVel;
-                        memory.currentPosMeasured    = localPos;
-                        memory.currentTorqueMeasured = localTrq;
+                        memory.currentVelMeasured    = float(md.m_mdRegisters.velocity.value);
+                        memory.currentPosMeasured    = float(md.m_mdRegisters.position.value);
+                        memory.currentTorqueMeasured = float(md.m_mdRegisters.torque.value);
                     }
                 }
             }
@@ -1300,23 +1358,34 @@ void candleLoop(CommonMemory& memory, std::atomic<bool>& isRunning)
         if (buttonDiscoverMdPressed)
         {
             discoverOngoing = true;
-            mdV.clear();
-            for (const auto& id : mab::MD::discoverMDs(candle))
-            {
-                mdV.emplace_back(id, candle);
-                mdV.back().init();
-            }
-
             {
                 std::lock_guard<std::mutex> lock(memory.mtx);
                 memory.mdIDs.clear();
-                for (const auto& id : mdV)
-                {
-                    memory.mdIDs.push_back(id.m_canId);
-                }
             }
-            discoverOngoing = false;
         }
+
+        if (selectedMD)
+        {
+            min = 0;
+            max = 100;
+        }
+
+        if (discoverOngoing)
+        {
+            for (const auto& id : mab::MD::discoverRangedMDs(candle, min, max))
+            {
+                memory.mdIDs.push_back(id);
+            }
+            min += 100;
+            max += 100;
+            if (max > MAX_VALID_ID)
+            {
+                discoverOngoing = false;
+                min             = 0;
+                max             = 100;
+            }
+        }
+
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
@@ -1390,12 +1459,17 @@ int main(int, char**)
 
     std::atomic<bool> isRunning{true};
 
+    // int i   = 0;
+    // int sum = 0;
+
     // Initialization ofo candlehardware thread
     std::thread hardware(candleLoop, std::ref(m_common), std::ref(isRunning));
 
     // Main loop
     while (!glfwWindowShouldClose(window))
     {
+        // auto start_time = std::chrono::high_resolution_clock::now();
+
         glfwPollEvents();
         if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0)
         {
@@ -1409,6 +1483,7 @@ int main(int, char**)
         ImGui::NewFrame();
 
         drawMenuTopBar(m_common, io);
+        drawTestMenuBar(m_common, io);
         drawLeftMenuBar(m_common, io);
         drawMainMenu(m_common, io);
 
@@ -1425,6 +1500,21 @@ int main(int, char**)
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window);
+
+        // i++;
+        // auto end_time = std::chrono::high_resolution_clock::now();
+
+        // auto duration =
+        //     std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+
+        // sum += int(duration.count());
+
+        // if (i == 10)
+        // {
+        //     std::cout << "Loop execution took: " << sum / 10 << " milliseconds.\n";
+        //     i   = 0;
+        //     sum = 0;
+        // }
     }
 
     // Cleanup

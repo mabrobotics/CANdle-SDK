@@ -14,6 +14,7 @@
 #include <atomic>
 #include <thread>
 #include <mutex>
+#include <chrono>
 
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <GLES2/gl2.h>
@@ -59,25 +60,8 @@ struct CommonMemory
     bool buttonDiscoverMdPressed = false;
     bool updateParametersTest    = false;
     bool selectedMDid            = false;
-    bool firstDownload           = true;
+    bool testOngoing             = false;
 };
-
-struct TableData
-{
-    float Kp_vel          = 0.0f;
-    float Ki_vel          = 0.0f;
-    float Kd_vel          = 0.0f;
-    float integralMax_vel = 0.0f;
-
-    float Kp_pos          = 0.0f;
-    float Ki_pos          = 0.0f;
-    float Kd_pos          = 0.0f;
-    float integralMax_pos = 0.0f;
-
-    float Kp_imp = 0.0f;
-    float Kd_imp = 0.0f;
-};
-TableData tableData;
 
 static bool systemON        = true;
 static bool selectedMD      = false;
@@ -85,8 +69,9 @@ static bool selectedMode    = false;
 static bool discoverOngoing = false;
 
 static int   monitorX, monitorY;
-static float leftMenuBarWidth = 500.0f;
-static float margin           = 10.f;
+static float leftMenuBarWidth  = 500.0f;
+static float testMenuBarHeight = 100.0f;
+static float margin            = 10.f;
 
 // Back menu settings
 ImGuiWindowFlags flagsBackMenu = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
@@ -102,10 +87,6 @@ ImColor mabColor = ImColor::HSV(0.078f, 1.0f, 1.0f);
 
 std::string chosenIDstr = "Select Your MD";
 
-// MAB
-mab::MDRegisters_S registers;
-mab::MDRegisters_S registers2;
-
 // MAXIMUM VALUES
 static float maxVelocityClamp     = 0.0f;
 static float maxPositionClamp     = 0.0f;
@@ -113,6 +94,8 @@ static float minPositionClamp     = 0.0f;
 static float maxTorqueClamp       = 0.0f;
 static float maxAccelerationClamp = 0.0f;
 static float maxDecelerationClamp = 0.0f;
+
+const float refreshRate = 200.f;
 
 static float positionWindowSlider = 0.0f;
 static float positionWindow       = 0.1f;
@@ -144,10 +127,7 @@ const float  step_fast                = 1.0f;
 static void drawMenuTopBar(CommonMemory& memory, ImGuiIO& io);
 static void drawMainMenu(CommonMemory& memory, ImGuiIO& io);
 static void drawLeftMenuBar(CommonMemory& memory, ImGuiIO& io);
-
-static void drawPIDtunerVelocity();
-static void drawPIDtunerPosition();
-static void drawPDtunerImpedance();
+static void drawTestMenuBar(CommonMemory& memory, ImGuiIO& io);
 
 static void drawVelocityPlot(CommonMemory& memory, ImGuiIO& io);
 static void drawPositionPlot(CommonMemory& memory, ImGuiIO& io);
@@ -164,7 +144,11 @@ static void drawSetVelocityWindow();
 static void drawTestButton(CommonMemory& memory);
 static void drawEndTestButton(CommonMemory& memory);
 static void drawDiscoverMDButton(CommonMemory& memory);
-static void drawParametersTable();
+
+static void drawParametersVelocity(CommonMemory& memory);
+static void drawParametersPosition(CommonMemory& memory);
+static void drawParametersImpedance(CommonMemory& memory);
+
 static void drawToggleButton();
 static void drawSelectModeButton(CommonMemory& memory);
 static void drawSelectMDButton(CommonMemory& memory);
@@ -173,11 +157,11 @@ static void CenterText(const char* text);
 const char* getModeName(mab::MdMode_E mode);
 static bool drawBigInputFloat(
     const char* label, float* v, float step, float step_fast, const char* format);
-static bool drawOrangeInputFloat(const char* label,
-                                 float*      v,
-                                 float       step      = 0.0f,
-                                 float       step_fast = 0.0f,
-                                 const char* format    = "%.3f");
+// static bool drawOrangeInputFloat(const char* label,
+//                                  float*      v,
+//                                  float       step      = 0.0f,
+//                                  float       step_fast = 0.0f,
+//                                  const char* format    = "%.3f");
 
 static void testMD(CommonMemory& memory, mab::MD& md);
 static void downloadParameters(CommonMemory& memory, mab::MD& md);
