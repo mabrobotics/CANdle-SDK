@@ -388,21 +388,6 @@ namespace mab
              MDCfgElement(
                  "motor", "torque bandwidth", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
             {0x01D, MDCfgElement("motor", "KV", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
-            {0x013,
-             MDCfgElement(
-                 "motor", "torque constant a", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
-            {0x014,
-             MDCfgElement(
-                 "motor", "torque constant b", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
-            {0x015,
-             MDCfgElement(
-                 "motor", "torque constant c", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
-            {0x019,
-             MDCfgElement(
-                 "motor", "dynamic friction", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
-            {0x01A,
-             MDCfgElement(
-                 "motor", "static friction", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
             {0x01E,
              MDCfgElement("motor",
                           "calibration mode",
@@ -410,7 +395,6 @@ namespace mab
                                                           mainEncoderCalibrationModeFromReadable,
                                                           verifyEnum))},
             {0x808, MDCfgElement("motor", "shutdown temp")},
-            {0x600, MDCfgElement("motor", "reverse direction")},
 
             // Encoder parameters
             {0x020,

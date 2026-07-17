@@ -471,6 +471,33 @@ namespace mab
         return std::make_pair(m_status.motionStatus, result);
     }
 
+    std::pair<const std::unordered_map<MDStatus::MiscStatusBits, MDStatus::StatusItem_S>,
+              MD::Error_t>
+    MD::getMiscStatus()
+    {
+        auto result = readRegister(m_mdRegisters.miscStatus);
+        if (result != Error_t::OK)
+        {
+            m_log.error("Could not read ");
+            return std::make_pair(m_status.miscStatus, result);
+        }
+        MDStatus::decode(m_mdRegisters.miscStatus.value, m_status.miscStatus);
+        return std::make_pair(m_status.miscStatus, result);
+    }
+    std::pair<const std::unordered_map<MDStatus::ConfigStatusBits, MDStatus::StatusItem_S>,
+              MD::Error_t>
+    MD::getConfigStatus()
+    {
+        auto result = readRegister(m_mdRegisters.configStatus);
+        if (result != Error_t::OK)
+        {
+            m_log.error("Could not read ");
+            return std::make_pair(m_status.configStatus, result);
+        }
+        MDStatus::decode(m_mdRegisters.configStatus.value, m_status.configStatus);
+        return std::make_pair(m_status.configStatus, result);
+    }
+
     std::pair<float, MD::Error_t> MD::getPosition()
     {
         auto result = readRegister(m_mdRegisters.mainEncoderPosition);
@@ -537,6 +564,11 @@ namespace mab
         return std::make_pair(m_mdRegisters.motorTemperature.value, result);
     }
 
+    void MD::setLogLevel(Logger::LogLevel_E level)
+    {
+        m_log.m_optionalLevel = level;
+    }
+
     /// @brief This test should be performed with 1M datarate on CAN network
     void MD::testLatency()
     {
@@ -591,28 +623,25 @@ namespace mab
 
         log.info("Looking for MDs");
 
+        // workaround for ping error spam
+        Logger::Verbosity_E prevVerbosity =
+            Logger::g_m_verbosity.value_or(Logger::Verbosity_E::VERBOSITY_1);
         for (canId_t id = MIN_VAILID_ID; id < MAX_VAILID_ID; id++)
         {
             log.debug("Trying to bind MD with id %d", id);
             log.progress(float(id) / float(MAX_VAILID_ID));
-            // workaround for ping error spam
-            Logger::Verbosity_E prevVerbosity =
-                Logger::g_m_verbosity.value_or(Logger::Verbosity_E::VERBOSITY_1);
             Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
             MD md(id, candle);
             if (md.init() == MD::Error_t::OK)
+            {
                 ids.push_back(id);
-
+                md.readRegister(md.m_mdRegisters.motorName);
+                Logger::g_m_verbosity = prevVerbosity;
+                log.info("\r - Found '%s' at @%d" END_LINE, md.m_mdRegisters.motorName.value, id);
+            }
             Logger::g_m_verbosity = prevVerbosity;
         }
-        for (canId_t id : ids)
-        {
-            log.info("Discovered MD device with ID: %d", id);
-        }
-        if (ids.size() > 0)
-            return ids;
-
-        log.warn("Have not found any MD devices on the CAN bus!");
+        log.progress(1.);
         return ids;
     }
 }  // namespace mab

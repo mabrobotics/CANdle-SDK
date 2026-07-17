@@ -121,7 +121,15 @@ namespace mab
         payload.insert(payload.end(), firmwareSHA256.begin(), firmwareSHA256.end());
         payload.resize(63);
 
-        return sendCommand(Command_t::META, payload);
+        if (sendCommand(Command_t::META, payload))
+        {
+            // old workaround for CANdle limitation, of having max timeout of ~250ish ms.
+            // META message does saveing in flash, so it takes slightly longer than that, and we must 
+            // send another frame to get *actual* response for the command.
+            std::vector<u8> dummy;
+            return sendFrame(dummy);
+        }
+        return CanBootloader::Error_t::DATA_TRANSFER_ERROR;
     }
 
     CanBootloader::Error_t CanBootloader::boot(const u32 bootAddress) const
@@ -154,11 +162,12 @@ namespace mab
         if (!mp_candle)
             return Error_t::NOT_CONNNECTED;
 
+        m_log.debug("Sending frame %d", frame.size());
         auto result = mp_candle->transferCANFrame(
             m_id, frame, DEFAULT_REPONSE.size(), m_customReponseTimeoutMs.value_or(DEFAULT_TIMOUT));
         if (result.second != candleTypes::Error_t::OK)
         {
-            m_log.error("Failed to send frame!");
+            m_log.debug("Failed to send frame!");
             return Error_t::DATA_TRANSFER_ERROR;
         }
 
@@ -167,7 +176,7 @@ namespace mab
 
         if (response.find(DEFAULT_REPONSE) == std::string_view::npos)
         {
-            m_log.error("Invalid response!");
+            m_log.debug("Invalid response!");
             return Error_t::DATA_TRANSFER_ERROR;
         }
 

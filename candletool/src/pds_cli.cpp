@@ -358,7 +358,7 @@ void PdsCli::parse()
             }
 
             CanLoader canLoader(candle.value(), &mabFile, m_canId);
-            if (canLoader.flashAndBoot())
+            if (canLoader.flashAndBoot(m_recovery))
             {
                 m_log.success("Update complete for PDS @ %d", m_canId);
             }

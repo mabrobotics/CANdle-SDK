@@ -175,14 +175,19 @@ namespace mab
 
         inline void frameDump(std::vector<u8> frame) const
         {
-            m_log.debug("FRAME DUMP");
+            if (m_log.getCurrentLevel() > Logger::LogLevel_E::DEBUG)
+                return;
+
+            size_t            byteCount = 0;
+            std::stringstream ss;
+            ss << std::endl << "00 - 08: ";
             for (const auto byte : frame)
             {
-                std::stringstream ss;
-                ss << " 0x" << std::hex << std::setfill('0') << std::setw(2) << (int)byte << " "
-                   << "[ " << ((char)byte == 0 ? '0' : (char)byte) << " ]";
-                m_log.debug(ss.str().c_str());
+                ss << " 0x" << std::hex << std::setfill('0') << std::setw(2) << (int)byte << " ";
+                if (++byteCount % 8 == 0 && byteCount < frame.size())
+                    ss << std::endl << std::setfill('0') << std::setw(2) << std::dec << byteCount - 1 << " - " << byteCount - 1 + 8 << ": ";
             }
+            m_log.debug(ss.str().c_str());
         }
     };
 

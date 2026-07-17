@@ -8,7 +8,6 @@
 #include <cmath>
 #include <cstring>
 #include <string>
-#include <algorithm>
 
 namespace mab
 {
@@ -24,7 +23,7 @@ namespace mab
     {
     }
 
-    bool CanLoader::flashAndBoot()
+    bool CanLoader::flashAndBoot(bool recovery)
     {
         if (m_candle == nullptr)
         {
@@ -43,12 +42,20 @@ namespace mab
         const std::span<const u8, 32> firmwareSHA256 = (m_mabFile->m_fwEntry.checksum);
         const u32                     swAddress      = m_mabFile->m_fwEntry.bootAddress;
 
-        // Verify communication
-        if (bootloader.init(swAddress, appSize) != CanBootloader::Error_t::OK)
+        while (true)
         {
-            m_log.error("Failed to initialize bootloader");
-            return false;
+            if (bootloader.init(swAddress, appSize) == CanBootloader::Error_t::OK)
+                break;
+            if (!recovery)
+            {
+                m_log.error("Failed to initialize bootloader");
+                return false;
+            }
+            usleep(250'000);
         }
+
+        m_log.info("Bootloader Connected!");
+        sleep(1);
 
         // Clearing memory
         if (bootloader.erase(swAddress, appSize) != CanBootloader::Error_t::OK)
@@ -83,14 +90,16 @@ namespace mab
         m_log.progress(1.0);  // Transfering finish indication
 
         // Transfering metadata about firmware
-        if (bootloader.transferMetadata(true, firmwareSHA256) != CanBootloader::Error_t::OK)
+        if (bootloader.init(swAddress, appSize) != CanBootloader::Error_t::OK ||
+            bootloader.transferMetadata(true, firmwareSHA256) != CanBootloader::Error_t::OK)
         {
             m_log.error("Failed to transfer metadata");
             return false;
         }
 
         // Send boot cmd
-        if (bootloader.boot(swAddress))
+        bootloader.boot(swAddress);
+        if (bootloader.boot(swAddress) != CanBootloader::Error_t::OK)
         {
             m_log.error("Failed to boot");
             return false;
