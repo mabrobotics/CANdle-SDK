@@ -464,6 +464,7 @@ namespace mab
                     m_logger.error("Could not connect to MD!");
                     return;
                 }
+                version_ut fwVersion = getMdFirmwareVersion(*md);
 
                 std::filesystem::path configFilePath = *uploadConfigOptions.configFile;
                 if (configFilePath.empty())
@@ -506,15 +507,11 @@ namespace mab
                         return;
                     }
                     // Write the value to the MD
-                    if (address == (u16)MDRegisterAddress_E::shuntResistance)
-                    {
-                        // For firmware 2.6+ shunt resistance is read only, thus we ommit it.
+
+                    // Note: after fw 3.0, shuntResistance is Read only
+                    if (address == (u16)MDRegisterAddress_E::shuntResistance &&
+                        isVersionAtLeast(fwVersion, 3, 0, 0))
                         md->readRegister(md->m_mdRegisters.firmwareVersion);
-                        version_ut fwVersion;
-                        fwVersion.i = md->m_mdRegisters.firmwareVersion.value;
-                        if (fwVersion.s.major >= 2 && fwVersion.s.minor >= 6)
-                            continue;
-                    }
                     else
                         registerWrite(*md, address, toml.m_value);
                 }
@@ -536,6 +533,18 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
+                    return;
+                }
+                m_logger.info(
+                    "The factory reset, will erase the whole configuration from the drive, "
+                    "including its CAN ID to 100 (0x64)! Proceed?");
+
+                std::string answer;
+                std::cout << "Type 'Y' to continue: ";
+                std::getline(std::cin, answer);
+                if (answer != "Y" && answer != "y")
+                {
+                    m_logger.error("Factory Reset aborted by user!");
                     return;
                 }
                 MDRegisters_S registers;
@@ -751,22 +760,22 @@ namespace mab
                          << std::endl;
 
                 m_logger << "[Actuator]" << std::endl;
+                m_logger << "- gear ratio: " << std::setprecision(5)
+                         << readableRegisters.motorGearRatio.value << "(~" << std::setprecision(0)
+                         << 1.f / readableRegisters.motorGearRatio.value << ":1)" << std::endl;
                 m_logger << "- pole pairs: "
                          << std::to_string(readableRegisters.motorPolePairs.value) << std::endl;
                 m_logger << "- Kt: " << std::setprecision(4) << readableRegisters.motorKt.value
                          << " Nm/A" << " (KV: " << std::to_string(readableRegisters.motorKV.value)
-                         << " rpm/V" << std::endl;
+                         << " rpm/V)" << std::endl;
                 m_logger << std::fixed << "- R: " << std::setprecision(3)
                          << readableRegisters.motorResistance.value
                          << " Ohm. L: " << std::setprecision(6)
-                         << readableRegisters.motorInductance.value << " H";
+                         << readableRegisters.motorInductance.value << " H" << std::endl;
                 m_logger << "- torque bandwidth: " << readableRegisters.motorTorqueBandwidth.value
                          << " Hz" << std::endl;
                 m_logger << "- max current: " << std::setprecision(1)
                          << readableRegisters.motorIMax.value << " A" << std::endl;
-                m_logger << "- gear ratio: " << std::setprecision(5)
-                         << readableRegisters.motorGearRatio.value << "(~" << std::setprecision(0)
-                         << 1.f / readableRegisters.motorGearRatio.value << ":1)" << std::endl;
                 m_logger << "- max motor temperature: "
                          << std::to_string(readableRegisters.motorShutdownTemp.value) << " *C"
                          << std::endl;
@@ -1257,6 +1266,42 @@ namespace mab
         update->callback(
             [this, candleBuilder, mdCanId, updateOptions, ctx]()
             {
+                if (*updateOptions.forceErase)
+                {
+                    m_logger.info(
+                        "The force-erase, will erase the whole configuration from the drive, "
+                        "including"
+                        "bootloader configuration. Drives' CAN ID will be set default 100 (0x64)! "
+                        "Proceed?");
+                    std::string answer;
+                    std::cout << "Type 'Y' to continue: ";
+                    std::getline(std::cin, answer);
+                    if (answer != "Y" && answer != "y")
+                    {
+                        m_logger.error("Factory Reset aborted by user!");
+                        return;
+                    }
+                    auto candle = candleBuilder->build().value_or(nullptr);
+                    if (candle == nullptr)
+                    {
+                        m_logger.error("Could not connect to candle!");
+                        return;
+                    }
+                    if (!*updateOptions.recovery)
+                    {
+                        MD md(*mdCanId, candle);
+                        md.reset();
+                        usleep(200'000);
+                    }
+                    CanLoader canLoader(candle, nullptr, *mdCanId);
+                    if (!canLoader.forceEraseConfig())
+                    {
+                        m_logger.error("Force-erase failed!");
+                        return;
+                    }
+                    m_logger.success("Force-erase complete for MD @ %d", *mdCanId);
+                    return;
+                }
                 if (updateOptions.pathToMabFile->empty())
                 {
                     if (updateOptions.fwVersion->empty())

@@ -179,6 +179,7 @@ namespace mab
                 : fwVersion(std::make_shared<std::string>("")),
                   pathToMabFile(std::make_shared<std::filesystem::path>("")),
                   recovery(std::make_shared<bool>(false)),
+                  forceErase(std::make_shared<bool>(false)),
                   metadataFile(std::make_shared<std::string>(""))
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
@@ -192,6 +193,9 @@ namespace mab
                     {"recovery",
                      rootCli->add_flag(
                          "-r,--recovery", *recovery, "Driver recovery after failed flashing")},
+                    {"force_erase",
+                     rootCli->add_flag(
+                         "--force-erase", *forceErase, "Force full wipe of the driver")},
                     {"meta_file",
                      rootCli->add_option("-m,--meta-file",
                                          *metadataFile,
@@ -200,6 +204,7 @@ namespace mab
             const std::shared_ptr<std::string>           fwVersion;
             const std::shared_ptr<std::filesystem::path> pathToMabFile;
             const std::shared_ptr<bool>                  recovery;
+            const std::shared_ptr<bool>                  forceErase;
             const std::shared_ptr<std::string>           metadataFile;
             std::map<std::string, CLI::Option*>          optionsMap;
         };  // namespace mab
