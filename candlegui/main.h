@@ -21,7 +21,57 @@
 #endif
 #include <GLFW/glfw3.h>  // Will drag system OpenGL headers
 
-struct CommonMemory
+struct plotPoints_S
+{
+    float time;
+
+    float velocity;
+    float position;
+    float torque;
+
+    float targetVelocity;
+    float targetPosition;
+    float targetTorque;
+};
+
+struct guiBuffers_S
+{
+    static const uint32_t SIZE = 100000;
+
+    float guiElapsedTime = 0.0f;
+
+    float time[SIZE]      = {0};
+    float vel[SIZE]       = {0};
+    float pos[SIZE]       = {0};
+    float trq[SIZE]       = {0};
+    float targetVel[SIZE] = {0};
+    float targetPos[SIZE] = {0};
+    float targetTrq[SIZE] = {0};
+
+    uint32_t offset   = 0;
+    uint32_t readData = 0;
+
+    float minVel = 0.0f, maxVel = 0.0f;
+    float minPos = 0.0f, maxPos = 0.0f;
+    float minTrq = 0.0f, maxTrq = 0.0f;
+
+    void reset()
+    {
+        offset = 0;
+        maxVel = 0.0f;
+        minVel = 0.0f;
+        maxTrq = 0.0f;
+        minTrq = 0.0f;
+        maxPos = 0.0f;
+        minPos = 0.0f;
+        for (uint32_t i = 0; i < SIZE; ++i)
+        {
+            time[i] = vel[i] = pos[i] = trq[i] = targetVel[i] = 0.0f;
+        }
+    }
+};
+
+struct commonMemory_S
 {
     std::atomic<int> actual_thread_hz{0};
     std::mutex       mtx;
@@ -45,13 +95,7 @@ struct CommonMemory
     float Kp_imp = 0.0f;
     float Kd_imp = 0.0f;
 
-    // Hardware measurements
-    float currentVelMeasured    = 0.0f;
-    float currentPosMeasured    = 0.0f;
-    float currentTorqueMeasured = 0.0f;
-
     // MAB
-    std::mutex                mtx_mab;
     mab::MdMode_E             currentMode = mab::MdMode_E::IDLE;
     std::vector<mab::canId_t> mdIDs;
     mab::canId_t              chosenID = 0;
@@ -62,6 +106,11 @@ struct CommonMemory
     std::atomic<bool> updateParametersTest{false};
     std::atomic<bool> selectedMDid{false};
     std::atomic<bool> testOngoing{false};
+
+    // Plots
+    static const uint32_t PLOT_BUFFER_SIZE = 100000;
+    plotPoints_S          plotBuffer[PLOT_BUFFER_SIZE];
+    std::atomic<uint32_t> plotWriteData{0};
 };
 
 static bool systemON        = true;
@@ -70,9 +119,13 @@ static bool selectedMode    = false;
 static bool discoverOngoing = false;
 
 static int   monitorX, monitorY;
-static float leftMenuBarWidth  = 500.0f;
-static float testMenuBarHeight = 100.0f;
-static float margin            = 10.f;
+static float leftMenuBarWidth    = 500.0f;
+static float testMenuBarHeight   = 100.0f;
+static float lowBarHeight        = 30.0f;
+static float marginPlot          = 10.f;
+static float paddingButtons      = 30.f;
+static float mediumButtonHeight  = 40.0f;
+static float roundingFrameButton = 12.0f;
 
 // Back menu settings
 ImGuiWindowFlags flagsBackMenu = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
@@ -82,9 +135,12 @@ ImGuiWindowFlags flagsBackMenu = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoRe
 // Table settings
 ImGuiTableFlags flagsTables = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
 
-ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+ImVec4 clear_color2 = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+ImVec4 clear_color  = ImVec4(0.055f, 0.059f, 0.067f, 1.00f);
+ImVec4 buttonColor  = ImVec4(0.167f, 0.165f, 0.196f, 1.0f);
 
-ImColor mabColor = ImColor::HSV(0.078f, 1.0f, 1.0f);
+ImVec4 mabColor        = ImVec4(1.0f, 0.468f, 0.0f, 1.0f);
+ImVec4 mabColorHovered = ImVec4(1.0f, 0.468f, 0.0f, 0.5f);
 
 std::string chosenIDstr = "Select Your MD";
 
@@ -96,7 +152,7 @@ static float maxTorqueClamp       = 0.0f;
 static float maxAccelerationClamp = 0.0f;
 static float maxDecelerationClamp = 0.0f;
 
-const float refreshRate = 200.f;
+const float targetHoldTime = 0.25f;
 
 static float positionWindowSlider = 0.0f;
 static float positionWindow       = 0.1f;
@@ -125,14 +181,20 @@ const float  step                     = 0.1f;
 const float  step_fast                = 1.0f;
 
 // functions
-static void drawMenuTopBar(CommonMemory& memory, ImGuiIO& io);
-static void drawMainMenu(CommonMemory& memory, ImGuiIO& io);
-static void drawLeftMenuBar(CommonMemory& memory, ImGuiIO& io);
-static void drawTestMenuBar(CommonMemory& memory, ImGuiIO& io);
+static void updatePlotData(commonMemory_S& memory, guiBuffers_S& buffers, ImGuiIO& io);
+static void drawMenuTopBar(commonMemory_S& memory, ImGuiIO& io);
+static void drawMenuLowerBar(commonMemory_S& memory, ImGuiIO& io);
+static void drawMainMenu(commonMemory_S& memory, ImGuiIO& io, guiBuffers_S& buffers);
+static void drawLeftMenuBar(commonMemory_S& memory, ImGuiIO& io);
+static void drawTestMenuBar(commonMemory_S& memory, ImGuiIO& io);
 
-static void drawVelocityPlot(CommonMemory& memory, ImGuiIO& io);
-static void drawPositionPlot(CommonMemory& memory, ImGuiIO& io);
-static void drawTorquePlot(CommonMemory& memory, ImGuiIO& io);
+static void timeInTarget(bool&           inWindow,
+                         float&          timeInTargetWindow,
+                         float&          dt,
+                         commonMemory_S& memory);
+static void drawVelocityPlot(commonMemory_S& memory, guiBuffers_S& buffers);
+static void drawPositionPlot(commonMemory_S& memory, guiBuffers_S& buffers);
+static void drawTorquePlot(commonMemory_S& memory, guiBuffers_S& buffers);
 
 static void drawSetTargetVelocity();
 static void drawSetTargetPosition();
@@ -142,34 +204,37 @@ static void drawSetTargetDeceleration();
 static void drawSetPositionWindow();
 static void drawSetVelocityWindow();
 
-static void drawTestButton(CommonMemory& memory);
-static void drawEndTestButton(CommonMemory& memory);
-static void drawDiscoverMDButton(CommonMemory& memory);
+static void drawTestEndButton(commonMemory_S& memory);
+static void drawDiscoverMDButton(commonMemory_S& memory);
 
-static void drawParametersVelocity(CommonMemory& memory);
-static void drawParametersPosition(CommonMemory& memory);
-static void drawParametersImpedance(CommonMemory& memory);
+static void drawParametersVelocity(commonMemory_S& memory);
+static void drawParametersPosition(commonMemory_S& memory);
+static void drawParametersImpedance(commonMemory_S& memory);
 
-static void drawToggleButton();
-static void drawSelectModeButton(CommonMemory& memory);
-static void drawSelectMDButton(CommonMemory& memory);
+static void drawSelectModeButton(commonMemory_S& memory);
+static void drawSelectMDButton(commonMemory_S& memory);
 
-static void CenterText(const char* text);
+static void comboStyle(const char* text);
+static void buttonStyle();
+static void endComboStyle();
+static void endButtonStyle();
+static void centerText(const char* text);
 const char* getModeName(mab::MdMode_E mode);
-static bool drawBigInputFloat(
+static bool drawBigInputFloat(const char* label,
+                              float*      v,
+                              float       step,
+                              float       step_fast,
+                              const char* format,
+                              float       windowWidth);
+static bool buttonColorInputFloat(
     const char* label, float* v, float step, float step_fast, const char* format);
-// static bool drawOrangeInputFloat(const char* label,
-//                                  float*      v,
-//                                  float       step      = 0.0f,
-//                                  float       step_fast = 0.0f,
-//                                  const char* format    = "%.3f");
 
-static void testMD(CommonMemory& memory, mab::MD& md);
-static void downloadParameters(CommonMemory& memory, mab::MD& md);
+static void testMD(commonMemory_S& memory, mab::MD& md);
+static void downloadParameters(commonMemory_S& memory, mab::MD& md);
 
-static void updateVelParameters(CommonMemory& memory);
-static void updatePosParameters(CommonMemory& memory);
-static void updateImpParameters(CommonMemory& memory);
+static void updateVelParameters(commonMemory_S& memory);
+static void updatePosParameters(commonMemory_S& memory);
+static void updateImpParameters(commonMemory_S& memory);
 
 // hardware thread loop
-void candleLoop(CommonMemory& memory, std::atomic<bool>& isRunning);
+void candleLoop(commonMemory_S& memory, std::atomic<bool>& isRunning);
