@@ -13,7 +13,7 @@ cd "$BUILD_DIRECTORY"
 
 chmod -R a+rw "$BUILD_DIRECTORY"
 
-cmake ..
+cmake -DCMAKE_INSTALL_SYSCONFDIR=/etc ..
 chmod -R a+rw "$BUILD_DIRECTORY"
 
 make -j4
