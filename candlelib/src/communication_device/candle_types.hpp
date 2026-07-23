@@ -22,6 +22,8 @@ namespace mab
             DATA_EMPTY,
             RESPONSE_TIMEOUT,
             CAN_DEVICE_NOT_RESPONDING,
+            TRANSMITTER_ERROR,
+            RECEIVER_ERROR,
             INVALID_ID,
             BAD_RESPONSE,
             UNKNOWN_ERROR

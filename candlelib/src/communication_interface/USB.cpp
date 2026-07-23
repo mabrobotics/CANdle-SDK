@@ -351,6 +351,12 @@ namespace mab
         {
             std::string err = translateLibusbError(transmitError);
             m_Log.error(err.c_str());
+
+            if (transmitError == libusb_error::LIBUSB_ERROR_TIMEOUT)
+            {
+                return std::pair(data, Error_t::TIMEOUT);
+            }
+
             if (transmitError == libusb_error::LIBUSB_ERROR_PIPE)  // pipe clogged and needs a reset
             {
                 m_libusbDevice->unclogInput();

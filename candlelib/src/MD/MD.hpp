@@ -227,7 +227,7 @@ namespace mab
         std::pair<const std::unordered_map<MDStatus::MiscStatusBits, MDStatus::StatusItem_S>,
                   Error_t>
         getMiscStatus();
-        
+
         /// @brief Request config status
         /// @return Config status map with bit positions as ids
         std::pair<const std::unordered_map<MDStatus::ConfigStatusBits, MDStatus::StatusItem_S>,
@@ -619,6 +619,9 @@ namespace mab
         void testLatency();
 
         static std::vector<canId_t> discoverMDs(Candle* candle);
+        static std::vector<canId_t> discoverRangedMDs(Candle* candle,
+                                                      canId_t minValueRange,
+                                                      canId_t maxValueRange);
 
       private:
         Candle* const m_candle;

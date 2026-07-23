@@ -73,6 +73,7 @@ endmacro(add_unit_test_executable)
 
 add_subdirectory(commons)
 add_subdirectory(candlelib)
+add_subdirectory(candlegui)
 if(CANDLESDK_BUILD_PYTHON)
     add_subdirectory(pycandle)
 else()

@@ -16,6 +16,7 @@ namespace mab
         {
             OK,
             NOT_CONNECTED,
+            DISCONNECTED,
             INITIALIZATION_ERROR,
             COULD_NOT_ACQUIRE_INTEFACE,
             TRANSMITTER_ERROR,

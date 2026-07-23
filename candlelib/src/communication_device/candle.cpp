@@ -211,8 +211,42 @@ namespace mab
             data->insert(data->begin(), result.first.begin(), result.first.end());
             // *data = result.first;
 
-            if (result.second)
-                return candleTypes::Error_t::UNKNOWN_ERROR;
+            switch (result.second)
+            {
+                case I_CommunicationInterface::DATA_EMPTY:
+                    return candleTypes::Error_t::DATA_EMPTY;
+                    break;
+                case I_CommunicationInterface::DATA_TOO_LONG:
+                    return candleTypes::Error_t::DATA_TOO_LONG;
+                    break;
+                case I_CommunicationInterface::DISCONNECTED:
+                    return candleTypes::Error_t::DEVICE_NOT_CONNECTED;
+                    break;
+                case I_CommunicationInterface::INITIALIZATION_ERROR:
+                    return candleTypes::Error_t::INITIALIZATION_ERROR;
+                    break;
+                case I_CommunicationInterface::NOT_CONNECTED:
+                    return candleTypes::Error_t::UNINITIALIZED;
+                    break;
+                case I_CommunicationInterface::OK:
+                    return candleTypes::Error_t::OK;
+                    break;
+                case I_CommunicationInterface::RECEIVER_ERROR:
+                    return candleTypes::Error_t::RECEIVER_ERROR;
+                    break;
+                case I_CommunicationInterface::TIMEOUT:
+                    return candleTypes::Error_t::RESPONSE_TIMEOUT;
+                    break;
+                case I_CommunicationInterface::TRANSMITTER_ERROR:
+                    return candleTypes::Error_t::TRANSMITTER_ERROR;
+                    break;
+                case I_CommunicationInterface::UNKNOWN_ERROR:
+                    return candleTypes::Error_t::UNKNOWN_ERROR;
+                    break;
+                default:
+                    return candleTypes::Error_t::UNKNOWN_ERROR;
+                    break;
+            }
         }
         // frameDump(*data);
 
