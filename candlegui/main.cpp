@@ -198,7 +198,7 @@ static void drawErrorMenuPopup(commonMemory_S& memory, ImGuiIO& io)
     if (ImGui::BeginPopupModal(popupTitle, nullptr, flags))
     {
         ImGui::SetWindowFontScale(1.3f);
-        ImGui::Text("You forgot your Candle!");
+        ImGui::Text("You didn't light your Candle!");
         ImGui::Separator();
 
         ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f),
@@ -1353,9 +1353,10 @@ void candleLoop(commonMemory_S& memory, std::atomic<bool>& isRunning)
             {
                 std::cout << "Error: " << errorToString(errMsg) << std::endl;
                 std::lock_guard<std::mutex> lock(memory.mtx);
-                memory.testStarted      = false;
-                memory.testOngoing      = false;
-                memory.candleAvailable  = false;
+                memory.testStarted     = false;
+                memory.testOngoing     = false;
+                memory.candleAvailable = false;
+                memory.mdIDs.clear();
                 buttonDiscoverMdPressed = false;
                 discoverOngoing         = false;
 
