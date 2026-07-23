@@ -8,7 +8,7 @@ find_package(OpenGL REQUIRED)
 
 add_subdirectory(lib)
 
-add_executable(mab_tuner main.cpp) 
+add_executable(mdgui main.cpp) 
 
 set(COMMON_INCLUDES
     ../candlelib/include
@@ -16,9 +16,9 @@ set(COMMON_INCLUDES
     ../candlelib/src/objectDictionary
 )
 
-target_include_directories(mab_tuner PRIVATE ${COMMON_INCLUDES})
+target_include_directories(mdgui PRIVATE ${COMMON_INCLUDES})
 
-target_link_libraries(mab_tuner PRIVATE
+target_link_libraries(mdgui PRIVATE
         pthread
         candle
         -static-libstdc++

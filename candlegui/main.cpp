@@ -1596,7 +1596,7 @@ int main(int, char**)
     const GLFWvidmode* videoMode      = glfwGetVideoMode(primaryMonitor);
 
     GLFWwindow* window =
-        glfwCreateWindow(videoMode->width, videoMode->height, "MABtuner app", nullptr, nullptr);
+        glfwCreateWindow(videoMode->width, videoMode->height, "MD GUI", nullptr, nullptr);
     if (window == nullptr)
         return 1;
 
