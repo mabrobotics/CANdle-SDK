@@ -1368,7 +1368,10 @@ void candleLoop(commonMemory_S& memory, std::atomic<bool>& isRunning)
             }
             else
                 timeoutCounter = 0;
+        }
 
+        if (candle != nullptr)
+        {
             mab::MD md(chosenID, candle);
 
             if (selectedMDid)
