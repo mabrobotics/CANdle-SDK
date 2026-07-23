@@ -185,7 +185,7 @@ static void drawTestMenuBar(commonMemory_S& memory, ImGuiIO& io)
 
 static void drawErrorMenuPopup(commonMemory_S& memory, ImGuiIO& io)
 {
-    const char* popupTitle = "Candle Error##ErrorPopup";
+    const char* popupTitle = "CANdle Error##ErrorPopup";
 
     ImGui::OpenPopup(popupTitle);
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
@@ -198,11 +198,11 @@ static void drawErrorMenuPopup(commonMemory_S& memory, ImGuiIO& io)
     if (ImGui::BeginPopupModal(popupTitle, nullptr, flags))
     {
         ImGui::SetWindowFontScale(1.3f);
-        ImGui::Text("You didn't light your Candle!");
+        ImGui::Text("You didn't light your CANdle!");
         ImGui::Separator();
 
         ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f),
-                           "Continue by connecting Candle via USB!");
+                           "Continue by connecting CANdle via USB!");
 
         ImGui::EndPopup();
     }
