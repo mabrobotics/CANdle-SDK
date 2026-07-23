@@ -183,6 +183,32 @@ static void drawTestMenuBar(commonMemory_S& memory, ImGuiIO& io)
     ImGui::End();
 }
 
+static void drawErrorMenuPopup(commonMemory_S& memory, ImGuiIO& io)
+{
+    const char* popupTitle = "Candle Error##ErrorPopup";
+
+    ImGui::OpenPopup(popupTitle);
+    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+
+    ImGuiWindowFlags flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove;
+
+    ImGui::PushStyleColor(ImGuiCol_TitleBgActive, mabColor);
+
+    if (ImGui::BeginPopupModal(popupTitle, nullptr, flags))
+    {
+        ImGui::SetWindowFontScale(1.3f);
+        ImGui::Text("You forgot your Candle!");
+        ImGui::Separator();
+
+        ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f),
+                           "Continue by connecting Candle via USB!");
+
+        ImGui::EndPopup();
+    }
+    ImGui::PopStyleColor(1);
+}
+
 static void updatePlotData(commonMemory_S& memory, guiBuffers_S& buffers, ImGuiIO& io)
 {
     static bool  lastTestStarted    = false;
@@ -1227,10 +1253,44 @@ static void updateImpParameters(commonMemory_S& memory)
     memory.Kd_imp = Kd_impSlider;
 }
 
+const char* errorToString(mab::candleTypes::Error_t error)
+{
+    switch (error)
+    {
+        case mab::candleTypes::Error_t::OK:
+            return "OK";
+        case mab::candleTypes::Error_t::DEVICE_NOT_CONNECTED:
+            return "DEVICE_NOT_CONNECTED";
+        case mab::candleTypes::Error_t::INITIALIZATION_ERROR:
+            return "INITIALIZATION_ERROR";
+        case mab::candleTypes::Error_t::UNINITIALIZED:
+            return "UNINITIALIZED";
+        case mab::candleTypes::Error_t::DATA_TOO_LONG:
+            return "DATA_TOO_LONG";
+        case mab::candleTypes::Error_t::DATA_EMPTY:
+            return "DATA_EMPTY";
+        case mab::candleTypes::Error_t::RESPONSE_TIMEOUT:
+            return "RESPONSE_TIMEOUT";
+        case mab::candleTypes::Error_t::CAN_DEVICE_NOT_RESPONDING:
+            return "CAN_DEVICE_NOT_RESPONDING";
+        case mab::candleTypes::Error_t::TRANSMITTER_ERROR:
+            return "TRANSMITTER_ERROR";
+        case mab::candleTypes::Error_t::RECEIVER_ERROR:
+            return "RECEIVER_ERROR";
+        case mab::candleTypes::Error_t::INVALID_ID:
+            return "INVALID_ID";
+        case mab::candleTypes::Error_t::BAD_RESPONSE:
+            return "BAD_RESPONSE";
+        case mab::candleTypes::Error_t::UNKNOWN_ERROR:
+            return "UNKNOWN_ERROR";
+        default:
+            return "UNDEFINED";
+    }
+}
+
 void candleLoop(commonMemory_S& memory, std::atomic<bool>& isRunning)
 {
-    mab::Candle* candle = mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M,
-                                            mab::candleTypes::busTypes_t::USB);
+    mab::Candle* candle = nullptr;
 
     mab::canId_t min = 0;
     mab::canId_t max = 100;
@@ -1245,6 +1305,8 @@ void candleLoop(commonMemory_S& memory, std::atomic<bool>& isRunning)
 
     constexpr mab::canId_t MAX_VALID_ID = 0x7FF;
 
+    int timeoutCounter = 0;
+
     while (isRunning)
     {
         bool testStarted             = memory.testStarted.load();
@@ -1258,187 +1320,212 @@ void candleLoop(commonMemory_S& memory, std::atomic<bool>& isRunning)
         currentMode = memory.currentMode;
         chosenID    = memory.chosenID;
 
-        for (mab::canId_t& id : memory.mdIDs)
+        if (candle == nullptr)
         {
-            if (id == chosenID)
+            auto busType =
+                std::make_unique<mab::USB>(mab::Candle::CANDLE_VID, mab::Candle::CANDLE_PID);
+
+            if (busType->connect() == mab::I_CommunicationInterface::Error_t::OK)
             {
-                mab::MD md(id, candle);
-                if (selectedMDid)
+                candle =
+                    mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M, std::move(busType));
+                if (candle != nullptr)
                 {
-                    md.init();
-                    downloadParameters(memory, md);
-                }
-
-                if (!testStarted && hardwareLastTestStarted)
-                {
-                    {
-                        std::lock_guard<std::mutex> lock(memory.mtx);
-                        memory.testOngoing = false;
-                    }
-                    md.disable();
-                }
-
-                if (testStarted && !hardwareLastTestStarted)
-                {
-                    testStartTime               = std::chrono::steady_clock::now();
-                    memory.updateParametersTest = true;
-                }
-                hardwareLastTestStarted = testStarted;
-
-                if (updateParametersTest)
-                {
-                    md.zero();  // ZEROING FOR SAFETY TODO
-                    if (md.setMotionMode(currentMode) != mab::MD::Error_t::OK)
-                    {
-                        std::cout << "MD mode setting failed \n";
-                    }
-
-                    switch (currentMode)
-                    {
-                        case mab::MdMode_E::IDLE:
-                            break;
-                        case mab::MdMode_E::VELOCITY_PID:
-                            memory.targetVelocity = targetVelocitySlider;
-                            memory.targetPosition = 0.0f;
-                            positionWindow        = 0.01;
-                            velocityWindow        = velocityWindowSlider;
-                            updateVelParameters(memory);
-                            md.setVelocityPIDparam(memory.Kp_vel,
-                                                   memory.Ki_vel,
-                                                   memory.Kd_vel,
-                                                   memory.integralMax_vel);
-                            break;
-                        case mab::MdMode_E::POSITION_PID:
-                            memory.targetPosition = targetPositionSlider;
-                            memory.targetVelocity = 0.0f;
-                            velocityWindow        = 0.01;
-                            positionWindow        = positionWindowSlider;
-                            updatePosParameters(memory);
-                            md.setPositionPIDparam(memory.Kp_pos,
-                                                   memory.Ki_pos,
-                                                   memory.Kd_pos,
-                                                   memory.integralMax_pos);
-                            break;
-                        case mab::MdMode_E::IMPEDANCE:
-                            memory.targetPosition = targetPositionSlider;
-                            updateImpParameters(memory);
-                            md.setImpedanceParams(memory.Kp_imp, memory.Kd_imp);
-                            break;
-                        case mab::MdMode_E::RAW_TORQUE:  // case unused
-                            break;
-                        case mab::MdMode_E::VELOCITY_PROFILE:
-                            memory.targetPosition     = targetPositionSlider;
-                            memory.targetVelocity     = targetVelocitySlider;
-                            memory.targetAcceleration = targetAccelerationSlider;
-                            memory.targetDeceleration = targetDecelerationSlider;
-                            positionWindow            = 0.01;
-                            velocityWindow            = velocityWindowSlider;
-                            updateVelParameters(memory);
-                            updatePosParameters(memory);
-                            md.setVelocityPIDparam(memory.Kp_vel,
-                                                   memory.Ki_vel,
-                                                   memory.Kd_vel,
-                                                   memory.integralMax_vel);
-                            md.setPositionPIDparam(memory.Kp_pos,
-                                                   memory.Ki_pos,
-                                                   memory.Kd_pos,
-                                                   memory.integralMax_pos);
-                            break;
-                        case mab::MdMode_E::POSITION_PROFILE:
-                            memory.targetPosition     = targetPositionSlider;
-                            memory.targetVelocity     = targetVelocitySlider;
-                            memory.targetAcceleration = targetAccelerationSlider;
-                            memory.targetDeceleration = targetDecelerationSlider;
-                            velocityWindow            = 0.01;
-                            positionWindow            = positionWindowSlider;
-                            updateVelParameters(memory);
-                            updatePosParameters(memory);
-                            md.setVelocityPIDparam(memory.Kp_vel,
-                                                   memory.Ki_vel,
-                                                   memory.Kd_vel,
-                                                   memory.integralMax_vel);
-                            md.setPositionPIDparam(memory.Kp_pos,
-                                                   memory.Ki_pos,
-                                                   memory.Kd_pos,
-                                                   memory.integralMax_pos);
-                            break;
-                        default:
-                            break;
-                    }
-
-                    md.enable();
-                    memory.updateParametersTest = false;
-                }
-
-                if ((testStarted && currentMode != mab::MdMode_E::IDLE))
-                {
-                    {
-                        std::lock_guard<std::mutex> lock(memory.mtx);
-                        memory.testOngoing = true;
-                    }
-
-                    std::chrono::time_point<std::chrono::steady_clock> now =
-                        std::chrono::steady_clock::now();
-                    std::chrono::duration<float> elapsed         = now - testStartTime;
-                    float                        realTimeSeconds = elapsed.count();
-
-                    testMD(memory, md);
-
-                    md.readRegisters(md.m_mdRegisters.velocity,
-                                     md.m_mdRegisters.position,
-                                     md.m_mdRegisters.torque);
-
-                    float vel = float(md.m_mdRegisters.velocity.value);
-                    float pos = float(md.m_mdRegisters.position.value);
-                    float trq = float(md.m_mdRegisters.torque.value);
-
-                    uint32_t head = memory.plotWriteData.load(std::memory_order_relaxed);
-
-                    memory.plotBuffer[head % commonMemory_S::PLOT_BUFFER_SIZE] = {
-                        realTimeSeconds,
-                        vel,
-                        pos,
-                        trq,
-                        memory.targetVelocity,
-                        memory.targetPosition,
-                        memory.targetTorque};
-
-                    memory.plotWriteData.store(head + 1, std::memory_order_release);
+                    memory.candleAvailable = true;
                 }
             }
         }
 
-        if (buttonDiscoverMdPressed)
+        if (candle != nullptr)
         {
-            discoverOngoing = true;
+            mab::candleTypes::Error_t errMsg = candle->legacyCheckConnection();
+
+            if (errMsg == mab::candleTypes::Error_t::RESPONSE_TIMEOUT ||
+                errMsg == mab::candleTypes::Error_t::RECEIVER_ERROR)
             {
+                timeoutCounter += 1;
+            }
+
+            if ((errMsg != mab::candleTypes::Error_t::OK &&
+                 errMsg != mab::candleTypes::Error_t::RESPONSE_TIMEOUT &&
+                 errMsg != mab::candleTypes::Error_t::RECEIVER_ERROR) ||
+                timeoutCounter > 5)
+            {
+                std::cout << "Error: " << errorToString(errMsg) << std::endl;
                 std::lock_guard<std::mutex> lock(memory.mtx);
-                memory.mdIDs.clear();
+                memory.testStarted     = false;
+                memory.testOngoing     = false;
+                memory.candleAvailable = false;
+
+                mab::detachCandle(candle);
+                candle = nullptr;
             }
-        }
+            else
+                timeoutCounter = 0;
 
-        if (selectedMD)
-        {
-            min = 0;
-            max = 100;
-        }
+            mab::MD md(chosenID, candle);
 
-        if (discoverOngoing)
-        {
-            for (const mab::canId_t& id : mab::MD::discoverRangedMDs(candle, min, max))
+            if (selectedMDid)
             {
-                memory.mdIDs.push_back(id);
+                md.init();
+                downloadParameters(memory, md);
             }
-            min += 100;
-            max += 100;
-            if (max > MAX_VALID_ID)
+
+            if (!testStarted && hardwareLastTestStarted)
             {
-                discoverOngoing = false;
-                min             = 0;
-                max             = 100;
+                {
+                    std::lock_guard<std::mutex> lock(memory.mtx);
+                    memory.testOngoing = false;
+                }
+                md.disable();
+            }
+
+            if (testStarted && !hardwareLastTestStarted)
+            {
+                testStartTime               = std::chrono::steady_clock::now();
+                memory.updateParametersTest = true;
+            }
+            hardwareLastTestStarted = testStarted;
+
+            if (updateParametersTest)
+            {
+                md.zero();  // ZEROING FOR SAFETY TODO
+                if (md.setMotionMode(currentMode) != mab::MD::Error_t::OK)
+                {
+                    std::cout << "MD mode setting failed \n";
+                }
+
+                switch (currentMode)
+                {
+                    case mab::MdMode_E::IDLE:
+                        break;
+                    case mab::MdMode_E::VELOCITY_PID:
+                        memory.targetVelocity = targetVelocitySlider;
+                        memory.targetPosition = 0.0f;
+                        positionWindow        = 0.01;
+                        velocityWindow        = velocityWindowSlider;
+                        updateVelParameters(memory);
+                        md.setVelocityPIDparam(
+                            memory.Kp_vel, memory.Ki_vel, memory.Kd_vel, memory.integralMax_vel);
+                        break;
+                    case mab::MdMode_E::POSITION_PID:
+                        memory.targetPosition = targetPositionSlider;
+                        memory.targetVelocity = 0.0f;
+                        velocityWindow        = 0.01;
+                        positionWindow        = positionWindowSlider;
+                        updatePosParameters(memory);
+                        md.setPositionPIDparam(
+                            memory.Kp_pos, memory.Ki_pos, memory.Kd_pos, memory.integralMax_pos);
+                        break;
+                    case mab::MdMode_E::IMPEDANCE:
+                        memory.targetPosition = targetPositionSlider;
+                        updateImpParameters(memory);
+                        md.setImpedanceParams(memory.Kp_imp, memory.Kd_imp);
+                        break;
+                    case mab::MdMode_E::RAW_TORQUE:  // case unused
+                        break;
+                    case mab::MdMode_E::VELOCITY_PROFILE:
+                        memory.targetPosition     = targetPositionSlider;
+                        memory.targetVelocity     = targetVelocitySlider;
+                        memory.targetAcceleration = targetAccelerationSlider;
+                        memory.targetDeceleration = targetDecelerationSlider;
+                        positionWindow            = 0.01;
+                        velocityWindow            = velocityWindowSlider;
+                        updateVelParameters(memory);
+                        updatePosParameters(memory);
+                        md.setVelocityPIDparam(
+                            memory.Kp_vel, memory.Ki_vel, memory.Kd_vel, memory.integralMax_vel);
+                        md.setPositionPIDparam(
+                            memory.Kp_pos, memory.Ki_pos, memory.Kd_pos, memory.integralMax_pos);
+                        break;
+                    case mab::MdMode_E::POSITION_PROFILE:
+                        memory.targetPosition     = targetPositionSlider;
+                        memory.targetVelocity     = targetVelocitySlider;
+                        memory.targetAcceleration = targetAccelerationSlider;
+                        memory.targetDeceleration = targetDecelerationSlider;
+                        velocityWindow            = 0.01;
+                        positionWindow            = positionWindowSlider;
+                        updateVelParameters(memory);
+                        updatePosParameters(memory);
+                        md.setVelocityPIDparam(
+                            memory.Kp_vel, memory.Ki_vel, memory.Kd_vel, memory.integralMax_vel);
+                        md.setPositionPIDparam(
+                            memory.Kp_pos, memory.Ki_pos, memory.Kd_pos, memory.integralMax_pos);
+                        break;
+                    default:
+                        break;
+                }
+
+                md.enable();
+                memory.updateParametersTest = false;
+            }
+
+            if ((testStarted && currentMode != mab::MdMode_E::IDLE))
+            {
+                {
+                    std::lock_guard<std::mutex> lock(memory.mtx);
+                    memory.testOngoing = true;
+                }
+
+                std::chrono::time_point<std::chrono::steady_clock> now =
+                    std::chrono::steady_clock::now();
+                std::chrono::duration<float> elapsed         = now - testStartTime;
+                float                        realTimeSeconds = elapsed.count();
+
+                testMD(memory, md);
+
+                md.readRegisters(
+                    md.m_mdRegisters.velocity, md.m_mdRegisters.position, md.m_mdRegisters.torque);
+
+                float vel = float(md.m_mdRegisters.velocity.value);
+                float pos = float(md.m_mdRegisters.position.value);
+                float trq = float(md.m_mdRegisters.torque.value);
+
+                uint32_t writeData = memory.plotWriteData.load(std::memory_order_relaxed);
+
+                memory.plotBuffer[writeData % commonMemory_S::PLOT_BUFFER_SIZE] = {
+                    realTimeSeconds,
+                    vel,
+                    pos,
+                    trq,
+                    memory.targetVelocity,
+                    memory.targetPosition,
+                    memory.targetTorque};
+
+                memory.plotWriteData.store(writeData + 1, std::memory_order_release);
+            }
+
+            if (buttonDiscoverMdPressed)
+            {
+                discoverOngoing = true;
+                {
+                    std::lock_guard<std::mutex> lock(memory.mtx);
+                    memory.mdIDs.clear();
+                }
+            }
+
+            if (selectedMD)
+            {
+                min = 0;
+                max = 100;
+            }
+
+            if (discoverOngoing)
+            {
+                for (const mab::canId_t& id : mab::MD::discoverRangedMDs(candle, min, max))
+                {
+                    memory.mdIDs.push_back(id);
+                }
+                min += 100;
+                max += 100;
+                if (max > MAX_VALID_ID)
+                {
+                    discoverOngoing = false;
+                    min             = 0;
+                    max             = 100;
+                }
             }
         }
-
         nextExecTime += dt;
 
         std::chrono::time_point<std::chrono::steady_clock> now = std::chrono::steady_clock::now();
@@ -1460,7 +1547,6 @@ void candleLoop(commonMemory_S& memory, std::atomic<bool>& isRunning)
         else
             nextExecTime = std::chrono::steady_clock::now();
     }
-    mab::detachCandle(candle);
 }
 
 // Main code
@@ -1550,11 +1636,28 @@ int main(int, char**)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        drawMenuTopBar(m_common, io);
-        drawMenuLowerBar(m_common, io);
-        drawTestMenuBar(m_common, io);
-        drawLeftMenuBar(m_common, io);
-        drawMainMenu(m_common, io, guiBuffers);
+        if (m_common.candleAvailable)
+        {
+            drawMenuTopBar(m_common, io);
+            drawMenuLowerBar(m_common, io);
+            drawTestMenuBar(m_common, io);
+            drawLeftMenuBar(m_common, io);
+            drawMainMenu(m_common, io, guiBuffers);
+        }
+        else
+        {
+            drawErrorMenuPopup(m_common, io);
+
+            ImGui::BeginDisabled();
+
+            drawMenuTopBar(m_common, io);
+            drawMenuLowerBar(m_common, io);
+            drawTestMenuBar(m_common, io);
+            drawLeftMenuBar(m_common, io);
+            drawMainMenu(m_common, io, guiBuffers);
+
+            ImGui::EndDisabled();
+        }
 
         // Rendering
         ImGui::Render();

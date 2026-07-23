@@ -121,6 +121,8 @@ namespace mab
 
         const CANdleDatarate_E m_canDatarate;
 
+        candleTypes::Error_t legacyCheckConnection();
+
       private:
         static constexpr std::chrono::milliseconds DEFAULT_CONFIGURATION_TIMEOUT =
             std::chrono::milliseconds(5);
@@ -148,7 +150,6 @@ namespace mab
 
         // TODO: this method is temporary and must be changed, must have some way for bus to check
         // functional connection
-        candleTypes::Error_t legacyCheckConnection();
 
         static constexpr std::array<u8, 2> resetCommandFrame()
         {
@@ -185,7 +186,9 @@ namespace mab
             {
                 ss << " 0x" << std::hex << std::setfill('0') << std::setw(2) << (int)byte << " ";
                 if (++byteCount % 8 == 0 && byteCount < frame.size())
-                    ss << std::endl << std::setfill('0') << std::setw(2) << std::dec << byteCount - 1 << " - " << byteCount - 1 + 8 << ": ";
+                    ss << std::endl
+                       << std::setfill('0') << std::setw(2) << std::dec << byteCount - 1 << " - "
+                       << byteCount - 1 + 8 << ": ";
             }
             m_log.debug(ss.str().c_str());
         }
@@ -210,6 +213,7 @@ namespace mab
         if (candle == nullptr || candle->init() != candleTypes::Error_t::OK)
         {
             log.error("Could not initialize CANdle device!");
+            delete candle;
             return {};
         }
         return candle;

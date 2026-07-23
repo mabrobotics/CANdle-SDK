@@ -106,6 +106,7 @@ struct commonMemory_S
     std::atomic<bool> updateParametersTest{false};
     std::atomic<bool> selectedMDid{false};
     std::atomic<bool> testOngoing{false};
+    std::atomic<bool> candleAvailable{false};
 
     // Plots
     static const uint32_t PLOT_BUFFER_SIZE = 100000;
@@ -187,6 +188,7 @@ static void drawMenuLowerBar(commonMemory_S& memory, ImGuiIO& io);
 static void drawMainMenu(commonMemory_S& memory, ImGuiIO& io, guiBuffers_S& buffers);
 static void drawLeftMenuBar(commonMemory_S& memory, ImGuiIO& io);
 static void drawTestMenuBar(commonMemory_S& memory, ImGuiIO& io);
+static void drawErrorMenuPopup(commonMemory_S& memory, ImGuiIO& io);
 
 static void timeInTarget(bool&           inWindow,
                          float&          timeInTargetWindow,
@@ -219,6 +221,7 @@ static void buttonStyle();
 static void endComboStyle();
 static void endButtonStyle();
 static void centerText(const char* text);
+const char* errorToString(mab::candleTypes::Error_t error);
 const char* getModeName(mab::MdMode_E mode);
 static bool drawBigInputFloat(const char* label,
                               float*      v,
