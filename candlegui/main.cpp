@@ -1353,9 +1353,14 @@ void candleLoop(commonMemory_S& memory, std::atomic<bool>& isRunning)
             {
                 std::cout << "Error: " << errorToString(errMsg) << std::endl;
                 std::lock_guard<std::mutex> lock(memory.mtx);
-                memory.testStarted     = false;
-                memory.testOngoing     = false;
-                memory.candleAvailable = false;
+                memory.testStarted      = false;
+                memory.testOngoing      = false;
+                memory.candleAvailable  = false;
+                buttonDiscoverMdPressed = false;
+                discoverOngoing         = false;
+
+                min = 0;
+                max = 100;
 
                 mab::detachCandle(candle);
                 candle = nullptr;
