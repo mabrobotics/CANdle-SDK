@@ -26,15 +26,16 @@ namespace mab
     class LibusbDevice
     {
         libusb_device*            m_dev;
-        libusb_device_handle*     m_devHandle;
+        libusb_device_handle*     m_devHandle = nullptr;
         libusb_device_descriptor  m_desc;
-        Logger                    m_log = Logger(Logger::ProgramLayer_E::BOTTOM, "USB_DEV");
-        libusb_config_descriptor* m_config;
+        Logger                    m_log    = Logger(Logger::ProgramLayer_E::BOTTOM, "USB_DEV");
+        libusb_config_descriptor* m_config = nullptr;
 
         s32        m_inEndpointAddress, m_outEndpointAddress;
         const bool m_peek;
 
         bool m_connected = false;
+        bool m_isValid   = true;
 
         std::array<u8, 512> m_rxBuffer = {0};
 
@@ -57,6 +58,10 @@ namespace mab
         {
             return m_connected;
         }
+        bool isValid() const
+        {
+            return m_isValid;
+        }
 
         std::string getSerialNo();
     };
@@ -64,7 +69,7 @@ namespace mab
     // TODO: those should be args
     static constexpr int IN_ENDPOINT  = 0x81;  ///< CANdle USB input endpoint address.
     static constexpr int OUT_ENDPOINT = 0x01;  ///< CANdle USB output endpoint address.
-    class USB            final : public I_CommunicationInterface
+    class USB final : public I_CommunicationInterface
     {
       private:
         Logger m_Log = Logger(Logger::ProgramLayer_E::BOTTOM, "USB");

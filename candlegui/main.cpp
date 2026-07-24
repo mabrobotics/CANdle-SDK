@@ -82,9 +82,28 @@ static void drawMainMenu(commonMemory_S& memory, ImGuiIO& io, guiBuffers_S& buff
 
     if (ImGui::Begin("Main menu", nullptr, flagsBackMenu))
     {
-        if (systemON)
+        mab::MdMode_E currentModeLocal = memory.currentMode;
+        updatePlotData(memory, buffers, io);
+
+        if (currentModeLocal == mab::MdMode_E::VELOCITY_PID ||
+            currentModeLocal == mab::MdMode_E::VELOCITY_PROFILE)
         {
-            updatePlotData(memory, buffers, io);
+            drawVelocityPlot(memory, buffers);
+            drawPositionPlot(memory, buffers);
+            ImGui::SameLine();
+            drawTorquePlot(memory, buffers);
+        }
+        else if (currentModeLocal == mab::MdMode_E::POSITION_PID ||
+                 currentModeLocal == mab::MdMode_E::POSITION_PROFILE ||
+                 currentModeLocal == mab::MdMode_E::IMPEDANCE)
+        {
+            drawPositionPlot(memory, buffers);
+            drawVelocityPlot(memory, buffers);
+            ImGui::SameLine();
+            drawTorquePlot(memory, buffers);
+        }
+        else
+        {
             drawVelocityPlot(memory, buffers);
             drawPositionPlot(memory, buffers);
             drawTorquePlot(memory, buffers);
@@ -325,10 +344,30 @@ static void drawVelocityPlot(commonMemory_S& memory, guiBuffers_S& buffers)
     ImPlotSpec spec;
     spec.Offset = buffers.offset;
 
+    ImVec2 windowSize;
+
     bool testStarted = memory.testStarted;
 
+    mab::MdMode_E currentModeLocal = memory.currentMode;
+
+    if (currentModeLocal == mab::MdMode_E::VELOCITY_PID ||
+        currentModeLocal == mab::MdMode_E::VELOCITY_PROFILE)
+    {
+        windowSize = ImVec2(-1, ImGui::GetContentRegionAvail().y / 2);
+    }
+    else if (currentModeLocal == mab::MdMode_E::POSITION_PID ||
+             currentModeLocal == mab::MdMode_E::POSITION_PROFILE ||
+             currentModeLocal == mab::MdMode_E::IMPEDANCE)
+    {
+        windowSize = ImVec2(ImGui::GetContentRegionAvail().x / 2, ImGui::GetContentRegionAvail().y);
+    }
+    else
+    {
+        windowSize = ImVec2(-1, ImGui::GetContentRegionAvail().y / 3);
+    }
+
     ImPlot::PushStyleColor(ImPlotCol_FrameBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-    if (ImPlot::BeginPlot("##VelocityPlot", ImVec2(-1, ImGui::GetContentRegionAvail().y / 3)))
+    if (ImPlot::BeginPlot("##VelocityPlot", windowSize))
     {
         ImPlotCond plotCondition = testStarted ? ImPlotCond_Always : ImPlotCond_Once;
         ImPlot::SetupLegend(ImPlotLocation_NorthEast, ImPlotLegendFlags_None);
@@ -338,6 +377,7 @@ static void drawVelocityPlot(commonMemory_S& memory, guiBuffers_S& buffers)
 
         float oldestTime = buffers.time[buffers.offset];
 
+        ImPlot::SetupAxis(ImAxis_X1, "Time [s]");
         ImPlot::SetupAxisLimits(ImAxis_X1, oldestTime, currentTime, plotCondition);
 
         float bottomY =
@@ -355,6 +395,7 @@ static void drawVelocityPlot(commonMemory_S& memory, guiBuffers_S& buffers)
             bottomY = -marginPlot;
         }
 
+        ImPlot::SetupAxis(ImAxis_Y1, "Velocity [rad/s]");
         ImPlot::SetupAxisLimits(ImAxis_Y1, bottomY, topY, plotCondition);
 
         ImPlot::PlotLine("Velocity(t)", buffers.time, buffers.vel, guiBuffers_S::SIZE, spec);
@@ -376,8 +417,28 @@ static void drawPositionPlot(commonMemory_S& memory, guiBuffers_S& buffers)
     spec.Offset      = buffers.offset;
     bool testStarted = memory.testStarted;
 
+    ImVec2 windowSize;
+
+    mab::MdMode_E currentModeLocal = memory.currentMode;
+
+    if (currentModeLocal == mab::MdMode_E::VELOCITY_PID ||
+        currentModeLocal == mab::MdMode_E::VELOCITY_PROFILE)
+    {
+        windowSize = ImVec2(ImGui::GetContentRegionAvail().x / 2, ImGui::GetContentRegionAvail().y);
+    }
+    else if (currentModeLocal == mab::MdMode_E::POSITION_PID ||
+             currentModeLocal == mab::MdMode_E::POSITION_PROFILE ||
+             currentModeLocal == mab::MdMode_E::IMPEDANCE)
+    {
+        windowSize = ImVec2(-1, ImGui::GetContentRegionAvail().y / 2);
+    }
+    else
+    {
+        windowSize = ImVec2(-1, ImGui::GetContentRegionAvail().y / 2);
+    }
+
     ImPlot::PushStyleColor(ImPlotCol_FrameBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-    if (ImPlot::BeginPlot("##PositionPlot", ImVec2(-1, ImGui::GetContentRegionAvail().y / 2)))
+    if (ImPlot::BeginPlot("##PositionPlot", windowSize))
     {
         ImPlotCond plotCondition = testStarted ? ImPlotCond_Always : ImPlotCond_Once;
         ImPlot::SetupLegend(ImPlotLocation_NorthEast, ImPlotLegendFlags_None);
@@ -387,6 +448,7 @@ static void drawPositionPlot(commonMemory_S& memory, guiBuffers_S& buffers)
 
         float oldestTime = buffers.time[buffers.offset];
 
+        ImPlot::SetupAxis(ImAxis_X1, "Time [s]");
         ImPlot::SetupAxisLimits(ImAxis_X1, oldestTime, currentTime, plotCondition);
 
         float bottomY =
@@ -404,6 +466,7 @@ static void drawPositionPlot(commonMemory_S& memory, guiBuffers_S& buffers)
             bottomY = -marginPlot;
         }
 
+        ImPlot::SetupAxis(ImAxis_Y1, "Position [rad]");
         ImPlot::SetupAxisLimits(ImAxis_Y1, bottomY, topY, plotCondition);
 
         ImPlot::PlotLine("Position(t)", buffers.time, buffers.pos, guiBuffers_S::SIZE, spec);
@@ -425,8 +488,28 @@ static void drawTorquePlot(commonMemory_S& memory, guiBuffers_S& buffers)
     spec.Offset      = buffers.offset;
     bool testStarted = memory.testStarted;
 
+    ImVec2 windowSize;
+
+    mab::MdMode_E currentModeLocal = memory.currentMode;
+
+    if (currentModeLocal == mab::MdMode_E::VELOCITY_PID ||
+        currentModeLocal == mab::MdMode_E::VELOCITY_PROFILE)
+    {
+        windowSize = ImVec2(-1, -1);
+    }
+    else if (currentModeLocal == mab::MdMode_E::POSITION_PID ||
+             currentModeLocal == mab::MdMode_E::POSITION_PROFILE ||
+             currentModeLocal == mab::MdMode_E::IMPEDANCE)
+    {
+        windowSize = ImVec2(-1, -1);
+    }
+    else
+    {
+        windowSize = ImVec2(-1, -1);
+    }
+
     ImPlot::PushStyleColor(ImPlotCol_FrameBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-    if (ImPlot::BeginPlot("##TorquegPlot", ImVec2(-1, ImGui::GetContentRegionAvail().y)))
+    if (ImPlot::BeginPlot("##TorquegPlot", windowSize))
     {
         ImPlotCond plotCondition = testStarted ? ImPlotCond_Always : ImPlotCond_Once;
         ImPlot::SetupLegend(ImPlotLocation_NorthEast, ImPlotLegendFlags_None);
@@ -436,6 +519,7 @@ static void drawTorquePlot(commonMemory_S& memory, guiBuffers_S& buffers)
 
         float oldestTime = buffers.time[buffers.offset];
 
+        ImPlot::SetupAxis(ImAxis_X1, "Time [s]");
         ImPlot::SetupAxisLimits(ImAxis_X1, oldestTime, currentTime, plotCondition);
 
         float bottomY =
@@ -453,6 +537,7 @@ static void drawTorquePlot(commonMemory_S& memory, guiBuffers_S& buffers)
             bottomY = -marginPlot;
         }
 
+        ImPlot::SetupAxis(ImAxis_Y1, "Torque [Nm]");
         ImPlot::SetupAxisLimits(ImAxis_Y1, bottomY, topY, plotCondition);
 
         ImPlot::PlotLine("Torque(t)", buffers.time, buffers.trq, guiBuffers_S::SIZE, spec);
@@ -471,8 +556,13 @@ static void drawSetTargetVelocity()
 
     ImGui::SetCursorPosX(paddingButtons);
     ImGui::Text("Target Velocity");
-    if (drawBigInputFloat(
-            "##Target Velocity", &targetVelocitySlider, 1.0f, 2.0f, "%.2f", leftMenuBarWidth))
+    if (drawBigInputFloat("##Target Velocity",
+                          &targetVelocitySlider,
+                          1.0f,
+                          2.0f,
+                          "%.2f",
+                          leftMenuBarWidth,
+                          "rad/s"))
     {
         targetVelocitySlider =
             std::clamp(targetVelocitySlider, -maxVelocityClamp, maxVelocityClamp);
@@ -484,8 +574,13 @@ static void drawSetTargetPosition()
     ImGui::Spacing();
     ImGui::SetCursorPosX(paddingButtons);
     ImGui::Text("Target Position");
-    if (drawBigInputFloat(
-            "##Target Position", &targetPositionSlider, 1.0f, 2.0f, "%.2f", leftMenuBarWidth))
+    if (drawBigInputFloat("##Target Position",
+                          &targetPositionSlider,
+                          1.0f,
+                          2.0f,
+                          "%.2f",
+                          leftMenuBarWidth,
+                          "rad"))
     {
         targetPositionSlider = std::clamp(targetPositionSlider, minPositionClamp, maxPositionClamp);
     }
@@ -497,7 +592,7 @@ static void drawSetTargetTorque()
     ImGui::SetCursorPosX(paddingButtons);
     ImGui::Text("Target Torque");
     if (drawBigInputFloat(
-            "##Target Torque", &targetTorqueSlider, 1.0f, 2.0f, "%.2f", leftMenuBarWidth))
+            "##Target Torque", &targetTorqueSlider, 1.0f, 2.0f, "%.2f", leftMenuBarWidth, "Nm"))
     {
         targetTorqueSlider = std::clamp(targetTorqueSlider, -maxTorqueClamp, maxTorqueClamp);
     }
@@ -508,8 +603,13 @@ static void drawSetTargetAcceleration()
     ImGui::Spacing();
     ImGui::SetCursorPosX(paddingButtons);
     ImGui::Text("Acceleration");
-    if (drawBigInputFloat(
-            "##Acceleration", &targetAccelerationSlider, step, step_fast, "%.2f", leftMenuBarWidth))
+    if (drawBigInputFloat("##Acceleration",
+                          &targetAccelerationSlider,
+                          step,
+                          step_fast,
+                          "%.2f",
+                          leftMenuBarWidth,
+                          "rad/s^2"))
     {
         targetAccelerationSlider = std::clamp(targetAccelerationSlider, 0.0f, maxAccelerationClamp);
     }
@@ -520,8 +620,13 @@ static void drawSetTargetDeceleration()
     ImGui::Spacing();
     ImGui::SetCursorPosX(paddingButtons);
     ImGui::Text("Deceleration");
-    if (drawBigInputFloat(
-            "##Deceleration", &targetDecelerationSlider, step, step_fast, "%.2f", leftMenuBarWidth))
+    if (drawBigInputFloat("##Deceleration",
+                          &targetDecelerationSlider,
+                          step,
+                          step_fast,
+                          "%.2f",
+                          leftMenuBarWidth,
+                          "rad/s^2"))
     {
         targetDecelerationSlider = std::clamp(targetDecelerationSlider, 0.0f, maxDecelerationClamp);
     }
@@ -532,8 +637,13 @@ static void drawSetPositionWindow()
     ImGui::Spacing();
     ImGui::SetCursorPosX(paddingButtons);
     ImGui::Text("Position Window");
-    drawBigInputFloat(
-        "##Position Window", &positionWindowSlider, step, step_fast, "%.2f", leftMenuBarWidth);
+    drawBigInputFloat("##Position Window",
+                      &positionWindowSlider,
+                      step,
+                      step_fast,
+                      "%.2f",
+                      leftMenuBarWidth,
+                      "rad");
 }
 
 static void drawSetVelocityWindow()
@@ -541,8 +651,13 @@ static void drawSetVelocityWindow()
     ImGui::Spacing();
     ImGui::SetCursorPosX(paddingButtons);
     ImGui::Text("Velocity Window");
-    drawBigInputFloat(
-        "##Velocity Window", &velocityWindowSlider, step, step_fast, "%.2f", leftMenuBarWidth);
+    drawBigInputFloat("##Velocity Window",
+                      &velocityWindowSlider,
+                      step,
+                      step_fast,
+                      "%.2f",
+                      leftMenuBarWidth,
+                      "rad/s");
 }
 
 static void drawDiscoverMDButton(commonMemory_S& memory)
@@ -1077,10 +1192,22 @@ const char* getModeName(mab::MdMode_E mode)
     }
 }
 
-static bool drawBigInputFloat(
-    const char* label, float* v, float step, float step_fast, const char* format, float windowWidth)
+static bool drawBigInputFloat(const char* label,
+                              float*      v,
+                              float       step,
+                              float       step_fast,
+                              const char* format,
+                              float       windowWidth,
+                              const char* unit)
 {
     bool valueChanged = false;
+
+    std::string formatStr = format;
+    if (unit != nullptr && unit[0] != '\0')
+    {
+        formatStr += " ";
+        formatStr += unit;
+    }
 
     ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, mabColor);
@@ -1122,7 +1249,7 @@ static bool drawBigInputFloat(
     ImGui::SameLine(0, spacing);
 
     ImGui::SetNextItemWidth(inputWidth);
-    if (ImGui::InputFloat("##input", v, 0.0f, 0.0f, format, ImGuiInputTextFlags_None))
+    if (ImGui::InputFloat("##input", v, 0.0f, 0.0f, formatStr.c_str(), ImGuiInputTextFlags_None))
     {
         valueChanged = true;
     }

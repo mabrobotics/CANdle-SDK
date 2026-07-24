@@ -114,7 +114,6 @@ struct commonMemory_S
     std::atomic<uint32_t> plotWriteData{0};
 };
 
-static bool systemON        = true;
 static bool selectedMD      = false;
 static bool selectedMode    = false;
 static bool discoverOngoing = false;
@@ -228,7 +227,8 @@ static bool drawBigInputFloat(const char* label,
                               float       step,
                               float       step_fast,
                               const char* format,
-                              float       windowWidth);
+                              float       windowWidth,
+                              const char* unit = nullptr);
 static bool buttonColorInputFloat(
     const char* label, float* v, float step, float step_fast, const char* format);
 
