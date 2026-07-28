@@ -126,6 +126,9 @@
     MD_REG(mosfetTemperature, f32, 0x806, RO)        \
     MD_REG(motorTemperature, f32, 0x807, RO)         \
     MD_REG(motorShutdownTemp, u8, 0x808, RW)         \
+    MD_REG(runTorqueSensorZero, u8, 0x008E, WO)      \
+    MD_REG(torqueSensor, u8, 0x0200, RW)             \
+    MD_REG(torqueSensorData, f32, 0x0201, RO)        \
                                                      \
     MD_REG(mainEncoderStatus, u32, 0x809, RO)        \
     MD_REG(auxEncoderStatus, u32, 0x80A, RO)         \
