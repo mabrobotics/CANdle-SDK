@@ -201,21 +201,29 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
 
         if (candle == nullptr)
         {
-            try
+            std::unique_ptr<mab::USB> busType =
+                std::make_unique<mab::USB>(mab::Candle::CANDLE_VID, mab::Candle::CANDLE_PID);
+
+            bool usbConnected = false;
+
+            for (int i = 0; i < 100 && isRunning; i++)
             {
-                candle = mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M,
-                                           mab::candleTypes::busTypes_t::USB);
-            }
-            catch (const std::runtime_error& e)
-            {
-                std::cout << e.what() << std::endl;
-                mab::detachCandle(candle);
-                candle = nullptr;
+                if (busType->connect() == mab::I_CommunicationInterface::Error_t::OK)
+                {
+                    usbConnected = true;
+                    break;
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
             }
 
-            if (candle != nullptr)
+            if (usbConnected)
             {
-                m_data->candleAvailable = true;
+                candle =
+                    mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M, std::move(busType));
+                if (candle != nullptr)
+                {
+                    m_data->candleAvailable = true;
+                }
             }
         }
 
