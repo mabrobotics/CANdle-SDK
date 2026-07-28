@@ -186,7 +186,6 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
         std::chrono::steady_clock::now();
     static bool hardwareLastTestStarted = false;
 
-    constexpr mab::canId_t MAX_VALID_ID = 0x7FF;
     while (isRunning)
     {
         bool testStarted             = m_data->testStarted.load();
@@ -202,17 +201,21 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
 
         if (candle == nullptr)
         {
-            auto busType =
-                std::make_unique<mab::USB>(mab::Candle::CANDLE_VID, mab::Candle::CANDLE_PID);
-
-            if (busType->connect() == mab::I_CommunicationInterface::Error_t::OK)
+            try
             {
-                candle =
-                    mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M, std::move(busType));
-                if (candle != nullptr)
-                {
-                    m_data->candleAvailable = true;
-                }
+                candle = mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M,
+                                           mab::candleTypes::busTypes_t::USB);
+            }
+            catch (const std::runtime_error& e)
+            {
+                std::cout << e.what() << std::endl;
+                mab::detachCandle(candle);
+                candle = nullptr;
+            }
+
+            if (candle != nullptr)
+            {
+                m_data->candleAvailable = true;
             }
         }
 
