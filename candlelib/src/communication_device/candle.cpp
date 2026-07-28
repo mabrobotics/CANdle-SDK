@@ -219,14 +219,11 @@ namespace mab
                 case I_CommunicationInterface::DATA_TOO_LONG:
                     return candleTypes::Error_t::DATA_TOO_LONG;
                     break;
-                case I_CommunicationInterface::DISCONNECTED:
-                    return candleTypes::Error_t::DEVICE_NOT_CONNECTED;
-                    break;
                 case I_CommunicationInterface::INITIALIZATION_ERROR:
                     return candleTypes::Error_t::INITIALIZATION_ERROR;
                     break;
                 case I_CommunicationInterface::NOT_CONNECTED:
-                    return candleTypes::Error_t::UNINITIALIZED;
+                    return candleTypes::Error_t::DEVICE_NOT_CONNECTED;
                     break;
                 case I_CommunicationInterface::OK:
                     return candleTypes::Error_t::OK;

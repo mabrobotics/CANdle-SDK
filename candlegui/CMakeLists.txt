@@ -8,7 +8,7 @@ find_package(OpenGL REQUIRED)
 
 add_subdirectory(lib)
 
-add_executable(mdgui main.cpp) 
+add_executable(mdgui ../candlegui/src/main.cpp ../candlegui/src/GUI.cpp ../candlegui/src/HardwareCandle.cpp) 
 
 set(COMMON_INCLUDES
     ../candlelib/include

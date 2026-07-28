@@ -26,16 +26,15 @@ namespace mab
     class LibusbDevice
     {
         libusb_device*            m_dev;
-        libusb_device_handle*     m_devHandle = nullptr;
+        libusb_device_handle*     m_devHandle;
         libusb_device_descriptor  m_desc;
-        Logger                    m_log    = Logger(Logger::ProgramLayer_E::BOTTOM, "USB_DEV");
-        libusb_config_descriptor* m_config = nullptr;
+        Logger                    m_log = Logger(Logger::ProgramLayer_E::BOTTOM, "USB_DEV");
+        libusb_config_descriptor* m_config;
 
         s32        m_inEndpointAddress, m_outEndpointAddress;
         const bool m_peek;
 
         bool m_connected = false;
-        bool m_isValid   = true;
 
         std::array<u8, 512> m_rxBuffer = {0};
 
@@ -57,10 +56,6 @@ namespace mab
         bool isConnected() const
         {
             return m_connected;
-        }
-        bool isValid() const
-        {
-            return m_isValid;
         }
 
         std::string getSerialNo();

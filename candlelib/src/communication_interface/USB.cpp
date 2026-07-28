@@ -83,16 +83,17 @@ namespace mab
         m_log.debug("Connected device has %d interfaces", m_config->bNumInterfaces);
 
         m_log.debug("Opening communication...");
-
         libusb_error usbOpenError = static_cast<libusb_error>(libusb_open(m_dev, &m_devHandle));
-        if (usbOpenError || m_devHandle == nullptr)
+        if (usbOpenError)
         {
             std::string message;
             message = translateLibusbError(usbOpenError);
             message.insert(0, "On open: ");
             m_log.error(message.c_str());
-            m_isValid = false;
-            return;
+        }
+        if (m_devHandle == nullptr)
+        {
+            m_log.error("Did not receive a handle from libusb device!");
         }
         if (peek)
             return;
@@ -124,37 +125,25 @@ namespace mab
     LibusbDevice::~LibusbDevice()
     {
         // if device was only used in discovery no interfaces are claimed
-        if (m_devHandle != nullptr)
+        if (!m_peek)
         {
-            if (!m_peek && m_connected && m_config != nullptr)
+            for (u32 interfaceNo = 1; interfaceNo < m_config->bNumInterfaces; interfaceNo++)
             {
-                for (u32 interfaceNo = 1; interfaceNo < m_config->bNumInterfaces; interfaceNo++)
+                libusb_error usbReleaseError =
+                    static_cast<libusb_error>(libusb_release_interface(m_devHandle, interfaceNo));
+                if (usbReleaseError)
                 {
-                    libusb_error usbReleaseError = static_cast<libusb_error>(
-                        libusb_release_interface(m_devHandle, interfaceNo));
-                    if (usbReleaseError)
-                    {
-                        std::string message;
-                        message = translateLibusbError(usbReleaseError);
-                        m_log.error(message.c_str());
-                    }
-
-                    if (!libusb_kernel_driver_active(m_devHandle, 0))
-                        libusb_attach_kernel_driver(m_devHandle, 0);
+                    std::string message;
+                    message = translateLibusbError(usbReleaseError);
+                    m_log.error(message.c_str());
                 }
+                if (!libusb_kernel_driver_active(m_devHandle, 0))
+                    libusb_attach_kernel_driver(m_devHandle, 0);
             }
-
-            libusb_close(m_devHandle);
-
-            m_log.info(
-                "Disconnected USB device: vid - %d, pid - %d", m_desc.idVendor, m_desc.idProduct);
         }
-
-        if (m_config != nullptr)
-        {
-            libusb_free_config_descriptor(m_config);
-            m_config = nullptr;
-        }
+        libusb_close(m_devHandle);
+        m_log.info(
+            "Disconnected USB device: vid - %d, pid - %d", m_desc.idVendor, m_desc.idProduct);
     }
 
     libusb_error LibusbDevice::transmit(u8* data, const size_t length, const u32 timeout)
@@ -277,11 +266,6 @@ namespace mab
                 m_Log.debug("Found the right device!");
                 m_libusbDevice =
                     std::make_unique<LibusbDevice>(checkedDevice, IN_ENDPOINT, OUT_ENDPOINT, true);
-                if (!m_libusbDevice->isValid())
-                {
-                    m_libusbDevice = nullptr;
-                    continue;
-                }
                 std::string serialNo = m_libusbDevice->getSerialNo();
                 m_Log.info("Device with serial %s found", serialNo.c_str());
 
@@ -367,12 +351,6 @@ namespace mab
         {
             std::string err = translateLibusbError(transmitError);
             m_Log.error(err.c_str());
-
-            if (transmitError == libusb_error::LIBUSB_ERROR_TIMEOUT)
-            {
-                return std::pair(data, Error_t::TIMEOUT);
-            }
-
             if (transmitError == libusb_error::LIBUSB_ERROR_PIPE)  // pipe clogged and needs a reset
             {
                 m_libusbDevice->unclogInput();

@@ -213,7 +213,6 @@ namespace mab
         if (candle == nullptr || candle->init() != candleTypes::Error_t::OK)
         {
             log.error("Could not initialize CANdle device!");
-            delete candle;
             return {};
         }
         return candle;

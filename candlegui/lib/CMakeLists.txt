@@ -2,14 +2,12 @@ cmake_minimum_required(VERSION 3.15...3.25)
 
 add_library(mabGUI STATIC
     imgui.cpp
-    imgui_demo.cpp
     imgui_draw.cpp
     imgui_tables.cpp
     imgui_widgets.cpp
     imgui_impl_glfw.cpp
     imgui_impl_opengl3.cpp
     implot.cpp
-    implot_demo.cpp
     implot_items.cpp
 )
 
