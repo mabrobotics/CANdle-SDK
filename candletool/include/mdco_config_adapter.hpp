@@ -189,10 +189,15 @@ namespace mab
         {
             switch (idx)
             {
+                case 0x6076:
+                    ss << " [mN] " << fromMili(objSecond.getAsString()) << " [N]";
+                    break;
+                case 0x6075:
+                    ss << " [mA] " << fromMili(objSecond.getAsString()) << " [A]";
+                    break;
                 case 0x607d:  // min/max position
                     if (subIdx > 0)
-                        ss << " [Encoder Ticks] "
-                           << mab::MDCOConfigAdapter::fromEncTick(objSecond.getAsString())
+                        ss << " [Encoder Ticks] " << fromEncTick(objSecond.getAsString())
                            << " [rad]";
                     break;
                 case 0x6080:  // max motor speed
