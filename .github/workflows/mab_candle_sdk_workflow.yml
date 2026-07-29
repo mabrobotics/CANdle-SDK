@@ -148,7 +148,7 @@ jobs:
       - name: Install OpenGl
         run: | 
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev xorg-dev
+          sudo apt-get install -y pkg-config libgl1-mesa-dev xorg-dev libglfw3-dev
 
       - name: CMake configure
         run: |
@@ -183,7 +183,7 @@ jobs:
       - name: Install OpenGl
         run: | 
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev xorg-dev    
+          sudo apt-get install -y pkg-config libgl1-mesa-dev xorg-dev libglfw3-dev  
 
       - name: CMake configure
         run: |
@@ -217,7 +217,7 @@ jobs:
       - name: Install OpenGl
         run: | 
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev xorg-dev
+          sudo apt-get install -y pkg-config libgl1-mesa-dev xorg-dev libglfw3-dev
 
       - name: CMake configure
         run: |
@@ -252,7 +252,7 @@ jobs:
       - name: Install OpenGl
         run: | 
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev xorg-dev
+          sudo apt-get install -y pkg-config libgl1-mesa-dev xorg-dev libglfw3-dev
 
       - name: CMake configure
         run: |
@@ -286,7 +286,7 @@ jobs:
       - name: Install OpenGl
         run: | 
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev xorg-dev
+          sudo apt-get install -y pkg-config libgl1-mesa-dev xorg-dev libglfw3-dev
 
       - name: CMake configure
         run: |
@@ -321,7 +321,7 @@ jobs:
       - name: Install OpenGl
         run: | 
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev xorg-dev
+          sudo apt-get install -y pkg-config libgl1-mesa-dev xorg-dev libglfw3-dev
 
       - name: CMake configure
         run: |
@@ -383,7 +383,7 @@ jobs:
       - name: Install OpenGl
         run: | 
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev xorg-dev
+          sudo apt-get install -y pkg-config libgl1-mesa-dev xorg-dev libglfw3-dev
 
       - name: CMake configure
         run: |
