@@ -22,12 +22,11 @@ namespace mab
             MDConfigMap& config, std::shared_ptr<EDSObjectDictionary> od);
         void configFromOd(std::shared_ptr<EDSObjectDictionary> od, MDConfigMap& config);
 
-        static inline u32                                    CPR = 0;
-        static inline bool                                   positionOverflow;
-        static inline u8                                     mode = 0;
-        static inline mab::MDAuxEncoderValue_S::EncoderTypes type =
-            mab::MDAuxEncoderValue_S::EncoderTypes::NONE;
-        void setCPR(mab::MDAuxEncoderValue_S::EncoderTypes _type, u32 _mode)
+        static inline u32  CPR = 0;
+        static inline bool positionOverflow;
+        static inline u8   mode = 0;
+        static inline u8   type = 0;
+        void               setCPR(mab::MDAuxEncoderValue_S::EncoderTypes _type, u32 _mode)
         {
             auto& modeMap = mab::MDAuxEncoderModeValue_S::fromNumericMap;
             if (modeMap.at(_mode) == "MAIN")
@@ -184,6 +183,12 @@ namespace mab
         {
             return (_id == 0x114 || _id == 0x115) ? true : false;
         }
+        u8 stringToU8(std::string_view str)
+        {
+            u8 result;
+            std::from_chars(str.begin(), str.end(), result);
+            return result;
+        }
         void unitConversionPrint(std::stringstream&          ss,
                                  u16                         idx,
                                  mab::EDSEntry&              objSecond,
@@ -195,10 +200,8 @@ namespace mab
                               // map
                     if (subIdx == 0x1)
                     {
-                        u8               tmpType = 0;
-                        std::string_view type_s  = objSecond.getAsString();
-                        std::from_chars(type_s.begin(), type_s.end(), tmpType);
-                        this->type = static_cast<mab::MDAuxEncoderValue_S::EncoderTypes>(tmpType);
+                        std::string_view type_s = objSecond.getAsString();
+                        std::from_chars(type_s.begin(), type_s.end(), this->type);
                     }
                     if (subIdx == 0x3)
                     {
@@ -213,9 +216,12 @@ namespace mab
                     ss << " [mA], " << fromMili(objSecond.getAsString()) << " [A]";
                     break;
                 case 0x607d:  // min/max position
-                    if (subIdx > 0)
-                        setCPR(this->type, this->mode);
-                    ss << " [Encoder Ticks] " << fromEncTick(objSecond.getAsString()) << " [rad]";
+                    if (subIdx == 1 || subIdx == 2)
+                    {
+                        setCPR((mab::MDAuxEncoderValue_S::EncoderTypes)this->type, this->mode);
+                        ss << " [Encoder Ticks] " << fromEncTick(objSecond.getAsString())
+                           << " [rad]";
+                    }
                     break;
                 case 0x6080:  // max motor speed
                 case 0x6081:  // profile velocity
@@ -231,6 +237,14 @@ namespace mab
                     break;
             }
         }
+        void setCPRValues(MDConfigMap& config)
+        {
+            std::string_view typeStr = config.getValueByAddress(0x25);
+            std::string_view modeStr = config.getValueByAddress(0x020);
+            mode                     = stringToU8(modeStr);
+            type                     = stringToU8(typeStr);
+            setCPR(static_cast<mab::MDAuxEncoderValue_S::EncoderTypes>(type), mode);
+        };
     };
 
 }  // namespace mab
