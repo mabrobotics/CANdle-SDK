@@ -209,7 +209,7 @@ jobs:
           sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
           sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
           apt-get update
-          apt-get install -y pkg-config libgl1-mesa-dev:arm64 libx11-dev:arm64
+          apt-get install -y pkg-config libgl1-mesa-dev:arm64 libx11-dev:arm64 libglfw3-dev:arm64
 
       - name: CMake configure
         run: |
@@ -247,7 +247,7 @@ jobs:
           sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
           sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
           apt-get update
-          apt-get install -y pkg-config libgl1-mesa-dev:arm64 libx11-dev:arm64
+          apt-get install -y pkg-config libgl1-mesa-dev:arm64 libx11-dev:arm64 libglfw3-dev:arm64
 
       - name: CMake configure
         run: |
@@ -284,7 +284,7 @@ jobs:
           sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
           sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
           apt-get update
-          apt-get install -y pkg-config libgl1-mesa-dev:armhf libx11-dev:armhf
+          apt-get install -y pkg-config libgl1-mesa-dev:armhf libx11-dev:armhf libglfw3-dev:armhf
 
       - name: CMake configure
         run: |
@@ -322,7 +322,7 @@ jobs:
           sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
           sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
           apt-get update
-          apt-get install -y pkg-config libgl1-mesa-dev:armhf libx11-dev:armhf
+          apt-get install -y pkg-config libgl1-mesa-dev:armhf libx11-dev:armhf libglfw3-dev:armhf
 
       - name: CMake configure
         run: |
