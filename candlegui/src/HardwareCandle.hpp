@@ -23,7 +23,8 @@ class HardwareCandle
     mab::canId_t min = 0;
     mab::canId_t max = 100;
 
-    const mab::canId_t MAX_VALID_ID = 0x7FF;
+    const mab::canId_t MAX_VALID_ID        = 0x7FF;
+    const int          MAX_CONNECT_RETRIES = 100;
 
     void testMD(mab::MD& md);
     void downloadParameters(mab::MD& md);

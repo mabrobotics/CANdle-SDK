@@ -206,7 +206,7 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
 
             bool usbConnected = false;
 
-            for (int i = 0; i < 100 && isRunning; i++)
+            for (int i = 0; i < MAX_CONNECT_RETRIES && isRunning; i++)
             {
                 if (busType->connect() == mab::I_CommunicationInterface::Error_t::OK)
                 {
@@ -232,17 +232,14 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
             mab::candleTypes::Error_t errMsg = candle->legacyCheckConnection();
 
             if (errMsg == mab::candleTypes::Error_t::RESPONSE_TIMEOUT ||
-                errMsg == mab::candleTypes::Error_t::RECEIVER_ERROR)
+                errMsg == mab::candleTypes::Error_t::RECEIVER_ERROR ||
+                errMsg == mab::candleTypes::Error_t::TRANSMITTER_ERROR)
             {
                 timeoutCounter += 1;
             }
 
-            if ((errMsg != mab::candleTypes::Error_t::OK &&
-                 errMsg != mab::candleTypes::Error_t::RESPONSE_TIMEOUT &&
-                 errMsg != mab::candleTypes::Error_t::RECEIVER_ERROR) ||
-                timeoutCounter > 5)
+            if (errMsg == mab::candleTypes::Error_t::DEVICE_NOT_CONNECTED || timeoutCounter > 5)
             {
-                std::cout << "Error: " << errorToString(errMsg) << std::endl;
                 std::lock_guard<std::mutex> lock(m_data->mtx);
                 m_data->testStarted     = false;
                 m_data->testOngoing     = false;
