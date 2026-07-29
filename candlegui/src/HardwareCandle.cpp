@@ -418,7 +418,7 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
 
             if (m_data->discoverOngoing)
             {
-                for (const mab::canId_t& id : mab::MD::discoverRangedMDs(candle, min, max))
+                for (const mab::canId_t& id : mab::MD::discoverMDs(candle, min, max))
                 {
                     m_data->mdIDs.push_back(id);
                 }

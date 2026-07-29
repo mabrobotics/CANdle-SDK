@@ -619,9 +619,9 @@ namespace mab
         void testLatency();
 
         static std::vector<canId_t> discoverMDs(Candle* candle);
-        static std::vector<canId_t> discoverRangedMDs(Candle* candle,
-                                                      canId_t minValueRange,
-                                                      canId_t maxValueRange);
+        static std::vector<canId_t> discoverMDs(Candle* candle,
+                                                canId_t minValueRange,
+                                                canId_t maxValueRange);
 
       private:
         Candle* const m_candle;
