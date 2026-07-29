@@ -357,12 +357,12 @@ jobs:
         with:
           submodules: "true"
 
-      - name: Install pkg-config in container
+      - name: Install dependencies for Windows cross-compilation
         run: |
-          apt-get update && apt-get install -y pkg-config
+          apt-get update && apt-get install -y pkg-config mingw-w64-x86_64-glfw3 || apt-get install -y pkg-config libglfw3-dev-mingw-w64 || apt-get install -y pkg-config
 
       - name: Build
-        run: |
+        run:
           ./launch/buildForWindows.sh
 
       - name: Store artifacts
