@@ -1,21 +1,21 @@
 FROM mabroboticsofficial/mab_build_environment:v3
 
-RUN echo "deb [arch=armhf] http://ports.ubuntu.com/ jammy main multiverse universe" | sudo tee -a /etc/apt/sources.list
-RUN echo "deb [arch=armhf] http://ports.ubuntu.com/ jammy-security main multiverse universe" | sudo tee -a /etc/apt/sources.list
-RUN echo "deb [arch=armhf] http://ports.ubuntu.com/ jammy-backports main multiverse universe" | sudo tee -a /etc/apt/sources.list
-RUN echo "deb [arch=armhf] http://ports.ubuntu.com/ jammy-updates main multiverse universe" | sudo tee -a /etc/apt/sources.list
-
-# exit 0 because update will fail due to incomplete backport repository
-RUN sudo apt update ; exit 0
-
-RUN sudo apt install -y gcc-arm-linux-gnueabihf
-RUN sudo apt install -y binutils-arm-linux-gnueabihf
-RUN sudo apt install -y g++-arm-linux-gnueabihf
-
 RUN sudo dpkg --add-architecture armhf
 
-RUN sudo apt install -y libusb-1.0-0-dev:armhf
+RUN sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list && \
+    sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
 
-RUN sudo apt install -y libgl1-mesa-dev:armhf
-RUN sudo apt install -y libx11-dev:armhf
-RUN sudo apt install -y pkg-config
+RUN echo "deb [arch=armhf] http://ports.ubuntu.com/ubuntu-ports/ jammy main multiverse universe restricted" | sudo tee -a /etc/apt/sources.list && \
+    echo "deb [arch=armhf] http://ports.ubuntu.com/ubuntu-ports/ jammy-security main multiverse universe restricted" | sudo tee -a /etc/apt/sources.list && \
+    echo "deb [arch=armhf] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main multiverse universe restricted" | sudo tee -a /etc/apt/sources.list
+
+RUN sudo apt-get update -y
+
+RUN sudo apt-get install -y \
+    gcc-arm-linux-gnueabihf \
+    binutils-arm-linux-gnueabihf \
+    g++-arm-linux-gnueabihf \
+    libusb-1.0-0-dev:armhf \
+    libgl1-mesa-dev:armhf \
+    libx11-dev:armhf \
+    pkg-config
