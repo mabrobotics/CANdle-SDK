@@ -18,11 +18,11 @@ int main(int argc, char** argv)
     auto candle = std::unique_ptr<mab::Candle>(
         attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M, mab::candleTypes::busTypes_t::USB));
 
-    for (const auto& id : mab::Pds::discoverPDS(candle.get()))
+    for (const auto& canIdAndRate : mab::Pds::discoverPDS(mab::candleTypes::busTypes_t::USB))
     {
-        log.info("Found PDS with CAN ID: %u", id);
-        pdsV.emplace_back(id, candle.get());
-        pdsV.back().init(id);
+        log.info("Found PDS with CAN ID: %u", canIdAndRate.id);
+        pdsV.emplace_back(canIdAndRate.id, candle.get());
+        pdsV.back().init(canIdAndRate.id);
     }
 
     for (const auto& id : mab::MD::discoverMDs(candle.get()))

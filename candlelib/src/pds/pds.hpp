@@ -15,6 +15,11 @@
 
 namespace mab
 {
+    struct canIdAndRate
+    {
+        canId_t          id;
+        CANdleDatarate_E datarate;
+    };
 
     /**
      * @brief Power distribution system class
@@ -102,7 +107,7 @@ namespace mab
 
         static const char* moduleTypeToString(moduleType_E type);
 
-        static const std::vector<canId_t> discoverPDS(Candle* candle);
+        static const std::vector<canIdAndRate> discoverPDS(mab::candleTypes::busTypes_t busType);
 
       private:
         /**

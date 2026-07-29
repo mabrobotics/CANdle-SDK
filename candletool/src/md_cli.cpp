@@ -201,7 +201,7 @@ namespace mab
                 m_logger.success("MD CAN parameters updated successfully!");
             });
 
-        // Calibration  ====================================================================
+        // candletool md calibration
         auto* calibration =
             mdCLi->add_subcommand("calibration", "Calibrate the MD drive.")->needs(mdCanIdOption);
 
@@ -269,7 +269,7 @@ namespace mab
                 // Perform main encoder calibration
                 f32 calibrationTime = 40;  // seconds
                 if (isVersionAtLeast(getMdFirmwareVersion(*md), 3, 0, 0))
-                    calibrationTime = 15;
+                    calibrationTime = 20;
                 if (doOnMainEncoder)
                 {
                     m_logger.info("Starting main encoder calibration...");
@@ -669,6 +669,7 @@ namespace mab
             });
 
         // Info ============================================================================
+        // candletool md info
         auto* info = mdCLi->add_subcommand("info", "Get information about the MD drive.")
                          ->needs(mdCanIdOption);
         info->callback(
@@ -692,14 +693,15 @@ namespace mab
                 };
 
                 readableRegisters.forEachRegister(readReadableRegs);
-
-                m_logger << std::fixed;
-                m_logger << "Actuator `" << readableRegisters.motorName.value << "`@" << *mdCanId
-                         << ":" << std::endl;
-
-                m_logger << "[Firmware]" << std::endl;
                 mab::version_ut firmwareVersion = {{0, 0, 0, 0}};
                 firmwareVersion.i               = readableRegisters.firmwareVersion.value;
+
+                m_logger << std::fixed;
+                m_logger << "Actuator `" << readableRegisters.motorName.value << "` at CAN ID "
+                         << *mdCanId << " (0x" << std::hex << *mdCanId << "):" << std::dec
+                         << std::endl;
+
+                m_logger << "[Firmware]" << std::endl;
                 m_logger << "- version: v" << (int)firmwareVersion.s.major << "."
                          << (int)firmwareVersion.s.minor << "." << (int)firmwareVersion.s.revision
                          << "." << firmwareVersion.s.tag << std::endl;
@@ -755,6 +757,28 @@ namespace mab
                                 .value_or("Unknown")
                          << std::endl;
 
+                bool auxAsMain = readableRegisters.auxEncoder.value != 0 &&
+                                 readableRegisters.auxEncoderMode.value ==
+                                     (u8)MDAuxEncoderModeValue_S::toNumeric("MAIN").value();
+                m_logger << "[MAIN encoder]" << std::endl;
+                if (isVersionAtLeast(firmwareVersion, 3, 0, 0))
+                {
+                    m_logger << " - main encoder: "
+                             << MDAuxEncoderValue_S::toReadable(readableRegisters.mainEncoder.value)
+                                    .value_or("UNKNOWN")
+                             << std::endl;
+                }
+                else
+                {
+                    m_logger << " - main encoder: "
+                             << (readableRegisters.mainEncoder.value == 0
+                                     ? (auxAsMain ? "Aux as MAIN" : "ONBOARD")
+                                     : MDAuxEncoderValue_S::toReadable(
+                                           readableRegisters.mainEncoder.value == 0)
+                                           .value_or("Onboard or Legacy Aux in MAIN mode"))
+                             << std::endl;
+                }
+
                 m_logger << "[AUX encoder]" << std::endl;
                 m_logger << " - auxilary encoder: "
                          << MDAuxEncoderValue_S::toReadable(readableRegisters.auxEncoder.value)
@@ -772,10 +796,15 @@ namespace mab
                                     readableRegisters.auxEncoderMode.value)
                                     .value_or("Unknown")
                              << std::endl;
-                    m_logger << " - position: " << std::setprecision(2)
-                             << readableRegisters.auxEncoderPosition.value << " rad" << std::endl;
-                    m_logger << " - velocity: " << std::setprecision(1)
-                             << readableRegisters.auxEncoderVelocity.value << " rad/s" << std::endl;
+                    if (!auxAsMain)
+                    {
+                        m_logger << " - position: " << std::setprecision(2)
+                                 << readableRegisters.auxEncoderPosition.value << " rad"
+                                 << std::endl;
+                        m_logger << " - velocity: " << std::setprecision(1)
+                                 << readableRegisters.auxEncoderVelocity.value << " rad/s"
+                                 << std::endl;
+                    }
                 }
 
                 m_logger << "[Motion]" << std::endl;
@@ -884,7 +913,7 @@ namespace mab
                         ->needs(mdCanIdOption)
                         ->require_subcommand();
 
-        // Register read
+        // candletool md register read
         auto regRead = reg->add_subcommand("read", "Read register value.");
 
         RegisterReadOption regReadOptions(regRead);
@@ -934,7 +963,7 @@ namespace mab
                     "Register %s has a value of %s", registerStr.c_str(), result.c_str());
             });
 
-        // Register write
+        // candletool md register write
         auto regWrite = reg->add_subcommand("write", "Write register value to MD");
 
         RegisterWriteOption registerWriteOption(regWrite);
@@ -1289,7 +1318,7 @@ namespace mab
                         }
 
                         md->reset();
-                        usleep(300'000);
+                        usleep(200'000);
                     }
                     else
                     {
