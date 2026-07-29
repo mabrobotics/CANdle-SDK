@@ -185,7 +185,7 @@ namespace mab
         }
         u8 stringToU8(std::string_view str)
         {
-            u8 result;
+            u8 result = 0;
             std::from_chars(str.begin(), str.end(), result);
             return result;
         }
