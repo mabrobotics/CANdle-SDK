@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(OpenGL REQUIRED)
+find_package(Threads REQUIRED)
 
 add_subdirectory(lib)
 
@@ -19,7 +20,7 @@ set(COMMON_INCLUDES
 target_include_directories(mdgui PRIVATE ${COMMON_INCLUDES})
 
 target_link_libraries(mdgui PRIVATE
-        pthread
+        Threads::Threads
         candle
         mabGUI
         OpenGL::GL
