@@ -21,7 +21,6 @@ target_include_directories(mdgui PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(mdgui PRIVATE
         pthread
         candle
-        -static-libstdc++
-        -static-libgcc
         mabGUI
+        OpenGL::GL
     )
