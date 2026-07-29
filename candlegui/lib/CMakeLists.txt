@@ -18,5 +18,6 @@ target_compile_options(mabGUI PRIVATE -Wno-error=deprecated-enum-enum-conversion
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GLFW3 REQUIRED glfw3)
 
+target_include_directories(mabGUI PRIVATE ${GLFW3_INCLUDE_DIRS})
 target_link_directories(mabGUI PRIVATE ${GLFW3_LIBRARY_DIRS})
 target_link_libraries(mabGUI PRIVATE ${GLFW3_LIBRARIES} OpenGL::GL)
