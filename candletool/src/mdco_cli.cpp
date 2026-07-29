@@ -573,9 +573,6 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             u8 type = (u8)(canopen_types::UNSIGNED8_t)(*od)[0x2005][0x1];
             odCfgAdapter.setCPR(static_cast<mab::MDAuxEncoderValue_S::EncoderTypes>(type), mode);
 
-            // auto u = (*od).getEntryByName("Profile Velocity").value().get();
-            // u.getAsString();
-            // u.getContainerMetaData().value().numberOfSubindices;
             if (mdco == nullptr)
                 m_log.error("Failed to conect to mdco!");
             for (auto& object : *od)
@@ -623,12 +620,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                         ss << "[0x" << std::hex << idx << "]" << "[0x" << subIdx << "]"
                            << subobject.second->getEntryMetaData().parameterName << " = "
                            << subobject.second->getAsString();
-                        if (idx == 0x607d && subIdx > 0)
-
-                            ss << " [Encoder Ticks] "
-                               << mab::MDCOConfigAdapter::fromEncTick(
-                                      subobject.second->getAsString())
-                               << " [rad]";
+                        odCfgAdapter.unitConversionPrint(ss, idx, *subobject.second, subIdx);
 
                         m_log.info("%s", ss.str().c_str());
                     }
@@ -642,17 +634,15 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 }
 
                 std::stringstream ss;
+
                 ss << "[0x" << std::hex << idx << "] "
                    << object.second.getEntryMetaData().parameterName << " = "
                    << object.second.getAsString();
 
-                odCfgAdapter.convertedPrintHandler(ss, idx, object.second);
+                odCfgAdapter.unitConversionPrint(ss, idx, object.second);
 
                 m_log.info("%s", ss.str().c_str());
             }
-
-            /// (void)y_chuj;
-            //(void)x_sub;
         });
 
     // Save

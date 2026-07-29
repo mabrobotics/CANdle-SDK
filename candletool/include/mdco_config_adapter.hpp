@@ -182,10 +182,19 @@ namespace mab
         {
             return (_id == 0x114 || _id == 0x115) ? true : false;
         }
-        void convertedPrintHandler(std::stringstream& ss, u16 idx, mab::EDSEntry& objSecond)
+        void unitConversionPrint(std::stringstream&          ss,
+                                 u16                         idx,
+                                 mab::EDSEntry&              objSecond,
+                                 std::optional<unsigned int> subIdx = {})
         {
             switch (idx)
             {
+                case 0x607d:  // min/max position
+                    if (subIdx > 0)
+                        ss << " [Encoder Ticks] "
+                           << mab::MDCOConfigAdapter::fromEncTick(objSecond.getAsString())
+                           << " [rad]";
+                    break;
                 case 0x6080:  // max motor speed
                 case 0x6081:  // profile velocity
                     ss << " [rpm], " << fromRPM(objSecond.getAsString()) << " [rad/s]";
@@ -200,12 +209,6 @@ namespace mab
                     break;
             }
         }
-        // template <class T_Result, class T1, class T2>
-        // bool detectOverflow(T1 a, T2 b)
-        // {
-        //     T_Result result;
-        //     return (__builtin_mul_overflow(a, b, &result)) ? true : false;
-        // }
     };
 
 }  // namespace mab
