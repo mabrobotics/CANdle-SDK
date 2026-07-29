@@ -56,7 +56,7 @@ skip = [
 ]
 linux.before-build = "yum -y install libusbx-devel libusb-devel glfw-devel mesa-libGL-devel pkgconf-pkg-config"
 windows.archs = ["AMD64"]
-windows.before-build = "pacman -S --noconfirm mingw-w64-x86_64-pkg-config"
+windows.before-build = "pip install pkgconfig"
 
 [[tool.cibuildwheel.overrides]]
 select = "*-musllinux*"
