@@ -243,7 +243,9 @@ namespace mab
             std::string_view modeStr = config.getValueByAddress(0x020);
             mode                     = stringToU8(modeStr);
             type                     = stringToU8(typeStr);
-            setCPR(static_cast<mab::MDAuxEncoderValue_S::EncoderTypes>(type), mode);
+            mab::MDAuxEncoderValue_S::EncoderTypes typeMD =
+                static_cast<mab::MDAuxEncoderValue_S::EncoderTypes>(type);
+            setCPR(typeMD, mode);
         };
     };
 
