@@ -372,7 +372,6 @@ namespace mab
                     result += std::to_string(static_cast<int>(byte));
                     result += " ";
                 }
-                // mab::MDCOConfigAdapter::toEncTick(result);
                 return result;
         }
         return nullptr;

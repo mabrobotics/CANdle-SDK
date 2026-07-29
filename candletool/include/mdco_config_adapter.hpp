@@ -22,9 +22,11 @@ namespace mab
             MDConfigMap& config, std::shared_ptr<EDSObjectDictionary> od);
         void configFromOd(std::shared_ptr<EDSObjectDictionary> od, MDConfigMap& config);
 
-        static inline u32  CPR = 0;
-        static inline bool positionOverflow;
-
+        static inline u32                                    CPR = 0;
+        static inline bool                                   positionOverflow;
+        static inline u8                                     mode = 0;
+        static inline mab::MDAuxEncoderValue_S::EncoderTypes type =
+            mab::MDAuxEncoderValue_S::EncoderTypes::NONE;
         void setCPR(mab::MDAuxEncoderValue_S::EncoderTypes _type, u32 _mode)
         {
             auto& modeMap = mab::MDAuxEncoderModeValue_S::fromNumericMap;
@@ -189,16 +191,31 @@ namespace mab
         {
             switch (idx)
             {
+                case 0x2005:  // mode and type getter, should not cause errors as long as od is a
+                              // map
+                    if (subIdx == 0x1)
+                    {
+                        u8               tmpType = 0;
+                        std::string_view type_s  = objSecond.getAsString();
+                        std::from_chars(type_s.begin(), type_s.end(), tmpType);
+                        this->type = static_cast<mab::MDAuxEncoderValue_S::EncoderTypes>(tmpType);
+                    }
+                    if (subIdx == 0x3)
+                    {
+                        std::string_view mode_s = objSecond.getAsString();
+                        std::from_chars(mode_s.begin(), mode_s.end(), this->mode);
+                    }
+                    break;
                 case 0x6076:
-                    ss << " [mN] " << fromMili(objSecond.getAsString()) << " [N]";
+                    ss << " [mN], " << fromMili(objSecond.getAsString()) << " [N]";
                     break;
                 case 0x6075:
-                    ss << " [mA] " << fromMili(objSecond.getAsString()) << " [A]";
+                    ss << " [mA], " << fromMili(objSecond.getAsString()) << " [A]";
                     break;
                 case 0x607d:  // min/max position
                     if (subIdx > 0)
-                        ss << " [Encoder Ticks] " << fromEncTick(objSecond.getAsString())
-                           << " [rad]";
+                        setCPR(this->type, this->mode);
+                    ss << " [Encoder Ticks] " << fromEncTick(objSecond.getAsString()) << " [rad]";
                     break;
                 case 0x6080:  // max motor speed
                 case 0x6081:  // profile velocity

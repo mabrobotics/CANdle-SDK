@@ -8,9 +8,9 @@ namespace mab
     {
         std::vector<std::reference_wrapper<EDSEntry>> result;
         Logger                                        log(Logger::ProgramLayer_E::TOP, "MDCO CFG");
-
-        setCPR(static_cast<mab::MDAuxEncoderValue_S::EncoderTypes>(config.getValueAsNumber(0x020)),
-               config.getValueAsNumber(0x025));
+        mode = config.getValueAsNumber(0x025);
+        type = static_cast<mab::MDAuxEncoderValue_S::EncoderTypes>(config.getValueAsNumber(0x020));
+        setCPR(static_cast<mab::MDAuxEncoderValue_S::EncoderTypes>(type), mode);
 
         for (const auto& [regAddr, objName, subIdx] : manufacturerRegMaping)
         {

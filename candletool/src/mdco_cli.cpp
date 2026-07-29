@@ -566,13 +566,6 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             auto              mdco = getMdco(mdCanId, od);
             MDCOConfigAdapter odCfgAdapter;
 
-            mdco->readSDO((*od)[0x2005][0x3]);
-            mdco->readSDO((*od)[0x2005][0x1]);
-
-            u8 mode = (u8)(canopen_types::UNSIGNED8_t)(*od)[0x2005][0x3];
-            u8 type = (u8)(canopen_types::UNSIGNED8_t)(*od)[0x2005][0x1];
-            odCfgAdapter.setCPR(static_cast<mab::MDAuxEncoderValue_S::EncoderTypes>(type), mode);
-
             if (mdco == nullptr)
                 m_log.error("Failed to conect to mdco!");
             for (auto& object : *od)
