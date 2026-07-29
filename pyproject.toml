@@ -54,7 +54,7 @@ skip = [
     "*musllinux*",
     "cp*t-*",
 ]
-linux.before-build = "yum -y install epel-release && yum -y install libusbx-devel libusb-devel mesa-libGL-devel libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel libXext-devel glfw-devel"
+linux.before-build = "yum -y install libusbx-devel && yum -y install libusb-devel"
 windows.archs = ["AMD64"]
 
 [[tool.cibuildwheel.overrides]]
