@@ -206,6 +206,8 @@ jobs:
       - name: Install OpenGL and dependencies
         run: |
           dpkg --add-architecture arm64
+          sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+          sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
           apt-get update
           apt-get install -y pkg-config libgl1-mesa-dev:arm64 libx11-dev:arm64
 
@@ -242,6 +244,8 @@ jobs:
       - name: Install OpenGL and dependencies
         run: |
           dpkg --add-architecture arm64
+          sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+          sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
           apt-get update
           apt-get install -y pkg-config libgl1-mesa-dev:arm64 libx11-dev:arm64
 
@@ -277,6 +281,8 @@ jobs:
       - name: Install OpenGL and dependencies
         run: |
           dpkg --add-architecture armhf
+          sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+          sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
           apt-get update
           apt-get install -y pkg-config libgl1-mesa-dev:armhf libx11-dev:armhf
 
@@ -313,6 +319,8 @@ jobs:
       - name: Install OpenGL and dependencies
         run: |
           dpkg --add-architecture armhf
+          sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+          sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
           apt-get update
           apt-get install -y pkg-config libgl1-mesa-dev:armhf libx11-dev:armhf
 
