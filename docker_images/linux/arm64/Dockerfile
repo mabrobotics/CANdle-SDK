@@ -15,3 +15,7 @@ RUN sudo apt install -y g++-aarch64-linux-gnu
 RUN sudo dpkg --add-architecture arm64
 
 RUN sudo apt install -y libusb-1.0-0-dev:arm64
+
+RUN sudo apt install -y libgl1-mesa-dev:arm64
+RUN sudo apt install -y libx11-dev:arm64
+RUN sudo apt install -y pkg-config

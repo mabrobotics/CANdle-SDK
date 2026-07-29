@@ -203,12 +203,6 @@ jobs:
         with:
           submodules: "true"
 
-      - name: Install arm64 dependencies
-        run: |
-          dpkg --add-architecture arm64
-          apt-get update
-          apt-get install -y libgl1-mesa-dev:arm64 libx11-dev:arm64 pkg-config
-
       - name: CMake configure
         run: |
           cmake -DCMAKE_BUILD_TYPE=Release -DCANDLE_BUILD_STATIC=OFF --toolchain ./cmake/linux.arm64.toolchain.cmake ./ -B build -G "Unix Makefiles" .
@@ -239,12 +233,6 @@ jobs:
         with:
           submodules: "true"
 
-      - name: Install arm64 dependencies
-        run: |
-          dpkg --add-architecture arm64
-          apt-get update
-          apt-get install -y libgl1-mesa-dev:arm64 libx11-dev:arm64 pkg-config
-
       - name: CMake configure
         run: |
           cmake -DCMAKE_BUILD_TYPE=Release --toolchain ./cmake/linux.arm64.toolchain.cmake ./ -B build -G "Unix Makefiles" .
@@ -273,12 +261,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: "true"
-
-      - name: Install armhf dependencies
-        run: |
-          dpkg --add-architecture armhf
-          apt-get update
-          apt-get install -y libgl1-mesa-dev:armhf libx11-dev:armhf pkg-config
 
       - name: CMake configure
         run: |
@@ -309,12 +291,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: "true"
-
-      - name: Install armhf dependencies
-        run: |
-          dpkg --add-architecture armhf
-          apt-get update
-          apt-get install -y libgl1-mesa-dev:armhf libx11-dev:armhf pkg-config
 
       - name: CMake configure
         run: |

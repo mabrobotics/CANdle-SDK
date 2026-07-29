@@ -15,3 +15,7 @@ RUN sudo apt install -y g++-arm-linux-gnueabihf
 RUN sudo dpkg --add-architecture armhf
 
 RUN sudo apt install -y libusb-1.0-0-dev:armhf
+
+RUN sudo apt install -y libgl1-mesa-dev:armhf
+RUN sudo apt install -y libx11-dev:armhf
+RUN sudo apt install -y pkg-config
