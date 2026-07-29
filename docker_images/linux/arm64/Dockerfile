@@ -18,4 +18,5 @@ RUN sudo apt-get install -y \
     libusb-1.0-0-dev:arm64 \
     libgl1-mesa-dev:arm64 \
     libx11-dev:arm64 \
+    libglfw3-dev:arm64 \
     pkg-config

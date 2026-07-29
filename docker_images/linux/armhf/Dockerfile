@@ -18,4 +18,5 @@ RUN sudo apt-get install -y \
     libusb-1.0-0-dev:armhf \
     libgl1-mesa-dev:armhf \
     libx11-dev:armhf \
+    libglfw3-dev:armhf \
     pkg-config
