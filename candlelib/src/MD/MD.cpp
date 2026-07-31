@@ -35,14 +35,16 @@ namespace mab
                 "for latest firmware and more information.");
         }
 
-        m_mdRegisters.legacyHardwareVersion = 0;
+        m_mdRegisters.firmwareVersion = 0;
 
-        auto mfLegacydataResult = readRegister(m_mdRegisters.legacyHardwareVersion);
+        auto mfFirmwareResult = readRegister(m_mdRegisters.firmwareVersion);
 
-        if (mfLegacydataResult != Error_t::OK)
+        if (mfFirmwareResult != Error_t::OK)
             return Error_t::NOT_CONNECTED;
 
-        if (m_mdRegisters.legacyHardwareVersion.value != 0)
+        version_ut mfFirmwareVersion = {.i = m_mdRegisters.firmwareVersion.value};
+
+        if (mfFirmwareVersion.s.major != 0)
             return Error_t::OK;
 
         return Error_t::NOT_CONNECTED;
