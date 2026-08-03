@@ -16,6 +16,7 @@ namespace mab
         CanLoader(mab::Candle* candle, MabFileParser* mabFile, mab::canId_t canId);
         ~CanLoader();
         bool flashAndBoot(bool recovery);
+        bool forceEraseConfig();
 
       private:
         const MabFileParser* m_mabFile;

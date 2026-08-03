@@ -266,6 +266,17 @@ namespace mab
             }
         }
     };
+    struct MDDeviceRev_S
+    {
+        static std::optional<u32> toNumeric(const std::string_view val) = delete;
+
+        static std::optional<std::string> toReadable(u8 val)
+        {
+            int major = val / 10;
+            int minor = val % 10;
+            return "v" + std::to_string(major) + "." + std::to_string(minor);
+        }
+    };
     struct MDRegisterAccessError_S
     {
         static std::string toReadable(mab::MdRegisterAccessErrorCode code)
