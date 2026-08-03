@@ -98,6 +98,14 @@ jobs:
         with:
           submodules: "true"
 
+      - name: Install dependencies and Windows GLFW3
+        run: |
+          apt-get update && apt-get install -y wget unzip pkg-config mingw-w64 nodejs
+          wget -qO glfw.zip https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.bin.WIN64.zip
+          unzip -q glfw.zip -d /opt/glfw
+          mkdir -p /opt/glfw/pkgconfig
+          echo -e "prefix=/opt/glfw/glfw-3.4.bin.WIN64\nlibdir=\${prefix}/lib-mingw-w64\nincludedir=\${prefix}/include\nName: GLFW\nDescription: GLFW\nVersion: 3.4\nLibs: -L\${libdir} -lglfw3 -lgdi32 -lopengl32\nCflags: -I\${includedir}" > /opt/glfw/pkgconfig/glfw3.pc
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -368,7 +376,6 @@ jobs:
       - name: Build
         env:
           PKG_CONFIG_PATH: /opt/glfw/pkgconfig
-          # Tell CMake to inject these explicitly into the MinGW flags
           CFLAGS: "-I/opt/glfw/glfw-3.4.bin.WIN64/include"
           CXXFLAGS: "-I/opt/glfw/glfw-3.4.bin.WIN64/include"
           LDFLAGS: "-L/opt/glfw/glfw-3.4.bin.WIN64/lib-mingw-w64"
