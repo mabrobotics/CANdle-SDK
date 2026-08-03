@@ -100,7 +100,7 @@ namespace mab
         /// @return
         Error_t setCurrentLimit(float currentLimit /*A*/);
 
-        /// @brief Set update rate for the torque control loop
+        /// @brief Set update rate for the torque control loopmd.hpp
         /// @param torqueBandwidth Update rate in Hz
         /// @return
         Error_t setTorqueBandwidth(u16 torqueBandwidth /*Hz*/);
@@ -608,10 +608,14 @@ namespace mab
                 case Error_t::TRANSFER_FAILED:
                     m_log.error("Transfer of CAN frame failed!");
                     return true;
-                default:
+                case Error_t::LEGACY_FW:
+                    m_log.error("Legacy Firmware!");
+                    return true;
+                case Error_t::UNKNOWN_ERROR:
                     m_log.error("Unknown error!");
                     return true;
             }
+            m_log.error("Unknown error!");
             return true;
         }
 

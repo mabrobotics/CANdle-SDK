@@ -43,7 +43,8 @@ target_include_directories(
          ${CMAKE_CURRENT_SOURCE_DIR}/src/web_file_module
          ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src)
 
-target_compile_options(candletool PRIVATE -g -Wno-unused-parameter -Wno-missing-field-initializers)
+target_compile_options(candletool PRIVATE -g -Wno-unused-parameter -Wno-missing-field-initializers 
+    -Wswitch-enum)
 if(WIN32)
   target_compile_options(candletool PRIVATE -Wa,-mbig-obj)
 endif()

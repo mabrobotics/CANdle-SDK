@@ -75,9 +75,11 @@ namespace mab
                 return (char*)"candlehat";
             case mab::deviceType_E::PDS:
                 return (char*)"pds";
-            default:
-                return (char*)"UNKNOWN";
+            case mab::deviceType_E::UNKNOWN_DEVICE:
+            case mab::deviceType_E::UNKNOWN_DEVICE_2:
+                break;
         }
+        return (char*)"UNKNOWN";
     }
 
 #pragma pack(push, 1)
