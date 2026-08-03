@@ -24,4 +24,5 @@ target_link_libraries(mdgui PRIVATE
         candle
         mabGUI
         OpenGL::GL
+        ${CMAKE_DL_LIBS}
     )
