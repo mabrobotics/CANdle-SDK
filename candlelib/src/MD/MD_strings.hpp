@@ -67,7 +67,7 @@ namespace mab
             {EncoderTypes::ONBOARD, 16384},
             {EncoderTypes::RLS_17B_SPI, 131072},
             {EncoderTypes::RLS_ORBIS_RS422, 131072},
-            {EncoderTypes::CE300, 0},
+            {EncoderTypes::CE300, 65536},
         };
         static inline const std::map<EncoderTypes, std::string_view> fromNumericMap{
             {EncoderTypes::NONE, "NONE"},

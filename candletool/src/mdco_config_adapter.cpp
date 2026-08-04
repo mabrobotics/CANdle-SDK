@@ -99,7 +99,7 @@ namespace mab
 
         for (const auto& [regAddr, objAddress, subIdx] : standardRegMaping)
         {
-            if (regSkip(regAddr))
+            if (skipPrintingByRegister(regAddr))
                 continue;
             EDSEntry& obj =
                 subIdx.has_value() ? (*od)[objAddress][subIdx.value()] : (*od)[objAddress];

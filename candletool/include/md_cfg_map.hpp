@@ -389,18 +389,14 @@ namespace mab
                  "motor", "torque constant", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
             {0x016,
              MDCfgElement(
-                 "limits", "max current", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+                 "motor", "max current", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
             {0x017,
              MDCfgElement(
                  "motor", "gear ratio", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
             {0x018,
              MDCfgElement(
                  "motor", "torque bandwidth", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
-            {0x01D,
-             MDCfgElement("motor",
-                          "KV",
-                          MDCfgElement::ParserFunctions_S(
-                              verifyMinMaxType))},  // currently not handled in md80_firmware
+            {0x01D, MDCfgElement("motor", "KV", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
             {0x01E,
              MDCfgElement("motor",
                           "calibration mode",
@@ -472,10 +468,10 @@ namespace mab
                  "limits", "max deceleration", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
             {0x116,
              MDCfgElement(
-                 "limits", "rated torque", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+                 "motor", "rated torque", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
             {0x117,
              MDCfgElement(
-                 "limits", "rated current", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+                 "motor", "rated current", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
             // Motion profile
             {0x120,
              MDCfgElement(
@@ -504,8 +500,6 @@ namespace mab
                               GPIOModeToReadable, GPIOModeFromReadable, verifyEnum))}
 
         };
-
-        ///
 
       private:
         MDRegisters_S registers;  // only for verification purposes

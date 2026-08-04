@@ -22,7 +22,7 @@ namespace mab
             MDConfigMap& config, std::shared_ptr<EDSObjectDictionary> od);
         void configFromOd(std::shared_ptr<EDSObjectDictionary> od, MDConfigMap& config);
 
-        static inline u32  CPR = 0;
+        static inline u32  CPR = 16384;
         static inline bool positionOverflow;
         static inline u8   mode = 0;
         static inline u8   type = 0;
@@ -51,35 +51,29 @@ namespace mab
             std::from_chars(x.begin(), x.end(), xFloat);
             return std::to_string(xFloat / 1000.f);
         };
-
         static constexpr auto toEncTick = [](std::string_view x) -> std::string
         {
             i64 xInt   = 0;
             i32 result = 0;
             std::from_chars(x.begin(), x.end(), xInt);
-
             if (__builtin_mul_overflow(xInt, CPR, &result))
             {
                 result           = (xInt > 0) ? INT32_MAX : INT32_MIN;
                 positionOverflow = true;
             }
-
             else
             {
                 result = xInt * CPR / (2 * M_PI);
             }
-
             std::string encTick = std::to_string(static_cast<i64>(result));
-
             return encTick;
         };
         static constexpr auto fromEncTick = [](std::string_view x) -> std::string
         {
             f32 xFloat;
             std::from_chars(x.begin(), x.end(), xFloat);
-            return std::to_string(xFloat * 2 * M_PI / (CPR * 1.0f));
+            return std::to_string(xFloat * 2 * M_PI / ((f32)CPR));
         };
-
         static constexpr auto toRPM = [](std::string_view x) -> std::string
         {
             f32 xFloat = 0.f;
@@ -92,13 +86,8 @@ namespace mab
             std::from_chars(x.begin(), x.end(), xInt);
             return std::to_string(xInt * 2 * M_PI / 60.f);
         };
-
         MDCOConfigAdapter()
-            : cfgToOdUnitConversions({// {0x016, toMili},
-                                      //                       {0x112, toMili},
-                                      //                       {0x117, toMili},
-                                      //                       {0x116, toMili},
-                                      {0x110, toEncTick},
+            : cfgToOdUnitConversions({{0x110, toEncTick},
                                       {0x111, toEncTick},
                                       {0x113, toRPM},
                                       {0x114, toRPM},
@@ -107,11 +96,7 @@ namespace mab
                                       {0x121, toRPM},
                                       {0x122, toRPM},
                                       {0x123, toRPM}}),
-              odToCfgUnitConversions({// {0x016, fromMili},
-                                      //                       {0x112, fromMili},
-                                      //                       {0x117, fromMili},
-                                      //                       {0x116, fromMili},
-                                      {0x110, fromEncTick},
+              odToCfgUnitConversions({{0x110, fromEncTick},
                                       {0x111, fromEncTick},
                                       {0x113, fromRPM},
                                       {0x114, fromRPM},
@@ -157,17 +142,17 @@ namespace mab
 
         static constexpr auto standardRegMaping =
             std::to_array<std::tuple<u16, u16, std::optional<u8>>>({
+                {0x112, 0X6072, {}},  // Motor max torque
+                {0x016, 0X6073, {}},  // Motor max current
                 {0x117, 0x6075, {}},  // Motor rated current
                 {0x116, 0x6076, {}},  // Motor rated torque
-                {0x016, 0X6073, {}},  // Motor max current
-                {0x112, 0X6072, {}},  // Motor max torque
 
-                {0x110, 0x607D, 2},  // Max position
                 {0x111, 0x607D, 1},  // Min position
+                {0x110, 0x607D, 2},  // Max position
 
-                {0x113, 0x6080, {}},  // Max velocity
-                {0x114, 0x60C5, {}},  // Max acceleration
-                {0x115, 0x60C6, {}},  // Max deceleration
+                // {0x113, 0x6080, {}},  // Max velocity
+                // {0x114, 0x60C5, {}},  // Max acceleration
+                // {0x115, 0x60C6, {}},  // Max deceleration
 
                 {0x120, 0x6081, {}},  // Profile velocity
                 {0x121, 0x6083, {}},  // Profile acceleration
@@ -179,15 +164,24 @@ namespace mab
             cfgToOdUnitConversions;
         const std::unordered_map<u16, std::function<std::string(std::string_view)>>
              odToCfgUnitConversions;
-        bool regSkip(u16 _id)
+        bool skipPrintingByRegister(u16 _id)
         {
             return (_id == 0x114 || _id == 0x115) ? true : false;
         }
-        u8 stringToU8(std::string_view str)
+        u8 stringToU8(std::string str)
         {
-            u8 result = 0;
-            std::from_chars(str.begin(), str.end(), result);
-            return result;
+            try
+            {
+                return (u8)(std::stoi(str));
+            }
+            catch (const std::out_of_range& e)
+            {
+                throw std::out_of_range("stoi conversion out of range");
+            }
+            catch (std::invalid_argument& e)
+            {
+                throw;
+            }
         }
         void unitConversionPrint(std::stringstream&          ss,
                                  u16                         idx,
@@ -239,11 +233,10 @@ namespace mab
         }
         void setCPRValues(MDConfigMap& config)
         {
-            std::string_view typeStr = config.getValueByAddress(0x25);
-            std::string_view modeStr = config.getValueByAddress(0x020);
-            mode                     = stringToU8(modeStr);
-            type                     = stringToU8(typeStr);
-
+            std::string typeStr = config.getValueByAddress(0x25);
+            std::string modeStr = config.getValueByAddress(0x020);
+            mode                = stringToU8(modeStr);
+            type                = stringToU8(typeStr);
             setCPR(static_cast<mab::MDAuxEncoderValue_S::EncoderTypes>(type), mode);
         };
     };
