@@ -2,12 +2,14 @@
 
 namespace mab
 {
+
     std::vector<std::reference_wrapper<EDSEntry>> MDCOConfigAdapter::configToOd(
         MDConfigMap& config, std::shared_ptr<EDSObjectDictionary> od)
     {
         std::vector<std::reference_wrapper<EDSEntry>> result;
         Logger                                        log(Logger::ProgramLayer_E::TOP, "MDCO CFG");
-        // Manufacturer part parsing
+        setCPRValues(config);
+
         for (const auto& [regAddr, objName, subIdx] : manufacturerRegMaping)
         {
             const std::string cfgValue =
@@ -44,6 +46,7 @@ namespace mab
                 cfgToOdUnitConversions.find(cfgAddr) != cfgToOdUnitConversions.end()
                     ? cfgToOdUnitConversions.at(cfgAddr)(config.getValueByAddress(cfgAddr))
                     : config.getValueByAddress(cfgAddr);
+
             if (cfgValue.empty())
             {
                 log.warn("402 standard object 0x%x of the MD not found in config", odAddr);
@@ -62,13 +65,13 @@ namespace mab
                       obj.getAsString().c_str());
             result.push_back(obj);
         }
-
         return result;
     }
     void MDCOConfigAdapter::configFromOd(std::shared_ptr<EDSObjectDictionary> od,
                                          MDConfigMap&                         config)
     {
         Logger log(Logger::ProgramLayer_E::TOP, "MDCO CFG");
+        setCPRValues(config);
         for (const auto& [regAddr, objName, subIdx] : manufacturerRegMaping)
         {
             auto objOpt = od->getEntryByName(objName);
@@ -93,8 +96,11 @@ namespace mab
                           .c_str(),
                       obj.getAsString().c_str());
         }
+
         for (const auto& [regAddr, objAddress, subIdx] : standardRegMaping)
         {
+            if (skipPrintingByRegister(regAddr))
+                continue;
             EDSEntry& obj =
                 subIdx.has_value() ? (*od)[objAddress][subIdx.value()] : (*od)[objAddress];
             config.setValueByAddress(

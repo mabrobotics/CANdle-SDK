@@ -125,9 +125,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
 
     // CAN ============================================================================
 
-    CLI::App* can = mdco->add_subcommand("can", "Configure CAN id of the driver.")
-                        ->needs(mdCanIdOption)
-                        ->require_option();
+    CLI::App*  can = mdco->add_subcommand("can", "Configure CAN id of the driver.")
+                         ->needs(mdCanIdOption)
+                         ->require_option();
     CanOptions canOptions(can);
     can->callback(
         [this, mdCanId, canOptions, loadEDS]()
@@ -205,6 +205,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
 
             MDConfigMap       cfgMap;
             MDCOConfigAdapter odCfgAdapter;
+
             for (auto& [regAddr, objName, subidxOpt] : odCfgAdapter.manufacturerRegMaping)
             {
                 auto objOpt = od->getEntryByName(objName);
@@ -221,6 +222,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                     continue;
                 }
             }
+
             for (auto& [regAddr, objAddress, subidxOpt] : odCfgAdapter.standardRegMaping)
             {
                 auto& obj = subidxOpt.has_value() ? (*od)[objAddress][subidxOpt.value()]
@@ -287,7 +289,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 return;
             }
 
-            MDConfigMap       cfgMap;
+            MDConfigMap cfgMap;
+
             MDCOConfigAdapter odCfgAdapter;
 
             for (auto& [address, toml] : cfgMap.m_map)
@@ -307,10 +310,13 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                                 toml.m_tomlKey.data());
                     return;
                 }
-            }
+            };
 
             auto entries = odCfgAdapter.configToOd(cfgMap, od);
-
+            if (odCfgAdapter.positionOverflow)
+            {
+                m_log.warn("Min/Max position overflow, set to 2'147'483'647 encoder ticks");
+            }
             for (auto& entry : entries)
             {
                 if (md->writeSDO(entry.get()) != MDCO::Error_t::OK)
@@ -556,28 +562,35 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     info->callback(
         [this, mdCanId, loadEDS]()
         {
-            auto od   = loadEDS().first;
-            auto mdco = getMdco(mdCanId, od);
+            auto              od   = loadEDS().first;
+            auto              mdco = getMdco(mdCanId, od);
+            MDCOConfigAdapter odCfgAdapter;
+
             if (mdco == nullptr)
                 m_log.error("Failed to conect to mdco!");
-
             for (auto& object : *od)
             {
                 u32 idx = object.first;
                 // error fields skipped
                 bool skip = false;
+
                 switch (idx)
                 {
                     case 0x1003:
+
                     case 0x1801:
                         skip = true;
                         break;
+
                     default:
                         skip = false;
+
                         break;
                 }
                 if (skip)
+                {
                     continue;
+                }
                 if (object.second.getContainerMetaData().has_value())
                 {
                     std::stringstream ss;
@@ -586,18 +599,22 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                     m_log.info("%s", ss.str().c_str());
                     for (auto& subobject : object.second)
                     {
+                        unsigned int subIdx =
+                            subobject.second->getEntryMetaData().address.second.value();
                         if (mdco->readSDO(*subobject.second) != MDCO::Error_t::OK)
                         {
                             m_log.error("could not read object %s",
                                         subobject.second->getEntryMetaData().parameterName.c_str());
                             continue;
                         }
+
                         std::stringstream ss;
-                        ss << "[0x" << std::hex << idx << "]" << "[0x"
-                           << (unsigned int)subobject.second->getEntryMetaData()
-                                  .address.second.value()
-                           << "]" << subobject.second->getEntryMetaData().parameterName << " = "
+
+                        ss << "[0x" << std::hex << idx << "]" << "[0x" << subIdx << "]"
+                           << subobject.second->getEntryMetaData().parameterName << " = "
                            << subobject.second->getAsString();
+                        odCfgAdapter.unitConversionPrint(ss, idx, *subobject.second, subIdx);
+
                         m_log.info("%s", ss.str().c_str());
                     }
                     continue;
@@ -608,10 +625,15 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                                 object.second.getEntryMetaData().parameterName.c_str());
                     continue;
                 }
+
                 std::stringstream ss;
+
                 ss << "[0x" << std::hex << idx << "] "
                    << object.second.getEntryMetaData().parameterName << " = "
                    << object.second.getAsString();
+
+                odCfgAdapter.unitConversionPrint(ss, idx, object.second);
+
                 m_log.info("%s", ss.str().c_str());
             }
         });

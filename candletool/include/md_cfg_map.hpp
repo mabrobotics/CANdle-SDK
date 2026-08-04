@@ -122,6 +122,15 @@ namespace mab
         std::optional<mINI::INIStructure> m_mdConfigSchema;
 
       public:
+        u8 getValueAsNumber(u16 _address)
+        {
+            std::string_view conversionTypeS = getValueByAddress(_address);
+            u8               conversionTypeU;
+            std::from_chars(conversionTypeS.begin(), conversionTypeS.end(), conversionTypeU);
+            return conversionTypeU;
+        }
+        u8 encoderType = 0;
+
         MDConfigMap(std::optional<mINI::INIStructure> mdConfigSchema = {})
             : m_mdConfigSchema(mdConfigSchema)
         {
@@ -441,7 +450,7 @@ namespace mab
             // Limits
             {0x112,
              MDCfgElement(
-                 "limits", "max torque", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+                 "motor", "max torque", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
             {0x110,
              MDCfgElement(
                  "limits", "max position", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
@@ -457,7 +466,12 @@ namespace mab
             {0x115,
              MDCfgElement(
                  "limits", "max deceleration", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
-
+            {0x116,
+             MDCfgElement(
+                 "motor", "rated torque", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+            {0x117,
+             MDCfgElement(
+                 "motor", "rated current", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
             // Motion profile
             {0x120,
              MDCfgElement(
@@ -478,11 +492,14 @@ namespace mab
              MDCfgElement("hardware",
                           "shunt resistance",
                           MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+
             {0x160,
              MDCfgElement("GPIO",
                           "mode",
                           MDCfgElement::ParserFunctions_S(
-                              GPIOModeToReadable, GPIOModeFromReadable, verifyEnum))}};
+                              GPIOModeToReadable, GPIOModeFromReadable, verifyEnum))}
+
+        };
 
       private:
         MDRegisters_S registers;  // only for verification purposes
