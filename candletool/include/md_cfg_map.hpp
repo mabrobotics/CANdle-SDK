@@ -450,7 +450,7 @@ namespace mab
             // Limits
             {0x112,
              MDCfgElement(
-                 "limits", "max torque", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
+                 "motor", "max torque", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
             {0x110,
              MDCfgElement(
                  "limits", "max position", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
