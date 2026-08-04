@@ -270,7 +270,7 @@ namespace mab
                 // Perform main encoder calibration
                 f32 calibrationTime = 40;  // seconds
                 if (isVersionAtLeast(getMdFirmwareVersion(*md), 3, 0, 0))
-                    calibrationTime = 20;
+                    calibrationTime = 25;
                 if (doOnMainEncoder)
                 {
                     m_logger.info("Starting main encoder calibration...");
