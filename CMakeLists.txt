@@ -43,13 +43,20 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(NOT SUPPRESS_WARN)
-  add_compile_options(-Wfatal-errors -Wall -Wextra -Wpedantic
-                      -Wno-unused-parameter -Wno-missing-field-initializers)
-  if(NOT WIN32)
-    add_compile_options(-Werror)
-    add_compile_definitions(WIN32_MEAN_AND_LEAN) # This define is needed for
-    # windows.h to exclude some less used APIs
+  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_compile_options(-Wfatal-errors -Wall -Wextra -Wpedantic
+                        -Wno-unused-parameter -Wno-missing-field-initializers)
+    if(NOT WIN32)
+      add_compile_options(-Werror)
+    endif()
+  
+  elseif(MSVC)
+    add_compile_options(/W4) 
   endif()
+endif()
+
+if(WIN32)
+  add_compile_definitions(WIN32_LEAN_AND_MEAN)
 endif()
 
 if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64" OR ${CMAKE_SYSTEM_PROCESSOR}

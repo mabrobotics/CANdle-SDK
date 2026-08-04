@@ -42,7 +42,6 @@ install.strip = false
 [tool.scikit-build.cmake.define]
 CANDLESDK_BUILD_PYTHON = "ON"
 PYBIND11_FINDPYTHON = "OFF"
-PKG_CONFIG_EXECUTABLE = "C:/msys64/mingw64/bin/pkg-config.exe"
 
 [tool.cibuildwheel]
 build-frontend = "build[uv]"
@@ -57,13 +56,3 @@ skip = [
 ]
 linux.before-build = "yum -y install libusbx-devel libusb-devel glfw-devel mesa-libGL-devel pkgconf-pkg-config"
 windows.archs = ["AMD64"]
-windows.before-build = "pip install pkgconfig"
-
-[[tool.cibuildwheel.overrides]]
-select = "*-musllinux*"
-linux.before-build = "yum -y install libusbx-devel libusb-devel glfw-devel mesa-libGL-devel pkgconf-pkg-config"
-
-[tool.cibuildwheel.windows.environment]
-PATH = "C:\\msys64\\mingw64\\bin;C:\\msys64\\usr\\bin;$PATH"
-PKG_CONFIG = "C:/msys64/mingw64/bin/pkg-config.exe"
-PKG_CONFIG_PATH = "C:/msys64/mingw64/lib/pkgconfig"
