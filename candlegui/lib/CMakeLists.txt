@@ -15,6 +15,12 @@ target_include_directories(mabGUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_compile_options(mabGUI PRIVATE -Wno-error=deprecated-enum-enum-conversion)
 
+find_package(PkgConfig QUIET)
+
+if(NOT PKG_CONFIG_FOUND AND DEFINED ENV{MSYSTEM})
+    find_program(PKG_CONFIG_EXECUTABLE NAMES pkg-config pkgconf HINTS "C:/msys64/mingw64/bin")
+endif()
+
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GLFW3 REQUIRED glfw3)
 
