@@ -6,6 +6,7 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
+#include <filesystem>
 #include "commonMemory.hpp"
 
 class GraphicInterface
@@ -50,7 +51,7 @@ class GraphicInterface
 
     const float targetHoldTime = 0.25f;
 
-       const float step      = 0.1f;
+    const float step      = 0.1f;
     const float step_fast = 1.0f;
 
     // Main menu draw functions

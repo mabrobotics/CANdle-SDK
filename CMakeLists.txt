@@ -18,9 +18,11 @@ project(
 
 option(CANDLESDK_BUILD_PYTHON "Build python library shared object" OFF)
 option(CANDLESDK_BUILD_EXAMPLES
-       "Build examples (has no effect on python builds)" ON)
+       "Build examples (has no effect on python builds)" OFF)
 option(CANDLESDK_BUILD_CANDLETOOL
-       "Build candletool executable (has no effect on python builds)" ON)
+       "Build candletool executable (has no effect on python builds)" OFF)
+option(CANDLESDK_BUILD_MDGUI
+       "Build mdgui executable (has no effect on python builds)" ON)
 option(
   CANDLE_BUILD_STATIC
   "Build static library (has no effect on windows library and python builds)"
@@ -34,6 +36,7 @@ message("Available flags and their values:")
 message("  CANDLESDK_BUILD_PYTHON = ${CANDLESDK_BUILD_PYTHON}")
 message("  CANDLESDK_BUILD_EXAMPLES = ${CANDLESDK_BUILD_EXAMPLES}")
 message("  CANDLESDK_BUILD_CANDLETOOL = ${CANDLESDK_BUILD_CANDLETOOL}")
+message("  CANDLESDK_BUILD_MDGUI = ${CANDLESDK_BUILD_MDGUI}")
 message("  CANDLE_BUILD_STATIC = ${CANDLE_BUILD_STATIC}")
 message("  MAKE_TESTS = ${MAKE_TESTS}")
 message("  SUPPRESS_WARN = ${SUPPRESS_WARN}")
@@ -80,7 +83,6 @@ endmacro(add_unit_test_executable)
 
 add_subdirectory(commons)
 add_subdirectory(candlelib)
-add_subdirectory(candlegui)
 if(CANDLESDK_BUILD_PYTHON)
     add_subdirectory(pycandle)
 else()
@@ -90,4 +92,8 @@ else()
     if(CANDLESDK_BUILD_EXAMPLES)
         add_subdirectory(examples)
     endif()
+    if(CANDLESDK_BUILD_MDGUI)
+        add_subdirectory(candlegui)
+    endif()
+
 endif()

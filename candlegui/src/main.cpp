@@ -30,7 +30,27 @@ int main(int, char**)
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
     ImGui::StyleColorsDark();
 
-    io.Fonts->AddFontFromFileTTF("candlegui/fonts/Roboto.ttf", 14.0f);
+    std::string fontLocalPath  = "fonts/Roboto.ttf";
+    std::string fontSystemPath = "/usr/share/mdgui/fonts/Roboto.ttf";
+    std::string fontFinalPath  = "";
+
+    if (std::filesystem::exists(fontLocalPath))
+    {
+        fontFinalPath = fontLocalPath;
+    }
+    else if (std::filesystem::exists(fontSystemPath))
+    {
+        fontFinalPath = fontSystemPath;
+    }
+
+    if (!fontFinalPath.empty())
+    {
+        io.Fonts->AddFontFromFileTTF(fontFinalPath.c_str(), 14.0f);
+    }
+    else
+    {
+        io.Fonts->AddFontDefault();
+    }
 
     auto m_common = std::make_shared<commonMemory_S>();
 
