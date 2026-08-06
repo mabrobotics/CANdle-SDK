@@ -34,17 +34,16 @@ void GraphicInterface::init()
 #endif
 
     // Create window with graphics context
-    // GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
-    // const GLFWvidmode* videoMode      = glfwGetVideoMode(primaryMonitor);
+    GLFWmonitor*       primaryMonitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* videoMode      = glfwGetVideoMode(primaryMonitor);
 
-    glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
-    m_window = glfwCreateWindow(1280, 960, "MD GUI", nullptr, nullptr);
+    m_window = glfwCreateWindow(videoMode->width, videoMode->height, "MD GUI", nullptr, nullptr);
     if (m_window == nullptr)
         return;
 
-    // int monitorX, monitorY;
-    //  glfwGetMonitorPos(primaryMonitor, &monitorX, &monitorY);
-    //  glfwSetWindowPos(m_window, monitorX, monitorY);
+    int monitorX, monitorY;
+    glfwGetMonitorPos(primaryMonitor, &monitorX, &monitorY);
+    glfwSetWindowPos(m_window, monitorX, monitorY);
 
     glfwMakeContextCurrent(m_window);
     glfwSwapInterval(1);  // Enable vsync
@@ -88,6 +87,8 @@ void GraphicInterface::loop()
             drawMenuLowerBar();
             drawTestMenuBar();
             drawLeftMenuBar();
+            drawRightMenuBar();
+            drawErrorMenuBar();
             drawMainMenu();
         }
         else
@@ -100,6 +101,8 @@ void GraphicInterface::loop()
             drawMenuLowerBar();
             drawTestMenuBar();
             drawLeftMenuBar();
+            drawRightMenuBar();
+            drawErrorMenuBar();
             drawMainMenu();
 
             ImGui::EndDisabled();
@@ -198,7 +201,35 @@ void GraphicInterface::drawTestMenuBar()
 
     if (ImGui::Begin("Test menu", nullptr, flagsBackMenu))
     {
+        drawTestManualButton();
         drawTestEndButton();
+    }
+    ImGui::End();
+}
+
+void GraphicInterface::drawErrorMenuBar()
+{
+    const ImGuiViewport* errorBarViewport = ImGui::GetMainViewport();
+
+    ImVec2 errorBarPos =
+        ImVec2(errorBarViewport->WorkPos.x + leftMenuBarWidth, errorBarViewport->WorkPos.y);
+    ImGui::SetNextWindowPos(errorBarPos, ImGuiCond_Always);
+
+    ImVec2 mainSize = ImVec2(errorBarViewport->WorkSize.x - leftMenuBarWidth - rightMenuBarWidth,
+                             errorMenuBarHeight);
+    ImGui::SetNextWindowSize(mainSize, ImGuiCond_Always);
+
+    if (ImGui::Begin("Error Menu Bar", nullptr, flagsBackMenu))
+    {
+        bool errorOccured = m_data->errorOccured;
+        ImGui::Text("Error status:");
+        ImGui::SameLine();
+        if (!errorOccured)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
+            ImGui::Text("No errors");
+            ImGui::PopStyleColor();
+        }
     }
     ImGui::End();
 }
@@ -272,17 +303,35 @@ void GraphicInterface::drawLeftMenuBar()
     ImGui::End();
 }
 
+void GraphicInterface::drawRightMenuBar()
+{
+    const ImGuiViewport* rightMenuViewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(rightMenuViewport->WorkPos, ImGuiCond_Always);
+
+    ImVec2 rightPos =
+        ImVec2(rightMenuViewport->WorkSize.x - rightMenuBarWidth, rightMenuViewport->WorkPos.y);
+    ImGui::SetNextWindowPos(rightPos, ImGuiCond_Always);
+
+    ImVec2 windowSize = ImVec2(rightMenuBarWidth, rightMenuViewport->WorkSize.y - lowBarHeight);
+    ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
+
+    if (ImGui::Begin("Right Menu", nullptr, flagsBackMenu))
+    {
+    }
+    ImGui::End();
+}
+
 void GraphicInterface::drawMainMenu()
 {
     const ImGuiViewport* mainMenuViewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(mainMenuViewport->WorkPos, ImGuiCond_Always);
 
-    ImVec2 mainPos =
-        ImVec2(mainMenuViewport->WorkPos.x + leftMenuBarWidth, mainMenuViewport->WorkPos.y);
+    ImVec2 mainPos = ImVec2(mainMenuViewport->WorkPos.x + leftMenuBarWidth,
+                            mainMenuViewport->WorkPos.y + errorMenuBarHeight);
     ImGui::SetNextWindowPos(mainPos, ImGuiCond_Always);
 
-    ImVec2 mainSize = ImVec2(mainMenuViewport->WorkSize.x - leftMenuBarWidth,
-                             mainMenuViewport->WorkSize.y - lowBarHeight);
+    ImVec2 mainSize = ImVec2(mainMenuViewport->WorkSize.x - leftMenuBarWidth - rightMenuBarWidth,
+                             mainMenuViewport->WorkSize.y - lowBarHeight - errorMenuBarHeight);
     ImGui::SetNextWindowSize(mainSize, ImGuiCond_Always);
 
     if (ImGui::Begin("Main menu", nullptr, flagsBackMenu))
@@ -350,20 +399,21 @@ BUTTONS
 
 */
 
-void GraphicInterface::drawTestEndButton()
+void GraphicInterface::drawTestManualButton()
 {
     ImVec4        colorNormal, colorHovered, colorActive;
     float         borderSize;
-    bool          testStarted  = m_data->testStarted;
-    bool          selectedMode = m_data->selectedMode;
-    mab::MdMode_E currentMode  = m_data->currentMode;
+    bool          selectedMode               = m_data->selectedMode;
+    mab::MdMode_E currentMode                = m_data->currentMode;
+    bool          buttonAutomaticTestPressed = m_data->buttonAutomaticTestPressed;
+    bool          buttonManualTestPressed    = m_data->buttonManualTestPressed;
 
-    if (!selectedMode || currentMode == mab::MdMode_E::IDLE)
+    if (!selectedMode || currentMode == mab::MdMode_E::IDLE || buttonAutomaticTestPressed)
     {
         ImGui::BeginDisabled();
     }
 
-    if (testStarted)
+    if (buttonManualTestPressed)
     {
         borderSize   = 0.0f;
         colorNormal  = mabColor;
@@ -387,14 +437,91 @@ void GraphicInterface::drawTestEndButton()
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, colorActive);
 
     ImGui::SetCursorPosX(paddingButtons);
-    if (ImGui::Button(m_data->testStarted ? "End test" : "Test",
-                      ImVec2(leftMenuBarWidth - (paddingButtons * 2.0f), 80.0f)))
+
+    ImGui::PushButtonRepeat(true);
+
+    if (ImGui::Button("Manual Test", ImVec2(leftMenuBarWidth - (paddingButtons * 2.0f), 40.0f)))
     {
         std::lock_guard<std::mutex> lock(m_data->mtx);
-        m_data->testStarted = !m_data->testStarted;
+        m_data->buttonManualTestPressed = true;
     }
 
-    if (!selectedMode || currentMode == mab::MdMode_E::IDLE)
+    bool is_held = ImGui::IsItemActive();
+    if (!buttonAutomaticTestPressed)
+    {
+        if (is_held)
+        {
+            std::lock_guard<std::mutex> lock(m_data->mtx);
+            m_data->testStarted                = true;
+            m_data->buttonAutomaticTestPressed = false;
+        }
+        else
+        {
+            std::lock_guard<std::mutex> lock(m_data->mtx);
+            m_data->testStarted             = false;
+            m_data->buttonManualTestPressed = false;
+        }
+    }
+
+    ImGui::PopButtonRepeat();
+
+    if (!selectedMode || currentMode == mab::MdMode_E::IDLE || buttonAutomaticTestPressed)
+    {
+        ImGui::EndDisabled();
+    }
+
+    ImGui::PopStyleColor(4);
+    ImGui::PopStyleVar(2);
+}
+
+void GraphicInterface::drawTestEndButton()
+{
+    ImVec4        colorNormal, colorHovered, colorActive;
+    float         borderSize;
+    bool          testStarted             = m_data->testStarted;
+    bool          selectedMode            = m_data->selectedMode;
+    bool          buttonManualTestPressed = m_data->buttonManualTestPressed;
+    mab::MdMode_E currentMode             = m_data->currentMode;
+
+    if (!selectedMode || currentMode == mab::MdMode_E::IDLE || buttonManualTestPressed)
+    {
+        ImGui::BeginDisabled();
+    }
+
+    if (testStarted && !buttonManualTestPressed)
+    {
+        borderSize   = 0.0f;
+        colorNormal  = mabColor;
+        colorHovered = mabColorHovered;
+        colorActive  = mabColor;
+    }
+    else
+    {
+        borderSize   = 1.0f;
+        colorNormal  = buttonColor;
+        colorHovered = mabColorHovered;
+        colorActive  = mabColor;
+    }
+
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, borderSize);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, roundingFrameButton);
+
+    ImGui::PushStyleColor(ImGuiCol_Border, mabColor);
+    ImGui::PushStyleColor(ImGuiCol_Button, colorNormal);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, colorHovered);
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, colorActive);
+
+    ImGui::SetCursorPosX(paddingButtons);
+    if (ImGui::Button(m_data->buttonAutomaticTestPressed ? "End test" : "Automatic Test",
+                      ImVec2(leftMenuBarWidth - (paddingButtons * 2.0f), 40.0f)))
+    {
+        std::lock_guard<std::mutex> lock(m_data->mtx);
+        m_data->testStarted                = !m_data->testStarted;
+        m_data->buttonManualTestPressed    = false;
+        m_data->buttonAutomaticTestPressed = true;
+    }
+
+    if (!selectedMode || currentMode == mab::MdMode_E::IDLE || buttonManualTestPressed)
     {
         ImGui::EndDisabled();
     }
@@ -1008,7 +1135,7 @@ void GraphicInterface::timeInTarget(bool& inWindow, float& timeInTargetWindow, f
     {
         timeInTargetWindow += dt;
 
-        if (timeInTargetWindow >= targetHoldTime)
+        if (timeInTargetWindow >= targetHoldTime && !m_data->buttonManualTestPressed)
         {
             {
                 std::lock_guard<std::mutex> lock(m_data->mtx);

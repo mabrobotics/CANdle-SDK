@@ -68,14 +68,19 @@ struct commonMemory_S
 
     // Logic
     std::atomic<bool> testStarted{false};
+
     std::atomic<bool> buttonDiscoverMdPressed{false};
     std::atomic<bool> buttonSelectMdPressed{false};
+    std::atomic<bool> buttonManualTestPressed{false};
+    std::atomic<bool> buttonAutomaticTestPressed{false};
+
     std::atomic<bool> updateParametersTest{false};
     std::atomic<bool> selectedMD{false};
     std::atomic<bool> selectedMode{false};
     std::atomic<bool> testOngoing{false};
     std::atomic<bool> candleAvailable{false};
     std::atomic<bool> discoverOngoing{false};
+    std::atomic<bool> errorOccured{false};
 
     // Plots
     static const uint32_t PLOT_BUFFER_SIZE = 100000;

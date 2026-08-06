@@ -24,8 +24,10 @@ class GraphicInterface
 
     GLFWwindow* m_window = nullptr;
 
-    float leftMenuBarWidth    = 500.0f;
+    float leftMenuBarWidth    = 350.0f;
+    float rightMenuBarWidth   = 300.0f;
     float testMenuBarHeight   = 100.0f;
+    float errorMenuBarHeight  = 50.0f;
     float lowBarHeight        = 30.0f;
     float marginPlot          = 10.f;
     float paddingButtons      = 30.f;
@@ -56,13 +58,16 @@ class GraphicInterface
 
     // Main menu draw functions
     void drawMenuTopBar();
+    void drawErrorMenuBar();
     void drawMenuLowerBar();
     void drawTestMenuBar();
     void drawLeftMenuBar();
+    void drawRightMenuBar();
     void drawMainMenu();
     void drawErrorMenuPopup();
 
     // Buttons
+    void drawTestManualButton();
     void drawTestEndButton();
     void drawDiscoverMDButton();
     void drawSelectMDButton();

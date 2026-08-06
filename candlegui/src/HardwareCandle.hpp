@@ -27,6 +27,7 @@ class HardwareCandle
     const int          MAX_CONNECT_RETRIES = 100;
 
     void testMD(mab::MD& md);
+    bool checkStatus(mab::MD& md);
     void downloadParameters(mab::MD& md);
 
     void updateVelParameters();

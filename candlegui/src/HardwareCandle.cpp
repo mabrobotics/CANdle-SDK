@@ -39,6 +39,19 @@ void HardwareCandle::testMD(mab::MD& md)
     }
 }
 
+bool HardwareCandle::checkStatus(mab::MD& md)
+{
+    const auto& [status, result] = md.getQuickStatus();
+
+    if (result != mab::MD::Error_t::OK)
+    {
+        m_data->testStarted = false;
+        return true;
+    }
+
+    return false;
+}
+
 void HardwareCandle::downloadParameters(mab::MD& md)
 {
     mab::MD::Error_t err = md.readRegisters(md.m_mdRegisters.motorImpPidKp,
@@ -274,7 +287,8 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
             {
                 {
                     std::lock_guard<std::mutex> lock(m_data->mtx);
-                    m_data->testOngoing = false;
+                    m_data->testOngoing                = false;
+                    m_data->buttonAutomaticTestPressed = false;
                 }
                 md.disable();
             }
@@ -375,7 +389,8 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
             {
                 {
                     std::lock_guard<std::mutex> lock(m_data->mtx);
-                    m_data->testOngoing = true;
+                    m_data->testOngoing  = true;
+                    m_data->errorOccured = checkStatus(md);
                 }
 
                 std::chrono::time_point<std::chrono::steady_clock> now =
