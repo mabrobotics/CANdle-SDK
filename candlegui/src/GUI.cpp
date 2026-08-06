@@ -33,17 +33,10 @@ void GraphicInterface::init()
     // glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
 #endif
 
-    // Create window with graphics context
-    GLFWmonitor*       primaryMonitor = glfwGetPrimaryMonitor();
-    const GLFWvidmode* videoMode      = glfwGetVideoMode(primaryMonitor);
-
-    m_window = glfwCreateWindow(videoMode->width, videoMode->height, "MD GUI", nullptr, nullptr);
+    glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
+    m_window = glfwCreateWindow(1280, 960, "MD GUI", nullptr, nullptr);
     if (m_window == nullptr)
         return;
-
-    int monitorX, monitorY;
-    glfwGetMonitorPos(primaryMonitor, &monitorX, &monitorY);
-    glfwSetWindowPos(m_window, monitorX, monitorY);
 
     glfwMakeContextCurrent(m_window);
     glfwSwapInterval(1);  // Enable vsync
@@ -83,11 +76,11 @@ void GraphicInterface::loop()
 
         if (m_data->candleAvailable)
         {
-            drawMenuTopBar();
+            // drawMenuTopBar();
             drawMenuLowerBar();
             drawTestMenuBar();
             drawLeftMenuBar();
-            drawRightMenuBar();
+            // drawRightMenuBar();
             drawErrorMenuBar();
             drawMainMenu();
         }
@@ -97,11 +90,11 @@ void GraphicInterface::loop()
 
             ImGui::BeginDisabled();
 
-            drawMenuTopBar();
+            // drawMenuTopBar();
             drawMenuLowerBar();
             drawTestMenuBar();
             drawLeftMenuBar();
-            drawRightMenuBar();
+            // drawRightMenuBar();
             drawErrorMenuBar();
             drawMainMenu();
 
@@ -130,40 +123,40 @@ Main menu draw functions
 
 */
 
-void GraphicInterface::drawMenuTopBar()
-{
-    if (ImGui::BeginMainMenuBar())
-    {
-        if (ImGui::BeginMenu("File"))
-        {
-            if (ImGui::MenuItem("Undo", "Ctrl+Z"))
-            {
-            }
-            ImGui::EndMenu();
-        }
-        if (ImGui::BeginMenu("Edit"))
-        {
-            if (ImGui::MenuItem("Undo", "Ctrl+Z"))
-            {
-            }
-            if (ImGui::MenuItem("Redo", "Ctrl+Y", false, false))
-            {
-            }  // Disabled item
-            ImGui::Separator();
-            if (ImGui::MenuItem("Cut", "Ctrl+X"))
-            {
-            }
-            if (ImGui::MenuItem("Copy", "Ctrl+C"))
-            {
-            }
-            if (ImGui::MenuItem("Paste", "Ctrl+V"))
-            {
-            }
-            ImGui::EndMenu();
-        }
-        ImGui::EndMainMenuBar();
-    }
-}
+// void GraphicInterface::drawMenuTopBar()
+// {
+//     if (ImGui::BeginMainMenuBar())
+//     {
+//         if (ImGui::BeginMenu("File"))
+//         {
+//             if (ImGui::MenuItem("Undo", "Ctrl+Z"))
+//             {
+//             }
+//             ImGui::EndMenu();
+//         }
+//         if (ImGui::BeginMenu("Edit"))
+//         {
+//             if (ImGui::MenuItem("Undo", "Ctrl+Z"))
+//             {
+//             }
+//             if (ImGui::MenuItem("Redo", "Ctrl+Y", false, false))
+//             {
+//             }  // Disabled item
+//             ImGui::Separator();
+//             if (ImGui::MenuItem("Cut", "Ctrl+X"))
+//             {
+//             }
+//             if (ImGui::MenuItem("Copy", "Ctrl+C"))
+//             {
+//             }
+//             if (ImGui::MenuItem("Paste", "Ctrl+V"))
+//             {
+//             }
+//             ImGui::EndMenu();
+//         }
+//         ImGui::EndMainMenuBar();
+//     }
+// }
 
 void GraphicInterface::drawMenuLowerBar()
 {
@@ -215,8 +208,9 @@ void GraphicInterface::drawErrorMenuBar()
         ImVec2(errorBarViewport->WorkPos.x + leftMenuBarWidth, errorBarViewport->WorkPos.y);
     ImGui::SetNextWindowPos(errorBarPos, ImGuiCond_Always);
 
-    ImVec2 mainSize = ImVec2(errorBarViewport->WorkSize.x - leftMenuBarWidth - rightMenuBarWidth,
-                             errorMenuBarHeight);
+    ImVec2 mainSize =
+        ImVec2(errorBarViewport->WorkSize.x - leftMenuBarWidth /*- rightMenuBarWidth*/,
+               errorMenuBarHeight);
     ImGui::SetNextWindowSize(mainSize, ImGuiCond_Always);
 
     if (ImGui::Begin("Error Menu Bar", nullptr, flagsBackMenu))
@@ -303,23 +297,23 @@ void GraphicInterface::drawLeftMenuBar()
     ImGui::End();
 }
 
-void GraphicInterface::drawRightMenuBar()
-{
-    const ImGuiViewport* rightMenuViewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(rightMenuViewport->WorkPos, ImGuiCond_Always);
+// void GraphicInterface::drawRightMenuBar()
+// {
+//     const ImGuiViewport* rightMenuViewport = ImGui::GetMainViewport();
+//     ImGui::SetNextWindowPos(rightMenuViewport->WorkPos, ImGuiCond_Always);
 
-    ImVec2 rightPos =
-        ImVec2(rightMenuViewport->WorkSize.x - rightMenuBarWidth, rightMenuViewport->WorkPos.y);
-    ImGui::SetNextWindowPos(rightPos, ImGuiCond_Always);
+//     ImVec2 rightPos =
+//         ImVec2(rightMenuViewport->WorkSize.x - rightMenuBarWidth, rightMenuViewport->WorkPos.y);
+//     ImGui::SetNextWindowPos(rightPos, ImGuiCond_Always);
 
-    ImVec2 windowSize = ImVec2(rightMenuBarWidth, rightMenuViewport->WorkSize.y - lowBarHeight);
-    ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
+//     ImVec2 windowSize = ImVec2(rightMenuBarWidth, rightMenuViewport->WorkSize.y - lowBarHeight);
+//     ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
 
-    if (ImGui::Begin("Right Menu", nullptr, flagsBackMenu))
-    {
-    }
-    ImGui::End();
-}
+//     if (ImGui::Begin("Right Menu", nullptr, flagsBackMenu))
+//     {
+//     }
+//     ImGui::End();
+// }
 
 void GraphicInterface::drawMainMenu()
 {
@@ -330,8 +324,9 @@ void GraphicInterface::drawMainMenu()
                             mainMenuViewport->WorkPos.y + errorMenuBarHeight);
     ImGui::SetNextWindowPos(mainPos, ImGuiCond_Always);
 
-    ImVec2 mainSize = ImVec2(mainMenuViewport->WorkSize.x - leftMenuBarWidth - rightMenuBarWidth,
-                             mainMenuViewport->WorkSize.y - lowBarHeight - errorMenuBarHeight);
+    ImVec2 mainSize =
+        ImVec2(mainMenuViewport->WorkSize.x - leftMenuBarWidth /*- rightMenuBarWidth*/,
+               mainMenuViewport->WorkSize.y - lowBarHeight - errorMenuBarHeight);
     ImGui::SetNextWindowSize(mainSize, ImGuiCond_Always);
 
     if (ImGui::Begin("Main menu", nullptr, flagsBackMenu))
