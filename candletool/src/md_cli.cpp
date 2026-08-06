@@ -735,6 +735,13 @@ namespace mab
                                     readableRegisters.legacyHardwareVersion.value)
                                     .value_or("Unknown")
                              << std::endl;
+                    m_logger << "- batch: " << std::string(readableRegisters.productionBatch.value)
+                             << std::endl;
+                    m_logger << "- manufactured: "
+                             << std::string(readableRegisters.productionDate.value)
+                                    .insert(4, ".")
+                                    .insert(2, ".")
+                             << std::endl;
                 }
                 else
                 {
