@@ -34,16 +34,17 @@ void GraphicInterface::init()
 #endif
 
     // Create window with graphics context
-    GLFWmonitor*       primaryMonitor = glfwGetPrimaryMonitor();
-    const GLFWvidmode* videoMode      = glfwGetVideoMode(primaryMonitor);
+    // GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+    // const GLFWvidmode* videoMode      = glfwGetVideoMode(primaryMonitor);
 
-    m_window = glfwCreateWindow(videoMode->width, videoMode->height, "MD GUI", nullptr, nullptr);
+    glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
+    m_window = glfwCreateWindow(1280, 960, "MD GUI", nullptr, nullptr);
     if (m_window == nullptr)
         return;
 
-    int monitorX, monitorY;
-    glfwGetMonitorPos(primaryMonitor, &monitorX, &monitorY);
-    glfwSetWindowPos(m_window, monitorX, monitorY);
+    // int monitorX, monitorY;
+    //  glfwGetMonitorPos(primaryMonitor, &monitorX, &monitorY);
+    //  glfwSetWindowPos(m_window, monitorX, monitorY);
 
     glfwMakeContextCurrent(m_window);
     glfwSwapInterval(1);  // Enable vsync
