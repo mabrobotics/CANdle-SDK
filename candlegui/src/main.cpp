@@ -76,7 +76,7 @@ int main(int argc, char** argv)
     }
     else
     {
-        std::cerr << "Invalid bus type, try: \"usb, spi \"." << busType << std::endl;
+        std::cerr << busType << "is invalid bus type, try: \"usb, spi \"." << std::endl;
         m_common->busType = commonMemory_S::busType_E::UNKNOWN;
         return 1;
     }
