@@ -12,7 +12,7 @@ static void glfw_error_callback(int error, const char* description)
 }
 
 // Main code
-int main(int, char**)
+int main(int argc, char** argv)
 {
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
@@ -52,17 +52,34 @@ int main(int, char**)
         io.Fonts->AddFontDefault();
     }
 
+    std::string busType = "usb";
+
+    for (int i = 1; i < argc; i++)
+    {
+        std::string_view arg(argv[i]);
+
+        if (arg.substr(0, 6) == "--bus=")
+        {
+            busType = arg.substr(6);
+        }
+    }
+
     auto m_common = std::make_shared<commonMemory_S>();
 
-#if defined(__x86_64__) || defined(_M_X64)
-    m_common->architecture = commonMemory_S::systemArchitecture_E::X86_64;
-#elif defined(__aarch64__) || defined(_M_ARM64)
-    m_common->architecture = commonMemory_S::systemArchitecture_E::ARM64;
-#elif defined(__arm__) || defined(_M_ARM)
-    m_common->architecture = commonMemory_S::systemArchitecture_E::ARMHF;
-#else
-    m_common->architecture = commonMemory_S::systemArchitecture_E::UNKNOWN;
-#endif
+    if (busType == "usb")
+    {
+        m_common->busType = commonMemory_S::busType_E::USB;
+    }
+    else if (busType == "spi")
+    {
+        m_common->busType = commonMemory_S::busType_E::SPI;
+    }
+    else
+    {
+        std::cerr << "Invalid bus type, try: \"usb, spi \"." << busType << std::endl;
+        m_common->busType = commonMemory_S::busType_E::UNKNOWN;
+        return 1;
+    }
 
     std::atomic<bool> isRunning{true};
 

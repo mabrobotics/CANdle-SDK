@@ -214,25 +214,26 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
 
         if (candle == nullptr)
         {
-            std::unique_ptr<mab::I_CommunicationInterface> busType;
-            if (m_data->architecture == commonMemory_S::systemArchitecture_E::X86_64)
+            std::unique_ptr<mab::I_CommunicationInterface> bus;
+
+            commonMemory_S::busType_E busType = m_data->busType;
+
+            if (busType == commonMemory_S::busType_E::USB)
             {
-                busType =
-                    std::make_unique<mab::USB>(mab::Candle::CANDLE_VID, mab::Candle::CANDLE_PID);
+                bus = std::make_unique<mab::USB>(mab::Candle::CANDLE_VID, mab::Candle::CANDLE_PID);
             }
-            if (m_data->architecture == commonMemory_S::systemArchitecture_E::ARM64 ||
-                m_data->architecture == commonMemory_S::systemArchitecture_E::ARMHF)
+            if (busType == commonMemory_S::busType_E::SPI)
             {
-                busType = std::make_unique<mab::SPI>();
+                bus = std::make_unique<mab::SPI>();
             }
 
-            if (busType)
+            if (bus)
             {
                 bool interfaceConnected = false;
 
                 for (int i = 0; i < MAX_CONNECT_RETRIES && isRunning; i++)
                 {
-                    if (busType->connect() == mab::I_CommunicationInterface::Error_t::OK)
+                    if (bus->connect() == mab::I_CommunicationInterface::Error_t::OK)
                     {
                         interfaceConnected = true;
                         break;
@@ -242,8 +243,8 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
 
                 if (interfaceConnected)
                 {
-                    candle = mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M,
-                                               std::move(busType));
+                    candle =
+                        mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M, std::move(bus));
                     if (candle != nullptr)
                     {
                         m_data->candleAvailable = true;
