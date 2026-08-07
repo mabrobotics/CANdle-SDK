@@ -7,6 +7,15 @@
 
 struct commonMemory_S
 {
+    enum class systemArchitecture_E
+    {
+        X86_64  = 0,
+        ARM64   = 1,
+        ARMHF   = 2,
+        UNKNOWN = 3
+    };
+    systemArchitecture_E architecture;
+
     std::atomic<int> actual_thread_hz{0};
     std::mutex       mtx;
     float            targetVelocity     = 0.0f;

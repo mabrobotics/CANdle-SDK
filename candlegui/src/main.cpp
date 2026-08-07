@@ -54,6 +54,16 @@ int main(int, char**)
 
     auto m_common = std::make_shared<commonMemory_S>();
 
+#if defined(__x86_64__) || defined(_M_X64)
+    m_common->architecture = commonMemory_S::systemArchitecture_E::X86_64;
+#elif defined(__aarch64__) || defined(_M_ARM64)
+    m_common->architecture = commonMemory_S::systemArchitecture_E::ARM64;
+#elif defined(__arm__) || defined(_M_ARM)
+    m_common->architecture = commonMemory_S::systemArchitecture_E::ARMHF;
+#else
+    m_common->architecture = commonMemory_S::systemArchitecture_E::UNKNOWN;
+#endif
+
     std::atomic<bool> isRunning{true};
 
     GraphicInterface interface(m_common, io);

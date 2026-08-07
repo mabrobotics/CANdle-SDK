@@ -1124,9 +1124,9 @@ void GraphicInterface::updatePlotData()
     }
 }
 
-void GraphicInterface::timeInTarget(bool& inWindow, float& timeInTargetWindow, float& dt)
+void GraphicInterface::timeInTarget(bool& inTimeWindow, float& timeInTargetWindow, float& dt)
 {
-    if (inWindow)
+    if (inTimeWindow)
     {
         timeInTargetWindow += dt;
 

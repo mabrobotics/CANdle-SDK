@@ -214,28 +214,40 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
 
         if (candle == nullptr)
         {
-            std::unique_ptr<mab::USB> busType =
-                std::make_unique<mab::USB>(mab::Candle::CANDLE_VID, mab::Candle::CANDLE_PID);
-
-            bool usbConnected = false;
-
-            for (int i = 0; i < MAX_CONNECT_RETRIES && isRunning; i++)
+            std::unique_ptr<mab::I_CommunicationInterface> busType;
+            if (m_data->architecture == commonMemory_S::systemArchitecture_E::X86_64)
             {
-                if (busType->connect() == mab::I_CommunicationInterface::Error_t::OK)
-                {
-                    usbConnected = true;
-                    break;
-                }
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                busType =
+                    std::make_unique<mab::USB>(mab::Candle::CANDLE_VID, mab::Candle::CANDLE_PID);
+            }
+            if (m_data->architecture == commonMemory_S::systemArchitecture_E::ARM64 ||
+                m_data->architecture == commonMemory_S::systemArchitecture_E::ARMHF)
+            {
+                busType = std::make_unique<mab::SPI>();
             }
 
-            if (usbConnected)
+            if (busType)
             {
-                candle =
-                    mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M, std::move(busType));
-                if (candle != nullptr)
+                bool interfaceConnected = false;
+
+                for (int i = 0; i < MAX_CONNECT_RETRIES && isRunning; i++)
                 {
-                    m_data->candleAvailable = true;
+                    if (busType->connect() == mab::I_CommunicationInterface::Error_t::OK)
+                    {
+                        interfaceConnected = true;
+                        break;
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                }
+
+                if (interfaceConnected)
+                {
+                    candle = mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M,
+                                               std::move(busType));
+                    if (candle != nullptr)
+                    {
+                        m_data->candleAvailable = true;
+                    }
                 }
             }
         }
