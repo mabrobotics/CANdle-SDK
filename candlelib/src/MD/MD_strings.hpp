@@ -52,6 +52,9 @@ namespace mab
             {9, "RLS_17B_SPI"},
             {10, "RLS_ORBIS_RS422"},
             {11, "CE300"},
+            {12, "RLS_MB022"},
+            {13, "AR50"},
+
         };
         static inline const std::map<std::string_view, u32> toNumericMap{
             {"NONE", 0},
@@ -67,6 +70,8 @@ namespace mab
             {"RLS_17B_SPI", 9},
             {"RLS_ORBIS_RS422", 10},
             {"CE300", 11},
+            {"RLS_MB022", 12},
+            {"AR50", 13},
         };
 
         static std::optional<u32> toNumeric(const std::string_view val)
