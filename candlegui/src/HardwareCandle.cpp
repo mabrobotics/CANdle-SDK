@@ -172,6 +172,8 @@ const char* HardwareCandle::errorToString(mab::candleTypes::Error_t error)
             return "INVALID_ID";
         case mab::candleTypes::Error_t::BAD_RESPONSE:
             return "BAD_RESPONSE";
+        case mab::candleTypes::Error_t::NOT_SUPPORTED:
+            return "NOT_SUPPORTED";
         case mab::candleTypes::Error_t::UNKNOWN_ERROR:
             return "UNKNOWN_ERROR";
         default:
@@ -248,6 +250,7 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                     if (candle != nullptr)
                     {
                         m_data->candleAvailable = true;
+                        m_data->updatedVersion  = true;
                     }
                 }
             }
@@ -270,6 +273,23 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                 m_data->testStarted     = false;
                 m_data->testOngoing     = false;
                 m_data->candleAvailable = false;
+                m_data->mdIDs.clear();
+                buttonDiscoverMdPressed = false;
+                m_data->discoverOngoing = false;
+
+                min = 0;
+                max = 100;
+
+                mab::detachCandle(candle);
+                candle = nullptr;
+            }
+            else if (errMsg == mab::candleTypes::Error_t::NOT_SUPPORTED)
+            {
+                std::lock_guard<std::mutex> lock(m_data->mtx);
+                m_data->testStarted     = false;
+                m_data->testOngoing     = false;
+                m_data->candleAvailable = false;
+                m_data->updatedVersion  = false;
                 m_data->mdIDs.clear();
                 buttonDiscoverMdPressed = false;
                 m_data->discoverOngoing = false;

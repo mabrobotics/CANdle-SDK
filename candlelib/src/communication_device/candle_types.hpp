@@ -23,6 +23,7 @@ namespace mab
             RESPONSE_TIMEOUT,
             CAN_DEVICE_NOT_RESPONDING,
             TRANSMITTER_ERROR,
+            NOT_SUPPORTED,
             RECEIVER_ERROR,
             INVALID_ID,
             BAD_RESPONSE,

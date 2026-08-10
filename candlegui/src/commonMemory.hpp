@@ -87,6 +87,7 @@ struct commonMemory_S
     std::atomic<bool> selectedMode{false};
     std::atomic<bool> testOngoing{false};
     std::atomic<bool> candleAvailable{false};
+    std::atomic<bool> updatedVersion{false};
     std::atomic<bool> discoverOngoing{false};
     std::atomic<bool> errorOccured{false};
 

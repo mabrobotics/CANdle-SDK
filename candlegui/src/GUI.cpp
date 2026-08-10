@@ -377,11 +377,19 @@ void GraphicInterface::drawErrorMenuPopup()
     if (ImGui::BeginPopupModal(popupTitle, nullptr, flags))
     {
         ImGui::SetWindowFontScale(1.3f);
-        ImGui::Text("You didn't light your CANdle!");
+
+        if (!m_data->updatedVersion)
+            ImGui::Text("Update CANdle drivers.");
+        else
+            ImGui::Text("You didn't light your CANdle!");
         ImGui::Separator();
 
-        ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f),
-                           "Continue by connecting CANdle via USB!");
+        if (!m_data->updatedVersion)
+            ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f),
+                               "Install new USB drivers by runing candlesdk-win-driver.exe!");
+        else
+            ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f),
+                               "Continue by connecting CANdle via USB!");
 
         ImGui::EndPopup();
     }

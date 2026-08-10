@@ -131,6 +131,10 @@ if(WIN32)
   set(CPACK_NSIS_MODIFY_PATH ON)
   set(CPACK_NSIS_MUI_ICON "${CMAKE_CURRENT_SOURCE_DIR}/MAB.ico")
   set(CPACK_NSIS_MUI_UNIICON "${CMAKE_CURRENT_SOURCE_DIR}/MAB.ico")
+  set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
+        DetailPrint \\\"Driver installing...\\\"
+        ExecWait '\\\"$INSTDIR\\\\bin\\\\candlesdk-win-driver.exe\\\"'
+    ")
 elseif(UNIX)
     install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/udev/rules.d/99-mdgui.rules DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/" COMPONENT rulesgui)
 

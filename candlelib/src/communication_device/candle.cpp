@@ -240,6 +240,9 @@ namespace mab
                 case I_CommunicationInterface::UNKNOWN_ERROR:
                     return candleTypes::Error_t::UNKNOWN_ERROR;
                     break;
+                case I_CommunicationInterface::NOT_SUPPORTED:
+                    return candleTypes::Error_t::NOT_SUPPORTED;
+                    break;
                 default:
                     return candleTypes::Error_t::UNKNOWN_ERROR;
                     break;

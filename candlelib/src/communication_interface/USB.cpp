@@ -365,7 +365,7 @@ namespace mab
             }
             if (transmitError == libusb_error::LIBUSB_ERROR_NOT_SUPPORTED)
             {
-                return std::pair(data, Error_t::NOT_CONNECTED);
+                return std::pair(data, Error_t::NOT_SUPPORTED);
             }
             return std::pair(data, Error_t::TRANSMITTER_ERROR);
         }
