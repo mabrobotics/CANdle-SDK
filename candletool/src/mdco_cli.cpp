@@ -640,12 +640,12 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             m_log.success("Saving registers succesful!");
         });
 
-    //candletool mdco test  
+    // candletool mdco test
     CLI::App* test = mdco->add_subcommand("test", "Test the MD drive movement.")
                          ->needs(mdCanIdOption)
                          ->require_subcommand();
 
-    // candletool mdco test move 
+    // candletool mdco test move
     CLI::App* testMove =
         test->add_subcommand("move", "Validate if motor can move.")->require_subcommand();
 
@@ -677,7 +677,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error("Failed move");
                 return;
             }
-            while (!mdco->targetReached().first)
+            std::signal(SIGINT, [](int) { testRunning = false; });
+            while (!mdco->targetReached().first && testRunning)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
                 auto position = mdco->getPosition().first;
@@ -685,8 +686,10 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 mdco->setTargetPosition(
                     *moveOptionsAbs.target);  // get driver unstuck from quickstop
             }
-
-            m_log.success("Target Reached!");
+            if (!testRunning)
+                m_log.info("Test move disabled!");
+            else
+                m_log.success("Target Reached!");
 
             if (mdco->disable() != MDCO::Error_t::OK)
             {
@@ -695,7 +698,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             }
         });
 
-    // candletool mdco test move relative 
+    // candletool mdco test move relative
     CLI::App* testMoveRel = testMove->add_subcommand(
         "relative", "Move motor to relative position using impedance mode.");
 
@@ -766,8 +769,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             }
         });
     // candletool mdco test move velocity
-    CLI::App* testMoveVel = testMove->add_subcommand(
-        "velocity", "Move motor with specified velocity.");
+    CLI::App* testMoveVel =
+        testMove->add_subcommand("velocity", "Move motor with specified velocity.");
 
     MoveOptions moveOptionsVel(testMoveVel);
 
@@ -783,7 +786,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error("Failed move");
                 return;
             }
-            if (mdco->setOperationMode(mab::ModesOfOperation::CyclicSyncVelocity) != MDCO::Error_t::OK)
+            if (mdco->setOperationMode(mab::ModesOfOperation::CyclicSyncVelocity) !=
+                MDCO::Error_t::OK)
             {
                 m_log.error("Failed move");
                 return;
@@ -795,24 +799,25 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error("Failed move");
                 return;
             }
-            if (mdco->setOperationMode(mab::ModesOfOperation::CyclicSyncVelocity) != MDCO::Error_t::OK)
+            if (mdco->setOperationMode(mab::ModesOfOperation::CyclicSyncVelocity) !=
+                MDCO::Error_t::OK)
             {
                 m_log.error("Failed move");
                 return;
             }
-            auto             targetVelocity = *moveOptionsVel.target;
-            auto velocity = mdco->getVelocity().first;
+            auto targetVelocity = *moveOptionsVel.target;
+            auto velocity       = mdco->getVelocity().first;
             std::signal(SIGINT, [](int) { testRunning = false; });
-            while(testRunning)
+            while (testRunning)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
                 velocity = mdco->getVelocity().first;
                 m_log << "Vel: " << velocity << '\n';
-                m_log << "Target: " << targetVelocity<< '\n';
+                m_log << "Target: " << targetVelocity << '\n';
                 mdco->setTargetVelocity(targetVelocity);
             }
 
-            m_log.success("Target Reached!");
+            m_log.success("Test move stopped!");
 
             if (mdco->disable() != MDCO::Error_t::OK)
             {
