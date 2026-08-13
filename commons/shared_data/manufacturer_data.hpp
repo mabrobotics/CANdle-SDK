@@ -72,6 +72,8 @@ namespace mab
                 return (char*)"md0004";
             case mab::deviceType_E::MD200:
                 return (char*)"md200";
+            case mab::deviceType_E::MD80HV_HS:
+                return (char*)"md80hvhs";
             case mab::deviceType_E::CANDLE:
                 return (char*)"candle";
             case mab::deviceType_E::CANDLE_HAT:
