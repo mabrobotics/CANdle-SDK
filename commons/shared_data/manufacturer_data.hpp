@@ -20,6 +20,7 @@ namespace mab
         MD80DE         = 0x05,
         MD80EC         = 0x06,
         MD200          = 0x07,
+        MD80HV_HS      = 0x08,
 
         MD0004 = 0xB0,
 
@@ -43,6 +44,8 @@ namespace mab
             return mab::deviceType_E::MD0004;
         if (strcmp(cstr, "md200") == 0)
             return mab::deviceType_E::MD200;
+        if (strcmp(cstr, "md80hvhs") == 0)
+            return mab::deviceType_E::MD80HV_HS;
         if (strcmp(cstr, "candle") == 0)
             return mab::deviceType_E::CANDLE;
         if (strcmp(cstr, "candlehat") == 0)
