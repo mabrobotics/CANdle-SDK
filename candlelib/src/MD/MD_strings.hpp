@@ -41,8 +41,8 @@ namespace mab
     {
         static inline const std::map<u32, std::string_view> fromNumericMap{
             {0, "NONE"},
-            {1, "ME_AS_CENTER"},
-            {2, "ME_AS_OFFAXIS"},
+            {1, "ME_AM_CENTER"},
+            {2, "ME_AM_OFFAXIS"},
             {3, "RLS_17B_RS422"},
             {4, "CM_OFFAXIS"},
             {5, "M24B_CENTER"},
@@ -56,7 +56,9 @@ namespace mab
         static inline const std::map<std::string_view, u32> toNumericMap{
             {"NONE", 0},
             {"ME_AS_CENTER", 1},
+            {"ME_AM_CENTER", 1},
             {"ME_AS_OFFAXIS", 2},
+            {"ME_AM_OFFAXIS", 2},
             {"RLS_17B_RS422", 3},
             {"MB053SFA17BENT00", 3},  // deprecated
             {"CM_OFFAXIS", 4},
@@ -94,19 +96,20 @@ namespace mab
     // DIR IS BROKEN! So it is not included here until it is fixed
     struct MDAuxEncoderModeValue_S
     {
-        static inline const std::map<u32, std::string_view> fromNumericMap{
-            {0, "NONE"},
-            {1, "STARTUP"},
-            {2, "MOTION"},
-            {3, "REPORT"},
-            {4, "MAIN"},
-            {5, "CALIBRATED_REPORT"}};
+        static inline const std::map<u32, std::string_view> fromNumericMap{{0, "NONE"},
+                                                                           {1, "STARTUP"},
+                                                                           {2, "MOTION"},
+                                                                           {3, "REPORT"},
+                                                                           {4, "MAIN"},
+                                                                           {5, "CALIBRATED_REPORT"},
+                                                                           {6, "DUAL"}};
         static inline const std::map<std::string_view, u32> toNumericMap{{"NONE", 0},
                                                                          {"STARTUP", 1},
                                                                          {"MOTION", 2},
                                                                          {"REPORT", 3},
                                                                          {"MAIN", 4},
-                                                                         {"CALIBRATED_REPORT", 5}};
+                                                                         {"CALIBRATED_REPORT", 5},
+                                                                         {"DUAL", 6}};
 
         static std::optional<u32> toNumeric(const std::string_view val)
         {
@@ -219,10 +222,8 @@ namespace mab
     };
     struct MDTorqueSensorType_S
     {
-        static inline const std::map<u32, std::string_view> fromNumericMap{
-            {0, "OFF"}, {1, "XJC"}};
-        static inline const std::map<std::string_view, u32> toNumericMap{
-            {"OFF", 0}, {"XJC", 1}};
+        static inline const std::map<u32, std::string_view> fromNumericMap{{0, "OFF"}, {1, "XJC"}};
+        static inline const std::map<std::string_view, u32> toNumericMap{{"OFF", 0}, {"XJC", 1}};
 
         static std::optional<u32> toNumeric(const std::string_view val)
         {
