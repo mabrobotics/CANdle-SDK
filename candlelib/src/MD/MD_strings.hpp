@@ -191,9 +191,9 @@ namespace mab
     struct MDUserGpioConfigurationValue_S
     {
         static inline const std::map<u32, std::string_view> fromNumericMap{
-            {0, "OFF"}, {1, "AUTO_BRAKE"}, {2, "GPIO_INPUT"}};
+            {0, "OFF"}, {1, "BRAKE"}, {2, "GPIO_INPUT"}};
         static inline const std::map<std::string_view, u32> toNumericMap{
-            {"OFF", 0}, {"AUTO_BRAKE", 1}, {"GPIO_INPUT", 2}};
+            {"OFF", 0}, {"AUTO_BRAKE", 1}, {"BRAKE", 1}, {"GPIO_INPUT", 2}};
 
         static std::optional<u32> toNumeric(const std::string_view val)
         {
@@ -214,6 +214,30 @@ namespace mab
             {
                 return std::string(it->second);
             }
+            return std::nullopt;
+        }
+    };
+    struct MDTorqueSensorType_S
+    {
+        static inline const std::map<u32, std::string_view> fromNumericMap{
+            {0, "OFF"}, {1, "XJC"}};
+        static inline const std::map<std::string_view, u32> toNumericMap{
+            {"OFF", 0}, {"XJC", 1}};
+
+        static std::optional<u32> toNumeric(const std::string_view val)
+        {
+            if (std::isdigit(val[0]))
+                return std::stoi(val.data());
+            auto it = toNumericMap.find(val);
+            if (it != toNumericMap.end())
+                return it->second;
+            return std::nullopt;
+        }
+        static std::optional<std::string> toReadable(u32 val)
+        {
+            auto it = fromNumericMap.find(val);
+            if (it != fromNumericMap.end())
+                return std::string(it->second);
             return std::nullopt;
         }
     };

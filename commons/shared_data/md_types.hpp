@@ -73,6 +73,7 @@
     MD_REG(runBlink, u8, 0x08B, WO)                  \
     MD_REG(runZero, u8, 0x08C, WO)                   \
     MD_REG(runCanReinit, u8, 0x08D, WO)              \
+    MD_REG(runTorqueSensorZero, u8, 0x008E, WO)      \
                                                      \
     MD_REG(calAuxEncoderStdDev, float, 0x100, RO)    \
     MD_REG(calAuxEncoderMinE, float, 0x101, RO)      \
@@ -107,6 +108,9 @@
                                                      \
     MD_REG(userGpioConfiguration, u8, 0x160, RW)     \
     MD_REG(userGpioState, u16, 0x161, RO)            \
+                                                     \
+    MD_REG(torqueSensor, u8, 0x0200, RW)             \
+    MD_REG(torqueSensorData, f32, 0x0201, RO)        \
                                                      \
     MD_REG(shuntResistance, float, 0x700, RW)        \
     MD_REG(maxDriverCurrent, float, 0x701, RO)       \
