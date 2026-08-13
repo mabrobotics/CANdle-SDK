@@ -272,16 +272,13 @@ void GraphicInterface::drawLeftMenuBar()
                 break;
             case mab::MdMode_E::VELOCITY_PROFILE:
                 drawParametersVelocity();
-                drawParametersPosition();
                 drawSetTargetVelocity();
-                drawSetTargetPosition();
                 drawSetTargetAcceleration();
                 drawSetTargetDeceleration();
                 break;
             case mab::MdMode_E::POSITION_PROFILE:
                 drawParametersVelocity();
                 drawParametersPosition();
-                drawSetTargetVelocity();
                 drawSetTargetPosition();
                 drawSetTargetAcceleration();
                 drawSetTargetDeceleration();
@@ -296,24 +293,6 @@ void GraphicInterface::drawLeftMenuBar()
     }
     ImGui::End();
 }
-
-// void GraphicInterface::drawRightMenuBar()
-// {
-//     const ImGuiViewport* rightMenuViewport = ImGui::GetMainViewport();
-//     ImGui::SetNextWindowPos(rightMenuViewport->WorkPos, ImGuiCond_Always);
-
-//     ImVec2 rightPos =
-//         ImVec2(rightMenuViewport->WorkSize.x - rightMenuBarWidth, rightMenuViewport->WorkPos.y);
-//     ImGui::SetNextWindowPos(rightPos, ImGuiCond_Always);
-
-//     ImVec2 windowSize = ImVec2(rightMenuBarWidth, rightMenuViewport->WorkSize.y - lowBarHeight);
-//     ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
-
-//     if (ImGui::Begin("Right Menu", nullptr, flagsBackMenu))
-//     {
-//     }
-//     ImGui::End();
-// }
 
 void GraphicInterface::drawMainMenu()
 {
@@ -945,17 +924,13 @@ void GraphicInterface::drawSetTargetPosition()
     ImGui::Spacing();
     ImGui::SetCursorPosX(paddingButtons);
     ImGui::Text("Target Position");
-    if (drawBigInputFloat("##Target Position",
-                          &m_data->targetPositionSlider,
-                          1.0f,
-                          2.0f,
-                          "%.2f",
-                          leftMenuBarWidth,
-                          "rad"))
-    {
-        m_data->targetPositionSlider = std::clamp(
-            m_data->targetPositionSlider, m_data->minPositionClamp, m_data->maxPositionClamp);
-    }
+    drawBigInputFloat("##Target Position",
+                      &m_data->targetPositionSlider,
+                      1.0f,
+                      2.0f,
+                      "%.2f",
+                      leftMenuBarWidth,
+                      "rad");
 }
 
 void GraphicInterface::drawSetTargetTorque()
