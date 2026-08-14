@@ -21,6 +21,7 @@ namespace mab
             TRANSMITTER_ERROR,
             RECEIVER_ERROR,
             UNKNOWN_ERROR,
+            NOT_SUPPORTED,
             DATA_TOO_LONG,
             DATA_EMPTY,
             TIMEOUT

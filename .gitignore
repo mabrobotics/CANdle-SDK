@@ -42,3 +42,7 @@ customConfigs
 !candlesdk-win-driver.exe
 *.out
 *.app
+
+# Config files
+*.ini
+Makefile.old

@@ -19,9 +19,11 @@ project(
 
 option(CANDLESDK_BUILD_PYTHON "Build python library shared object" OFF)
 option(CANDLESDK_BUILD_EXAMPLES
-       "Build examples (has no effect on python builds)" ON)
+       "Build examples (has no effect on python builds)" OFF)
 option(CANDLESDK_BUILD_CANDLETOOL
-       "Build candletool executable (has no effect on python builds)" ON)
+       "Build candletool executable (has no effect on python builds)" OFF)
+option(CANDLESDK_BUILD_MDGUI
+       "Build mdgui executable (has no effect on python builds)" ON)
 option(
   CANDLE_BUILD_STATIC
   "Build static library (has no effect on windows library and python builds)"
@@ -35,6 +37,7 @@ message("Available flags and their values:")
 message("  CANDLESDK_BUILD_PYTHON = ${CANDLESDK_BUILD_PYTHON}")
 message("  CANDLESDK_BUILD_EXAMPLES = ${CANDLESDK_BUILD_EXAMPLES}")
 message("  CANDLESDK_BUILD_CANDLETOOL = ${CANDLESDK_BUILD_CANDLETOOL}")
+message("  CANDLESDK_BUILD_MDGUI = ${CANDLESDK_BUILD_MDGUI}")
 message("  CANDLE_BUILD_STATIC = ${CANDLE_BUILD_STATIC}")
 message("  MAKE_TESTS = ${MAKE_TESTS}")
 message("  SUPPRESS_WARN = ${SUPPRESS_WARN}")
@@ -44,13 +47,20 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(NOT SUPPRESS_WARN)
-  add_compile_options(-Wfatal-errors -Wall -Wextra -Wpedantic
-                      -Wno-unused-parameter -Wno-missing-field-initializers)
-  if(NOT WIN32)
-    add_compile_options(-Werror)
-    add_compile_definitions(WIN32_MEAN_AND_LEAN) # This define is needed for
-    # windows.h to exclude some less used APIs
+  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_compile_options(-Wfatal-errors -Wall -Wextra -Wpedantic
+                        -Wno-unused-parameter -Wno-missing-field-initializers)
+    if(NOT WIN32)
+      add_compile_options(-Werror)
+    endif()
+  
+  elseif(MSVC)
+    add_compile_options(/W4) 
   endif()
+endif()
+
+if(WIN32)
+  add_compile_definitions(WIN32_LEAN_AND_MEAN)
 endif()
 
 if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64" OR ${CMAKE_SYSTEM_PROCESSOR}
@@ -83,4 +93,8 @@ else()
     if(CANDLESDK_BUILD_EXAMPLES)
         add_subdirectory(examples)
     endif()
+    if(CANDLESDK_BUILD_MDGUI)
+        add_subdirectory(candlegui)
+    endif()
+
 endif()

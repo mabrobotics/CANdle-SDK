@@ -355,6 +355,18 @@ namespace mab
             {
                 m_libusbDevice->unclogInput();
             }
+            if (transmitError == libusb_error::LIBUSB_ERROR_NO_DEVICE)
+            {
+                return std::pair(data, Error_t::NOT_CONNECTED);
+            }
+            if (transmitError == libusb_error::LIBUSB_ERROR_IO)
+            {
+                return std::pair(data, Error_t::NOT_CONNECTED);
+            }
+            if (transmitError == libusb_error::LIBUSB_ERROR_NOT_SUPPORTED)
+            {
+                return std::pair(data, Error_t::NOT_SUPPORTED);
+            }
             return std::pair(data, Error_t::TRANSMITTER_ERROR);
         }
 

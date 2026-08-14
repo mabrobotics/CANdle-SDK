@@ -73,11 +73,6 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-dev
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -108,11 +103,9 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install CIBuildWheel
-        run: python -m pip install cibuildwheel==3.1.1
-
-      - name: Install uv
-        run: python -m pip install uv
+      - name: Install CIBuildWheel and uv
+        run: |
+          python -m pip install cibuildwheel==3.1.1 uv
 
       - name: Set CMake generator
         shell: powershell
@@ -138,6 +131,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: "true"
+      
+      - name: Install OpenGl
+        run: | 
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libgl1-mesa-dev xorg-dev libglfw3-dev
 
       - name: CMake configure
         run: |
@@ -169,6 +167,14 @@ jobs:
         with:
           submodules: "true"
 
+      - name: Install OpenGl
+        run: | 
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libgl1-mesa-dev xorg-dev libglfw3-dev  
+      
+      - name: Install CPack dependencies
+        run: sudo apt-get update && sudo apt-get install -y file dpkg-dev
+
       - name: CMake configure
         run: |
           cmake -DCMAKE_BUILD_TYPE=Release -B build -G "Unix Makefiles" .
@@ -198,8 +204,17 @@ jobs:
         with:
           submodules: "true"
 
+      - name: Install OpenGL and dependencies
+        run: |
+          dpkg --add-architecture arm64
+          sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+          sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
+          apt-get update
+          apt-get install -y pkg-config libgl1-mesa-dev:arm64 libx11-dev:arm64 libglfw3-dev:arm64
+
       - name: CMake configure
         run: |
+          export PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
           cmake -DCMAKE_BUILD_TYPE=Release -DCANDLE_BUILD_STATIC=OFF --toolchain ./cmake/linux.arm64.toolchain.cmake ./ -B build -G "Unix Makefiles" .
 
       - name: Build
@@ -227,9 +242,18 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: "true"
+      
+      - name: Install OpenGL and dependencies
+        run: |
+          dpkg --add-architecture arm64
+          sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+          sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
+          apt-get update
+          apt-get install -y pkg-config libgl1-mesa-dev:arm64 libx11-dev:arm64 libglfw3-dev:arm64 file dpkg-dev
 
       - name: CMake configure
         run: |
+          export PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
           cmake -DCMAKE_BUILD_TYPE=Release --toolchain ./cmake/linux.arm64.toolchain.cmake ./ -B build -G "Unix Makefiles" .
 
       - name: Build
@@ -257,8 +281,17 @@ jobs:
         with:
           submodules: "true"
 
+      - name: Install OpenGL and dependencies
+        run: |
+          dpkg --add-architecture armhf
+          sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+          sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
+          apt-get update
+          apt-get install -y pkg-config libgl1-mesa-dev:armhf libx11-dev:armhf libglfw3-dev:armhf
+
       - name: CMake configure
         run: |
+          export PKG_CONFIG_LIBDIR=/usr/lib/arm-linux-gnueabihf/pkgconfig:/usr/share/pkgconfig
           cmake -DCMAKE_BUILD_TYPE=Release -DCANDLE_BUILD_STATIC=OFF --toolchain ./cmake/linux.armhf.toolchain.cmake ./ -B build -G "Unix Makefiles" .
 
       - name: Build
@@ -287,8 +320,17 @@ jobs:
         with:
           submodules: "true"
 
+      - name: Install OpenGL and dependencies
+        run: |
+          dpkg --add-architecture armhf
+          sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+          sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
+          apt-get update
+          apt-get install -y pkg-config libgl1-mesa-dev:armhf libx11-dev:armhf libglfw3-dev:armhf file dpkg-dev
+
       - name: CMake configure
         run: |
+          export PKG_CONFIG_LIBDIR=/usr/lib/arm-linux-gnueabihf/pkgconfig:/usr/share/pkgconfig
           cmake -DCMAKE_BUILD_TYPE=Release --toolchain ./cmake/linux.armhf.toolchain.cmake ./ -B build -G "Unix Makefiles" .
 
       - name: Build
@@ -316,9 +358,21 @@ jobs:
         with:
           submodules: "true"
 
-      - name: Build
+      - name: Install dependencies and Windows GLFW3
         run: |
-          ./launch/buildForWindows.sh
+          apt-get update && apt-get install -y wget unzip pkg-config mingw-w64 nodejs
+          wget -qO glfw.zip https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.bin.WIN64.zip
+          unzip -q glfw.zip -d /opt/glfw
+          mkdir -p /opt/glfw/pkgconfig
+          echo -e "prefix=/opt/glfw/glfw-3.4.bin.WIN64\nlibdir=\${prefix}/lib-mingw-w64\nincludedir=\${prefix}/include\nName: GLFW\nDescription: GLFW\nVersion: 3.4\nLibs: -L\${libdir} -lglfw3 -lgdi32 -lopengl32\nCflags: -I\${includedir}" > /opt/glfw/pkgconfig/glfw3.pc
+
+      - name: Build
+        env:
+          PKG_CONFIG_PATH: /opt/glfw/pkgconfig
+          CFLAGS: "-I/opt/glfw/glfw-3.4.bin.WIN64/include"
+          CXXFLAGS: "-I/opt/glfw/glfw-3.4.bin.WIN64/include"
+          LDFLAGS: "-L/opt/glfw/glfw-3.4.bin.WIN64/lib-mingw-w64"
+        run: ./launch/buildForWindows.sh
 
       - name: Store artifacts
         uses: actions/upload-artifact@v4
@@ -338,6 +392,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: "true"
+      
+      - name: Install OpenGl
+        run: | 
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libgl1-mesa-dev xorg-dev libglfw3-dev
 
       - name: CMake configure
         run: |
