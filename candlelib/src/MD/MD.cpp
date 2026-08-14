@@ -614,6 +614,16 @@ namespace mab
         constexpr canId_t MIN_VAILID_ID = 10;     // ids less than that are reserved for special
         constexpr canId_t MAX_VAILID_ID = 0x7FF;  // 11-bit value (standard can ID max)
 
+        return discoverMDs(candle, MIN_VAILID_ID, MAX_VAILID_ID);
+    }
+
+    std::vector<canId_t> MD::discoverMDs(Candle* candle,
+                                         canId_t minValueRange,
+                                         canId_t maxValueRange)
+    {
+        constexpr canId_t MIN_VALID_ID = 10;     // ids less than that are reserved for special
+        constexpr canId_t MAX_VALID_ID = 0x7FF;  // 11-bit value (standard can ID max)
+
         Logger               log(Logger::ProgramLayer_E::TOP, "MD_DISCOVERY");
         std::vector<canId_t> ids;
 
@@ -623,15 +633,19 @@ namespace mab
             return std::vector<canId_t>();
         }
 
-        log.info("Looking for MDs");
+        if (minValueRange < MIN_VALID_ID)
+            minValueRange = MIN_VALID_ID;
+
+        if (maxValueRange > MAX_VALID_ID)
+            maxValueRange = MAX_VALID_ID;
 
         // workaround for ping error spam
         Logger::Verbosity_E prevVerbosity =
             Logger::g_m_verbosity.value_or(Logger::Verbosity_E::VERBOSITY_1);
-        for (canId_t id = MIN_VAILID_ID; id < MAX_VAILID_ID; id++)
+        for (canId_t id = minValueRange; id < maxValueRange; id++)
         {
             log.debug("Trying to bind MD with id %d", id);
-            log.progress(float(id) / float(MAX_VAILID_ID));
+            // log.progress(float(id) / float(maxValueRange));
             Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
             MD md(id, candle);
             if (md.init() == MD::Error_t::OK)
@@ -643,7 +657,7 @@ namespace mab
             }
             Logger::g_m_verbosity = prevVerbosity;
         }
-        log.progress(1.);
+        // log.progress(1.);
         return ids;
     }
 }  // namespace mab
