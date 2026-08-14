@@ -10,6 +10,7 @@
 #include "CLI/CLI.hpp"
 #include "logger.hpp"
 #include "candlelib.hpp"
+#include "configHelpers.hpp"
 
 namespace mab
 {
@@ -66,7 +67,7 @@ namespace mab
     {
         std::vector<CANdleBranch_S>                  candleBranchVec;
         const std::shared_ptr<std::filesystem::path> packageEtcPath =
-            std::make_shared<std::filesystem::path>(DEFAULT_CANDLETOOL_CONFIG_DIR);
+            std::make_shared<std::filesystem::path>(getDefaultConfigDir());
     };
 
     class MABDescriptionFormatter : public CLI::Formatter
