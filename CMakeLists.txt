@@ -19,9 +19,9 @@ project(
 
 option(CANDLESDK_BUILD_PYTHON "Build python library shared object" OFF)
 option(CANDLESDK_BUILD_EXAMPLES
-       "Build examples (has no effect on python builds)" OFF)
+       "Build examples (has no effect on python builds)" ON)
 option(CANDLESDK_BUILD_CANDLETOOL
-       "Build candletool executable (has no effect on python builds)" OFF)
+       "Build candletool executable (has no effect on python builds)" ON)
 option(CANDLESDK_BUILD_MDGUI
        "Build mdgui executable (has no effect on python builds)" ON)
 option(
