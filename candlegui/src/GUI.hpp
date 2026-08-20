@@ -57,7 +57,6 @@ class GraphicInterface
     const float step_fast = 1.0f;
 
     // Main menu draw functions
-    // void drawMenuTopBar();
     void drawErrorMenuBar();
     void drawMenuLowerBar();
     void drawTestMenuBar();

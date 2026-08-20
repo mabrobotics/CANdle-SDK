@@ -76,7 +76,6 @@ void GraphicInterface::loop()
 
         if (m_data->candleAvailable)
         {
-            // drawMenuTopBar();
             drawMenuLowerBar();
             drawTestMenuBar();
             drawLeftMenuBar();
@@ -90,7 +89,6 @@ void GraphicInterface::loop()
 
             ImGui::BeginDisabled();
 
-            // drawMenuTopBar();
             drawMenuLowerBar();
             drawTestMenuBar();
             drawLeftMenuBar();
@@ -122,41 +120,6 @@ void GraphicInterface::loop()
 Main menu draw functions
 
 */
-
-// void GraphicInterface::drawMenuTopBar()
-// {
-//     if (ImGui::BeginMainMenuBar())
-//     {
-//         if (ImGui::BeginMenu("File"))
-//         {
-//             if (ImGui::MenuItem("Undo", "Ctrl+Z"))
-//             {
-//             }
-//             ImGui::EndMenu();
-//         }
-//         if (ImGui::BeginMenu("Edit"))
-//         {
-//             if (ImGui::MenuItem("Undo", "Ctrl+Z"))
-//             {
-//             }
-//             if (ImGui::MenuItem("Redo", "Ctrl+Y", false, false))
-//             {
-//             }  // Disabled item
-//             ImGui::Separator();
-//             if (ImGui::MenuItem("Cut", "Ctrl+X"))
-//             {
-//             }
-//             if (ImGui::MenuItem("Copy", "Ctrl+C"))
-//             {
-//             }
-//             if (ImGui::MenuItem("Paste", "Ctrl+V"))
-//             {
-//             }
-//             ImGui::EndMenu();
-//         }
-//         ImGui::EndMainMenuBar();
-//     }
-// }
 
 void GraphicInterface::drawMenuLowerBar()
 {
