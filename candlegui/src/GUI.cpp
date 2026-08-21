@@ -76,6 +76,7 @@ void GraphicInterface::loop()
 
         if (m_data->candleAvailable)
         {
+            updatePlotData();
             drawMenuLowerBar();
             drawTestMenuBar();
             drawLeftMenuBar();
@@ -338,8 +339,6 @@ void GraphicInterface::drawMainMenu()
     if (ImGui::Begin("Main menu", nullptr, flagsBackMenu))
     {
         mab::MdMode_E currentModeLocal = m_data->currentMode;
-
-        updatePlotData();
 
         ImVec2 availableSpace        = ImGui::GetContentRegionAvail();
         float  heightWithoutSplitter = availableSpace.y - resizeButton;
