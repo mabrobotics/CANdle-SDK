@@ -1762,9 +1762,19 @@ void GraphicInterface::drawValuesVelocity()
 
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
-        ImGui::Text("yA");
+        ImGui::Text("Δt");
         ImGui::TableNextColumn();
         ImGui::PushID(3);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        float deltaT = std::abs(cursorAPositionVel - cursorBPositionVel);
+        buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f");
+        ImGui::PopID();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("yA");
+        ImGui::TableNextColumn();
+        ImGui::PushID(4);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float cursorAHorPositionVelTemp = static_cast<float>(cursorAHorPositionVel);
         if (buttonColorInputFloat("##hidden_label", &cursorAHorPositionVelTemp, 0.0f, 0.0f, "%.3f"))
@@ -1777,23 +1787,13 @@ void GraphicInterface::drawValuesVelocity()
         ImGui::TableNextColumn();
         ImGui::Text("yB");
         ImGui::TableNextColumn();
-        ImGui::PushID(4);
+        ImGui::PushID(5);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float cursorBHorPositionVelTemp = static_cast<float>(cursorBHorPositionVel);
         if (buttonColorInputFloat("##hidden_label", &cursorBHorPositionVelTemp, 0.0f, 0.0f, "%.3f"))
         {
             cursorBHorPositionVelTemp = cursorBHorPositionVelTemp;
         }
-        ImGui::PopID();
-
-        ImGui::TableNextRow();
-        ImGui::TableNextColumn();
-        ImGui::Text("Δt");
-        ImGui::TableNextColumn();
-        ImGui::PushID(5);
-        ImGui::SetNextItemWidth(-FLT_MIN);
-        float deltaT = std::abs(cursorAPositionVel - cursorBPositionVel);
-        buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f");
         ImGui::PopID();
 
         ImGui::TableNextRow();
@@ -1852,9 +1852,19 @@ void GraphicInterface::drawValuesPosition()
 
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
-        ImGui::Text("yA");
+        ImGui::Text("Δt");
         ImGui::TableNextColumn();
         ImGui::PushID(3);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        float deltaT = std::abs(cursorAPositionPos - cursorBPositionPos);
+        buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f");
+        ImGui::PopID();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("yA");
+        ImGui::TableNextColumn();
+        ImGui::PushID(4);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float cursorAHorPositionPosTemp = static_cast<float>(cursorAHorPositionPos);
         if (buttonColorInputFloat("##hidden_label", &cursorAHorPositionPosTemp, 0.0f, 0.0f, "%.3f"))
@@ -1867,23 +1877,13 @@ void GraphicInterface::drawValuesPosition()
         ImGui::TableNextColumn();
         ImGui::Text("yB");
         ImGui::TableNextColumn();
-        ImGui::PushID(4);
+        ImGui::PushID(5);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float cursorBHorPositionPosTemp = static_cast<float>(cursorBHorPositionPos);
         if (buttonColorInputFloat("##hidden_label", &cursorBHorPositionPosTemp, 0.0f, 0.0f, "%.3f"))
         {
             cursorBHorPositionPos = cursorBHorPositionPosTemp;
         }
-        ImGui::PopID();
-
-        ImGui::TableNextRow();
-        ImGui::TableNextColumn();
-        ImGui::Text("Δt");
-        ImGui::TableNextColumn();
-        ImGui::PushID(5);
-        ImGui::SetNextItemWidth(-FLT_MIN);
-        float deltaT = std::abs(cursorAPositionPos - cursorBPositionPos);
-        buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f");
         ImGui::PopID();
 
         ImGui::TableNextRow();
@@ -1942,9 +1942,19 @@ void GraphicInterface::drawValuesTorque()
 
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
-        ImGui::Text("yA");
+        ImGui::Text("Δt");
         ImGui::TableNextColumn();
         ImGui::PushID(3);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        float deltaT = std::abs(cursorAPositionTrq - cursorBPositionTrq);
+        buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f");
+        ImGui::PopID();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("yA");
+        ImGui::TableNextColumn();
+        ImGui::PushID(4);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float cursorAHorPositionTrqTemp = static_cast<float>(cursorAHorPositionTrq);
         if (buttonColorInputFloat("##hidden_label", &cursorAHorPositionTrqTemp, 0.0f, 0.0f, "%.3f"))
@@ -1957,23 +1967,13 @@ void GraphicInterface::drawValuesTorque()
         ImGui::TableNextColumn();
         ImGui::Text("yB");
         ImGui::TableNextColumn();
-        ImGui::PushID(4);
+        ImGui::PushID(5);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float cursorBHorPositionTrqTemp = static_cast<float>(cursorBHorPositionTrq);
         if (buttonColorInputFloat("##hidden_label", &cursorBHorPositionTrqTemp, 0.0f, 0.0f, "%.3f"))
         {
             cursorBHorPositionTrq = cursorBHorPositionTrqTemp;
         }
-        ImGui::PopID();
-
-        ImGui::TableNextRow();
-        ImGui::TableNextColumn();
-        ImGui::Text("Δt");
-        ImGui::TableNextColumn();
-        ImGui::PushID(5);
-        ImGui::SetNextItemWidth(-FLT_MIN);
-        float deltaT = std::abs(cursorAPositionTrq - cursorBPositionTrq);
-        buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f");
         ImGui::PopID();
 
         ImGui::TableNextRow();
