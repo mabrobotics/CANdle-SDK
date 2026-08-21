@@ -1790,7 +1790,7 @@ void GraphicInterface::drawValuesVelocity()
         ImGui::TableNextColumn();
         ImGui::Text("Δt");
         ImGui::TableNextColumn();
-        ImGui::PushID(4);
+        ImGui::PushID(5);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float deltaT = std::abs(cursorAPositionVel - cursorBPositionVel);
         buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f");
@@ -1800,7 +1800,7 @@ void GraphicInterface::drawValuesVelocity()
         ImGui::TableNextColumn();
         ImGui::Text("Δy");
         ImGui::TableNextColumn();
-        ImGui::PushID(4);
+        ImGui::PushID(6);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float deltaY = std::abs(cursorAHorPositionVel - cursorBHorPositionVel);
         buttonColorInputFloat("##hidden_label", &deltaY, 0.0f, 0.0f, "%.3f");
@@ -1880,7 +1880,7 @@ void GraphicInterface::drawValuesPosition()
         ImGui::TableNextColumn();
         ImGui::Text("Δt");
         ImGui::TableNextColumn();
-        ImGui::PushID(4);
+        ImGui::PushID(5);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float deltaT = std::abs(cursorAPositionPos - cursorBPositionPos);
         buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f");
@@ -1890,7 +1890,7 @@ void GraphicInterface::drawValuesPosition()
         ImGui::TableNextColumn();
         ImGui::Text("Δy");
         ImGui::TableNextColumn();
-        ImGui::PushID(4);
+        ImGui::PushID(6);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float deltaY = std::abs(cursorAHorPositionPos - cursorBHorPositionPos);
         buttonColorInputFloat("##hidden_label", &deltaY, 0.0f, 0.0f, "%.3f");
@@ -1970,7 +1970,7 @@ void GraphicInterface::drawValuesTorque()
         ImGui::TableNextColumn();
         ImGui::Text("Δt");
         ImGui::TableNextColumn();
-        ImGui::PushID(4);
+        ImGui::PushID(5);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float deltaT = std::abs(cursorAPositionTrq - cursorBPositionTrq);
         buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f");
@@ -1980,7 +1980,7 @@ void GraphicInterface::drawValuesTorque()
         ImGui::TableNextColumn();
         ImGui::Text("Δy");
         ImGui::TableNextColumn();
-        ImGui::PushID(4);
+        ImGui::PushID(6);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float deltaY = std::abs(cursorAHorPositionTrq - cursorBHorPositionTrq);
         buttonColorInputFloat("##hidden_label", &deltaY, 0.0f, 0.0f, "%.3f");
