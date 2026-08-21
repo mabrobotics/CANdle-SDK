@@ -23,6 +23,8 @@ struct commonMemory_S
     float            targetAcceleration = 0.0f;
     float            targetDeceleration = 0.0f;
 
+    std::string errorMessage;
+
     // TUNING GAINS
     float Kp_vel          = 0.0f;
     float Ki_vel          = 0.0f;

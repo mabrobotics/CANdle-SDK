@@ -27,7 +27,7 @@ class GraphicInterface
     float leftMenuBarWidth      = 325.0f;
     float rightMenuBarWidth     = 200.0f;
     float testMenuBarHeight     = 100.0f;
-    float errorMenuBarHeight    = 50.0f;
+    float errorMenuBarHeight    = 30.0f;
     float lowBarHeight          = 30.0f;
     float marginPlot            = 10.f;
     float paddingButtons        = 30.f;

@@ -39,16 +39,44 @@ void HardwareCandle::testMD(mab::MD& md)
     }
 }
 
-bool HardwareCandle::checkStatus(mab::MD& md)
+bool HardwareCandle::checkStatus(mab::MD& md, mab::canId_t chosenID)
 {
-    const auto& [status, result] = md.getQuickStatus();
+    const auto& [status, error] = md.getQuickStatus();
 
-    if (result != mab::MD::Error_t::OK)
+    if (m_data->discoverOngoing)
     {
-        m_data->testStarted = false;
+        m_data->errorMessage = "Discover ongoing";
         return true;
     }
 
+    if (!m_data->testStarted && m_data->selectedMD)
+    {
+        m_data->errorMessage = "Connected to MD" + std::to_string(chosenID);
+        return false;
+    }
+
+    if (error != mab::MD::Error_t::OK)
+    {
+        m_data->errorMessage = "COMMUNICATION FAILED";
+        return true;
+    }
+
+    if (m_data->testStarted)
+    {
+        for (const auto& [bit, statusItem] : status)
+        {
+            if (statusItem.isSet() && statusItem.isError)
+            {
+                m_data->errorMessage = statusItem.name + "FAULT";
+                return true;
+            }
+        }
+
+        m_data->errorMessage = "No errors";
+        return false;
+    }
+
+    m_data->errorMessage = "CANdle Connected";
     return false;
 }
 
@@ -216,6 +244,9 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
 
         if (candle == nullptr)
         {
+            m_data->errorMessage = "CANdle Disconnected";
+            m_data->errorOccured = true;
+
             std::unique_ptr<mab::I_CommunicationInterface> bus;
 
             commonMemory_S::busType_E busType = m_data->busType;
@@ -276,6 +307,7 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                 m_data->mdIDs.clear();
                 buttonDiscoverMdPressed = false;
                 m_data->discoverOngoing = false;
+                m_data->selectedMD      = false;
 
                 min = 0;
                 max = 100;
@@ -293,6 +325,7 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                 m_data->mdIDs.clear();
                 buttonDiscoverMdPressed = false;
                 m_data->discoverOngoing = false;
+                m_data->selectedMD      = false;
 
                 min = 0;
                 max = 100;
@@ -307,6 +340,8 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
         if (candle != nullptr)
         {
             mab::MD md(chosenID, candle);
+
+            m_data->errorOccured = checkStatus(md, chosenID);
 
             if (buttonSelectMdPressed)
             {
@@ -422,8 +457,7 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
             {
                 {
                     std::lock_guard<std::mutex> lock(m_data->mtx);
-                    m_data->testOngoing  = true;
-                    m_data->errorOccured = checkStatus(md);
+                    m_data->testOngoing = true;
                 }
 
                 std::chrono::time_point<std::chrono::steady_clock> now =

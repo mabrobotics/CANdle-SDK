@@ -179,12 +179,18 @@ void GraphicInterface::drawErrorMenuBar()
     if (ImGui::Begin("Error Menu Bar", nullptr, flagsBackMenu))
     {
         bool errorOccured = m_data->errorOccured;
-        ImGui::Text("Error status:");
+        ImGui::Text("Connection status:");
         ImGui::SameLine();
         if (!errorOccured)
         {
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
-            ImGui::Text("No errors");
+            ImGui::Text("%s", m_data->errorMessage.c_str());
+            ImGui::PopStyleColor();
+        }
+        else
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+            ImGui::Text("%s", m_data->errorMessage.c_str());
             ImGui::PopStyleColor();
         }
     }
