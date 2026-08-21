@@ -79,9 +79,9 @@ void GraphicInterface::loop()
             drawMenuLowerBar();
             drawTestMenuBar();
             drawLeftMenuBar();
-            // drawRightMenuBar();
             drawErrorMenuBar();
             drawMainMenu();
+            drawRightMenuBar();
         }
         else
         {
@@ -92,9 +92,9 @@ void GraphicInterface::loop()
             drawMenuLowerBar();
             drawTestMenuBar();
             drawLeftMenuBar();
-            // drawRightMenuBar();
             drawErrorMenuBar();
             drawMainMenu();
+            drawRightMenuBar();
 
             ImGui::EndDisabled();
         }
@@ -171,9 +171,8 @@ void GraphicInterface::drawErrorMenuBar()
         ImVec2(errorBarViewport->WorkPos.x + leftMenuBarWidth, errorBarViewport->WorkPos.y);
     ImGui::SetNextWindowPos(errorBarPos, ImGuiCond_Always);
 
-    ImVec2 mainSize =
-        ImVec2(errorBarViewport->WorkSize.x - leftMenuBarWidth /*- rightMenuBarWidth*/,
-               errorMenuBarHeight);
+    ImVec2 mainSize = ImVec2(errorBarViewport->WorkSize.x - leftMenuBarWidth - rightMenuBarWidth,
+                             errorMenuBarHeight);
     ImGui::SetNextWindowSize(mainSize, ImGuiCond_Always);
 
     if (ImGui::Begin("Error Menu Bar", nullptr, flagsBackMenu))
@@ -257,6 +256,72 @@ void GraphicInterface::drawLeftMenuBar()
     ImGui::End();
 }
 
+void GraphicInterface::drawRightMenuBar()
+{
+    bool                 testStarted       = m_data->testStarted;
+    const ImGuiViewport* rightMenuViewport = ImGui::GetMainViewport();
+    ImVec2               rightMenuPos =
+        ImVec2(rightMenuViewport->WorkPos.x + rightMenuViewport->WorkSize.x - rightMenuBarWidth,
+               rightMenuViewport->WorkPos.y);
+    ImGui::SetNextWindowPos(rightMenuPos, ImGuiCond_Always);
+
+    ImVec2 windowSize = ImVec2(rightMenuBarWidth, rightMenuViewport->WorkSize.y - lowBarHeight);
+    ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
+
+    if (ImGui::Begin("Right Menu", nullptr, flagsBackMenu))
+    {
+        mab::MdMode_E currentMode = m_data->currentMode;
+
+        if (testStarted || currentMode == mab::MdMode_E::IDLE)
+        {
+            ImGui::BeginDisabled();
+        }
+
+        ImGui::SetCursorPosX((rightMenuBarWidth - rightMenuButtonWidth) / 2);
+        drawRestorePlotsButton();
+        ImGui::Spacing();
+        ImGui::Separator();
+
+        ImGui::Spacing();
+        drawCheckboxCrosshairsButton();
+        ImGui::Spacing();
+        ImGui::Separator();
+
+        ImGui::Spacing();
+        ImGui::Text("Velocity plot");
+        drawCheckboxVerCursorsVelButton();
+        drawCheckboxHorCursorsVelButton();
+        ImGui::Spacing();
+        drawValuesVelocity();
+        ImGui::Spacing();
+        ImGui::Separator();
+
+        ImGui::Spacing();
+        ImGui::Text("Position plot");
+        drawCheckboxVerCursorsPosButton();
+        drawCheckboxHorCursorsPosButton();
+        ImGui::Spacing();
+        drawValuesPosition();
+        ImGui::Spacing();
+        ImGui::Separator();
+
+        ImGui::Spacing();
+        ImGui::Text("Torque plot");
+        drawCheckboxVerCursorsTrqButton();
+        drawCheckboxHorCursorsTrqButton();
+        ImGui::Spacing();
+        drawValuesTorque();
+        ImGui::Spacing();
+        ImGui::Separator();
+
+        if (testStarted || currentMode == mab::MdMode_E::IDLE)
+        {
+            ImGui::EndDisabled();
+        }
+    }
+    ImGui::End();
+}
+
 void GraphicInterface::drawMainMenu()
 {
     const ImGuiViewport* mainMenuViewport = ImGui::GetMainViewport();
@@ -266,39 +331,120 @@ void GraphicInterface::drawMainMenu()
                             mainMenuViewport->WorkPos.y + errorMenuBarHeight);
     ImGui::SetNextWindowPos(mainPos, ImGuiCond_Always);
 
-    ImVec2 mainSize =
-        ImVec2(mainMenuViewport->WorkSize.x - leftMenuBarWidth /*- rightMenuBarWidth*/,
-               mainMenuViewport->WorkSize.y - lowBarHeight - errorMenuBarHeight);
+    ImVec2 mainSize = ImVec2(mainMenuViewport->WorkSize.x - leftMenuBarWidth - rightMenuBarWidth,
+                             mainMenuViewport->WorkSize.y - lowBarHeight - errorMenuBarHeight);
     ImGui::SetNextWindowSize(mainSize, ImGuiCond_Always);
 
     if (ImGui::Begin("Main menu", nullptr, flagsBackMenu))
     {
         mab::MdMode_E currentModeLocal = m_data->currentMode;
+
         updatePlotData();
+
+        ImVec2 availableSpace        = ImGui::GetContentRegionAvail();
+        float  heightWithoutSplitter = availableSpace.y - resizeButton;
+        float  topHeight             = heightWithoutSplitter * menuTopHeightRatio;
+        float  remainingHeight       = heightWithoutSplitter - topHeight;
+        float  widthWithoutSplitter  = availableSpace.x - resizeButton;
+        float  leftWidth             = widthWithoutSplitter * menuBottomWidthRatio;
+        float  rightWidth            = widthWithoutSplitter - leftWidth;
+
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
+
+        ImPlotFlags plotFlags;
+        if (buttonShowCrosshairsChecked)
+        {
+            plotFlags = ImPlotFlags_Crosshairs;
+        }
+        else
+            plotFlags = ImPlotFlags_None;
 
         if (currentModeLocal == mab::MdMode_E::VELOCITY_PID ||
             currentModeLocal == mab::MdMode_E::VELOCITY_PROFILE)
         {
-            drawVelocityPlot();
-            drawPositionPlot();
-            ImGui::SameLine();
-            drawTorquePlot();
+            if (buttonRestorePlotsPressed)
+            {
+                menuTopHeightRatio   = 0.5f;
+                menuBottomWidthRatio = 0.5f;
+
+                buttonRestorePlotsPressed = false;
+            }
+
+            drawVelocityPlot(ImVec2(-1, topHeight), plotFlags);
+
+            ImGui::InvisibleButton("h_splitter", ImVec2(-1, resizeButton));
+            if (ImGui::IsItemHovered() || ImGui::IsItemActive())
+                ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNS);
+
+            if (ImGui::IsItemActive())
+            {
+                menuTopHeightRatio += ImGui::GetIO().MouseDelta.y / heightWithoutSplitter;
+                menuTopHeightRatio = std::clamp(menuTopHeightRatio, 0.2f, 0.8f);
+            }
+
+            drawPositionPlot(ImVec2(leftWidth, remainingHeight), plotFlags);
+            ImGui::SameLine(0.0f, 0.0f);
+
+            ImGui::InvisibleButton("v_splitter", ImVec2(resizeButton, remainingHeight));
+            if (ImGui::IsItemHovered() || ImGui::IsItemActive())
+                ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+
+            if (ImGui::IsItemActive())
+            {
+                menuBottomWidthRatio += ImGui::GetIO().MouseDelta.x / widthWithoutSplitter;
+                menuBottomWidthRatio = std::clamp(menuBottomWidthRatio, 0.2f, 0.8f);
+            }
+            ImGui::SameLine(0.0f, 0.0f);
+
+            drawTorquePlot(ImVec2(rightWidth, remainingHeight), plotFlags);
         }
         else if (currentModeLocal == mab::MdMode_E::POSITION_PID ||
                  currentModeLocal == mab::MdMode_E::POSITION_PROFILE ||
                  currentModeLocal == mab::MdMode_E::IMPEDANCE)
         {
-            drawPositionPlot();
-            drawVelocityPlot();
-            ImGui::SameLine();
-            drawTorquePlot();
+            if (buttonRestorePlotsPressed)
+            {
+                menuTopHeightRatio   = 0.5f;
+                menuBottomWidthRatio = 0.5f;
+
+                buttonRestorePlotsPressed = false;
+            }
+
+            drawPositionPlot(ImVec2(-1, topHeight), plotFlags);
+
+            ImGui::InvisibleButton("h_splitter", ImVec2(-1, resizeButton));
+            if (ImGui::IsItemHovered() || ImGui::IsItemActive())
+                ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNS);
+
+            if (ImGui::IsItemActive())
+            {
+                menuTopHeightRatio += ImGui::GetIO().MouseDelta.y / heightWithoutSplitter;
+                menuTopHeightRatio = std::clamp(menuTopHeightRatio, 0.2f, 0.8f);
+            }
+
+            drawVelocityPlot(ImVec2(leftWidth, remainingHeight), plotFlags);
+            ImGui::SameLine(0.0f, 0.0f);
+
+            ImGui::InvisibleButton("v_splitter", ImVec2(resizeButton, remainingHeight));
+            if (ImGui::IsItemHovered() || ImGui::IsItemActive())
+                ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+
+            if (ImGui::IsItemActive())
+            {
+                menuBottomWidthRatio += ImGui::GetIO().MouseDelta.x / widthWithoutSplitter;
+                menuBottomWidthRatio = std::clamp(menuBottomWidthRatio, 0.2f, 0.8f);
+            }
+            ImGui::SameLine(0.0f, 0.0f);
+
+            drawTorquePlot(ImVec2(rightWidth, remainingHeight), plotFlags);
         }
         else
         {
-            drawVelocityPlot();
-            drawPositionPlot();
-            drawTorquePlot();
+            drawVelocityPlot(ImVec2(-1, availableSpace.y / 3), plotFlags);
+            drawPositionPlot(ImVec2(-1, availableSpace.y / 3), plotFlags);
+            drawTorquePlot(ImVec2(-1, availableSpace.y / 3), plotFlags);
         }
+        ImGui::PopStyleVar();
     }
 
     ImGui::End();
@@ -641,6 +787,101 @@ void GraphicInterface::drawSelectModeButton()
     {
         ImGui::EndDisabled();
     }
+}
+
+void GraphicInterface::drawRestorePlotsButton()
+{
+    buttonStyle();
+    if (ImGui::Button("Restore Plots", ImVec2(rightMenuButtonWidth, 30.f)))
+    {
+        buttonRestorePlotsPressed = true;
+    }
+    endButtonStyle();
+}
+
+void GraphicInterface::drawCheckboxCrosshairsButton()
+{
+    checkboxStyle();
+    ImGui::Checkbox("Show Crosshairs", &buttonShowCrosshairsChecked);
+    endCheckboxStyle();
+}
+
+void GraphicInterface::drawCheckboxVerCursorsVelButton()
+{
+    checkboxStyle();
+    if (ImGui::Checkbox("##Show Cursors Vel", &cursorsVerticalVelocityEnabled))
+    {
+        cursorAPositionVel = 0.2 * timeElapsedOnPlot;
+        cursorBPositionVel = 0.8 * timeElapsedOnPlot;
+    }
+    ImGui::SameLine();
+    ImGui::Text("Vertical Cursors");
+    endCheckboxStyle();
+}
+
+void GraphicInterface::drawCheckboxVerCursorsPosButton()
+{
+    checkboxStyle();
+    if (ImGui::Checkbox("##Show Cursors Pos", &cursorsVerticalPositionEnabled))
+    {
+        cursorAPositionPos = 0.2 * timeElapsedOnPlot;
+        cursorBPositionPos = 0.8 * timeElapsedOnPlot;
+    }
+    ImGui::SameLine();
+    ImGui::Text("Vertical Cursors");
+    endCheckboxStyle();
+}
+
+void GraphicInterface::drawCheckboxVerCursorsTrqButton()
+{
+    checkboxStyle();
+    if (ImGui::Checkbox("##Show Cursors Trq", &cursorsVerticalTorqueEnabled))
+    {
+        cursorAPositionTrq = 0.2 * timeElapsedOnPlot;
+        cursorBPositionTrq = 0.8 * timeElapsedOnPlot;
+    }
+    ImGui::SameLine();
+    ImGui::Text("Vertical Cursors");
+    endCheckboxStyle();
+}
+
+void GraphicInterface::drawCheckboxHorCursorsVelButton()
+{
+    checkboxStyle();
+    if (ImGui::Checkbox("##Show Horizontal Cursors Vel", &cursorsHorizontalVelocityEnabled))
+    {
+        cursorAHorPositionVel = minVel;
+        cursorBHorPositionVel = maxVel;
+    }
+    ImGui::SameLine();
+    ImGui::Text("Horizontal Cursors");
+    endCheckboxStyle();
+}
+
+void GraphicInterface::drawCheckboxHorCursorsPosButton()
+{
+    checkboxStyle();
+    if (ImGui::Checkbox("##Show Horizontal Cursors Pos", &cursorsHorizontalPositionEnabled))
+    {
+        cursorAHorPositionPos = minPos;
+        cursorBHorPositionPos = maxPos;
+    }
+    ImGui::SameLine();
+    ImGui::Text("Horizontal Cursors");
+    endCheckboxStyle();
+}
+
+void GraphicInterface::drawCheckboxHorCursorsTrqButton()
+{
+    checkboxStyle();
+    if (ImGui::Checkbox("##Show Horizontal Cursors Trq", &cursorsHorizontalTorqueEnabled))
+    {
+        cursorAHorPositionTrq = minTrq;
+        cursorBHorPositionTrq = maxTrq;
+    }
+    ImGui::SameLine();
+    ImGui::Text("Horizontal Cursors");
+    endCheckboxStyle();
 }
 
 /*
@@ -995,10 +1236,18 @@ void GraphicInterface::updatePlotData()
     if (testStarted && !lastTestStarted)
     {
         m_data->reset();
-        m_data->readData       = m_data->plotWriteData.load(std::memory_order_acquire);
-        timeInTargetWindow     = 0.0f;
-        lastHardwareTime       = 0.0f;
-        m_data->guiElapsedTime = 0.0f;
+        m_data->readData               = m_data->plotWriteData.load(std::memory_order_acquire);
+        timeInTargetWindow             = 0.0f;
+        lastHardwareTime               = 0.0f;
+        m_data->guiElapsedTime         = 0.0f;
+        cursorsVerticalVelocityEnabled = false;
+        cursorsVerticalPositionEnabled = false;
+        cursorsVerticalTorqueEnabled   = false;
+
+        resetCursors();
+        cursorsHorizontalVelocityEnabled = false;
+        cursorsHorizontalPositionEnabled = false;
+        cursorsHorizontalTorqueEnabled   = false;
     }
 
     lastTestStarted = testStarted;
@@ -1021,6 +1270,13 @@ void GraphicInterface::updatePlotData()
 
             float dt_point   = time - lastHardwareTime;
             lastHardwareTime = time;
+
+            minVel = m_data->minVel;
+            minPos = m_data->minPos;
+            minTrq = m_data->minTrq;
+            maxVel = m_data->maxVel;
+            maxPos = m_data->maxPos;
+            maxTrq = m_data->maxTrq;
 
             if (vel > m_data->maxVel)
                 m_data->maxVel = vel;
@@ -1091,7 +1347,7 @@ void GraphicInterface::timeInTarget(bool& inTimeWindow, float& timeInTargetWindo
     }
 }
 
-void GraphicInterface::drawVelocityPlot()
+void GraphicInterface::drawVelocityPlot(ImVec2 size, ImPlotFlags plotFlag)
 {
     int processedSamples = static_cast<int>(m_data->readData);
     int bufferSize       = static_cast<int>(commonMemory_S::PLOT_BUFFER_SIZE);
@@ -1102,28 +1358,10 @@ void GraphicInterface::drawVelocityPlot()
 
     bool testStarted = m_data->testStarted;
 
-    ImVec2 windowSize;
-
-    mab::MdMode_E currentModeLocal = m_data->currentMode;
-
-    if (currentModeLocal == mab::MdMode_E::VELOCITY_PID ||
-        currentModeLocal == mab::MdMode_E::VELOCITY_PROFILE)
-    {
-        windowSize = ImVec2(-1, ImGui::GetContentRegionAvail().y / 2);
-    }
-    else if (currentModeLocal == mab::MdMode_E::POSITION_PID ||
-             currentModeLocal == mab::MdMode_E::POSITION_PROFILE ||
-             currentModeLocal == mab::MdMode_E::IMPEDANCE)
-    {
-        windowSize = ImVec2(ImGui::GetContentRegionAvail().x / 2, ImGui::GetContentRegionAvail().y);
-    }
-    else
-    {
-        windowSize = ImVec2(-1, ImGui::GetContentRegionAvail().y / 3);
-    }
-
     ImPlot::PushStyleColor(ImPlotCol_FrameBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-    if (ImPlot::BeginPlot("##VelocityPlot", windowSize))
+
+    if (ImPlot::BeginPlot("##VelocityPlot", size, plotFlag))
+
     {
         ImPlotCond plotCondition = testStarted ? ImPlotCond_Always : ImPlotCond_Once;
         ImPlot::SetupLegend(ImPlotLocation_NorthEast, ImPlotLegendFlags_None);
@@ -1134,6 +1372,8 @@ void GraphicInterface::drawVelocityPlot()
 
         ImPlot::SetupAxis(ImAxis_X1, "Time [s]");
         ImPlot::SetupAxisLimits(ImAxis_X1, 0, currentTime, plotCondition);
+
+        timeElapsedOnPlot = currentTime;
 
         float bottomY =
             (m_data->minVel < 0.0f) ? (m_data->minVel - 0.2f * std::abs(m_data->minVel)) : 0.0f;
@@ -1163,12 +1403,78 @@ void GraphicInterface::drawVelocityPlot()
                 "Target Velocity", m_data->plotTime, m_data->plotTargetVelocity, pointsCount, spec);
         }
 
+        if (cursorsVerticalVelocityEnabled)
+        {
+            ImPlotDragToolFlags flags = ImPlotDragToolFlags_NoFit;
+
+            bool dragA = ImPlot::DragLineX(0, &cursorAPositionVel, colA, 1.0f, flags);
+            bool dragB = ImPlot::DragLineX(1, &cursorBPositionVel, colB, 1.0f, flags);
+
+            ImPlot::TagX(cursorAPositionVel, colA, "tA");
+            ImPlot::TagX(cursorBPositionVel, colB, "tB");
+
+            if (dragA || ImGui::IsItemHovered())
+            {
+                ImPlot::Annotation(cursorAPositionVel,
+                                   0.0,
+                                   colA,
+                                   ImVec2(10, -10),
+                                   true,
+                                   "tA: %.3fs",
+                                   cursorAPositionVel);
+            }
+            if (dragB || ImGui::IsItemHovered())
+            {
+                ImPlot::Annotation(cursorBPositionVel,
+                                   0.0,
+                                   colB,
+                                   ImVec2(10, -10),
+                                   true,
+                                   "tB: %.3fs",
+                                   cursorBPositionVel);
+            }
+        }
+
+        if (cursorsHorizontalVelocityEnabled)
+        {
+            ImPlotDragToolFlags flags = ImPlotDragToolFlags_NoFit;
+
+            bool dragA  = ImPlot::DragLineY(0, &cursorAHorPositionVel, colA, 1.0f, flags);
+            bool hoverA = ImGui::IsItemHovered();
+            bool dragB  = ImPlot::DragLineY(1, &cursorBHorPositionVel, colB, 1.0f, flags);
+            bool hoverB = ImGui::IsItemHovered();
+
+            ImPlot::TagY(cursorAHorPositionVel, colA, "yA");
+            ImPlot::TagY(cursorBHorPositionVel, colB, "yB");
+
+            if (dragA || hoverA)
+            {
+                ImPlot::Annotation(0.0,
+                                   cursorAHorPositionVel,
+                                   colA,
+                                   ImVec2(10, -10),
+                                   true,
+                                   "yA: %.3f",
+                                   cursorAHorPositionVel);
+            }
+            if (dragB || hoverB)
+            {
+                ImPlot::Annotation(0.0,
+                                   cursorBHorPositionVel,
+                                   colB,
+                                   ImVec2(10, -10),
+                                   true,
+                                   "yB: %.3f",
+                                   cursorBHorPositionVel);
+            }
+        }
+
         ImPlot::EndPlot();
     }
     ImPlot::PopStyleColor();
 }
 
-void GraphicInterface::drawPositionPlot()
+void GraphicInterface::drawPositionPlot(ImVec2 size, ImPlotFlags plotFlag)
 {
     int processedSamples = static_cast<int>(m_data->readData);
     int bufferSize       = static_cast<int>(commonMemory_S::PLOT_BUFFER_SIZE);
@@ -1177,29 +1483,11 @@ void GraphicInterface::drawPositionPlot()
     ImPlotSpec spec;
     spec.Offset = (processedSamples < bufferSize) ? 0 : static_cast<int>(m_data->offset);
 
-    bool   testStarted = m_data->testStarted;
-    ImVec2 windowSize;
-
-    mab::MdMode_E currentModeLocal = m_data->currentMode;
-
-    if (currentModeLocal == mab::MdMode_E::VELOCITY_PID ||
-        currentModeLocal == mab::MdMode_E::VELOCITY_PROFILE)
-    {
-        windowSize = ImVec2(ImGui::GetContentRegionAvail().x / 2, ImGui::GetContentRegionAvail().y);
-    }
-    else if (currentModeLocal == mab::MdMode_E::POSITION_PID ||
-             currentModeLocal == mab::MdMode_E::POSITION_PROFILE ||
-             currentModeLocal == mab::MdMode_E::IMPEDANCE)
-    {
-        windowSize = ImVec2(-1, ImGui::GetContentRegionAvail().y / 2);
-    }
-    else
-    {
-        windowSize = ImVec2(-1, ImGui::GetContentRegionAvail().y / 2);
-    }
+    bool testStarted = m_data->testStarted;
 
     ImPlot::PushStyleColor(ImPlotCol_FrameBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-    if (ImPlot::BeginPlot("##PositionPlot", windowSize))
+
+    if (ImPlot::BeginPlot("##PositionPlot", size, plotFlag))
     {
         ImPlotCond plotCondition = testStarted ? ImPlotCond_Always : ImPlotCond_Once;
         ImPlot::SetupLegend(ImPlotLocation_NorthEast, ImPlotLegendFlags_None);
@@ -1237,12 +1525,78 @@ void GraphicInterface::drawPositionPlot()
             ImPlot::PlotStairs(
                 "Target Position", m_data->plotTime, m_data->plotTargetPosition, pointsCount, spec);
 
+        if (cursorsVerticalPositionEnabled)
+        {
+            ImPlotDragToolFlags flags = ImPlotDragToolFlags_NoFit;
+
+            bool dragA = ImPlot::DragLineX(2, &cursorAPositionPos, colA, 1.0f, flags);
+            bool dragB = ImPlot::DragLineX(3, &cursorBPositionPos, colB, 1.0f, flags);
+
+            ImPlot::TagX(cursorAPositionPos, colA, "A");
+            ImPlot::TagX(cursorBPositionPos, colB, "B");
+
+            if (dragA || ImGui::IsItemHovered())
+            {
+                ImPlot::Annotation(cursorAPositionPos,
+                                   0.0,
+                                   colA,
+                                   ImVec2(10, -10),
+                                   true,
+                                   "tA: %.3fs",
+                                   cursorAPositionPos);
+            }
+            if (dragB || ImGui::IsItemHovered())
+            {
+                ImPlot::Annotation(cursorBPositionPos,
+                                   0.0,
+                                   colB,
+                                   ImVec2(10, -10),
+                                   true,
+                                   "tB: %.3fs",
+                                   cursorBPositionPos);
+            }
+        }
+
+        if (cursorsHorizontalPositionEnabled)
+        {
+            ImPlotDragToolFlags flags = ImPlotDragToolFlags_NoFit;
+
+            bool dragA  = ImPlot::DragLineY(2, &cursorAHorPositionPos, colA, 1.0f, flags);
+            bool hoverA = ImGui::IsItemHovered();
+            bool dragB  = ImPlot::DragLineY(3, &cursorBHorPositionPos, colB, 1.0f, flags);
+            bool hoverB = ImGui::IsItemHovered();
+
+            ImPlot::TagY(cursorAHorPositionPos, colA, "A");
+            ImPlot::TagY(cursorBHorPositionPos, colB, "B");
+
+            if (dragA || hoverA)
+            {
+                ImPlot::Annotation(0.0,
+                                   cursorAHorPositionPos,
+                                   colA,
+                                   ImVec2(10, -10),
+                                   true,
+                                   "yA: %.3f",
+                                   cursorAHorPositionPos);
+            }
+            if (dragB || hoverB)
+            {
+                ImPlot::Annotation(0.0,
+                                   cursorBHorPositionPos,
+                                   colB,
+                                   ImVec2(10, -10),
+                                   true,
+                                   "yB: %.3f",
+                                   cursorBHorPositionPos);
+            }
+        }
+
         ImPlot::EndPlot();
     }
     ImPlot::PopStyleColor();
 }
 
-void GraphicInterface::drawTorquePlot()
+void GraphicInterface::drawTorquePlot(ImVec2 size, ImPlotFlags plotFlag)
 {
     int processedSamples = static_cast<int>(m_data->readData);
     int bufferSize       = static_cast<int>(commonMemory_S::PLOT_BUFFER_SIZE);
@@ -1252,10 +1606,9 @@ void GraphicInterface::drawTorquePlot()
     spec.Offset      = (processedSamples < bufferSize) ? 0 : static_cast<int>(m_data->offset);
     bool testStarted = m_data->testStarted;
 
-    ImVec2 windowSize = ImVec2(-1, -1);
-
     ImPlot::PushStyleColor(ImPlotCol_FrameBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-    if (ImPlot::BeginPlot("##TorquegPlot", windowSize))
+
+    if (ImPlot::BeginPlot("##TorquegPlot", size, plotFlag))
     {
         ImPlotCond plotCondition = testStarted ? ImPlotCond_Always : ImPlotCond_Once;
         ImPlot::SetupLegend(ImPlotLocation_NorthEast, ImPlotLegendFlags_None);
@@ -1291,9 +1644,351 @@ void GraphicInterface::drawTorquePlot()
             ImPlot::PlotStairs(
                 "Target Torque", m_data->plotTime, m_data->plotTargetTorque, pointsCount, spec);
 
+        if (cursorsVerticalTorqueEnabled)
+        {
+            ImPlotDragToolFlags flags = ImPlotDragToolFlags_NoFit;
+
+            bool dragA = ImPlot::DragLineX(4, &cursorAPositionTrq, colA, 1.0f, flags);
+            bool dragB = ImPlot::DragLineX(5, &cursorBPositionTrq, colB, 1.0f, flags);
+
+            ImPlot::TagX(cursorAPositionTrq, colA, "A");
+            ImPlot::TagX(cursorBPositionTrq, colB, "B");
+
+            if (dragA || ImGui::IsItemHovered())
+            {
+                ImPlot::Annotation(cursorAPositionTrq,
+                                   0.0,
+                                   colA,
+                                   ImVec2(10, -10),
+                                   true,
+                                   "tA: %.3fs",
+                                   cursorAPositionTrq);
+            }
+            if (dragB || ImGui::IsItemHovered())
+            {
+                ImPlot::Annotation(cursorBPositionTrq,
+                                   0.0,
+                                   colB,
+                                   ImVec2(10, -10),
+                                   true,
+                                   "tB: %.3fs",
+                                   cursorBPositionTrq);
+            }
+        }
+
+        if (cursorsHorizontalTorqueEnabled)
+        {
+            ImPlotDragToolFlags flags = ImPlotDragToolFlags_NoFit;
+
+            bool dragA  = ImPlot::DragLineY(4, &cursorAHorPositionTrq, colA, 1.0f, flags);
+            bool hoverA = ImGui::IsItemHovered();
+            bool dragB  = ImPlot::DragLineY(5, &cursorBHorPositionTrq, colB, 1.0f, flags);
+            bool hoverB = ImGui::IsItemHovered();
+
+            ImPlot::TagY(cursorAHorPositionTrq, colA, "A");
+            ImPlot::TagY(cursorBHorPositionTrq, colB, "B");
+
+            if (dragA || hoverA)
+            {
+                ImPlot::Annotation(0.0,
+                                   cursorAHorPositionTrq,
+                                   colA,
+                                   ImVec2(10, -10),
+                                   true,
+                                   "yA: %.3f",
+                                   cursorAHorPositionTrq);
+            }
+            if (dragB || hoverB)
+            {
+                ImPlot::Annotation(0.0,
+                                   cursorBHorPositionTrq,
+                                   colB,
+                                   ImVec2(10, -10),
+                                   true,
+                                   "yB: %.3f",
+                                   cursorBHorPositionTrq);
+            }
+        }
+
         ImPlot::EndPlot();
     }
     ImPlot::PopStyleColor();
+}
+
+/*
+
+Draw values
+
+*/
+
+void GraphicInterface::drawValuesVelocity()
+{
+    ImGuiTableFlags flags = ImGuiTableFlags_Borders;
+
+    const uint8_t numberOfColumns = 2;
+
+    ImGui::SetCursorPosX((rightMenuBarWidth - rightMenuButtonWidth) / 2);
+    ImVec2 tableSize = ImVec2(rightMenuButtonWidth, 0.0f);
+    if (ImGui::BeginTable("ValueTableVelocity", numberOfColumns, flags, tableSize))
+    {
+        ImGui::TableSetupColumn("Cursor");
+        ImGui::TableSetupColumn("Value");
+        ImGui::TableHeadersRow();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("tA");
+        ImGui::TableNextColumn();
+        ImGui::PushID(1);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        float cursorAPositionVelTemp = static_cast<float>(cursorAPositionVel);
+        if (buttonColorInputFloat("##hidden_label", &cursorAPositionVelTemp, 0.0f, 0.0f, "%.3f"))
+        {
+            cursorAPositionVel = cursorAPositionVelTemp;
+        }
+        ImGui::PopID();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("tB");
+        ImGui::TableNextColumn();
+        ImGui::PushID(2);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        float cursorBPositionVelTemp = static_cast<float>(cursorBPositionVel);
+        if (buttonColorInputFloat("##hidden_label", &cursorBPositionVelTemp, 0.0f, 0.0f, "%.3f"))
+        {
+            cursorBPositionVel = cursorBPositionVelTemp;
+        }
+        ImGui::PopID();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("yA");
+        ImGui::TableNextColumn();
+        ImGui::PushID(3);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        float cursorAHorPositionVelTemp = static_cast<float>(cursorAHorPositionVel);
+        if (buttonColorInputFloat("##hidden_label", &cursorAHorPositionVelTemp, 0.0f, 0.0f, "%.3f"))
+        {
+            cursorAHorPositionVel = cursorAHorPositionVelTemp;
+        }
+        ImGui::PopID();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("yB");
+        ImGui::TableNextColumn();
+        ImGui::PushID(4);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        float cursorBHorPositionVelTemp = static_cast<float>(cursorBHorPositionVel);
+        if (buttonColorInputFloat("##hidden_label", &cursorBHorPositionVelTemp, 0.0f, 0.0f, "%.3f"))
+        {
+            cursorBHorPositionVelTemp = cursorBHorPositionVelTemp;
+        }
+        ImGui::PopID();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Δt");
+        ImGui::TableNextColumn();
+        ImGui::PushID(4);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        float deltaT = std::abs(cursorAPositionVel - cursorBPositionVel);
+        buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f");
+        ImGui::PopID();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Δy");
+        ImGui::TableNextColumn();
+        ImGui::PushID(4);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        float deltaY = std::abs(cursorAHorPositionVel - cursorBHorPositionVel);
+        buttonColorInputFloat("##hidden_label", &deltaY, 0.0f, 0.0f, "%.3f");
+        ImGui::PopID();
+
+        ImGui::EndTable();
+    }
+}
+
+void GraphicInterface::drawValuesPosition()
+{
+    ImGuiTableFlags flags = ImGuiTableFlags_Borders;
+
+    const uint8_t numberOfColumns = 2;
+
+    ImGui::SetCursorPosX((rightMenuBarWidth - rightMenuButtonWidth) / 2);
+    ImVec2 tableSize = ImVec2(rightMenuButtonWidth, 0.0f);
+    if (ImGui::BeginTable("ValueTablePosition", numberOfColumns, flags, tableSize))
+    {
+        ImGui::TableSetupColumn("Cursor");
+        ImGui::TableSetupColumn("Value");
+        ImGui::TableHeadersRow();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("tA");
+        ImGui::TableNextColumn();
+        ImGui::PushID(1);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        float cursorAPositionPosTemp = static_cast<float>(cursorAPositionPos);
+        if (buttonColorInputFloat("##hidden_label", &cursorAPositionPosTemp, 0.0f, 0.0f, "%.3f"))
+        {
+            cursorAPositionPos = cursorAPositionPosTemp;
+        }
+        ImGui::PopID();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("tB");
+        ImGui::TableNextColumn();
+        ImGui::PushID(2);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        float cursorBPositionPosTemp = static_cast<float>(cursorBPositionPos);
+        if (buttonColorInputFloat("##hidden_label", &cursorBPositionPosTemp, 0.0f, 0.0f, "%.3f"))
+        {
+            cursorBPositionPos = cursorBPositionPosTemp;
+        }
+        ImGui::PopID();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("yA");
+        ImGui::TableNextColumn();
+        ImGui::PushID(3);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        float cursorAHorPositionPosTemp = static_cast<float>(cursorAHorPositionPos);
+        if (buttonColorInputFloat("##hidden_label", &cursorAHorPositionPosTemp, 0.0f, 0.0f, "%.3f"))
+        {
+            cursorAHorPositionPos = cursorAHorPositionPosTemp;
+        }
+        ImGui::PopID();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("yB");
+        ImGui::TableNextColumn();
+        ImGui::PushID(4);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        float cursorBHorPositionPosTemp = static_cast<float>(cursorBHorPositionPos);
+        if (buttonColorInputFloat("##hidden_label", &cursorBHorPositionPosTemp, 0.0f, 0.0f, "%.3f"))
+        {
+            cursorBHorPositionPos = cursorBHorPositionPosTemp;
+        }
+        ImGui::PopID();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Δt");
+        ImGui::TableNextColumn();
+        ImGui::PushID(4);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        float deltaT = std::abs(cursorAPositionPos - cursorBPositionPos);
+        buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f");
+        ImGui::PopID();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Δy");
+        ImGui::TableNextColumn();
+        ImGui::PushID(4);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        float deltaY = std::abs(cursorAHorPositionPos - cursorBHorPositionPos);
+        buttonColorInputFloat("##hidden_label", &deltaY, 0.0f, 0.0f, "%.3f");
+        ImGui::PopID();
+
+        ImGui::EndTable();
+    }
+}
+
+void GraphicInterface::drawValuesTorque()
+{
+    ImGuiTableFlags flags = ImGuiTableFlags_Borders;
+
+    const uint8_t numberOfColumns = 2;
+
+    ImGui::SetCursorPosX((rightMenuBarWidth - rightMenuButtonWidth) / 2);
+    ImVec2 tableSize = ImVec2(rightMenuButtonWidth, 0.0f);
+    if (ImGui::BeginTable("ValueTableTorque", numberOfColumns, flags, tableSize))
+    {
+        ImGui::TableSetupColumn("Cursor");
+        ImGui::TableSetupColumn("Value");
+        ImGui::TableHeadersRow();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("tA");
+        ImGui::TableNextColumn();
+        ImGui::PushID(1);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        float cursorAPositionTrqTemp = static_cast<float>(cursorAPositionTrq);
+        if (buttonColorInputFloat("##hidden_label", &cursorAPositionTrqTemp, 0.0f, 0.0f, "%.3f"))
+        {
+            cursorAPositionTrq = cursorAPositionTrqTemp;
+        }
+        ImGui::PopID();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("tB");
+        ImGui::TableNextColumn();
+        ImGui::PushID(2);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        float cursorBPositionTrqTemp = static_cast<float>(cursorBPositionTrq);
+        if (buttonColorInputFloat("##hidden_label", &cursorBPositionTrqTemp, 0.0f, 0.0f, "%.3f"))
+        {
+            cursorBPositionTrq = cursorBPositionTrqTemp;
+        }
+        ImGui::PopID();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("yA");
+        ImGui::TableNextColumn();
+        ImGui::PushID(3);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        float cursorAHorPositionTrqTemp = static_cast<float>(cursorAHorPositionTrq);
+        if (buttonColorInputFloat("##hidden_label", &cursorAHorPositionTrqTemp, 0.0f, 0.0f, "%.3f"))
+        {
+            cursorAHorPositionTrq = cursorAHorPositionTrqTemp;
+        }
+        ImGui::PopID();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("yB");
+        ImGui::TableNextColumn();
+        ImGui::PushID(4);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        float cursorBHorPositionTrqTemp = static_cast<float>(cursorBHorPositionTrq);
+        if (buttonColorInputFloat("##hidden_label", &cursorBHorPositionTrqTemp, 0.0f, 0.0f, "%.3f"))
+        {
+            cursorBHorPositionTrq = cursorBHorPositionTrqTemp;
+        }
+        ImGui::PopID();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Δt");
+        ImGui::TableNextColumn();
+        ImGui::PushID(4);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        float deltaT = std::abs(cursorAPositionTrq - cursorBPositionTrq);
+        buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f");
+        ImGui::PopID();
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Δy");
+        ImGui::TableNextColumn();
+        ImGui::PushID(4);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        float deltaY = std::abs(cursorAHorPositionTrq - cursorBHorPositionTrq);
+        buttonColorInputFloat("##hidden_label", &deltaY, 0.0f, 0.0f, "%.3f");
+        ImGui::PopID();
+
+        ImGui::EndTable();
+    }
 }
 
 /*
@@ -1340,6 +2035,20 @@ void GraphicInterface::buttonStyle()
 }
 
 void GraphicInterface::endButtonStyle()
+{
+    ImGui::PopStyleColor(3);
+    ImGui::PopStyleVar();
+}
+
+void GraphicInterface::checkboxStyle()
+{
+    ImGui::PushStyleColor(ImGuiCol_CheckMark, mabColor);
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, buttonColor);
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, mabColorHovered);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, roundingFrameCheckbox);
+}
+
+void GraphicInterface::endCheckboxStyle()
 {
     ImGui::PopStyleColor(3);
     ImGui::PopStyleVar();
