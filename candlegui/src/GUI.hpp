@@ -25,13 +25,13 @@ class GraphicInterface
     GLFWwindow* m_window = nullptr;
 
     float leftMenuBarWidth      = 325.0f;
-    float rightMenuBarWidth     = 175.0f;
+    float rightMenuBarWidth     = 200.0f;
     float testMenuBarHeight     = 100.0f;
     float errorMenuBarHeight    = 50.0f;
     float lowBarHeight          = 30.0f;
     float marginPlot            = 10.f;
     float paddingButtons        = 30.f;
-    float rightMenuButtonWidth  = 150.f;
+    float rightMenuButtonWidth  = rightMenuBarWidth - 20.f;
     float mediumButtonHeight    = 40.0f;
     float roundingFrameButton   = 12.0f;
     float roundingFrameCheckbox = 8.0f;
