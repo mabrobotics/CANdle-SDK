@@ -39,45 +39,123 @@ void HardwareCandle::testMD(mab::MD& md)
     }
 }
 
-bool HardwareCandle::checkStatus(mab::MD& md, mab::canId_t chosenID)
+void HardwareCandle::checkConnectionStatus(mab::MD& md, mab::canId_t chosenID)
 {
-    const auto& [status, error] = md.getQuickStatus();
+    m_data->errorConnectionOccured = false;
+    m_data->errorMessage           = "CANdle Connected";
 
     if (m_data->discoverOngoing)
     {
-        m_data->errorMessage = "Discover ongoing";
-        return true;
+        m_data->errorMessage           = "Discover ongoing";
+        m_data->errorConnectionOccured = true;
     }
 
-    if (!m_data->testStarted && m_data->selectedMD)
+    if (m_data->selectedMD)
     {
-        m_data->errorMessage = "Connected to MD" + std::to_string(chosenID);
-        return false;
+        m_data->errorMessage           = "Connected to MD" + std::to_string(chosenID);
+        m_data->errorConnectionOccured = false;
     }
+}
 
-    if (error != mab::MD::Error_t::OK)
-    {
-        m_data->errorMessage = "COMMUNICATION FAILED";
-        return true;
-    }
+void HardwareCandle::checkQuickStatus(mab::MD& md)
+{
+    md.readRegisters(md.m_mdRegisters.quickStatus,
+                     md.m_mdRegisters.mainEncoderStatus,
+                     md.m_mdRegisters.hardwareStatus,
+                     md.m_mdRegisters.bridgeStatus,
+                     md.m_mdRegisters.motionStatus,
+                     md.m_mdRegisters.communicationStatus);
 
-    if (m_data->testStarted)
+    mab::MDStatus::decode(md.m_mdRegisters.quickStatus.value, statuses.quickStatus);
+
+    m_data->errorQuickStatusOccured   = false;
+    m_data->errorEncoderOccured       = false;
+    m_data->errorHardwareOccured      = false;
+    m_data->errorMotionOccured        = false;
+    m_data->errorCommunicationOccured = false;
+    m_data->errorQuickStatusMessage   = "No errors";
+
+    for (const auto& [bit, status] : statuses.quickStatus)
     {
-        for (const auto& [bit, statusItem] : status)
+        if (!status.isSet())
         {
-            if (statusItem.isSet() && statusItem.isError)
-            {
-                m_data->errorMessage = statusItem.name + "FAULT";
-                return true;
-            }
+            continue;
+        }
+        if (bit == mab::MDStatus::QuickStatusBits::TargetPositionReached)
+        {
+            continue;
         }
 
-        m_data->errorMessage = "No errors";
-        return false;
-    }
+        m_data->errorOccured            = true;
+        m_data->errorQuickStatusOccured = true;
+        m_data->errorQuickStatusMessage = "ERROR";
 
-    m_data->errorMessage = "CANdle Connected";
-    return false;
+        switch (bit)
+        {
+            case mab::MDStatus::QuickStatusBits::MosfetBridgeStatus:
+                mab::MDStatus::decode(md.m_mdRegisters.bridgeStatus.value, statuses.bridgeStatus);
+                for (const auto& [bit, status] : statuses.bridgeStatus)
+                {
+                    if (status.isSet())
+                    {
+                        m_data->errorBridgeStatusMessage = status.name;
+                        m_data->errorBridgeOccured       = true;
+                    }
+                }
+                break;
+            case mab::MDStatus::QuickStatusBits::MainEncoderStatus:
+            case mab::MDStatus::QuickStatusBits::OutputEncoderStatus:
+            case mab::MDStatus::QuickStatusBits::CalibrationEncoderStatus:
+                mab::MDStatus::decode(md.m_mdRegisters.mainEncoderStatus.value,
+                                      statuses.encoderStatus);
+                for (const auto& [bit, status] : statuses.encoderStatus)
+                {
+                    if (status.isSet())
+                    {
+                        m_data->errorEncoderStatusMessage = status.name;
+                        m_data->errorEncoderOccured       = true;
+                    }
+                }
+                break;
+            case mab::MDStatus::QuickStatusBits::HardwareStatus:
+                mab::MDStatus::decode(md.m_mdRegisters.hardwareStatus.value,
+                                      statuses.hardwareStatus);
+                for (const auto& [bit, status] : statuses.hardwareStatus)
+                {
+                    if (status.isSet())
+                    {
+                        m_data->errorHardwareStatusMessage = status.name;
+                        m_data->errorHardwareOccured       = true;
+                    }
+                }
+                break;
+            case mab::MDStatus::QuickStatusBits::MotionStatus:
+                mab::MDStatus::decode(md.m_mdRegisters.motionStatus.value, statuses.motionStatus);
+                for (const auto& [bit, status] : statuses.motionStatus)
+                {
+                    if (status.isSet())
+                    {
+                        m_data->errorMotionStatusMessage = status.name;
+                        m_data->errorMotionOccured       = true;
+                    }
+                }
+                break;
+            case mab::MDStatus::QuickStatusBits::CommunicationStatus:
+                mab::MDStatus::decode(md.m_mdRegisters.communicationStatus.value,
+                                      statuses.communicationStatus);
+                for (const auto& [bit, status] : statuses.communicationStatus)
+                {
+                    if (status.isSet())
+                    {
+                        m_data->errorCommunicationStatusMessage = status.name;
+                        m_data->errorCommunicationOccured       = true;
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+    }
 }
 
 void HardwareCandle::downloadParameters(mab::MD& md)
@@ -102,7 +180,7 @@ void HardwareCandle::downloadParameters(mab::MD& md)
                                              md.m_mdRegisters.motorVelPidWindup,
                                              md.m_mdRegisters.motorPosPidWindup);
 
-    if (err != mab::MD::Error_t::OK && err2 != mab::MD::Error_t::OK)
+    if (err != mab::MD::Error_t::OK || err2 != mab::MD::Error_t::OK)
     {
         std::cout << "Error reading registers: " << static_cast<uint8_t>(err) << "\n";
     }
@@ -122,17 +200,17 @@ void HardwareCandle::downloadParameters(mab::MD& md)
 
             m_data->Kp_imp = float(md.m_mdRegisters.motorImpPidKp.value);
             m_data->Kd_imp = float(md.m_mdRegisters.motorImpPidKd.value);
+
+            m_data->positionWindowSlider = float(md.m_mdRegisters.positionWindow.value);
+            m_data->velocityWindowSlider = float(md.m_mdRegisters.velocityWindow.value);
+
+            m_data->maxVelocityClamp     = float(md.m_mdRegisters.maxVelocity.value);
+            m_data->maxPositionClamp     = float(md.m_mdRegisters.positionLimitMax.value);
+            m_data->minPositionClamp     = float(md.m_mdRegisters.positionLimitMin.value);
+            m_data->maxTorqueClamp       = float(md.m_mdRegisters.maxTorque.value);
+            m_data->maxAccelerationClamp = float(md.m_mdRegisters.maxAcceleration.value);
+            m_data->maxDecelerationClamp = float(md.m_mdRegisters.maxDeceleration.value);
         }
-
-        m_data->positionWindowSlider = float(md.m_mdRegisters.positionWindow.value);
-        m_data->velocityWindowSlider = float(md.m_mdRegisters.velocityWindow.value);
-
-        m_data->maxVelocityClamp     = float(md.m_mdRegisters.maxVelocity.value);
-        m_data->maxPositionClamp     = float(md.m_mdRegisters.positionLimitMax.value);
-        m_data->minPositionClamp     = float(md.m_mdRegisters.positionLimitMin.value);
-        m_data->maxTorqueClamp       = float(md.m_mdRegisters.maxTorque.value);
-        m_data->maxAccelerationClamp = float(md.m_mdRegisters.maxAcceleration.value);
-        m_data->maxDecelerationClamp = float(md.m_mdRegisters.maxDeceleration.value);
 
         // Write them on init to sliders
         m_data->Kp_velSlider          = m_data->Kp_vel;
@@ -231,10 +309,12 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
 
     while (isRunning)
     {
-        bool testStarted             = m_data->testStarted.load();
-        bool updateParametersTest    = m_data->updateParametersTest.exchange(false);
-        bool buttonDiscoverMdPressed = m_data->buttonDiscoverMdPressed.exchange(false);
-        bool buttonSelectMdPressed   = m_data->buttonSelectMdPressed.exchange(false);
+        bool testStarted              = m_data->testStarted.load();
+        bool selectedMD               = m_data->selectedMD.load();
+        bool updateParametersTest     = m_data->updateParametersTest.exchange(false);
+        bool buttonDiscoverMdPressed  = m_data->buttonDiscoverMdPressed.exchange(false);
+        bool buttonSelectMdPressed    = m_data->buttonSelectMdPressed.exchange(false);
+        bool buttonClearErrorsPressed = m_data->buttonClearErrorsPressed.exchange(false);
 
         mab::MdMode_E currentMode;
         mab::canId_t  chosenID;
@@ -244,8 +324,8 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
 
         if (candle == nullptr)
         {
-            m_data->errorMessage = "CANdle Disconnected";
-            m_data->errorOccured = true;
+            m_data->errorMessage           = "CANdle Disconnected";
+            m_data->errorConnectionOccured = true;
 
             std::unique_ptr<mab::I_CommunicationInterface> bus;
 
@@ -341,7 +421,20 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
         {
             mab::MD md(chosenID, candle);
 
-            m_data->errorOccured = checkStatus(md, chosenID);
+            checkConnectionStatus(md, chosenID);
+
+            if (buttonClearErrorsPressed)
+            {
+                if (md.clearErrors() == mab::MD::Error_t::OK)
+                {
+                    m_data->errorOccured = false;
+                }
+            }
+
+            if (!testStarted && selectedMD)
+            {
+                checkQuickStatus(md);
+            }
 
             if (buttonSelectMdPressed)
             {
@@ -467,12 +560,30 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
 
                 testMD(md);
 
-                md.readRegisters(
-                    md.m_mdRegisters.velocity, md.m_mdRegisters.position, md.m_mdRegisters.torque);
+                md.readRegisters(md.m_mdRegisters.velocity,
+                                 md.m_mdRegisters.position,
+                                 md.m_mdRegisters.torque,
+                                 md.m_mdRegisters.quickStatus);
 
                 float vel = float(md.m_mdRegisters.velocity.value);
                 float pos = float(md.m_mdRegisters.position.value);
                 float trq = float(md.m_mdRegisters.torque.value);
+
+                mab::MDStatus::decode(md.m_mdRegisters.quickStatus.value, statuses.quickStatus);
+
+                for (const auto& [bit, status] : statuses.quickStatus)
+                {
+                    if (bit == mab::MDStatus::QuickStatusBits::TargetPositionReached)
+                    {
+                        continue;
+                    }
+                    if (!status.isSet())
+                    {
+                        continue;
+                    }
+                    m_data->errorQuickStatusMessage = status.name;
+                    m_data->errorQuickStatusOccured = true;
+                }
 
                 std::lock_guard<std::mutex> lock(m_data->mtx);
                 uint32_t writeData = m_data->plotWriteData.load(std::memory_order_relaxed);

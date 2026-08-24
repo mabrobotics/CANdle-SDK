@@ -81,8 +81,9 @@ void GraphicInterface::loop()
             drawTestMenuBar();
             drawLeftMenuBar();
             drawErrorMenuBar();
+            if (showCursorMenu)
+                drawRightMenuBar();
             drawMainMenu();
-            drawRightMenuBar();
         }
         else
         {
@@ -94,8 +95,9 @@ void GraphicInterface::loop()
             drawTestMenuBar();
             drawLeftMenuBar();
             drawErrorMenuBar();
+            if (showCursorMenu)
+                drawRightMenuBar();
             drawMainMenu();
-            drawRightMenuBar();
 
             ImGui::EndDisabled();
         }
@@ -145,6 +147,7 @@ void GraphicInterface::drawMenuLowerBar()
 
 void GraphicInterface::drawTestMenuBar()
 {
+    bool                 errorOccured     = m_data->errorOccured;
     const ImGuiViewport* testMenuViewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(testMenuViewport->WorkPos, ImGuiCond_Always);
 
@@ -158,8 +161,21 @@ void GraphicInterface::drawTestMenuBar()
 
     if (ImGui::Begin("Test menu", nullptr, flagsBackMenu))
     {
+        drawCursorMenu();
+
+        if (errorOccured)
+        {
+            ImGui::BeginDisabled();
+        }
+
+        ImGui::Spacing();
         drawTestManualButton();
         drawTestEndButton();
+
+        if (errorOccured)
+        {
+            ImGui::EndDisabled();
+        }
     }
     ImGui::End();
 }
@@ -172,26 +188,120 @@ void GraphicInterface::drawErrorMenuBar()
         ImVec2(errorBarViewport->WorkPos.x + leftMenuBarWidth, errorBarViewport->WorkPos.y);
     ImGui::SetNextWindowPos(errorBarPos, ImGuiCond_Always);
 
-    ImVec2 mainSize = ImVec2(errorBarViewport->WorkSize.x - leftMenuBarWidth - rightMenuBarWidth,
-                             errorMenuBarHeight);
+    ImVec2 mainSize;
+    if (showCursorMenu)
+        mainSize = ImVec2(errorBarViewport->WorkSize.x - leftMenuBarWidth - rightMenuBarWidth,
+                          errorMenuBarHeight);
+    else
+        mainSize = ImVec2(errorBarViewport->WorkSize.x - leftMenuBarWidth, errorMenuBarHeight);
+
     ImGui::SetNextWindowSize(mainSize, ImGuiCond_Always);
 
     if (ImGui::Begin("Error Menu Bar", nullptr, flagsBackMenu))
     {
-        bool errorOccured = m_data->errorOccured;
+        bool errorConnectionOccured    = m_data->errorConnectionOccured;
+        bool errorQuickStatusOccured   = m_data->errorQuickStatusOccured;
+        bool errorEncoderOccured       = m_data->errorEncoderOccured;
+        bool errorHardwareOccured      = m_data->errorHardwareOccured;
+        bool errorBridgeOccured        = m_data->errorBridgeOccured;
+        bool errorMotionOccured        = m_data->errorMotionOccured;
+        bool errorCommunicationOccured = m_data->errorCommunicationOccured;
+        bool selectedMD                = m_data->selectedMD;
+
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("Connection status:");
         ImGui::SameLine();
-        if (!errorOccured)
+        if (errorConnectionOccured)
         {
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_Text, redColor);
             ImGui::Text("%s", m_data->errorMessage.c_str());
             ImGui::PopStyleColor();
         }
         else
         {
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_Text, greenColor);
             ImGui::Text("%s", m_data->errorMessage.c_str());
             ImGui::PopStyleColor();
+        }
+
+        if (selectedMD)
+        {
+            ImGui::SameLine();
+            ImGui::Text("Status:");
+            ImGui::SameLine();
+            if (errorQuickStatusOccured)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, redColor);
+                ImGui::Text("%s", m_data->errorQuickStatusMessage.c_str());
+                ImGui::PopStyleColor();
+            }
+            else
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, greenColor);
+                ImGui::Text("%s", m_data->errorQuickStatusMessage.c_str());
+                ImGui::PopStyleColor();
+            }
+
+            if (errorEncoderOccured)
+            {
+                ImGui::SameLine();
+                ImGui::Text("Encoder status:");
+                ImGui::SameLine();
+
+                ImGui::PushStyleColor(ImGuiCol_Text, redColor);
+                ImGui::Text("%s", m_data->errorEncoderStatusMessage.c_str());
+                ImGui::PopStyleColor();
+            }
+
+            if (errorHardwareOccured)
+            {
+                ImGui::SameLine();
+                ImGui::Text("Hardware status:");
+                ImGui::SameLine();
+
+                ImGui::PushStyleColor(ImGuiCol_Text, redColor);
+                ImGui::Text("%s", m_data->errorHardwareStatusMessage.c_str());
+                ImGui::PopStyleColor();
+            }
+
+            if (errorBridgeOccured)
+            {
+                ImGui::SameLine();
+                ImGui::Text("Bridge status:");
+                ImGui::SameLine();
+
+                ImGui::PushStyleColor(ImGuiCol_Text, redColor);
+                ImGui::Text("%s", m_data->errorBridgeStatusMessage.c_str());
+                ImGui::PopStyleColor();
+            }
+
+            if (errorMotionOccured)
+            {
+                ImGui::SameLine();
+                ImGui::Text("Motion status:");
+                ImGui::SameLine();
+
+                ImGui::PushStyleColor(ImGuiCol_Text, redColor);
+                ImGui::Text("%s", m_data->errorMotionStatusMessage.c_str());
+                ImGui::PopStyleColor();
+            }
+
+            if (errorCommunicationOccured)
+            {
+                ImGui::SameLine();
+                ImGui::Text("Communication status:");
+                ImGui::SameLine();
+
+                ImGui::PushStyleColor(ImGuiCol_Text, redColor);
+                ImGui::Text("%s", m_data->errorCommunicationStatusMessage.c_str());
+                ImGui::PopStyleColor();
+            }
+
+            ImGui::SameLine();
+            drawClearErrorsButton();
+
+            ImGui::SameLine();
+            drawRestorePlotsButton();
         }
     }
     ImGui::End();
@@ -284,8 +394,7 @@ void GraphicInterface::drawRightMenuBar()
             ImGui::BeginDisabled();
         }
 
-        ImGui::SetCursorPosX((rightMenuBarWidth - rightMenuButtonWidth) / 2);
-        drawRestorePlotsButton();
+        ImGui::Text("Cursor Menu");
         ImGui::Spacing();
         ImGui::Separator();
 
@@ -338,8 +447,14 @@ void GraphicInterface::drawMainMenu()
                             mainMenuViewport->WorkPos.y + errorMenuBarHeight);
     ImGui::SetNextWindowPos(mainPos, ImGuiCond_Always);
 
-    ImVec2 mainSize = ImVec2(mainMenuViewport->WorkSize.x - leftMenuBarWidth - rightMenuBarWidth,
-                             mainMenuViewport->WorkSize.y - lowBarHeight - errorMenuBarHeight);
+    ImVec2 mainSize;
+    if (showCursorMenu)
+        mainSize = ImVec2(mainMenuViewport->WorkSize.x - leftMenuBarWidth - rightMenuBarWidth,
+                          mainMenuViewport->WorkSize.y - lowBarHeight - errorMenuBarHeight);
+    else
+        mainSize = ImVec2(mainMenuViewport->WorkSize.x - leftMenuBarWidth,
+                          mainMenuViewport->WorkSize.y - lowBarHeight - errorMenuBarHeight);
+
     ImGui::SetNextWindowSize(mainSize, ImGuiCond_Always);
 
     if (ImGui::Begin("Main menu", nullptr, flagsBackMenu))
@@ -797,9 +912,19 @@ void GraphicInterface::drawSelectModeButton()
 void GraphicInterface::drawRestorePlotsButton()
 {
     buttonStyle();
-    if (ImGui::Button("Restore Plots", ImVec2(rightMenuButtonWidth, 30.f)))
+    if (ImGui::Button("Restore Plots", ImVec2(rightMenuButtonWidth / 2, 20.f)))
     {
         buttonRestorePlotsPressed = true;
+    }
+    endButtonStyle();
+}
+
+void GraphicInterface::drawClearErrorsButton()
+{
+    buttonStyle();
+    if (ImGui::Button("Clear Errors", ImVec2(rightMenuButtonWidth / 2, 20.f)))
+    {
+        m_data->buttonClearErrorsPressed = true;
     }
     endButtonStyle();
 }
@@ -887,6 +1012,18 @@ void GraphicInterface::drawCheckboxHorCursorsTrqButton()
     ImGui::SameLine();
     ImGui::Text("Horizontal Cursors");
     endCheckboxStyle();
+}
+
+void GraphicInterface::drawCursorMenu()
+{
+    ImGui::SetCursorPosX(paddingButtons);
+    checkboxStyle();
+    ImGui::Checkbox("##Show Cursor Menu", &showCursorMenu);
+    ImGui::SameLine();
+    ImGui::Text("Show Cursor Menu");
+    endCheckboxStyle();
+    ImGui::Spacing();
+    ImGui::Separator();
 }
 
 /*
@@ -1375,7 +1512,7 @@ void GraphicInterface::drawVelocityPlot(ImVec2 size, ImPlotFlags plotFlag)
             m_data->plotTime[(m_data->offset == 0) ? commonMemory_S::PLOT_BUFFER_SIZE - 1
                                                    : m_data->offset - 1];
 
-        ImPlot::SetupAxis(ImAxis_X1, "Time [s]");
+        ImPlot::SetupAxis(ImAxis_X1, "Time [s]", ImPlotAxisFlags_NoHighlight);
         ImPlot::SetupAxisLimits(ImAxis_X1, 0, currentTime, plotCondition);
 
         timeElapsedOnPlot = currentTime;
@@ -1395,7 +1532,7 @@ void GraphicInterface::drawVelocityPlot(ImVec2 size, ImPlotFlags plotFlag)
             bottomY = -marginPlot;
         }
 
-        ImPlot::SetupAxis(ImAxis_Y1, "Velocity [rad/s]");
+        ImPlot::SetupAxis(ImAxis_Y1, "Velocity [rad/s]", ImPlotAxisFlags_NoHighlight);
         ImPlot::SetupAxisLimits(ImAxis_Y1, bottomY, topY, plotCondition);
 
         ImPlot::PlotLine("Velocity(t)", m_data->plotTime, m_data->plotVelocity, pointsCount, spec);
@@ -1501,7 +1638,7 @@ void GraphicInterface::drawPositionPlot(ImVec2 size, ImPlotFlags plotFlag)
             m_data->plotTime[(m_data->offset == 0) ? commonMemory_S::PLOT_BUFFER_SIZE - 1
                                                    : m_data->offset - 1];
 
-        ImPlot::SetupAxis(ImAxis_X1, "Time [s]");
+        ImPlot::SetupAxis(ImAxis_X1, "Time [s]", ImPlotAxisFlags_NoHighlight);
         ImPlot::SetupAxisLimits(ImAxis_X1, 0, currentTime, plotCondition);
 
         float bottomY =
@@ -1519,7 +1656,7 @@ void GraphicInterface::drawPositionPlot(ImVec2 size, ImPlotFlags plotFlag)
             bottomY = -marginPlot;
         }
 
-        ImPlot::SetupAxis(ImAxis_Y1, "Position [rad]");
+        ImPlot::SetupAxis(ImAxis_Y1, "Position [rad]", ImPlotAxisFlags_NoHighlight);
         ImPlot::SetupAxisLimits(ImAxis_Y1, bottomY, topY, plotCondition);
 
         ImPlot::PlotLine("Position(t)", m_data->plotTime, m_data->plotPosition, pointsCount, spec);
@@ -1622,7 +1759,7 @@ void GraphicInterface::drawTorquePlot(ImVec2 size, ImPlotFlags plotFlag)
             m_data->plotTime[(m_data->offset == 0) ? commonMemory_S::PLOT_BUFFER_SIZE - 1
                                                    : m_data->offset - 1];
 
-        ImPlot::SetupAxis(ImAxis_X1, "Time [s]");
+        ImPlot::SetupAxis(ImAxis_X1, "Time [s]", ImPlotAxisFlags_NoHighlight);
         ImPlot::SetupAxisLimits(ImAxis_X1, 0, currentTime, plotCondition);
 
         float bottomY =
@@ -1640,7 +1777,7 @@ void GraphicInterface::drawTorquePlot(ImVec2 size, ImPlotFlags plotFlag)
             bottomY = -marginPlot;
         }
 
-        ImPlot::SetupAxis(ImAxis_Y1, "Torque [Nm]");
+        ImPlot::SetupAxis(ImAxis_Y1, "Torque [Nm]", ImPlotAxisFlags_NoHighlight);
         ImPlot::SetupAxisLimits(ImAxis_Y1, bottomY, topY, plotCondition);
 
         ImPlot::PlotLine("Torque(t)", m_data->plotTime, m_data->plotTorque, pointsCount, spec);
@@ -1746,8 +1883,8 @@ void GraphicInterface::drawValuesVelocity()
         ImGui::TableNextColumn();
         ImGui::PushID(1);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        float cursorAPositionVelTemp = static_cast<float>(cursorAPositionVel);
-        if (buttonColorInputFloat("##hidden_label", &cursorAPositionVelTemp, 0.0f, 0.0f, "%.3f s"))
+        float cursorAPositionVelTemp = static_cast<float>(cursorAPositionVel) * 1000;
+        if (buttonColorInputFloat("##hidden_label", &cursorAPositionVelTemp, 0.0f, 0.0f, "%.3f ms"))
         {
             cursorAPositionVel = cursorAPositionVelTemp;
         }
@@ -1759,8 +1896,8 @@ void GraphicInterface::drawValuesVelocity()
         ImGui::TableNextColumn();
         ImGui::PushID(2);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        float cursorBPositionVelTemp = static_cast<float>(cursorBPositionVel);
-        if (buttonColorInputFloat("##hidden_label", &cursorBPositionVelTemp, 0.0f, 0.0f, "%.3f s"))
+        float cursorBPositionVelTemp = static_cast<float>(cursorBPositionVel) * 1000;
+        if (buttonColorInputFloat("##hidden_label", &cursorBPositionVelTemp, 0.0f, 0.0f, "%.3f ms"))
         {
             cursorBPositionVel = cursorBPositionVelTemp;
         }
@@ -1772,8 +1909,8 @@ void GraphicInterface::drawValuesVelocity()
         ImGui::TableNextColumn();
         ImGui::PushID(3);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        float deltaT = std::abs(cursorAPositionVel - cursorBPositionVel);
-        buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f s");
+        float deltaT = std::abs(cursorAPositionVel - cursorBPositionVel) * 1000;
+        buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f ms");
         ImGui::PopID();
 
         ImGui::TableNextRow();
@@ -1784,7 +1921,7 @@ void GraphicInterface::drawValuesVelocity()
         ImGui::SetNextItemWidth(-FLT_MIN);
         float freq;
         if (deltaT != 0.0f)
-            freq = std::abs(1 / deltaT);
+            freq = std::abs(1 / deltaT) * 1000;
         buttonColorInputFloat("##hidden_label", &freq, 0.0f, 0.0f, "%.3f Hz");
         ImGui::PopID();
 
@@ -1850,8 +1987,8 @@ void GraphicInterface::drawValuesPosition()
         ImGui::TableNextColumn();
         ImGui::PushID(1);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        float cursorAPositionPosTemp = static_cast<float>(cursorAPositionPos);
-        if (buttonColorInputFloat("##hidden_label", &cursorAPositionPosTemp, 0.0f, 0.0f, "%.3f s"))
+        float cursorAPositionPosTemp = static_cast<float>(cursorAPositionPos) * 1000;
+        if (buttonColorInputFloat("##hidden_label", &cursorAPositionPosTemp, 0.0f, 0.0f, "%.3f ms"))
         {
             cursorAPositionPos = cursorAPositionPosTemp;
         }
@@ -1863,8 +2000,8 @@ void GraphicInterface::drawValuesPosition()
         ImGui::TableNextColumn();
         ImGui::PushID(2);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        float cursorBPositionPosTemp = static_cast<float>(cursorBPositionPos);
-        if (buttonColorInputFloat("##hidden_label", &cursorBPositionPosTemp, 0.0f, 0.0f, "%.3f s"))
+        float cursorBPositionPosTemp = static_cast<float>(cursorBPositionPos) * 1000;
+        if (buttonColorInputFloat("##hidden_label", &cursorBPositionPosTemp, 0.0f, 0.0f, "%.3f ms"))
         {
             cursorBPositionPos = cursorBPositionPosTemp;
         }
@@ -1876,8 +2013,8 @@ void GraphicInterface::drawValuesPosition()
         ImGui::TableNextColumn();
         ImGui::PushID(3);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        float deltaT = std::abs(cursorAPositionPos - cursorBPositionPos);
-        buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f s");
+        float deltaT = std::abs(cursorAPositionPos - cursorBPositionPos) * 1000;
+        buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f ms");
         ImGui::PopID();
 
         ImGui::TableNextRow();
@@ -1888,7 +2025,7 @@ void GraphicInterface::drawValuesPosition()
         ImGui::SetNextItemWidth(-FLT_MIN);
         float freq;
         if (deltaT != 0.0f)
-            freq = std::abs(1 / deltaT);
+            freq = std::abs(1 / deltaT) * 1000;
         buttonColorInputFloat("##hidden_label", &freq, 0.0f, 0.0f, "%.3f Hz");
         ImGui::PopID();
 
@@ -1954,8 +2091,8 @@ void GraphicInterface::drawValuesTorque()
         ImGui::TableNextColumn();
         ImGui::PushID(1);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        float cursorAPositionTrqTemp = static_cast<float>(cursorAPositionTrq);
-        if (buttonColorInputFloat("##hidden_label", &cursorAPositionTrqTemp, 0.0f, 0.0f, "%.3f s"))
+        float cursorAPositionTrqTemp = static_cast<float>(cursorAPositionTrq) * 1000;
+        if (buttonColorInputFloat("##hidden_label", &cursorAPositionTrqTemp, 0.0f, 0.0f, "%.3f ms"))
         {
             cursorAPositionTrq = cursorAPositionTrqTemp;
         }
@@ -1967,8 +2104,8 @@ void GraphicInterface::drawValuesTorque()
         ImGui::TableNextColumn();
         ImGui::PushID(2);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        float cursorBPositionTrqTemp = static_cast<float>(cursorBPositionTrq);
-        if (buttonColorInputFloat("##hidden_label", &cursorBPositionTrqTemp, 0.0f, 0.0f, "%.3f s"))
+        float cursorBPositionTrqTemp = static_cast<float>(cursorBPositionTrq) * 1000;
+        if (buttonColorInputFloat("##hidden_label", &cursorBPositionTrqTemp, 0.0f, 0.0f, "%.3f ms"))
         {
             cursorBPositionTrq = cursorBPositionTrqTemp;
         }
@@ -1980,8 +2117,8 @@ void GraphicInterface::drawValuesTorque()
         ImGui::TableNextColumn();
         ImGui::PushID(3);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        float deltaT = std::abs(cursorAPositionTrq - cursorBPositionTrq);
-        buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f s");
+        float deltaT = std::abs(cursorAPositionTrq - cursorBPositionTrq) * 1000;
+        buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f ms");
         ImGui::PopID();
 
         ImGui::TableNextRow();
@@ -1992,7 +2129,7 @@ void GraphicInterface::drawValuesTorque()
         ImGui::SetNextItemWidth(-FLT_MIN);
         float freq;
         if (deltaT != 0.0f)
-            freq = std::abs(1 / deltaT);
+            freq = std::abs(1 / deltaT) * 1000;
         buttonColorInputFloat("##hidden_label", &freq, 0.0f, 0.0f, "%.3f Hz");
         ImGui::PopID();
 

@@ -25,9 +25,9 @@ class GraphicInterface
     GLFWwindow* m_window = nullptr;
 
     float leftMenuBarWidth      = 325.0f;
-    float rightMenuBarWidth     = 200.0f;
-    float testMenuBarHeight     = 100.0f;
-    float errorMenuBarHeight    = 30.0f;
+    float rightMenuBarWidth     = 225.0f;
+    float testMenuBarHeight     = 140.0f;
+    float errorMenuBarHeight    = 40.0f;
     float lowBarHeight          = 30.0f;
     float marginPlot            = 10.f;
     float paddingButtons        = 30.f;
@@ -90,6 +90,8 @@ class GraphicInterface
     bool cursorsHorizontalPositionEnabled = false;
     bool cursorsHorizontalTorqueEnabled   = false;
 
+    bool showCursorMenu = false;
+
     // Back menu settings
     ImGuiWindowFlags flagsBackMenu = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
                                      ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
@@ -102,11 +104,14 @@ class GraphicInterface
     ImVec4 clear_color  = ImVec4(0.055f, 0.059f, 0.067f, 1.00f);
     ImVec4 buttonColor  = ImVec4(0.167f, 0.165f, 0.196f, 1.0f);
 
-    ImVec4 mabColor        = ImVec4(1.0f, 0.468f, 0.0f, 1.0f);
-    ImVec4 mabColorHovered = ImVec4(1.0f, 0.468f, 0.0f, 0.5f);
+    const ImVec4 redColor   = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+    const ImVec4 greenColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
 
-    const ImVec4 colA = mabColor;
-    const ImVec4 colB = mabColor;
+    const ImVec4 mabColor        = ImVec4(1.0f, 0.468f, 0.0f, 1.0f);
+    const ImVec4 mabColorHovered = ImVec4(1.0f, 0.468f, 0.0f, 0.5f);
+
+    const ImVec4 colA = mabColorHovered;
+    const ImVec4 colB = mabColorHovered;
 
     std::string chosenIDstr = "Select Your MD";
 
@@ -131,6 +136,7 @@ class GraphicInterface
     void drawSelectMDButton();
     void drawSelectModeButton();
     void drawRestorePlotsButton();
+    void drawClearErrorsButton();
     void drawCheckboxCrosshairsButton();
     void drawCheckboxVerCursorsVelButton();
     void drawCheckboxVerCursorsPosButton();
@@ -138,6 +144,7 @@ class GraphicInterface
     void drawCheckboxHorCursorsVelButton();
     void drawCheckboxHorCursorsPosButton();
     void drawCheckboxHorCursorsTrqButton();
+    void drawCursorMenu();
 
     // Parameters setters etc.
     void drawParametersVelocity();

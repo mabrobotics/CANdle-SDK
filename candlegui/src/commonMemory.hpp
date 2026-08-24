@@ -24,6 +24,12 @@ struct commonMemory_S
     float            targetDeceleration = 0.0f;
 
     std::string errorMessage;
+    std::string errorQuickStatusMessage;
+    std::string errorEncoderStatusMessage;
+    std::string errorHardwareStatusMessage;
+    std::string errorBridgeStatusMessage;
+    std::string errorMotionStatusMessage;
+    std::string errorCommunicationStatusMessage;
 
     // TUNING GAINS
     float Kp_vel          = 0.0f;
@@ -83,6 +89,7 @@ struct commonMemory_S
     std::atomic<bool> buttonSelectMdPressed{false};
     std::atomic<bool> buttonManualTestPressed{false};
     std::atomic<bool> buttonAutomaticTestPressed{false};
+    std::atomic<bool> buttonClearErrorsPressed{false};
 
     std::atomic<bool> updateParametersTest{false};
     std::atomic<bool> selectedMD{false};
@@ -91,7 +98,16 @@ struct commonMemory_S
     std::atomic<bool> candleAvailable{false};
     std::atomic<bool> updatedVersion{true};
     std::atomic<bool> discoverOngoing{false};
+
+    // Errors
     std::atomic<bool> errorOccured{false};
+    std::atomic<bool> errorConnectionOccured{false};
+    std::atomic<bool> errorQuickStatusOccured{false};
+    std::atomic<bool> errorEncoderOccured{false};
+    std::atomic<bool> errorHardwareOccured{false};
+    std::atomic<bool> errorBridgeOccured{false};
+    std::atomic<bool> errorMotionOccured{false};
+    std::atomic<bool> errorCommunicationOccured{false};
 
     // Plots
     static const uint32_t PLOT_BUFFER_SIZE = 100000;
