@@ -19,6 +19,7 @@ class HardwareCandle
     mab::Candle* candle = nullptr;
 
     mab::MDStatus statuses;
+    mab::canId_t  chosenID;
 
     int timeoutCounter = 0;
 

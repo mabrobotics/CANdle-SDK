@@ -90,6 +90,7 @@ struct commonMemory_S
     std::atomic<bool> buttonManualTestPressed{false};
     std::atomic<bool> buttonAutomaticTestPressed{false};
     std::atomic<bool> buttonClearErrorsPressed{false};
+    std::atomic<bool> buttonSavePressed{false};
 
     std::atomic<bool> updateParametersTest{false};
     std::atomic<bool> selectedMD{false};

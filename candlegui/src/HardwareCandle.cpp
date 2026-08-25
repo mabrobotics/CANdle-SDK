@@ -41,19 +41,26 @@ void HardwareCandle::testMD(mab::MD& md)
 
 void HardwareCandle::checkConnectionStatus(mab::MD& md, mab::canId_t chosenID)
 {
-    m_data->errorConnectionOccured = false;
-    m_data->errorMessage           = "CANdle Connected";
+    bool selectedMD      = m_data->selectedMD;
+    bool discoverOngoing = m_data->discoverOngoing;
 
-    if (m_data->discoverOngoing)
+    m_data->errorConnectionOccured = false;
+
+    if (discoverOngoing)
     {
         m_data->errorMessage           = "Discover ongoing";
         m_data->errorConnectionOccured = true;
     }
 
-    if (m_data->selectedMD)
+    else if (selectedMD)
     {
         m_data->errorMessage           = "Connected to MD" + std::to_string(chosenID);
         m_data->errorConnectionOccured = false;
+    }
+
+    else
+    {
+        m_data->errorMessage = "CANdle Connected";
     }
 }
 
@@ -315,9 +322,9 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
         bool buttonDiscoverMdPressed  = m_data->buttonDiscoverMdPressed.exchange(false);
         bool buttonSelectMdPressed    = m_data->buttonSelectMdPressed.exchange(false);
         bool buttonClearErrorsPressed = m_data->buttonClearErrorsPressed.exchange(false);
+        bool buttonSavePressed        = m_data->buttonSavePressed.exchange(false);
 
         mab::MdMode_E currentMode;
-        mab::canId_t  chosenID;
 
         currentMode = m_data->currentMode;
         chosenID    = m_data->chosenID;
@@ -434,6 +441,11 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
             if (!testStarted && selectedMD)
             {
                 checkQuickStatus(md);
+            }
+
+            if (!testStarted && buttonSavePressed)
+            {
+                md.save();
             }
 
             if (buttonSelectMdPressed)

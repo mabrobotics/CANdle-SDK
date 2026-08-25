@@ -34,7 +34,12 @@ void GraphicInterface::init()
 #endif
 
     glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
-    m_window = glfwCreateWindow(1280, 960, "MD GUI", nullptr, nullptr);
+
+    std::string CANdleSDKVersion = CANDLESDK_VERSION;
+
+    std::string appName = "MD GUI " + CANdleSDKVersion;
+
+    m_window = glfwCreateWindow(1280, 960, appName.c_str(), nullptr, nullptr);
     if (m_window == nullptr)
         return;
 
@@ -138,9 +143,19 @@ void GraphicInterface::drawMenuLowerBar()
 
     if (ImGui::Begin("Lower Bar", nullptr, flagsBackMenu))
     {
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
-                    1000.0f / m_io.Framerate,
-                    m_io.Framerate);
+        char text[128];
+        snprintf(text,
+                 sizeof(text),
+                 "Application average %.3f ms/frame (%.1f FPS)",
+                 1000.0f / m_io.Framerate,
+                 m_io.Framerate);
+
+        float textWidth      = ImGui::CalcTextSize(text).x;
+        float availableSpace = ImGui::GetContentRegionAvail().x;
+
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + availableSpace - textWidth);
+
+        ImGui::TextUnformatted(text);
     }
     ImGui::End();
 }
@@ -162,6 +177,8 @@ void GraphicInterface::drawTestMenuBar()
     if (ImGui::Begin("Test menu", nullptr, flagsBackMenu))
     {
         drawCursorMenu();
+        ImGui::Spacing();
+        ImGui::Separator();
 
         if (errorOccured)
         {
@@ -170,6 +187,7 @@ void GraphicInterface::drawTestMenuBar()
 
         ImGui::Spacing();
         drawTestManualButton();
+        ImGui::Spacing();
         drawTestEndButton();
 
         if (errorOccured)
@@ -336,15 +354,18 @@ void GraphicInterface::drawLeftMenuBar()
                 drawParametersVelocity();
                 drawSetTargetVelocity();
                 drawSetVelocityWindow();
+                drawSaveButton();
                 break;
             case mab::MdMode_E::POSITION_PID:
                 drawParametersPosition();
                 drawSetTargetPosition();
                 drawSetPositionWindow();
+                drawSaveButton();
                 break;
             case mab::MdMode_E::IMPEDANCE:
                 drawParametersImpedance();
                 drawSetTargetPosition();
+                drawSaveButton();
                 break;
             case mab::MdMode_E::RAW_TORQUE:  // case unused
                 drawSetTargetTorque();
@@ -354,6 +375,7 @@ void GraphicInterface::drawLeftMenuBar()
                 drawSetTargetVelocity();
                 drawSetTargetAcceleration();
                 drawSetTargetDeceleration();
+                drawSaveButton();
                 break;
             case mab::MdMode_E::POSITION_PROFILE:
                 drawParametersVelocity();
@@ -361,6 +383,7 @@ void GraphicInterface::drawLeftMenuBar()
                 drawSetTargetPosition();
                 drawSetTargetAcceleration();
                 drawSetTargetDeceleration();
+                drawSaveButton();
                 break;
             default:
                 break;
@@ -612,8 +635,6 @@ BUTTONS
 
 void GraphicInterface::drawTestManualButton()
 {
-    ImVec4        colorNormal, colorHovered, colorActive;
-    float         borderSize;
     bool          selectedMode               = m_data->selectedMode;
     mab::MdMode_E currentMode                = m_data->currentMode;
     bool          buttonAutomaticTestPressed = m_data->buttonAutomaticTestPressed;
@@ -624,28 +645,7 @@ void GraphicInterface::drawTestManualButton()
         ImGui::BeginDisabled();
     }
 
-    if (buttonManualTestPressed)
-    {
-        borderSize   = 0.0f;
-        colorNormal  = mabColor;
-        colorHovered = mabColorHovered;
-        colorActive  = mabColor;
-    }
-    else
-    {
-        borderSize   = 1.0f;
-        colorNormal  = buttonColor;
-        colorHovered = mabColorHovered;
-        colorActive  = mabColor;
-    }
-
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, borderSize);
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, roundingFrameButton);
-
-    ImGui::PushStyleColor(ImGuiCol_Border, mabColor);
-    ImGui::PushStyleColor(ImGuiCol_Button, colorNormal);
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, colorHovered);
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, colorActive);
+    buttonImportantStyle(buttonManualTestPressed);
 
     ImGui::SetCursorPosX(paddingButtons);
 
@@ -681,17 +681,15 @@ void GraphicInterface::drawTestManualButton()
         ImGui::EndDisabled();
     }
 
-    ImGui::PopStyleColor(4);
-    ImGui::PopStyleVar(2);
+    endButtonImportantStyle();
 }
 
 void GraphicInterface::drawTestEndButton()
 {
-    ImVec4        colorNormal, colorHovered, colorActive;
-    float         borderSize;
     bool          testStarted             = m_data->testStarted;
     bool          selectedMode            = m_data->selectedMode;
     bool          buttonManualTestPressed = m_data->buttonManualTestPressed;
+    bool          startCondition          = testStarted && !buttonManualTestPressed;
     mab::MdMode_E currentMode             = m_data->currentMode;
 
     if (!selectedMode || currentMode == mab::MdMode_E::IDLE || buttonManualTestPressed)
@@ -699,30 +697,10 @@ void GraphicInterface::drawTestEndButton()
         ImGui::BeginDisabled();
     }
 
-    if (testStarted && !buttonManualTestPressed)
-    {
-        borderSize   = 0.0f;
-        colorNormal  = mabColor;
-        colorHovered = mabColorHovered;
-        colorActive  = mabColor;
-    }
-    else
-    {
-        borderSize   = 1.0f;
-        colorNormal  = buttonColor;
-        colorHovered = mabColorHovered;
-        colorActive  = mabColor;
-    }
-
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, borderSize);
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, roundingFrameButton);
-
-    ImGui::PushStyleColor(ImGuiCol_Border, mabColor);
-    ImGui::PushStyleColor(ImGuiCol_Button, colorNormal);
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, colorHovered);
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, colorActive);
+    buttonImportantStyle(startCondition);
 
     ImGui::SetCursorPosX(paddingButtons);
+
     if (ImGui::Button(m_data->buttonAutomaticTestPressed ? "End test" : "Automatic Test",
                       ImVec2(leftMenuBarWidth - (paddingButtons * 2.0f), 40.0f)))
     {
@@ -737,8 +715,7 @@ void GraphicInterface::drawTestEndButton()
         ImGui::EndDisabled();
     }
 
-    ImGui::PopStyleColor(4);
-    ImGui::PopStyleVar(2);
+    endButtonImportantStyle();
 }
 
 void GraphicInterface::drawDiscoverMDButton()
@@ -929,6 +906,73 @@ void GraphicInterface::drawClearErrorsButton()
     endButtonStyle();
 }
 
+void GraphicInterface::drawSaveButton()
+{
+    bool          selectedMode               = m_data->selectedMode;
+    mab::MdMode_E currentMode                = m_data->currentMode;
+    bool          buttonAutomaticTestPressed = m_data->buttonAutomaticTestPressed;
+    bool          buttonManualTestPressed    = m_data->buttonManualTestPressed;
+    bool          buttonSavePressed          = m_data->buttonSavePressed;
+
+    if (!selectedMode || currentMode == mab::MdMode_E::IDLE || buttonAutomaticTestPressed ||
+        buttonManualTestPressed)
+    {
+        ImGui::BeginDisabled();
+    }
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+    ImGui::SetCursorPosX(leftMenuBarWidth / 4.0f);
+
+    buttonImportantStyle(buttonSavePressed);
+
+    if (ImGui::Button("Save Config", ImVec2(leftMenuBarWidth / 2.0f, 30.0f)))
+    {
+        ImGui::OpenPopup("Save config");
+    }
+
+    endButtonImportantStyle();
+
+    if (!selectedMode || currentMode == mab::MdMode_E::IDLE || buttonAutomaticTestPressed ||
+        buttonManualTestPressed)
+    {
+        ImGui::EndDisabled();
+    }
+
+    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+    ImGui::PushStyleColor(ImGuiCol_TitleBgActive, mabColor);
+    if (ImGui::BeginPopupModal("Save config", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::SetWindowFontScale(1.3f);
+
+        ImGui::Text("Are you sure you want to save config?");
+        ImGui::Separator();
+
+        buttonStyle();
+        if (ImGui::Button("OK", ImVec2(120, 0)))
+        {
+            m_data->buttonSavePressed = true;
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::SetItemDefaultFocus();
+        ImGui::SameLine();
+
+        if (ImGui::Button("Cancel", ImVec2(120, 0)))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+
+        endButtonStyle();
+
+        ImGui::EndPopup();
+    }
+    ImGui::PopStyleColor(1);
+}
+
 void GraphicInterface::drawCheckboxCrosshairsButton()
 {
     checkboxStyle();
@@ -1022,8 +1066,6 @@ void GraphicInterface::drawCursorMenu()
     ImGui::SameLine();
     ImGui::Text("Show Cursor Menu");
     endCheckboxStyle();
-    ImGui::Spacing();
-    ImGui::Separator();
 }
 
 /*
@@ -1252,6 +1294,7 @@ void GraphicInterface::drawSetTargetVelocity()
 
     ImGui::SetCursorPosX(paddingButtons);
     ImGui::Text("Target Velocity");
+    ImGui::Spacing();
     if (drawBigInputFloat("##Target Velocity",
                           &m_data->targetVelocitySlider,
                           1.0f,
@@ -1270,6 +1313,7 @@ void GraphicInterface::drawSetTargetPosition()
     ImGui::Spacing();
     ImGui::SetCursorPosX(paddingButtons);
     ImGui::Text("Target Position");
+    ImGui::Spacing();
     drawBigInputFloat("##Target Position",
                       &m_data->targetPositionSlider,
                       1.0f,
@@ -1284,6 +1328,7 @@ void GraphicInterface::drawSetTargetTorque()
     ImGui::Spacing();
     ImGui::SetCursorPosX(paddingButtons);
     ImGui::Text("Target Torque");
+    ImGui::Spacing();
     if (drawBigInputFloat("##Target Torque",
                           &m_data->targetTorqueSlider,
                           1.0f,
@@ -1302,6 +1347,7 @@ void GraphicInterface::drawSetTargetAcceleration()
     ImGui::Spacing();
     ImGui::SetCursorPosX(paddingButtons);
     ImGui::Text("Acceleration");
+    ImGui::Spacing();
     if (drawBigInputFloat("##Acceleration",
                           &m_data->targetAccelerationSlider,
                           step,
@@ -1320,6 +1366,7 @@ void GraphicInterface::drawSetTargetDeceleration()
     ImGui::Spacing();
     ImGui::SetCursorPosX(paddingButtons);
     ImGui::Text("Deceleration");
+    ImGui::Spacing();
     if (drawBigInputFloat("##Deceleration",
                           &m_data->targetDecelerationSlider,
                           step,
@@ -1338,6 +1385,7 @@ void GraphicInterface::drawSetPositionWindow()
     ImGui::Spacing();
     ImGui::SetCursorPosX(paddingButtons);
     ImGui::Text("Position Window");
+    ImGui::Spacing();
     drawBigInputFloat("##Position Window",
                       &m_data->positionWindowSlider,
                       step,
@@ -1352,6 +1400,7 @@ void GraphicInterface::drawSetVelocityWindow()
     ImGui::Spacing();
     ImGui::SetCursorPosX(paddingButtons);
     ImGui::Text("Velocity Window");
+    ImGui::Spacing();
     drawBigInputFloat("##Velocity Window",
                       &m_data->velocityWindowSlider,
                       step,
@@ -1545,71 +1594,12 @@ void GraphicInterface::drawVelocityPlot(ImVec2 size, ImPlotFlags plotFlag)
                 "Target Velocity", m_data->plotTime, m_data->plotTargetVelocity, pointsCount, spec);
         }
 
-        if (cursorsVerticalVelocityEnabled)
-        {
-            ImPlotDragToolFlags flags = ImPlotDragToolFlags_NoFit;
-
-            bool dragA = ImPlot::DragLineX(0, &cursorAPositionVel, colA, 1.0f, flags);
-            bool dragB = ImPlot::DragLineX(1, &cursorBPositionVel, colB, 1.0f, flags);
-
-            ImPlot::TagX(cursorAPositionVel, colA, "tA");
-            ImPlot::TagX(cursorBPositionVel, colB, "tB");
-
-            if (dragA || ImGui::IsItemHovered())
-            {
-                ImPlot::Annotation(cursorAPositionVel,
-                                   0.0,
-                                   colA,
-                                   ImVec2(10, -10),
-                                   true,
-                                   "tA: %.3fs",
-                                   cursorAPositionVel);
-            }
-            if (dragB || ImGui::IsItemHovered())
-            {
-                ImPlot::Annotation(cursorBPositionVel,
-                                   0.0,
-                                   colB,
-                                   ImVec2(10, -10),
-                                   true,
-                                   "tB: %.3fs",
-                                   cursorBPositionVel);
-            }
-        }
-
-        if (cursorsHorizontalVelocityEnabled)
-        {
-            ImPlotDragToolFlags flags = ImPlotDragToolFlags_NoFit;
-
-            bool dragA  = ImPlot::DragLineY(0, &cursorAHorPositionVel, colA, 1.0f, flags);
-            bool hoverA = ImGui::IsItemHovered();
-            bool dragB  = ImPlot::DragLineY(1, &cursorBHorPositionVel, colB, 1.0f, flags);
-            bool hoverB = ImGui::IsItemHovered();
-
-            ImPlot::TagY(cursorAHorPositionVel, colA, "yA");
-            ImPlot::TagY(cursorBHorPositionVel, colB, "yB");
-
-            if (dragA || hoverA)
-            {
-                ImPlot::Annotation(0.0,
-                                   cursorAHorPositionVel,
-                                   colA,
-                                   ImVec2(10, -10),
-                                   true,
-                                   "yA: %.3f",
-                                   cursorAHorPositionVel);
-            }
-            if (dragB || hoverB)
-            {
-                ImPlot::Annotation(0.0,
-                                   cursorBHorPositionVel,
-                                   colB,
-                                   ImVec2(10, -10),
-                                   true,
-                                   "yB: %.3f",
-                                   cursorBHorPositionVel);
-            }
-        }
+        plotCursors(cursorAPositionVel,
+                    cursorBPositionVel,
+                    cursorAHorPositionVel,
+                    cursorBHorPositionVel,
+                    cursorsVerticalVelocityEnabled,
+                    cursorsHorizontalVelocityEnabled);
 
         ImPlot::EndPlot();
     }
@@ -1667,71 +1657,12 @@ void GraphicInterface::drawPositionPlot(ImVec2 size, ImPlotFlags plotFlag)
             ImPlot::PlotStairs(
                 "Target Position", m_data->plotTime, m_data->plotTargetPosition, pointsCount, spec);
 
-        if (cursorsVerticalPositionEnabled)
-        {
-            ImPlotDragToolFlags flags = ImPlotDragToolFlags_NoFit;
-
-            bool dragA = ImPlot::DragLineX(2, &cursorAPositionPos, colA, 1.0f, flags);
-            bool dragB = ImPlot::DragLineX(3, &cursorBPositionPos, colB, 1.0f, flags);
-
-            ImPlot::TagX(cursorAPositionPos, colA, "A");
-            ImPlot::TagX(cursorBPositionPos, colB, "B");
-
-            if (dragA || ImGui::IsItemHovered())
-            {
-                ImPlot::Annotation(cursorAPositionPos,
-                                   0.0,
-                                   colA,
-                                   ImVec2(10, -10),
-                                   true,
-                                   "tA: %.3fs",
-                                   cursorAPositionPos);
-            }
-            if (dragB || ImGui::IsItemHovered())
-            {
-                ImPlot::Annotation(cursorBPositionPos,
-                                   0.0,
-                                   colB,
-                                   ImVec2(10, -10),
-                                   true,
-                                   "tB: %.3fs",
-                                   cursorBPositionPos);
-            }
-        }
-
-        if (cursorsHorizontalPositionEnabled)
-        {
-            ImPlotDragToolFlags flags = ImPlotDragToolFlags_NoFit;
-
-            bool dragA  = ImPlot::DragLineY(2, &cursorAHorPositionPos, colA, 1.0f, flags);
-            bool hoverA = ImGui::IsItemHovered();
-            bool dragB  = ImPlot::DragLineY(3, &cursorBHorPositionPos, colB, 1.0f, flags);
-            bool hoverB = ImGui::IsItemHovered();
-
-            ImPlot::TagY(cursorAHorPositionPos, colA, "A");
-            ImPlot::TagY(cursorBHorPositionPos, colB, "B");
-
-            if (dragA || hoverA)
-            {
-                ImPlot::Annotation(0.0,
-                                   cursorAHorPositionPos,
-                                   colA,
-                                   ImVec2(10, -10),
-                                   true,
-                                   "yA: %.3f",
-                                   cursorAHorPositionPos);
-            }
-            if (dragB || hoverB)
-            {
-                ImPlot::Annotation(0.0,
-                                   cursorBHorPositionPos,
-                                   colB,
-                                   ImVec2(10, -10),
-                                   true,
-                                   "yB: %.3f",
-                                   cursorBHorPositionPos);
-            }
-        }
+        plotCursors(cursorAPositionPos,
+                    cursorBPositionPos,
+                    cursorAHorPositionPos,
+                    cursorBHorPositionPos,
+                    cursorsVerticalPositionEnabled,
+                    cursorsHorizontalPositionEnabled);
 
         ImPlot::EndPlot();
     }
@@ -1786,75 +1717,102 @@ void GraphicInterface::drawTorquePlot(ImVec2 size, ImPlotFlags plotFlag)
             ImPlot::PlotStairs(
                 "Target Torque", m_data->plotTime, m_data->plotTargetTorque, pointsCount, spec);
 
-        if (cursorsVerticalTorqueEnabled)
-        {
-            ImPlotDragToolFlags flags = ImPlotDragToolFlags_NoFit;
-
-            bool dragA = ImPlot::DragLineX(4, &cursorAPositionTrq, colA, 1.0f, flags);
-            bool dragB = ImPlot::DragLineX(5, &cursorBPositionTrq, colB, 1.0f, flags);
-
-            ImPlot::TagX(cursorAPositionTrq, colA, "A");
-            ImPlot::TagX(cursorBPositionTrq, colB, "B");
-
-            if (dragA || ImGui::IsItemHovered())
-            {
-                ImPlot::Annotation(cursorAPositionTrq,
-                                   0.0,
-                                   colA,
-                                   ImVec2(10, -10),
-                                   true,
-                                   "tA: %.3fs",
-                                   cursorAPositionTrq);
-            }
-            if (dragB || ImGui::IsItemHovered())
-            {
-                ImPlot::Annotation(cursorBPositionTrq,
-                                   0.0,
-                                   colB,
-                                   ImVec2(10, -10),
-                                   true,
-                                   "tB: %.3fs",
-                                   cursorBPositionTrq);
-            }
-        }
-
-        if (cursorsHorizontalTorqueEnabled)
-        {
-            ImPlotDragToolFlags flags = ImPlotDragToolFlags_NoFit;
-
-            bool dragA  = ImPlot::DragLineY(4, &cursorAHorPositionTrq, colA, 1.0f, flags);
-            bool hoverA = ImGui::IsItemHovered();
-            bool dragB  = ImPlot::DragLineY(5, &cursorBHorPositionTrq, colB, 1.0f, flags);
-            bool hoverB = ImGui::IsItemHovered();
-
-            ImPlot::TagY(cursorAHorPositionTrq, colA, "A");
-            ImPlot::TagY(cursorBHorPositionTrq, colB, "B");
-
-            if (dragA || hoverA)
-            {
-                ImPlot::Annotation(0.0,
-                                   cursorAHorPositionTrq,
-                                   colA,
-                                   ImVec2(10, -10),
-                                   true,
-                                   "yA: %.3f",
-                                   cursorAHorPositionTrq);
-            }
-            if (dragB || hoverB)
-            {
-                ImPlot::Annotation(0.0,
-                                   cursorBHorPositionTrq,
-                                   colB,
-                                   ImVec2(10, -10),
-                                   true,
-                                   "yB: %.3f",
-                                   cursorBHorPositionTrq);
-            }
-        }
+        plotCursors(cursorAPositionVel,
+                    cursorBPositionTrq,
+                    cursorAHorPositionTrq,
+                    cursorBHorPositionTrq,
+                    cursorsVerticalTorqueEnabled,
+                    cursorsHorizontalTorqueEnabled);
 
         ImPlot::EndPlot();
     }
     ImPlot::PopStyleColor();
+}
+
+void GraphicInterface::plotCursors(
+    double& xA, double& xB, double& yA, double& yB, bool& verticalCursors, bool& horizontalCursors)
+{
+    ImPlotRect limits   = ImPlot::GetPlotLimits();
+    double     dynamicY = limits.Y.Min + (limits.Y.Max - limits.Y.Min) * 0.05;
+    double     dynamicX = limits.X.Min;
+
+    if (verticalCursors)
+    {
+        ImVec2 offsetXA(10.f, -10.f);
+        ImVec2 offsetXB(10.f, -10.f);
+
+        float pixelX_A = ImPlot::PlotToPixels(xA, 0).x;
+        float pixelX_B = ImPlot::PlotToPixels(xB, 0).x;
+
+        if (std::abs(pixelX_A - pixelX_B) < 70.0f)
+        {
+            if (xA < xB)
+            {
+                offsetXB.y = 15.f;
+            }
+            else
+            {
+                offsetXA.y = 15.f;
+            }
+        }
+
+        ImPlotDragToolFlags flags = ImPlotDragToolFlags_NoFit;
+
+        bool dragA = ImPlot::DragLineX(0, &xA, colA, 1.0f, flags);
+        bool dragB = ImPlot::DragLineX(1, &xB, colB, 1.0f, flags);
+
+        ImPlot::TagX(xA, colA, "tA");
+        ImPlot::TagX(xB, colB, "tB");
+
+        if (dragA || ImGui::IsItemHovered())
+        {
+            ImPlot::Annotation(xA, dynamicY, colA, offsetXA, true, "tA: %.3fs", xA);
+        }
+        if (dragB || ImGui::IsItemHovered())
+        {
+            ImPlot::Annotation(xB, dynamicY, colB, offsetXB, true, "tB: %.3fs", xB);
+        }
+    }
+
+    if (horizontalCursors)
+    {
+        ImVec2 offsetYA(10.f, -10.f);
+        ImVec2 offsetYB(10.f, -10.f);
+
+        float pixelY_A = ImPlot::PlotToPixels(0, yA).y;
+        float pixelY_B = ImPlot::PlotToPixels(0, yB).y;
+
+        if (std::abs(pixelY_A - pixelY_B) < 30.0f)
+        {
+            if (pixelY_A < pixelY_B)
+            {
+                offsetYB.y = 15.f;
+            }
+            else
+            {
+                offsetYA.y = 15.f;
+            }
+        }
+
+        ImPlotDragToolFlags flags = ImPlotDragToolFlags_NoFit;
+
+        bool dragA  = ImPlot::DragLineY(0, &yA, colA, 1.0f, flags);
+        bool hoverA = ImGui::IsItemHovered();
+        bool dragB  = ImPlot::DragLineY(1, &yB, colB, 1.0f, flags);
+        bool hoverB = ImGui::IsItemHovered();
+
+        ImPlot::TagY(yA, colA, "yA");
+        ImPlot::TagY(yB, colB, "yB");
+
+        if (dragA || hoverA)
+        {
+            ImPlot::Annotation(dynamicX, yA, colA, offsetYA, true, "yA: %.3f", yA);
+        }
+        if (dragB || hoverB)
+        {
+            ImPlot::Annotation(dynamicX, yB, colB, offsetYB, true, "yB: %.3f", yB);
+        }
+    }
 }
 
 /*
@@ -2222,6 +2180,41 @@ void GraphicInterface::endButtonStyle()
 {
     ImGui::PopStyleColor(3);
     ImGui::PopStyleVar();
+}
+
+void GraphicInterface::buttonImportantStyle(bool& flag)
+{
+    ImVec4 colorNormal, colorHovered, colorActive;
+    float  borderSize;
+
+    if (flag)
+    {
+        borderSize   = 0.0f;
+        colorNormal  = mabColor;
+        colorHovered = mabColorHovered;
+        colorActive  = mabColor;
+    }
+    else
+    {
+        borderSize   = 1.0f;
+        colorNormal  = buttonColor;
+        colorHovered = mabColorHovered;
+        colorActive  = mabColor;
+    }
+
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, borderSize);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, roundingFrameButton);
+
+    ImGui::PushStyleColor(ImGuiCol_Border, mabColor);
+    ImGui::PushStyleColor(ImGuiCol_Button, colorNormal);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, colorHovered);
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, colorActive);
+}
+
+void GraphicInterface::endButtonImportantStyle()
+{
+    ImGui::PopStyleColor(4);
+    ImGui::PopStyleVar(2);
 }
 
 void GraphicInterface::checkboxStyle()

@@ -26,7 +26,7 @@ class GraphicInterface
 
     float leftMenuBarWidth      = 325.0f;
     float rightMenuBarWidth     = 225.0f;
-    float testMenuBarHeight     = 140.0f;
+    float testMenuBarHeight     = 145.0f;
     float errorMenuBarHeight    = 40.0f;
     float lowBarHeight          = 30.0f;
     float marginPlot            = 10.f;
@@ -45,6 +45,7 @@ class GraphicInterface
     bool buttonShowCrosshairsChecked = false;
 
     // Cursors
+
     float timeElapsedOnPlot;
 
     double minVel, maxVel;
@@ -137,6 +138,8 @@ class GraphicInterface
     void drawSelectModeButton();
     void drawRestorePlotsButton();
     void drawClearErrorsButton();
+    void drawSaveButton();
+
     void drawCheckboxCrosshairsButton();
     void drawCheckboxVerCursorsVelButton();
     void drawCheckboxVerCursorsPosButton();
@@ -165,6 +168,12 @@ class GraphicInterface
     void drawVelocityPlot(ImVec2 size, ImPlotFlags plotFlag);
     void drawPositionPlot(ImVec2 size, ImPlotFlags plotFlag);
     void drawTorquePlot(ImVec2 size, ImPlotFlags plotFlag);
+    void plotCursors(double& xA,
+                     double& xB,
+                     double& yA,
+                     double& yB,
+                     bool&   verticalCursors,
+                     bool&   horizontalCursors);
 
     // Draw values
     void drawValuesVelocity();
@@ -174,9 +183,11 @@ class GraphicInterface
     // Style edit
     void        comboStyle(const char* text);
     void        buttonStyle();
+    void        buttonImportantStyle(bool& flag);
     void        checkboxStyle();
     void        endComboStyle();
     void        endButtonStyle();
+    void        endButtonImportantStyle();
     void        endCheckboxStyle();
     void        centerText(const char* text);
     const char* getModeName(mab::MdMode_E mode);
