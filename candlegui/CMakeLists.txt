@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.15...3.25)
 
 project(candlegui)
 
+if(WIN32)
+    enable_language(RC)
+endif()
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -48,6 +52,7 @@ set(CANDLEGUI_SOURCES
     src/main.cpp 
     src/GUI.cpp 
     src/HardwareCandle.cpp
+    logo.rc
    )
 
 add_executable(mdgui ${CANDLEGUI_SOURCES}) 
@@ -112,7 +117,12 @@ set(CPACK_PACKAGE_VERSION_PATCH ${CANDLEGUI_VERSION_PATCH})
 set(CPACK_PACKAGE_VENDOR "MAB Robotics")
 set(CPACK_PACKAGE_DESCRIPTION
     "GUI tool for MD configuration and tuning.")
-set(CPACK_MONOLITHIC_INSTALL OFF)
+
+if(WIN32)
+    set(CPACK_MONOLITHIC_INSTALL ON)
+else()
+    set(CPACK_MONOLITHIC_INSTALL OFF)
+endif()
 
 if(WIN32)
     install(TARGETS mdgui RUNTIME DESTINATION . COMPONENT candlegui)
@@ -131,14 +141,17 @@ if(WIN32)
     
     target_compile_definitions(mdgui PRIVATE DEFAULT_custom_CONFIG_DIR="${CMAKE_INSTALL_SYSCONFDIR}/custom/config")
 
-  set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
-  set(CPACK_NSIS_MODIFY_PATH ON)
-  set(CPACK_NSIS_MUI_ICON "${CMAKE_CURRENT_SOURCE_DIR}/MAB.ico")
-  set(CPACK_NSIS_MUI_UNIICON "${CMAKE_CURRENT_SOURCE_DIR}/MAB.ico")
-  set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
-        DetailPrint \\\"Driver installing...\\\"
-        ExecWait '\\\"$INSTDIR\\\\bin\\\\candlesdk-win-driver.exe\\\"'
-    ")
+    set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
+    set(CPACK_NSIS_MODIFY_PATH ON)
+    set(CPACK_NSIS_MUI_ICON "${CMAKE_CURRENT_SOURCE_DIR}/MAB.ico")
+    set(CPACK_NSIS_MUI_UNIICON "${CMAKE_CURRENT_SOURCE_DIR}/MAB.ico")
+    set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
+            DetailPrint \\\"Driver installing...\\\"
+            ExecWait '\\\"$INSTDIR\\\\bin\\\\candlesdk-win-driver.exe\\\"'
+        ")
+    set(CPACK_NSIS_EXECUTABLES_DIRECTORY ".")
+    set(CPACK_PACKAGE_EXECUTABLES "mdgui" "MDgui")
+    set(CPACK_CREATE_DESKTOP_LINKS "mdgui")
 elseif(UNIX)
     install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/udev/rules.d/99-mdgui.rules DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/" COMPONENT rulesgui)
 
