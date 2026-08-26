@@ -146,7 +146,7 @@ void GraphicInterface::drawMenuLowerBar()
         char text[128];
         snprintf(text,
                  sizeof(text),
-                 "Application average %.3f ms/frame (%.1f FPS)",
+                 "%.3f ms/frame (%.1f FPS)",
                  1000.0f / m_io.Framerate,
                  m_io.Framerate);
 
@@ -367,6 +367,7 @@ void GraphicInterface::drawLeftMenuBar()
             case mab::MdMode_E::IMPEDANCE:
                 drawParametersImpedance();
                 drawSetTargetPosition();
+                drawSetPositionWindow();
                 drawSaveButton();
                 break;
             case mab::MdMode_E::RAW_TORQUE:  // case unused
@@ -377,6 +378,7 @@ void GraphicInterface::drawLeftMenuBar()
                 drawSetTargetVelocity();
                 drawSetTargetAcceleration();
                 drawSetTargetDeceleration();
+                drawSetVelocityWindow();
                 drawSaveButton();
                 break;
             case mab::MdMode_E::POSITION_PROFILE:
@@ -385,6 +387,7 @@ void GraphicInterface::drawLeftMenuBar()
                 drawSetTargetPosition();
                 drawSetTargetAcceleration();
                 drawSetTargetDeceleration();
+                drawSetPositionWindow();
                 drawSaveButton();
                 break;
             default:
@@ -957,11 +960,16 @@ void GraphicInterface::drawSaveButton()
     ImGui::Separator();
     ImGui::Spacing();
     ImGui::SetCursorPosX(leftMenuBarWidth / 4.0f);
-    ImGui::SetCursorPosY(leftMenuBarHeight - 40.0f);
+
+    float saveButtonY = ImGui::GetWindowHeight() - 40.0f;
+
+    float currentY = ImGui::GetCursorPosY();
+
+    ImGui::SetCursorPosY(currentY > saveButtonY ? currentY : saveButtonY);
 
     buttonImportantStyle(buttonSavePressed);
 
-    if (ImGui::Button("Save Config", ImVec2(leftMenuBarWidth / 2.0f, 30.0f)))
+    if (ImGui::Button("Upload Config To Drive", ImVec2(leftMenuBarWidth / 2.0f, 30.0f)))
     {
         ImGui::OpenPopup("Save config");
     }
