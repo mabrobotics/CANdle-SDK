@@ -93,6 +93,11 @@ void HardwareCandle::checkQuickStatus(mab::MD& md)
             continue;
         }
 
+        m_data->currentMode                = mab::MdMode_E::IDLE;
+        m_data->testStarted                = false;
+        m_data->buttonAutomaticTestPressed = false;
+        m_data->mdIDs.clear();
+        m_data->selectedMD              = false;
         m_data->errorOccured            = true;
         m_data->errorQuickStatusOccured = true;
         m_data->errorQuickStatusMessage = "ERROR";
@@ -468,13 +473,15 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
 
             if (testStarted && !hardwareLastTestStarted)
             {
-                testStartTime                = std::chrono::steady_clock::now();
+                updateParametersTest         = true;
                 m_data->updateParametersTest = true;
             }
             hardwareLastTestStarted = testStarted;
 
             if (updateParametersTest)
             {
+                m_data->reset();
+
                 md.zero();  // ZEROING FOR SAFETY TODO
                 if (md.setMotionMode(currentMode) != mab::MD::Error_t::OK)
                 {
@@ -554,8 +561,36 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                         break;
                 }
 
+                {
+                    std::lock_guard<std::mutex> lock(m_data->mtx);
+                    uint32_t writeData = m_data->plotWriteData.load(std::memory_order_relaxed);
+
+                    uint32_t indexBeforeStep = writeData % commonMemory_S::PLOT_BUFFER_SIZE;
+                    m_data->plotTime[indexBeforeStep]           = 0.0f;
+                    m_data->plotVelocity[indexBeforeStep]       = 0.0f;
+                    m_data->plotPosition[indexBeforeStep]       = 0.0f;
+                    m_data->plotTorque[indexBeforeStep]         = 0.0f;
+                    m_data->plotTargetVelocity[indexBeforeStep] = 0.0f;
+                    m_data->plotTargetPosition[indexBeforeStep] = 0.0f;
+                    m_data->plotTargetTorque[indexBeforeStep]   = 0.0f;
+
+                    uint32_t indexOnStep = (writeData + 1) % commonMemory_S::PLOT_BUFFER_SIZE;
+                    m_data->plotTime[indexOnStep]           = beginStepTime;
+                    m_data->plotVelocity[indexOnStep]       = 0.0f;
+                    m_data->plotPosition[indexOnStep]       = 0.0f;
+                    m_data->plotTorque[indexOnStep]         = 0.0f;
+                    m_data->plotTargetVelocity[indexOnStep] = m_data->targetVelocity;
+                    m_data->plotTargetPosition[indexOnStep] = m_data->targetPosition;
+                    m_data->plotTargetTorque[indexOnStep]   = m_data->targetTorque;
+
+                    m_data->plotWriteData.store(writeData + 2, std::memory_order_release);
+                }
+
                 md.enable();
                 m_data->updateParametersTest = false;
+
+                std::chrono::microseconds delayStep(static_cast<int>(beginStepTime * 1000000.0f));
+                testStartTime = std::chrono::steady_clock::now() - delayStep;
             }
 
             if ((testStarted && currentMode != mab::MdMode_E::IDLE))
@@ -593,8 +628,13 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                     {
                         continue;
                     }
+                    m_data->testStarted             = false;
                     m_data->errorQuickStatusMessage = status.name;
                     m_data->errorQuickStatusOccured = true;
+                    m_data->currentMode             = mab::MdMode_E::IDLE;
+                    m_data->mdIDs.clear();
+                    m_data->buttonAutomaticTestPressed = false;
+                    m_data->selectedMD                 = false;
                 }
 
                 std::lock_guard<std::mutex> lock(m_data->mtx);

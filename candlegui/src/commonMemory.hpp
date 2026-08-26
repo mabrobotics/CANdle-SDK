@@ -24,7 +24,7 @@ struct commonMemory_S
     float            targetDeceleration = 0.0f;
 
     std::string errorMessage;
-    std::string errorQuickStatusMessage;
+    std::string errorQuickStatusMessage = "No errors";
     std::string errorEncoderStatusMessage;
     std::string errorHardwareStatusMessage;
     std::string errorBridgeStatusMessage;
@@ -141,6 +141,8 @@ struct commonMemory_S
         minTrq = 0.0f;
         maxPos = 0.0f;
         minPos = 0.0f;
+
+        plotWriteData.store(0, std::memory_order_release);
 
         for (uint32_t i = 0; i < PLOT_BUFFER_SIZE; ++i)
         {

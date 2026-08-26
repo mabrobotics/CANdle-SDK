@@ -24,7 +24,8 @@ class GraphicInterface
 
     GLFWwindow* m_window = nullptr;
 
-    float leftMenuBarWidth      = 325.0f;
+    float leftMenuBarWidth = 325.0f;
+    float leftMenuBarHeight;
     float rightMenuBarWidth     = 225.0f;
     float testMenuBarHeight     = 145.0f;
     float errorMenuBarHeight    = 40.0f;

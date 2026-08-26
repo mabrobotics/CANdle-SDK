@@ -242,24 +242,24 @@ void GraphicInterface::drawErrorMenuBar()
             ImGui::PopStyleColor();
         }
 
+        ImGui::SameLine();
+        ImGui::Text("Status:");
+        ImGui::SameLine();
+        if (errorQuickStatusOccured)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, redColor);
+            ImGui::Text("%s", m_data->errorQuickStatusMessage.c_str());
+            ImGui::PopStyleColor();
+        }
+        else
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, greenColor);
+            ImGui::Text("%s", m_data->errorQuickStatusMessage.c_str());
+            ImGui::PopStyleColor();
+        }
+
         if (selectedMD)
         {
-            ImGui::SameLine();
-            ImGui::Text("Status:");
-            ImGui::SameLine();
-            if (errorQuickStatusOccured)
-            {
-                ImGui::PushStyleColor(ImGuiCol_Text, redColor);
-                ImGui::Text("%s", m_data->errorQuickStatusMessage.c_str());
-                ImGui::PopStyleColor();
-            }
-            else
-            {
-                ImGui::PushStyleColor(ImGuiCol_Text, greenColor);
-                ImGui::Text("%s", m_data->errorQuickStatusMessage.c_str());
-                ImGui::PopStyleColor();
-            }
-
             if (errorEncoderOccured)
             {
                 ImGui::SameLine();
@@ -330,8 +330,10 @@ void GraphicInterface::drawLeftMenuBar()
     const ImGuiViewport* leftMenuViewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(leftMenuViewport->WorkPos, ImGuiCond_Always);
 
-    ImVec2 windowSize =
-        ImVec2(leftMenuBarWidth, leftMenuViewport->WorkSize.y - testMenuBarHeight - lowBarHeight);
+    leftMenuBarHeight = leftMenuViewport->WorkSize.y - testMenuBarHeight - lowBarHeight;
+
+    ImVec2 windowSize = ImVec2(leftMenuBarWidth, leftMenuBarHeight);
+
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
 
     if (ImGui::Begin("Main Menu", nullptr, flagsBackMenu))
@@ -426,23 +428,54 @@ void GraphicInterface::drawRightMenuBar()
         ImGui::Spacing();
         ImGui::Separator();
 
-        ImGui::Spacing();
-        ImGui::Text("Velocity plot");
-        drawCheckboxVerCursorsVelButton();
-        drawCheckboxHorCursorsVelButton();
-        ImGui::Spacing();
-        drawValuesVelocity();
-        ImGui::Spacing();
-        ImGui::Separator();
+        switch (currentMode)
+        {
+            case mab::MdMode_E::VELOCITY_PID:
+            case mab::MdMode_E::VELOCITY_PROFILE:
 
-        ImGui::Spacing();
-        ImGui::Text("Position plot");
-        drawCheckboxVerCursorsPosButton();
-        drawCheckboxHorCursorsPosButton();
-        ImGui::Spacing();
-        drawValuesPosition();
-        ImGui::Spacing();
-        ImGui::Separator();
+                ImGui::Spacing();
+                ImGui::Text("Velocity plot");
+                drawCheckboxVerCursorsVelButton();
+                drawCheckboxHorCursorsVelButton();
+                ImGui::Spacing();
+                drawValuesVelocity();
+                ImGui::Spacing();
+                ImGui::Separator();
+
+                ImGui::Spacing();
+                ImGui::Text("Position plot");
+                drawCheckboxVerCursorsPosButton();
+                drawCheckboxHorCursorsPosButton();
+                ImGui::Spacing();
+                drawValuesPosition();
+                ImGui::Spacing();
+                ImGui::Separator();
+                break;
+            case mab::MdMode_E::POSITION_PID:
+            case mab::MdMode_E::POSITION_PROFILE:
+            case mab::MdMode_E::IMPEDANCE:
+
+                ImGui::Spacing();
+                ImGui::Text("Position plot");
+                drawCheckboxVerCursorsPosButton();
+                drawCheckboxHorCursorsPosButton();
+                ImGui::Spacing();
+                drawValuesPosition();
+                ImGui::Spacing();
+                ImGui::Separator();
+
+                ImGui::Spacing();
+                ImGui::Text("Velocity plot");
+                drawCheckboxVerCursorsVelButton();
+                drawCheckboxHorCursorsVelButton();
+                ImGui::Spacing();
+                drawValuesVelocity();
+                ImGui::Spacing();
+                ImGui::Separator();
+                break;
+            default:
+                break;
+        }
 
         ImGui::Spacing();
         ImGui::Text("Torque plot");
@@ -924,6 +957,7 @@ void GraphicInterface::drawSaveButton()
     ImGui::Separator();
     ImGui::Spacing();
     ImGui::SetCursorPosX(leftMenuBarWidth / 4.0f);
+    ImGui::SetCursorPosY(leftMenuBarHeight - 40.0f);
 
     buttonImportantStyle(buttonSavePressed);
 
@@ -1060,12 +1094,24 @@ void GraphicInterface::drawCheckboxHorCursorsTrqButton()
 
 void GraphicInterface::drawCursorMenu()
 {
+    mab::MdMode_E currentMode = m_data->currentMode;
+    if (currentMode == mab::MdMode_E::IDLE)
+    {
+        showCursorMenu = false;
+        ImGui::BeginDisabled();
+    }
+
     ImGui::SetCursorPosX(paddingButtons);
     checkboxStyle();
     ImGui::Checkbox("##Show Cursor Menu", &showCursorMenu);
     ImGui::SameLine();
     ImGui::Text("Show Cursor Menu");
     endCheckboxStyle();
+
+    if (currentMode == mab::MdMode_E::IDLE)
+    {
+        ImGui::EndDisabled();
+    }
 }
 
 /*
@@ -1426,8 +1472,7 @@ void GraphicInterface::updatePlotData()
 
     if (testStarted && !lastTestStarted)
     {
-        m_data->reset();
-        m_data->readData               = m_data->plotWriteData.load(std::memory_order_acquire);
+        m_data->readData               = 0;
         timeInTargetWindow             = 0.0f;
         lastHardwareTime               = 0.0f;
         m_data->guiElapsedTime         = 0.0f;
@@ -1447,6 +1492,11 @@ void GraphicInterface::updatePlotData()
     {
         m_data->guiElapsedTime += m_io.DeltaTime;
         uint32_t currentDataWrite = m_data->plotWriteData.load(std::memory_order_acquire);
+
+        if (m_data->readData > currentDataWrite)
+        {
+            m_data->readData = 0;
+        }
 
         while (m_data->readData != currentDataWrite)
         {

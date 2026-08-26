@@ -21,7 +21,8 @@ class HardwareCandle
     mab::MDStatus statuses;
     mab::canId_t  chosenID;
 
-    int timeoutCounter = 0;
+    int   timeoutCounter = 0;
+    float beginStepTime  = 0.025f;
 
     mab::canId_t min = 0;
     mab::canId_t max = 100;
