@@ -149,12 +149,12 @@ Or, using Docker (x86_64 only; see [installing Docker on Ubuntu](https://docs.do
 ./launch/runDockerForLinux86-64.sh
 ```
 
-> **Note:** Additionally, you will be required to install udev rules to allow usage of CANdle via libUSB. To do so:
-```
-cd build
-sudo make install_rules
-```
-This operation is required only once per PC, and may require restarting your PC to take effect.
+> **Note:** Additionally, you will be required to install udev rules to allow usage of CANdle via libUSB from userspace (no `sudo`). To do so:
+> ```
+> cd build
+> sudo make install_rules
+> ```
+> This operation is required only once per PC, and may require restarting your PC to take effect.
 
 #### Windows
 
