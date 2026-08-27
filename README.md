@@ -15,6 +15,42 @@ It also provides C++ and Python libraries so you can build your own applications
 
 📖 Full documentation: [MD80 x CANdle Documentation](https://mabrobotics.github.io/MD80-x-CANdle-Documentation/CANdle-SDK/intro.html#candlesdk)
 
+## Getting started
+
+Pick the path that matches what you want to do:
+
+| I want to... | Go to |
+| --- | --- |
+| Configure/test my hardware, no coding required | [Install candletool & mdgui](#install-candletool--mdgui) |
+| Control my hardware from Python | [Python quick start](#python-quick-start) |
+| Build C++ apps against the SDK | [Building from source](#build) |
+| Fix a bug or add a feature to the SDK itself | [Contributing](#contributing) |
+
+## Install candletool & mdgui
+
+Prebuilt installers for both apps are published on the [Releases page](https://github.com/mabrobotics/CANdle-SDK/releases/latest) — no build tools or source checkout required.
+
+### Windows
+
+1. Download the latest `candletool` and/or `mdgui` `.exe` installer from [Releases](https://github.com/mabrobotics/CANdle-SDK/releases/latest) and run it.
+2. Install the WinUSB driver for CANdle (one-time setup per PC):
+   1. Download and run [Zadig](https://github.com/pbatard/libwdi/releases/download/v1.5.0/zadig-2.8.exe)
+   2. Options -> List All Devices
+   3. Select `MD USB-TO-CAN` from the dropdown menu
+   4. Change the driver type to `libusb-win32`
+   5. Click **Replace Driver** and wait for it to finish
+
+### Linux
+
+Download the `.deb` package matching your architecture (x86_64, arm64, or armhf) from [Releases](https://github.com/mabrobotics/CANdle-SDK/releases/latest), then install it:
+
+```
+sudo dpkg -i candletool_<version>_<arch>.deb
+sudo dpkg -i mdgui_<version>_<arch>.deb
+```
+
+Once installed, run `candletool --help` to get started, or launch `mdgui` from your applications menu.
+
 ## Dependencies & Requirements
 
 Aquire the repository via git clone:
@@ -49,14 +85,7 @@ Package requires w64devkit to build. It can be automatically downloaded and conf
 launch/buildForWindows.bat
 ```
 
-To use CANdle on Windows, one must manually change USB driver for CANdle, to WinUSB:
-
-1. Download and run [Zadig 2.8](https://github.com/pbatard/libwdi/releases/download/v1.5.0/zadig-2.8.exe)
-2. Options -> List all devices
-3. Select `MD USB-TO-CAN` from drop down menu
-4. Changed driver type to `libusb-win32`
-5. Click `Replace Driver`
-6. Wait for installation to finish.
+You'll also need the WinUSB driver for CANdle — see the driver setup steps in [Install candletool & mdgui](#install-candletool--mdgui) above.
 
 ## Build
 
