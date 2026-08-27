@@ -23,7 +23,8 @@ Pick the path that matches what you want to do:
 | --- | --- |
 | Configure and test, no coding required | [Install candletool & mdgui](#install-candletool--mdgui) |
 | Control MD/PDS from Python | [Python quick start](#python-quick-start) |
-| Build C++ MD/PDS control apps using SDK | [Building from source](#building-from-source) |
+| Build CANdle-SDK yourself | [Building from source](#building-from-source) |
+| Use CANdle-SDK in your project! | [Using in your own project](#use-candle-sdk-in-your-project) |
 
 ## Install candletool & mdgui
 
@@ -194,7 +195,7 @@ To build wheels for multiple libc/Python version combinations at once, use:
 
 Then install the wheel matching your platform, e.g. `python -m pip install ./dist/candlesdk-1.5.0-cp310-cp310-linux_x86_64.whl` for CPython 3.10, glibc, x86-64.
 
-### Use CANdle-SDK as a library in your own project
+## Use CANdle-SDK in your project
 
 The recommended way to consume CANdle-SDK from another C++ project is as a git submodule:
 
