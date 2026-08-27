@@ -14,7 +14,10 @@ include(GNUInstallDirs)
 set(CANDLEGUI_VERSION_MAJOR ${CANDLESDK_VERSION_1})
 set(CANDLEGUI_VERSION_MINOR ${CANDLESDK_VERSION_2})
 set(CANDLEGUI_VERSION_PATCH ${CANDLESDK_VERSION_3})
-set(CANDLEGUI_VERSION_TAG "r")
+# CANDLESDK_VERSION_TAG carries literal quotes (e.g. 'x') so it also works as
+# a C char-literal when used as a compile definition elsewhere; strip them
+# here since CANDLEGUI_VERSION_TAG is only used as a plain string.
+string(REPLACE "'" "" CANDLEGUI_VERSION_TAG "${CANDLESDK_VERSION_TAG}")
 
 set(CANDLEGUI_VERSION_FULL
     "${CANDLEGUI_VERSION_MAJOR}.${CANDLEGUI_VERSION_MINOR}.${CANDLEGUI_VERSION_PATCH}-${CANDLEGUI_VERSION_TAG}"
@@ -124,6 +127,8 @@ else()
     set(CPACK_MONOLITHIC_INSTALL OFF)
 endif()
 
+set(CANDLEGUI_CPACK_COMPONENTS candlegui)
+
 if(WIN32)
     install(TARGETS mdgui RUNTIME DESTINATION . COMPONENT candlegui)
     install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/fonts" DESTINATION . COMPONENT candlegui)
@@ -154,6 +159,7 @@ if(WIN32)
     set(CPACK_CREATE_DESKTOP_LINKS "mdgui")
 elseif(UNIX)
     install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/udev/rules.d/99-mdgui.rules DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/" COMPONENT rulesgui)
+    list(APPEND CANDLEGUI_CPACK_COMPONENTS rulesgui)
 
     target_compile_definitions(mdgui PRIVATE DEFAULT_custom_CONFIG_DIR="/${CMAKE_INSTALL_SYSCONFDIR}/custom")
     add_custom_target(mdgui_install_rules COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_BINARY_DIR}" --component rulesgui)
@@ -180,6 +186,16 @@ if(MAKE_TESTS)
     enable_testing()
 endif()
 
+# See the matching comment in candletool/CMakeLists.txt: give mdgui its own
+# CPack config/output and restrict it to mdgui's own components so it doesn't
+# clobber or bundle candletool's package.
+set(CPACK_COMPONENTS_ALL ${CANDLEGUI_CPACK_COMPONENTS})
+set(CPACK_INSTALL_CMAKE_PROJECTS)
+foreach(_candlegui_component ${CANDLEGUI_CPACK_COMPONENTS})
+    list(APPEND CPACK_INSTALL_CMAKE_PROJECTS
+         "${CMAKE_BINARY_DIR};${CMAKE_PROJECT_NAME};${_candlegui_component};/")
+endforeach()
+set(CPACK_OUTPUT_CONFIG_FILE "${CMAKE_BINARY_DIR}/CPackConfig_mdgui.cmake")
 include(CPack)
 
 

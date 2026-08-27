@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.5...3.25)
 
 include(GNUInstallDirs)
 
@@ -8,8 +8,13 @@ set(CANDLETOOL_VERSION_MAJOR ${CANDLESDK_VERSION_1})
 set(CANDLETOOL_VERSION_MINOR ${CANDLESDK_VERSION_2})
 set(CANDLETOOL_VERSION_PATCH ${CANDLESDK_VERSION_3})
 set(CANDLETOOL_VERSION_TAG   ${CANDLESDK_VERSION_TAG})
+# CANDLETOOL_VERSION_TAG carries literal quotes (e.g. 'x') so it also works as
+# a C char-literal when substituted into the CANDLETOOL_VTAG compile
+# definition below. Strip them for uses as a plain string, such as the
+# package version string / CPack file name.
+string(REPLACE "'" "" CANDLETOOL_VERSION_TAG_STR "${CANDLETOOL_VERSION_TAG}")
 set(CANDLETOOL_VERSION_FULL
-    "${CANDLETOOL_VERSION_MAJOR}.${CANDLETOOL_VERSION_MINOR}.${CANDLETOOL_VERSION_PATCH}-${CANDLETOOL_VERSION_TAG}"
+    "${CANDLETOOL_VERSION_MAJOR}.${CANDLETOOL_VERSION_MINOR}.${CANDLETOOL_VERSION_PATCH}-${CANDLETOOL_VERSION_TAG_STR}"
 )
 
 add_subdirectory(3rd_party/CLI11)
@@ -94,6 +99,8 @@ set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE)
 set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_SOURCE_DIR}/README.md)
 set(CPACK_MONOLITHIC_INSTALL OFF)
 
+set(CANDLETOOL_CPACK_COMPONENTS candletool _configs)
+
 if(WIN32)
   add_executable(candle-win-driver IMPORTED
                  ${CMAKE_CURRENT_SOURCE_DIR}/tools/candlesdk-win-driver.exe)
@@ -113,6 +120,7 @@ if(WIN32)
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/eds
     DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
     COMPONENT _eds)
+  list(APPEND CANDLETOOL_CPACK_COMPONENTS _eds)
 
   install(
     FILES
@@ -192,6 +200,7 @@ elseif(UNIX)
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/udev/rules.d/99-candletool.rules
     DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/"
     COMPONENT rules)
+  list(APPEND CANDLETOOL_CPACK_COMPONENTS rules)
 
   install(
     FILES
@@ -215,4 +224,12 @@ if(MAKE_TESTS)
   enable_testing()
 endif()
 
+# CANdle-SDK bundles multiple installable executables (candletool, mdgui).
+set(CPACK_COMPONENTS_ALL ${CANDLETOOL_CPACK_COMPONENTS})
+set(CPACK_INSTALL_CMAKE_PROJECTS)
+foreach(_candletool_component ${CANDLETOOL_CPACK_COMPONENTS})
+  list(APPEND CPACK_INSTALL_CMAKE_PROJECTS
+       "${CMAKE_BINARY_DIR};${CMAKE_PROJECT_NAME};${_candletool_component};/")
+endforeach()
+set(CPACK_OUTPUT_CONFIG_FILE "${CMAKE_BINARY_DIR}/CPackConfig_candletool.cmake")
 include(CPack)
