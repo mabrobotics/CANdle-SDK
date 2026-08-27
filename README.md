@@ -57,6 +57,48 @@ sudo apt install ./mdgui_<version>_<arch>.deb
 
 Once installed, run `candletool --help` to get started, or launch `mdgui` from your applications menu.
 
+## Python quick start
+
+> **Note:** The Python bindings wrap the C++ library and carry some overhead, so they don't match its performance. For high-frequency control loops or other performance-critical applications, use the [C++ library](#build) directly.
+The Python bindings are published on PyPI as `candlesdk` — no compiler or source checkout needed. On some systems (e.g. recent Debian/Ubuntu) `pip` refuses to install system-wide, so installing into a virtual environment may be required:
+
+
+`venv` setup (optional, if required):
+```
+python3 -m venv .venv
+source .venv/bin/activate   # on Windows: .venv\Scripts\activate
+```
+Installing CandleSDK Python bindings:
+```
+pip install candlesdk
+```
+
+```python
+import pyCandle as pc
+
+candle = pc.attachCandle(pc.CANdleDatarate_E.CAN_DATARATE_1M, pc.busTypes_t.USB)
+md_id = pc.discoverMDs(candle)[0]
+md = pc.MD(md_id, candle)
+
+if md.init() == pc.MD_Error_t.OK:
+    md.zero()
+    md.setMotionMode(pc.MotionMode_t.IMPEDANCE)
+    md.enable()
+    ...
+    ...
+    ...
+md.disable()
+```
+
+
+### Running the Python examples
+
+Ready-to-run scripts covering both MD and PDS control are in [examples/py](examples/py), e.g. `md_impedance.py` and `pds_example_basic.py`. Grab the folder (or the whole repo) with the [git clone](#dependencies--requirements) instructions below, then, with `candlesdk` installed and your hardware connected, run:
+
+```
+python3 examples/py/md_impedance.py
+```
+
 ## Dependencies & Requirements
 
 Aquire the repository via git clone:
@@ -129,19 +171,19 @@ Using powershell run
 ./launch/buildForWindows.bat
 ```
 
-### Compiling Python module
+### Building the Python module from source
 
-Dependencies are listed inside pyproject.toml
+Most users should just `pip install candlesdk` — see [Python quick start](#python-quick-start). Build it yourself only if you need an unreleased change or a platform not covered by the published wheels.
 
-To compile for the current system run build command inside repository using your preferred python binary, for eg. `python -m build`.
+Dependencies are listed inside `pyproject.toml`. To build a wheel for the current system, run `python -m build` inside the repository with your preferred Python binary.
 
-To compile against multiple versions of libc and python use:
+To build wheels for multiple libc/Python version combinations at once, use:
 
 ```
 ./launch/pythonBuildWheel.sh
 ```
 
-To install use pip install on the desired wheel, for eg. `python -m pip install ./dist/pycandlemab-1.7.0-cp310-cp310-linux_x86_64.whl` for CPython 3.10, glibc and x86-64 arch.
+Then install the wheel matching your platform, e.g. `python -m pip install ./dist/candlesdk-1.5.0-cp310-cp310-linux_x86_64.whl` for CPython 3.10, glibc, x86-64.
 
 ## Including CANdle-SDK in your projects
 
