@@ -15,6 +15,8 @@ The SDK includes two ready-to-use apps for working with your hardware without wr
 - **candletool** — a command-line tool for configuring, calibrating, and diagnosing devices
 - **mdgui** — a graphical tool for tuning MD motion control gains
 
+![mdgui](docs/mdgui.png)
+
 It also provides C++ and Python libraries so you can build your own applications on top of the same drivers.
 
 📖 Full documentation: [MD80 x CANdle Documentation](https://mabrobotics.github.io/MD80-x-CANdle-Documentation/CANdle-SDK/intro.html#candlesdk)
