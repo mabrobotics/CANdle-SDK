@@ -1,6 +1,19 @@
 # CANdle-SDK
 
-A toolkit for developing applications using MAB Robotics MD motor controllers and actuators.
+**CANdle-SDK** is the official C++ and Python toolkit from [MAB Robotics](https://www.mabrobotics.pl/) for configuring, testing, and controlling:
+
+- [**MD** motor controllers](https://www.mabrobotics.pl/product-page/md80-motor-controller) — compact brushless servo drives for legged and mobile robots
+- [**CANdle** / **CANdle HAT**](https://www.mabrobotics.pl/motion-control/candle-series) — USB/SPI-to-CAN-FD dongles that connect up to 16 devices to a PC or single-board computer
+- [**PDS** (Power Distribution System)](https://www.mabrobotics.pl/product-page/pds-power-distribution-system) — modular power management and monitoring for mobile robots
+
+The SDK includes two ready-to-use apps for working with your hardware without writing any code:
+
+- **candletool** — a command-line tool for configuring, calibrating, and diagnosing devices
+- **mdgui** — a graphical tool for the same tasks
+
+It also provides C++ and Python libraries so you can build your own applications on top of the same drivers.
+
+📖 Full documentation: [MD80 x CANdle Documentation](https://mabrobotics.github.io/MD80-x-CANdle-Documentation/CANdle-SDK/intro.html#candlesdk)
 
 ## Dependencies & Requirements
 
