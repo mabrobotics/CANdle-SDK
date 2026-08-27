@@ -8,8 +8,8 @@
 
 The SDK includes two ready-to-use apps for working with your hardware without writing any code:
 
-- **candletool** — a command-line tool for configuring, calibrating, and diagnosing devices
-- **mdgui** — a graphical tool for the same tasks
+- **candletool** — a command-line tool for configuring, calibrating, and diagnosing devices,
+- **mdgui** — a graphical tool for tuning MD motion control gains.
 
 It also provides C++ and Python libraries so you can build your own applications on top of the same drivers.
 
@@ -21,9 +21,9 @@ Pick the path that matches what you want to do:
 
 | I want to... | Go to |
 | --- | --- |
-| Configure/test my hardware, no coding required | [Install candletool & mdgui](#install-candletool--mdgui) |
-| Control my hardware from Python | [Python quick start](#python-quick-start) |
-| Build C++ apps against the SDK | [Building from source](#build) |
+| Configure and test, no coding required | [Install candletool & mdgui](#install-candletool--mdgui) |
+| Control MD/PDS from Python | [Python quick start](#python-quick-start) |
+| Build C++ MD/PDS control apps using SDK | [Building from source](#build) |
 | Fix a bug or add a feature to the SDK itself | [Contributing](#contributing) |
 
 ## Install candletool & mdgui
@@ -32,8 +32,14 @@ Prebuilt installers for both apps are published on the [Releases page](https://g
 
 ### Windows
 
-1. Download the latest `candletool` and/or `mdgui` `.exe` installer from [Releases](https://github.com/mabrobotics/CANdle-SDK/releases/latest) and run it.
-2. Install the WinUSB driver for CANdle (one-time setup per PC):
+Download the latest `candletool-<version>-Windows-<arch>.exe` and/or `mdgui-<version>-Windows-<arch>.exe` installer from [Releases](https://github.com/mabrobotics/CANdle-SDK/releases/latest) and run it.
+
+#### Swap default USB driver (optional)
+This is normally done by the installer automatically, but if for any reason the process fails, it can
+be done manually.
+
+
+Install the WinUSB driver for CANdle (one-time setup per PC):
    1. Download and run [Zadig](https://github.com/pbatard/libwdi/releases/download/v1.5.0/zadig-2.8.exe)
    2. Options -> List All Devices
    3. Select `MD USB-TO-CAN` from the dropdown menu
@@ -45,8 +51,8 @@ Prebuilt installers for both apps are published on the [Releases page](https://g
 Download the `.deb` package matching your architecture (x86_64, arm64, or armhf) from [Releases](https://github.com/mabrobotics/CANdle-SDK/releases/latest), then install it:
 
 ```
-sudo dpkg -i candletool_<version>_<arch>.deb
-sudo dpkg -i mdgui_<version>_<arch>.deb
+sudo apt install ./candletool_<version>_<arch>.deb
+sudo apt install ./mdgui_<version>_<arch>.deb
 ```
 
 Once installed, run `candletool --help` to get started, or launch `mdgui` from your applications menu.
