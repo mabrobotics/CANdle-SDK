@@ -19,4 +19,3 @@ cmake -G"MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release ..
 make package -j4
 cd %currentdir%
 exit /b 0
-

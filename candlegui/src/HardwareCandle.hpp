@@ -18,7 +18,11 @@ class HardwareCandle
 
     mab::Candle* candle = nullptr;
 
-    int timeoutCounter = 0;
+    mab::MDStatus statuses;
+    mab::canId_t  chosenID;
+
+    int   timeoutCounter = 0;
+    float beginStepTime  = 0.025f;
 
     mab::canId_t min = 0;
     mab::canId_t max = 100;
@@ -27,7 +31,8 @@ class HardwareCandle
     const int          MAX_CONNECT_RETRIES = 100;
 
     void testMD(mab::MD& md);
-    bool checkStatus(mab::MD& md);
+    void checkConnectionStatus(mab::MD& md, mab::canId_t chosenID);
+    void checkQuickStatus(mab::MD& md);
     void downloadParameters(mab::MD& md);
 
     void updateVelParameters();

@@ -24,15 +24,75 @@ class GraphicInterface
 
     GLFWwindow* m_window = nullptr;
 
-    float leftMenuBarWidth = 350.0f;
-    // float rightMenuBarWidth   = 300.0f;
-    float testMenuBarHeight   = 100.0f;
-    float errorMenuBarHeight  = 50.0f;
-    float lowBarHeight        = 30.0f;
-    float marginPlot          = 10.f;
-    float paddingButtons      = 30.f;
-    float mediumButtonHeight  = 40.0f;
-    float roundingFrameButton = 12.0f;
+    float leftMenuBarWidth = 325.0f;
+    float leftMenuBarHeight;
+    float rightMenuBarWidth     = 225.0f;
+    float testMenuBarHeight     = 145.0f;
+    float errorMenuBarHeight    = 40.0f;
+    float lowBarHeight          = 30.0f;
+    float marginPlot            = 10.f;
+    float paddingButtons        = 30.f;
+    float rightMenuButtonWidth  = rightMenuBarWidth - 20.f;
+    float mediumButtonHeight    = 40.0f;
+    float roundingFrameButton   = 12.0f;
+    float roundingFrameCheckbox = 8.0f;
+
+    float resizeButton = 15.0f;
+
+    float menuTopHeightRatio   = 0.5f;
+    float menuBottomWidthRatio = 0.5f;
+
+    bool buttonRestorePlotsPressed   = false;
+    bool buttonShowCrosshairsChecked = false;
+
+    // Cursors
+
+    float timeElapsedOnPlot;
+
+    double minVel, maxVel;
+    double minPos, maxPos;
+    double minTrq, maxTrq;
+
+    double cursorAPositionVel;
+    double cursorBPositionVel;
+    double cursorAPositionPos;
+    double cursorBPositionPos;
+    double cursorAPositionTrq;
+    double cursorBPositionTrq;
+
+    double cursorAHorPositionVel;
+    double cursorBHorPositionVel;
+    double cursorAHorPositionPos;
+    double cursorBHorPositionPos;
+    double cursorAHorPositionTrq;
+    double cursorBHorPositionTrq;
+
+    void resetCursors()
+    {
+        cursorAPositionVel = 0.0;
+        cursorBPositionVel = 0.0;
+        cursorAPositionPos = 0.0;
+        cursorBPositionPos = 0.0;
+        cursorAPositionTrq = 0.0;
+        cursorBPositionTrq = 0.0;
+
+        cursorAHorPositionVel = 0.0;
+        cursorBHorPositionVel = 0.0;
+        cursorAHorPositionPos = 0.0;
+        cursorBHorPositionPos = 0.0;
+        cursorAHorPositionTrq = 0.0;
+        cursorBHorPositionTrq = 0.0;
+    }
+
+    bool cursorsVerticalVelocityEnabled = false;
+    bool cursorsVerticalPositionEnabled = false;
+    bool cursorsVerticalTorqueEnabled   = false;
+
+    bool cursorsHorizontalVelocityEnabled = false;
+    bool cursorsHorizontalPositionEnabled = false;
+    bool cursorsHorizontalTorqueEnabled   = false;
+
+    bool showCursorMenu = false;
 
     // Back menu settings
     ImGuiWindowFlags flagsBackMenu = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
@@ -46,8 +106,14 @@ class GraphicInterface
     ImVec4 clear_color  = ImVec4(0.055f, 0.059f, 0.067f, 1.00f);
     ImVec4 buttonColor  = ImVec4(0.167f, 0.165f, 0.196f, 1.0f);
 
-    ImVec4 mabColor        = ImVec4(1.0f, 0.468f, 0.0f, 1.0f);
-    ImVec4 mabColorHovered = ImVec4(1.0f, 0.468f, 0.0f, 0.5f);
+    const ImVec4 redColor   = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+    const ImVec4 greenColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
+
+    const ImVec4 mabColor        = ImVec4(1.0f, 0.468f, 0.0f, 1.0f);
+    const ImVec4 mabColorHovered = ImVec4(1.0f, 0.468f, 0.0f, 0.5f);
+
+    const ImVec4 colA = mabColorHovered;
+    const ImVec4 colB = mabColorHovered;
 
     std::string chosenIDstr = "Select Your MD";
 
@@ -61,7 +127,7 @@ class GraphicInterface
     void drawMenuLowerBar();
     void drawTestMenuBar();
     void drawLeftMenuBar();
-    // void drawRightMenuBar();
+    void drawRightMenuBar();
     void drawMainMenu();
     void drawErrorMenuPopup();
 
@@ -71,6 +137,18 @@ class GraphicInterface
     void drawDiscoverMDButton();
     void drawSelectMDButton();
     void drawSelectModeButton();
+    void drawRestorePlotsButton();
+    void drawClearErrorsButton();
+    void drawSaveButton();
+
+    void drawCheckboxCrosshairsButton();
+    void drawCheckboxVerCursorsVelButton();
+    void drawCheckboxVerCursorsPosButton();
+    void drawCheckboxVerCursorsTrqButton();
+    void drawCheckboxHorCursorsVelButton();
+    void drawCheckboxHorCursorsPosButton();
+    void drawCheckboxHorCursorsTrqButton();
+    void drawCursorMenu();
 
     // Parameters setters etc.
     void drawParametersVelocity();
@@ -88,15 +166,30 @@ class GraphicInterface
     // Draw plots
     void updatePlotData();
     void timeInTarget(bool& inWindow, float& timeInTargetWindow, float& dt);
-    void drawVelocityPlot();
-    void drawPositionPlot();
-    void drawTorquePlot();
+    void drawVelocityPlot(ImVec2 size, ImPlotFlags plotFlag);
+    void drawPositionPlot(ImVec2 size, ImPlotFlags plotFlag);
+    void drawTorquePlot(ImVec2 size, ImPlotFlags plotFlag);
+    void plotCursors(double& xA,
+                     double& xB,
+                     double& yA,
+                     double& yB,
+                     bool&   verticalCursors,
+                     bool&   horizontalCursors);
+
+    // Draw values
+    void drawValuesVelocity();
+    void drawValuesPosition();
+    void drawValuesTorque();
 
     // Style edit
     void        comboStyle(const char* text);
     void        buttonStyle();
+    void        buttonImportantStyle(bool& flag);
+    void        checkboxStyle();
     void        endComboStyle();
     void        endButtonStyle();
+    void        endButtonImportantStyle();
+    void        endCheckboxStyle();
     void        centerText(const char* text);
     const char* getModeName(mab::MdMode_E mode);
     bool        drawBigInputFloat(const char* label,
