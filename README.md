@@ -13,8 +13,8 @@
 The SDK includes two ready-to-use apps for working with your hardware without writing any code:
 
 - **candletool** — a command-line tool for configuring, calibrating, and diagnosing devices
+![candletool](docs/candletool.png)
 - **mdgui** — a graphical tool for tuning MD motion control gains
-
 ![mdgui](docs/mdgui.png)
 
 It also provides C++ and Python libraries so you can build your own applications on top of the same drivers.
