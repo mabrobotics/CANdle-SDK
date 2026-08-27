@@ -23,8 +23,7 @@ Pick the path that matches what you want to do:
 | --- | --- |
 | Configure and test, no coding required | [Install candletool & mdgui](#install-candletool--mdgui) |
 | Control MD/PDS from Python | [Python quick start](#python-quick-start) |
-| Build C++ MD/PDS control apps using SDK | [Building from source](#build) |
-| Fix a bug or add a feature to the SDK itself | [Contributing](#contributing) |
+| Build C++ MD/PDS control apps using SDK | [Building from source](#building-from-source) |
 
 ## Install candletool & mdgui
 
@@ -59,7 +58,7 @@ Once installed, run `candletool --help` to get started, or launch `mdgui` from y
 
 ## Python quick start
 
-> **Note:** The Python bindings wrap the C++ library and carry some overhead, so they don't match its performance. For high-frequency control loops or other performance-critical applications, use the [C++ library](#build) directly.
+> **Note:** The Python bindings wrap the C++ library and carry some overhead, so they don't match its performance. For high-frequency control loops or other performance-critical applications, use the [C++ library](#building-from-source) directly.
 The Python bindings are published on PyPI as `candlesdk` — no compiler or source checkout needed. On some systems (e.g. recent Debian/Ubuntu) `pip` refuses to install system-wide, so installing into a virtual environment may be required:
 
 
@@ -93,15 +92,18 @@ md.disable()
 
 ### Running the Python examples
 
-Ready-to-run scripts covering both MD and PDS control are in [examples/py](examples/py), e.g. `md_impedance.py` and `pds_example_basic.py`. Grab the folder (or the whole repo) with the [git clone](#dependencies--requirements) instructions below, then, with `candlesdk` installed and your hardware connected, run:
+Ready-to-run scripts covering both MD and PDS control are in [examples/py](examples/py), e.g. `md_impedance.py` and `pds_example_basic.py`. Grab the folder (or the whole repo) with the [git clone](#get-the-source) instructions below, then, with `candlesdk` installed and your hardware connected, run:
 
 ```
 python3 examples/py/md_impedance.py
 ```
 
-## Dependencies & Requirements
+## Building from source
 
-Aquire the repository via git clone:
+This section is for developers building the C++ library, candletool or mdgui themselves — e.g. to modify the SDK or to target a platform without prebuilt packages. 
+If you just want to configure hardware or write Python code, see [Install candletool & mdgui](#install-candletool--mdgui) or [Python quick start](#python-quick-start) instead.
+
+### Get the source
 
 ```
 git clone https://github.com/mabrobotics/CANdle-SDK.git
@@ -109,66 +111,73 @@ cd CANdle-SDK
 git submodule update --init --recursive
 ```
 
-or
+ > **Note:** A zipped download of the repository will not work, since it relies on git submodules.
 
-```
-git clone git@github.com:mabrobotics/CANdle-SDK.git
-cd CANdle-SDK
-git submodule update --init --recursive
-```
+### Prerequisites
 
-Zipped project download will not work as the repository uses submodules.
-
-### Linux
+#### Linux
 
 ```
 sudo apt install build-essential git cmake libusb-1.0-0-dev
 ```
 
-### Windows
+#### Windows
 
-Package requires w64devkit to build. It can be automatically downloaded and configured using:
-
-```
-launch/buildForWindows.bat
-```
-
+Building requires w64devkit, which can be downloaded and configured automatically by the build script below.
 You'll also need the WinUSB driver for CANdle — see the driver setup steps in [Install candletool & mdgui](#install-candletool--mdgui) above.
 
-## Build
+### Build
 
-### Linux based OS
+#### Linux
 
-Building for Linux system:
-
+You can use the script:
 ```
 ./launch/buildForLinux.sh
 ```
 
-#### Using Docker (only on x86_64 architecture)
+Or build manually:
+```
+mkdir build
+cd build
+cmake ..
+make -j6
+```
 
-(See: [Installing docker on Linux(ubuntu)](https://docs.docker.com/engine/install/ubuntu/) )
-
-Run:
+Or, using Docker (x86_64 only; see [installing Docker on Ubuntu](https://docs.docker.com/engine/install/ubuntu/)):
 
 ```
 ./launch/runDockerForLinux86-64.sh
 ```
 
-### Cross-compile for Windows
+> **Note:** Additionally, you will be required to install udev rules to allow usage of CANdle via libUSB. To do so:
+```
+cd build
+sudo make install_rules
+```
+This operation is required only once per PC, and may require restarting your PC to take effect.
 
-#### Using Docker
+#### Windows
+
+Natively, from PowerShell:
+
+```
+./launch/buildForWindows.bat
+```
+
+Or cross-compile from Linux using Docker:
 
 ```
 ./launch/runDockerForWindows.sh
 ```
 
-### Natively build on Windows
+Both produce a `build/` directory containing the `candlelib` library and, by default, the `candletool`, `mdgui`, and example binaries.
 
-Using powershell run
+### C++ examples
+
+Example programs demonstrating MD and PDS usage — impedance control, diagnostics, PDS power stage/braking resistor handling, and more — are in [examples/cpp](examples/cpp). Each file builds into its own executable as part of the normal build above; run one directly from the build output, e.g.:
 
 ```
-./launch/buildForWindows.bat
+./build/examples/md_example_impedance
 ```
 
 ### Building the Python module from source
@@ -185,20 +194,18 @@ To build wheels for multiple libc/Python version combinations at once, use:
 
 Then install the wheel matching your platform, e.g. `python -m pip install ./dist/candlesdk-1.5.0-cp310-cp310-linux_x86_64.whl` for CPython 3.10, glibc, x86-64.
 
-## Including CANdle-SDK in your projects
+### Use CANdle-SDK as a library in your own project
 
-Best way to include CANdle-SDK in your code is to include it as a git submodule and include it in you CMakeLists.txt like this:
+The recommended way to consume CANdle-SDK from another C++ project is as a git submodule:
 
 ```
 git submodule add git@github.com:mabrobotics/CANdle-SDK.git
 git submodule update --init --recursive
 ```
 
-You can than use candlelib as a library to link against your executables.
+Then link against the `candle` target (built from `candlelib`) in your own `CMakeLists.txt`:
 
-Below examplary CMakeLists.txt:
-
-```
+```cmake
 cmake_minimum_required(VERSION 3.15)
 
 project(myCandleProject)
