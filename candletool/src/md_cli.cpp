@@ -270,7 +270,7 @@ namespace mab
                 // Perform main encoder calibration
                 f32 calibrationTime = 40;  // seconds
                 if (isVersionAtLeast(getMdFirmwareVersion(*md), 3, 0, 0))
-                    calibrationTime = 20;
+                    calibrationTime = 25;
                 if (doOnMainEncoder)
                 {
                     m_logger.info("Starting main encoder calibration...");
@@ -300,6 +300,13 @@ namespace mab
                 // Perform aux encoder calibration
                 if (doOnAuxEncoder)
                 {
+                    if (!md->isMDError(md->readRegister(registers.auxEncoder)) &&
+                        registers.auxEncoder.value == 0)
+                    {
+                        m_logger.info("Aux encoder not defined, stopping.");
+                        return;
+                    }
+
                     m_logger.info("Starting aux encoder calibration...");
                     // get gear ratio
                     if (md->readRegister(registers.motorGearRatio) != MD::Error_t::OK)
@@ -735,6 +742,13 @@ namespace mab
                                     readableRegisters.legacyHardwareVersion.value)
                                     .value_or("Unknown")
                              << std::endl;
+                    m_logger << "- batch: " << std::string(readableRegisters.productionBatch.value)
+                             << std::endl;
+                    m_logger << "- manufactured: "
+                             << std::string(readableRegisters.productionDate.value)
+                                    .insert(4, ".")
+                                    .insert(2, ".")
+                             << std::endl;
                 }
                 else
                 {
@@ -1113,12 +1127,15 @@ namespace mab
                 {
                     return;
                 }
+                if (md->isMDError(md->readRegister(md->m_mdRegisters.maxVelocity)))
+                    return;
+                f32 targetVelocity = md->m_mdRegisters.maxVelocity.value * 0.5f;
                 if (md->isMDError(md->setTargetPosition(*absoluteTestOptions.target)))
                     return;
-
+                if (md->isMDError(md->setTargetVelocity(targetVelocity)))
+                    return;
                 if (md->isMDError(md->setMotionMode(mab::MdMode_E::POSITION_PROFILE)))
                     return;
-
                 if (md->isMDError(md->enable()))
                     return;
 

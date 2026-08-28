@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15...3.25)
+cmake_minimum_required(VERSION 3.5...3.25)
 
 include(git_func.cmake)
 
@@ -19,9 +19,9 @@ project(
 
 option(CANDLESDK_BUILD_PYTHON "Build python library shared object" OFF)
 option(CANDLESDK_BUILD_EXAMPLES
-       "Build examples (has no effect on python builds)" OFF)
+       "Build examples (has no effect on python builds)" ON)
 option(CANDLESDK_BUILD_CANDLETOOL
-       "Build candletool executable (has no effect on python builds)" OFF)
+       "Build candletool executable (has no effect on python builds)" ON)
 option(CANDLESDK_BUILD_MDGUI
        "Build mdgui executable (has no effect on python builds)" ON)
 option(
@@ -95,6 +95,29 @@ else()
     endif()
     if(CANDLESDK_BUILD_MDGUI)
         add_subdirectory(candlegui)
+    endif()
+
+    # candletool and candlegui each generate their own CPackConfig (see the
+    # comments next to their `include(CPack)` calls) instead of sharing the
+    # default one, so CMake won't auto-create a `package` target. Wire up a
+    # single `make package` that builds packages for whichever of them are
+    # enabled.
+    set(CANDLESDK_PACKAGE_COMMANDS)
+    if(CANDLESDK_BUILD_CANDLETOOL)
+        list(APPEND CANDLESDK_PACKAGE_COMMANDS
+             COMMAND ${CMAKE_CPACK_COMMAND} --config
+                     ${CMAKE_BINARY_DIR}/CPackConfig_candletool.cmake)
+    endif()
+    if(CANDLESDK_BUILD_MDGUI)
+        list(APPEND CANDLESDK_PACKAGE_COMMANDS
+             COMMAND ${CMAKE_CPACK_COMMAND} --config
+                     ${CMAKE_BINARY_DIR}/CPackConfig_mdgui.cmake)
+    endif()
+    if(CANDLESDK_PACKAGE_COMMANDS)
+        add_custom_target(
+          package ${CANDLESDK_PACKAGE_COMMANDS}
+          COMMENT "Building CPack packages"
+          VERBATIM)
     endif()
 
 endif()

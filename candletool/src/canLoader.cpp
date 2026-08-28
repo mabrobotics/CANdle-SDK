@@ -42,6 +42,7 @@ namespace mab
         const std::span<u8>           firmware       = *(m_mabFile->m_fwEntry.data);
         const std::span<const u8, 32> firmwareSHA256 = (m_mabFile->m_fwEntry.checksum);
 
+        u32 attemptCounter = 0;
         while (true)
         {
             if (bootloader.init(swAddress, appSize) == CanBootloader::Error_t::OK)
@@ -51,7 +52,8 @@ namespace mab
                 m_log.error("Failed to initialize bootloader");
                 return false;
             }
-            usleep(250'000);
+            if (attemptCounter++ % 1000)
+                m_log.info("Attempting to connect to the bootloader");
         }
 
         m_log.info("Bootloader Connected!");
