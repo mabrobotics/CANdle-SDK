@@ -2,7 +2,7 @@
 #ifndef WIN32
 #include <chrono>
 
-#include "mab_types.hpp"
+#include "candle/shared_data/mab_types.hpp"
 #include "candle/communication_interface/I_communication_interface.hpp"
 #include "candle/logger/logger.hpp"
 #include "candle/crc.hpp"

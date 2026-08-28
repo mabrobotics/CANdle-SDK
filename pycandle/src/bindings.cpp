@@ -8,15 +8,15 @@
 #include <memory>
 #include <vector>
 
-#include "mab_types.hpp"
+#include "candle/shared_data/mab_types.hpp"
 #include "candle/communication_device/candle_types.hpp"
 #include "candle/communication_device/candle.hpp"
 #include "candle/MD/MD.hpp"
 #include "candle/logger/logger.hpp"
 #include "candle/pds/pds.hpp"
 #include "candle/pds/pds_module.hpp"
-#include "pds_types.hpp"
-#include "pds_properties.hpp"
+#include "candle/shared_data/pds_types.hpp"
+#include "candle/shared_data/mab_types.hpp"
 #include "candle/pds/brake_resistor.hpp"
 #include "candle/pds/power_stage.hpp"
 #include "candle/pds/isolated_converter.hpp"

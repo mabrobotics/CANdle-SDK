@@ -4,7 +4,7 @@
 #include "candle/communication_interface/I_communication_interface.hpp"
 #include "candle/communication_interface/USB.hpp"
 #include "candle/logger/logger.hpp"
-#include "mab_types.hpp"
+#include "candle/shared_data/mab_types.hpp"
 
 #include <memory>
 #include <utility>

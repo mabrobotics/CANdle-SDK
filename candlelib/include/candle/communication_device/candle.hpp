@@ -5,9 +5,9 @@
 #include "candle/communication_interface/I_communication_interface.hpp"
 #include "candle/communication_interface/USB.hpp"
 #include "candle/communication_interface/SPI.hpp"
-#include "mab_types.hpp"
+#include "candle/shared_data/mab_types.hpp"
 #include "candle/communication_device/candle_frame_adapter.hpp"
-#include "candle_frame_dto.hpp"
+#include "candle/shared_data/candle_frame_dto.hpp"
 
 #include <array>
 #include <memory>

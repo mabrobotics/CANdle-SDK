@@ -11,7 +11,7 @@
 #include <cctype>
 #include <charconv>
 #include "configHelpers.hpp"
-#include "mab_types.hpp"
+#include "candle/shared_data/mab_types.hpp"
 #include "candle/logger/logger.hpp"
 #include "candle/objectDictionary/edsEntry.hpp"
 #include "mini/ini.h"

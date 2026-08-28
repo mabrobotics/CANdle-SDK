@@ -1,7 +1,7 @@
 #pragma once
 
 #include "candle/logger/logger.hpp"
-#include "pds_types.hpp"
+#include "candle/shared_data/pds_types.hpp"
 #include "candle/communication_device/candle_types.hpp"
 #include "candle/pds/pds_protocol.hpp"
 #include "candle/communication_device/candle.hpp"

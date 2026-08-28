@@ -1,8 +1,9 @@
 #pragma once
 
+#include "candle/shared_data/mab_types.hpp"
+
 #include <array>
 #include <cstddef>
-#include "mab_types.hpp"
 
 namespace mab
 {

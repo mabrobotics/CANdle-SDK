@@ -4,7 +4,7 @@
 #include "iLoader.hpp"
 #include "candle/communication_device/candle.hpp"
 #include "candle/logger/logger.hpp"
-#include "mab_types.hpp"
+#include "candle/shared_data/mab_types.hpp"
 #include "candle/can_bootloader/can_bootloader.hpp"
 
 #include <array>

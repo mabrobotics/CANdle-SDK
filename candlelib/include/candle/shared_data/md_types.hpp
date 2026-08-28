@@ -1,5 +1,7 @@
 #pragma once
 
+#include "candle/shared_data/mab_types.hpp"
+
 #include <array>
 #include <cstddef>
 #include <cstdio>
@@ -8,8 +10,6 @@
 #include <type_traits>
 #include <tuple>
 #include <vector>
-
-#include "mab_types.hpp"
 
 // DEFINE ALL OF THE MD REGISTERS HERE
 #define REGISTER_LIST                                \

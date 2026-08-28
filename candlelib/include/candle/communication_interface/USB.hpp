@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mab_types.hpp>
+#include "candle/shared_data/mab_types.hpp"
 
 #include "candle/logger/logger.hpp"
 #include "candle/communication_interface/I_communication_interface.hpp"

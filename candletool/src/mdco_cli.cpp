@@ -21,7 +21,7 @@
 #include "candle/communication_device/candle_types.hpp"
 #include "candle/objectDictionary/edsEntry.hpp"
 #include "candle/objectDictionary/edsParser.hpp"
-#include "mab_types.hpp"
+#include "candle/shared_data/mab_types.hpp"
 #include "md_cfg_map.hpp"
 #include "mini/ini.h"
 #include "mdco_config_adapter.hpp"

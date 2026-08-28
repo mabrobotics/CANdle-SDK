@@ -1,9 +1,9 @@
 #pragma once
 
 #include "candle/objectDictionary/edsEntry.hpp"
-#include "mab_types.hpp"
+#include "candle/shared_data/mab_types.hpp"
 #include "candle/logger/logger.hpp"
-#include "manufacturer_data.hpp"
+#include "candle/shared_data/manufacturer_data.hpp"
 #include "candle/communication_device/candle_types.hpp"
 #include "candle/communication_device/candle.hpp"
 #include "candle/MD/MDStatus.hpp"

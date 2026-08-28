@@ -1,6 +1,6 @@
 #pragma once
 
-#include "mab_types.hpp"
+#include "candle/shared_data/mab_types.hpp"
 #ifdef __cplusplus
 #include <cstring>
 #else

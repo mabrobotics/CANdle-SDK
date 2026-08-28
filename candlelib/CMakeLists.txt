@@ -16,11 +16,11 @@ endif()
 
 if(WIN32)
     set(LIBUSB_WINDOWS_DYNAMIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/lib/windows/libusb-1.0.dll)
+        ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/libusb/lib/windows/libusb-1.0.dll)
     set(LIBUSB_WINDOWS_STATIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/lib/windows/libusb-1.0.a)
+        ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/libusb/lib/windows/libusb-1.0.a)
     set(LIBUSB_INCLUDE_DIR
-        ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb/inc/libusb-1.0)
+        ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/libusb/inc/libusb-1.0)
 endif()
 
 if(CANDLE_BUILD_STATIC)
@@ -37,6 +37,10 @@ message(
     STATUS
     "\nCANDLE_BUILD_SHARED: ${CANDLE_BUILD_SHARED}\nCANDLE_BUILD_STATIC: ${CANDLE_BUILD_STATIC}"
 )
+
+add_library(Unit_test INTERFACE)
+target_sources(Unit_test INTERFACE test/unit_test_runner.cpp)
+target_link_libraries(Unit_test INTERFACE gmock)
 
 if(UNIX)
     set(UNIX_ONLY_SOURCES src/communication_interface/SPI.cpp)
@@ -76,9 +80,9 @@ target_include_directories(
 target_include_directories(candle SYSTEM PRIVATE ${LIBUSB_INCLUDE_DIR})
 
 if(UNIX)
-    target_link_libraries(candle shared_data pthread ${LIBUSB_LIBRARY})
+    target_link_libraries(candle pthread ${LIBUSB_LIBRARY})
 else()
-    target_link_libraries(candle shared_data pthread
+    target_link_libraries(candle pthread
         ${LIBUSB_WINDOWS_STATIC} -static)
 endif()
 
@@ -106,6 +110,10 @@ if(MAKE_TESTS)
     enable_testing()
 
     add_unit_test_executable(logger_test logger/logger_test.cpp)
+
+    add_unit_test_executable(candle_frame_dto_test
+        test/candle_frame_dto_test.cpp)
+    target_link_libraries(candle_frame_dto_test PUBLIC shared_data)
 
     add_unit_test_executable(pds_protocol_test test/pds_protocol_test.cpp)
     target_sources(pds_protocol_test PRIVATE src/pds/pds_protocol.cpp)

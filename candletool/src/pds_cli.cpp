@@ -1,13 +1,13 @@
 #include "canLoader.hpp"
 #include "candle/communication_device/candle.hpp"
 #include "mabFileParser.hpp"
-#include "mab_types.hpp"
+#include "candle/shared_data/mab_types.hpp"
 #include "candle/pds/pds.hpp"
 #include "pds_cli.hpp"
-#include "mab_def.hpp"
+#include "candle/shared_data/mab_def.hpp"
 #include "configHelpers.hpp"
-#include "pds_properties.hpp"
-#include "pds_types.hpp"
+#include "candle/shared_data/mab_types.hpp"
+#include "candle/shared_data/pds_types.hpp"
 
 /*
     PDS Ini fields keywords

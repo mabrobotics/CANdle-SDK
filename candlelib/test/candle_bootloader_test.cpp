@@ -1,6 +1,6 @@
 
 #include "I_communication_interface_mock.hpp"
-#include "mab_types.hpp"
+#include "candle/shared_data/mab_types.hpp"
 #include "candle/logger/logger.hpp"
 #include "candle/communication_device/candle_bootloader.hpp"
 

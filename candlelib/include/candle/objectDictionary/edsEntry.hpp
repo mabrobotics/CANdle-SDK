@@ -5,7 +5,7 @@
 #pragma once
 
 #include "candle/logger/logger.hpp"
-#include "mab_types.hpp"
+#include "candle/shared_data/mab_types.hpp"
 
 #include <cstddef>
 #include <iterator>

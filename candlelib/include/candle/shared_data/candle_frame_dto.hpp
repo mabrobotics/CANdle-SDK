@@ -1,8 +1,11 @@
 #pragma once
-#include "mab_def.hpp"
-#include "mab_types.hpp"
+
+#include "candle/shared_data/mab_def.hpp"
+#include "candle/shared_data/mab_types.hpp"
+
 #include <cstring>
 #include <type_traits>
+
 namespace mab
 {
     /// @brief DTO struct to be sent via CANdle buses

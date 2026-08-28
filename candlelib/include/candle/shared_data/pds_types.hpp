@@ -1,7 +1,8 @@
 #pragma once
 
-#include "mab_types.hpp"
-#include "pds_properties.hpp"
+#include "candle/shared_data/mab_types.hpp"
+#include "candle/shared_data/pds_properties.hpp"
+
 namespace mab
 {
     enum class msgResponse_E : u8

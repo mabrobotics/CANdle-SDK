@@ -1,8 +1,8 @@
 #pragma once
 
 #include "candle/logger/logger.hpp"
-#include "mab_types.hpp"
-#include "md_types.hpp"
+#include "candle/shared_data/mab_types.hpp"
+#include "candle/shared_data/md_types.hpp"
 #include "candle/MD/MD_strings.hpp"
 #include "mini/ini.h"
 #include "utilities.hpp"

@@ -123,7 +123,8 @@ if(WIN32)
     candle
     -static-libstdc++
     -static-libgcc
-    -static)
+    -static
+  )
 
   add_compile_definitions(
     DEFAULT_CANDLETOOL_CONFIG_DIR="${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
