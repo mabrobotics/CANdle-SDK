@@ -8,7 +8,6 @@
 #include <cmath>
 #include <cstring>
 #include <string>
-#include <algorithm>
 
 namespace mab
 {
@@ -24,7 +23,7 @@ namespace mab
     {
     }
 
-    bool CanLoader::flashAndBoot()
+    bool CanLoader::flashAndBoot(bool recovery)
     {
         if (m_candle == nullptr)
         {
@@ -39,16 +38,26 @@ namespace mab
 
         CanBootloader                 bootloader     = mab::CanBootloader(m_canId, m_candle);
         const u32                     appSize        = m_mabFile->m_fwEntry.size;
+        const u32                     swAddress      = m_mabFile->m_fwEntry.bootAddress;
         const std::span<u8>           firmware       = *(m_mabFile->m_fwEntry.data);
         const std::span<const u8, 32> firmwareSHA256 = (m_mabFile->m_fwEntry.checksum);
-        const u32                     swAddress      = m_mabFile->m_fwEntry.bootAddress;
 
-        // Verify communication
-        if (bootloader.init(swAddress, appSize) != CanBootloader::Error_t::OK)
+        u32 attemptCounter = 0;
+        while (true)
         {
-            m_log.error("Failed to initialize bootloader");
-            return false;
+            if (bootloader.init(swAddress, appSize) == CanBootloader::Error_t::OK)
+                break;
+            if (!recovery)
+            {
+                m_log.error("Failed to initialize bootloader");
+                return false;
+            }
+            if (attemptCounter++ % 1000)
+                m_log.info("Attempting to connect to the bootloader");
         }
+
+        m_log.info("Bootloader Connected!");
+        sleep(1);
 
         // Clearing memory
         if (bootloader.erase(swAddress, appSize) != CanBootloader::Error_t::OK)
@@ -83,20 +92,66 @@ namespace mab
         m_log.progress(1.0);  // Transfering finish indication
 
         // Transfering metadata about firmware
-        if (bootloader.transferMetadata(true, firmwareSHA256) != CanBootloader::Error_t::OK)
+        if (bootloader.init(swAddress, appSize) != CanBootloader::Error_t::OK ||
+            bootloader.transferMetadata(true, firmwareSHA256) != CanBootloader::Error_t::OK)
         {
             m_log.error("Failed to transfer metadata");
             return false;
         }
 
         // Send boot cmd
-        if (bootloader.boot(swAddress))
+        bootloader.boot(swAddress);
+        if (bootloader.boot(swAddress) != CanBootloader::Error_t::OK)
         {
             m_log.error("Failed to boot");
             return false;
         }
         m_log.success("Flashing sucessful!");
 
+        return true;
+    }
+    bool CanLoader::forceEraseConfig()
+    {
+        if (m_candle == nullptr)
+        {
+            m_log.error("Candle not initialized");
+            return false;
+        }
+        CanBootloader bootloader          = mab::CanBootloader(m_canId, m_candle);
+        const u32     appSize             = 0;
+        const u32     swAddress           = 0x800'0000;
+        const u32     legacyConfigAddress = 0x801'B800;
+        const u32     configAddress       = 0x801'B000;
+
+        while (true)
+        {
+            if (bootloader.init(swAddress, appSize) == CanBootloader::Error_t::OK)
+                break;
+            usleep(250'000);
+        }
+
+        m_log.info("Bootloader Connected!");
+        sleep(1);
+
+        // Clearing memory
+        if (bootloader.erase(legacyConfigAddress, 1) != CanBootloader::Error_t::OK)
+        {
+            m_log.error("Failed to erase legacy config!");
+            return false;
+        }
+        if (bootloader.erase(configAddress, 1) != CanBootloader::Error_t::OK)
+        {
+            m_log.error("Failed to erase config!");
+            return false;
+        }
+
+        // Send boot cmd
+        bootloader.boot(swAddress);
+        if (bootloader.boot(swAddress) != CanBootloader::Error_t::OK)
+        {
+            m_log.error("Failed to boot");
+            return false;
+        }
         return true;
     }
 }  // namespace mab

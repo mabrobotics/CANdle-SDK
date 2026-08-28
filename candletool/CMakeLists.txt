@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.5...3.25)
 
 include(GNUInstallDirs)
 
@@ -7,10 +7,14 @@ message(CMAKE_INSTALL_SYSCONFDIR: ${CMAKE_INSTALL_SYSCONFDIR})
 set(CANDLETOOL_VERSION_MAJOR ${CANDLESDK_VERSION_1})
 set(CANDLETOOL_VERSION_MINOR ${CANDLESDK_VERSION_2})
 set(CANDLETOOL_VERSION_PATCH ${CANDLESDK_VERSION_3})
-set(CANDLETOOL_VERSION_TAG "r")
-
+set(CANDLETOOL_VERSION_TAG   ${CANDLESDK_VERSION_TAG})
+# CANDLETOOL_VERSION_TAG carries literal quotes (e.g. 'x') so it also works as
+# a C char-literal when substituted into the CANDLETOOL_VTAG compile
+# definition below. Strip them for uses as a plain string, such as the
+# package version string / CPack file name.
+string(REPLACE "'" "" CANDLETOOL_VERSION_TAG_STR "${CANDLETOOL_VERSION_TAG}")
 set(CANDLETOOL_VERSION_FULL
-    "${CANDLETOOL_VERSION_MAJOR}.${CANDLETOOL_VERSION_MINOR}.${CANDLETOOL_VERSION_PATCH}-${CANDLETOOL_VERSION_TAG}"
+    "${CANDLETOOL_VERSION_MAJOR}.${CANDLETOOL_VERSION_MINOR}.${CANDLETOOL_VERSION_PATCH}-${CANDLETOOL_VERSION_TAG_STR}"
 )
 
 add_subdirectory(3rd_party/CLI11)
@@ -44,7 +48,8 @@ target_include_directories(
          ${CMAKE_CURRENT_SOURCE_DIR}/src/web_file_module
          ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src)
 
-target_compile_options(candletool PRIVATE -g -Wno-unused-parameter -Wno-missing-field-initializers)
+target_compile_options(candletool PRIVATE -g -Wno-unused-parameter -Wno-missing-field-initializers 
+    -Wswitch-enum)
 if(WIN32)
   target_compile_options(candletool PRIVATE -Wa,-mbig-obj)
 endif()
@@ -59,7 +64,9 @@ target_compile_definitions(
   PRIVATE CANDLETOOL_VMAJOR=${CANDLETOOL_VERSION_MAJOR}
           CANDLETOOL_VMINOR=${CANDLETOOL_VERSION_MINOR}
           CANDLETOOL_VREVISION=${CANDLETOOL_VERSION_PATCH}
-          CANDLETOOL_VTAG=${CANDLETOOL_VERSION_TAG})
+          CANDLETOOL_VTAG=${CANDLETOOL_VERSION_TAG}
+          CANDLETOOL_VHASH=${CANDLESDK_VERSION_HASH}
+      )
 
 target_link_libraries(candletool CLI11)
 
@@ -76,21 +83,7 @@ add_custom_command(
     ${CMAKE_CURRENT_BINARY_DIR}/
   COMMENT "Copying configs...")
 
-# package / installer
-set(CPACK_PROJECT_NAME "candletool")
-set(CPACK_PACKAGE_NAME candletool)
-set(CPACK_PACKAGE_FILE_NAME
-    ${CPACK_PACKAGE_NAME}-${CANDLETOOL_VERSION_FULL}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}
-)
-set(CPACK_PACKAGE_VERSION_MAJOR ${CANDLETOOL_VERSION_MAJOR})
-set(CPACK_PACKAGE_VERSION_MINOR ${CANDLETOOL_VERSION_MINOR})
-set(CPACK_PACKAGE_VERSION_PATCH ${CANDLETOOL_VERSION_PATCH})
-set(CPACK_PACKAGE_VENDOR "MAB Robotics")
-set(CPACK_PACKAGE_DESCRIPTION
-    "Console tool for MAB devices ecosystem configuration")
-set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE)
-set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_SOURCE_DIR}/README.md)
-set(CPACK_MONOLITHIC_INSTALL ON)
+set(CANDLETOOL_CPACK_COMPONENTS candletool _configs)
 
 if(WIN32)
   add_executable(candle-win-driver IMPORTED
@@ -111,6 +104,7 @@ if(WIN32)
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/eds
     DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
     COMPONENT _eds)
+  list(APPEND CANDLETOOL_CPACK_COMPONENTS _eds)
 
   install(
     FILES
@@ -122,10 +116,6 @@ if(WIN32)
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
                 WORLD_WRITE
     COMPONENT _configs)
-  set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
-  set(CPACK_NSIS_MODIFY_PATH ON)
-  set(CPACK_NSIS_MUI_ICON "${CMAKE_CURRENT_SOURCE_DIR}/MAB.ico")
-  set(CPACK_NSIS_MUI_UNIICON "${CMAKE_CURRENT_SOURCE_DIR}/MAB.ico")
   target_link_libraries(
     candletool
     -static
@@ -165,31 +155,12 @@ elseif(UNIX)
                 WORLD_WRITE
     COMPONENT _configs)
 
-  set(CPACK_GENERATOR "DEB")
-  set(CPACK_DEBIAN_PACKAGE_MAINTAINER "MAB Robotics <contact@mabrobotics.pl>")
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS libusb-1.0-0)
-  set(CPACK_DEBIAN_PACKAGE_VERSION)
-
-  if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
-
-    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "arm64")
-
-  elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "armhf")
-
-    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "armhf")
-
-  endif()
-  message(CPACK_DEBIAN_PACKAGE_ARCHITECTURE =
-          ${CPACK_DEBIAN_PACKAGE_ARCHITECTURE})
-
-  set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
-      "${CMAKE_CURRENT_SOURCE_DIR}/template_package/postinst")
-
   install(
     FILES
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/udev/rules.d/99-candletool.rules
     DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/"
     COMPONENT rules)
+  list(APPEND CANDLETOOL_CPACK_COMPONENTS rules)
 
   install(
     FILES
@@ -213,4 +184,4 @@ if(MAKE_TESTS)
   enable_testing()
 endif()
 
-include(CPack)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CPackConfig.cmake)

@@ -48,9 +48,10 @@ namespace mab
                     return "MOTOR_CONFIG";
                 case Type_E::PDS_CONFIG:
                     return "PDS_CONFIG";
-                default:
-                    return "UNKNOWN";
+                case Type_E::UNKNOWN:
+                    break;
             }
+            return "UNKNOWN";
         }
     };
 }  // namespace mab

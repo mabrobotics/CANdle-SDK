@@ -19,6 +19,8 @@ namespace mab
         PDS            = 0x04,
         MD80DE         = 0x05,
         MD80EC         = 0x06,
+        MD200          = 0x07,
+        MD80HV_HS      = 0x08,
 
         MD0004 = 0xB0,
 
@@ -40,6 +42,10 @@ namespace mab
             return mab::deviceType_E::MD80EC;
         if (strcmp(cstr, "md0004") == 0)
             return mab::deviceType_E::MD0004;
+        if (strcmp(cstr, "md200") == 0)
+            return mab::deviceType_E::MD200;
+        if (strcmp(cstr, "md80hvhs") == 0)
+            return mab::deviceType_E::MD80HV_HS;
         if (strcmp(cstr, "candle") == 0)
             return mab::deviceType_E::CANDLE;
         if (strcmp(cstr, "candlehat") == 0)
@@ -64,15 +70,21 @@ namespace mab
                 return (char*)"md80ec";
             case mab::deviceType_E::MD0004:
                 return (char*)"md0004";
+            case mab::deviceType_E::MD200:
+                return (char*)"md200";
+            case mab::deviceType_E::MD80HV_HS:
+                return (char*)"md80hvhs";
             case mab::deviceType_E::CANDLE:
                 return (char*)"candle";
             case mab::deviceType_E::CANDLE_HAT:
                 return (char*)"candlehat";
             case mab::deviceType_E::PDS:
                 return (char*)"pds";
-            default:
-                return (char*)"UNKNOWN";
+            case mab::deviceType_E::UNKNOWN_DEVICE:
+            case mab::deviceType_E::UNKNOWN_DEVICE_2:
+                break;
         }
+        return (char*)"UNKNOWN";
     }
 
 #pragma pack(push, 1)

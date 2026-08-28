@@ -35,14 +35,16 @@ namespace mab
                 "for latest firmware and more information.");
         }
 
-        m_mdRegisters.legacyHardwareVersion = 0;
+        m_mdRegisters.firmwareVersion = 0;
 
-        auto mfLegacydataResult = readRegister(m_mdRegisters.legacyHardwareVersion);
+        auto mfFirmwareResult = readRegister(m_mdRegisters.firmwareVersion);
 
-        if (mfLegacydataResult != Error_t::OK)
+        if (mfFirmwareResult != Error_t::OK)
             return Error_t::NOT_CONNECTED;
 
-        if (m_mdRegisters.legacyHardwareVersion.value != 0)
+        version_ut mfFirmwareVersion = {.i = m_mdRegisters.firmwareVersion.value};
+
+        if (mfFirmwareVersion.s.major != 0)
             return Error_t::OK;
 
         return Error_t::NOT_CONNECTED;
@@ -471,6 +473,33 @@ namespace mab
         return std::make_pair(m_status.motionStatus, result);
     }
 
+    std::pair<const std::unordered_map<MDStatus::MiscStatusBits, MDStatus::StatusItem_S>,
+              MD::Error_t>
+    MD::getMiscStatus()
+    {
+        auto result = readRegister(m_mdRegisters.miscStatus);
+        if (result != Error_t::OK)
+        {
+            m_log.error("Could not read ");
+            return std::make_pair(m_status.miscStatus, result);
+        }
+        MDStatus::decode(m_mdRegisters.miscStatus.value, m_status.miscStatus);
+        return std::make_pair(m_status.miscStatus, result);
+    }
+    std::pair<const std::unordered_map<MDStatus::ConfigStatusBits, MDStatus::StatusItem_S>,
+              MD::Error_t>
+    MD::getConfigStatus()
+    {
+        auto result = readRegister(m_mdRegisters.configStatus);
+        if (result != Error_t::OK)
+        {
+            m_log.error("Could not read ");
+            return std::make_pair(m_status.configStatus, result);
+        }
+        MDStatus::decode(m_mdRegisters.configStatus.value, m_status.configStatus);
+        return std::make_pair(m_status.configStatus, result);
+    }
+
     std::pair<float, MD::Error_t> MD::getPosition()
     {
         auto result = readRegister(m_mdRegisters.mainEncoderPosition);
@@ -537,6 +566,11 @@ namespace mab
         return std::make_pair(m_mdRegisters.motorTemperature.value, result);
     }
 
+    void MD::setLogLevel(Logger::LogLevel_E level)
+    {
+        m_log.m_optionalLevel = level;
+    }
+
     /// @brief This test should be performed with 1M datarate on CAN network
     void MD::testLatency()
     {
@@ -580,6 +614,16 @@ namespace mab
         constexpr canId_t MIN_VAILID_ID = 10;     // ids less than that are reserved for special
         constexpr canId_t MAX_VAILID_ID = 0x7FF;  // 11-bit value (standard can ID max)
 
+        return discoverMDs(candle, MIN_VAILID_ID, MAX_VAILID_ID);
+    }
+
+    std::vector<canId_t> MD::discoverMDs(Candle* candle,
+                                         canId_t minValueRange,
+                                         canId_t maxValueRange)
+    {
+        constexpr canId_t MIN_VALID_ID = 10;     // ids less than that are reserved for special
+        constexpr canId_t MAX_VALID_ID = 0x7FF;  // 11-bit value (standard can ID max)
+
         Logger               log(Logger::ProgramLayer_E::TOP, "MD_DISCOVERY");
         std::vector<canId_t> ids;
 
@@ -589,30 +633,31 @@ namespace mab
             return std::vector<canId_t>();
         }
 
-        log.info("Looking for MDs");
+        if (minValueRange < MIN_VALID_ID)
+            minValueRange = MIN_VALID_ID;
 
-        for (canId_t id = MIN_VAILID_ID; id < MAX_VAILID_ID; id++)
+        if (maxValueRange > MAX_VALID_ID)
+            maxValueRange = MAX_VALID_ID;
+
+        // workaround for ping error spam
+        Logger::Verbosity_E prevVerbosity =
+            Logger::g_m_verbosity.value_or(Logger::Verbosity_E::VERBOSITY_1);
+        for (canId_t id = minValueRange; id < maxValueRange; id++)
         {
             log.debug("Trying to bind MD with id %d", id);
-            log.progress(float(id) / float(MAX_VAILID_ID));
-            // workaround for ping error spam
-            Logger::Verbosity_E prevVerbosity =
-                Logger::g_m_verbosity.value_or(Logger::Verbosity_E::VERBOSITY_1);
+            // log.progress(float(id) / float(maxValueRange));
             Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
             MD md(id, candle);
             if (md.init() == MD::Error_t::OK)
+            {
                 ids.push_back(id);
-
+                md.readRegister(md.m_mdRegisters.motorName);
+                Logger::g_m_verbosity = prevVerbosity;
+                log.info("\r - Found '%s' at @%d" END_LINE, md.m_mdRegisters.motorName.value, id);
+            }
             Logger::g_m_verbosity = prevVerbosity;
         }
-        for (canId_t id : ids)
-        {
-            log.info("Discovered MD device with ID: %d", id);
-        }
-        if (ids.size() > 0)
-            return ids;
-
-        log.warn("Have not found any MD devices on the CAN bus!");
+        // log.progress(1.);
         return ids;
     }
 }  // namespace mab

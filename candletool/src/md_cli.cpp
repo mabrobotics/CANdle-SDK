@@ -13,8 +13,8 @@
 #include "candle.hpp"
 #include "logger.hpp"
 #include "mab_types.hpp"
+#include "manufacturer_data.hpp"
 #include "md_types.hpp"
-#include "candle_types.hpp"
 #include "mabFileParser.hpp"
 #include "md_cfg_map.hpp"
 #include "utilities.hpp"
@@ -23,8 +23,6 @@
 #include "configHelpers.hpp"
 #include "curl_handler.hpp"
 #include "flasher.hpp"
-#include "web_file.hpp"
-
 
 #ifndef WIN32
 
@@ -58,6 +56,18 @@
 
 namespace mab
 {
+    version_ut getMdFirmwareVersion(MD& md)
+    {
+        md.readRegister(md.m_mdRegisters.firmwareVersion);
+        return {.i = md.m_mdRegisters.firmwareVersion.value};
+    }
+    bool isVersionAtLeast(version_ut fwVersion, int major, int minor, int rev)
+    {
+        if (fwVersion.s.major < major || fwVersion.s.minor < minor || fwVersion.s.revision < rev)
+            return false;
+        return true;
+    }
+
     MDCli::MDCli(CLI::App* rootCli, CANdleToolCtx_S ctx)
     {
         if (ctx.candleBranchVec.empty())
@@ -192,7 +202,7 @@ namespace mab
                 m_logger.success("MD CAN parameters updated successfully!");
             });
 
-        // Calibration  ====================================================================
+        // candletool md calibration
         auto* calibration =
             mdCLi->add_subcommand("calibration", "Calibrate the MD drive.")->needs(mdCanIdOption);
 
@@ -201,12 +211,21 @@ namespace mab
         calibration->callback(
             [this, candleBuilder, mdCanId, calibrationOptions]()
             {
+                auto md = getMd(mdCanId, candleBuilder);
+                if (md == nullptr)
+                    return;
+
+                bool calibrationRequired = md->getCalibrationStatus().first.empty() ||
+                                           md->getMainEncoderStatus().first.empty() ||
+                                           md->getOutputEncoderStatus().first.empty();
                 m_logger.info(
                     "Calibration requires about 20W of power, please ensure that the "
-                    "power supply is sufficient!");
-                m_logger.warn(
-                    "The motor will rotate during calibration, "
-                    "are you sure you want to proceed?");
+                    "power supply is sufficient! The motor will rotate during calibration. ");
+                if (!calibrationRequired)
+                    m_logger.warn(
+                        "It appears the drive does not require a calibration. Are you sure you "
+                        "want to proceed?");
+
                 std::string answer;
                 std::cout << "Type 'Y' to continue: ";
                 std::getline(std::cin, answer);
@@ -215,11 +234,7 @@ namespace mab
                     m_logger.error("Calibration aborted by user!");
                     return;
                 }
-                auto md = getMd(mdCanId, candleBuilder);
-                if (md == nullptr)
-                {
-                    return;
-                }
+
                 MDRegisters_S registers;
                 // Determine if setup error are present
                 auto calibrationStatus = md->getCalibrationStatus();
@@ -244,70 +259,54 @@ namespace mab
                     return;
                 }
                 // Determine types of calibration that will be performed
-                bool performMainEncoderCalibration = false;
-                bool performAuxEncoderCalibration  = false;
+                bool doOnMainEncoder = true;
+                bool doOnAuxEncoder  = true;
 
-                // Check if aux encoder will be calibrated
-                if (*calibrationOptions.calibrationOfEncoder == "aux" ||
-                    *calibrationOptions.calibrationOfEncoder == "all")
-                {
-                    if (registers.auxEncoder.value == 0)
-                    {
-                        m_logger.warn(
-                            "Auxilary encoder not present, skipping aux encoder "
-                            "calibration!");
-                    }
-                    else
-                    {
-                        performAuxEncoderCalibration = true;
-                    }
-                }
-
-                // Check if main encoder will be calibrated
-                if (*calibrationOptions.calibrationOfEncoder == "main" ||
-                    *calibrationOptions.calibrationOfEncoder == "all")
-                {
-                    performMainEncoderCalibration = true;
-                }
+                if (*calibrationOptions.calibrationOfEncoder == "aux")
+                    doOnMainEncoder = false;
+                if (*calibrationOptions.calibrationOfEncoder == "main")
+                    doOnAuxEncoder = false;
 
                 // Perform main encoder calibration
-                if (performMainEncoderCalibration)
+                f32 calibrationTime = 40;  // seconds
+                if (isVersionAtLeast(getMdFirmwareVersion(*md), 3, 0, 0))
+                    calibrationTime = 25;
+                if (doOnMainEncoder)
                 {
                     m_logger.info("Starting main encoder calibration...");
                     registers.runCalibrateCmd = 1;  // Set flag to run main encoder calibration
                     if (md->writeRegister(registers.runCalibrateCmd) != MD::Error_t::OK)
-                    {
                         m_logger.error("Main encoder calibration failed!");
-                        return;
-                    }
-                    constexpr int CALIBRATION_TIME = 40;  // seconds
-                    for (int seconds = 0; seconds < CALIBRATION_TIME; seconds++)
+
+                    f32 dt = 0.25;
+                    for (f32 t = 0.; t < calibrationTime; t += dt)
                     {
-                        m_logger.progress(static_cast<double>(seconds) /
-                                          static_cast<double>(CALIBRATION_TIME));
-                        usleep(1'000'000);  // Wait for the MD to calibrate, TODO: change it when
-                                            // routines are ready
+                        m_logger.progress(t / (f32)calibrationTime);
+                        usleep(dt * 1'000'000);
                     }
                     m_logger.progress(1.0f);  // Ensure progress is at 100%
 
                     // Check if main encoder calibration was successful
                     auto mainEncoderStatus = md->getMainEncoderStatus();
                     if (mainEncoderStatus.second != MD::Error_t::OK)
-                    {
-                        m_logger.error("Could not get calibration status from MD!");
                         return;
-                    }
                     if (mainEncoderStatus.first.at(MDStatus::EncoderStatusBits::ErrorCalibration)
                             .isSet())
-                    {
                         m_logger.error("Main encoder calibration failed!");
+                    else
+                        m_logger.success("Main encoder calibration completed!");
+                }
+
+                // Perform aux encoder calibration
+                if (doOnAuxEncoder)
+                {
+                    if (!md->isMDError(md->readRegister(registers.auxEncoder)) &&
+                        registers.auxEncoder.value == 0)
+                    {
+                        m_logger.info("Aux encoder not defined, stopping.");
                         return;
                     }
-                    m_logger.success("Main encoder calibration completed successfully!");
-                }
-                // Perform aux encoder calibration
-                if (performAuxEncoderCalibration)
-                {
+
                     m_logger.info("Starting aux encoder calibration...");
                     // get gear ratio
                     if (md->readRegister(registers.motorGearRatio) != MD::Error_t::OK)
@@ -316,28 +315,15 @@ namespace mab
                         return;
                     }
                     // Calibrate
-                    registers.runCalibrateAuxEncoderCmd =
-                        1;  // Set flag to run aux encoder calibration
+                    registers.runCalibrateAuxEncoderCmd = 1;
                     if (md->writeRegister(registers.runCalibrateAuxEncoderCmd) != MD::Error_t::OK)
-                    {
-                        m_logger.error("Aux encoder calibration failed!");
                         return;
-                    }
 
-                    constexpr double AUX_CALIBRATION_TIME_COEFF = 2.8;  // seconds
-
-                    // Calculate calibration time based on gear ratio
-                    const int auxCalibrationTime =
-                        static_cast<int>((1.0 / registers.motorGearRatio.value) *
-                                         AUX_CALIBRATION_TIME_COEFF) +
-                        AUX_CALIBRATION_TIME_COEFF;
-
-                    for (int seconds = 0; seconds < auxCalibrationTime; seconds++)
+                    f32 dt = 0.25;
+                    for (f32 t = 0.; t < calibrationTime; t += dt)
                     {
-                        m_logger.progress(static_cast<double>(seconds) /
-                                          static_cast<double>(auxCalibrationTime));
-                        usleep(1'000'000);  // Wait for the MD to calibrate, TODO: change it when
-                                            // routines are ready
+                        m_logger.progress(t / (f32)calibrationTime);
+                        usleep(dt * 1'000'000);
                     }
                     m_logger.progress(1.0f);  // Ensure progress is at 100%
 
@@ -355,46 +341,8 @@ namespace mab
                         return;
                     }
                     m_logger.success("Aux encoder calibration completed successfully!");
-
-                    // Testing aux encoder accuracy
-                    if (*calibrationOptions.runTests)
-                    {
-                        m_logger.info("Starting aux encoder accuracy test...");
-                        registers.runTestAuxEncoderCmd =
-                            1;  // Set flag to run aux encoder accuracy test
-                        if (md->writeRegister(registers.runTestAuxEncoderCmd) != MD::Error_t::OK)
-                        {
-                            m_logger.error("Aux encoder accuracy test failed!");
-                            return;
-                        }
-                        for (int seconds = 0; seconds < auxCalibrationTime; seconds++)
-                        {
-                            m_logger.progress(static_cast<double>(seconds) / auxCalibrationTime);
-                            usleep(1'000'000);  // Wait for the MD to test, TODO: change it when
-                                                // routines are ready
-                        }
-                        m_logger.progress(1.0f);  // Ensure progress is at 100%
-
-                        if (md->readRegisters(registers.calAuxEncoderStdDev,
-                                              registers.calAuxEncoderMinE,
-                                              registers.calAuxEncoderMaxE) != MD::Error_t::OK)
-                        {
-                            m_logger.error("Could not read aux encoder accuracy test results!");
-                            return;
-                        }
-                        constexpr double RAD_TO_DEG = 180.0 / M_PI;
-                        m_logger.info("Aux encoder accuracy test results:");
-                        m_logger.info("  Standard deviation: %.6f rad  (%.4f deg)",
-                                      registers.calAuxEncoderStdDev.value,
-                                      RAD_TO_DEG * registers.calAuxEncoderStdDev.value);
-                        m_logger.info("  Lowest error:      %.6f rad (%.4f deg)",
-                                      registers.calAuxEncoderMinE.value,
-                                      RAD_TO_DEG * registers.calAuxEncoderMinE.value);
-                        m_logger.info("  Highest error:      %.6f rad  (%.4f deg)",
-                                      registers.calAuxEncoderMaxE.value,
-                                      RAD_TO_DEG * registers.calAuxEncoderMaxE.value);
-                    }
                 }
+
                 auto quickStatus = md->getQuickStatus().first;
                 if (quickStatus.at(MDStatus::QuickStatusBits::CalibrationEncoderStatus))
                 {
@@ -411,8 +359,8 @@ namespace mab
                             MDStatus::CalibrationStatusBits::ErrorPolePairDetection))
                         m_logger.error("Pole pair detection failed!");
                 }
-                else if (quickStatus.at(MDStatus::QuickStatusBits::MainEncoderStatus) ||
-                         quickStatus.at(MDStatus::QuickStatusBits::OutputEncoderStatus))
+                if (quickStatus.at(MDStatus::QuickStatusBits::MainEncoderStatus) ||
+                    quickStatus.at(MDStatus::QuickStatusBits::OutputEncoderStatus))
                 {
                     m_logger.debug("Calibration failed at %s encoder error correction",
                                    quickStatus.at(MDStatus::QuickStatusBits::OutputEncoderStatus)
@@ -484,14 +432,6 @@ namespace mab
                     m_logger.error("Configuration file path is empty!");
                     return;
                 }
-                // If the path is not specified, prepend the standard path
-                std::string matchString = configFilePath.string();
-                if (std::find(matchString.begin(), matchString.end(), '/') ==
-                    matchString.end() || std::find(matchString.begin(), matchString.end(), '\\') ==
-                        matchString.end())
-                {
-                    configFilePath = std::filesystem::path(DEFAULT_CANDLETOOL_CONFIG_DIR) / std::filesystem::path("/config/motors/") / configFilePath;
-                }
 
                 MDConfigMap cfgMap;
                 for (auto& [regAddress, cfgElement] : cfgMap.m_map)
@@ -531,6 +471,7 @@ namespace mab
                     m_logger.error("Could not connect to MD!");
                     return;
                 }
+                version_ut fwVersion = getMdFirmwareVersion(*md);
 
                 std::filesystem::path configFilePath = *uploadConfigOptions.configFile;
                 if (configFilePath.empty())
@@ -538,14 +479,12 @@ namespace mab
                     m_logger.error("Configuration file path is empty!");
                     return;
                 }
-                // If the path is not specified, prepend the standard path
-                std::string matchString = configFilePath.string();
-                if (std::find(matchString.begin(), matchString.end(), '/') ==
-                    matchString.end() || std::find(matchString.begin(), matchString.end(), '\\') ==
-                        matchString.end())
-                {
-                    configFilePath = std::filesystem::path(DEFAULT_CANDLETOOL_CONFIG_DIR) / std::filesystem::path("/config/motors/") / configFilePath;
-                }
+
+                // Allows using absolute paths, relative path to cwd (with `./`), relative path to
+                // getMotorsConfigPath
+                if (!configFilePath.is_absolute() && !configFilePath.string().starts_with("./") &&
+                    !configFilePath.string().starts_with("../"))
+                    configFilePath = getMotorsConfigPath() / configFilePath;
 
                 mINI::INIFile      configFile(configFilePath.string());
                 mINI::INIStructure ini;
@@ -575,7 +514,13 @@ namespace mab
                         return;
                     }
                     // Write the value to the MD
-                    registerWrite(*md, address, toml.m_value);
+
+                    // Note: after fw 3.0, shuntResistance is Read only
+                    if (address == (u16)MDRegisterAddress_E::shuntResistance &&
+                        isVersionAtLeast(fwVersion, 3, 0, 0))
+                        md->readRegister(md->m_mdRegisters.firmwareVersion);
+                    else
+                        registerWrite(*md, address, toml.m_value);
                 }
 
                 if (md->save() != MD::Error_t::OK)
@@ -595,6 +540,18 @@ namespace mab
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
                 {
+                    return;
+                }
+                m_logger.info(
+                    "The factory reset, will erase the whole configuration from the drive, "
+                    "including its CAN ID to 100 (0x64)! Proceed?");
+
+                std::string answer;
+                std::cout << "Type 'Y' to continue: ";
+                std::getline(std::cin, answer);
+                if (answer != "Y" && answer != "y")
+                {
+                    m_logger.error("Factory Reset aborted by user!");
                     return;
                 }
                 MDRegisters_S registers;
@@ -683,7 +640,7 @@ namespace mab
                 m_logger.success("The config file is valid!");
             });
 
-        // Discover ============================================================================
+        // candletool md discover
         auto* discover = mdCLi
                              ->add_subcommand("discover",
                                               "Discover MD drives on the"
@@ -703,23 +660,14 @@ namespace mab
                 auto    ids    = MD::discoverMDs(candle);
 
                 if (ids.empty())
-                {
                     m_logger.error("No MD found on the bus for data %s",
                                    datarateToStr(*(candleBuilder->datarate))
                                        .value_or("NOT A DATARATE")
                                        .c_str());
-                }
-                else
-                {
-                    m_logger.info("Found following MDs:");
-                }
-                for (const auto& id : ids)
-                {
-                    m_logger.info("- %d", id);
-                }
                 detachCandle(candle);
             });
-        // Save ============================================================================
+
+        // candletool md save
         auto* save = mdCLi->add_subcommand("save", "Save MD drive configuration to flash memory.")
                          ->needs(mdCanIdOption);
         save->callback(
@@ -739,149 +687,203 @@ namespace mab
             });
 
         // Info ============================================================================
+        // candletool md info
         auto* info = mdCLi->add_subcommand("info", "Get information about the MD drive.")
                          ->needs(mdCanIdOption);
         info->callback(
             [this, candleBuilder, mdCanId]()
             {
-                auto          md = getMd(mdCanId, candleBuilder);
-                MDRegisters_S readableRegisters;
+                std::unique_ptr<MD, std::function<void(MD*)>> md = getMd(mdCanId, candleBuilder);
+                MDRegisters_S                                 readableRegisters;
 
+                md->setLogLevel(Logger::LogLevel_E::SILENT);
                 auto readReadableRegs = [&]<typename T>(MDRegisterEntry_S<T>& reg)
                 {
-                    // TODO: skipping new registers for now
-                    if ((reg.m_regAddress < 0x800 && reg.m_regAddress > 0x700) ||
-                        reg.m_regAddress > 0x810)
+                    if (reg.m_accessLevel == RegisterAccessLevel_E::WO)
                         return;
-                    if (reg.m_accessLevel != RegisterAccessLevel_E::WO)
-                    {
-                        auto fault = md->readRegisters(reg);
-                        if (fault != MD::Error_t::OK)
-                            m_logger.error("Error while reading register %s", reg.m_name.data());
-
-                        if constexpr (std::is_integral_v<decltype(reg.value)>)
-                        {
-                            m_logger.debug(
-                                "Read register %s, Value: %d", reg.m_name.data(), reg.value);
-                        }
-                        else
-                        {
-                            m_logger.debug("Read register %s", reg.m_name.data());
-                        }
-                    }
+                    auto fault = md->readRegisterWithExtResponse(reg);
+                    if (fault.first == MD::Error_t::TRANSFER_FAILED)
+                        m_logger.debug("Error while reading register %s", reg.m_name.data());
+                    if constexpr (std::is_integral_v<decltype(reg.value)>)
+                        m_logger.debug("Read register %s, Value: %d", reg.m_name.data(), reg.value);
+                    else
+                        m_logger.debug("Read register %s", reg.m_name.data());
                 };
 
                 readableRegisters.forEachRegister(readReadableRegs);
-
-                m_logger << std::fixed;
-                m_logger << "Drive " << *mdCanId << ":" << std::endl;
-                m_logger << "- actuator name: " << readableRegisters.motorName.value << std::endl;
-                m_logger << "- CAN speed: " << readableRegisters.canBaudrate.value / 1000000 << " M"
-                         << std::endl;
-                m_logger << "- CAN termination resistor: "
-                         << ((readableRegisters.canTermination.value == true) ? "enabled"
-                                                                              : "disabled")
-                         << std::endl;
-                m_logger << "- gear ratio: " << std::setprecision(5)
-                         << readableRegisters.motorGearRatio.value << std::endl;
                 mab::version_ut firmwareVersion = {{0, 0, 0, 0}};
                 firmwareVersion.i               = readableRegisters.firmwareVersion.value;
-                m_logger << "- firmware version: v" << (int)firmwareVersion.s.major << "."
-                         << (int)firmwareVersion.s.minor << "." << (int)firmwareVersion.s.revision
-                         << "." << firmwareVersion.s.tag << std::endl;
-                m_logger << "- hardware version(legacy): " << "Not implemented yet" << std::endl;
-                m_logger << "- hardware type: "
-                         << MDLegacyHwVersion_S::toReadable(
-                                readableRegisters.legacyHardwareVersion.value)
-                                .value_or("Unknown")
+
+                m_logger << std::fixed;
+                m_logger << "Actuator `" << readableRegisters.motorName.value << "` at CAN ID "
+                         << *mdCanId << " (0x" << std::hex << *mdCanId << "):" << std::dec
                          << std::endl;
-                m_logger << "- build date: "
+
+                m_logger << "[Firmware]" << std::endl;
+                m_logger << "- version: v" << (int)firmwareVersion.s.major << "."
+                         << (int)firmwareVersion.s.minor << "." << (int)firmwareVersion.s.revision
+                         << "." << firmwareVersion.s.tag << "_"
+                         << readableRegisters.commitHash.value << "_"
                          << MDBuildDateValue_S::toReadable(readableRegisters.buildDate.value)
                                 .value_or("Unknown")
                          << std::endl;
-                m_logger << "- commit hash: " << readableRegisters.commitHash.value
-                         << std::endl;  // TODO: printable format
-                m_logger << "- max current: " << std::setprecision(1)
-                         << readableRegisters.motorIMax.value << " A" << std::endl;
-                m_logger << "- bridge type: " << std::to_string(readableRegisters.bridgeType.value)
-                         << std::endl;
-                m_logger << "- shunt resistance: " << std::setprecision(4)
-                         << readableRegisters.shuntResistance.value << " Ohm" << std::endl;
-                m_logger << "- pole pairs: "
-                         << std::to_string(readableRegisters.motorPolePairs.value) << std::endl;
-                m_logger << "- KV rating: " << std::to_string(readableRegisters.motorKV.value)
-                         << " rpm/V" << std::endl;
-                m_logger << "- motor shutdown temperature: "
-                         << std::to_string(readableRegisters.motorShutdownTemp.value) << " *C"
-                         << std::endl;
-                m_logger << "- motor calibration mode: "
-                         << MDMainEncoderCalibrationModeValue_S::toReadable(
-                                readableRegisters.motorCalibrationMode.value)
-                                .value_or("Unknown")
-                         << std::endl;
-                m_logger << "- motor torque constant: " << std::setprecision(4)
-                         << readableRegisters.motorKt.value << " Nm/A" << std::endl;
-                m_logger << std::fixed << "- d-axis resistance: " << std::setprecision(3)
-                         << readableRegisters.motorResistance.value << " Ohm\n";
-                m_logger << std::fixed << "- d-axis inductance: " << std::setprecision(6)
-                         << readableRegisters.motorInductance.value << " H\n";
-                m_logger << "- torque bandwidth: " << readableRegisters.motorTorqueBandwidth.value
-                         << " Hz" << std::endl;
-                m_logger << "- CAN watchdog: " << readableRegisters.canWatchdog.value << " ms"
+
+                if (isVersionAtLeast(firmwareVersion, 3, 0, 0))
+                {
+                    m_logger << "[Driver]" << std::endl;
+                    m_logger << "- type: "
+                             << deviceTypeToCstring(
+                                    (deviceType_E)readableRegisters.hardwareType.value)
+                             << "_"
+                             << MDDeviceRev_S::toReadable(readableRegisters.hardwareRev.value)
+                                    .value_or("Unknown")
+                             << "_"
+                             << MDLegacyHwVersion_S::toReadable(
+                                    readableRegisters.legacyHardwareVersion.value)
+                                    .value_or("Unknown")
+                             << std::endl;
+                    m_logger << "- batch: " << std::string(readableRegisters.productionBatch.value)
+                             << std::endl;
+                    m_logger << "- manufactured: "
+                             << std::string(readableRegisters.productionDate.value)
+                                    .insert(4, ".")
+                                    .insert(2, ".")
+                             << std::endl;
+                }
+                else
+                {
+                    m_logger << "[Driver]" << std::endl;
+                    m_logger << "- type (legacy): "
+                             << MDLegacyHwVersion_S::toReadable(
+                                    readableRegisters.legacyHardwareVersion.value)
+                                    .value_or("Unknown")
+                             << std::endl;
+                }
+                m_logger << "- shunt resistance: " << std::setprecision(1)
+                         << readableRegisters.shuntResistance.value * 1000.f << " mOhm"
                          << std::endl;
                 m_logger << "- GPIO mode: "
                          << MDUserGpioConfigurationValue_S::toReadable(
                                 readableRegisters.userGpioConfiguration.value)
+                                .value_or("OFF")
+                         << std::endl;
+                m_logger << "[CAN]" << std::endl;
+                m_logger << "- datarate: " << readableRegisters.canBaudrate.value / 1000000 << " M"
+                         << std::endl;
+                m_logger << "- timeout: " << readableRegisters.canWatchdog.value << " ms"
+                         << std::endl;
+
+                m_logger << "[Actuator]" << std::endl;
+                m_logger << "- gear ratio: " << std::setprecision(5)
+                         << readableRegisters.motorGearRatio.value << "(~" << std::setprecision(0)
+                         << 1.f / readableRegisters.motorGearRatio.value << ":1)" << std::endl;
+                m_logger << "- pole pairs: "
+                         << std::to_string(readableRegisters.motorPolePairs.value) << std::endl;
+                m_logger << "- Kt: " << std::setprecision(4) << readableRegisters.motorKt.value
+                         << " Nm/A" << " (KV: " << std::to_string(readableRegisters.motorKV.value)
+                         << " rpm/V)" << std::endl;
+                m_logger << std::fixed << "- R: " << std::setprecision(3)
+                         << readableRegisters.motorResistance.value
+                         << " Ohm. L: " << std::setprecision(6)
+                         << readableRegisters.motorInductance.value << " H" << std::endl;
+                m_logger << "- torque bandwidth: " << readableRegisters.motorTorqueBandwidth.value
+                         << " Hz" << std::endl;
+                m_logger << "- max current: " << std::setprecision(1)
+                         << readableRegisters.motorIMax.value << " A" << std::endl;
+                m_logger << "- max motor temperature: "
+                         << std::to_string(readableRegisters.motorShutdownTemp.value) << " *C"
+                         << std::endl;
+                m_logger << "- calibration mode: "
+                         << MDMainEncoderCalibrationModeValue_S::toReadable(
+                                readableRegisters.motorCalibrationMode.value)
                                 .value_or("Unknown")
                          << std::endl;
 
-                m_logger << "- auxilary encoder: "
+                bool auxAsMain = readableRegisters.auxEncoder.value != 0 &&
+                                 readableRegisters.auxEncoderMode.value ==
+                                     (u8)MDAuxEncoderModeValue_S::toNumeric("MAIN").value();
+                m_logger << "[MAIN encoder]" << std::endl;
+                if (isVersionAtLeast(firmwareVersion, 3, 0, 0))
+                {
+                    m_logger << " - main encoder: "
+                             << MDAuxEncoderValue_S::toReadable(readableRegisters.mainEncoder.value)
+                                    .value_or("UNKNOWN")
+                             << std::endl;
+                }
+                else
+                {
+                    m_logger << " - main encoder: "
+                             << (readableRegisters.mainEncoder.value == 0
+                                     ? (auxAsMain ? "Aux as MAIN" : "ONBOARD")
+                                     : MDAuxEncoderValue_S::toReadable(
+                                           readableRegisters.mainEncoder.value == 0)
+                                           .value_or("Onboard or Legacy Aux in MAIN mode"))
+                             << std::endl;
+                }
+
+                m_logger << "[AUX encoder]" << std::endl;
+                m_logger << " - auxilary encoder: "
                          << MDAuxEncoderValue_S::toReadable(readableRegisters.auxEncoder.value)
                                 .value_or("Unknown")
                          << std::endl;
-
                 if (readableRegisters.auxEncoder.value != 0)
                 {
-                    m_logger << "   - aux encoder mode: "
-                             << MDAuxEncoderModeValue_S::toReadable(
-                                    readableRegisters.auxEncoderMode.value)
-                                    .value_or("Unknown")
-                             << std::endl;
-                    m_logger << "   - aux encoder calibration mode: "
+                    m_logger << " - calibration mode: "
                              << MDAuxEncoderCalibrationModeValue_S::toReadable(
                                     readableRegisters.auxEncoderCalibrationMode.value)
                                     .value_or("Unknown")
                              << std::endl;
-                    m_logger << "   - aux encoder position: "
-                             << readableRegisters.auxEncoderPosition.value << " rad" << std::endl;
-                    m_logger << "   - aux encoder velocity: "
-                             << readableRegisters.auxEncoderVelocity.value << " rad/s" << std::endl;
+                    m_logger << " - operation mode: "
+                             << MDAuxEncoderModeValue_S::toReadable(
+                                    readableRegisters.auxEncoderMode.value)
+                                    .value_or("Unknown")
+                             << std::endl;
+                    if (!auxAsMain)
+                    {
+                        m_logger << " - position: " << std::setprecision(2)
+                                 << readableRegisters.auxEncoderPosition.value << " rad"
+                                 << std::endl;
+                        m_logger << " - velocity: " << std::setprecision(1)
+                                 << readableRegisters.auxEncoderVelocity.value << " rad/s"
+                                 << std::endl;
+                    }
                 }
 
-                m_logger << "- motion limits: " << std::endl;
-                m_logger << "   - max torque: " << std::setprecision(2)
+                m_logger << "[Motion]" << std::endl;
+                m_logger << " - max torque: " << std::setprecision(2)
                          << readableRegisters.maxTorque.value << " Nm" << std::endl;
-                m_logger << "   - max acceleration: " << std::setprecision(2)
+                m_logger << " - max acceleration: " << std::setprecision(2)
                          << readableRegisters.maxAcceleration.value << " rad/s^2" << std::endl;
-                m_logger << "   - max deceleration: " << std::setprecision(2)
+                m_logger << " - max deceleration: " << std::setprecision(2)
                          << readableRegisters.maxDeceleration.value << " rad/s^2" << std::endl;
-                m_logger << "   - max velocity: " << std::setprecision(2)
+                m_logger << " - max velocity: " << std::setprecision(2)
                          << readableRegisters.maxVelocity.value << " rad/s" << std::endl;
-                m_logger << "   - position limit min: " << std::setprecision(2)
-                         << as_inf(readableRegisters.positionLimitMin.value) << " rad" << std::endl;
-                m_logger << "   - position limit max: " << std::setprecision(2)
-                         << as_inf(readableRegisters.positionLimitMax.value) << " rad" << std::endl;
+                if (readableRegisters.positionLimitMin.value == 0.f &&
+                    readableRegisters.positionLimitMax.value == 0.f)
+                    m_logger << " - position limit: off" << std::endl;
+                else
+                {
+                    m_logger << " - position limit min: " << std::setprecision(2)
+                             << as_inf(readableRegisters.positionLimitMin.value) << " rad"
+                             << std::endl;
+                    m_logger << " - position limit max: " << std::setprecision(2)
+                             << as_inf(readableRegisters.positionLimitMax.value) << " rad"
+                             << std::endl;
+                }
 
+                m_logger << "[State]" << std::endl;
                 m_logger << "- position: " << std::setprecision(2)
                          << readableRegisters.mainEncoderPosition.value << " rad" << std::endl;
-                m_logger << "- velocity: " << std::setprecision(2)
+                m_logger << "- velocity: " << std::setprecision(1)
                          << readableRegisters.mainEncoderVelocity.value << " rad/s" << std::endl;
                 m_logger << "- torque: " << std::setprecision(2)
                          << readableRegisters.motorTorque.value << " Nm" << std::endl;
-                m_logger << "- MOSFET temperature: " << std::fixed << std::setprecision(2)
+                m_logger << "- driver temperature: " << std::fixed << std::setprecision(1)
                          << readableRegisters.mosfetTemperature.value << " *C" << std::endl;
-                m_logger << "- motor temperature: " << std::fixed << std::setprecision(2)
-                         << readableRegisters.motorTemperature.value << " *C" << std::endl;
+                if (readableRegisters.motorTemperature.value > 0.)
+                    m_logger << "- motor  temperature: " << std::fixed << std::setprecision(1)
+                             << readableRegisters.motorTemperature.value << " *C" << std::endl;
+
                 m_logger << std::endl;
                 auto statusToString =
                     []<typename T>(
@@ -940,6 +942,12 @@ namespace mab
                 m_logger << "- motion status: 	0x" << std::hex
                          << readableRegisters.motionStatus.value << std::dec << " ("
                          << statusToString(md->getMotionStatus().first) << ")" << std::endl;
+                m_logger << "- misc status: 	0x" << std::hex
+                         << readableRegisters.miscStatus.value << std::dec << " ("
+                         << statusToString(md->getMiscStatus().first) << ")" << std::endl;
+                m_logger << "- config status: 	0x" << std::hex
+                         << readableRegisters.configStatus.value << std::dec << " ("
+                         << statusToString(md->getConfigStatus().first) << ")" << std::endl;
             });
 
         // Register =======================================================================
@@ -947,7 +955,7 @@ namespace mab
                         ->needs(mdCanIdOption)
                         ->require_subcommand();
 
-        // Register read
+        // candletool md register read
         auto regRead = reg->add_subcommand("read", "Read register value.");
 
         RegisterReadOption regReadOptions(regRead);
@@ -997,7 +1005,7 @@ namespace mab
                     "Register %s has a value of %s", registerStr.c_str(), result.c_str());
             });
 
-        // Register write
+        // candletool md register write
         auto regWrite = reg->add_subcommand("write", "Write register value to MD");
 
         RegisterWriteOption registerWriteOption(regWrite);
@@ -1086,7 +1094,7 @@ namespace mab
                     m_logger.success("Writen value to write-only register %s", registerStr.c_str());
                 }
             });
-        // Reset
+        // candletool md reset
         mdCLi->add_subcommand("reset", "Reboot the MD drive")
             ->callback(
                 [this, candleBuilder, mdCanId]()
@@ -1105,11 +1113,11 @@ namespace mab
                          ->needs(mdCanIdOption)
                          ->require_subcommand();
 
-        // Absolute
+        // candletool md test absolute
         auto* absolute =
             test->add_subcommand("absolute", "Move to target utilizing trapezoidal profile")
                 ->require_option();
-        TestOptions absoluteTestOptions(absolute);
+        MoveTestOptions absoluteTestOptions(absolute);
 
         absolute->callback(
             [this, candleBuilder, mdCanId, absoluteTestOptions]()
@@ -1119,12 +1127,15 @@ namespace mab
                 {
                     return;
                 }
+                if (md->isMDError(md->readRegister(md->m_mdRegisters.maxVelocity)))
+                    return;
+                f32 targetVelocity = md->m_mdRegisters.maxVelocity.value * 0.5f;
                 if (md->isMDError(md->setTargetPosition(*absoluteTestOptions.target)))
                     return;
-
+                if (md->isMDError(md->setTargetVelocity(targetVelocity)))
+                    return;
                 if (md->isMDError(md->setMotionMode(mab::MdMode_E::POSITION_PROFILE)))
                     return;
-
                 if (md->isMDError(md->enable()))
                     return;
 
@@ -1139,11 +1150,11 @@ namespace mab
                 m_logger.info("TARGET REACHED!");
             });
 
-        // Relative
+        // candletool md test relative
         auto* relative =
             test->add_subcommand("relative", "Move relative to current position")->require_option();
 
-        TestOptions relativeTestOptions(relative);
+        MoveTestOptions relativeTestOptions(relative);
 
         relative->callback(
             [this, candleBuilder, mdCanId, relativeTestOptions]()
@@ -1164,13 +1175,42 @@ namespace mab
                 *relativeTestOptions.target += pos;
                 md->enable();
 
-                for (f32 t = 0.f; t < 1.f; t += 0.01f)
+                for (f32 t = 0.f; t < 1.f; t += 0.001f)
                 {
                     f32 target = std::lerp(pos, *relativeTestOptions.target, t);
                     md->setTargetPosition(target);
                     m_logger.info("Position: %4.2f, Velocity: %4.1f",
                                   md->getPosition().first,
                                   md->getVelocity().first);
+                }
+
+                md->disable();
+                m_logger.success("Movement ended.");
+            });
+
+        // candletool md test velocity
+        auto* velocity =
+            test->add_subcommand("velocity", "Move with set velocity, using velocity profile")
+                ->require_option();
+
+        MoveTestOptions velocityTestOptions(velocity);
+
+        velocity->callback(
+            [this, candleBuilder, mdCanId, velocityTestOptions]()
+            {
+                auto md = getMd(mdCanId, candleBuilder);
+                if (md == nullptr)
+                {
+                    return;
+                }
+
+                md->setMotionMode(mab::MdMode_E::VELOCITY_PROFILE);
+                md->enable();
+
+                while (1)
+                {
+                    md->setTargetVelocity(*velocityTestOptions.target);
+                    m_logger.info("Velocity: %4.1f", md->getVelocity().first);
                     usleep(30000);
                 }
 
@@ -1178,7 +1218,64 @@ namespace mab
                 m_logger.success("Movement ended.");
             });
 
-        // Update
+        // md test encoder
+        auto* encoderTest =
+            test->add_subcommand("encoder", "Test encoder accuracy")->require_option();
+
+        EncoderTestOptions encoderTestOptions(encoderTest);
+
+        encoderTest->callback(
+            [this, candleBuilder, mdCanId, encoderTestOptions]()
+            {
+                auto md = getMd(mdCanId, candleBuilder);
+                if (md == nullptr)
+                    return;
+                bool testMain = true;
+                if (*encoderTestOptions.encoder == "aux")
+                    testMain = false;
+
+                auto& regs = md->m_mdRegisters;
+                if (testMain)
+                {
+                    regs.runTestMainEncoderCmd = true;
+                    md->writeRegister(regs.runTestMainEncoderCmd);
+                }
+                else
+                {
+                    md->readRegister(regs.auxEncoder);
+                    if (regs.auxEncoder.value == 0)
+                    {
+                        m_logger.warn("Cannot start Aux encoder test. There is no Aux encoder!");
+                        return;
+                    }
+                    md->m_mdRegisters.runTestAuxEncoderCmd = true;
+                    md->writeRegister(md->m_mdRegisters.runTestAuxEncoderCmd);
+                }
+
+                f32 testTime = 6;
+                f32 dt       = 0.25;
+                for (f32 t = 0.f; t < testTime; t += dt)
+                {
+                    m_logger.progress(t / testTime);
+                    usleep(dt * 1'000'000);
+                }
+                m_logger.progress(1.);
+                md->disable();
+                if (testMain)
+                    md->readRegisters(regs.calMainEncoderMaxE, regs.calMainEncoderStdDev);
+                else
+                    md->readRegisters(regs.calAuxEncoderMaxE, regs.calAuxEncoderStdDev);
+                m_logger.info("Test Completed");
+                m_logger.info("[%s Encoder]", testMain ? "Main" : "Aux");
+                m_logger.info(
+                    " - error stddev: %.4f rad",
+                    testMain ? regs.calMainEncoderStdDev.value : regs.calAuxEncoderStdDev.value);
+                m_logger.info(
+                    " - error max: %.4f rad",
+                    testMain ? regs.calMainEncoderMaxE.value : regs.calAuxEncoderMaxE.value);
+            });
+
+        // candletool md update
         auto* update =
             mdCLi->add_subcommand("update", "Update firmware on MD drive.")->needs(mdCanIdOption);
         UpdateOptions updateOptions(update);
@@ -1186,6 +1283,42 @@ namespace mab
         update->callback(
             [this, candleBuilder, mdCanId, updateOptions, ctx]()
             {
+                if (*updateOptions.forceErase)
+                {
+                    m_logger.info(
+                        "The force-erase, will erase the whole configuration from the drive, "
+                        "including"
+                        "bootloader configuration. Drives' CAN ID will be set default 100 (0x64)! "
+                        "Proceed?");
+                    std::string answer;
+                    std::cout << "Type 'Y' to continue: ";
+                    std::getline(std::cin, answer);
+                    if (answer != "Y" && answer != "y")
+                    {
+                        m_logger.error("Factory Reset aborted by user!");
+                        return;
+                    }
+                    auto candle = candleBuilder->build().value_or(nullptr);
+                    if (candle == nullptr)
+                    {
+                        m_logger.error("Could not connect to candle!");
+                        return;
+                    }
+                    if (!*updateOptions.recovery)
+                    {
+                        MD md(*mdCanId, candle);
+                        md.reset();
+                        usleep(200'000);
+                    }
+                    CanLoader canLoader(candle, nullptr, *mdCanId);
+                    if (!canLoader.forceEraseConfig())
+                    {
+                        m_logger.error("Force-erase failed!");
+                        return;
+                    }
+                    m_logger.success("Force-erase complete for MD @ %d", *mdCanId);
+                    return;
+                }
                 if (updateOptions.pathToMabFile->empty())
                 {
                     if (updateOptions.fwVersion->empty())
@@ -1244,14 +1377,35 @@ namespace mab
                                            *mdCanId);
                             return;
                         }
+                        auto fw = getMdFirmwareVersion(*md);
+                        if (!isVersionAtLeast(fw, 3, 0, 0))
+                        {
+                            m_logger.warn(
+                                "You are attempting to update MD from version v%d.%d.%d to version "
+                                "%s.\n This comes with changes, that in specific conditions "
+                                "(motor+encoder combinations) may require you to:\n"
+                                "- reapply .cfg file,\n"
+                                "- perform calibration,\n"
+                                "- set zero offset.\n"
+                                "Continue? [y/n]",
+                                fw.s.major,
+                                fw.s.minor,
+                                fw.s.revision,
+                                mabFile.m_fwEntry.version);
+                            char c;
+                            std::cin >> c;
+                            if (c != 'y' && c != 'Y')
+                                return;
+                        }
+
                         md->reset();
-                        usleep(300'000);
+                        usleep(200'000);
                     }
                     else
                     {
                         m_logger.warn("Recovery mode...");
                         m_logger.warn(
-                            "Please make sure driver is in the bootload phase (rebooting)");
+                            "Please make sure driver is in the bootloader phase (rebooting)");
                     }
                     auto candle = candleBuilder->build().value_or(nullptr);
                     if (candle == nullptr)
@@ -1260,11 +1414,7 @@ namespace mab
                         return;
                     }
                     CanLoader canLoader(candle, &mabFile, *mdCanId);
-                    if (canLoader.flashAndBoot())
-                    {
-                        m_logger.success("Update complete for MD @ %d", *mdCanId);
-                    }
-                    else
+                    if (!canLoader.flashAndBoot(*(updateOptions.recovery)))
                     {
                         m_logger.error("MD flashing failed!");
                         return;

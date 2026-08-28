@@ -1,15 +1,16 @@
-cmake_minimum_required(VERSION 3.15...3.25)
+cmake_minimum_required(VERSION 3.5...3.25)
 
 include(git_func.cmake)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CANDLESDK_VERSION_1 1)
-set(CANDLESDK_VERSION_2 4)
-set(CANDLESDK_VERSION_3 1)
+set(CANDLESDK_VERSION_2 5)
+set(CANDLESDK_VERSION_3 0)
 set(CANDLESDK_VERSION
     ${CANDLESDK_VERSION_1}.${CANDLESDK_VERSION_2}.${CANDLESDK_VERSION_3})
 add_compile_definitions(CANDLESDK_VERSION="${CANDLESDK_VERSION}")
+add_compile_definitions(CANDLESDK_VERSION_HASH="${GIT_HASH}")
 get_tag(CANDLESDK_VERSION_TAG)
 
 project(
@@ -21,6 +22,8 @@ option(CANDLESDK_BUILD_EXAMPLES
        "Build examples (has no effect on python builds)" ON)
 option(CANDLESDK_BUILD_CANDLETOOL
        "Build candletool executable (has no effect on python builds)" ON)
+option(CANDLESDK_BUILD_MDGUI
+       "Build mdgui executable (has no effect on python builds)" ON)
 option(
   CANDLE_BUILD_STATIC
   "Build static library (has no effect on windows library and python builds)"
@@ -34,6 +37,7 @@ message("Available flags and their values:")
 message("  CANDLESDK_BUILD_PYTHON = ${CANDLESDK_BUILD_PYTHON}")
 message("  CANDLESDK_BUILD_EXAMPLES = ${CANDLESDK_BUILD_EXAMPLES}")
 message("  CANDLESDK_BUILD_CANDLETOOL = ${CANDLESDK_BUILD_CANDLETOOL}")
+message("  CANDLESDK_BUILD_MDGUI = ${CANDLESDK_BUILD_MDGUI}")
 message("  CANDLE_BUILD_STATIC = ${CANDLE_BUILD_STATIC}")
 message("  MAKE_TESTS = ${MAKE_TESTS}")
 message("  SUPPRESS_WARN = ${SUPPRESS_WARN}")
@@ -43,13 +47,20 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(NOT SUPPRESS_WARN)
-  add_compile_options(-Wfatal-errors -Wall -Wextra -Wpedantic
-                      -Wno-unused-parameter -Wno-missing-field-initializers)
-  if(NOT WIN32)
-    add_compile_options(-Werror)
-    add_compile_definitions(WIN32_MEAN_AND_LEAN) # This define is needed for
-    # windows.h to exclude some less used APIs
+  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_compile_options(-Wfatal-errors -Wall -Wextra -Wpedantic
+                        -Wno-unused-parameter -Wno-missing-field-initializers)
+    if(NOT WIN32)
+      add_compile_options(-Werror)
+    endif()
+  
+  elseif(MSVC)
+    add_compile_options(/W4) 
   endif()
+endif()
+
+if(WIN32)
+  add_compile_definitions(WIN32_LEAN_AND_MEAN)
 endif()
 
 if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64" OR ${CMAKE_SYSTEM_PROCESSOR}
@@ -82,4 +93,31 @@ else()
     if(CANDLESDK_BUILD_EXAMPLES)
         add_subdirectory(examples)
     endif()
+    if(CANDLESDK_BUILD_MDGUI)
+        add_subdirectory(candlegui)
+    endif()
+
+    # candletool and candlegui each generate their own CPackConfig (see the
+    # comments next to their `include(CPack)` calls) instead of sharing the
+    # default one, so CMake won't auto-create a `package` target. Wire up a
+    # single `make package` that builds packages for whichever of them are
+    # enabled.
+    set(CANDLESDK_PACKAGE_COMMANDS)
+    if(CANDLESDK_BUILD_CANDLETOOL)
+        list(APPEND CANDLESDK_PACKAGE_COMMANDS
+             COMMAND ${CMAKE_CPACK_COMMAND} --config
+                     ${CMAKE_BINARY_DIR}/CPackConfig_candletool.cmake)
+    endif()
+    if(CANDLESDK_BUILD_MDGUI)
+        list(APPEND CANDLESDK_PACKAGE_COMMANDS
+             COMMAND ${CMAKE_CPACK_COMMAND} --config
+                     ${CMAKE_BINARY_DIR}/CPackConfig_mdgui.cmake)
+    endif()
+    if(CANDLESDK_PACKAGE_COMMANDS)
+        add_custom_target(
+          package ${CANDLESDK_PACKAGE_COMMANDS}
+          COMMENT "Building CPack packages"
+          VERBATIM)
+    endif()
+
 endif()

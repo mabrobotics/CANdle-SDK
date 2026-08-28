@@ -78,9 +78,10 @@ std::string tagFromTargetDevice(MabFileParser::TargetDevice_E type)
             return "pds";
         case MabFileParser::TargetDevice_E::CANDLE:
             return "candle";
-        default:
-            return "UNKNOWN";
+        case MabFileParser::TargetDevice_E::INVALID:
+            break;
     }
+    return "INVALID";
 }
 MabFileParser::TargetDevice_E parseTargetDevice(std::string tag)
 {

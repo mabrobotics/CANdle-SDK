@@ -13,6 +13,8 @@
 #include <string_view>
 #include <thread>
 #include <vector>
+#include <csignal>
+
 #include "CLI/CLI.hpp"
 #include "MDCO.hpp"
 #include "candle.hpp"
@@ -25,6 +27,7 @@
 #include "mdco_config_adapter.hpp"
 
 using namespace mab;
+bool testRunning = true;
 
 std::unique_ptr<MDCO, std::function<void(MDCO*)>> MdcoCli::getMdco(
     const std::shared_ptr<canId_t> mdCanId, std::shared_ptr<EDSObjectDictionary> od)
@@ -637,16 +640,16 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             m_log.success("Saving registers succesful!");
         });
 
-    // TEST ============================================================================
+    // candletool mdco test
     CLI::App* test = mdco->add_subcommand("test", "Test the MD drive movement.")
                          ->needs(mdCanIdOption)
                          ->require_subcommand();
 
-    // // TEST move
+    // candletool mdco test move
     CLI::App* testMove =
         test->add_subcommand("move", "Validate if motor can move.")->require_subcommand();
 
-    // // TEST move absolute
+    // candletool mdco test move absolute
     CLI::App* testMoveAbs = testMove->add_subcommand(
         "absolute", "Move motor to absolute position using position profile mode.");
 
@@ -669,21 +672,24 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error("Failed move");
                 return;
             }
-            if (mdco->setTargetPosition(*moveOptionsAbs.position) != MDCO::Error_t::OK)
+            if (mdco->setTargetPosition(*moveOptionsAbs.target) != MDCO::Error_t::OK)
             {
                 m_log.error("Failed move");
                 return;
             }
-            while (!mdco->targetReached().first)
+            std::signal(SIGINT, [](int) { testRunning = false; });
+            while (!mdco->targetReached().first && testRunning)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
                 auto position = mdco->getPosition().first;
                 std::cout << "Pos: " << position << '\n';
                 mdco->setTargetPosition(
-                    *moveOptionsAbs.position);  // get driver unstuck from quickstop
+                    *moveOptionsAbs.target);  // get driver unstuck from quickstop
             }
-
-            m_log.success("Target Reached!");
+            if (!testRunning)
+                m_log.info("Test move disabled!");
+            else
+                m_log.success("Target Reached!");
 
             if (mdco->disable() != MDCO::Error_t::OK)
             {
@@ -692,7 +698,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             }
         });
 
-    // Relative
+    // candletool mdco test move relative
     CLI::App* testMoveRel = testMove->add_subcommand(
         "relative", "Move motor to relative position using impedance mode.");
 
@@ -731,10 +737,10 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 return;
             }
             // Arbitrary clamping, better to change that in the future
-            *moveOptionsRel.position = std::clamp(*moveOptionsRel.position, -32'000, 32'000);
+            *moveOptionsRel.target = std::clamp(*moveOptionsRel.target, -32'000, 32'000);
 
             auto             position       = mdco->getPosition().first;
-            auto             targetPosition = *moveOptionsRel.position;
+            auto             targetPosition = *moveOptionsRel.target;
             constexpr size_t steps          = 100;
 
             std::array<i32, steps> trajectory;
@@ -755,6 +761,63 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             }
 
             m_log.success("Target Reached!");
+
+            if (mdco->disable() != MDCO::Error_t::OK)
+            {
+                m_log.error("Failed disable");
+                return;
+            }
+        });
+    // candletool mdco test move velocity
+    CLI::App* testMoveVel =
+        testMove->add_subcommand("velocity", "Move motor with specified velocity.");
+
+    MoveOptions moveOptionsVel(testMoveVel);
+
+    testMoveVel->callback(
+        [this, mdCanId, loadEDS, moveOptionsVel]()
+        {
+            auto od   = loadEDS().first;
+            auto mdco = getMdco(mdCanId, od);
+            if (mdco == nullptr)
+                m_log.error("Failed to conect to mdco!");
+            if (mdco->disable() != MDCO::Error_t::OK)
+            {
+                m_log.error("Failed move");
+                return;
+            }
+            if (mdco->setOperationMode(mab::ModesOfOperation::CyclicSyncVelocity) !=
+                MDCO::Error_t::OK)
+            {
+                m_log.error("Failed move");
+                return;
+            }
+            m_log.info("Loop starting, use Ctrl+C to stop.");
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            if (mdco->enable() != MDCO::Error_t::OK)
+            {
+                m_log.error("Failed move");
+                return;
+            }
+            if (mdco->setOperationMode(mab::ModesOfOperation::CyclicSyncVelocity) !=
+                MDCO::Error_t::OK)
+            {
+                m_log.error("Failed move");
+                return;
+            }
+            auto targetVelocity = *moveOptionsVel.target;
+            auto velocity       = mdco->getVelocity().first;
+            std::signal(SIGINT, [](int) { testRunning = false; });
+            while (testRunning)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                velocity = mdco->getVelocity().first;
+                m_log << "Vel: " << velocity << '\n';
+                m_log << "Target: " << targetVelocity << '\n';
+                mdco->setTargetVelocity(targetVelocity);
+            }
+
+            m_log.success("Test move stopped!");
 
             if (mdco->disable() != MDCO::Error_t::OK)
             {

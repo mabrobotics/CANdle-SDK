@@ -143,7 +143,10 @@ int main(int argc, char** argv)
     CLI11_PARSE(app, argc, argv);
     if (showCandleSDKVersion)
     {
-        std::cout << "CandleSDK version: " << CANDLESDK_VERSION << "\n";
+        std::cout << CANDLESDK_VERSION;;
+        if (CANDLETOOL_VTAG != 'm')
+            std::cout << "_" << CANDLETOOL_VTAG << "_" << CANDLESDK_VERSION_HASH;
+        std::cout << "\n";
     }
 
     std::optional<mab::CANdleDatarate_E> dataOpt = stringToData(cmd.data);

@@ -9,6 +9,7 @@ venv
 wheelhouse
 *.cache*
 *compile_commands.json
+customConfigs
 
 # Compiled Object files
 *.slo
@@ -41,3 +42,7 @@ wheelhouse
 !candlesdk-win-driver.exe
 *.out
 *.app
+
+# Config files
+*.ini
+Makefile.old

@@ -9,11 +9,12 @@ cd ${base_dir}
 mkdir $BUILD_DIRECTORY -p
 cd $BUILD_DIRECTORY
 chmod -R a+rw ${base_dir}/${BUILD_DIRECTORY}
-cmake .. -DCMAKE_TOOLCHAIN_FILE=${base_dir}/cmake/windows.x86_64.gcc.toolchain.cmake
+cmake .. -DCMAKE_TOOLCHAIN_FILE="${base_dir}/cmake/windows.x86_64.gcc.toolchain.cmake" -DCMAKE_BUILD_TYPE=Release
 chmod -R a+rw ${base_dir}/${BUILD_DIRECTORY}
-make -j
+make -j4
 chmod -R a+rw ${base_dir}/${BUILD_DIRECTORY}
-cpack -G NSIS
+
+make package
 chmod -R a+rw ${base_dir}/${BUILD_DIRECTORY}
 
 cd ${start_dir}

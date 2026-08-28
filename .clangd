@@ -1,4 +1,13 @@
 CompileFlags:
-  Add: [ ]
+  Remove:
+    - --target=arm-none-eabi
+    - -isystem/usr/lib/arm-none-eabi/include
+    - -isystem/usr/lib/arm-none-eabi/include/c++/13.2.1
+    - -isystem/usr/lib/arm-none-eabi/include/c++/13.2.1/arm-none-eabi
+  Add: 
+    - -std=c++20
+    - -stdlib=libstdc++
+    - -isystem/usr/include/c++/13
   CompilationDatabase: ./build
   Compiler: /usr/bin/c++
+

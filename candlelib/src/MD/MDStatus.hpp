@@ -158,10 +158,43 @@ namespace mab
         std::unordered_map<MotionStatusBits, StatusItem_S> motionStatus = {
             {MotionStatusBits::ErrorPositionLimit, StatusItem_S("Error Position Limit", true)},
             {MotionStatusBits::ErrorVelocityLimit, StatusItem_S("Error Velocity Limit", true)},
-            {MotionStatusBits::WarningAcceleration, StatusItem_S("Warning Acceleration", false)},
-            {MotionStatusBits::WarningTorque, StatusItem_S("Warning Torque", false)},
-            {MotionStatusBits::WarningVelocity, StatusItem_S("Warning Velocity", false)},
-            {MotionStatusBits::WarningPosition, StatusItem_S("Warning Position", false)}};
+            {MotionStatusBits::WarningAcceleration, StatusItem_S("Warning Acceleration Clipped", false)},
+            {MotionStatusBits::WarningTorque, StatusItem_S("Warning Torque Clipped", false)},
+            {MotionStatusBits::WarningVelocity, StatusItem_S("Warning Velocity Target Clipped", false)},
+            {MotionStatusBits::WarningPosition, StatusItem_S("Warning Position Target Clipped", false)}};
+
+        enum class MiscStatusBits : bitPos
+        {
+            ErrorOTPMemoryCorrupted = 0,
+            WarnRestartRequired     = 29,
+            WarnRoutineInProgress   = 30
+        };
+        std::unordered_map<MiscStatusBits, StatusItem_S> miscStatus = {
+            {MiscStatusBits::ErrorOTPMemoryCorrupted,
+             StatusItem_S("Error OTP Memory Corrupted", true)},
+            {MiscStatusBits::WarnRestartRequired, StatusItem_S("Restart Required", false)},
+            {MiscStatusBits::WarnRoutineInProgress, StatusItem_S("Routine in progress", false)},
+        };
+
+        enum class ConfigStatusBits : bitPos
+        {
+            ErrorSave                 = 1,
+            ErrorMotorParams          = 2,
+            ErrorLimits               = 3,
+            WarnSavingRequired        = 28,
+            WarnBootloaderInfoMissing = 29,
+            WarnConfigEntryMissing    = 30
+        };
+        std::unordered_map<ConfigStatusBits, StatusItem_S> configStatus = {
+            {ConfigStatusBits::ErrorSave, StatusItem_S("Error during Saving", true)},
+            {ConfigStatusBits::ErrorMotorParams, StatusItem_S("Invalid Motor Parameters", true)},
+            {ConfigStatusBits::ErrorLimits, StatusItem_S("Invalid Limits", true)},
+            {ConfigStatusBits::WarnSavingRequired, StatusItem_S("Saving required", false)},
+            {ConfigStatusBits::WarnBootloaderInfoMissing,
+             StatusItem_S("Bootloader Information Missing", false)},
+            {ConfigStatusBits::WarnConfigEntryMissing,
+             StatusItem_S("Missing Config Entry (Default used)", false)},
+        };
 
         static std::vector<std::string> getStatusString(
             std::unordered_map<bitPos, StatusItem_S> errors)
