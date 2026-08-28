@@ -13,7 +13,8 @@ cmake .. -DCMAKE_TOOLCHAIN_FILE="${base_dir}/cmake/windows.x86_64.gcc.toolchain.
 chmod -R a+rw ${base_dir}/${BUILD_DIRECTORY}
 make -j
 chmod -R a+rw ${base_dir}/${BUILD_DIRECTORY}
-cpack -G NSIS
+cpack --config CPackConfig_candletool.cmake -G NSIS
+cpack --config CPackConfig_mdgui.cmake -G NSIS
 chmod -R a+rw ${base_dir}/${BUILD_DIRECTORY}
 
 cd ${start_dir}

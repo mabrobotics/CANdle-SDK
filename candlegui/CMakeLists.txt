@@ -108,25 +108,6 @@ target_compile_definitions(
           CANDLEGUI_VREVISION=${CANDLEGUI_VERSION_PATCH}
           CANDLEGUI_VTAG=${CANDLEGUI_VERSION_TAG})
 
-# package / installer
-set(CPACK_PROJECT_NAME "mdgui")
-set(CPACK_PACKAGE_NAME mdgui)
-set(CPACK_PACKAGE_FILE_NAME
-    ${CPACK_PACKAGE_NAME}-${CANDLEGUI_VERSION_FULL}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}
-)
-set(CPACK_PACKAGE_VERSION_MAJOR ${CANDLEGUI_VERSION_MAJOR})
-set(CPACK_PACKAGE_VERSION_MINOR ${CANDLEGUI_VERSION_MINOR})
-set(CPACK_PACKAGE_VERSION_PATCH ${CANDLEGUI_VERSION_PATCH})
-set(CPACK_PACKAGE_VENDOR "MAB Robotics")
-set(CPACK_PACKAGE_DESCRIPTION
-    "GUI tool for MD configuration and tuning.")
-
-if(WIN32)
-    set(CPACK_MONOLITHIC_INSTALL ON)
-else()
-    set(CPACK_MONOLITHIC_INSTALL OFF)
-endif()
-
 set(CANDLEGUI_CPACK_COMPONENTS candlegui)
 
 if(WIN32)
@@ -145,39 +126,12 @@ if(WIN32)
     install(PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/tools/candlesdk-win-driver.exe DESTINATION bin COMPONENT candlegui)
     
     target_compile_definitions(mdgui PRIVATE DEFAULT_custom_CONFIG_DIR="${CMAKE_INSTALL_SYSCONFDIR}/custom/config")
-
-    set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
-    set(CPACK_NSIS_MODIFY_PATH ON)
-    set(CPACK_NSIS_MUI_ICON "${CMAKE_CURRENT_SOURCE_DIR}/MAB.ico")
-    set(CPACK_NSIS_MUI_UNIICON "${CMAKE_CURRENT_SOURCE_DIR}/MAB.ico")
-    set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
-            DetailPrint \\\"Driver installing...\\\"
-            ExecWait '\\\"$INSTDIR\\\\bin\\\\candlesdk-win-driver.exe\\\"'
-        ")
-    set(CPACK_NSIS_EXECUTABLES_DIRECTORY ".")
-    set(CPACK_PACKAGE_EXECUTABLES "mdgui" "MDgui")
-    set(CPACK_CREATE_DESKTOP_LINKS "mdgui")
 elseif(UNIX)
     install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/udev/rules.d/99-mdgui.rules DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/" COMPONENT rulesgui)
     list(APPEND CANDLEGUI_CPACK_COMPONENTS rulesgui)
 
     target_compile_definitions(mdgui PRIVATE DEFAULT_custom_CONFIG_DIR="/${CMAKE_INSTALL_SYSCONFDIR}/custom")
     add_custom_target(mdgui_install_rules COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_BINARY_DIR}" --component rulesgui)
-
-    set(CPACK_GENERATOR "DEB")
-    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "MAB Robotics <contact@mabrobotics.pl>")
-    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libusb-1.0-0, libgl1, libglfw3")
-    set(CPACK_DEBIAN_PACKAGE_VERSION)
-    
-    if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
-        set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "arm64")
-    elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "armhf")
-        set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "armhf")
-    endif()
-    
-    set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/template_package/postinst")
-
 else()
     message(FATAL_ERROR "System not UNIX nor Windows, cannot compile!")
 endif()
@@ -186,18 +140,5 @@ if(MAKE_TESTS)
     enable_testing()
 endif()
 
-# See the matching comment in candletool/CMakeLists.txt: give mdgui its own
-# CPack config/output and restrict it to mdgui's own components so it doesn't
-# clobber or bundle candletool's package.
-set(CPACK_COMPONENTS_ALL ${CANDLEGUI_CPACK_COMPONENTS})
-set(CPACK_INSTALL_CMAKE_PROJECTS)
-foreach(_candlegui_component ${CANDLEGUI_CPACK_COMPONENTS})
-    list(APPEND CPACK_INSTALL_CMAKE_PROJECTS
-         "${CMAKE_BINARY_DIR};${CMAKE_PROJECT_NAME};${_candlegui_component};/")
-endforeach()
-set(CPACK_OUTPUT_CONFIG_FILE "${CMAKE_BINARY_DIR}/CPackConfig_mdgui.cmake")
-include(CPack)
-
-
-
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CPackConfig.cmake)
 

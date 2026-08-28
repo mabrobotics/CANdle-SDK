@@ -83,22 +83,6 @@ add_custom_command(
     ${CMAKE_CURRENT_BINARY_DIR}/
   COMMENT "Copying configs...")
 
-# package / installer
-set(CPACK_PROJECT_NAME "candletool")
-set(CPACK_PACKAGE_NAME candletool)
-set(CPACK_PACKAGE_FILE_NAME
-    ${CPACK_PACKAGE_NAME}-${CANDLETOOL_VERSION_FULL}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}
-)
-set(CPACK_PACKAGE_VERSION_MAJOR ${CANDLETOOL_VERSION_MAJOR})
-set(CPACK_PACKAGE_VERSION_MINOR ${CANDLETOOL_VERSION_MINOR})
-set(CPACK_PACKAGE_VERSION_PATCH ${CANDLETOOL_VERSION_PATCH})
-set(CPACK_PACKAGE_VENDOR "MAB Robotics")
-set(CPACK_PACKAGE_DESCRIPTION
-    "Console tool for MAB devices ecosystem configuration")
-set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE)
-set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_SOURCE_DIR}/README.md)
-set(CPACK_MONOLITHIC_INSTALL OFF)
-
 set(CANDLETOOL_CPACK_COMPONENTS candletool _configs)
 
 if(WIN32)
@@ -132,10 +116,6 @@ if(WIN32)
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
                 WORLD_WRITE
     COMPONENT _configs)
-  set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
-  set(CPACK_NSIS_MODIFY_PATH ON)
-  set(CPACK_NSIS_MUI_ICON "${CMAKE_CURRENT_SOURCE_DIR}/MAB.ico")
-  set(CPACK_NSIS_MUI_UNIICON "${CMAKE_CURRENT_SOURCE_DIR}/MAB.ico")
   target_link_libraries(
     candletool
     -static
@@ -175,26 +155,6 @@ elseif(UNIX)
                 WORLD_WRITE
     COMPONENT _configs)
 
-  set(CPACK_GENERATOR "DEB")
-  set(CPACK_DEBIAN_PACKAGE_MAINTAINER "MAB Robotics <contact@mabrobotics.pl>")
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS libusb-1.0-0)
-  set(CPACK_DEBIAN_PACKAGE_VERSION)
-
-  if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")
-
-    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "arm64")
-
-  elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "armhf")
-
-    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "armhf")
-
-  endif()
-  message(CPACK_DEBIAN_PACKAGE_ARCHITECTURE =
-          ${CPACK_DEBIAN_PACKAGE_ARCHITECTURE})
-
-  set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
-      "${CMAKE_CURRENT_SOURCE_DIR}/template_package/postinst")
-
   install(
     FILES
       ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/udev/rules.d/99-candletool.rules
@@ -224,12 +184,4 @@ if(MAKE_TESTS)
   enable_testing()
 endif()
 
-# CANdle-SDK bundles multiple installable executables (candletool, mdgui).
-set(CPACK_COMPONENTS_ALL ${CANDLETOOL_CPACK_COMPONENTS})
-set(CPACK_INSTALL_CMAKE_PROJECTS)
-foreach(_candletool_component ${CANDLETOOL_CPACK_COMPONENTS})
-  list(APPEND CPACK_INSTALL_CMAKE_PROJECTS
-       "${CMAKE_BINARY_DIR};${CMAKE_PROJECT_NAME};${_candletool_component};/")
-endforeach()
-set(CPACK_OUTPUT_CONFIG_FILE "${CMAKE_BINARY_DIR}/CPackConfig_candletool.cmake")
-include(CPack)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CPackConfig.cmake)

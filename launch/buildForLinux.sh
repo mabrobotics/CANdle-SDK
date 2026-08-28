@@ -19,5 +19,6 @@ chmod -R a+rw "$BUILD_DIRECTORY"
 make -j4
 chmod -R a+rw "$BUILD_DIRECTORY"
 
-cpack -G DEB
+cpack --config CPackConfig_candletool.cmake -G DEB
+cpack --config CPackConfig_mdgui.cmake -G DEB
 chmod -R a+rw "$BUILD_DIRECTORY"
