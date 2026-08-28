@@ -300,6 +300,13 @@ namespace mab
                 // Perform aux encoder calibration
                 if (doOnAuxEncoder)
                 {
+                    if (!md->isMDError(md->readRegister(registers.auxEncoder)) &&
+                        registers.auxEncoder.value == 0)
+                    {
+                        m_logger.info("Aux encoder not defined, stopping.");
+                        return;
+                    }
+
                     m_logger.info("Starting aux encoder calibration...");
                     // get gear ratio
                     if (md->readRegister(registers.motorGearRatio) != MD::Error_t::OK)
@@ -1136,8 +1143,8 @@ namespace mab
                              .first.at(MDStatus::QuickStatusBits::TargetPositionReached)
                              .isSet()))
                 {
-                m_logger.info("Position: %4.2f", md->getPosition().first);
-                usleep(50'000);
+                    m_logger.info("Position: %4.2f", md->getPosition().first);
+                    usleep(50'000);
                 }
                 md->disable();
                 m_logger.info("TARGET REACHED!");
