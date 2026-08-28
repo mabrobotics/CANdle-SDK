@@ -2,6 +2,13 @@ cmake_minimum_required(VERSION 3.5...3.25)
 
 project(candlelib)
 
+set(INSTALL_GTEST OFF)
+add_subdirectory(3rd_party/googletest)
+
+add_library(Unit_test INTERFACE)
+target_sources(Unit_test INTERFACE test/unit_test_runner.cpp)
+target_link_libraries(Unit_test INTERFACE gmock)
+
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(CANDLESDK_BUILD_PYTHON)
@@ -37,10 +44,6 @@ message(
     STATUS
     "\nCANDLE_BUILD_SHARED: ${CANDLE_BUILD_SHARED}\nCANDLE_BUILD_STATIC: ${CANDLE_BUILD_STATIC}"
 )
-
-add_library(Unit_test INTERFACE)
-target_sources(Unit_test INTERFACE test/unit_test_runner.cpp)
-target_link_libraries(Unit_test INTERFACE gmock)
 
 if(UNIX)
     set(UNIX_ONLY_SOURCES src/communication_interface/SPI.cpp)
