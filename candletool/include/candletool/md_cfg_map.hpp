@@ -5,7 +5,7 @@
 #include "candle/shared_data/md_types.hpp"
 #include "candle/MD/MD_strings.hpp"
 #include "mini/ini.h"
-#include "utilities.hpp"
+#include "candletool/utilities.hpp"
 
 #include <cctype>
 #include <charconv>

@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.5...3.25)
 
 project(candlelib)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 set(INSTALL_GTEST OFF)
 add_subdirectory(3rd_party/googletest)
 
@@ -9,25 +11,19 @@ add_library(Unit_test INTERFACE)
 target_sources(Unit_test INTERFACE test/unit_test_runner.cpp)
 target_link_libraries(Unit_test INTERFACE gmock)
 
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
 if(CANDLESDK_BUILD_PYTHON)
     set(CANDLE_BUILD_STATIC ON)
 endif()
 
 if(UNIX)
-    set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
-    include(${CMAKE_MODULE_PATH}/Findlibusb.cmake)
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
     find_package(libusb REQUIRED)
 endif()
 
 if(WIN32)
-    set(LIBUSB_WINDOWS_DYNAMIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/libusb/lib/windows/libusb-1.0.dll)
-    set(LIBUSB_WINDOWS_STATIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/libusb/lib/windows/libusb-1.0.a)
-    set(LIBUSB_INCLUDE_DIR
-        ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/libusb/inc/libusb-1.0)
+    set(LIBUSB_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/libusb/lib/windows/libusb-1.0.a")
+    set(LIBUSB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/libusb/inc/libusb-1.0")
+    set(LIBUSB_WINDOWS_DYNAMIC "${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/libusb/lib/windows/libusb-1.0.dll")
 endif()
 
 if(CANDLE_BUILD_STATIC)
@@ -58,6 +54,7 @@ target_sources(
     src/communication_device/candle_bootloader.cpp
     ${UNIX_ONLY_SOURCES}
     src/communication_interface/USB.cpp
+    src/logger/logger.cpp
     src/MD/MD.cpp
     src/MD/MDCO.cpp
     src/pds/pds.cpp
@@ -67,20 +64,25 @@ target_sources(
     src/pds/brake_resistor.cpp
     src/pds/isolated_converter.cpp
     src/objectDictionary/edsParser.cpp
-    src/objectDictionary/edsEntry.cpp
-    src/logger/logger.cpp)
+    src/objectDictionary/edsEntry.cpp)
 
 if(UNIX)
     target_compile_definitions(candle PRIVATE UNIX)
 endif()
 
-target_include_directories(
-    candle
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../candletool/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../candletool/3rd_party/mINI/src
-    ${LIBUSB_INCLUDE_DIR})
-target_include_directories(candle SYSTEM PRIVATE ${LIBUSB_INCLUDE_DIR})
+target_include_directories(candle PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+)
+
+target_include_directories(candle PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/../candletool/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../candletool/3rd_party/mINI/src"
+)
+
+target_include_directories(candle SYSTEM PUBLIC
+    "$<BUILD_INTERFACE:${LIBUSB_INCLUDE_DIR}>"
+)
 
 if(UNIX)
     target_link_libraries(candle pthread ${LIBUSB_LIBRARY})

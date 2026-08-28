@@ -6,7 +6,7 @@
 #include "candle/shared_data/mab_types.hpp"
 #include "candle/logger/logger.hpp"
 #include "candle/MD/MD.hpp"
-#include "utilities.hpp"
+#include "candletool/utilities.hpp"
 
 #include <filesystem>
 #include <memory>

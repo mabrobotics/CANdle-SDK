@@ -1,8 +1,8 @@
 #pragma once
 
-#include "web_file.hpp"
+#include "candletool/web_file_module/web_file.hpp"
 #include "candle/shared_data/mab_types.hpp"
-#include "utilities.hpp"
+#include "candletool/utilities.hpp"
 #include "candle/logger/logger.hpp"
 
 namespace mab

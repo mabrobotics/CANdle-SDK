@@ -1,4 +1,4 @@
-#include "mdco_cli.hpp"
+#include "candletool/mdco_cli.hpp"
 #include <fcntl.h>
 #include <array>
 #include <chrono>
@@ -22,9 +22,9 @@
 #include "candle/objectDictionary/edsEntry.hpp"
 #include "candle/objectDictionary/edsParser.hpp"
 #include "candle/shared_data/mab_types.hpp"
-#include "md_cfg_map.hpp"
+#include "candletool/md_cfg_map.hpp"
 #include "mini/ini.h"
-#include "mdco_config_adapter.hpp"
+#include "candletool/mdco_config_adapter.hpp"
 
 using namespace mab;
 bool testRunning = true;

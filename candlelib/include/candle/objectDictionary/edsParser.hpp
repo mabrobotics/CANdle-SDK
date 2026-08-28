@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <cctype>
 #include <charconv>
-#include "configHelpers.hpp"
+#include "candletool/configHelpers.hpp"
 #include "candle/shared_data/mab_types.hpp"
 #include "candle/logger/logger.hpp"
 #include "candle/objectDictionary/edsEntry.hpp"
