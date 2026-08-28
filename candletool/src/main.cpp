@@ -1,11 +1,11 @@
 #include <cstdlib>
 #include <memory>
 #include <string>
-#include "candle.hpp"
+#include "candle/communication_device/candle.hpp"
 #include "candle_cli.hpp"
-#include "candle_types.hpp"
+#include "candle/communication_device/candle_types.hpp"
 #include "configHelpers.hpp"
-#include "logger.hpp"
+#include "candle/logger/logger.hpp"
 #include "mab_types.hpp"
 #include "md_cli.hpp"
 #include "CLI/CLI.hpp"
@@ -143,7 +143,8 @@ int main(int argc, char** argv)
     CLI11_PARSE(app, argc, argv);
     if (showCandleSDKVersion)
     {
-        std::cout << CANDLESDK_VERSION;;
+        std::cout << CANDLESDK_VERSION;
+        ;
         if (CANDLETOOL_VTAG != 'm')
             std::cout << "_" << CANDLETOOL_VTAG << "_" << CANDLESDK_VERSION_HASH;
         std::cout << "\n";

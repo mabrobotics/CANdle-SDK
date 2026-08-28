@@ -4,7 +4,7 @@
 #include <array>
 #include <string>
 #include <memory>
-#include "logger.hpp"
+#include "candle/logger/logger.hpp"
 
 #include "mab_types.hpp"
 

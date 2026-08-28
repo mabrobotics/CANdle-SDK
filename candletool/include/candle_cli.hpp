@@ -1,9 +1,9 @@
 #pragma once
 #include "CLI/CLI.hpp"
-#include "candle.hpp"
+#include "candle/communication_device/candle.hpp"
 #include "mab_types.hpp"
-#include "logger.hpp"
-#include "candle_types.hpp"
+#include "candle/logger/logger.hpp"
+#include "candle/communication_device/candle_types.hpp"
 #include "utilities.hpp"
 
 namespace mab
@@ -33,9 +33,7 @@ namespace mab
                                          "Version of fw to download (\"latest\" or X.X.X format). "
                                          "For example:  candletool candle update latest")},
                     {"path",
-                     rootCli->add_option("-p,--path",
-                                         *pathToMabFile,
-                                         "Local path to .mab file")},
+                     rootCli->add_option("-p,--path", *pathToMabFile, "Local path to .mab file")},
                     {"meta_file",
                      rootCli->add_option("-m,--meta-file",
                                          *metadataFile,

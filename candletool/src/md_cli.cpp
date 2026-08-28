@@ -8,17 +8,17 @@
 #include <string_view>
 #include <filesystem>
 #include <variant>
-#include "MDStatus.hpp"
+#include "candle/MD/MDStatus.hpp"
 #include "canLoader.hpp"
-#include "candle.hpp"
-#include "logger.hpp"
+#include "candle/communication_device/candle.hpp"
+#include "candle/logger/logger.hpp"
 #include "mab_types.hpp"
 #include "manufacturer_data.hpp"
 #include "md_types.hpp"
 #include "mabFileParser.hpp"
 #include "md_cfg_map.hpp"
 #include "utilities.hpp"
-#include "MDStatus.hpp"
+#include "candle/MD/MDStatus.hpp"
 #include "mini/ini.h"
 #include "configHelpers.hpp"
 #include "curl_handler.hpp"
@@ -1136,8 +1136,8 @@ namespace mab
                              .first.at(MDStatus::QuickStatusBits::TargetPositionReached)
                              .isSet()))
                 {
-                m_logger.info("Position: %4.2f", md->getPosition().first);
-                usleep(50'000);
+                    m_logger.info("Position: %4.2f", md->getPosition().first);
+                    usleep(50'000);
                 }
                 md->disable();
                 m_logger.info("TARGET REACHED!");

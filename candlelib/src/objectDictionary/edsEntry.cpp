@@ -8,7 +8,7 @@
 #include <variant>
 #include <bit>
 
-#include "edsEntry.hpp"
+#include "candle/objectDictionary/edsEntry.hpp"
 
 namespace mab
 {

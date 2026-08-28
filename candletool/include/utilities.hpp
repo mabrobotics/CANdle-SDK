@@ -1,4 +1,8 @@
 #pragma once
+#include "CLI/CLI.hpp"
+#include "candle/logger/logger.hpp"
+#include "candle/candlelib.hpp"
+
 #include <memory>
 #include <string>
 #include <cstdlib>
@@ -7,9 +11,6 @@
 #include <type_traits>
 #include <limits>
 #include <cmath>
-#include "CLI/CLI.hpp"
-#include "logger.hpp"
-#include "candlelib.hpp"
 
 namespace mab
 {

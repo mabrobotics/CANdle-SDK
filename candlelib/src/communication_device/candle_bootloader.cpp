@@ -1,4 +1,4 @@
-#include "candle_bootloader.hpp"
+#include "candle/communication_device/candle_bootloader.hpp"
 #include <algorithm>
 
 namespace mab

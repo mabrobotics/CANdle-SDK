@@ -16,11 +16,11 @@
 #include <csignal>
 
 #include "CLI/CLI.hpp"
-#include "MDCO.hpp"
-#include "candle.hpp"
-#include "candle_types.hpp"
-#include "edsEntry.hpp"
-#include "edsParser.hpp"
+#include "candle/MD/MDCO.hpp"
+#include "candle/communication_device/candle.hpp"
+#include "candle/communication_device/candle_types.hpp"
+#include "candle/objectDictionary/edsEntry.hpp"
+#include "candle/objectDictionary/edsParser.hpp"
 #include "mab_types.hpp"
 #include "md_cfg_map.hpp"
 #include "mini/ini.h"
@@ -128,9 +128,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
 
     // CAN ============================================================================
 
-    CLI::App* can = mdco->add_subcommand("can", "Configure CAN id of the driver.")
-                        ->needs(mdCanIdOption)
-                        ->require_option();
+    CLI::App*  can = mdco->add_subcommand("can", "Configure CAN id of the driver.")
+                         ->needs(mdCanIdOption)
+                         ->require_option();
     CanOptions canOptions(can);
     can->callback(
         [this, mdCanId, canOptions, loadEDS]()

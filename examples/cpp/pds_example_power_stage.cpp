@@ -6,8 +6,8 @@
     Power stage and braking resistor binding
 */
 
-#include "candle.hpp"
-#include "pds.hpp"
+#include "candle/communication_device/candle.hpp"
+#include "candle/pds/pds.hpp"
 
 using namespace mab;
 

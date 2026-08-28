@@ -1,9 +1,9 @@
 #pragma once
 
-#include "logger.hpp"
+#include "candle/logger/logger.hpp"
 #include "mab_types.hpp"
 #include "md_types.hpp"
-#include "MD_strings.hpp"
+#include "candle/MD/MD_strings.hpp"
 #include "mini/ini.h"
 #include "utilities.hpp"
 

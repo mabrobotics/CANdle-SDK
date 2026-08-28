@@ -5,8 +5,8 @@
 #include "mab_types.hpp"
 #include "pds_types.hpp"
 /*#include "candletool.hpp"*/
-#include "pds.hpp"
-#include "candle.hpp"
+#include "candle/pds/pds.hpp"
+#include "candle/communication_device/candle.hpp"
 #include "mini/ini.h"
 
 using namespace mab;

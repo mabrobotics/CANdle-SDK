@@ -3,9 +3,9 @@
 #include <vector>
 
 #include "candle_cli.hpp"
-#include "candle.hpp"
+#include "candle/communication_device/candle.hpp"
 #include "mabFileParser.hpp"
-#include "candle_bootloader.hpp"
+#include "candle/communication_device/candle_bootloader.hpp"
 #include "mab_crc.hpp"
 #include "curl_handler.hpp"
 #include "web_file.hpp"

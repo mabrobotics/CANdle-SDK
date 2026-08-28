@@ -1,13 +1,13 @@
 #pragma once
 
 #include "CLI/CLI.hpp"
-#include "edsEntry.hpp"
-#include "logger.hpp"
-#include "MDCO.hpp"
-#include "candle.hpp"
+#include "candle/objectDictionary/edsEntry.hpp"
+#include "candle/logger/logger.hpp"
+#include "candle/MD/MDCO.hpp"
+#include "candle/communication_device/candle.hpp"
 #include "mini/ini.h"
 #include "configHelpers.hpp"
-#include "edsParser.hpp"
+#include "candle/objectDictionary/edsParser.hpp"
 #include "mab_types.hpp"
 #include "utilities.hpp"
 
@@ -113,9 +113,7 @@ namespace mab
         {
             MoveOptions(CLI::App* rootCli) : target(std::make_shared<i32>(0))
             {
-                rootCli
-                    ->add_option(
-                        "target", *target, "Target to reach [encoder ticks].")
+                rootCli->add_option("target", *target, "Target to reach [encoder ticks].")
                     ->required();
             }
             const std::shared_ptr<i32>          target;

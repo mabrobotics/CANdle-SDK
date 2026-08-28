@@ -1,10 +1,11 @@
-#include "can_bootloader.hpp"
+#include "candle/can_bootloader/can_bootloader.hpp"
+#include "candle/communication_device/candle_bootloader.hpp"
+#include "candle/communication_device/candle.hpp"
+
 #include <array>
 #include <span>
 #include <string_view>
 #include <vector>
-#include "candle_bootloader.hpp"
-#include "candle.hpp"
 
 namespace mab
 {
@@ -124,8 +125,8 @@ namespace mab
         if (sendCommand(Command_t::META, payload))
         {
             // old workaround for CANdle limitation, of having max timeout of ~250ish ms.
-            // META message does saveing in flash, so it takes slightly longer than that, and we must 
-            // send another frame to get *actual* response for the command.
+            // META message does saveing in flash, so it takes slightly longer than that, and we
+            // must send another frame to get *actual* response for the command.
             std::vector<u8> dummy;
             return sendFrame(dummy);
         }

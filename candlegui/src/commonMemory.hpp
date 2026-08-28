@@ -1,5 +1,5 @@
 #pragma once
-#include "candle.hpp"
+#include "candle/communication_device/candle.hpp"
 #include <mutex>
 #include <atomic>
 #include <vector>

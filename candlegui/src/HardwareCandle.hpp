@@ -2,7 +2,7 @@
 #include <memory>
 
 #include "commonMemory.hpp"
-#include "MD.hpp"
+#include "candle/MD/MD.hpp"
 
 class HardwareCandle
 {

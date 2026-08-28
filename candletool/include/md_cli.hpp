@@ -1,14 +1,16 @@
 #pragma once
+
 #include "CLI/CLI.hpp"
-#include "candle.hpp"
+#include "candle/communication_device/candle.hpp"
+#include "candle/communication_device/candle_types.hpp"
 #include "mab_types.hpp"
-#include "logger.hpp"
-#include "MD.hpp"
+#include "candle/logger/logger.hpp"
+#include "candle/MD/MD.hpp"
 #include "utilities.hpp"
+
 #include <filesystem>
 #include <memory>
 #include <optional>
-#include <candle_types.hpp>
 
 namespace mab
 {

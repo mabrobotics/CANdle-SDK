@@ -1,9 +1,9 @@
 #pragma once
 
-#include "logger.hpp"
+#include "candle/logger/logger.hpp"
 #include "md_cfg_map.hpp"
-#include "edsEntry.hpp"
-#include "MDCO.hpp"
+#include "candle/objectDictionary/edsEntry.hpp"
+#include "candle/MD/MDCO.hpp"
 
 #include <array>
 #include <charconv>
@@ -119,7 +119,7 @@ namespace mab
 
         static constexpr auto standardRegMaping =
             std::to_array<std::tuple<u16, u16, std::optional<u8>>>({
-                {0x112, 0x6072, {}},  // Motor max torque 
+                {0x112, 0x6072, {}},  // Motor max torque
                 {0x016, 0x6073, {}},  // Motor max current
                 {0x016, 0x6075, {}},  // Motor rated current
                 {0x112, 0x6076, {}},  // Motor rated torque

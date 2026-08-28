@@ -1,6 +1,6 @@
 #include "canLoader.hpp"
-#include "can_bootloader.hpp"
-#include "candle.hpp"
+#include "candle/can_bootloader/can_bootloader.hpp"
+#include "candle/communication_device/candle.hpp"
 #include "mabFileParser.hpp"
 #include "mab_crc.hpp"
 
