@@ -16,7 +16,9 @@ mkdir %0\..\..\build
 set currentdir="%cd%"
 cd %0\..\..\build
 cmake -G"MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release ..
+
 make -j4 
 make package
+
 cd %currentdir%
 exit /b 0
