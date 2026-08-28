@@ -1120,12 +1120,15 @@ namespace mab
                 {
                     return;
                 }
+                if (md->isMDError(md->readRegister(md->m_mdRegisters.maxVelocity)))
+                    return;
+                f32 targetVelocity = md->m_mdRegisters.maxVelocity.value * 0.5f;
                 if (md->isMDError(md->setTargetPosition(*absoluteTestOptions.target)))
                     return;
-
+                if (md->isMDError(md->setTargetVelocity(targetVelocity)))
+                    return;
                 if (md->isMDError(md->setMotionMode(mab::MdMode_E::POSITION_PROFILE)))
                     return;
-
                 if (md->isMDError(md->enable()))
                     return;
 
@@ -1133,8 +1136,8 @@ namespace mab
                              .first.at(MDStatus::QuickStatusBits::TargetPositionReached)
                              .isSet()))
                 {
-                    m_logger.info("Position: %4.2f", md->getPosition().first);
-                    usleep(50'000);
+                m_logger.info("Position: %4.2f", md->getPosition().first);
+                usleep(50'000);
                 }
                 md->disable();
                 m_logger.info("TARGET REACHED!");
