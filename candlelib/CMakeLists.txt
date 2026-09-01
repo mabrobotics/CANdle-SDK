@@ -1,15 +1,20 @@
 cmake_minimum_required(VERSION 3.5...3.25)
-
 project(candlelib)
+
+include(GNUInstallDirs)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# GoogleTest
 set(INSTALL_GTEST OFF)
 add_subdirectory(3rd_party/googletest)
 
+# UNIT TEST
 add_library(Unit_test INTERFACE)
 target_sources(Unit_test INTERFACE test/unit_test_runner.cpp)
 target_link_libraries(Unit_test INTERFACE gmock)
+
+find_package(Threads REQUIRED)
 
 if(CANDLESDK_BUILD_PYTHON)
     set(CANDLE_BUILD_STATIC ON)
@@ -26,20 +31,7 @@ if(WIN32)
     set(LIBUSB_WINDOWS_DYNAMIC "${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/libusb/lib/windows/libusb-1.0.dll")
 endif()
 
-if(CANDLE_BUILD_STATIC)
-    set(CANDLE_BUILD_STATIC "TRUE")
-    set(CANDLE_BUILD_SHARED "FALSE")
-    add_library(candle STATIC ${CANDLE_SOURCE})
-else()
-    set(CANDLE_BUILD_STATIC "FALSE")
-    set(CANDLE_BUILD_SHARED "TRUE")
-    add_library(candle SHARED ${CANDLE_SOURCE})
-endif()
-
-message(
-    STATUS
-    "\nCANDLE_BUILD_SHARED: ${CANDLE_BUILD_SHARED}\nCANDLE_BUILD_STATIC: ${CANDLE_BUILD_STATIC}"
-)
+add_library(candle)
 
 if(UNIX)
     set(UNIX_ONLY_SOURCES src/communication_interface/SPI.cpp)
@@ -72,23 +64,15 @@ endif()
 
 target_include_directories(candle PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
-)
-
-target_include_directories(candle PUBLIC
-    "${CMAKE_CURRENT_SOURCE_DIR}/../candletool/include"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../candletool/3rd_party/mINI/src"
-)
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
 
 target_include_directories(candle SYSTEM PUBLIC
-    "$<BUILD_INTERFACE:${LIBUSB_INCLUDE_DIR}>"
-)
+    "$<BUILD_INTERFACE:${LIBUSB_INCLUDE_DIR}>")
 
 if(UNIX)
-    target_link_libraries(candle pthread ${LIBUSB_LIBRARY})
+    target_link_libraries(candle PUBLIC Threads::Threads ${LIBUSB_LIBRARY} PRIVATE mINI)
 else()
-    target_link_libraries(candle pthread
-        ${LIBUSB_WINDOWS_STATIC} -static)
+    target_link_libraries(candle PUBLIC Threads::Threads ${LIBUSB_WINDOWS_STATIC} PRIVATE mINI -static)
 endif()
 
 if(NOT SUPPRESS_WARN)

@@ -70,8 +70,6 @@ if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64" OR ${CMAKE_SYSTEM_PROCESSOR}
     -Wno-stringop-overflow)
 endif()
 
-set(mINI_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/third_party/mINI/inc/)
-
 macro(add_unit_test_executable test_name)
   message("Adding unit test executable ${test_name}")
   add_executable(${test_name} ${ARGN})
@@ -82,6 +80,9 @@ macro(add_unit_test_executable test_name)
     OUTPUT_NAME test_${test_name})
 endmacro(add_unit_test_executable)
 
+add_library(mINI INTERFACE)
+target_include_directories(mINI INTERFACE ${CMAKE_SOURCE_DIR}/3rd_party/mINI/src)
+
 add_subdirectory(candlelib)
 
 if(CANDLESDK_BUILD_PYTHON)
@@ -91,12 +92,12 @@ else()
     add_subdirectory(candletool)
   endif()
 
-  if(CANDLESDK_BUILD_EXAMPLES)
-    add_subdirectory(examples)
-  endif()
-
   if(CANDLESDK_BUILD_MDGUI)
     add_subdirectory(candlegui)
+  endif()
+
+  if(CANDLESDK_BUILD_EXAMPLES)
+    add_subdirectory(examples)
   endif()
 
   # candletool and candlegui each generate their own CPackConfig (see the

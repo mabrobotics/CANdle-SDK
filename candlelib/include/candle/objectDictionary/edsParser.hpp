@@ -1,6 +1,10 @@
 #ifndef EDS_PARSER_HPP
 #define EDS_PARSER_HPP
 
+#include "candle/shared_data/mab_types.hpp"
+#include "candle/logger/logger.hpp"
+#include "candle/objectDictionary/edsEntry.hpp"
+
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -10,11 +14,6 @@
 #include <algorithm>
 #include <cctype>
 #include <charconv>
-#include "candletool/configHelpers.hpp"
-#include "candle/shared_data/mab_types.hpp"
-#include "candle/logger/logger.hpp"
-#include "candle/objectDictionary/edsEntry.hpp"
-#include "mini/ini.h"
 
 namespace mab
 {
@@ -37,8 +36,6 @@ namespace mab
             const std::filesystem::path& edsFilePath);
 
       private:
-        static EDSEntry::EDSValueMetaData parseValueMetadata(mINI::INIMap<std::string>& entry);
-
         static inline bool isEntry(std::string_view s)
         {
             return !s.empty() &&

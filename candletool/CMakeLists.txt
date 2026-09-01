@@ -40,13 +40,11 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_executable(candletool ${CANDLETOOL_SOURCES})
 
-target_link_libraries(candletool candle)
+target_link_libraries(candletool PUBLIC candle PRIVATE mINI CLI11)
 
 target_include_directories(
   candletool
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/web_file_module
-  ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src)
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 target_compile_options(candletool PRIVATE -g -Wno-unused-parameter -Wno-missing-field-initializers
   -Wswitch-enum)
@@ -69,8 +67,6 @@ target_compile_definitions(
   CANDLETOOL_VTAG=${CANDLETOOL_VERSION_TAG}
   CANDLETOOL_VHASH=${CANDLESDK_VERSION_HASH}
 )
-
-target_link_libraries(candletool CLI11)
 
 # add_unit_test_executable(pds_cli_test tests/pds_cli_test.cpp)
 # target_include_directories(pds_cli_test PRIVATE include)
