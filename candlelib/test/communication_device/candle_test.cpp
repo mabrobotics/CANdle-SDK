@@ -1,6 +1,6 @@
 
-#include <I_communication_interface_mock.hpp>
-#include <candle.hpp>
+#include <candle/communication_interface/I_communication_interface_mock.hpp>
+#include <candle/communication_device/candle.hpp>
 #include "candle/shared_data/mab_types.hpp"
 
 #include <bit>

@@ -40,7 +40,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_executable(candletool ${CANDLETOOL_SOURCES})
 
-target_link_libraries(candletool PUBLIC candle PRIVATE mINI CLI11)
+if(UNIX)
+  target_link_libraries(candletool PUBLIC candle PRIVATE mINI CLI11)
+endif()
 
 target_include_directories(
   candletool
@@ -117,6 +119,8 @@ if(WIN32)
     candletool
     -static
     candle
+    mINI
+    CLI11
     -static-libstdc++
     -static-libgcc
     -static

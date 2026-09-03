@@ -84,8 +84,7 @@ target_link_libraries(mdgui
     ${CMAKE_DL_LIBS}
 )
 
-# target_include_directories(imgui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib)
-# target_link_libraries(imgui PUBLIC ${GLFW_TARGET} OpenGL::GL)
+target_link_libraries(imgui PUBLIC ${GLFW_TARGET} OpenGL::GL)
 target_include_directories(mdgui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
 target_compile_options(mdgui PRIVATE -g -Wno-unused-parameter -Wno-missing-field-initializers)

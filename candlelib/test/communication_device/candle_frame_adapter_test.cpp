@@ -56,7 +56,7 @@ TEST_F(CandleFrameAdapterTest, simultaneousReadWrite)
 {
     mab::CANdleFrameAdapter cfa(m_sync);
 
-    std::jthread thread(&CandleFrameAdapterTest::mockReadWrite, this, &cfa);
+    std::jthread thread(std::bind_front(&CandleFrameAdapterTest::mockReadWrite, this), &cfa);
 
     std::vector<std::future<std::pair<std::vector<u8>, CANdleFrameAdapter::Error_t>>> futures;
 
@@ -85,7 +85,7 @@ TEST_F(CandleFrameAdapterTest, readerFailError)
 {
     mab::CANdleFrameAdapter cfa(m_sync);
 
-    std::jthread thread(&CandleFrameAdapterTest::mockReadWrite, this, &cfa);
+    std::jthread thread(std::bind_front(&CandleFrameAdapterTest::mockReadWrite, this), &cfa);
 
     std::vector<std::future<std::pair<std::vector<u8>, CANdleFrameAdapter::Error_t>>> futures;
 

@@ -81,7 +81,10 @@ macro(add_unit_test_executable test_name)
 endmacro(add_unit_test_executable)
 
 add_library(mINI INTERFACE)
-target_include_directories(mINI INTERFACE ${CMAKE_SOURCE_DIR}/3rd_party/mINI/src)
+target_include_directories(
+  mINI INTERFACE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 add_subdirectory(candlelib)
 
@@ -106,6 +109,10 @@ else()
   # single `make package` that builds packages for whichever of them are
   # enabled.
   set(CANDLESDK_PACKAGE_COMMANDS)
+
+  list(APPEND CANDLESDK_PACKAGE_COMMANDS
+    COMMAND ${CMAKE_CPACK_COMMAND} --config
+    ${CMAKE_BINARY_DIR}/CPackConfig_candlelib.cmake)
 
   if(CANDLESDK_BUILD_CANDLETOOL)
     list(APPEND CANDLESDK_PACKAGE_COMMANDS

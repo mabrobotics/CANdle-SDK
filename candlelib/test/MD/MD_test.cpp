@@ -3,7 +3,7 @@
 #include <functional>
 
 #include "candle/communication_interface/I_communication_interface.hpp"
-#include "I_communication_interface_mock.hpp"
+#include "candle/communication_interface/I_communication_interface_mock.hpp"
 #include "candle/MD/MD.hpp"
 #include "candle/communication_device/candle.hpp"
 #include "gmock/gmock.h"
