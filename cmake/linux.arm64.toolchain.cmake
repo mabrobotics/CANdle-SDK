@@ -13,21 +13,28 @@ set(TARGET_OS "LINUX")
 # Set name if not defined as argument ##
 if(NOT TOOLCHAIN_CROSS_TRIPLET)
   set(TOOLCHAIN_CROSS_TRIPLET "aarch64-linux-gnu"
-  )# may also be set to different value using cmake ..
-   # -DTOOLCHAIN_CROSS_TRIPLET="aarch64-linux-gnu" ......
+  ) # may also be set to different value using cmake ..
+
+  # -DTOOLCHAIN_CROSS_TRIPLET="aarch64-linux-gnu" ......
 endif()
 
+set(PKG_CONFIG_EXECUTABLE pkg-config)
+
+set(ENV{PKG_CONFIG_DIR} "")
+set(ENV{PKG_CONFIG_LIBDIR} "/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig")
+set(ENV{PKG_CONFIG_SYSROOT_DIR} "/")
+
 execute_process(COMMAND which "${TOOLCHAIN_CROSS_TRIPLET}-gcc"
-                OUTPUT_VARIABLE CMAKE_C_COMPILER_NEWLINED)
+  OUTPUT_VARIABLE CMAKE_C_COMPILER_NEWLINED)
 execute_process(COMMAND which "${TOOLCHAIN_CROSS_TRIPLET}-g++"
-                OUTPUT_VARIABLE CMAKE_CXX_COMPILER_NEWLINED)
+  OUTPUT_VARIABLE CMAKE_CXX_COMPILER_NEWLINED)
 
 string(STRIP "${CMAKE_C_COMPILER_NEWLINED}" CMAKE_C_COMPILER)
 string(STRIP "${CMAKE_CXX_COMPILER_NEWLINED}" CMAKE_CXX_COMPILER)
 
 set(CMAKE_FIND_ROOT_PATH /usr/aarch64-linux-gnu /usr/lib/aarch64-linux-gnu)
 
-set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM BOTH)
-set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH)
-set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE BOTH)
-set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE BOTH)
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
