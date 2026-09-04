@@ -25,6 +25,8 @@ customConfigs
 *.so
 *.dylib
 *.dll
+!candlelib/3rd_party/libusb/lib/windows/*.dll
+!candlelib/3rd_party/libusb/lib/windows/*.a
 
 # Fortran module files
 *.mod
