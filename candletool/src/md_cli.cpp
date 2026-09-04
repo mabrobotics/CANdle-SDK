@@ -744,11 +744,16 @@ namespace mab
                              << std::endl;
                     m_logger << "- batch: " << std::string(readableRegisters.productionBatch.value)
                              << std::endl;
-                    m_logger << "- manufactured: "
-                             << std::string(readableRegisters.productionDate.value)
-                                    .insert(4, ".")
-                                    .insert(2, ".")
-                             << std::endl;
+                    std::string manufactured(readableRegisters.productionDate.value);
+                    if (manufactured.size() >= 6)
+                    {
+                        manufactured.insert(4, ".").insert(2, ".");
+                    }
+                    else
+                    {
+                        manufactured = "NONE";
+                    }
+                    m_logger << "- manufactured: " << manufactured << std::endl;
                 }
                 else
                 {
