@@ -35,9 +35,68 @@ _candletool_completions()
         return 0
     fi
 
+    local function_name="${COMP_WORDS[2]}"
+
+    if [[ "$device_type" == "md" ]]; then
+        if [[ ${COMP_CWORD} == 3 ]]; then
+            local md_function=""
+
+            case "$function_name" in
+                config)
+                    md_function="download upload factory-reset verify"
+                    ;;
+                test)
+                    md_function="absolute relative velocity encoder"
+                    ;;
+                register)
+                    md_function="read write"
+                    ;;
+                *)
+                    md_function=""
+                    ;;
+            esac
+                
+            COMPREPLY=($(compgen -W "$md_function" -- "$current"))
+            return 0
+        fi
+    fi
+
+    if [[ "$device_type" == "mdco" ]]; then
+        if [[ ${COMP_CWORD} == 3 ]]; then
+            local mdco_function=""
+
+            case "$function_name" in
+                config)
+                    mdco_function="download upload"
+                    ;;
+                sdo)
+                    mdco_function="read write"
+                    ;;
+                test)
+                    mdco_function="move"
+                    ;;
+                encoder)
+                    mdco_function="display"
+                    ;;
+                *)
+                    mdco_function=""
+                    ;;
+            esac
+                
+            COMPREPLY=($(compgen -W "$mdco_function" -- "$current"))
+        fi
+
+        if [[ "${COMP_WORDS[3]}" == "move" ]]; then
+            if [[ ${COMP_CWORD} == 4 ]]; then
+                local move_mode="absolute relative velocity"
+                COMPREPLY=($(compgen -W "$move_mode" -- "$current"))
+            fi
+        fi
+        return 0
+    fi
+
     if [[ "$device_type" == "pds" ]]; then
         if [[ ${COMP_CWORD} == 4 ]]; then
-            local function_name="${COMP_WORDS[2]}"
             local pds_function=""
 
             case "$function_name" in

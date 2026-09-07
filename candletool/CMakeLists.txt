@@ -150,6 +150,7 @@ elseif(UNIX)
     FILES "tools/candletool-completion.bash"
     DESTINATION ${BASH_COMPLETION_DIR}
     RENAME "candletool"
+    COMPONENT candletool
   )
 
   install(
