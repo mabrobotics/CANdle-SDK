@@ -1,4 +1,3 @@
-#include "candletool/mdco_cli.hpp"
 #include <fcntl.h>
 #include <array>
 #include <chrono>
@@ -16,14 +15,17 @@
 #include <csignal>
 
 #include "CLI/CLI.hpp"
+#include "mini/ini.h"
+
 #include "candle/MD/MDCO.hpp"
 #include "candle/communication_device/candle.hpp"
 #include "candle/communication_device/candle_types.hpp"
 #include "candle/objectDictionary/edsEntry.hpp"
 #include "candle/objectDictionary/edsParser.hpp"
 #include "candle/shared_data/mab_types.hpp"
+
 #include "candletool/md_cfg_map.hpp"
-#include "mini/ini.h"
+#include "candletool/mdco_cli.hpp"
 #include "candletool/mdco_config_adapter.hpp"
 
 using namespace mab;

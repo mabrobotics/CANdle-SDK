@@ -1,9 +1,10 @@
-#include "candletool/utilities.hpp"
 #include <algorithm>
 #include <cctype>
 #include <variant>
 #include <string>
 #include <string_view>
+
+#include "candletool/utilities.hpp"
 
 namespace mab
 {

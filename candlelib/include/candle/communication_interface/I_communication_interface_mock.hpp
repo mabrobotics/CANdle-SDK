@@ -1,4 +1,5 @@
 #pragma once
+
 #include "candle/communication_interface/I_communication_interface.hpp"
 
 #include <gtest/gtest.h>

@@ -1,4 +1,5 @@
 #pragma once
+
 #include "candle/shared_data/mab_types.hpp"
 
 class Crc

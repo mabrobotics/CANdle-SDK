@@ -1,20 +1,22 @@
 #pragma once
 
-#include "CLI/CLI.hpp"
-#include "candle/objectDictionary/edsEntry.hpp"
-#include "candle/logger/logger.hpp"
-#include "candle/MD/MDCO.hpp"
-#include "candle/communication_device/candle.hpp"
-#include "mini/ini.h"
-#include "candletool/configHelpers.hpp"
-#include "candle/objectDictionary/edsParser.hpp"
-#include "candle/shared_data/mab_types.hpp"
-#include "candletool/utilities.hpp"
-
 #include <filesystem>
 #include <limits>
 #include <memory>
 #include <string>
+
+#include "CLI/CLI.hpp"
+#include "mini/ini.h"
+
+#include "candle/objectDictionary/edsEntry.hpp"
+#include "candle/logger/logger.hpp"
+#include "candle/MD/MDCO.hpp"
+#include "candle/communication_device/candle.hpp"
+#include "candle/objectDictionary/edsParser.hpp"
+#include "candle/shared_data/mab_types.hpp"
+
+#include "candletool/configHelpers.hpp"
+#include "candletool/utilities.hpp"
 
 namespace mab
 {

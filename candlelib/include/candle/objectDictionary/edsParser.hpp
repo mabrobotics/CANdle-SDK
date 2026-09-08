@@ -1,5 +1,6 @@
-#ifndef EDS_PARSER_HPP
-#define EDS_PARSER_HPP
+#pragma once
+// #ifndef EDS_PARSER_HPP
+// #define EDS_PARSER_HPP
 
 #include "candle/shared_data/mab_types.hpp"
 #include "candle/logger/logger.hpp"
@@ -84,4 +85,4 @@ namespace mab
         }
     };
 }  // namespace mab
-#endif  // EDS_PARSER_HPP
+// #endif  // EDS_PARSER_HPP

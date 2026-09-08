@@ -1,12 +1,5 @@
 #pragma once
 
-#include "candle/logger/logger.hpp"
-#include "candle/shared_data/mab_types.hpp"
-#include "candle/shared_data/md_types.hpp"
-#include "candle/MD/MD_strings.hpp"
-#include "mini/ini.h"
-#include "candletool/utilities.hpp"
-
 #include <cctype>
 #include <charconv>
 #include <iostream>
@@ -18,6 +11,15 @@
 #include <memory>
 #include <string_view>
 #include <regex>
+
+#include "mini/ini.h"
+
+#include "candle/logger/logger.hpp"
+#include "candle/shared_data/mab_types.hpp"
+#include "candle/shared_data/md_types.hpp"
+#include "candle/MD/MD_strings.hpp"
+
+#include "candletool/utilities.hpp"
 
 namespace mab
 {

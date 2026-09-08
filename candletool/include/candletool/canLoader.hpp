@@ -1,13 +1,15 @@
-#ifndef CANLOADER_HPP
-#define CANLOADER_HPP
+// #ifndef CANLOADER_HPP
+// #define CANLOADER_HPP
+#pragma once
 
-#include "candletool/iLoader.hpp"
+#include <array>
+
 #include "candle/communication_device/candle.hpp"
 #include "candle/logger/logger.hpp"
 #include "candle/shared_data/mab_types.hpp"
 #include "candle/can_bootloader/can_bootloader.hpp"
 
-#include <array>
+#include "candletool/iLoader.hpp"
 
 namespace mab
 {
@@ -28,4 +30,4 @@ namespace mab
     };
 
 }  // namespace mab
-#endif /* CANLOADER_HPP */
+// #endif /* CANLOADER_HPP */

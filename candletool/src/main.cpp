@@ -1,17 +1,19 @@
 #include <cstdlib>
 #include <memory>
 #include <string>
+
+#include "CLI/CLI.hpp"
+
 #include "candle/communication_device/candle.hpp"
-#include "candletool/candle_cli.hpp"
 #include "candle/communication_device/candle_types.hpp"
-#include "candletool/configHelpers.hpp"
 #include "candle/logger/logger.hpp"
 #include "candle/shared_data/mab_types.hpp"
+
+#include "candletool/candle_cli.hpp"
+#include "candletool/configHelpers.hpp"
 #include "candletool/md_cli.hpp"
-#include "CLI/CLI.hpp"
 #include "candletool/pds_cli.hpp"
 #include "candletool/mdco_cli.hpp"
-
 #include "candletool/utilities.hpp"
 
 //     ___     _     _  _      _   _         _____               _
