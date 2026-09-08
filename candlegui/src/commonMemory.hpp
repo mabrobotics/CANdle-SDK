@@ -1,9 +1,11 @@
 #pragma once
-#include "candle/communication_device/candle.hpp"
+
 #include <mutex>
 #include <atomic>
 #include <vector>
 #include <cmath>
+
+#include "candle/communication_device/candle.hpp"
 
 struct commonMemory_S
 {

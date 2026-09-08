@@ -1,7 +1,6 @@
 #include "candle/communication_interface/USB.hpp"
 
 #include <cstring>
-#include <string>
 
 #ifdef WIN32
 #define NO_DRIVER_EXTENDED_HELPER_MESSAGE              \

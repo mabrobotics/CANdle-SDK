@@ -6,7 +6,6 @@ It provides all modules and API interfaces.
 
 #include <unordered_map>
 
-#include "candle/shared_data/mab_types.hpp"
 #include "candle/communication_device/candle.hpp"
 #include "candle/pds/pds.hpp"
 #include "candle/MD/MD.hpp"

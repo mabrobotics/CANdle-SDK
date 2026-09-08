@@ -1,6 +1,6 @@
-#include "candle/pds/pds_protocol.hpp"
-
 #include <string.h>
+
+#include "candle/pds/pds_protocol.hpp"
 
 namespace mab
 {

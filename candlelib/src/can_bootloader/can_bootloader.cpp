@@ -1,11 +1,10 @@
-#include "candle/can_bootloader/can_bootloader.hpp"
-#include "candle/communication_device/candle_bootloader.hpp"
-#include "candle/communication_device/candle.hpp"
-
 #include <array>
 #include <span>
 #include <string_view>
 #include <vector>
+
+#include "candle/communication_device/candle_bootloader.hpp"
+#include "candle/can_bootloader/can_bootloader.hpp"
 
 namespace mab
 {

@@ -4,9 +4,6 @@
 // meta-data about the object itself.
 #pragma once
 
-#include "candle/logger/logger.hpp"
-#include "candle/shared_data/mab_types.hpp"
-
 #include <cstddef>
 #include <iterator>
 #include <span>
@@ -17,6 +14,9 @@
 #include <variant>
 #include <vector>
 #include <map>
+
+#include "candle/logger/logger.hpp"
+#include "candle/shared_data/mab_types.hpp"
 
 namespace mab
 {

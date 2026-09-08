@@ -1,13 +1,11 @@
-
-#include <candle/communication_interface/I_communication_interface_mock.hpp>
-#include <candle/communication_device/candle.hpp>
-#include "candle/shared_data/mab_types.hpp"
-
 #include <bit>
 #include <memory>
 #include <variant>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+
+#include <candle/communication_interface/I_communication_interface_mock.hpp>
+#include <candle/communication_device/candle.hpp>
 
 using ::testing::_;
 using ::testing::Return;

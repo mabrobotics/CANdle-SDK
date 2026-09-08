@@ -1,14 +1,12 @@
 #pragma once
 
-#include "candle/logger/logger.hpp"
-#include "candle/shared_data/pds_types.hpp"
-#include "candle/communication_device/candle_types.hpp"
-#include "candle/pds/pds_protocol.hpp"
-#include "candle/communication_device/candle.hpp"
-
 #include <stdint.h>
 #include <cstring>
 #include <memory>
+
+#include "candle/communication_device/candle.hpp"
+#include "candle/shared_data/pds_types.hpp"
+#include "candle/pds/pds_protocol.hpp"
 
 namespace mab
 {

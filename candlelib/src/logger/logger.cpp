@@ -1,9 +1,8 @@
-#include "candle/logger/logger.hpp"
 #include <stdarg.h>
 #include <cmath>
-#include <mutex>
 #include <cstring>
-#include <iomanip>
+
+#include "candle/logger/logger.hpp"
 
 // PUBLICS
 

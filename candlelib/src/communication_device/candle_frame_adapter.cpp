@@ -1,8 +1,8 @@
-#include "candle/communication_device/candle_frame_adapter.hpp"
-#include "candle/crc.hpp"
-
 #include <algorithm>
 #include <chrono>
+
+#include "candle/communication_device/candle_frame_adapter.hpp"
+#include "candle/crc.hpp"
 
 namespace mab
 {

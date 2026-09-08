@@ -1,11 +1,8 @@
-#include "candle/communication_device/candle.hpp"
-#include "candle/communication_device/candle_types.hpp"
-#include "candle/MD/MD.hpp"
-#include "candle/shared_data/mab_types.hpp"
-
 #include <exception>
-
 #include <optional>
+
+#include "candle/communication_device/candle.hpp"
+#include "candle/MD/MD.hpp"
 
 namespace mab
 {

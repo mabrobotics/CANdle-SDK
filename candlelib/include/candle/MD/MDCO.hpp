@@ -1,13 +1,5 @@
 #pragma once
 
-#include "candle/objectDictionary/edsEntry.hpp"
-#include "candle/shared_data/mab_types.hpp"
-#include "candle/logger/logger.hpp"
-#include "candle/shared_data/manufacturer_data.hpp"
-#include "candle/communication_device/candle_types.hpp"
-#include "candle/communication_device/candle.hpp"
-#include "candle/MD/MDStatus.hpp"
-
 #include <unistd.h>
 #include <cstring>
 #include <memory>
@@ -15,6 +7,11 @@
 #include <string>
 #include <vector>
 #include <iomanip>
+
+#include "candle/communication_device/candle.hpp"
+#include "candle/objectDictionary/edsEntry.hpp"
+#include "candle/shared_data/manufacturer_data.hpp"
+#include "candle/MD/MDStatus.hpp"
 
 namespace mab
 {

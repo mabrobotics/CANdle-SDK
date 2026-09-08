@@ -1,24 +1,24 @@
 #pragma once
 
+#include <array>
+#include <future>
+#include <iomanip>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <string_view>
+#include <utility>
+#include <vector>
+
 #include "candle/communication_device/candle_types.hpp"
-#include "candle/logger/logger.hpp"
+#include "candle/communication_device/candle_frame_adapter.hpp"
 #include "candle/communication_interface/I_communication_interface.hpp"
 #include "candle/communication_interface/USB.hpp"
 #include "candle/communication_interface/SPI.hpp"
-#include "candle/shared_data/mab_types.hpp"
-#include "candle/communication_device/candle_frame_adapter.hpp"
+#include "candle/logger/logger.hpp"
 #include "candle/shared_data/candle_frame_dto.hpp"
-
-#include <array>
-#include <memory>
-#include <optional>
-#include <string_view>
-#include <vector>
-#include <utility>
-#include <iomanip>
-#include <map>
-#include <future>
-#include <mutex>
+#include "candle/shared_data/mab_types.hpp"
 
 namespace mab
 {

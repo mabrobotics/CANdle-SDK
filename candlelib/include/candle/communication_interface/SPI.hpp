@@ -2,12 +2,6 @@
 
 #ifndef WIN32
 #include <chrono>
-
-#include "candle/shared_data/mab_types.hpp"
-#include "candle/communication_interface/I_communication_interface.hpp"
-#include "candle/logger/logger.hpp"
-#include "candle/crc.hpp"
-
 #include <fcntl.h>
 #include <linux/ioctl.h>
 #include <linux/spi/spidev.h>
@@ -16,6 +10,11 @@
 #include <unistd.h>
 #include <string>
 #include <thread>
+
+#include "candle/shared_data/mab_types.hpp"
+#include "candle/communication_interface/I_communication_interface.hpp"
+#include "candle/logger/logger.hpp"
+#include "candle/crc.hpp"
 
 namespace mab
 {

@@ -1,9 +1,5 @@
 #pragma once
 
-#include "candle/logger/logger.hpp"
-#include "candle/shared_data/candle_frame_dto.hpp"
-#include "candle/shared_data/mab_types.hpp"
-
 #include <atomic>
 #include <array>
 #include <future>
@@ -16,6 +12,10 @@
 #include <thread>
 #include <vector>
 #include <unordered_map>
+
+#include "candle/logger/logger.hpp"
+#include "candle/shared_data/candle_frame_dto.hpp"
+#include "candle/shared_data/mab_types.hpp"
 
 namespace mab
 {

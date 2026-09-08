@@ -14,15 +14,10 @@
 #include "candletool/canLoader.hpp"
 #include "candletool/mabFileParser.hpp"
 #include "candletool/md_cfg_map.hpp"
-#include "candletool/utilities.hpp"
 #include "candletool/configHelpers.hpp"
 #include "candletool/web_file_module/curl_handler.hpp"
 #include "candletool/web_file_module/flasher.hpp"
 
-#include "candle/MD/MDStatus.hpp"
-#include "candle/communication_device/candle.hpp"
-#include "candle/logger/logger.hpp"
-#include "candle/shared_data/mab_types.hpp"
 #include "candle/shared_data/manufacturer_data.hpp"
 #include "candle/shared_data/md_types.hpp"
 

@@ -1,17 +1,14 @@
-#include "candle/objectDictionary/edsParser.hpp"
-#include "candle/logger/logger.hpp"
-#include "mini/ini.h"
-
-#include <algorithm>
 #include <cstdlib>
 #include <cstring>
-#include <filesystem>
 #include <memory>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
-#include <string>
 #include <utility>
+
+#include "mini/ini.h"
+
+#include "candle/objectDictionary/edsParser.hpp"
 
 using namespace mab;
 

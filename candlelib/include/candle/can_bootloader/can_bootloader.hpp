@@ -1,14 +1,12 @@
 #pragma once
 
-#include "candle/communication_device/candle.hpp"
-#include "candle/logger/logger.hpp"
-#include "candle/shared_data/mab_def.hpp"
-#include "candle/shared_data/mab_types.hpp"
-
 #include <array>
 #include <cstring>
 #include <string_view>
 #include <span>
+
+#include "candle/communication_device/candle.hpp"
+#include "candle/shared_data/mab_def.hpp"
 
 namespace mab
 {

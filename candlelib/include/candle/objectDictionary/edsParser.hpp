@@ -1,20 +1,18 @@
 #pragma once
-// #ifndef EDS_PARSER_HPP
-// #define EDS_PARSER_HPP
 
-#include "candle/shared_data/mab_types.hpp"
-#include "candle/logger/logger.hpp"
-#include "candle/objectDictionary/edsEntry.hpp"
-
-#include <string>
+#include <algorithm>
+#include <cctype>
+#include <charconv>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <regex>
 #include <set>
-#include <filesystem>
-#include <algorithm>
-#include <cctype>
-#include <charconv>
+#include <string>
+
+#include "candle/shared_data/mab_types.hpp"
+#include "candle/logger/logger.hpp"
+#include "candle/objectDictionary/edsEntry.hpp"
 
 namespace mab
 {
@@ -85,4 +83,3 @@ namespace mab
         }
     };
 }  // namespace mab
-// #endif  // EDS_PARSER_HPP

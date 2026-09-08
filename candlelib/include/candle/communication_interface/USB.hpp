@@ -1,16 +1,15 @@
 #pragma once
 
-#include "candle/shared_data/mab_types.hpp"
-
-#include "candle/logger/logger.hpp"
-#include "candle/communication_interface/I_communication_interface.hpp"
-
 #include <string>
 #include <exception>
 #include <vector>
 #include <memory>
 #include <mutex>
 #include <utility>
+
+#include "candle/shared_data/mab_types.hpp"
+#include "candle/logger/logger.hpp"
+#include "candle/communication_interface/I_communication_interface.hpp"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"

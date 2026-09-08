@@ -2,12 +2,9 @@
 #include <gmock/gmock.h>
 #include <functional>
 
-#include "candle/communication_interface/I_communication_interface.hpp"
+#include "candle/communication_device/candle.hpp"
 #include "candle/communication_interface/I_communication_interface_mock.hpp"
 #include "candle/MD/MD.hpp"
-#include "candle/communication_device/candle.hpp"
-#include "gmock/gmock.h"
-#include "candle/shared_data/mab_types.hpp"
 #include "candle/shared_data/md_types.hpp"
 
 using testing::_;

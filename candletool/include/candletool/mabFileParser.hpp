@@ -4,8 +4,8 @@
 #include <array>
 #include <string>
 #include <memory>
-#include "candle/logger/logger.hpp"
 
+#include "candle/logger/logger.hpp"
 #include "candle/shared_data/mab_types.hpp"
 
 class MabFileParser
