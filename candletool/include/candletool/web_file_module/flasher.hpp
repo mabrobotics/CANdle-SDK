@@ -4,7 +4,6 @@
 #include "candle/logger/logger.hpp"
 
 #include "candletool/web_file_module/web_file.hpp"
-#include "candletool/utilities.hpp"
 
 namespace mab
 {

@@ -1,4 +1,5 @@
 #include "candletool/web_file_module/flasher.hpp"
+#include "candletool/utilities.hpp"
 
 namespace mab
 {
