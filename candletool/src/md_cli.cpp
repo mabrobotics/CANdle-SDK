@@ -1,11 +1,9 @@
 #include <cstdint>
 #include <cstdlib>
 #include <ios>
-#include <memory>
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <filesystem>
 #include <variant>
 
 #include "mini/ini.h"
@@ -17,9 +15,6 @@
 #include "candletool/configHelpers.hpp"
 #include "candletool/web_file_module/curl_handler.hpp"
 #include "candletool/web_file_module/flasher.hpp"
-
-#include "candle/shared_data/manufacturer_data.hpp"
-#include "candle/shared_data/md_types.hpp"
 
 #ifndef WIN32
 

@@ -1,10 +1,11 @@
 #include <gtest/gtest.h>
+#include <string>
+#include <cstring>
+
 #include "candle/pds/pds_protocol.hpp"
 #include "candle/pds/pds_module.hpp"
 #include "candle/pds/power_stage.hpp"
 #include "candle/pds/brake_resistor.hpp"
-#include <string>
-#include <cstring>
 
 namespace mab
 {

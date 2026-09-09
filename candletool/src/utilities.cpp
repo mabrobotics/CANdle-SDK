@@ -1,8 +1,7 @@
 #include <algorithm>
 #include <cctype>
-#include <variant>
-#include <string>
 #include <string_view>
+#include <variant>
 
 #include "candletool/utilities.hpp"
 

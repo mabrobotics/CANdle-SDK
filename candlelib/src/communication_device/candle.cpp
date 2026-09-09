@@ -1,5 +1,4 @@
 #include <exception>
-#include <optional>
 
 #include "candle/communication_device/candle.hpp"
 #include "candle/MD/MD.hpp"

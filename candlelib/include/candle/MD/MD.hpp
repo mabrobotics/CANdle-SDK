@@ -1,21 +1,20 @@
 #pragma once
 
-#include "candle/communication_device/candle.hpp"
-#include "candle/shared_data/md_types.hpp"
-#include "candle/shared_data/manufacturer_data.hpp"
-#include "candle/MD/MDStatus.hpp"
-#include "candle/MD/MD_strings.hpp"
-
 #include <cstring>
-
-#include <utility>
 #include <functional>
+#include <future>
+#include <iomanip>
+#include <string>
 #include <tuple>
 #include <unordered_map>
-#include <string>
+#include <utility>
 #include <vector>
-#include <iomanip>
-#include <future>
+
+#include "candle/communication_device/candle.hpp"
+#include "candle/MD/MDStatus.hpp"
+#include "candle/MD/MD_strings.hpp"
+#include "candle/shared_data/md_types.hpp"
+#include "candle/shared_data/manufacturer_data.hpp"
 
 namespace mab
 {

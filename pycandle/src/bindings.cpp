@@ -10,13 +10,7 @@
 
 #include "candle/communication_device/candle.hpp"
 #include "candle/MD/MD.hpp"
-
 #include "candle/pds/pds.hpp"
-#include "candle/pds/pds_module.hpp"
-#include "candle/shared_data/pds_types.hpp"
-#include "candle/pds/brake_resistor.hpp"
-#include "candle/pds/power_stage.hpp"
-#include "candle/pds/isolated_converter.hpp"
 
 namespace py = pybind11;
 

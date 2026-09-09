@@ -1,5 +1,4 @@
-#ifndef MAB_CRC_HPP
-#define MAB_CRC_HPP
+#pragma once
 
 #include <stdint.h>
 #include <cstddef>
@@ -13,5 +12,3 @@ namespace mab
                        size_t         len);  // TODO: this must be unified when fw will be changed
     }
 }  // namespace mab
-
-#endif /* MAB_CRC_HPP */

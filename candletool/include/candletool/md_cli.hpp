@@ -6,9 +6,6 @@
 
 #include "CLI/CLI.hpp"
 
-#include "candle/communication_device/candle.hpp"
-#include "candle/MD/MD.hpp"
-
 #include "candletool/utilities.hpp"
 
 namespace mab

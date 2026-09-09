@@ -1,13 +1,8 @@
-#include <array>
 #include <cmath>
 #include <cstring>
 #include <string>
 
-#include "candle/can_bootloader/can_bootloader.hpp"
-#include "candle/communication_device/candle.hpp"
-
 #include "candletool/canLoader.hpp"
-#include "candletool/mabFileParser.hpp"
 #include "candletool/mab_crc.hpp"
 
 namespace mab

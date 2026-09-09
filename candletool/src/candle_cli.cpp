@@ -7,7 +7,6 @@
 
 #include "candletool/candle_cli.hpp"
 #include "candletool/mabFileParser.hpp"
-#include "candletool/utilities.hpp"
 #include "candletool/mab_crc.hpp"
 #include "candletool/web_file_module/curl_handler.hpp"
 #include "candletool/web_file_module/web_file.hpp"

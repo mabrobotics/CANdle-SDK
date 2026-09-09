@@ -1,29 +1,18 @@
-#include <fcntl.h>
 #include <array>
 #include <chrono>
+#include <csignal>
 #include <cstddef>
 #include <exception>
-#include <filesystem>
-#include <memory>
+#include <fcntl.h>
 #include <ranges>
 #include <sstream>
 #include <stdexcept>
-#include <string>
 #include <string_view>
 #include <thread>
 #include <vector>
-#include <csignal>
 
-#include "CLI/CLI.hpp"
-#include "mini/ini.h"
-
-#include "candle/communication_device/candle.hpp"
-#include "candle/MD/MDCO.hpp"
-#include "candle/objectDictionary/edsEntry.hpp"
-#include "candle/objectDictionary/edsParser.hpp"
-
-#include "candletool/md_cfg_map.hpp"
 #include "candletool/mdco_cli.hpp"
+#include "candletool/md_cfg_map.hpp"
 #include "candletool/mdco_config_adapter.hpp"
 
 using namespace mab;

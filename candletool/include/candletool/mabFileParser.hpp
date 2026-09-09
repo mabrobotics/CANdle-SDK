@@ -1,5 +1,4 @@
-#ifndef MAB_FILE_PARSER_HPP
-#define MAB_FILE_PARSER_HPP
+#pragma once
 
 #include <array>
 #include <string>
@@ -40,5 +39,3 @@ class MabFileParser
   private:
     Logger log;
 };
-
-#endif /*MAB_FILE_PARSER_HPP*/

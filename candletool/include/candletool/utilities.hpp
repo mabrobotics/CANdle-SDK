@@ -1,17 +1,16 @@
 #pragma once
 
-#include <memory>
-#include <string>
+#include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
-#include <type_traits>
 #include <limits>
-#include <cmath>
+#include <memory>
+#include <string>
+#include <type_traits>
 
 #include "CLI/CLI.hpp"
 
-#include "candle/logger/logger.hpp"
 #include "candle/candlelib.hpp"
 
 namespace mab
