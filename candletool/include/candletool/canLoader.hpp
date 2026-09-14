@@ -3,7 +3,7 @@
 #include <array>
 
 #include "candle/communication_device/candle.hpp"
-#include "candle/can_bootloader/can_bootloader.hpp"
+#include "candletool/can_bootloader.hpp"
 
 #include "candletool/mabFileParser.hpp"
 

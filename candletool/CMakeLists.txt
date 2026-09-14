@@ -23,8 +23,9 @@ add_subdirectory(3rd_party/CLI11)
 set(CANDLETOOL_SOURCES
   src/candle_cli.cpp
   src/canLoader.cpp
-  src/web_file_module/curl_handler.cpp
-  src/web_file_module/flasher.cpp
+  src/can_bootloader.cpp
+  src/curl_handler.cpp
+  src/flasher.cpp
   src/md_cli.cpp
   src/mdco_cli.cpp
   src/mdco_cli.cpp

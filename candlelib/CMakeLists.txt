@@ -55,7 +55,6 @@ endif()
 target_sources(
     candle
     PRIVATE src/crc.cpp
-    src/can_bootloader/can_bootloader.cpp
     src/communication_device/candle.cpp
     src/communication_device/candle_frame_adapter.cpp
     src/communication_device/candle_bootloader.cpp

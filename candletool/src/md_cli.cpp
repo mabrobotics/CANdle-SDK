@@ -13,8 +13,8 @@
 #include "candletool/mabFileParser.hpp"
 #include "candletool/md_cfg_map.hpp"
 #include "candletool/configHelpers.hpp"
-#include "candletool/web_file_module/curl_handler.hpp"
-#include "candletool/web_file_module/flasher.hpp"
+#include "candletool/curl_handler.hpp"
+#include "candletool/flasher.hpp"
 
 #ifndef WIN32
 

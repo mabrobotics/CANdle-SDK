@@ -8,9 +8,9 @@
 #include "candletool/candle_cli.hpp"
 #include "candletool/mabFileParser.hpp"
 #include "candletool/mab_crc.hpp"
-#include "candletool/web_file_module/curl_handler.hpp"
-#include "candletool/web_file_module/web_file.hpp"
-#include "candletool/web_file_module/flasher.hpp"
+#include "candletool/curl_handler.hpp"
+#include "candletool/web_file.hpp"
+#include "candletool/flasher.hpp"
 
 #ifdef WIN32
 #include <windows.h>
