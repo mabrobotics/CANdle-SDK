@@ -5,7 +5,7 @@
 #include "candle/communication_device/candle.hpp"
 #include "candle/communication_interface/I_communication_interface_mock.hpp"
 #include "candle/MD/MD.hpp"
-#include "candle/shared_data/md_types.hpp"
+#include "candle/MD_types.hpp"
 
 using testing::_;
 using testing::Return;

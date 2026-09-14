@@ -16,7 +16,7 @@
 
 #include "candle/logger/logger.hpp"
 #include "candle/shared_data/mab_types.hpp"
-#include "candle/shared_data/md_types.hpp"
+#include "candle/MD_types.hpp"
 
 #include "candletool/utilities.hpp"
 

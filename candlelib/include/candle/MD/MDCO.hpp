@@ -11,7 +11,7 @@
 #include "candle/communication_device/candle.hpp"
 #include "candle/objectDictionary/edsEntry.hpp"
 #include "candle/shared_data/manufacturer_data.hpp"
-#include "candle/shared_data/md_types.hpp"
+#include "candle/MD_types.hpp"
 
 namespace mab
 {

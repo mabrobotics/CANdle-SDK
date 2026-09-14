@@ -6,6 +6,7 @@
 #include <cmath>
 
 #include "candle/communication_device/candle.hpp"
+#include "candle/MD_types.hpp"
 
 struct commonMemory_S
 {

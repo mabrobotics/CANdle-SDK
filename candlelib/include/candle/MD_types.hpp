@@ -1,7 +1,5 @@
 #pragma once
 
-#include "candle/shared_data/mab_types.hpp"
-
 #include <array>
 #include <cctype>
 #include <cstddef>
@@ -152,6 +150,24 @@ namespace mab
 {
     constexpr u32 MDCanIdMin = 10;
     constexpr u32 MDCanIdMax = 2000;
+
+    /**
+     * @brief MD Control Mode
+     * @note Position PID is a cascade controller, output of the Position PID (target velocity) is
+     * passed as an input of Velocity PID. Velocity PID output (torque) is then passed directly to
+     * internal current/torque controller.
+     */
+    enum MdMode_E : uint8_t
+    {
+        IDLE         = 0, /*!< Idle mode, no control output */
+        POSITION_PID = 1, /*!< Position PID mode (cascade controllers) */
+        VELOCITY_PID = 2, /*!< Velocity PID mode */
+        RAW_TORQUE   = 3, /*!< Raw torque mode */
+        IMPEDANCE =
+            4, /*!< Impedance mode, uses Impedance controller similar to spring-damper system */
+        POSITION_PROFILE = 7, /*!< Position PID with trapezoidal profile (constant acceleration) */
+        VELOCITY_PROFILE = 8, /*!< Velocity PID with trapezoidal profile (constant acceleration) */
+    };
 
     enum class MdFrameId_E : u8
     {
