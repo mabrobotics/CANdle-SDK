@@ -16,13 +16,27 @@ namespace mab
         return fwrite(ptr, size, nmemb, file);
     }
 
-    CandletoolVersion parseVersion(std::string s)
+    int compareCandletoolVersion(const CandletoolVersion* latest, const CandletoolVersion* current)
     {
-        if (!s.empty() && s[0] == 'v')
-            s.erase(0, 1);
+        if (latest->major != current->major)
+            return latest->major < current->major ? -1 : 1;
+        if (latest->minor != current->minor)
+            return latest->minor < current->minor ? -1 : 1;
+        if (latest->patch != current->patch)
+            return latest->patch < current->patch ? -1 : 1;
+        return 0;
+    }
 
-        CandletoolVersion v{};
-        std::sscanf(s.c_str(), "%d.%d.%d", &v.major, &v.minor, &v.patch);
+    CandletoolVersion parseVersion(const char* s)
+    {
+        CandletoolVersion v = {0, 0, 0};
+
+        if (!s || !*s)
+            return v;
+        if (s[0] == 'v' || s[0] == 'V')
+            s++;
+        std::sscanf(s, "%d.%d.%d", &v.major, &v.minor, &v.patch);
+
         return v;
     }
 
@@ -136,10 +150,10 @@ namespace mab
                     return;
                 }
 
-                CandletoolVersion latestV  = parseVersion(latestVersion);
-                CandletoolVersion currentV = parseVersion(currentVersion);
+                CandletoolVersion latestV  = parseVersion(latestVersion.c_str());
+                CandletoolVersion currentV = parseVersion(currentVersion.c_str());
 
-                if (latestV <= currentV)
+                if (compareCandletoolVersion(&latestV, &currentV) == 0)
                 {
                     m_logger.info(
                         ("candletool is already up to date (" + currentVersion + ").").c_str());

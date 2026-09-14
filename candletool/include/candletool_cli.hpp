@@ -9,11 +9,13 @@ namespace mab
 {
     struct CandletoolVersion
     {
-        int  major = 0, minor = 0, patch = 0;
-        auto operator<=>(const CandletoolVersion&) const = default;
+        int major;
+        int minor;
+        int patch;
     };
 
-    CandletoolVersion parseVersion(std::string s);
+    int compareCandletoolVersion(const CandletoolVersion* latest, const CandletoolVersion* current);
+    CandletoolVersion parseVersion(const char* s);
 
     class CandletoolCli
     {
@@ -28,6 +30,7 @@ namespace mab
         Logger                     m_logger = Logger(Logger::ProgramLayer_E::TOP, "CANDLETOOL_CLI");
 
         bool downloadFile(const std::string& url, const std::filesystem::path& outputPath);
+
         bool installPackage(const std::filesystem::path& path);
     };
 }  // namespace mab
