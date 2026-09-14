@@ -6,7 +6,7 @@
 
 #include "mini/ini.h"
 
-#include "candle/shared_data/mab_types.hpp"
+#include "candle/MAB_types.hpp"
 
 #ifdef WIN32
 #include <windows.h>

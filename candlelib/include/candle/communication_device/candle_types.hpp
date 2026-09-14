@@ -1,6 +1,6 @@
 #pragma once
 
-#include "candle/shared_data/mab_types.hpp"
+#include "candle/MAB_types.hpp"
 
 #include <chrono>
 #include <vector>

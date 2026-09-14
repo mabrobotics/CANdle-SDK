@@ -6,7 +6,6 @@
 #include <span>
 
 #include "candle/communication_device/candle.hpp"
-#include "candle/shared_data/mab_def.hpp"
 
 namespace mab
 {
@@ -23,14 +22,14 @@ namespace mab
 
         enum class Command_t : u8
         {
-            INIT = 0xB1,   // Get bootloader ready for transactions, decides what protocol is used
+            INIT  = 0xB1,  // Get bootloader ready for transactions, decides what protocol is used
                            // for data transfer
             ERASE = 0xB2,  // Erase flash region
             PROG  = 0xB3,  // Initialize program datatransfer (possible encryption)
             WRITE = 0xB4,  // Submit data chunks sent earlier (is always at the end of 32 transfers
                            // of 64 bytes of data transfers)
-            BOOT = 0xB5,   // Boot to app
-            META = 0xB6    // Set metadata and save it to flash
+            BOOT  = 0xB5,  // Boot to app
+            META  = 0xB6   // Set metadata and save it to flash
         };
 
         const canId_t m_id;

@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "candle/logger/logger.hpp"
-#include "candle/shared_data/mab_types.hpp"
+#include "candle/MAB_types.hpp"
 
 class MabFileParser
 {

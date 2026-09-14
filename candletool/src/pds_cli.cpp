@@ -1,4 +1,4 @@
-#include "candle/shared_data/mab_def.hpp"
+#include "candle/MAB_types.hpp"
 
 #include "candletool/pds_cli.hpp"
 #include "candletool/canLoader.hpp"

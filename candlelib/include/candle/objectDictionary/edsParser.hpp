@@ -10,7 +10,7 @@
 #include <set>
 #include <string>
 
-#include "candle/shared_data/mab_types.hpp"
+#include "candle/MAB_types.hpp"
 #include "candle/logger/logger.hpp"
 #include "candle/objectDictionary/edsEntry.hpp"
 

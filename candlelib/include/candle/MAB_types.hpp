@@ -6,6 +6,8 @@
 #include <stdint.h>
 #endif
 
+#include <stddef.h>
+
 typedef uint64_t u64;
 typedef int64_t  s64;
 typedef int64_t  i64;
@@ -30,6 +32,11 @@ typedef u32  flags_t;
 #ifdef __cplusplus
 namespace mab
 {
+    constexpr u16    BROADCAST_ID    = 9u;
+    constexpr u16    CAN_MIN_ID      = 10u;
+    constexpr u16    CAN_MAX_ID      = 2000u;
+    constexpr size_t CAN_MAX_PAYLOAD = 64u;
+
     using canId_t = u16;
 
     /// @brief CAN bus datarates

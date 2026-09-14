@@ -1,7 +1,6 @@
 #pragma once
 
-#include "candle/shared_data/mab_def.hpp"
-#include "candle/shared_data/mab_types.hpp"
+#include "candle/MAB_types.hpp"
 
 #include <cstring>
 #include <type_traits>
@@ -16,7 +15,7 @@ namespace mab
         u8      length         = 0;  // data length in bytes
         u8      sequenceNumber = 0;  // start at 1 for the first frame in the package
                                      // and increment by 1 for each frame
-        u8 data[64] = {0};
+        u8      data[64]       = {0};
     };
 
     /// @brief Helper for dealing with CANdle frame DTO

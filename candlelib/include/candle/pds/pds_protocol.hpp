@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "candle/PDS_types.hpp"
-#include "candle/shared_data/mab_types.hpp"
+#include "candle/MAB_types.hpp"
 #include "candle/logger/logger.hpp"
 
 namespace mab
