@@ -8,9 +8,9 @@
 #include <memory>
 #include <vector>
 
-#include "candle/communication_device/candle.hpp"
-#include "candle/MD/MD.hpp"
-#include "candle/pds/pds.hpp"
+#include "candle/candle.hpp"
+#include "candle/MD.hpp"
+#include "candle/PDS.hpp"
 
 namespace py = pybind11;
 
