@@ -1,5 +1,4 @@
 #include "candle/pds/pds.hpp"
-#include "candle/shared_data/pds_types.hpp"
 
 namespace mab
 {
@@ -29,7 +28,7 @@ namespace mab
     PdsModule::error_E Pds::init(void)
     {
         PdsModule::error_E result = readModules();
-        if (result != PdsModule::error_E ::OK)
+        if (result != PdsModule::error_E::OK)
         {
             m_log.error("Reading PDS submodules failed! [ %s ]", PdsModule::error2String(result));
             // TODO: How to handle this error?
@@ -86,51 +85,51 @@ namespace mab
         if (transferResult.second != mab::candleTypes::Error_t::OK)
         {
             m_log.error("Failed to transfer CAN frame");
-            return PdsModule::error_E ::COMMUNICATION_ERROR;
+            return PdsModule::error_E::COMMUNICATION_ERROR;
         }
 
         result = message.parseResponse(transferResult.first.data(), transferResult.first.size());
 
         if (result != PdsMessage::error_E::OK)
-            return PdsModule::error_E ::COMMUNICATION_ERROR;
+            return PdsModule::error_E::COMMUNICATION_ERROR;
 
         result = message.getProperty(propertyId_E::SOCKET_1_MODULE, &rawData);
         if (result != PdsMessage::error_E::OK)
-            return PdsModule::error_E ::COMMUNICATION_ERROR;
+            return PdsModule::error_E::COMMUNICATION_ERROR;
         m_modulesSet.moduleTypeSocket1 = decodeModuleType(rawData);
         createModule(m_modulesSet.moduleTypeSocket1, socketIndex_E::SOCKET_1);
 
         result = message.getProperty(propertyId_E::SOCKET_2_MODULE, &rawData);
         if (result != PdsMessage::error_E::OK)
-            return PdsModule::error_E ::COMMUNICATION_ERROR;
+            return PdsModule::error_E::COMMUNICATION_ERROR;
         m_modulesSet.moduleTypeSocket2 = decodeModuleType(rawData);
         createModule(m_modulesSet.moduleTypeSocket2, socketIndex_E::SOCKET_2);
 
         result = message.getProperty(propertyId_E::SOCKET_3_MODULE, &rawData);
         if (result != PdsMessage::error_E::OK)
-            return PdsModule::error_E ::COMMUNICATION_ERROR;
+            return PdsModule::error_E::COMMUNICATION_ERROR;
         m_modulesSet.moduleTypeSocket3 = decodeModuleType(rawData);
         createModule(m_modulesSet.moduleTypeSocket3, socketIndex_E::SOCKET_3);
 
         result = message.getProperty(propertyId_E::SOCKET_4_MODULE, &rawData);
         if (result != PdsMessage::error_E::OK)
-            return PdsModule::error_E ::COMMUNICATION_ERROR;
+            return PdsModule::error_E::COMMUNICATION_ERROR;
         m_modulesSet.moduleTypeSocket4 = decodeModuleType(rawData);
         createModule(m_modulesSet.moduleTypeSocket4, socketIndex_E::SOCKET_4);
 
         result = message.getProperty(propertyId_E::SOCKET_5_MODULE, &rawData);
         if (result != PdsMessage::error_E::OK)
-            return PdsModule::error_E ::COMMUNICATION_ERROR;
+            return PdsModule::error_E::COMMUNICATION_ERROR;
         m_modulesSet.moduleTypeSocket5 = decodeModuleType(rawData);
         createModule(m_modulesSet.moduleTypeSocket5, socketIndex_E::SOCKET_5);
 
         result = message.getProperty(propertyId_E::SOCKET_6_MODULE, &rawData);
         if (result != PdsMessage::error_E::OK)
-            return PdsModule::error_E ::COMMUNICATION_ERROR;
+            return PdsModule::error_E::COMMUNICATION_ERROR;
         m_modulesSet.moduleTypeSocket6 = decodeModuleType(rawData);
         createModule(m_modulesSet.moduleTypeSocket6, socketIndex_E::SOCKET_6);
 
-        return PdsModule::error_E ::OK;
+        return PdsModule::error_E::OK;
     }
 
     PdsModule::error_E Pds::getFwMetadata(pdsFwMetadata_S& metadata) const
@@ -146,7 +145,7 @@ namespace mab
         if (transferResult.second != mab::candleTypes::Error_t::OK)
         {
             m_log.error("Failed to transfer CAN frame");
-            return PdsModule::error_E ::COMMUNICATION_ERROR;
+            return PdsModule::error_E::COMMUNICATION_ERROR;
         }
 
         responseStatusCode = (msgResponse_E)*transferResult.first.data();
@@ -154,14 +153,14 @@ namespace mab
         {
             m_log.error("Failed to get firmware metadata! [ %u ]",
                         static_cast<uint8_t>(responseStatusCode));
-            return PdsModule::error_E ::PROTOCOL_ERROR;
+            return PdsModule::error_E::PROTOCOL_ERROR;
         }
 
         // size_t responseSize = (u8) * (transferResult.first.data() + 1);
 
         memcpy(&metadata, transferResult.first.data() + 2, sizeof(pdsFwMetadata_S));
 
-        return PdsModule::error_E ::OK;
+        return PdsModule::error_E::OK;
     }
 
     Pds::modulesSet_S Pds::getModules(void)

@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 #include "candle/communication_device/candle.hpp"
-#include "candle/shared_data/pds_types.hpp"
+#include "candle/PDS_types.hpp"
 #include "candle/pds/pds_module.hpp"
 #include "candle/pds/power_stage.hpp"
 #include "candle/pds/brake_resistor.hpp"

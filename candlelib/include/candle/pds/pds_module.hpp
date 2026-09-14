@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "candle/communication_device/candle.hpp"
-#include "candle/shared_data/pds_types.hpp"
+#include "candle/PDS_types.hpp"
 #include "candle/pds/pds_protocol.hpp"
 
 namespace mab
@@ -20,12 +20,10 @@ namespace mab
       public:
         enum class error_E : int8_t
         {
-
             OK                  = 0,
             INTERNAL_ERROR      = 1,
             PROTOCOL_ERROR      = 2,
             COMMUNICATION_ERROR = 3,
-
         };
 
         PdsModule()          = delete;
