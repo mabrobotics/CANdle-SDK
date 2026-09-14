@@ -2,19 +2,19 @@
 #include <cmath>
 #include <cstring>
 
-#include "candle/logger/logger.hpp"
+#include "candle/logger.hpp"
 
 // PUBLICS
 
-Logger ::Logger(ProgramLayer_E programLayer, std::string tag) : m_layer(programLayer), m_tag(tag)
+Logger::Logger(ProgramLayer_E programLayer, std::string tag) : m_layer(programLayer), m_tag(tag)
 {
 }
 
-Logger ::Logger(const Logger& logger_) : m_layer(logger_.m_layer), m_tag(logger_.m_tag)
+Logger::Logger(const Logger& logger_) : m_layer(logger_.m_layer), m_tag(logger_.m_tag)
 {
 }
 
-bool Logger ::setStream(const char* path_)
+bool Logger::setStream(const char* path_)
 {
     if (Logger::g_m_streamOverride.has_value())
     {
@@ -162,7 +162,7 @@ void Logger::printLog(FILE* stream, const char* header, const char* msg) const
     fflush(NULL);
 }
 
-std::string Logger ::generateHeader(Logger::MessageType_E messageType) const noexcept
+std::string Logger::generateHeader(Logger::MessageType_E messageType) const noexcept
 {
     std::string header;
 

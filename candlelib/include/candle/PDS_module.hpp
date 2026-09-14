@@ -4,9 +4,9 @@
 #include <cstring>
 #include <memory>
 
-#include "candle/communication_device/candle.hpp"
+#include "candle/candle.hpp"
 #include "candle/PDS_types.hpp"
-#include "candle/pds/pds_protocol.hpp"
+#include "candle/PDS_protocol.hpp"
 
 namespace mab
 {

@@ -4,8 +4,8 @@
 #include "CLI/CLI.hpp"
 #include "mini/ini.h"
 
-#include "candle/communication_device/candle.hpp"
-#include "candle/pds/pds.hpp"
+#include "candle/candle.hpp"
+#include "candle/PDS.hpp"
 
 using namespace mab;
 class PdsCli

@@ -1,8 +1,8 @@
 
-#include "candle/communication_interface/I_communication_interface_mock.hpp"
+#include "candle/I_communication_interface_mock.hpp"
 #include "candle/MAB_types.hpp"
-#include "candle/logger/logger.hpp"
-#include "candle/communication_device/candle_bootloader.hpp"
+#include "candle/logger.hpp"
+#include "candle/candle_bootloader.hpp"
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>

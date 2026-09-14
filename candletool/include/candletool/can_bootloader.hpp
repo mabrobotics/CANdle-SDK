@@ -5,7 +5,7 @@
 #include <string_view>
 #include <span>
 
-#include "candle/communication_device/candle.hpp"
+#include "candle/candle.hpp"
 
 namespace mab
 {

@@ -1,6 +1,6 @@
 #include <string>
 
-#include "candle/pds/isolated_converter.hpp"
+#include "candle/isolated_converter.hpp"
 
 namespace mab
 {

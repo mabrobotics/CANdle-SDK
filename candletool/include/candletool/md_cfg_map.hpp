@@ -14,7 +14,7 @@
 
 #include "mini/ini.h"
 
-#include "candle/logger/logger.hpp"
+#include "candle/logger.hpp"
 #include "candle/MAB_types.hpp"
 #include "candle/MD_types.hpp"
 

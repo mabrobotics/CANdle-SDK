@@ -1,6 +1,6 @@
 #include <algorithm>
 
-#include "candle/communication_device/candle_bootloader.hpp"
+#include "candle/candle_bootloader.hpp"
 
 namespace mab
 {

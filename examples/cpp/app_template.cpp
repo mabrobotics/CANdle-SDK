@@ -1,6 +1,6 @@
-#include "candle/communication_device/candle.hpp"
-#include "candle/pds/pds.hpp"
-#include "candle/MD/MD.hpp"
+#include "candle/candle.hpp"
+#include "candle/PDS.hpp"
+#include "candle/MD.hpp"
 
 #include <vector>
 #include <thread>

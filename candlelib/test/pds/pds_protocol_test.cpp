@@ -2,10 +2,10 @@
 #include <string>
 #include <cstring>
 
-#include "candle/pds/pds_protocol.hpp"
-#include "candle/pds/pds_module.hpp"
-#include "candle/pds/power_stage.hpp"
-#include "candle/pds/brake_resistor.hpp"
+#include "candle/PDS_protocol.hpp"
+#include "candle/PDS_module.hpp"
+#include "candle/power_stage.hpp"
+#include "candle/brake_resistor.hpp"
 
 namespace mab
 {

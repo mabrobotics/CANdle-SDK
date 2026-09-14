@@ -8,7 +8,7 @@
 
 #include "mini/ini.h"
 
-#include "candle/objectDictionary/edsParser.hpp"
+#include "candle/edsParser.hpp"
 
 using namespace mab;
 

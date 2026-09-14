@@ -8,9 +8,9 @@
 #include <string_view>
 #include <vector>
 
-#include "candle/logger/logger.hpp"
-#include "candle/objectDictionary/edsEntry.hpp"
-#include "candle/MD/MDCO.hpp"
+#include "candle/logger.hpp"
+#include "candle/edsEntry.hpp"
+#include "candle/MDCO.hpp"
 
 #include "candletool/md_cfg_map.hpp"
 

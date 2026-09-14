@@ -3,7 +3,7 @@
 #include <span>
 #include <string_view>
 
-#include "candle/MD/MDCO.hpp"
+#include "candle/MDCO.hpp"
 
 namespace mab
 {
@@ -84,7 +84,7 @@ namespace mab
         }
         (*m_od)[0x1010][0x1] = (canopen_types::UNSIGNED32_t)0x65766173;  // 0x65766173="save" in
                                                                          // ASCII and little endian
-        err = writeSDO((*m_od)[0x1010][0x1]);
+        err                  = writeSDO((*m_od)[0x1010][0x1]);
         if (err != Error_t::OK)
         {
             m_log.error("Error saving all parameters");

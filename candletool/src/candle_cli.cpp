@@ -2,8 +2,8 @@
 #include <memory>
 #include <vector>
 
-#include "candle/communication_device/candle.hpp"
-#include "candle/communication_device/candle_bootloader.hpp"
+#include "candle/candle.hpp"
+#include "candle/candle_bootloader.hpp"
 
 #include "candletool/candle_cli.hpp"
 #include "candletool/mabFileParser.hpp"

@@ -2,10 +2,10 @@
 #include <chrono>
 #include <cstdlib>
 #include <thread>
-#include "candle/communication_device/candle.hpp"
-#include "candle/MD/MDCO.hpp"
-#include "candle/objectDictionary/edsEntry.hpp"
-#include "candle/objectDictionary/edsParser.hpp"
+#include "candle/candle.hpp"
+#include "candle/MDCO.hpp"
+#include "candle/edsEntry.hpp"
+#include "candle/edsParser.hpp"
 
 using namespace mab;
 

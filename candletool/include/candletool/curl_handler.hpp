@@ -5,7 +5,7 @@
 #include "mini/ini.h"
 
 #include "candle/MAB_types.hpp"
-#include "candle/logger/logger.hpp"
+#include "candle/logger.hpp"
 #include "candletool/web_file.hpp"
 
 namespace mab

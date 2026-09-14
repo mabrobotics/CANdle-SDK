@@ -3,7 +3,7 @@
 #include <utility>
 #include <bit>
 
-#include "candle/objectDictionary/edsEntry.hpp"
+#include "candle/edsEntry.hpp"
 
 namespace mab
 {

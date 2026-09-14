@@ -10,9 +10,9 @@
 #include <utility>
 #include <vector>
 
-#include "candle/communication_device/candle.hpp"
+#include "candle/candle.hpp"
 #include "candle/MD_types.hpp"
-#include "candle/shared_data/manufacturer_data.hpp"
+#include "candle/manufacturer_data.hpp"
 
 namespace mab
 {

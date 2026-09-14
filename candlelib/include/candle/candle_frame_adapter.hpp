@@ -13,8 +13,8 @@
 #include <vector>
 #include <unordered_map>
 
-#include "candle/logger/logger.hpp"
-#include "candle/shared_data/candle_frame_dto.hpp"
+#include "candle/logger.hpp"
+#include "candle/candle_frame_dto.hpp"
 #include "candle/MAB_types.hpp"
 
 namespace mab

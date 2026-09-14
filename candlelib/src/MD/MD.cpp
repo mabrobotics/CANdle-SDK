@@ -1,4 +1,4 @@
-#include "candle/MD/MD.hpp"
+#include "candle/MD.hpp"
 
 namespace mab
 {

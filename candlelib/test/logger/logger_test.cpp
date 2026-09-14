@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "candle/logger/logger.hpp"
+#include "candle/logger.hpp"
 
 class LoggerTests : public ::testing::Test
 {

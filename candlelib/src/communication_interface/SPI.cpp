@@ -4,7 +4,7 @@
 #include <linux/spi/spidev.h>
 #include <sys/ioctl.h>
 
-#include "candle/communication_interface/SPI.hpp"
+#include "candle/SPI.hpp"
 
 namespace mab
 {

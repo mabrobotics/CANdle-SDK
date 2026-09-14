@@ -2,7 +2,7 @@
 
 #include "CLI/CLI.hpp"
 
-#include "candle/communication_device/candle.hpp"
+#include "candle/candle.hpp"
 #include "candletool/utilities.hpp"
 
 namespace mab

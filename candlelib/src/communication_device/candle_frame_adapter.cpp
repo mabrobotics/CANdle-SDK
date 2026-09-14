@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <chrono>
 
-#include "candle/communication_device/candle_frame_adapter.hpp"
+#include "candle/candle_frame_adapter.hpp"
 #include "candle/crc.hpp"
 
 namespace mab

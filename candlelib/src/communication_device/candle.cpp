@@ -1,7 +1,7 @@
 #include <exception>
 
-#include "candle/communication_device/candle.hpp"
-#include "candle/MD/MD.hpp"
+#include "candle/candle.hpp"
+#include "candle/MD.hpp"
 
 namespace mab
 {

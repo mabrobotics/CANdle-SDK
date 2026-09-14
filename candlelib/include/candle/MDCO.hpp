@@ -8,9 +8,9 @@
 #include <vector>
 #include <iomanip>
 
-#include "candle/communication_device/candle.hpp"
-#include "candle/objectDictionary/edsEntry.hpp"
-#include "candle/shared_data/manufacturer_data.hpp"
+#include "candle/candle.hpp"
+#include "candle/edsEntry.hpp"
+#include "candle/manufacturer_data.hpp"
 #include "candle/MD_types.hpp"
 
 namespace mab

@@ -8,8 +8,8 @@
 #include <semaphore>
 #include <thread>
 
-#include "candle/communication_device/candle_frame_adapter.hpp"
-#include "candle/shared_data/candle_frame_dto.hpp"
+#include "candle/candle_frame_adapter.hpp"
+#include "candle/candle_frame_dto.hpp"
 #include "candle/crc.hpp"
 
 using namespace mab;

@@ -15,7 +15,7 @@
 #include <vector>
 #include <map>
 
-#include "candle/logger/logger.hpp"
+#include "candle/logger.hpp"
 #include "candle/MAB_types.hpp"
 
 namespace mab

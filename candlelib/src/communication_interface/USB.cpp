@@ -1,4 +1,4 @@
-#include "candle/communication_interface/USB.hpp"
+#include "candle/USB.hpp"
 
 #include <cstring>
 

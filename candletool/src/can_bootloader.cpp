@@ -3,7 +3,7 @@
 #include <string_view>
 #include <vector>
 
-#include "candle/communication_device/candle_bootloader.hpp"
+#include "candle/candle_bootloader.hpp"
 #include "candletool/can_bootloader.hpp"
 
 namespace mab

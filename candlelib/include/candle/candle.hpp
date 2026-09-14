@@ -11,13 +11,13 @@
 #include <utility>
 #include <vector>
 
-#include "candle/communication_device/candle_types.hpp"
-#include "candle/communication_device/candle_frame_adapter.hpp"
-#include "candle/communication_interface/I_communication_interface.hpp"
-#include "candle/communication_interface/USB.hpp"
-#include "candle/communication_interface/SPI.hpp"
-#include "candle/logger/logger.hpp"
-#include "candle/shared_data/candle_frame_dto.hpp"
+#include "candle/candle_types.hpp"
+#include "candle/candle_frame_adapter.hpp"
+#include "candle/I_communication_interface.hpp"
+#include "candle/USB.hpp"
+#include "candle/SPI.hpp"
+#include "candle/logger.hpp"
+#include "candle/candle_frame_dto.hpp"
 #include "candle/MAB_types.hpp"
 
 namespace mab

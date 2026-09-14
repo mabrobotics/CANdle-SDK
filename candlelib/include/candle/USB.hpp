@@ -8,8 +8,8 @@
 #include <utility>
 
 #include "candle/MAB_types.hpp"
-#include "candle/logger/logger.hpp"
-#include "candle/communication_interface/I_communication_interface.hpp"
+#include "candle/logger.hpp"
+#include "candle/I_communication_interface.hpp"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"

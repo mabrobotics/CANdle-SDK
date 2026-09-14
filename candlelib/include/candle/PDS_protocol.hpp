@@ -6,7 +6,7 @@
 
 #include "candle/PDS_types.hpp"
 #include "candle/MAB_types.hpp"
-#include "candle/logger/logger.hpp"
+#include "candle/logger.hpp"
 
 namespace mab
 {

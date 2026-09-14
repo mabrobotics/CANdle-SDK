@@ -12,8 +12,8 @@
 #include <thread>
 
 #include "candle/MAB_types.hpp"
-#include "candle/communication_interface/I_communication_interface.hpp"
-#include "candle/logger/logger.hpp"
+#include "candle/I_communication_interface.hpp"
+#include "candle/logger.hpp"
 #include "candle/crc.hpp"
 
 namespace mab

@@ -1,4 +1,4 @@
-#include "candle/shared_data/candle_frame_dto.hpp"
+#include "candle/candle_frame_dto.hpp"
 
 #include <iostream>
 #include <gtest/gtest.h>

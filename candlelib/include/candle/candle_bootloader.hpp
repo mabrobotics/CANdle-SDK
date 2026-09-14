@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include "candle/communication_device/candle.hpp"
+#include "candle/candle.hpp"
 
 namespace mab
 {

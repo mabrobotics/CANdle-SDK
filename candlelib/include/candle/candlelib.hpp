@@ -6,11 +6,11 @@ It provides all modules and API interfaces.
 
 #include <unordered_map>
 
-#include "candle/communication_device/candle.hpp"
-#include "candle/pds/pds.hpp"
-#include "candle/MD/MD.hpp"
-#include "candle/communication_interface/USB.hpp"
-#include "candle/communication_interface/SPI.hpp"
+#include "candle/candle.hpp"
+#include "candle/PDS.hpp"
+#include "candle/MD.hpp"
+#include "candle/USB.hpp"
+#include "candle/SPI.hpp"
 
 namespace mab
 {

@@ -11,8 +11,8 @@
 #include <string>
 
 #include "candle/MAB_types.hpp"
-#include "candle/logger/logger.hpp"
-#include "candle/objectDictionary/edsEntry.hpp"
+#include "candle/logger.hpp"
+#include "candle/edsEntry.hpp"
 
 namespace mab
 {
