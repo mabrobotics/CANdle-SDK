@@ -137,7 +137,7 @@ jobs:
 
       - name: CMake configure
         run: |
-          cmake -DCMAKE_BUILD_TYPE=Release -DCANDLE_BUILD_SHARED=ON -B build -G "Unix Makefiles" .
+          cmake -DCMAKE_BUILD_TYPE=Release -DCANDLE_BUILD_STATIC=OFF -B build -G "Unix Makefiles" .
 
       - name: Build
         run: cmake --build ./build -j$(nproc)
@@ -227,6 +227,9 @@ jobs:
             -DOPENGL_INCLUDE_DIR=/usr/include \
             -DOPENGL_opengl_LIBRARY=/usr/lib/aarch64-linux-gnu/libGL.so \
             -DOPENGL_glx_LIBRARY=/usr/lib/aarch64-linux-gnu/libGLX.so \
+            -DX11_INCLUDE_DIR=/usr/include \
+            -DX11_X11_INCLUDE_PATH=/usr/include \
+            -DX11_X11_LIB=/usr/lib/aarch64-linux-gnu/libX11.so \
             --toolchain ./cmake/linux.arm64.toolchain.cmake \
             ./ -B build -G "Unix Makefiles" .
 
@@ -276,12 +279,16 @@ jobs:
         run: |
           PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig cmake \
             -DCMAKE_BUILD_TYPE=Release \
+            -DCANDLE_BUILD_SHARED=ON \
             -DCMAKE_PREFIX_PATH=/usr/lib/aarch64-linux-gnu \
             -DOPENGL_INCLUDE_DIR=/usr/include \
             -DOPENGL_opengl_LIBRARY=/usr/lib/aarch64-linux-gnu/libGL.so \
             -DOPENGL_glx_LIBRARY=/usr/lib/aarch64-linux-gnu/libGLX.so \
+            -DX11_INCLUDE_DIR=/usr/include \
+            -DX11_X11_INCLUDE_PATH=/usr/include \
+            -DX11_X11_LIB=/usr/lib/aarch64-linux-gnu/libX11.so \
             --toolchain ./cmake/linux.arm64.toolchain.cmake \
-            -B build -G "Unix Makefiles" ./
+            ./ -B build -G "Unix Makefiles" .
 
       - name: Build
         run: cmake --build ./build -j$(nproc)
