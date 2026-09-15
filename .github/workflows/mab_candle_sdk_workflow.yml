@@ -210,6 +210,14 @@ jobs:
         with:
           submodules: "true"
 
+      - name: Install OpenGL and dependencies
+        run: |
+          dpkg --add-architecture arm64
+          sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+          sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
+          apt-get update
+          apt-get install -y pkg-config libgl1-mesa-dev:arm64 libglu1-mesa-dev:arm64 libx11-dev:arm64 libglfw3-dev:arm64 file dpkg-dev
+
       - name: Debug - Check OpenGL libraries
         run: |
           echo "=== Checking for OpenGL libraries ==="
@@ -218,14 +226,6 @@ jobs:
           find /usr/lib/aarch64-linux-gnu/pkgconfig -name "*gl*" 2>/dev/null
           echo "=== CMake debug info ==="
           pkg-config --list-all | grep -i gl || echo "No GL pkg-config found"
-
-      - name: Install OpenGL and dependencies
-        run: |
-          dpkg --add-architecture arm64
-          sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
-          sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
-          apt-get update
-          apt-get install -y pkg-config libgl1-mesa-dev:arm64 libglu1-mesa-dev:arm64 libx11-dev:arm64 libglfw3-dev:arm64 file dpkg-dev
 
       - name: CMake configure
         run: |
@@ -264,6 +264,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: "true"
+      
+      - name: Install OpenGL and dependencies
+        run: |
+          dpkg --add-architecture arm64
+          sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+          sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
+          apt-get update
+          apt-get install -y pkg-config libgl1-mesa-dev:arm64 libglu1-mesa-dev:arm64 libx11-dev:arm64 libglfw3-dev:arm64 file dpkg-dev
 
       - name: Debug - Check OpenGL libraries
         run: |
@@ -273,14 +281,6 @@ jobs:
           find /usr/lib/aarch64-linux-gnu/pkgconfig -name "*gl*" 2>/dev/null
           echo "=== CMake debug info ==="
           pkg-config --list-all | grep -i gl || echo "No GL pkg-config found"
-      
-      - name: Install OpenGL and dependencies
-        run: |
-          dpkg --add-architecture arm64
-          sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
-          sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
-          apt-get update
-          apt-get install -y pkg-config libgl1-mesa-dev:arm64 libglu1-mesa-dev:arm64 libx11-dev:arm64 libglfw3-dev:arm64 file dpkg-dev
 
       - name: CMake configure
         run: |
