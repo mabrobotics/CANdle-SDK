@@ -23,8 +23,9 @@ add_subdirectory(3rd_party/CLI11)
 set(CANDLETOOL_SOURCES
   src/candle_cli.cpp
   src/canLoader.cpp
-  src/web_file_module/curl_handler.cpp
-  src/web_file_module/flasher.cpp
+  src/can_bootloader.cpp
+  src/curl_handler.cpp
+  src/flasher.cpp
   src/md_cli.cpp
   src/mdco_cli.cpp
   src/mdco_cli.cpp
@@ -40,13 +41,13 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_executable(candletool ${CANDLETOOL_SOURCES})
 
-target_link_libraries(candletool candle logger)
+if(UNIX)
+  target_link_libraries(candletool PUBLIC candle PRIVATE mINI CLI11)
+endif()
 
 target_include_directories(
   candletool
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/web_file_module
-  ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src)
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 target_compile_options(candletool PRIVATE -g -Wno-unused-parameter -Wno-missing-field-initializers
   -Wswitch-enum)
@@ -69,8 +70,6 @@ target_compile_definitions(
   CANDLETOOL_VTAG=${CANDLETOOL_VERSION_TAG}
   CANDLETOOL_VHASH=${CANDLESDK_VERSION_HASH}
 )
-
-target_link_libraries(candletool CLI11)
 
 # add_unit_test_executable(pds_cli_test tests/pds_cli_test.cpp)
 # target_include_directories(pds_cli_test PRIVATE include)
@@ -121,10 +120,12 @@ if(WIN32)
     candletool
     -static
     candle
+    mINI
+    CLI11
     -static-libstdc++
     -static-libgcc
     -static
-    logger)
+  )
 
   add_compile_definitions(
     DEFAULT_CANDLETOOL_CONFIG_DIR="${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"

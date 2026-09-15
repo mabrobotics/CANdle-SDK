@@ -1,4 +1,4 @@
-#include "GUI.hpp"
+#include "candlegui/GUI.hpp"
 
 GraphicInterface::GraphicInterface(std::shared_ptr<commonMemory_S> commonMemory, ImGuiIO& io)
     : m_data(commonMemory), m_io(io)

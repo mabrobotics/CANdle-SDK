@@ -2,15 +2,15 @@
 #include <memory>
 #include <vector>
 
-#include "candle_cli.hpp"
-#include "candle.hpp"
-#include "mabFileParser.hpp"
-#include "candle_bootloader.hpp"
-#include "mab_crc.hpp"
-#include "curl_handler.hpp"
-#include "web_file.hpp"
-#include "flasher.hpp"
-#include "utilities.hpp"
+#include "candle/candle.hpp"
+#include "candle/candle_bootloader.hpp"
+
+#include "candletool/candle_cli.hpp"
+#include "candletool/mabFileParser.hpp"
+#include "candletool/mab_crc.hpp"
+#include "candletool/curl_handler.hpp"
+#include "candletool/web_file.hpp"
+#include "candletool/flasher.hpp"
 
 #ifdef WIN32
 #include <windows.h>

@@ -1,13 +1,9 @@
-#include "canLoader.hpp"
-#include "candle.hpp"
-#include "mabFileParser.hpp"
-#include "mab_types.hpp"
-#include "pds.hpp"
-#include "pds_cli.hpp"
-#include "mab_def.hpp"
-#include "configHelpers.hpp"
-#include "pds_properties.hpp"
-#include "pds_types.hpp"
+#include "candle/MAB_types.hpp"
+
+#include "candletool/pds_cli.hpp"
+#include "candletool/canLoader.hpp"
+#include "candletool/mabFileParser.hpp"
+#include "candletool/configHelpers.hpp"
 
 /*
     PDS Ini fields keywords

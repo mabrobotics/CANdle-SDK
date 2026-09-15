@@ -1,30 +1,19 @@
-#include "mdco_cli.hpp"
-#include <fcntl.h>
 #include <array>
 #include <chrono>
+#include <csignal>
 #include <cstddef>
 #include <exception>
-#include <filesystem>
-#include <memory>
+#include <fcntl.h>
 #include <ranges>
 #include <sstream>
 #include <stdexcept>
-#include <string>
 #include <string_view>
 #include <thread>
 #include <vector>
-#include <csignal>
 
-#include "CLI/CLI.hpp"
-#include "MDCO.hpp"
-#include "candle.hpp"
-#include "candle_types.hpp"
-#include "edsEntry.hpp"
-#include "edsParser.hpp"
-#include "mab_types.hpp"
-#include "md_cfg_map.hpp"
-#include "mini/ini.h"
-#include "mdco_config_adapter.hpp"
+#include "candletool/mdco_cli.hpp"
+#include "candletool/md_cfg_map.hpp"
+#include "candletool/mdco_config_adapter.hpp"
 
 using namespace mab;
 bool testRunning = true;
@@ -128,9 +117,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
 
     // CAN ============================================================================
 
-    CLI::App* can = mdco->add_subcommand("can", "Configure CAN id of the driver.")
-                        ->needs(mdCanIdOption)
-                        ->require_option();
+    CLI::App*  can = mdco->add_subcommand("can", "Configure CAN id of the driver.")
+                         ->needs(mdCanIdOption)
+                         ->require_option();
     CanOptions canOptions(can);
     can->callback(
         [this, mdCanId, canOptions, loadEDS]()

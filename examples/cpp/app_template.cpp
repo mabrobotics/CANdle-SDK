@@ -1,7 +1,6 @@
-#include "candle.hpp"
-#include "pds.hpp"
-#include "MD.hpp"
-#include "logger.hpp"
+#include "candle/candle.hpp"
+#include "candle/PDS.hpp"
+#include "candle/MD.hpp"
 
 #include <vector>
 #include <thread>

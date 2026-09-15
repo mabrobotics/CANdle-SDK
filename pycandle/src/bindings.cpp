@@ -8,18 +8,9 @@
 #include <memory>
 #include <vector>
 
-#include "mab_types.hpp"
-#include "candle_types.hpp"
-#include "candle.hpp"
-#include "MD.hpp"
-#include "logger.hpp"
-#include "pds.hpp"
-#include "pds_module.hpp"
-#include "pds_types.hpp"
-#include "pds_properties.hpp"
-#include "brake_resistor.hpp"
-#include "power_stage.hpp"
-#include "isolated_converter.hpp"
+#include "candle/candle.hpp"
+#include "candle/MD.hpp"
+#include "candle/PDS.hpp"
 
 namespace py = pybind11;
 

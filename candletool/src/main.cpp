@@ -1,18 +1,17 @@
 #include <cstdlib>
 #include <memory>
 #include <string>
-#include "candle.hpp"
-#include "candle_cli.hpp"
-#include "candle_types.hpp"
-#include "configHelpers.hpp"
-#include "logger.hpp"
-#include "mab_types.hpp"
-#include "md_cli.hpp"
-#include "CLI/CLI.hpp"
-#include "pds_cli.hpp"
-#include "mdco_cli.hpp"
 
-#include "utilities.hpp"
+#include "CLI/CLI.hpp"
+
+#include "candle/candle.hpp"
+
+#include "candletool/candle_cli.hpp"
+#include "candletool/configHelpers.hpp"
+#include "candletool/md_cli.hpp"
+#include "candletool/pds_cli.hpp"
+#include "candletool/mdco_cli.hpp"
+#include "candletool/utilities.hpp"
 
 //     ___     _     _  _      _   _         _____               _
 //    / __|   /_\   | \| |  __| | | |  ___  |_   _|  ___   ___  | |
@@ -143,7 +142,8 @@ int main(int argc, char** argv)
     CLI11_PARSE(app, argc, argv);
     if (showCandleSDKVersion)
     {
-        std::cout << CANDLESDK_VERSION;;
+        std::cout << CANDLESDK_VERSION;
+        ;
         if (CANDLETOOL_VTAG != 'm')
             std::cout << "_" << CANDLETOOL_VTAG << "_" << CANDLESDK_VERSION_HASH;
         std::cout << "\n";

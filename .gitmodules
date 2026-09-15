@@ -1,5 +1,5 @@
 [submodule "commons/googletest"]
-	path = commons/googletest
+	path = candlelib/3rd_party/googletest
 	url = https://github.com/google/googletest.git
 [submodule "pycandle/3rd_party/pybind11"]
 	path = pycandle/3rd_party/pybind11

@@ -1,28 +1,20 @@
-#include "md_cli.hpp"
 #include <cstdint>
 #include <cstdlib>
 #include <ios>
-#include <memory>
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <filesystem>
 #include <variant>
-#include "MDStatus.hpp"
-#include "canLoader.hpp"
-#include "candle.hpp"
-#include "logger.hpp"
-#include "mab_types.hpp"
-#include "manufacturer_data.hpp"
-#include "md_types.hpp"
-#include "mabFileParser.hpp"
-#include "md_cfg_map.hpp"
-#include "utilities.hpp"
-#include "MDStatus.hpp"
+
 #include "mini/ini.h"
-#include "configHelpers.hpp"
-#include "curl_handler.hpp"
-#include "flasher.hpp"
+
+#include "candletool/md_cli.hpp"
+#include "candletool/canLoader.hpp"
+#include "candletool/mabFileParser.hpp"
+#include "candletool/md_cfg_map.hpp"
+#include "candletool/configHelpers.hpp"
+#include "candletool/curl_handler.hpp"
+#include "candletool/flasher.hpp"
 
 #ifndef WIN32
 

@@ -1,6 +1,5 @@
-#include "candle.hpp"
-#include "MD.hpp"
-#include "MDStatus.hpp"
+#include "candle/candle.hpp"
+#include "candle/MD.hpp"
 
 int main()
 {

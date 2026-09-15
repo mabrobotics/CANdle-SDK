@@ -1,4 +1,4 @@
-#include "HardwareCandle.hpp"
+#include "candlegui/HardwareCandle.hpp"
 
 HardwareCandle::HardwareCandle(std::shared_ptr<commonMemory_S> commonMemory) : m_data(commonMemory)
 {

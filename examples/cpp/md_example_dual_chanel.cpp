@@ -1,5 +1,5 @@
-#include "candle.hpp"
-#include "MD.hpp"
+#include "candle/candle.hpp"
+#include "candle/MD.hpp"
 
 int main()
 {

@@ -1,14 +1,10 @@
 
 #ifndef WIN32
-#include <chrono>
-#include <thread>
 
 #include <linux/spi/spidev.h>
 #include <sys/ioctl.h>
 
-#include "I_communication_interface.hpp"
-#include "logger.hpp"
-#include "SPI.hpp"
+#include "candle/SPI.hpp"
 
 namespace mab
 {

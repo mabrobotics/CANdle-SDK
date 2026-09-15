@@ -1,6 +1,6 @@
 #define GL_SILENCE_DEPRECATION
-#include "GUI.hpp"
-#include "HardwareCandle.hpp"
+#include "candlegui/GUI.hpp"
+#include "candlegui/HardwareCandle.hpp"
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
 #pragma comment(lib, "legacy_stdio_definitions")

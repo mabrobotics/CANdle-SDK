@@ -1,4 +1,4 @@
-#include "power_stage.hpp"
+#include "candle/power_stage.hpp"
 
 namespace mab
 {

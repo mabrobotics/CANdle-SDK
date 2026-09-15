@@ -1,13 +1,9 @@
-#include "canLoader.hpp"
-#include "can_bootloader.hpp"
-#include "candle.hpp"
-#include "mabFileParser.hpp"
-#include "mab_crc.hpp"
-
-#include <array>
 #include <cmath>
 #include <cstring>
 #include <string>
+
+#include "candletool/canLoader.hpp"
+#include "candletool/mab_crc.hpp"
 
 namespace mab
 {

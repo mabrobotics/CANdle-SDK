@@ -1,6 +1,7 @@
-#include <USB.hpp>
+#include "candle/USB.hpp"
+
 #include <cstring>
-#include <string>
+
 #ifdef WIN32
 #define NO_DRIVER_EXTENDED_HELPER_MESSAGE              \
     "No such device (it may have been disconnected). " \
