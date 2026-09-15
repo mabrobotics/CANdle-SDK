@@ -145,6 +145,15 @@ elseif(UNIX)
     DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
     COMPONENT _configs)
 
+  set(BASH_COMPLETION_DIR "share/bash-completion/completions")
+
+  install(
+    FILES "tools/candletool-completion.bash"
+    DESTINATION ${BASH_COMPLETION_DIR}
+    RENAME "candletool"
+    COMPONENT candletool
+  )
+
   install(
     FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini

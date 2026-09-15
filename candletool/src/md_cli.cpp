@@ -292,6 +292,13 @@ namespace mab
                 // Perform aux encoder calibration
                 if (doOnAuxEncoder)
                 {
+                    if (!md->isMDError(md->readRegister(registers.auxEncoder)) &&
+                        registers.auxEncoder.value == 0)
+                    {
+                        m_logger.info("Aux encoder not defined, stopping.");
+                        return;
+                    }
+
                     m_logger.info("Starting aux encoder calibration...");
                     // get gear ratio
                     if (md->readRegister(registers.motorGearRatio) != MD::Error_t::OK)
@@ -729,7 +736,6 @@ namespace mab
                              << std::endl;
                     m_logger << "- batch: " << std::string(readableRegisters.productionBatch.value)
                              << std::endl;
-
                     std::string manufactured(readableRegisters.productionDate.value);
                     if (manufactured.size() >= 6)
                     {

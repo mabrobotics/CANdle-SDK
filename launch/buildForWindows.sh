@@ -11,10 +11,10 @@ cd $BUILD_DIRECTORY
 chmod -R a+rw ${base_dir}/${BUILD_DIRECTORY}
 cmake .. -DCMAKE_TOOLCHAIN_FILE="${base_dir}/cmake/windows.x86_64.gcc.toolchain.cmake" -DCMAKE_BUILD_TYPE=Release
 chmod -R a+rw ${base_dir}/${BUILD_DIRECTORY}
-make -j
+make -j4
 chmod -R a+rw ${base_dir}/${BUILD_DIRECTORY}
-cpack --config CPackConfig_candletool.cmake -G NSIS
-cpack --config CPackConfig_mdgui.cmake -G NSIS
+
+make package
 chmod -R a+rw ${base_dir}/${BUILD_DIRECTORY}
 
 cd ${start_dir}
