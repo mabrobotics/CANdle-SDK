@@ -249,12 +249,13 @@ jobs:
           sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
           sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
           apt-get update
-          apt-get install -y pkg-config libgl1-mesa-dev:arm64 libx11-dev:arm64 libglfw3-dev:arm64 file dpkg-dev
+          apt-get install -y pkg-config libgl1-mesa-dev:arm64 libglu1-mesa-dev:arm64 libx11-dev:arm64 libglfw3-dev:arm64 file dpkg-dev
 
       - name: CMake configure
+        env:
+          PKG_CONFIG_LIBDIR: /usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
         run: |
-          export PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
-          cmake -DCMAKE_BUILD_TYPE=Release --toolchain ./cmake/linux.arm64.toolchain.cmake ./ -B build -G "Unix Makefiles" .
+          cmake -DCMAKE_BUILD_TYPE=Release --toolchain ./cmake/linux.arm64.toolchain.cmake -DCMAKE_PREFIX_PATH=/usr/lib/aarch64-linux-gnu -B build -G "Unix Makefiles" ./
 
       - name: Build
         run: cmake --build ./build -j$(nproc)
@@ -295,7 +296,13 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE=Release -DCANDLE_BUILD_STATIC=OFF --toolchain ./cmake/linux.armhf.toolchain.cmake ./ -B build -G "Unix Makefiles" .
 
       - name: Build
-        run: cmake --build ./build -j$(nproc)
+        run: |
+          cmake --build ./build -j$(nproc)
+          # Verify the library was built
+          if [ ! -f build/candlelib/libcandle.so ]; then
+            echo "Build failed: libcandle.so not found"
+            exit 1
+          fi
 
       - name: Rename artifact to arch dependant name
         run: |
