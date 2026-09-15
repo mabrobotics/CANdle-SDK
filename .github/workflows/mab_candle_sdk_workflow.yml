@@ -26,11 +26,9 @@ jobs:
       - name: Extract version from pyproject.toml and check for version tag
         id: set_output
         run: |
-          # Extract version from pyproject.toml
           version=$(grep '^version\s*=' pyproject.toml | sed -E "s/version\s*=\s*['\"](.*)['\"]/\\1/")
           echo "Version found in pyproject.toml: $version"
 
-          # Set is_dev if version contains 'dev'
           if [[ "$version" == *"dev"* ]]; then
             echo "Detected dev version"
             echo "is_dev=true" >> "$GITHUB_OUTPUT"
@@ -139,7 +137,7 @@ jobs:
 
       - name: CMake configure
         run: |
-          cmake -DCMAKE_BUILD_TYPE=Release -B build -G "Unix Makefiles" -DCANDLE_BUILD_STATIC=OFF .
+          cmake -DCMAKE_BUILD_TYPE=Release -DCANDLE_BUILD_SHARED=ON -B build -G "Unix Makefiles" .
 
       - name: Build
         run: cmake --build ./build -j$(nproc)
@@ -222,8 +220,7 @@ jobs:
 
       - name: CMake configure
         run: |
-          export PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
-          cmake -DCMAKE_BUILD_TYPE=Release -DCANDLE_BUILD_STATIC=OFF --toolchain ./cmake/linux.arm64.toolchain.cmake ./ -B build -G "Unix Makefiles" .
+          PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig cmake -DCMAKE_BUILD_TYPE=Release --toolchain ./cmake/linux.arm64.toolchain.cmake ./ -B build -G "Unix Makefiles" .
 
       - name: Build
         run: cmake --build ./build -j$(nproc)
@@ -268,10 +265,8 @@ jobs:
           apt-get install -y pkg-config libgl1-mesa-dev:arm64 libglu1-mesa-dev:arm64 libx11-dev:arm64 libglfw3-dev:arm64 file dpkg-dev
 
       - name: CMake configure
-        env:
-          PKG_CONFIG_LIBDIR: /usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
-        run: |
-          cmake -DCMAKE_BUILD_TYPE=Release --toolchain ./cmake/linux.arm64.toolchain.cmake -DCMAKE_PREFIX_PATH=/usr/lib/aarch64-linux-gnu -B build -G "Unix Makefiles" ./
+        run:
+          PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig cmake -DCMAKE_BUILD_TYPE=Release --toolchain ./cmake/linux.arm64.toolchain.cmake -DCMAKE_PREFIX_PATH=/usr/lib/aarch64-linux-gnu -B build -G "Unix Makefiles" ./
 
       - name: Build
         run: cmake --build ./build -j$(nproc)
@@ -314,9 +309,10 @@ jobs:
       - name: Build
         run: |
           cmake --build ./build -j$(nproc)
-          # Verify the library was built
           if [ ! -f build/candlelib/libcandle.so ]; then
             echo "Build failed: libcandle.so not found"
+            echo "Files found in build/candlelib:"
+            find build/candlelib -name "libcandle*" -type f || echo "No libcandle files found"
             exit 1
           fi
 
