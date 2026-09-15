@@ -26,11 +26,9 @@ jobs:
       - name: Extract version from pyproject.toml and check for version tag
         id: set_output
         run: |
-          # Extract version from pyproject.toml
           version=$(grep '^version\s*=' pyproject.toml | sed -E "s/version\s*=\s*['\"](.*)['\"]/\\1/")
           echo "Version found in pyproject.toml: $version"
 
-          # Set is_dev if version contains 'dev'
           if [[ "$version" == *"dev"* ]]; then
             echo "Detected dev version"
             echo "is_dev=true" >> "$GITHUB_OUTPUT"
@@ -64,6 +62,7 @@ jobs:
             echo "Version mismatch"
             echo "version_tag_same_as_in_cmake_lists=false" >> "$GITHUB_OUTPUT"
           fi
+
   build-candleSDK-python-linux:
     runs-on: ubuntu-latest
 
@@ -139,7 +138,7 @@ jobs:
 
       - name: CMake configure
         run: |
-          cmake -DCMAKE_BUILD_TYPE=Release -B build -G "Unix Makefiles" -DCANDLE_BUILD_STATIC=OFF .
+          cmake -DCMAKE_BUILD_TYPE=Release -DCANDLE_BUILD_STATIC=OFF -B build -G "Unix Makefiles" .
 
       - name: Build
         run: cmake --build ./build -j$(nproc)
@@ -218,11 +217,10 @@ jobs:
           sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
           sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
           apt-get update
-          apt-get install -y pkg-config libgl1-mesa-dev:arm64 libglu1-mesa-dev:arm64 libx11-dev:arm64 libglfw3-dev:arm64 file dpkg-dev
+          apt-get install -y pkg-config libgl1-mesa-dev:arm64 libglu1-mesa-dev:arm64 libx11-dev:arm64 libxkbcommon-dev:arm64 libglfw3-dev:arm64 libxcursor-dev:arm64 libxrandr-dev:arm64 libxinerama-dev:arm64 libxi-dev:arm64 libxext-dev:arm64 file dpkg-dev
 
       - name: CMake configure
         run: |
-          export PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
           cmake -DCMAKE_BUILD_TYPE=Release -DCANDLE_BUILD_STATIC=OFF --toolchain ./cmake/linux.arm64.toolchain.cmake ./ -B build -G "Unix Makefiles" .
 
       - name: Build
@@ -265,13 +263,11 @@ jobs:
           sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
           sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
           apt-get update
-          apt-get install -y pkg-config libgl1-mesa-dev:arm64 libglu1-mesa-dev:arm64 libx11-dev:arm64 libglfw3-dev:arm64 file dpkg-dev
+          apt-get install -y pkg-config libgl1-mesa-dev:arm64 libglu1-mesa-dev:arm64 libx11-dev:arm64 libxkbcommon-dev:arm64 libglfw3-dev:arm64 libxcursor-dev:arm64 libxrandr-dev:arm64 libxinerama-dev:arm64 libxi-dev:arm64 libxext-dev:arm64 file dpkg-dev
 
       - name: CMake configure
-        env:
-          PKG_CONFIG_LIBDIR: /usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
         run: |
-          cmake -DCMAKE_BUILD_TYPE=Release --toolchain ./cmake/linux.arm64.toolchain.cmake -DCMAKE_PREFIX_PATH=/usr/lib/aarch64-linux-gnu -B build -G "Unix Makefiles" ./
+          cmake -DCMAKE_BUILD_TYPE=Release --toolchain ./cmake/linux.arm64.toolchain.cmake ./ -B build -G "Unix Makefiles" .
 
       - name: Build
         run: cmake --build ./build -j$(nproc)
@@ -304,7 +300,7 @@ jobs:
           sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
           sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
           apt-get update
-          apt-get install -y pkg-config libgl1-mesa-dev:armhf libglu1-mesa-dev:armhf libx11-dev:armhf libglfw3-dev:armhf
+          apt-get install -y pkg-config libgl1-mesa-dev:armhf libglu1-mesa-dev:armhf libx11-dev:armhf libxkbcommon-dev:armhf libxcursor-dev:armhf libxrandr-dev:armhf libxinerama-dev:armhf libxi-dev:armhf libxext-dev:armhf libglfw3-dev:armhf
 
       - name: CMake configure
         run: |
@@ -314,9 +310,10 @@ jobs:
       - name: Build
         run: |
           cmake --build ./build -j$(nproc)
-          # Verify the library was built
           if [ ! -f build/candlelib/libcandle.so ]; then
             echo "Build failed: libcandle.so not found"
+            echo "Files found in build/candlelib:"
+            find build/candlelib -name "libcandle*" -type f || echo "No libcandle files found"
             exit 1
           fi
 
@@ -349,7 +346,7 @@ jobs:
           sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
           sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
           apt-get update
-          apt-get install -y pkg-config libgl1-mesa-dev:armhf libx11-dev:armhf libglfw3-dev:armhf file dpkg-dev
+          apt-get install -y pkg-config libgl1-mesa-dev:armhf libglu1-mesa-dev:armhf libx11-dev:armhf libxkbcommon-dev:armhf libxcursor-dev:armhf libxrandr-dev:armhf libxinerama-dev:armhf libxi-dev:armhf libxext-dev:armhf libglfw3-dev:armhf file dpkg-dev
 
       - name: CMake configure
         run: |
@@ -432,12 +429,13 @@ jobs:
         run: ./launch/run_all_tests.sh
 
   release:
-    if: contains('
-      refs/heads/main
-      ', github.ref)
+    if: github.ref == 'refs/heads/main'
     needs:
+      - build-candleSDK-linux-shared
       - build-candleSDK-linux-static
+      - build-candleSDK-linux-arm64-shared
       - build-candleSDK-linux-arm64-static
+      - build-candleSDK-linux-armhf-shared
       - build-candleSDK-linux-armhf-static
       - build-candleSDK-windows-static
       - check-if-dev
