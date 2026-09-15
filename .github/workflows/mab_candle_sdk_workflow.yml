@@ -210,6 +210,15 @@ jobs:
         with:
           submodules: "true"
 
+      - name: Debug - Check OpenGL libraries
+        run: |
+          echo "=== Checking for OpenGL libraries ==="
+          find /usr/lib/aarch64-linux-gnu -name "*GL*" 2>/dev/null | head -20
+          echo "=== Checking PKG-CONFIG files ==="
+          find /usr/lib/aarch64-linux-gnu/pkgconfig -name "*gl*" 2>/dev/null
+          echo "=== CMake debug info ==="
+          pkg-config --list-all | grep -i gl || echo "No GL pkg-config found"
+
       - name: Install OpenGL and dependencies
         run: |
           dpkg --add-architecture arm64
@@ -255,6 +264,15 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: "true"
+
+      - name: Debug - Check OpenGL libraries
+        run: |
+          echo "=== Checking for OpenGL libraries ==="
+          find /usr/lib/aarch64-linux-gnu -name "*GL*" 2>/dev/null | head -20
+          echo "=== Checking PKG-CONFIG files ==="
+          find /usr/lib/aarch64-linux-gnu/pkgconfig -name "*gl*" 2>/dev/null
+          echo "=== CMake debug info ==="
+          pkg-config --list-all | grep -i gl || echo "No GL pkg-config found"
       
       - name: Install OpenGL and dependencies
         run: |
