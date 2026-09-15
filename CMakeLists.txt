@@ -86,6 +86,12 @@ target_include_directories(
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
+if(CANDLE_BUILD_STATIC)
+  set(BUILD_SHARED_LIBS OFF)
+else()
+  set(BUILD_SHARED_LIBS ON)
+endif()
+
 add_subdirectory(candlelib)
 
 if(CANDLESDK_BUILD_PYTHON)

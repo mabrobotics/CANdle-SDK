@@ -62,6 +62,7 @@ jobs:
             echo "Version mismatch"
             echo "version_tag_same_as_in_cmake_lists=false" >> "$GITHUB_OUTPUT"
           fi
+
   build-candleSDK-python-linux:
     runs-on: ubuntu-latest
 
@@ -222,14 +223,10 @@ jobs:
         run: |
           PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig cmake \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCANDLE_BUILD_SHARED=ON \
+            -DCANDLE_BUILD_STATIC=OFF \
+            -DCMAKE_LIBRARY_ARCHITECTURE=aarch64-linux-gnu \
             -DCMAKE_PREFIX_PATH=/usr/lib/aarch64-linux-gnu \
-            -DOPENGL_INCLUDE_DIR=/usr/include \
-            -DOPENGL_opengl_LIBRARY=/usr/lib/aarch64-linux-gnu/libGL.so \
-            -DOPENGL_glx_LIBRARY=/usr/lib/aarch64-linux-gnu/libGLX.so \
-            -DX11_INCLUDE_DIR=/usr/include \
-            -DX11_X11_INCLUDE_PATH=/usr/include \
-            -DX11_X11_LIB=/usr/lib/aarch64-linux-gnu/libX11.so \
+            -DCMAKE_INCLUDE_PATH=/usr/include/aarch64-linux-gnu \
             --toolchain ./cmake/linux.arm64.toolchain.cmake \
             ./ -B build -G "Unix Makefiles" .
 
@@ -279,14 +276,9 @@ jobs:
         run: |
           PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig cmake \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCANDLE_BUILD_SHARED=ON \
+            -DCMAKE_LIBRARY_ARCHITECTURE=aarch64-linux-gnu \
             -DCMAKE_PREFIX_PATH=/usr/lib/aarch64-linux-gnu \
-            -DOPENGL_INCLUDE_DIR=/usr/include \
-            -DOPENGL_opengl_LIBRARY=/usr/lib/aarch64-linux-gnu/libGL.so \
-            -DOPENGL_glx_LIBRARY=/usr/lib/aarch64-linux-gnu/libGLX.so \
-            -DX11_INCLUDE_DIR=/usr/include \
-            -DX11_X11_INCLUDE_PATH=/usr/include \
-            -DX11_X11_LIB=/usr/lib/aarch64-linux-gnu/libX11.so \
+            -DCMAKE_INCLUDE_PATH=/usr/include/aarch64-linux-gnu \
             --toolchain ./cmake/linux.arm64.toolchain.cmake \
             ./ -B build -G "Unix Makefiles" .
 
@@ -326,7 +318,13 @@ jobs:
       - name: CMake configure
         run: |
           export PKG_CONFIG_LIBDIR=/usr/lib/arm-linux-gnueabihf/pkgconfig:/usr/share/pkgconfig
-          cmake -DCMAKE_BUILD_TYPE=Release -DCANDLE_BUILD_STATIC=OFF --toolchain ./cmake/linux.armhf.toolchain.cmake ./ -B build -G "Unix Makefiles" .
+          cmake -DCMAKE_BUILD_TYPE=Release \
+            -DCANDLE_BUILD_STATIC=OFF \
+            -DCMAKE_LIBRARY_ARCHITECTURE=arm-linux-gnueabihf \
+            -DCMAKE_PREFIX_PATH=/usr/lib/arm-linux-gnueabihf \
+            -DCMAKE_INCLUDE_PATH=/usr/include/arm-linux-gnueabihf \
+            --toolchain ./cmake/linux.armhf.toolchain.cmake \
+            ./ -B build -G "Unix Makefiles" .
 
       - name: Build
         run: |
@@ -372,7 +370,12 @@ jobs:
       - name: CMake configure
         run: |
           export PKG_CONFIG_LIBDIR=/usr/lib/arm-linux-gnueabihf/pkgconfig:/usr/share/pkgconfig
-          cmake -DCMAKE_BUILD_TYPE=Release --toolchain ./cmake/linux.armhf.toolchain.cmake ./ -B build -G "Unix Makefiles" .
+          cmake -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_LIBRARY_ARCHITECTURE=arm-linux-gnueabihf \
+            -DCMAKE_PREFIX_PATH=/usr/lib/arm-linux-gnueabihf \
+            -DCMAKE_INCLUDE_PATH=/usr/include/arm-linux-gnueabihf \
+            --toolchain ./cmake/linux.armhf.toolchain.cmake \
+            ./ -B build -G "Unix Makefiles" .
 
       - name: Build
         run: cmake --build ./build -j$(nproc)
@@ -450,12 +453,13 @@ jobs:
         run: ./launch/run_all_tests.sh
 
   release:
-    if: contains('
-      refs/heads/main
-      ', github.ref)
+    if: github.ref == 'refs/heads/main'
     needs:
+      - build-candleSDK-linux-shared
       - build-candleSDK-linux-static
+      - build-candleSDK-linux-arm64-shared
       - build-candleSDK-linux-arm64-static
+      - build-candleSDK-linux-armhf-shared
       - build-candleSDK-linux-armhf-static
       - build-candleSDK-windows-static
       - check-if-dev
