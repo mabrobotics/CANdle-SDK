@@ -218,18 +218,17 @@ jobs:
           apt-get update
           apt-get install -y pkg-config libgl1-mesa-dev:arm64 libglu1-mesa-dev:arm64 libx11-dev:arm64 libglfw3-dev:arm64 file dpkg-dev
 
-      - name: Debug - Check OpenGL libraries
-        run: |
-          echo "=== Checking for OpenGL libraries ==="
-          find /usr/lib/aarch64-linux-gnu -name "*GL*" 2>/dev/null | head -20
-          echo "=== Checking PKG-CONFIG files ==="
-          find /usr/lib/aarch64-linux-gnu/pkgconfig -name "*gl*" 2>/dev/null
-          echo "=== CMake debug info ==="
-          pkg-config --list-all | grep -i gl || echo "No GL pkg-config found"
-
       - name: CMake configure
         run: |
-          PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig cmake -DCMAKE_BUILD_TYPE=Release -DCANDLE_BUILD_SHARED=ON -DCMAKE_PREFIX_PATH=/usr/lib/aarch64-linux-gnu --toolchain ./cmake/linux.arm64.toolchain.cmake ./ -B build -G "Unix Makefiles" .
+          PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCANDLE_BUILD_SHARED=ON \
+            -DCMAKE_PREFIX_PATH=/usr/lib/aarch64-linux-gnu \
+            -DOPENGL_INCLUDE_DIR=/usr/include \
+            -DOPENGL_opengl_LIBRARY=/usr/lib/aarch64-linux-gnu/libGL.so \
+            -DOPENGL_glx_LIBRARY=/usr/lib/aarch64-linux-gnu/libGLX.so \
+            --toolchain ./cmake/linux.arm64.toolchain.cmake \
+            ./ -B build -G "Unix Makefiles" .
 
       - name: Build
         run: cmake --build ./build -j$(nproc)
@@ -273,18 +272,16 @@ jobs:
           apt-get update
           apt-get install -y pkg-config libgl1-mesa-dev:arm64 libglu1-mesa-dev:arm64 libx11-dev:arm64 libglfw3-dev:arm64 file dpkg-dev
 
-      - name: Debug - Check OpenGL libraries
-        run: |
-          echo "=== Checking for OpenGL libraries ==="
-          find /usr/lib/aarch64-linux-gnu -name "*GL*" 2>/dev/null | head -20
-          echo "=== Checking PKG-CONFIG files ==="
-          find /usr/lib/aarch64-linux-gnu/pkgconfig -name "*gl*" 2>/dev/null
-          echo "=== CMake debug info ==="
-          pkg-config --list-all | grep -i gl || echo "No GL pkg-config found"
-
       - name: CMake configure
         run: |
-          PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig cmake -DCMAKE_BUILD_TYPE=Release --toolchain ./cmake/linux.arm64.toolchain.cmake -DCMAKE_PREFIX_PATH=/usr/lib/aarch64-linux-gnu -B build -G "Unix Makefiles" ./
+          PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH=/usr/lib/aarch64-linux-gnu \
+            -DOPENGL_INCLUDE_DIR=/usr/include \
+            -DOPENGL_opengl_LIBRARY=/usr/lib/aarch64-linux-gnu/libGL.so \
+            -DOPENGL_glx_LIBRARY=/usr/lib/aarch64-linux-gnu/libGLX.so \
+            --toolchain ./cmake/linux.arm64.toolchain.cmake \
+            -B build -G "Unix Makefiles" ./
 
       - name: Build
         run: cmake --build ./build -j$(nproc)
