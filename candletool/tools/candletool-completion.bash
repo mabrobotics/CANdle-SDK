@@ -1,10 +1,18 @@
 _candletool_completions()
 {
     local current="${COMP_WORDS[COMP_CWORD]}"
+    local previous="${COMP_WORDS[COMP_CWORD-1]}"
     local suggestions=""
     local global_flags="-h --help -d --datarate -i --id --bus --device -v --verbosity --version -s --silent --log"
     local flags_with_args="-i --id --bus --datarate -d --device -v --verbosity -p --path -m --meta-file -e --encoder -f --mabfile -r --recovery --new_id --new_datarate --new_timeout --index --subindex --value"
 
+    if [[ "$previous" == "-p" || "$previous" == "--path" || "$previous" == "-m" || "$previous" == "--meta-file" || "$previous" == "-f" || "$previous" == "--mabfile" || "$previous" == "upload" || "$previous" == "download" ]]; then
+        compopt -o filenames 2>/dev/null
+        COMPREPLY=( $(compgen -f -- "$current") )
+        return 0
+    fi
+
+    
     if [[ "$current" == -* ]]; then
         suggestions="$global_flags"
     else
