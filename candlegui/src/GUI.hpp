@@ -37,7 +37,8 @@ class GraphicInterface
     float roundingFrameButton   = 12.0f;
     float roundingFrameCheckbox = 8.0f;
 
-    float resizeButton = 15.0f;
+    float saveButtonWidth = leftMenuBarWidth - (paddingButtons * 2.0f) - 40.f;
+    float resizeButton    = 15.0f;
 
     float menuTopHeightRatio   = 0.5f;
     float menuBottomWidthRatio = 0.5f;
@@ -149,6 +150,9 @@ class GraphicInterface
     void drawCheckboxHorCursorsPosButton();
     void drawCheckboxHorCursorsTrqButton();
     void drawCursorMenu();
+
+    // Helper
+    void drawHelper(const char* description);
 
     // Parameters setters etc.
     void drawParametersVelocity();
