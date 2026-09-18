@@ -1,4 +1,6 @@
+#include <cctype>
 #include <cstddef>
+#include <cstdio>
 #include <functional>
 #include <optional>
 #include <sstream>
@@ -180,6 +182,12 @@ namespace mab
             case DataType_E::DOMAIN_TYPE:
                 m_value = canopen_types::DOMAIN_t(bytes.begin(), bytes.end());
                 break;
+            case DataType_E::OCTET_STRING:
+                m_value = canopen_types::OCTET_STRING_t(bytes.begin(), bytes.end());
+                break;
+            case DataType_E::UNICODE_STRING:
+                m_value = canopen_types::UNICODE_STRING_t(bytes.begin(), bytes.end());
+                break;
             case DataType_E::VISIBLE_STRING:
             {
                 std::string result;
@@ -293,10 +301,19 @@ namespace mab
                 return canopen_types::UNSIGNED16_t(
                     std::stoul(std::string(str).c_str(), nullptr, 0));
             case DataType_E::UNSIGNED32:
+            {
                 if (val.empty())
                     return canopen_types::UNSIGNED32_t(0);
-                return canopen_types::UNSIGNED32_t(
-                    std::stoul(std::string(str).c_str(), nullptr, 0));
+                try
+                {
+                    return canopen_types::UNSIGNED32_t(
+                        std::stoul(std::string(str).c_str(), nullptr, 0));
+                }
+                catch (std::exception& e)
+                {
+                    return canopen_types::VISIBLE_STRING_t(str);
+                }
+            }
             case DataType_E::UNSIGNED64:
                 if (val.empty())
                     return canopen_types::UNSIGNED64_t(0);
@@ -362,7 +379,28 @@ namespace mab
             case DataType_E::UNICODE_STRING:
                 return {};
             case DataType_E::OCTET_STRING:
-                return {};  // todo: case on its own can not support it
+            {
+                // Octet strings carry both zero padded text (Batch Code) and raw binary
+                // identifiers (Core ID), so print text when it is printable, hex otherwise
+                const auto& bytes = std::get<canopen_types::OCTET_STRING_t>(val);
+                std::string text;
+                std::string hex;
+                bool        printable = true;
+                for (auto byte : bytes)
+                {
+                    const char c = static_cast<char>(byte);
+                    if (c != '\0')
+                    {
+                        if (std::isprint(static_cast<unsigned char>(c)) == 0)
+                            printable = false;
+                        text += c;
+                    }
+                    char buffer[4] = {};
+                    std::snprintf(buffer, sizeof(buffer), "%02x", static_cast<unsigned char>(c));
+                    hex += buffer;
+                }
+                return printable ? text : hex;
+            }
             case DataType_E::DOMAIN_TYPE:
                 std::vector<std::byte> bytes = std::get<canopen_types::DOMAIN_t>(val);
                 std::string            result;

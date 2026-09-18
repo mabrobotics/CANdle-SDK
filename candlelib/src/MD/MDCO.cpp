@@ -13,6 +13,96 @@
 
 namespace mab
 {
+    namespace
+    {
+        constexpr u8 SDO_ABORT_RESPONSE = 0x80;
+
+        /// @brief Human readable form of the CiA 301 SDO abort codes
+        const char* sdoAbortReason(u32 code)
+        {
+            switch (code)
+            {
+                case 0x05030000:
+                    return "toggle bit not alternated";
+                case 0x05040000:
+                    return "SDO protocol timed out";
+                case 0x05040001:
+                    return "command specifier not valid or unknown";
+                case 0x06010000:
+                    return "unsupported access to an object";
+                case 0x06010001:
+                    return "attempt to read a write only object";
+                case 0x06010002:
+                    return "attempt to write a read only object";
+                case 0x06020000:
+                    return "object does not exist in the object dictionary";
+                case 0x06070010:
+                    return "data type or length of service parameter does not match";
+                case 0x06090011:
+                    return "sub-index does not exist";
+                case 0x06090030:
+                    return "value range of parameter exceeded";
+                case 0x08000000:
+                    return "general error";
+                case 0x08000020:
+                    return "data cannot be transferred or stored to the application";
+                case 0x08000022:
+                    return "data cannot be transferred or stored due to the present device state";
+                default:
+                    return "unknown abort code";
+            }
+        }
+
+        /// @brief Objects the drive can only serve once the motor rating is configured
+        bool needsMotorRating(u16 index)
+        {
+            switch (index)
+            {
+                case 0x6071:  // Target Torque
+                case 0x6072:  // Max Torque
+                case 0x6073:  // Max Current
+                case 0x6077:  // Torque Actual Value
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /// @brief Detect an SDO abort response and report the reason the server gave
+        /// @return true when the server aborted the transfer
+        bool checkSdoAbort(const std::vector<u8>& response,
+                           const EDSEntry&        edsEntry,
+                           const Logger&          log)
+        {
+            if (response.size() < 8 || response[0] != SDO_ABORT_RESPONSE)
+                return false;
+
+            const u32 abortCode = (u32)response[4] | ((u32)response[5] << 8) |
+                                  ((u32)response[6] << 16) | ((u32)response[7] << 24);
+            const u16 index = edsEntry.getEntryMetaData().address.first;
+            const u8  subIndex = edsEntry.getEntryMetaData().address.second.value_or(0);
+
+            // Torque and current objects are scaled by the motor rating, the drive rejects
+            // them as long as it is missing, which is a configuration issue and not a fault
+            if (abortCode == 0x08000020 && needsMotorRating(index))
+            {
+                log.warn("%s (0x%04X:%02X) is unavailable until Motor Rated Current (0x6075) and "
+                         "Motor Rated Torque (0x6076) are configured",
+                         edsEntry.getEntryMetaData().parameterName.c_str(),
+                         index,
+                         subIndex);
+                return true;
+            }
+
+            log.error("SDO abort 0x%08X (%s) on 0x%04X:%02X %s",
+                      abortCode,
+                      sdoAbortReason(abortCode),
+                      index,
+                      subIndex,
+                      edsEntry.getEntryMetaData().parameterName.c_str());
+            return true;
+        }
+    }  // namespace
 
     MDCO::Error_t MDCO::init()
     {
@@ -746,9 +836,17 @@ namespace mab
             return Error_t::UNKNOWN_OBJECT;
         }
 
-        if (edsEntry.valueSize() <= 4 &&
-            edsEntry.getEntryMetaData().edsValueMeta.value().dataType !=
-                EDSEntry::DataType_E::VISIBLE_STRING)
+        // String like objects carry no fixed size, valueSize() only reports the length of the
+        // value currently held, so they always have to go through the segmented path (which
+        // still accepts an expedited answer from the server)
+        const EDSEntry::DataType_E dataType =
+            edsEntry.getEntryMetaData().edsValueMeta.value().dataType;
+        const bool isStringLike = dataType == EDSEntry::DataType_E::VISIBLE_STRING ||
+                                  dataType == EDSEntry::DataType_E::OCTET_STRING ||
+                                  dataType == EDSEntry::DataType_E::UNICODE_STRING ||
+                                  dataType == EDSEntry::DataType_E::DOMAIN_TYPE;
+
+        if (edsEntry.valueSize() <= 4 && !isStringLike)
         {
             // using expedited transfer
             std::vector<u8> transmitFrame = {
@@ -768,18 +866,14 @@ namespace mab
             }
             m_log.debug("Address: 0x%x", edsEntry.getEntryMetaData().address.first);
 
-            // Verify expedited response (bit 1 == 1)
-            if ((response[0] & 0x40) == 0)
+            if (checkSdoAbort(response, edsEntry, m_log))
+                return Error_t::REQUEST_INVALID;
+
+            // Verify expedited response (e bit of the command specifier)
+            if ((response[0] & 0x02) == 0)
             {
-                // retry
-                response = transferCanOpenFrame(
-                               SDO_REQUEST_BASE + m_canId, transmitFrame, transmitFrame.size())
-                               .first;
-                if ((response[0] & 0x40) == 0)
-                {
-                    m_log.error("Invalid expedited download response");
-                    return Error_t::TRANSFER_FAILED;
-                }
+                m_log.error("Invalid expedited upload response: 0x%02x", response[0]);
+                return Error_t::TRANSFER_FAILED;
             }
 
             // Number of unused bytes (bits 2-3)
@@ -814,6 +908,9 @@ namespace mab
                 return Error_t::TRANSFER_FAILED;
             }
 
+            if (checkSdoAbort(response, edsEntry, m_log))
+                return Error_t::REQUEST_INVALID;
+
             // If server responds with expedited transfer, handle it here
             if ((response[0] & 0x02) != 0)
             {
@@ -835,11 +932,11 @@ namespace mab
                 }
 
                 // Store value and return immediately (no segmented loop)
-                if (edsEntry.setSerializedValue(result) == EDSEntry::Error_t::OK)
+                const EDSEntry::Error_t parseError = edsEntry.setSerializedValue(result);
+                if (parseError == EDSEntry::Error_t::OK)
                     return Error_t::OK;
 
-                m_log.error("EDS parsing failed with code: %d",
-                            edsEntry.setSerializedValue(result));
+                m_log.error("EDS parsing failed with code: %d", parseError);
                 return Error_t::REQUEST_INVALID;
             }
 
@@ -861,6 +958,9 @@ namespace mab
                     return Error_t::TRANSFER_FAILED;
                 }
 
+                if (checkSdoAbort(segmentResponse, edsEntry, m_log))
+                    return Error_t::REQUEST_INVALID;
+
                 lastSegment   = (segmentResponse[0] & 0x01);
                 u8 emptyBytes = (segmentResponse[0] >> 1) & 0x07;
 
@@ -880,11 +980,12 @@ namespace mab
                 result.push_back(static_cast<std::byte>(b));
             }
         }
-        if (edsEntry.setSerializedValue(result) == EDSEntry::Error_t::OK)
+        const EDSEntry::Error_t parseError = edsEntry.setSerializedValue(result);
+        if (parseError == EDSEntry::Error_t::OK)
             return Error_t::OK;
         else
         {
-            m_log.error("EDS parsing failed with code: %d", edsEntry.setSerializedValue(result));
+            m_log.error("EDS parsing failed with code: %d", parseError);
             return Error_t::REQUEST_INVALID;
         }
     }
@@ -931,6 +1032,9 @@ namespace mab
             m_log.debug("Address: 0x%x", edsEntry.getEntryMetaData().address.first);
             m_log.debug("Lenght: 0x%x", payloadSize);
 
+            if (checkSdoAbort(response, edsEntry, m_log))
+                return Error_t::REQUEST_INVALID;
+
             // Expect initiate download response (0x60)
             if ((response[0] & 0xE0) != 0x60)
             {
@@ -960,6 +1064,9 @@ namespace mab
                             SDO_REQUEST_BASE + m_canId);
                 return Error_t::TRANSFER_FAILED;
             }
+
+            if (checkSdoAbort(response, edsEntry, m_log))
+                return Error_t::REQUEST_INVALID;
 
             if ((response[0] & 0xE0) != 0x60)
             {
@@ -1003,6 +1110,9 @@ namespace mab
                     m_log.error("Segment download failed SDO 0x%x", SDO_REQUEST_BASE + m_canId);
                     return Error_t::TRANSFER_FAILED;
                 }
+
+                if (checkSdoAbort(segmentResponse, edsEntry, m_log))
+                    return Error_t::REQUEST_INVALID;
 
                 // Expect segment response (0x20 | toggle<<4)
                 if ((segmentResponse[0] & 0xE0) != 0x20)
