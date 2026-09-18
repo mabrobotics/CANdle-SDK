@@ -29,6 +29,79 @@
 using namespace mab;
 bool testRunning = true;
 
+namespace
+{
+    /// @brief Verify that an address exists in the loaded .eds before it gets accessed
+    /// @param od object dictionary parsed from the .eds file
+    /// @param index object index requested by the user
+    /// @param subIndex subindex requested by the user, if any
+    /// @param log logger used to report the mismatch
+    /// @return true when the address can be accessed
+    bool checkAddressInEds(EDSObjectDictionary&     od,
+                           u16                      index,
+                           const std::optional<u8>& subIndex,
+                           const Logger&            log)
+    {
+        if (!od.hasEntry(index))
+        {
+            log.error(
+                "Object 0x%04X is not present in the loaded .eds file. Either the index is wrong "
+                "or the .eds does not match the firmware of the drive - check the eds path in "
+                "candletool.ini",
+                index);
+            return false;
+        }
+
+        EDSEntry&         entry      = od[index];
+        const std::string entryName  = entry.getEntryMetaData().parameterName;
+        const auto        subIndices = entry.subEntryIndices();
+
+        if (!subIndex.has_value())
+        {
+            if (!subIndices.empty())
+            {
+                std::stringstream ss;
+                for (const u8 available : subIndices)
+                    ss << "0x" << std::hex << (unsigned)available << " ";
+                log.error("Object 0x%04X (%s) is a record, it has to be accessed with --subindex. "
+                          "Subindices defined in the .eds: %s",
+                          index,
+                          entryName.c_str(),
+                          ss.str().c_str());
+                return false;
+            }
+            return true;
+        }
+
+        if (subIndices.empty())
+        {
+            log.error("Object 0x%04X (%s) is a single value, it has no subindices - drop the "
+                      "--subindex option",
+                      index,
+                      entryName.c_str());
+            return false;
+        }
+
+        if (!entry.hasSubEntry(subIndex.value()))
+        {
+            std::stringstream ss;
+            for (const u8 available : subIndices)
+                ss << "0x" << std::hex << (unsigned)available << " ";
+            log.error(
+                "Subindex 0x%02X is not present in object 0x%04X (%s). Either the subindex is "
+                "wrong or the .eds does not match the firmware of the drive. Subindices defined "
+                "in the .eds: %s",
+                subIndex.value(),
+                index,
+                entryName.c_str(),
+                ss.str().c_str());
+            return false;
+        }
+
+        return true;
+    }
+}  // namespace
+
 std::unique_ptr<MDCO, std::function<void(MDCO*)>> MdcoCli::getMdco(
     const std::shared_ptr<canId_t> mdCanId, std::shared_ptr<EDSObjectDictionary> od)
 {
@@ -401,7 +474,10 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     sdoRead->callback(
         [this, mdCanId, readOption, loadEDS]()
         {
-            auto od   = loadEDS().first;
+            auto od = loadEDS().first;
+            if (!checkAddressInEds(*od, *readOption.index, *readOption.subindex, m_log))
+                return;
+
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
                 m_log.error("Failed to conect to mdco!");
@@ -413,6 +489,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                          .has_value())
                 {
                     m_log.error("This sdo has no value to read!");
+                    return;
                 }
                 auto err = mdco->readSDO((*od)[*readOption.index][readOption.subindex->value()]);
                 if (err != MDCO::Error_t::OK)
@@ -432,6 +509,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 if (!(*od)[*readOption.index].getValueMetaData().has_value())
                 {
                     m_log.error("This sdo has no value to read!");
+                    return;
                 }
                 auto err = mdco->readSDO((*od)[*readOption.index]);
                 if (err != MDCO::Error_t::OK)
@@ -453,7 +531,10 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     sdoWrite->callback(
         [this, mdCanId, writeOption, loadEDS]()
         {
-            auto od   = loadEDS().first;
+            auto od = loadEDS().first;
+            if (!checkAddressInEds(*od, *writeOption.index, *writeOption.subindex, m_log))
+                return;
+
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
                 m_log.error("Failed to conect to mdco!");
@@ -465,6 +546,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                          .has_value())
                 {
                     m_log.error("This sdo has no value to write!");
+                    return;
                 }
                 (*od)[*writeOption.index][writeOption.subindex->value()].setFromString(
                     *writeOption.valueStr);
@@ -486,6 +568,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 if (!(*od)[*writeOption.index].getValueMetaData().has_value())
                 {
                     m_log.error("This sdo has no value to write!");
+                    return;
                 }
                 (*od)[*writeOption.index].setFromString(*writeOption.valueStr);
                 auto err = mdco->writeSDO((*od)[*writeOption.index]);

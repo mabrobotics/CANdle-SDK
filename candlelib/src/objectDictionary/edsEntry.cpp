@@ -435,6 +435,24 @@ namespace mab
         }
         return *(m_subObjectsMap.value()).at(subIndex);
     }
+    bool EDSEntry::hasSubEntry(u8 subIndex) const noexcept
+    {
+        if (!m_subObjectsMap.has_value())
+            return false;
+        return m_subObjectsMap.value().find(subIndex) != m_subObjectsMap.value().end();
+    }
+    std::vector<u8> EDSEntry::subEntryIndices() const noexcept
+    {
+        std::vector<u8> indices;
+        if (!m_subObjectsMap.has_value())
+            return indices;
+        indices.reserve(m_subObjectsMap.value().size());
+        for (const auto& subObject : m_subObjectsMap.value())
+        {
+            indices.push_back(subObject.first);
+        }
+        return indices;
+    }
     std::map<u8, std::unique_ptr<EDSEntry>>::const_iterator EDSEntry::begin() const
     {
         if (!m_subObjectsMap.has_value())
@@ -462,6 +480,10 @@ namespace mab
     EDSEntry& EDSObjectDictionary::operator[](u16 idx)
     {
         return m_map.at(idx);
+    }
+    bool EDSObjectDictionary::hasEntry(u16 idx) const noexcept
+    {
+        return m_map.find(idx) != m_map.end();
     }
     std::map<u16, EDSEntry>::iterator EDSObjectDictionary::begin()
     {
