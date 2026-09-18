@@ -122,6 +122,7 @@ std::pair<std::shared_ptr<EDSObjectDictionary>, EDSParser::Error_t> EDSParser::l
             auto&                      entry = key_val.second;
             metaData.parameterName           = entry["ParameterName"];
             u32 idx                          = std::stoul(key_val.first, nullptr, 16);
+            metaData.address                 = std::pair<u16, std::optional<u8>>(idx, std::nullopt);
 
             // Fill object type
             switch (std::stoul(entry["ObjectType"].c_str(), nullptr, 0))

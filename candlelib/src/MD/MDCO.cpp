@@ -6,6 +6,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include "MDObjects.hpp"
 #include "MDStatus.hpp"
 #include "candle_types.hpp"
 #include "edsEntry.hpp"
@@ -16,6 +17,7 @@ namespace mab
     namespace
     {
         constexpr u8 SDO_ABORT_RESPONSE = 0x80;
+
 
         /// @brief Human readable form of the CiA 301 SDO abort codes
         const char* sdoAbortReason(u32 code)
@@ -150,14 +152,13 @@ namespace mab
     {
         // blink the motor led, log an error message if transfer failed
         Error_t                           err       = enterConfigMode();
-        static constexpr std::string_view blinkName = "Blink LEDs";
-        auto                              blinkOpt  = m_od->getEntryByName(blinkName);
-        if (!blinkOpt.has_value())
+        EDSEntry* blinkEntry =
+            md_objects::resolveObject(*m_od, md_objects::CMD_BLINK_LEDS, m_log);
+        if (blinkEntry == nullptr)
         {
-            m_log.error("could not locate %s object!", blinkName);
             return Error_t::UNKNOWN_OBJECT;
         }
-        auto& blinkObj = blinkOpt.value().get();
+        auto& blinkObj = *blinkEntry;
         blinkObj       = (canopen_types::BOOLEAN_t)1;
         err            = writeSDO(blinkObj);
         if (err != Error_t::OK)
@@ -194,14 +195,13 @@ namespace mab
         // set the motor zero position to the actual position via SDO message, log an error message
         // if transfer failed
         Error_t                           err      = enterConfigMode();
-        static constexpr std::string_view zeroName = "Set Zero";
-        auto                              zeroOpt  = m_od->getEntryByName(zeroName);
-        if (!zeroOpt.has_value())
+        EDSEntry* zeroEntry =
+            md_objects::resolveObject(*m_od, md_objects::CMD_SET_ZERO, m_log);
+        if (zeroEntry == nullptr)
         {
-            m_log.error("could not locate %s object!", zeroName.data());
             return Error_t::UNKNOWN_OBJECT;
         }
-        auto& zeroObj = zeroOpt.value().get();
+        auto& zeroObj = *zeroEntry;
         zeroObj       = (canopen_types::BOOLEAN_t)1;
         err           = writeSDO(zeroObj);
         if (err != Error_t::OK)
@@ -215,14 +215,13 @@ namespace mab
     MDCO::Error_t MDCO::reset()
     {
         Error_t                           err       = enterConfigMode();
-        static constexpr std::string_view resetName = "Reset Controller";
-        auto                              resetOpt  = m_od->getEntryByName(resetName);
-        if (!resetOpt.has_value())
+        EDSEntry* resetEntry =
+            md_objects::resolveObject(*m_od, md_objects::CMD_RESET_CONTROLLER, m_log);
+        if (resetEntry == nullptr)
         {
-            m_log.error("could not locate %s object!", resetName.data());
             return Error_t::UNKNOWN_OBJECT;
         }
-        auto& resetObj = resetOpt.value().get();
+        auto& resetObj = *resetEntry;
         resetObj       = (canopen_types::BOOLEAN_t)1;
         err            = writeSDO(resetObj);
         if (err != Error_t::OK)
@@ -236,14 +235,13 @@ namespace mab
     MDCO::Error_t MDCO::clearErrors()
     {
         Error_t                           err            = enterConfigMode();
-        static constexpr std::string_view clearErrorName = "Clear Errors";
-        auto                              clearErrorOpt  = m_od->getEntryByName(clearErrorName);
-        if (!clearErrorOpt.has_value())
+        EDSEntry* clearErrorEntry =
+            md_objects::resolveObject(*m_od, md_objects::CMD_CLEAR_ERRORS, m_log);
+        if (clearErrorEntry == nullptr)
         {
-            m_log.error("could not locate %s object!", clearErrorName.data());
             return Error_t::UNKNOWN_OBJECT;
         }
-        auto& clearErrorObj = clearErrorOpt.value().get();
+        auto& clearErrorObj = *clearErrorEntry;
         clearErrorObj       = (canopen_types::BOOLEAN_t)1;
         err                 = writeSDO(clearErrorObj);
         if (err != Error_t::OK)
@@ -256,16 +254,15 @@ namespace mab
 
     MDCO::Error_t MDCO::setCurrentLimit(float currentLimit /*A*/)
     {
-        static constexpr std::string_view            setCurrentLimitName    = "Motor Rated Current";
-        static constexpr std::string_view            setCurrentMaxLimitName = "Max Current";
-        static constexpr canopen_types::UNSIGNED16_t setMaxLimit            = 1'000;
-        auto setCurrentLimitOpt = m_od->getEntryByName(setCurrentLimitName);
-        if (!setCurrentLimitOpt.has_value())
+        static constexpr canopen_types::UNSIGNED16_t setMaxLimit = 1'000;
+
+        EDSEntry* setCurrentLimitEntry =
+            md_objects::resolveObject(*m_od, md_objects::MOTOR_RATED_CURRENT, m_log);
+        if (setCurrentLimitEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", setCurrentLimitName.data());
             return Error_t::UNKNOWN_OBJECT;
         }
-        auto& setCurrentLimitObj = setCurrentLimitOpt.value().get();
+        auto& setCurrentLimitObj = *setCurrentLimitEntry;
         setCurrentLimitObj       = (canopen_types::UNSIGNED16_t)(currentLimit * 1'000);
         Error_t err              = writeSDO(setCurrentLimitObj);
         if (err != Error_t::OK)
@@ -275,13 +272,13 @@ namespace mab
             return err;
         }
 
-        auto setCurrentMaxLimitOpt = m_od->getEntryByName(setCurrentMaxLimitName);
-        if (!setCurrentMaxLimitOpt.has_value())
+        EDSEntry* setCurrentMaxLimitEntry =
+            md_objects::resolveObject(*m_od, md_objects::MAX_CURRENT, m_log);
+        if (setCurrentMaxLimitEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", setCurrentMaxLimitName.data());
             return Error_t::UNKNOWN_OBJECT;
         }
-        auto& setCurrentMaxLimitObj = setCurrentMaxLimitOpt.value().get();
+        auto& setCurrentMaxLimitObj = *setCurrentMaxLimitEntry;
         setCurrentMaxLimitObj       = setMaxLimit;
         err                         = writeSDO(setCurrentMaxLimitObj);
         if (err != Error_t::OK)
@@ -297,15 +294,13 @@ namespace mab
     MDCO::Error_t MDCO::setTorqueBandwidth(u16 torqueBandwidth /*Hz*/)
     {
         Error_t                           err                    = enterConfigMode();
-        static constexpr std::string_view setTorqueBandwidthName = "Torque Bandwidth";
-        static constexpr std::string_view reconfigureCANName     = "Run Can Reinit";
-        auto setTorqueBandwidthOpt = m_od->getEntryByName(setTorqueBandwidthName);
-        if (!setTorqueBandwidthOpt.has_value())
+        EDSEntry* setTorqueBandwidthEntry =
+            md_objects::resolveObject(*m_od, md_objects::TORQUE_BANDWIDTH, m_log);
+        if (setTorqueBandwidthEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", setTorqueBandwidthName.data());
             return Error_t::UNKNOWN_OBJECT;
         }
-        auto& setTorqueBandwidthObj = setTorqueBandwidthOpt.value().get();
+        auto& setTorqueBandwidthObj = *setTorqueBandwidthEntry;
         setTorqueBandwidthObj       = (canopen_types::UNSIGNED16_t)torqueBandwidth;
         err                         = writeSDO(setTorqueBandwidthObj);
         if (err != Error_t::OK)
@@ -314,13 +309,13 @@ namespace mab
                         setTorqueBandwidthObj.getEntryMetaData().parameterName.c_str());
             return err;
         }
-        auto reconfigureCANOpt = m_od->getEntryByName(reconfigureCANName);
-        if (!reconfigureCANOpt.has_value())
+        EDSEntry* reconfigureCANEntry =
+            md_objects::resolveObject(*m_od, md_objects::CMD_REINIT_CAN, m_log);
+        if (reconfigureCANEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", setTorqueBandwidthName.data());
             return Error_t::UNKNOWN_OBJECT;
         }
-        auto& reconfigureCANObj = reconfigureCANOpt.value().get();
+        auto& reconfigureCANObj = *reconfigureCANEntry;
         reconfigureCANObj       = (canopen_types::BOOLEAN_t)1;
         err                     = writeSDO(reconfigureCANObj);
         if (err != Error_t::OK)
@@ -334,14 +329,13 @@ namespace mab
 
     MDCO::Error_t MDCO::setOperationMode(mab::ModesOfOperation mode)
     {
-        constexpr std::string_view operationModeName = "Modes Of Operation";
-        auto                       operationModeOpt  = m_od->getEntryByName(operationModeName);
-        if (!operationModeOpt.has_value())
+        EDSEntry* operationModeEntry =
+            md_objects::resolveObject(*m_od, md_objects::MODES_OF_OPERATION, m_log);
+        if (operationModeEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", operationModeName.data());
             return Error_t::UNKNOWN_OBJECT;
         }
-        auto& operationModeObj = operationModeOpt.value().get();
+        auto& operationModeObj = *operationModeEntry;
         operationModeObj       = (canopen_types::INTEGER8_t)mode;
         Error_t err            = writeSDO(operationModeObj);
         if (err != Error_t::OK)
@@ -356,34 +350,38 @@ namespace mab
     MDCO::Error_t MDCO::setPositionPIDparam(float kp, float ki, float kd, float integralMax)
     {
         Error_t   err     = enterConfigMode();
-        const u16 address = m_od->getAdressByName("Position PID Controller").value().first;
+        EDSEntry* controller = md_objects::resolveObject(*m_od, md_objects::POSITION_PID_CONTROLLER, m_log);
+        if (controller == nullptr)
+        {
+            return Error_t::UNKNOWN_OBJECT;
+        }
 
-        (*m_od)[address][0x1] = (canopen_types::REAL32_t)kp;
-        err                   = writeSDO((*m_od)[address][0x1]);
+        (*controller)[0x1] = (canopen_types::REAL32_t)kp;
+        err                   = writeSDO((*controller)[0x1]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting position PID kp");
             return err;
         }
 
-        (*m_od)[address][0x2] = (canopen_types::REAL32_t)ki;
-        err                   = writeSDO((*m_od)[address][0x2]);
+        (*controller)[0x2] = (canopen_types::REAL32_t)ki;
+        err                   = writeSDO((*controller)[0x2]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting position PID ki");
             return err;
         }
 
-        (*m_od)[address][0x3] = (canopen_types::REAL32_t)kd;
-        err                   = writeSDO((*m_od)[address][0x3]);
+        (*controller)[0x3] = (canopen_types::REAL32_t)kd;
+        err                   = writeSDO((*controller)[0x3]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting position PID kd");
             return err;
         }
 
-        (*m_od)[address][0x4] = (canopen_types::REAL32_t)integralMax;
-        err                   = writeSDO((*m_od)[address][0x4]);
+        (*controller)[0x4] = (canopen_types::REAL32_t)integralMax;
+        err                   = writeSDO((*controller)[0x4]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting position PID integralMax");
@@ -396,34 +394,38 @@ namespace mab
     MDCO::Error_t MDCO::setVelocityPIDparam(float kp, float ki, float kd, float integralMax)
     {
         Error_t   err     = enterConfigMode();
-        const u16 address = m_od->getAdressByName("Velocity PID Controller").value().first;
+        EDSEntry* controller = md_objects::resolveObject(*m_od, md_objects::VELOCITY_PID_CONTROLLER, m_log);
+        if (controller == nullptr)
+        {
+            return Error_t::UNKNOWN_OBJECT;
+        }
 
-        (*m_od)[address][0x1] = (canopen_types::REAL32_t)kp;
-        err                   = writeSDO((*m_od)[address][0x1]);
+        (*controller)[0x1] = (canopen_types::REAL32_t)kp;
+        err                   = writeSDO((*controller)[0x1]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting velocity PID kp");
             return err;
         }
 
-        (*m_od)[address][0x2] = (canopen_types::REAL32_t)ki;
-        err                   = writeSDO((*m_od)[address][0x2]);
+        (*controller)[0x2] = (canopen_types::REAL32_t)ki;
+        err                   = writeSDO((*controller)[0x2]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting velocity PID ki");
             return err;
         }
 
-        (*m_od)[address][0x3] = (canopen_types::REAL32_t)kd;
-        err                   = writeSDO((*m_od)[address][0x3]);
+        (*controller)[0x3] = (canopen_types::REAL32_t)kd;
+        err                   = writeSDO((*controller)[0x3]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting velocity PID kd");
             return err;
         }
 
-        (*m_od)[address][0x4] = (canopen_types::REAL32_t)integralMax;
-        err                   = writeSDO((*m_od)[address][0x4]);
+        (*controller)[0x4] = (canopen_types::REAL32_t)integralMax;
+        err                   = writeSDO((*controller)[0x4]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting velocity PID integralMax");
@@ -436,18 +438,22 @@ namespace mab
     MDCO::Error_t MDCO::setImpedanceParams(float kp, float kd)
     {
         Error_t   err     = enterConfigMode();
-        const u16 address = m_od->getAdressByName("Impedance PD Controller").value().first;
+        EDSEntry* controller = md_objects::resolveObject(*m_od, md_objects::IMPEDANCE_PD_CONTROLLER, m_log);
+        if (controller == nullptr)
+        {
+            return Error_t::UNKNOWN_OBJECT;
+        }
 
-        (*m_od)[address][0x1] = (canopen_types::REAL32_t)kp;
-        err                   = writeSDO((*m_od)[address][0x1]);
+        (*controller)[0x1] = (canopen_types::REAL32_t)kp;
+        err                   = writeSDO((*controller)[0x1]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting impedance kp");
             return err;
         }
 
-        (*m_od)[address][0x2] = (canopen_types::REAL32_t)kd;
-        err                   = writeSDO((*m_od)[address][0x2]);
+        (*controller)[0x2] = (canopen_types::REAL32_t)kd;
+        err                   = writeSDO((*controller)[0x2]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting impedance kd");
@@ -565,14 +571,13 @@ namespace mab
     MDCO::getMainEncoderStatus()
     {
         mab::MDStatus              statuses;
-        constexpr std::string_view encoderStatusName = "Main Encoder Status";
-        auto                       encoderStatusOpt  = m_od->getEntryByName(encoderStatusName);
-        if (!encoderStatusOpt.has_value())
+        EDSEntry* encoderStatusEntry =
+            md_objects::resolveObject(*m_od, md_objects::AUX_ENCODER_STATUS, m_log);
+        if (encoderStatusEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", encoderStatusName.data());
             return {statuses.encoderStatus, Error_t::UNKNOWN_OBJECT};
         }
-        auto&   encoderStatusObj = encoderStatusOpt.value().get();
+        auto& encoderStatusObj = *encoderStatusEntry;
         Error_t err              = readSDO(encoderStatusObj);
         if (err != Error_t::OK)
         {
@@ -589,14 +594,13 @@ namespace mab
     MDCO::getOutputEncoderStatus()
     {
         mab::MDStatus              statuses;
-        constexpr std::string_view encoderStatusName = "Output Encoder Status";
-        auto                       encoderStatusOpt  = m_od->getEntryByName(encoderStatusName);
-        if (!encoderStatusOpt.has_value())
+        EDSEntry* encoderStatusEntry =
+            md_objects::resolveObject(*m_od, md_objects::AUX_ENCODER_STATUS, m_log);
+        if (encoderStatusEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", encoderStatusName.data());
             return {statuses.encoderStatus, Error_t::UNKNOWN_OBJECT};
         }
-        auto&   encoderStatusObj = encoderStatusOpt.value().get();
+        auto& encoderStatusObj = *encoderStatusEntry;
         Error_t err              = readSDO(encoderStatusObj);
         if (err != Error_t::OK)
         {
@@ -613,14 +617,13 @@ namespace mab
     MDCO::getCalibrationStatus()
     {
         mab::MDStatus              statuses;
-        constexpr std::string_view calibrationStatusName = "Calibration Status";
-        auto calibrationStatusOpt = m_od->getEntryByName(calibrationStatusName);
-        if (!calibrationStatusOpt.has_value())
+        EDSEntry* calibrationStatusEntry =
+            md_objects::resolveObject(*m_od, md_objects::CALIBRATION_STATUS, m_log);
+        if (calibrationStatusEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", calibrationStatusName.data());
             return {statuses.calibrationStatus, Error_t::UNKNOWN_OBJECT};
         }
-        auto&   calibrationStatusObj = calibrationStatusOpt.value().get();
+        auto& calibrationStatusObj = *calibrationStatusEntry;
         Error_t err                  = readSDO(calibrationStatusObj);
         if (err != Error_t::OK)
         {
@@ -637,14 +640,13 @@ namespace mab
     MDCO::getBridgeStatus()
     {
         mab::MDStatus              statuses;
-        constexpr std::string_view bridgeStatusName = "Bridge Status";
-        auto                       bridgeStatusOpt  = m_od->getEntryByName(bridgeStatusName);
-        if (!bridgeStatusOpt.has_value())
+        EDSEntry* bridgeStatusEntry =
+            md_objects::resolveObject(*m_od, md_objects::BRIDGE_STATUS, m_log);
+        if (bridgeStatusEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", bridgeStatusName.data());
             return {statuses.bridgeStatus, Error_t::UNKNOWN_OBJECT};
         }
-        auto&   bridgeStatusObj = bridgeStatusOpt.value().get();
+        auto& bridgeStatusObj = *bridgeStatusEntry;
         Error_t err             = readSDO(bridgeStatusObj);
         if (err != Error_t::OK)
         {
@@ -660,14 +662,13 @@ namespace mab
     MDCO::getHardwareStatus()
     {
         mab::MDStatus              statuses;
-        constexpr std::string_view hardwareStatusName = "Hardware Status";
-        auto                       hardwareStatusOpt  = m_od->getEntryByName(hardwareStatusName);
-        if (!hardwareStatusOpt.has_value())
+        EDSEntry* hardwareStatusEntry =
+            md_objects::resolveObject(*m_od, md_objects::HARDWARE_STATUS, m_log);
+        if (hardwareStatusEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", hardwareStatusName.data());
             return {statuses.hardwareStatus, Error_t::UNKNOWN_OBJECT};
         }
-        auto&   hardwareStatusObj = hardwareStatusOpt.value().get();
+        auto& hardwareStatusObj = *hardwareStatusEntry;
         Error_t err               = readSDO(hardwareStatusObj);
         if (err != Error_t::OK)
         {
@@ -684,14 +685,13 @@ namespace mab
     MDCO::getCommunicationStatus()
     {
         mab::MDStatus              statuses;
-        constexpr std::string_view communicationStatusName = "Communication Status";
-        auto communicationStatusOpt = m_od->getEntryByName(communicationStatusName);
-        if (!communicationStatusOpt.has_value())
+        EDSEntry* communicationStatusEntry =
+            md_objects::resolveObject(*m_od, md_objects::COMMUNICATION_STATUS, m_log);
+        if (communicationStatusEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", communicationStatusName.data());
             return {statuses.communicationStatus, Error_t::UNKNOWN_OBJECT};
         }
-        auto&   communicationStatusObj = communicationStatusOpt.value().get();
+        auto& communicationStatusObj = *communicationStatusEntry;
         Error_t err                    = readSDO(communicationStatusObj);
         if (err != Error_t::OK)
         {
@@ -708,14 +708,13 @@ namespace mab
     MDCO::getMotionStatus()
     {
         mab::MDStatus              statuses;
-        constexpr std::string_view motionStatusName = "Motion Status";
-        auto                       motionStatusOpt  = m_od->getEntryByName(motionStatusName);
-        if (!motionStatusOpt.has_value())
+        EDSEntry* motionStatusEntry =
+            md_objects::resolveObject(*m_od, md_objects::MOTION_STATUS, m_log);
+        if (motionStatusEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", motionStatusName.data());
             return {statuses.motionStatus, Error_t::UNKNOWN_OBJECT};
         }
-        auto&   motionStatusObj = motionStatusOpt.value().get();
+        auto& motionStatusObj = *motionStatusEntry;
         Error_t err             = readSDO(motionStatusObj);
         if (err != Error_t::OK)
         {
