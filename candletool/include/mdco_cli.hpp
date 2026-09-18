@@ -96,12 +96,11 @@ namespace mab
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
                     {"index",
-                     rootCli
-                         ->add_option("--index", *index, "Register ID (offset) to read data from.")
+                     rootCli->add_option("index", *index, "Register ID (offset) to read data from.")
                          ->required()},
                     {"subindex",
                      rootCli->add_option(
-                         "--subindex", *subindex, "Register ID (offset) to read data from.")}};
+                         "--subindex", *subindex, "Subindex of the object to read data from.")}};
             }
 
             const std::shared_ptr<u16>               index;
@@ -132,11 +131,11 @@ namespace mab
                 optionsMap = std::map<std::string, CLI::Option*>{
                     {"index",
                      rootCli
-                         ->add_option("--index", *index, "Register ID (offset) to read data from.")
+                         ->add_option("index", *index, "Register ID (offset) to write data to.")
                          ->required()},
                     {"subindex",
                      rootCli->add_option(
-                         "--subindex", *subindex, "Register ID (offset) to read data from.")},
+                         "--subindex", *subindex, "Subindex of the object to write data to.")},
                     {"value",
                      rootCli->add_option("--value", *valueStr, "Value to write by sdo")
                          ->required()}};

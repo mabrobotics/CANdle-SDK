@@ -4,7 +4,10 @@
 #include <chrono>
 #include <cstddef>
 #include <exception>
+#include <charconv>
 #include <filesystem>
+#include <iomanip>
+#include <limits>
 #include <memory>
 #include <ranges>
 #include <sstream>
@@ -31,6 +34,41 @@ bool testRunning = true;
 
 namespace
 {
+    /// @brief CANopen object indices are written in hex, so an argument without the 0x prefix
+    /// is usually a forgotten prefix rather than a decimal index - point the user at the hex
+    /// reading of what was passed, as long as that one exists in the .eds
+    /// @param od object dictionary parsed from the .eds file
+    /// @param indexOption cli option the index was parsed from, holds the raw argument
+    /// @param parsedIndex index as it was parsed by the cli
+    /// @param log logger used to report the tip
+    void hintHexIndex(EDSObjectDictionary& od,
+                      const CLI::Option*   indexOption,
+                      u16                  parsedIndex,
+                      const Logger&        log)
+    {
+        if (indexOption == nullptr || indexOption->results().empty())
+            return;
+
+        const std::string& argument = indexOption->results().front();
+        if (argument.starts_with("0x") || argument.starts_with("0X"))
+            return;
+
+        u32        asHex    = 0;
+        const auto [ptr, ec] = std::from_chars(
+            argument.data(), argument.data() + argument.size(), asHex, 16);
+
+        if (ec != std::errc{} || ptr != argument.data() + argument.size())
+            return;
+        if (asHex > std::numeric_limits<u16>::max() || asHex == parsedIndex)
+            return;
+        if (!od.hasEntry(static_cast<u16>(asHex)))
+            return;
+
+        log.info("Did you mean to access index 0x%04X (%s)? ",
+                 asHex,
+                 od[static_cast<u16>(asHex)].getEntryMetaData().parameterName.c_str());
+    }
+
     /// @brief Verify that an address exists in the loaded .eds before it gets accessed
     /// @param od object dictionary parsed from the .eds file
     /// @param index object index requested by the user
@@ -45,9 +83,10 @@ namespace
         if (!od.hasEntry(index))
         {
             log.error(
-                "Object 0x%04X is not present in the loaded .eds file. Either the index is wrong "
-                "or the .eds does not match the firmware of the drive - check the eds path in "
-                "candletool.ini",
+                "Object %u (0x%04X) is not present in the loaded .eds file. Either the index is "
+                "wrong or the .eds does not match the firmware of the drive - check the eds path "
+                "in candletool.ini",
+                index,
                 index);
             return false;
         }
@@ -62,9 +101,11 @@ namespace
             {
                 std::stringstream ss;
                 for (const u8 available : subIndices)
-                    ss << "0x" << std::hex << (unsigned)available << " ";
-                log.error("Object 0x%04X (%s) is a record, it has to be accessed with --subindex. "
-                          "Subindices defined in the .eds: %s",
+                    ss << "0x" << std::hex << std::setw(2) << std::setfill('0')
+                       << (unsigned)available << " ";
+                log.error("Object %u (0x%04X) '%s' is a record, it has to be accessed with "
+                          "--subindex. Subindices defined in the .eds: %s",
+                          index,
                           index,
                           entryName.c_str(),
                           ss.str().c_str());
@@ -75,8 +116,9 @@ namespace
 
         if (subIndices.empty())
         {
-            log.error("Object 0x%04X (%s) is a single value, it has no subindices - drop the "
-                      "--subindex option",
+            log.error("Object %u (0x%04X) '%s' is a single value, it has no subindices - drop "
+                      "the --subindex option",
+                      index,
                       index,
                       entryName.c_str());
             return false;
@@ -86,12 +128,15 @@ namespace
         {
             std::stringstream ss;
             for (const u8 available : subIndices)
-                ss << "0x" << std::hex << (unsigned)available << " ";
+                ss << "0x" << std::hex << std::setw(2) << std::setfill('0')
+                   << (unsigned)available << " ";
             log.error(
-                "Subindex 0x%02X is not present in object 0x%04X (%s). Either the subindex is "
-                "wrong or the .eds does not match the firmware of the drive. Subindices defined "
-                "in the .eds: %s",
+                "Subindex %u (0x%02X) is not present in object %u (0x%04X) '%s'. Either the "
+                "subindex is wrong or the .eds does not match the firmware of the drive. "
+                "Subindices defined in the .eds: %s",
                 subIndex.value(),
+                subIndex.value(),
+                index,
                 index,
                 entryName.c_str(),
                 ss.str().c_str());
@@ -476,7 +521,10 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         {
             auto od = loadEDS().first;
             if (!checkAddressInEds(*od, *readOption.index, *readOption.subindex, m_log))
+            {
+                hintHexIndex(*od, readOption.optionsMap.at("index"), *readOption.index, m_log);
                 return;
+            }
 
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
@@ -495,6 +543,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 if (err != MDCO::Error_t::OK)
                 {
                     m_log.error("could not read this sdo!");
+                    hintHexIndex(*od, readOption.optionsMap.at("index"), *readOption.index, m_log);
                     return;
                 }
                 m_log.success(
@@ -515,6 +564,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 if (err != MDCO::Error_t::OK)
                 {
                     m_log.error("could not read this sdo!");
+                    hintHexIndex(*od, readOption.optionsMap.at("index"), *readOption.index, m_log);
                     return;
                 }
                 m_log.success("%s = %s",
@@ -533,7 +583,10 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         {
             auto od = loadEDS().first;
             if (!checkAddressInEds(*od, *writeOption.index, *writeOption.subindex, m_log))
+            {
+                hintHexIndex(*od, writeOption.optionsMap.at("index"), *writeOption.index, m_log);
                 return;
+            }
 
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
@@ -554,6 +607,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 if (err != MDCO::Error_t::OK)
                 {
                     m_log.error("could not write this sdo!");
+                    hintHexIndex(
+                        *od, writeOption.optionsMap.at("index"), *writeOption.index, m_log);
                     return;
                 }
                 m_log.success(
@@ -575,6 +630,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 if (err != MDCO::Error_t::OK)
                 {
                     m_log.error("could not write this sdo!");
+                    hintHexIndex(
+                        *od, writeOption.optionsMap.at("index"), *writeOption.index, m_log);
                     return;
                 }
                 m_log.success("%s = %s",
