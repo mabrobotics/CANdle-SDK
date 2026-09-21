@@ -24,6 +24,8 @@
 #include "curl_handler.hpp"
 #include "flasher.hpp"
 
+#include <curl/curl.h>
+
 #ifndef WIN32
 
 #define REDSTART    "\033[1;31m"
@@ -56,6 +58,17 @@
 
 namespace mab
 {
+    static size_t curlCallback(char* ptr, size_t size, size_t nmemb, std::string* out)
+    {
+        out->append(ptr, size * nmemb);
+        return size * nmemb;
+    }
+
+    static size_t writeToFileCallback(char* ptr, size_t size, size_t nmemb, FILE* file)
+    {
+        return fwrite(ptr, size, nmemb, file);
+    }
+
     version_ut getMdFirmwareVersion(MD& md)
     {
         md.readRegister(md.m_mdRegisters.firmwareVersion);
@@ -66,6 +79,152 @@ namespace mab
         if (fwVersion.s.major < major || fwVersion.s.minor < minor || fwVersion.s.revision < rev)
             return false;
         return true;
+    }
+
+    int compareVersions(version_ut fwVersion, int major, int minor, int rev)
+    {
+        if (fwVersion.s.major != major)
+            return fwVersion.s.major > major ? 1 : -1;
+
+        if (fwVersion.s.minor != minor)
+            return fwVersion.s.minor > minor ? 1 : -1;
+
+        if (fwVersion.s.revision != rev)
+            return fwVersion.s.revision > rev ? 1 : -1;
+
+        return 0;
+    }
+
+    bool MDCli::checkVersion(version_ut currentVersion, const std::string& targetVersion)
+    {
+        int targetMajor = 0, targetMinor = 0, targetRevision = 0;
+
+        if (sscanf(
+                targetVersion.c_str(), "%d.%d.%d", &targetMajor, &targetMinor, &targetRevision) ==
+            3)
+        {
+            int compareVersionResult =
+                compareVersions(currentVersion, targetMajor, targetMinor, targetRevision);
+
+            if (compareVersionResult == 0)
+            {
+                m_logger.info("MD firmware version (%s) is already installed.",
+                              targetVersion.c_str());
+                return false;
+            }
+            else if (compareVersionResult > 0)
+            {
+                m_logger.warn(
+                    "You are attempting to update MD from version v%d.%d.%d to version "
+                    "v%s.\n This comes with changes, that in specific conditions "
+                    "(motor+encoder combinations) may require you to:\n"
+                    "- reapply .cfg file,\n"
+                    "- perform calibration,\n"
+                    "- set zero offset.\n"
+                    "Continue? [y/n]",
+                    currentVersion.s.major,
+                    currentVersion.s.minor,
+                    currentVersion.s.revision,
+                    targetVersion.c_str());
+
+                std::string answer;
+                std::getline(std::cin, answer);
+                if (answer != "y" && answer != "Y")
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                m_logger.info("Update available! Newer version: v%s.", targetVersion.c_str());
+                m_logger.info("Are you sure you want to upgrade from v%d.%d.%d? [y/N]:",
+                              currentVersion.s.major,
+                              currentVersion.s.minor,
+                              currentVersion.s.revision);
+
+                std::string answer;
+                std::getline(std::cin, answer);
+                if (answer != "y" && answer != "Y")
+                {
+                    return false;
+                }
+            }
+        }
+        else if (targetVersion == "latest")
+        {
+            m_logger.info("Using 'latest'. Current version is: %d.%d.%d",
+                          currentVersion.s.major,
+                          currentVersion.s.minor,
+                          currentVersion.s.revision);
+        }
+        else
+        {
+            m_logger.error("Invalid firmware version format.");
+            return false;
+        }
+
+        return true;
+    }
+
+    std::optional<std::string> fetchUrl(const std::string& url)
+    {
+        CURL* curl = curl_easy_init();
+
+        std::string resBody;
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resBody);
+        curl_easy_setopt(curl, CURLOPT_USERAGENT, "candletool");
+
+        CURLcode res = curl_easy_perform(curl);
+
+        if (res != CURLE_OK)
+        {
+            curl_easy_cleanup(curl);
+            return std::nullopt;
+        }
+
+        long httpCode = 0;
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
+        curl_easy_cleanup(curl);
+
+        if (httpCode != 200)
+            return std::nullopt;
+
+        return resBody;
+    }
+
+    bool MDCli::downloadFile(const std::string& url, const std::filesystem::path& outputPath)
+    {
+        FILE* file = std::fopen(outputPath.string().c_str(), "wb");
+        if (!file)
+        {
+            m_logger.error("Failed to open output file for writing.");
+            return false;
+        }
+
+        CURL* curl = curl_easy_init();
+        if (!curl)
+        {
+            std::fclose(file);
+            return false;
+        }
+
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_USERAGENT, "candletool");
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToFileCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, file);
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+
+        CURLcode res = curl_easy_perform(curl);
+
+        long httpCode = 0;
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
+
+        curl_easy_cleanup(curl);
+        std::fclose(file);
+
+        return (res == CURLE_OK && httpCode == 200);
     }
 
     MDCli::MDCli(CLI::App* rootCli, CANdleToolCtx_S ctx)
@@ -226,8 +385,8 @@ namespace mab
                         "It appears the drive does not require a calibration. Are you sure you "
                         "want to proceed?");
 
+                m_logger.info("Type 'Y' to continue: ");
                 std::string answer;
-                std::cout << "Type 'Y' to continue: ";
                 std::getline(std::cin, answer);
                 if (answer != "Y" && answer != "y")
                 {
@@ -546,8 +705,8 @@ namespace mab
                     "The factory reset, will erase the whole configuration from the drive, "
                     "including its CAN ID to 100 (0x64)! Proceed?");
 
+                m_logger.info("Type 'Y' to continue: ");
                 std::string answer;
-                std::cout << "Type 'Y' to continue: ";
                 std::getline(std::cin, answer);
                 if (answer != "Y" && answer != "y")
                 {
@@ -1295,8 +1454,8 @@ namespace mab
                         "including"
                         "bootloader configuration. Drives' CAN ID will be set default 100 (0x64)! "
                         "Proceed?");
+                    m_logger.info("Type 'Y' to continue: ");
                     std::string answer;
-                    std::cout << "Type 'Y' to continue: ";
                     std::getline(std::cin, answer);
                     if (answer != "Y" && answer != "y")
                     {
@@ -1333,38 +1492,175 @@ namespace mab
                         m_logger.error("For example candletool md update latest");
                         return;
                     }
-                    std::string fallbackPath = ctx.packageEtcPath->generic_string();
+
+                    version_ut currentVersion;
+                    {
+                        auto md = getMd(mdCanId, candleBuilder);
+                        if (md == nullptr)
+                        {
+                            m_logger.error("Could not communicate with MD device!");
+                            return;
+                        }
+
+                        currentVersion = getMdFirmwareVersion(*md);
+                    }  // parenthesis should be there (problem with candle pointer)
+
+                    std::string targetVersion = *updateOptions.fwVersion;
+
+                    version_ut targetVersion_ut;
+                    sscanf(targetVersion.c_str(),
+                           "%hhu.%hhu.%hhu",
+                           &targetVersion_ut.s.major,
+                           &targetVersion_ut.s.minor,
+                           &targetVersion_ut.s.revision);
+
+                    std::optional<std::string> body = fetchUrl(repoUrl);
+                    if (!body)
+                    {
+                        m_logger.error("Failed to reach API.");
+                        return;
+                    }
+
+                    std::filesystem::path tmpDirectory = std::filesystem::temp_directory_path();
+                    std::string iniFileDownloadName = repoUrl.substr(repoUrl.find_last_of('/') + 1);
+                    std::filesystem::path outputPath = tmpDirectory / iniFileDownloadName;
 
                     if (!updateOptions.metadataFile->empty())
-                        fallbackPath = *updateOptions.metadataFile;
+                        outputPath = *updateOptions.metadataFile;
                     else
-                        fallbackPath += "/config/web_files_metadata.ini";
+                        outputPath = tmpDirectory / iniFileDownloadName;
 
-                    m_logger.debug("Fallback path at: %s", fallbackPath.c_str());
-                    mINI::INIFile fallbackMetadataFile(fallbackPath);
-                    CurlHandler   curl(fallbackMetadataFile);
+                    if (!downloadFile(repoUrl, outputPath))
+                    {
+                        m_logger.error("Failed to download update file.");
+                        return;
+                    }
 
-                    std::string fileId = "MAB_CAN_FLASHER_";
-                    fileId += *updateOptions.fwVersion;
-                    auto curlResult = curl.downloadFile(fileId);
-                    if (curlResult.first != CurlHandler::CurlError_E::OK)
+                    mINI::INIFile      iniFile(outputPath.string());
+                    mINI::INIStructure iniData;
+                    iniFile.read(iniData);
+                    CurlHandler curl(iniFile);
+
+                    if (!isVersionAtLeast(targetVersion_ut, 3, 0, 0) && targetVersion != "latest")
+                    {
+                        std::string foundFlasherFileId = "";
+                        std::string prefixFlasherFile  = "mab_can_flasher_" + targetVersion;
+
+                        for (auto const& it : iniData)
+                        {
+                            const std::string& sectionName = it.first;
+
+                            if (sectionName.find(prefixFlasherFile) == 0)
+                            {
+                                foundFlasherFileId = sectionName;
+                                break;
+                            }
+                        }
+
+                        if (foundFlasherFileId.empty())
+                        {
+                            m_logger.error("Firmware version %s is not available on the server.",
+                                           targetVersion.c_str());
+                            return;
+                        }
+
+                        if (!checkVersion(currentVersion, targetVersion))
+                        {
+                            return;
+                        }
+
+                        auto curlResultFlasherFile = curl.downloadFile(foundFlasherFileId);
+                        if (curlResultFlasherFile.first != CurlHandler::CurlError_E::OK)
+                        {
+                            m_logger.error("Error on curl download request!",
+                                           targetVersion.c_str());
+                            return;
+                        }
+
+                        Flasher flasher(curlResultFlasherFile.second);
+                        canId_t flashId = *mdCanId;
+                        if (*updateOptions.recovery)
+                        {
+                            flashId = 9;
+                        }
+                        auto flashResult = flasher.flash(flashId, *updateOptions.recovery);
+                        if (flashResult != Flasher::Error_E::OK)
+                        {
+                            m_logger.error("Error while flashing firmware!");
+                            return;
+                        }
+                        m_logger.success("Update complete for MD @ %d", *mdCanId);
+                        return;
+                    }
+
+                    std::string foundMabFileId = "";
+                    std::string prefixMabFile  = "md_app_" + targetVersion;
+
+                    for (auto const& it : iniData)
+                    {
+                        const std::string& sectionName = it.first;
+
+                        if (sectionName.find(prefixMabFile) == 0)
+                        {
+                            foundMabFileId = sectionName;
+                            break;
+                        }
+                    }
+
+                    if (foundMabFileId.empty())
+                    {
+                        m_logger.error("Firmware version %s is not available on the server.",
+                                       targetVersion.c_str());
+                        return;
+                    }
+
+                    if (!checkVersion(currentVersion, targetVersion))
+                    {
+                        return;
+                    }
+
+                    auto curlResultMabFile = curl.downloadFile(foundMabFileId);
+                    if (curlResultMabFile.first != CurlHandler::CurlError_E::OK)
                     {
                         m_logger.error("Error on curl download request!");
                         return;
                     }
-                    Flasher flasher(curlResult.second);
-                    canId_t flashId = *mdCanId;
-                    if (*updateOptions.recovery)
+
+                    std::string   mabFilePath = curl.getMabFilePath();
+                    MabFileParser mabFile(mabFilePath, MabFileParser::TargetDevice_E::MD);
+
+                    if (*(updateOptions.recovery) == false)
                     {
-                        flashId = 9;
+                        auto md = getMd(mdCanId, candleBuilder);
+                        if (md == nullptr)
+                        {
+                            m_logger.error("Could not communicate with MD device with ID %d",
+                                           *mdCanId);
+                            return;
+                        }
+                        md->reset();
+                        usleep(200'000);
                     }
-                    auto flashResult = flasher.flash(flashId, *updateOptions.recovery);
-                    if (flashResult != Flasher::Error_E::OK)
+                    else
                     {
-                        m_logger.error("Error while flashing firmware!");
+                        m_logger.warn("Recovery mode...");
+                        m_logger.warn(
+                            "Please make sure driver is in the bootloader phase (rebooting)");
+                    }
+                    auto candle = candleBuilder->build().value_or(nullptr);
+                    if (candle == nullptr)
+                    {
+                        m_logger.error("Could not connect to candle!");
                         return;
                     }
+                    CanLoader canLoader(candle, &mabFile, *mdCanId);
+                    if (!canLoader.flashAndBoot(*(updateOptions.recovery)))
+                    {
+                        m_logger.error("MD flashing failed!");
 
+                        return;
+                    }
+                    m_logger.success("Update complete for MD @ %d", *mdCanId);
                     return;
                 }
                 else

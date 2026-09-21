@@ -26,20 +26,23 @@ namespace mab
         CurlHandler(const mINI::INIFile fallbackMetadata);
 
         std::pair<CurlError_E, WebFile_S> downloadFile(const std::string_view id);
+        std::string                       getMabFilePath();
 
       private:
         Logger m_log = Logger(Logger::ProgramLayer_E::LAYER_2, "CurlHandler");
 
         const mINI::INIFile m_fallbackMetadata;
         mINI::INIStructure  m_addressLutStructure;
+        std::string         fullOutputPath;
 
         CurlError_E getLatestLut();
 
         static inline std::string constructCurlCmd(std::string_view filename,
-                                                   std::string_view baseUrl)
+                                                   std::string_view baseUrl,
+                                                   std::string_view outputPath)
         {
             std::stringstream ret;
-            ret << "curl --fail -L -o " << filename << " " << baseUrl << filename;
+            ret << "curl --fail -L -o " << outputPath << " " << baseUrl << filename;
             return ret.str();
         }
     };

@@ -27,6 +27,12 @@ namespace mab
             const std::shared_ptr<const CandleBuilder> candleBuilder);
         bool                       registerWrite(MD& md, u16 regAdress, const std::string& value);
         std::optional<std::string> registerRead(MD& md, u16 regAdress);
+        bool downloadFile(const std::string& url, const std::filesystem::path& outputPath);
+        bool checkVersion(version_ut currentVersion, const std::string& targetVersion);
+
+        std::string repoUrl =
+            "https://mabrobotics.github.io/mab-documentation-devel-deploy/_static/firmware/"
+            "api_download.ini";
 
         struct CanOptions
         {

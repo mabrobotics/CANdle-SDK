@@ -9,12 +9,18 @@ namespace mab
     {
     }
 
+    std::string CurlHandler::getMabFilePath()
+    {
+        std::string outputPath = fullOutputPath;
+        return outputPath;
+    }
+
     std::pair<CurlHandler::CurlError_E, WebFile_S> CurlHandler::downloadFile(
         const std::string_view id)
     {
         m_log.info("Downloading file [ %s ]", id.data());
         WebFile_S webFile;
-        webFile.m_path = std::filesystem::current_path();
+        webFile.m_path = std::filesystem::temp_directory_path();
 
         const mINI::INIFile* file;
         // Try to get the latest LUT from the server
@@ -59,23 +65,27 @@ namespace mab
         // For multiarch entries
         if (filename.empty())
         {
-            constexpr sysArch_E arch           = getSysArch();
-            std::string         filename_field = "filename_";
+            if (type == WebFile_S::Type_E::MD_FLASHER)
+            {
+                constexpr sysArch_E arch           = getSysArch();
+                std::string         filename_field = "filename_";
 
-            if constexpr (arch == sysArch_E::ARM64)
-                filename_field += "arm64";
-            else if constexpr (arch == sysArch_E::ARMHF)
-                filename_field += "armhf";
-            else if constexpr (arch == sysArch_E::X86_64)
-                filename_field += "x86_64";
-            else
-                m_log.warn("No architecture specific filename found");
-            filename = m_addressLutStructure[id.data()][filename_field];
+                if constexpr (arch == sysArch_E::ARM64)
+                    filename_field += "arm64";
+                else if constexpr (arch == sysArch_E::ARMHF)
+                    filename_field += "armhf";
+                else if constexpr (arch == sysArch_E::X86_64)
+                    filename_field += "x86_64";
+                else
+                    m_log.warn("No architecture specific filename found");
+                filename = m_addressLutStructure[id.data()][filename_field];
+            }
         }
         if (!baseUrl.empty() && !filename.empty())
         {
             m_log.info("Found URL [ %s ] for file [ %s ]", baseUrl.c_str(), filename.data());
-            std::string command = constructCurlCmd(filename, baseUrl);
+            fullOutputPath      = (webFile.m_path / filename).string();
+            std::string command = constructCurlCmd(filename, baseUrl, fullOutputPath);
             bool        result  = executeCommand(command);
             if (result)
             {
@@ -83,7 +93,7 @@ namespace mab
                            filename.data(),
                            (baseUrl + filename).c_str());
                 m_log.warn("Trying mirror...");
-                command = constructCurlCmd(filename, baseUrlMirror);
+                command = constructCurlCmd(filename, baseUrlMirror, fullOutputPath);
                 result  = executeCommand(command);
 
                 if (result)

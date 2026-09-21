@@ -16,7 +16,8 @@ namespace mab
             m_log.error("No path to the file!");
             return Error_E::NO_FILE;
         }
-        else if (m_type != Type_E::CANDLE_FLASHER && m_type != Type_E::MD_FLASHER)
+        else if (m_type != Type_E::CANDLE_FLASHER && m_type != Type_E::MD_FLASHER &&
+                 m_type != Type_E::MD)
         {
             m_log.error("Invalid file type: %s", typeToStr(m_type).c_str());
             return Error_E::EXECUTION_ERROR;
@@ -45,6 +46,8 @@ namespace mab
         if (err)
         {
             m_log.error("Error executing flasher device!");
+            m_log.error("Note: If you are on Linux, this might be a permission issue.!");
+            m_log.error("Ensure your user is in the 'dialout' group to access serial devices.");
             return Error_E::EXECUTION_ERROR;
         }
         return Error_E::OK;

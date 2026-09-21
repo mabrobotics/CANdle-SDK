@@ -10,6 +10,7 @@ namespace mab
         enum class Type_E
         {
             UNKNOWN,
+            MD,
             MD_FLASHER,
             CANDLE_FLASHER,
             MAB_FILE,
@@ -23,6 +24,8 @@ namespace mab
         {
             if (str == "MD_FLASHER")
                 return Type_E::MD_FLASHER;
+            if (str == "MD")
+                return Type_E::MD;
             if (str == "CANDLE_FLASHER")
                 return Type_E::CANDLE_FLASHER;
             if (str == "MAB_FILE")
@@ -40,6 +43,8 @@ namespace mab
             {
                 case Type_E::MD_FLASHER:
                     return "MD_FLASHER";
+                case Type_E::MD:
+                    return "MD";
                 case Type_E::CANDLE_FLASHER:
                     return "CANDLE_FLASHER";
                 case Type_E::MAB_FILE:
