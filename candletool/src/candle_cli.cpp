@@ -56,7 +56,8 @@ namespace mab
 
                     m_logger.debug("Fallback path at: %s", fallbackPath.c_str());
                     mINI::INIFile fallbackMetadataFile(fallbackPath);
-                    CurlHandler   curl(fallbackMetadataFile);
+                    CurlHandler   curl;
+                    curl.setFallbackMetadata(fallbackMetadataFile);
 
                     std::string fileId = "MAB_USB_MABFILE_";
                     fileId += *updateOptions.fwVersion;

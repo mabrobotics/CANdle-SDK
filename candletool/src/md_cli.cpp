@@ -19,12 +19,9 @@
 #include "md_cfg_map.hpp"
 #include "utilities.hpp"
 #include "MDStatus.hpp"
-#include "mini/ini.h"
 #include "configHelpers.hpp"
 #include "curl_handler.hpp"
 #include "flasher.hpp"
-
-#include <curl/curl.h>
 
 #ifndef WIN32
 
@@ -58,22 +55,24 @@
 
 namespace mab
 {
-    static size_t curlCallback(char* ptr, size_t size, size_t nmemb, std::string* out)
-    {
-        out->append(ptr, size * nmemb);
-        return size * nmemb;
-    }
-
-    static size_t writeToFileCallback(char* ptr, size_t size, size_t nmemb, FILE* file)
-    {
-        return fwrite(ptr, size, nmemb, file);
-    }
-
     version_ut getMdFirmwareVersion(MD& md)
     {
         md.readRegister(md.m_mdRegisters.firmwareVersion);
         return {.i = md.m_mdRegisters.firmwareVersion.value};
     }
+
+    bool MDCli::cmdUserContinue()
+    {
+        m_logger.info("Do you want to continue? [y/N]");
+        std::string answer;
+        std::getline(std::cin, answer);
+        if (answer != "y" && answer != "Y")
+        {
+            return false;
+        }
+        return true;
+    }
+
     bool isVersionAtLeast(version_ut fwVersion, int major, int minor, int rev)
     {
         if (fwVersion.s.major < major || fwVersion.s.minor < minor || fwVersion.s.revision < rev)
@@ -93,6 +92,18 @@ namespace mab
             return fwVersion.s.revision > rev ? 1 : -1;
 
         return 0;
+    }
+
+    void MDCli::resetMD(const std::shared_ptr<canId_t>             mdCanId,
+                        const std::shared_ptr<const CandleBuilder> candleBuilder)
+    {
+        auto md = getMd(mdCanId, candleBuilder);
+        if (md == nullptr)
+        {
+            m_logger.error("Could not communicate with MD device with ID %d", *mdCanId);
+            return;
+        }
+        md->reset();
     }
 
     bool MDCli::checkVersion(version_ut currentVersion, const std::string& targetVersion)
@@ -120,34 +131,23 @@ namespace mab
                     "(motor+encoder combinations) may require you to:\n"
                     "- reapply .cfg file,\n"
                     "- perform calibration,\n"
-                    "- set zero offset.\n"
-                    "Continue? [y/n]",
+                    "- set zero offset.",
                     currentVersion.s.major,
                     currentVersion.s.minor,
                     currentVersion.s.revision,
                     targetVersion.c_str());
 
-                std::string answer;
-                std::getline(std::cin, answer);
-                if (answer != "y" && answer != "Y")
-                {
-                    return false;
-                }
+                return cmdUserContinue();
             }
             else
             {
-                m_logger.info("Update available! Newer version: v%s.", targetVersion.c_str());
-                m_logger.info("Are you sure you want to upgrade from v%d.%d.%d? [y/N]:",
+                m_logger.info("Update available! Upgrade to version: v%s from v%d.%d.%d.",
+                              targetVersion.c_str(),
                               currentVersion.s.major,
                               currentVersion.s.minor,
                               currentVersion.s.revision);
 
-                std::string answer;
-                std::getline(std::cin, answer);
-                if (answer != "y" && answer != "Y")
-                {
-                    return false;
-                }
+                return cmdUserContinue();
             }
         }
         else if (targetVersion == "latest")
@@ -166,65 +166,22 @@ namespace mab
         return true;
     }
 
-    std::optional<std::string> fetchUrl(const std::string& url)
+    std::string MDCli::findParsedFile(std::string& prefix, mINI::INIStructure& iniData)
     {
-        CURL* curl = curl_easy_init();
+        std::string foundFile;
 
-        std::string resBody;
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resBody);
-        curl_easy_setopt(curl, CURLOPT_USERAGENT, "candletool");
-
-        CURLcode res = curl_easy_perform(curl);
-
-        if (res != CURLE_OK)
+        for (auto const& it : iniData)
         {
-            curl_easy_cleanup(curl);
-            return std::nullopt;
+            const std::string& sectionName = it.first;
+
+            if (sectionName.find(prefix) == 0)
+            {
+                foundFile = sectionName;
+                break;
+            }
         }
 
-        long httpCode = 0;
-        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
-        curl_easy_cleanup(curl);
-
-        if (httpCode != 200)
-            return std::nullopt;
-
-        return resBody;
-    }
-
-    bool MDCli::downloadFile(const std::string& url, const std::filesystem::path& outputPath)
-    {
-        FILE* file = std::fopen(outputPath.string().c_str(), "wb");
-        if (!file)
-        {
-            m_logger.error("Failed to open output file for writing.");
-            return false;
-        }
-
-        CURL* curl = curl_easy_init();
-        if (!curl)
-        {
-            std::fclose(file);
-            return false;
-        }
-
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_USERAGENT, "candletool");
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToFileCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, file);
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-
-        CURLcode res = curl_easy_perform(curl);
-
-        long httpCode = 0;
-        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
-
-        curl_easy_cleanup(curl);
-        std::fclose(file);
-
-        return (res == CURLE_OK && httpCode == 200);
+        return foundFile;
     }
 
     MDCli::MDCli(CLI::App* rootCli, CANdleToolCtx_S ctx)
@@ -384,11 +341,7 @@ namespace mab
                     m_logger.warn(
                         "It appears the drive does not require a calibration. Are you sure you "
                         "want to proceed?");
-
-                m_logger.info("Type 'Y' to continue: ");
-                std::string answer;
-                std::getline(std::cin, answer);
-                if (answer != "Y" && answer != "y")
+                if (!cmdUserContinue())
                 {
                     m_logger.error("Calibration aborted by user!");
                     return;
@@ -705,10 +658,7 @@ namespace mab
                     "The factory reset, will erase the whole configuration from the drive, "
                     "including its CAN ID to 100 (0x64)! Proceed?");
 
-                m_logger.info("Type 'Y' to continue: ");
-                std::string answer;
-                std::getline(std::cin, answer);
-                if (answer != "Y" && answer != "y")
+                if (!cmdUserContinue())
                 {
                     m_logger.error("Factory Reset aborted by user!");
                     return;
@@ -1263,12 +1213,7 @@ namespace mab
             ->callback(
                 [this, candleBuilder, mdCanId]()
                 {
-                    auto md = getMd(mdCanId, candleBuilder);
-                    if (md == nullptr)
-                    {
-                        return;
-                    }
-                    md->reset();
+                    resetMD(mdCanId, candleBuilder);
                     m_logger.success("MD drive reset");
                 });
 
@@ -1454,10 +1399,7 @@ namespace mab
                         "including"
                         "bootloader configuration. Drives' CAN ID will be set default 100 (0x64)! "
                         "Proceed?");
-                    m_logger.info("Type 'Y' to continue: ");
-                    std::string answer;
-                    std::getline(std::cin, answer);
-                    if (answer != "Y" && answer != "y")
+                    if (!cmdUserContinue())
                     {
                         m_logger.error("Factory Reset aborted by user!");
                         return;
@@ -1470,8 +1412,7 @@ namespace mab
                     }
                     if (!*updateOptions.recovery)
                     {
-                        MD md(*mdCanId, candle);
-                        md.reset();
+                        resetMD(mdCanId, candleBuilder);
                         usleep(200'000);
                     }
                     CanLoader canLoader(candle, nullptr, *mdCanId);
@@ -1493,7 +1434,8 @@ namespace mab
                         return;
                     }
 
-                    version_ut currentVersion;
+                    std::string targetVersion = *updateOptions.fwVersion;
+                    version_ut  currentVersion;
                     {
                         auto md = getMd(mdCanId, candleBuilder);
                         if (md == nullptr)
@@ -1505,8 +1447,6 @@ namespace mab
                         currentVersion = getMdFirmwareVersion(*md);
                     }  // parenthesis should be there (problem with candle pointer)
 
-                    std::string targetVersion = *updateOptions.fwVersion;
-
                     version_ut targetVersion_ut;
                     sscanf(targetVersion.c_str(),
                            "%hhu.%hhu.%hhu",
@@ -1514,49 +1454,38 @@ namespace mab
                            &targetVersion_ut.s.minor,
                            &targetVersion_ut.s.revision);
 
-                    std::optional<std::string> body = fetchUrl(repoUrl);
+                    CurlHandler curl;
+
+                    std::optional<std::string> body = curl.fetchUrl(websiteDownloadUrl);
                     if (!body)
                     {
                         m_logger.error("Failed to reach API.");
                         return;
                     }
 
-                    std::filesystem::path tmpDirectory = std::filesystem::temp_directory_path();
-                    std::string iniFileDownloadName = repoUrl.substr(repoUrl.find_last_of('/') + 1);
-                    std::filesystem::path outputPath = tmpDirectory / iniFileDownloadName;
+                    std::filesystem::path outputPathAPI =
+                        curl.createTemporaryPath(websiteDownloadUrl);
 
                     if (!updateOptions.metadataFile->empty())
-                        outputPath = *updateOptions.metadataFile;
-                    else
-                        outputPath = tmpDirectory / iniFileDownloadName;
+                        outputPathAPI = *updateOptions.metadataFile;
 
-                    if (!downloadFile(repoUrl, outputPath))
+                    if (!curl.downloadAPIFile(websiteDownloadUrl, outputPathAPI))
                     {
                         m_logger.error("Failed to download update file.");
                         return;
                     }
 
-                    mINI::INIFile      iniFile(outputPath.string());
+                    mINI::INIFile      iniFile(outputPathAPI.string());
                     mINI::INIStructure iniData;
                     iniFile.read(iniData);
-                    CurlHandler curl(iniFile);
+                    curl.setFallbackMetadata(iniFile);
 
+                    // Decision: Should md be updated with .mab file or Flasher?
                     if (!isVersionAtLeast(targetVersion_ut, 3, 0, 0) && targetVersion != "latest")
                     {
-                        std::string foundFlasherFileId = "";
+                        // Download with a FLASHER
                         std::string prefixFlasherFile  = "mab_can_flasher_" + targetVersion;
-
-                        for (auto const& it : iniData)
-                        {
-                            const std::string& sectionName = it.first;
-
-                            if (sectionName.find(prefixFlasherFile) == 0)
-                            {
-                                foundFlasherFileId = sectionName;
-                                break;
-                            }
-                        }
-
+                        std::string foundFlasherFileId = findParsedFile(prefixFlasherFile, iniData);
                         if (foundFlasherFileId.empty())
                         {
                             m_logger.error("Firmware version %s is not available on the server.",
@@ -1572,8 +1501,8 @@ namespace mab
                         auto curlResultFlasherFile = curl.downloadFile(foundFlasherFileId);
                         if (curlResultFlasherFile.first != CurlHandler::CurlError_E::OK)
                         {
-                            m_logger.error("Error on curl download request!",
-                                           targetVersion.c_str());
+                            m_logger.error("Error on curl download request! Error code: %s",
+                                           curl.typeToStr(curlResultFlasherFile.first));
                             return;
                         }
 
@@ -1593,20 +1522,9 @@ namespace mab
                         return;
                     }
 
-                    std::string foundMabFileId = "";
+                    // Download with a .mab file
                     std::string prefixMabFile  = "md_app_" + targetVersion;
-
-                    for (auto const& it : iniData)
-                    {
-                        const std::string& sectionName = it.first;
-
-                        if (sectionName.find(prefixMabFile) == 0)
-                        {
-                            foundMabFileId = sectionName;
-                            break;
-                        }
-                    }
-
+                    std::string foundMabFileId = findParsedFile(prefixMabFile, iniData);
                     if (foundMabFileId.empty())
                     {
                         m_logger.error("Firmware version %s is not available on the server.",
@@ -1622,23 +1540,17 @@ namespace mab
                     auto curlResultMabFile = curl.downloadFile(foundMabFileId);
                     if (curlResultMabFile.first != CurlHandler::CurlError_E::OK)
                     {
-                        m_logger.error("Error on curl download request!");
+                        m_logger.error("Error on curl download request! Error code: %s",
+                                       curl.typeToStr(curlResultMabFile.first));
                         return;
                     }
 
-                    std::string   mabFilePath = curl.getMabFilePath();
+                    std::string   mabFilePath = curl.getOutputFilePath();
                     MabFileParser mabFile(mabFilePath, MabFileParser::TargetDevice_E::MD);
 
                     if (*(updateOptions.recovery) == false)
                     {
-                        auto md = getMd(mdCanId, candleBuilder);
-                        if (md == nullptr)
-                        {
-                            m_logger.error("Could not communicate with MD device with ID %d",
-                                           *mdCanId);
-                            return;
-                        }
-                        md->reset();
+                        resetMD(mdCanId, candleBuilder);
                         usleep(200'000);
                     }
                     else
@@ -1687,16 +1599,16 @@ namespace mab
                                 "(motor+encoder combinations) may require you to:\n"
                                 "- reapply .cfg file,\n"
                                 "- perform calibration,\n"
-                                "- set zero offset.\n"
-                                "Continue? [y/n]",
+                                "- set zero offset.",
                                 fw.s.major,
                                 fw.s.minor,
                                 fw.s.revision,
                                 mabFile.m_fwEntry.version);
-                            char c;
-                            std::cin >> c;
-                            if (c != 'y' && c != 'Y')
+                            if (!cmdUserContinue())
+                            {
+                                m_logger.error("Update aborted by user!");
                                 return;
+                            }
                         }
 
                         md->reset();
