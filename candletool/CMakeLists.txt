@@ -59,8 +59,14 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_executable(candletool ${CANDLETOOL_SOURCES})
 
+target_link_libraries(candletool
+  PRIVATE
+  CURL::libcurl
+  CLI11
+)
+
 if(UNIX)
-  target_link_libraries(candletool PUBLIC candle logger PRIVATE CURL::libcurl CLI11)
+  target_link_libraries(candletool PUBLIC candle logger)
 endif()
 
 target_include_directories(
@@ -140,13 +146,13 @@ if(WIN32)
     COMPONENT _configs)
   target_link_libraries(
     candletool
+    PUBLIC
     -static
     candle
     -static-libstdc++
     -static-libgcc
     -static
-    logger
-    CLI11)
+    logger)
 
   add_compile_definitions(
     DEFAULT_CANDLETOOL_CONFIG_DIR="${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
