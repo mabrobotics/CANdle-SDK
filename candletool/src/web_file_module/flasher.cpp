@@ -17,7 +17,7 @@ namespace mab
             return Error_E::NO_FILE;
         }
         else if (m_type != Type_E::CANDLE_FLASHER && m_type != Type_E::MD_FLASHER &&
-                 m_type != Type_E::MD)
+                 m_type != Type_E::MAB_FILE)
         {
             m_log.error("Invalid file type: %s", typeToStr(m_type).c_str());
             return Error_E::EXECUTION_ERROR;
