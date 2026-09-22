@@ -9,6 +9,7 @@
 #include "configHelpers.hpp"
 #include "edsParser.hpp"
 #include "mab_types.hpp"
+#include "eds_selection.hpp"
 #include "utilities.hpp"
 
 #include <filesystem>
@@ -34,6 +35,10 @@ namespace mab
 
         std::unique_ptr<MDCO, std::function<void(MDCO*)>> getMdco(
             const std::shared_ptr<canId_t> mdCanId, std::shared_ptr<EDSObjectDictionary> od);
+
+        /// @brief Path of the .eds describing drives with older firmware, empty when the
+        /// installation provides only one .eds
+        std::filesystem::path m_legacyEdsPath;
 
         struct CalibrationOptions
         {

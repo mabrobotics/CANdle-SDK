@@ -1,6 +1,7 @@
 #pragma once
 
 #include "logger.hpp"
+#include "MDObjects.hpp"
 #include "md_cfg_map.hpp"
 #include "edsEntry.hpp"
 #include "MDCO.hpp"
@@ -86,35 +87,43 @@ namespace mab
         {
         }
 
+        // Objects are addressed through md_objects, which resolves them by index and confirms
+        // the identity by name, so a renamed or renumbered .eds revision still maps correctly.
+        // Registers with no CANopen counterpart are absent here on purpose:
+        //   0x012 torque constant, 0x01D KV - the drive derives these from rated torque/current
+        //   0x700 shunt resistance          - deprecated, kept in the .cfg for older files
         static constexpr auto manufacturerRegMaping =
-            std::to_array<std::tuple<u16, std::string_view, std::optional<u8>>>({
-                {0x010, "Motor Name", {}},
-                {0x012, "Torque constant", {}},
+            std::to_array<std::pair<u16, md_objects::ObjectRef>>({
+                {0x010, md_objects::MOTOR_NAME},
+                {0x011, md_objects::POLE_PAIRS},
+                {0x018, md_objects::TORQUE_BANDWIDTH_CFG},
+                {0x01E, md_objects::MOTOR_CALIBRATION_MODE},
+                {0x808, md_objects::MOTOR_SHUTDOWN_TEMP},
+                // {0x600, "Reverse Direction"}, removed for safety
 
-                {0x017, "Gear Ratio", {}},
-                {0x018, "Torque Bandwidth", {}},
-                {0x01E, "Calibration Mode", {}},
-                {0x808, "Motor Shutdown Temperature", {}},
-                // {0x600, "Reverse Direction", {}}, removed for safety
+                {0x02A, md_objects::MAIN_ENCODER_TYPE},
+                {0x02B, md_objects::MAIN_ENCODER_DIR},
 
-                {0x020, "Output Encoder", {0x1}},
-                {0x025, "Output Encoder", {0x3}},
-                {0x026, "Output Encoder", {0x2}},
+                {0x020, md_objects::AUX_ENCODER_TYPE},
+                {0x025, md_objects::AUX_ENCODER_MODE},
+                {0x026, md_objects::AUX_ENCODER_CALIBRATION_MODE},
 
-                {0x030, "Position PID Controller", {0x1}},
-                {0x031, "Position PID Controller", {0x2}},
-                {0x032, "Position PID Controller", {0x3}},
-                {0x034, "Position PID Controller", {0x4}},
+                {0x200, md_objects::TORQUE_SENSOR_TYPE},
 
-                {0x040, "Velocity PID Controller", {0x1}},
-                {0x041, "Velocity PID Controller", {0x2}},
-                {0x042, "Velocity PID Controller", {0x3}},
-                {0x044, "Velocity PID Controller", {0x4}},
+                {0x030, md_objects::POSITION_PID_KP},
+                {0x031, md_objects::POSITION_PID_KI},
+                {0x032, md_objects::POSITION_PID_KD},
+                {0x034, md_objects::POSITION_PID_WINDUP},
 
-                {0x050, "Impedance PD Controller", {0x1}},
-                {0x051, "Impedance PD Controller", {0x2}},
+                {0x040, md_objects::VELOCITY_PID_KP},
+                {0x041, md_objects::VELOCITY_PID_KI},
+                {0x042, md_objects::VELOCITY_PID_KD},
+                {0x044, md_objects::VELOCITY_PID_WINDUP},
 
-                {0x160, "User GPIO Configuration", {}},
+                {0x050, md_objects::IMPEDANCE_PD_KP},
+                {0x051, md_objects::IMPEDANCE_PD_KD},
+
+                {0x160, md_objects::GPIO_MODE},
             });
 
         static constexpr auto standardRegMaping =

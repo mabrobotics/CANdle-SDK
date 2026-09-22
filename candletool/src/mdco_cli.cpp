@@ -165,7 +165,10 @@ std::unique_ptr<MDCO, std::function<void(MDCO*)>> MdcoCli::getMdco(
     auto md =
         std::unique_ptr<MDCO, std::function<void(MDCO*)>>(new MDCO(*mdCanId, candle, od), deleter);
     if (md->init() == MDCO::Error_t::OK)
+    {
+        useEdsMatchingFirmware(*md, od, m_legacyEdsPath, m_log);
         return md;
+    }
     else
     {
         m_log.error("Could not connect to MD!");
@@ -186,33 +189,14 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         [this,
          configFilePath]() -> std::pair<std::shared_ptr<EDSObjectDictionary>, EDSParser::Error_t>
     {
-        if (!std::filesystem::exists(configFilePath))
+        auto edsPaths = readEdsPaths(configFilePath, m_log);
+        if (!edsPaths.has_value())
         {
-            m_log.error(
-                "could not locate candletool.ini configuration file in %s. Is the candletool "
-                "installed "
-                "properly?",
-                configFilePath.c_str());
             exit(1);
         }
+        m_legacyEdsPath = edsPaths.value().legacy;
 
-        mINI::INIFile      configFile(configFilePath);
-        mINI::INIStructure configStruct;
-
-        configFile.read(configStruct);
-
-        std::filesystem::path edsPath = configStruct["eds"]["path"];
-        if (edsPath.empty() || !std::filesystem::exists(edsPath))
-        {
-            m_log.error(
-                "could not locate .eds file. Please check the %s file for eds section and fill it "
-                "properly. Currently read path is: %s",
-                configFilePath.c_str(),
-                edsPath.c_str());
-            exit(1);
-        }
-
-        auto odPair = EDSParser::load(edsPath);
+        auto odPair = EDSParser::load(edsPaths.value().current);
         if (odPair.second != EDSParser::Error_t::OK)
         {
             m_log.warn("EDS parsing failed!");
@@ -326,19 +310,16 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
 
             MDConfigMap       cfgMap;
             MDCOConfigAdapter odCfgAdapter;
-            for (auto& [regAddr, objName, subidxOpt] : odCfgAdapter.manufacturerRegMaping)
+            for (auto& [regAddr, objRef] : odCfgAdapter.manufacturerRegMaping)
             {
-                auto objOpt = od->getEntryByName(objName);
-                if (!objOpt.has_value())
+                EDSEntry* objPtr = md_objects::resolveObject(*od, objRef, m_log);
+                if (objPtr == nullptr)
                 {
-                    m_log.warn("Obj %s does not exist in the eds!", objName.data());
                     continue;
                 }
-                auto& obj = subidxOpt.has_value() ? objOpt.value().get()[subidxOpt.value()]
-                                                  : objOpt.value().get();
-                if (md->readSDO(obj) != MDCO::Error_t::OK)
+                if (md->readSDO(*objPtr) != MDCO::Error_t::OK)
                 {
-                    m_log.error("Obj %s could not be read from md!", objName.data());
+                    m_log.error("Obj %s could not be read from md!", objRef.label.data());
                     continue;
                 }
             }

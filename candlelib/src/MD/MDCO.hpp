@@ -82,6 +82,10 @@ namespace mab
 
         Error_t setOperationMode(mab::ModesOfOperation mode);
 
+        /// @brief Read the firmware version of the drive
+        /// @return version of the firmware and the result of the transfer
+        std::pair<version_ut, Error_t> getFirmwareVersion();
+
         Error_t setPositionPIDparam(float kp, float ki, float kd, float integralMax);
 
         Error_t setVelocityPIDparam(float kp, float ki, float kd, float integralMax);

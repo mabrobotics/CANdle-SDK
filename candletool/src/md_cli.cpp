@@ -1,4 +1,6 @@
 #include "md_cli.hpp"
+
+#include "eds_selection.hpp"
 #include <cstdint>
 #include <cstdlib>
 #include <ios>
@@ -8,6 +10,7 @@
 #include <string_view>
 #include <filesystem>
 #include <variant>
+#include "MDCO.hpp"
 #include "MDStatus.hpp"
 #include "canLoader.hpp"
 #include "candle.hpp"
@@ -22,6 +25,8 @@
 #include "mini/ini.h"
 #include "configHelpers.hpp"
 #include "curl_handler.hpp"
+#include "edsEntry.hpp"
+#include "edsParser.hpp"
 #include "flasher.hpp"
 
 #ifndef WIN32
@@ -1303,13 +1308,19 @@ namespace mab
                         m_logger.error("Factory Reset aborted by user!");
                         return;
                     }
+                    if (!*updateOptions.recovery && *updateOptions.mdco)
+                    {
+                        if (!resetOverCanOpen(mdCanId, candleBuilder, *ctx.packageEtcPath))
+                            return;
+                        usleep(200'000);
+                    }
                     auto candle = candleBuilder->build().value_or(nullptr);
                     if (candle == nullptr)
                     {
                         m_logger.error("Could not connect to candle!");
                         return;
                     }
-                    if (!*updateOptions.recovery)
+                    if (!*updateOptions.recovery && !*updateOptions.mdco)
                     {
                         MD md(*mdCanId, candle);
                         md.reset();
@@ -1326,6 +1337,11 @@ namespace mab
                 }
                 if (updateOptions.pathToMabFile->empty())
                 {
+                    if (*updateOptions.mdco)
+                        m_logger.warn(
+                            "--mdco has no effect here - the downloaded legacy flasher resets the "
+                            "drive on its own. Pass a local .mab file with -p to use the CANopen "
+                            "reset.");
                     if (updateOptions.fwVersion->empty())
                     {
                         m_logger.error(
@@ -1373,7 +1389,15 @@ namespace mab
                     MabFileParser mabFile(updateOptions.pathToMabFile->string(),
                                           MabFileParser::TargetDevice_E::MD);
 
-                    if (*(updateOptions.recovery) == false)
+                    if (*(updateOptions.recovery) == false && *updateOptions.mdco)
+                    {
+                        // CANopen firmware does not answer the MD protocol registers the version
+                        // check reads, so the drive is only reset here
+                        if (!resetOverCanOpen(mdCanId, candleBuilder, *ctx.packageEtcPath))
+                            return;
+                        usleep(200'000);
+                    }
+                    else if (*(updateOptions.recovery) == false)
                     {
                         auto md = getMd(mdCanId, candleBuilder);
                         if (md == nullptr)
@@ -1481,6 +1505,63 @@ namespace mab
                     m_logger.error("Failed to zero MD!");
                 }
             });
+    }
+
+    bool MDCli::resetOverCanOpen(const std::shared_ptr<canId_t>             mdCanId,
+                                 const std::shared_ptr<const CandleBuilder> candleBuilder,
+                                 const std::filesystem::path&               packageEtcPath)
+    {
+        const std::filesystem::path configFilePath = packageEtcPath / "config/candletool.ini";
+
+        const auto edsPaths = readEdsPaths(configFilePath, m_logger);
+        if (!edsPaths.has_value())
+        {
+            return false;
+        }
+
+        auto [od, parserError] = EDSParser::load(edsPaths.value().current);
+        if (parserError != EDSParser::Error_t::OK)
+            m_logger.warn("EDS parsing failed!");
+        if (od == nullptr)
+        {
+            m_logger.error("Could not load object dictionary from %s!",
+                           edsPaths.value().current.c_str());
+            return false;
+        }
+
+        // CANopen talks CAN 2.0, the builder is copied so the rest of the update keeps flashing
+        // with the frame format it was configured with
+        auto canOpenBuilder            = std::make_shared<CandleBuilder>(*candleBuilder);
+        canOpenBuilder->useCAN20Frames = true;
+        auto candle                    = canOpenBuilder->build().value_or(nullptr);
+        if (candle == nullptr)
+        {
+            m_logger.error("Could not connect to candle!");
+            return false;
+        }
+        candle->init();
+
+        MDCO mdco(*mdCanId, candle, od);
+        if (mdco.init() != MDCO::Error_t::OK)
+        {
+            m_logger.error("Could not communicate with MD device with ID %d over CANopen",
+                           *mdCanId);
+            detachCandle(candle);
+            return false;
+        }
+
+        // A drive waiting to be flashed may well be running older firmware, whose dictionary
+        // holds the reset command at a different address
+        useEdsMatchingFirmware(mdco, od, edsPaths.value().legacy, m_logger);
+
+        const MDCO::Error_t err = mdco.reset();
+        detachCandle(candle);
+        if (err != MDCO::Error_t::OK)
+        {
+            m_logger.error("Error resetting MD device with ID %d over CANopen", *mdCanId);
+            return false;
+        }
+        return true;
     }
 
     std::unique_ptr<MD, std::function<void(MD*)>> MDCli::getMd(

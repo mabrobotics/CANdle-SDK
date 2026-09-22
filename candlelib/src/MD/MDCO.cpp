@@ -347,6 +347,26 @@ namespace mab
         return err;
     }
 
+    std::pair<version_ut, MDCO::Error_t> MDCO::getFirmwareVersion()
+    {
+        version_ut version{.i = 0};
+
+        EDSEntry* versionEntry =
+            md_objects::resolveObject(*m_od, md_objects::FIRMWARE_VERSION, m_log);
+        if (versionEntry == nullptr)
+            return {version, Error_t::UNKNOWN_OBJECT};
+
+        Error_t err = readSDO(*versionEntry);
+        if (err != Error_t::OK)
+        {
+            m_log.debug("Could not read the firmware version");
+            return {version, err};
+        }
+
+        version.i = (u32)(canopen_types::UNSIGNED32_t)(*versionEntry);
+        return {version, Error_t::OK};
+    }
+
     MDCO::Error_t MDCO::setPositionPIDparam(float kp, float ki, float kd, float integralMax)
     {
         Error_t   err     = enterConfigMode();

@@ -25,6 +25,18 @@ namespace mab
         std::unique_ptr<MD, std::function<void(MD*)>> getMd(
             const std::shared_ptr<canId_t>             mdCanId,
             const std::shared_ptr<const CandleBuilder> candleBuilder);
+        /// @brief Reset the drive over CANopen instead of the MD protocol
+        ///
+        /// Drives running CANopen firmware do not answer MD protocol frames, so the reset that
+        /// puts them into the bootloader has to be sent as an SDO write on a CAN 2.0 link
+        /// @param mdCanId can node id of the drive to reset
+        /// @param candleBuilder builder of the candle used for communication, copied so the
+        /// CAN 2.0 frame format is only forced for this reset
+        /// @param packageEtcPath etc path of the package, holds candletool.ini pointing at the .eds
+        /// @return true when the drive acknowledged the reset
+        bool resetOverCanOpen(const std::shared_ptr<canId_t>             mdCanId,
+                              const std::shared_ptr<const CandleBuilder> candleBuilder,
+                              const std::filesystem::path&               packageEtcPath);
         bool                       registerWrite(MD& md, u16 regAdress, const std::string& value);
         std::optional<std::string> registerRead(MD& md, u16 regAdress);
 
@@ -180,7 +192,8 @@ namespace mab
                   pathToMabFile(std::make_shared<std::filesystem::path>("")),
                   recovery(std::make_shared<bool>(false)),
                   forceErase(std::make_shared<bool>(false)),
-                  metadataFile(std::make_shared<std::string>(""))
+                  metadataFile(std::make_shared<std::string>("")),
+                  mdco(std::make_shared<bool>(false))
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
                     {"version",
@@ -199,13 +212,19 @@ namespace mab
                     {"meta_file",
                      rootCli->add_option("-m,--meta-file",
                                          *metadataFile,
-                                         "File with file metadata for managing downloads.")}};
+                                         "File with file metadata for managing downloads.")},
+                    {"mdco",
+                     rootCli->add_flag("--mdco",
+                                       *mdco,
+                                       "Reset the drive over CANopen instead of the MD protocol. "
+                                       "Use for drives running CANopen firmware.")}};
             }
             const std::shared_ptr<std::string>           fwVersion;
             const std::shared_ptr<std::filesystem::path> pathToMabFile;
             const std::shared_ptr<bool>                  recovery;
             const std::shared_ptr<bool>                  forceErase;
             const std::shared_ptr<std::string>           metadataFile;
+            const std::shared_ptr<bool>                  mdco;
             std::map<std::string, CLI::Option*>          optionsMap;
         };  // namespace mab
     };
