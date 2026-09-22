@@ -1,3 +1,19 @@
+# Versions of the .eds files that come with candletool, as "candletool mdco eds" matches them:
+# the FileVersion each one declares in its [FileInfo] section
+_candletool_eds_versions()
+{
+    local edsDir="/etc/candletool/config/eds"
+    local eds version
+
+    [[ -d "$edsDir" ]] || return 0
+
+    for eds in "$edsDir"/*.eds; do
+        [[ -f "$eds" ]] || continue
+        version=$(sed -n 's/^[[:space:]]*FileVersion[[:space:]]*=[[:space:]]*\([^[:space:];]*\).*/\1/p' "$eds" | head -n1)
+        [[ -n "$version" ]] && printf '%s\n' "$version"
+    done
+}
+
 _candletool_completions()
 {
     local current="${COMP_WORDS[COMP_CWORD]}"
@@ -59,7 +75,7 @@ _candletool_completions()
                 functions="discover info update can setup_cfg setup_interactive read_cfg save set_battery_level set_shutdown_time set_br get_br set_br_trigger get_br_trigger disable ps br ic"
                 ;;
             mdco)
-                functions="blink can config clear discover encoder sdo reset calibration info save test"
+                functions="blink can config clear discover eds encoder sdo reset calibration info save test"
                 ;;
         esac
 
@@ -109,6 +125,14 @@ _candletool_completions()
                         ;;
                     config)
                         subcommands="download upload"
+                        ;;
+                    eds)
+                        # an .eds is selected either by the version of one that comes with
+                        # candletool or by the path of any other one
+                        compopt -o filenames 2>/dev/null
+                        COMPREPLY=( $(compgen -W "$(_candletool_eds_versions)" -- "$current") \
+                                    $(compgen -f -- "$current") )
+                        return 0
                         ;;
                     encoder)
                         subcommands="display"

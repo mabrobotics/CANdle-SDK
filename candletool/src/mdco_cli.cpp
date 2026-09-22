@@ -240,7 +240,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             constexpr std::string_view canIdName = "Can ID";
             auto                       od        = loadEDS().first;
             auto                       mdco      = getMdco(mdCanId, od);
-            if (*canOptions.canId < 1 || *canOptions.canId > 31)
+            if (*canOptions.canId < 10 || *canOptions.canId > 127)
             {
                 m_log.error("CAN id out of range!");
                 return;
@@ -466,6 +466,30 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             {
                 m_log.info("- %d", id);
             }
+        });
+
+    // EDS ============================================================================
+    CLI::App* eds = mdco->add_subcommand("eds",
+                                         "Select the .eds object dictionary the drive is "
+                                         "described with.")
+                        ->excludes(mdCanIdOption);
+
+    const auto edsSelection = std::make_shared<std::string>();
+    eds->add_option("selection",
+                    *edsSelection,
+                    "Version of one of the .eds files that come with candletool (e.g. 1.2) or a "
+                    "path to any .eds file. Without it the current selection is printed.");
+
+    eds->callback(
+        [this, configFilePath, edsSelection]()
+        {
+            if (edsSelection->empty())
+            {
+                reportEdsSelection(configFilePath, m_log);
+                return;
+            }
+            // The selection is kept in candletool.ini, so the following runs use it as well
+            selectEds(*edsSelection, configFilePath, m_log);
         });
 
     // ENCODER CANopen ============================================================================
