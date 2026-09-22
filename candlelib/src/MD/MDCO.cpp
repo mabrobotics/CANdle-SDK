@@ -574,10 +574,15 @@ namespace mab
         return err;
     }
 
-    MDCO::Error_t MDCO::setTargetTorque(float torque /*Nm*/)
+    // torque - normalized torque command, recomputed to permille value.
+    // Example:
+    // 1.0 = 1000 permille ( 100% of rated torque),
+    // 0.5 = 500 permille (50% of rated torque),
+    // -1.15 = -1150 permille ( 115% of rated torque)
+    MDCO::Error_t MDCO::setTargetTorque(float torque)
     {
-        (*m_od)[0x6074] = (canopen_types::INTEGER16_t)(torque * 1000);
-        Error_t err     = writeSDO((*m_od)[0x6074]);
+        (*m_od)[0x6071] = (canopen_types::INTEGER16_t)(torque * 1000);
+        Error_t err     = writeSDO((*m_od)[0x6071]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting Target Torque");

@@ -26,6 +26,7 @@
 #include "edsParser.hpp"
 #include "mab_types.hpp"
 #include "md_cfg_map.hpp"
+#include "md_update.hpp"
 #include "mini/ini.h"
 #include "mdco_config_adapter.hpp"
 
@@ -665,6 +666,21 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             m_log.success("Driver %d is restarting", (unsigned int)*mdCanId);
         });
 
+    // UPDATE ===========================================================================
+    CLI::App* update =
+        mdco->add_subcommand("update", "Update firmware on MD drive.")->needs(mdCanIdOption);
+    UpdateOptions updateOptions(update, "mdco");
+    update->callback(
+        [this, mdCanId, updateOptions]()
+        {
+            updateMd(updateOptions,
+                     UpdateReset_E::CANOPEN,
+                     mdCanId,
+                     m_candleBuilder,
+                     *m_ctx.packageEtcPath,
+                     m_log);
+        });
+
     // Calibration
     CLI::App* setupCalib = mdco->add_subcommand("calibration", "Calibrate main MD encoder.");
 
@@ -886,7 +902,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 return;
             }
             // Arbitrary clamping, better to change that in the future
-            *moveOptionsRel.target = std::clamp(*moveOptionsRel.target, -32'000, 32'000);
+            *moveOptionsRel.target = std::clamp(*moveOptionsRel.target, -320'000, 320'000);
 
             auto             position       = mdco->getPosition().first;
             auto             targetPosition = *moveOptionsRel.target;

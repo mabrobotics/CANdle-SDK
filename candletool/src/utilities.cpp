@@ -14,4 +14,17 @@ namespace mab
         return (start < end) ? std::string(start, end) : "";
     }
 
+    version_ut getMdFirmwareVersion(MD& md)
+    {
+        md.readRegister(md.m_mdRegisters.firmwareVersion);
+        return {.i = md.m_mdRegisters.firmwareVersion.value};
+    }
+
+    bool isVersionAtLeast(version_ut fwVersion, int major, int minor, int rev)
+    {
+        if (fwVersion.s.major < major || fwVersion.s.minor < minor || fwVersion.s.revision < rev)
+            return false;
+        return true;
+    }
+
 }  // namespace mab

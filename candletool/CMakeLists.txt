@@ -26,6 +26,7 @@ set(CANDLETOOL_SOURCES
   src/web_file_module/curl_handler.cpp
   src/web_file_module/flasher.cpp
   src/md_cli.cpp
+  src/md_update.cpp
   src/mdco_cli.cpp
   src/mdco_cli.cpp
   src/mdco_config_adapter.cpp
