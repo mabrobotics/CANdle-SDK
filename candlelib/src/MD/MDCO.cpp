@@ -171,9 +171,9 @@ namespace mab
 
     MDCO::Error_t MDCO::save()
     {
-        Error_t err     = MDCO::Error_t::OK;
-        (*m_od)[0x6060] = (canopen_types::INTEGER8_t)6;
-        err             = writeSDO((*m_od)[0x6060]);
+        Error_t err = MDCO::Error_t::OK;
+        (*m_od)[0x6040] = (canopen_types::UNSIGNED16_t)6;
+        err             = writeSDO((*m_od)[0x6040]);
         if (err != Error_t::OK)
         {
             m_log.error("Error sending shutdown cmd!");

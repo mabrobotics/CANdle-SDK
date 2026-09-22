@@ -817,7 +817,7 @@ PDOMapping=0
 ParameterName=TPDO communication parameter
 ObjectType=0x9
 ;StorageLocation=RAM
-SubNumber=0x6
+SubNumber=0x5
 
 [1800sub0]
 ParameterName=Highest sub-index supported
@@ -825,7 +825,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0005
 AccessType=ro
-DefaultValue=0x06
+DefaultValue=0x05
 PDOMapping=0
 
 [1800sub1]
@@ -864,20 +864,11 @@ AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
-[1800sub6]
-ParameterName=SYNC start value
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
 [1801]
 ParameterName=TPDO communication parameter
 ObjectType=0x9
 ;StorageLocation=RAM
-SubNumber=0x6
+SubNumber=0x5
 
 [1801sub0]
 ParameterName=Highest sub-index supported
@@ -924,20 +915,11 @@ AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
-[1801sub6]
-ParameterName=SYNC start value
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
 [1802]
 ParameterName=TPDO communication parameter
 ObjectType=0x9
 ;StorageLocation=RAM
-SubNumber=0x6
+SubNumber=0x5
 
 [1802sub0]
 ParameterName=Highest sub-index supported
@@ -984,20 +966,11 @@ AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
-[1802sub6]
-ParameterName=SYNC start value
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
 [1803]
 ParameterName=TPDO communication parameter
 ObjectType=0x9
 ;StorageLocation=RAM
-SubNumber=0x6
+SubNumber=0x5
 
 [1803sub0]
 ParameterName=Highest sub-index supported
@@ -1040,15 +1013,6 @@ ParameterName=Event timer
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0006
-AccessType=rw
-DefaultValue=0
-PDOMapping=0
-
-[1803sub6]
-ParameterName=SYNC start value
-ObjectType=0x7
-;StorageLocation=RAM
-DataType=0x0005
 AccessType=rw
 DefaultValue=0
 PDOMapping=0

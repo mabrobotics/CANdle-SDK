@@ -196,6 +196,10 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         }
         m_legacyEdsPath = edsPaths.value().legacy;
 
+        // Which dictionary a command ran against decides how its arguments were interpreted, so
+        // name it before the command is carried out - visible from -v2 up
+        m_log.debug("Describing the drive with %s", edsPaths.value().current.c_str());
+
         auto odPair = EDSParser::load(edsPaths.value().current);
         if (odPair.second != EDSParser::Error_t::OK)
         {
