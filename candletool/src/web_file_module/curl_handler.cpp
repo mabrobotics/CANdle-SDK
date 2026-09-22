@@ -23,14 +23,7 @@ namespace mab
         webFile.m_path = std::filesystem::temp_directory_path();
 
         const mINI::INIFile* file;
-        // Try to get the latest LUT from the server
-        CurlError_E result = getLatestLut();
-        if (result != CurlError_E::OK)
-        {
-            m_log.warn(
-                "Could not get the latest LUT from the MAB servers, falling back to local LUT");
-            file = &m_fallbackMetadata;
-        }
+        file = &m_fallbackMetadata;
 
         // If failed, fall back to the local LUT file
         if (file == nullptr || !file->read(m_addressLutStructure))
@@ -111,11 +104,5 @@ namespace mab
 
         m_log.error("Could not find URL for file [ %s ] in LUT", id.data());
         return std::make_pair(CurlError_E::ADDRESS_NOT_FOUND, webFile);
-    }
-
-    CurlHandler::CurlError_E CurlHandler::getLatestLut()
-    {
-        // Todo: implement fetching lut when ready
-        return CurlError_E::ADDRESS_NOT_FOUND;
     }
 }  // namespace mab

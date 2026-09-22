@@ -8,7 +8,7 @@ std::string                   tagFromTargetDevice(MabFileParser::TargetDevice_E 
 
 MabFileParser::MabFileParser(std::string filePath, TargetDevice_E target)
 {
-    m_logger.info("Processing file: %s", filePath.c_str());
+    MabFileParser::m_logger.info("Processing file: %s", filePath.c_str());
 
     mINI::INIFile      file(filePath);
     mINI::INIStructure ini;
