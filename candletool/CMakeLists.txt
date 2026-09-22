@@ -59,7 +59,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_executable(candletool ${CANDLETOOL_SOURCES})
 
-target_link_libraries(candletool PUBLIC candle logger PRIVATE CURL::libcurl CLI11)
+if(UNIX)
+  target_link_libraries(candletool PUBLIC candle logger PRIVATE CURL::libcurl CLI11)
+endif()
 
 target_include_directories(
   candletool
