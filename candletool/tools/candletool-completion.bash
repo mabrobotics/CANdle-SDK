@@ -61,6 +61,9 @@ _candletool_completions()
             mdco)
                 functions="blink can config clear discover encoder sdo reset calibration info save test"
                 ;;
+            update)
+                [[ "$current" == -* ]] && functions="-y --yes"
+                ;;
         esac
 
         suggestions="${suggestions} ${functions}"
