@@ -187,6 +187,10 @@ void GraphicInterface::drawTestMenuBar()
 
         ImGui::Spacing();
         drawTestManualButton();
+        ImGui::SameLine();
+        drawHelper(
+            "Test MANUAL - hold button for manually controlled test.\nTest AUTO - press button for "
+            "automatically provided test. Test ends when set value is in target window.");
         ImGui::Spacing();
         drawTestEndButton();
 
@@ -359,6 +363,7 @@ void GraphicInterface::drawLeftMenuBar()
                 drawSaveButton();
                 break;
             case mab::MdMode_E::POSITION_PID:
+                drawParametersVelocity();
                 drawParametersPosition();
                 drawSetTargetPosition();
                 drawSetPositionWindow();
@@ -687,7 +692,8 @@ void GraphicInterface::drawTestManualButton()
 
     ImGui::PushButtonRepeat(true);
 
-    if (ImGui::Button("Manual Test", ImVec2(leftMenuBarWidth - (paddingButtons * 2.0f), 40.0f)))
+    if (ImGui::Button("Apply Parameters & Test MANUAL",
+                      ImVec2(leftMenuBarWidth - (paddingButtons * 2.0f), 40.0f)))
     {
         std::lock_guard<std::mutex> lock(m_data->mtx);
         m_data->buttonManualTestPressed = true;
@@ -737,8 +743,9 @@ void GraphicInterface::drawTestEndButton()
 
     ImGui::SetCursorPosX(paddingButtons);
 
-    if (ImGui::Button(m_data->buttonAutomaticTestPressed ? "End test" : "Automatic Test",
-                      ImVec2(leftMenuBarWidth - (paddingButtons * 2.0f), 40.0f)))
+    if (ImGui::Button(
+            m_data->buttonAutomaticTestPressed ? "End test" : "Apply Parameters & Test AUTO",
+            ImVec2(leftMenuBarWidth - (paddingButtons * 2.0f), 40.0f)))
     {
         std::lock_guard<std::mutex> lock(m_data->mtx);
         m_data->testStarted                = !m_data->testStarted;
@@ -959,7 +966,7 @@ void GraphicInterface::drawSaveButton()
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
-    ImGui::SetCursorPosX(leftMenuBarWidth / 4.0f);
+    ImGui::SetCursorPosX((leftMenuBarWidth - saveButtonWidth) / 2.0f);
 
     float saveButtonY = ImGui::GetWindowHeight() - 40.0f;
 
@@ -969,12 +976,17 @@ void GraphicInterface::drawSaveButton()
 
     buttonImportantStyle(buttonSavePressed);
 
-    if (ImGui::Button("Upload Config To Drive", ImVec2(leftMenuBarWidth / 2.0f, 30.0f)))
+    if (ImGui::Button("Save Config To Flash Memory", ImVec2(saveButtonWidth, 30.0f)))
     {
-        ImGui::OpenPopup("Save config");
+        ImGui::OpenPopup("Warning: Save config");
     }
 
     endButtonImportantStyle();
+
+    ImGui::SameLine();
+    drawHelper(
+        "Choose this option only if you want to save configuration to drive's permament "
+        "memory.\nSetting not neceserry for testing.");
 
     if (!selectedMode || currentMode == mab::MdMode_E::IDLE || buttonAutomaticTestPressed ||
         buttonManualTestPressed)
@@ -986,13 +998,17 @@ void GraphicInterface::drawSaveButton()
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
     ImGui::PushStyleColor(ImGuiCol_TitleBgActive, mabColor);
-    if (ImGui::BeginPopupModal("Save config", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    if (ImGui::BeginPopupModal("Warning: Save config", NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImGui::SetWindowFontScale(1.3f);
 
-        ImGui::Text("Are you sure you want to save config?");
+        ImVec2 windowSize = ImGui::GetWindowSize();
+
+        ImGui::Text("This action will overwrite your current config in drive's permament memory.");
+        ImGui::Text("Are you sure you want to continue?");
         ImGui::Separator();
 
+        ImGui::SetCursorPosX((windowSize.x - 248.f) / 2);
         buttonStyle();
         if (ImGui::Button("OK", ImVec2(120, 0)))
         {
@@ -1119,6 +1135,28 @@ void GraphicInterface::drawCursorMenu()
     if (currentMode == mab::MdMode_E::IDLE)
     {
         ImGui::EndDisabled();
+    }
+}
+
+/*
+
+Helper
+
+*/
+
+void GraphicInterface::drawHelper(const char* description)
+{
+    ImGui::SetWindowFontScale(1.2f);
+    ImGui::TextDisabled("(?)");
+    ImGui::SetWindowFontScale(1.0f);
+
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::BeginTooltip();
+        ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+        ImGui::TextUnformatted(description);
+        ImGui::PopTextWrapPos();
+        ImGui::EndTooltip();
     }
 }
 

@@ -450,7 +450,67 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
 
             if (!testStarted && buttonSavePressed)
             {
-                md.save();
+                switch (currentMode)
+                {
+                    case mab::MdMode_E::IDLE:
+                        break;
+                    case mab::MdMode_E::VELOCITY_PID:
+                        updateVelParameters();
+                        md.setVelocityPIDparam(m_data->Kp_vel,
+                                               m_data->Ki_vel,
+                                               m_data->Kd_vel,
+                                               m_data->integralMax_vel);
+                        md.save();
+                        break;
+                    case mab::MdMode_E::POSITION_PID:
+                        updateVelParameters();
+                        updatePosParameters();
+                        md.setVelocityPIDparam(m_data->Kp_vel,
+                                               m_data->Ki_vel,
+                                               m_data->Kd_vel,
+                                               m_data->integralMax_vel);
+                        md.setPositionPIDparam(m_data->Kp_pos,
+                                               m_data->Ki_pos,
+                                               m_data->Kd_pos,
+                                               m_data->integralMax_pos);
+                        md.save();
+                        break;
+                    case mab::MdMode_E::IMPEDANCE:
+                        updateImpParameters();
+                        md.setImpedanceParams(m_data->Kp_imp, m_data->Kd_imp);
+                        md.save();
+                        break;
+                    case mab::MdMode_E::RAW_TORQUE:  // case unused
+                        break;
+                    case mab::MdMode_E::VELOCITY_PROFILE:
+                        updateVelParameters();
+                        updatePosParameters();
+                        md.setVelocityPIDparam(m_data->Kp_vel,
+                                               m_data->Ki_vel,
+                                               m_data->Kd_vel,
+                                               m_data->integralMax_vel);
+                        md.setPositionPIDparam(m_data->Kp_pos,
+                                               m_data->Ki_pos,
+                                               m_data->Kd_pos,
+                                               m_data->integralMax_pos);
+                        md.save();
+                        break;
+                    case mab::MdMode_E::POSITION_PROFILE:
+                        updateVelParameters();
+                        updatePosParameters();
+                        md.setVelocityPIDparam(m_data->Kp_vel,
+                                               m_data->Ki_vel,
+                                               m_data->Kd_vel,
+                                               m_data->integralMax_vel);
+                        md.setPositionPIDparam(m_data->Kp_pos,
+                                               m_data->Ki_pos,
+                                               m_data->Kd_pos,
+                                               m_data->integralMax_pos);
+                        md.save();
+                        break;
+                    default:
+                        break;
+                }
             }
 
             if (buttonSelectMdPressed)
@@ -508,6 +568,11 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                         m_data->targetVelocity = 0.0f;
                         m_data->velocityWindow = 0.01;
                         m_data->positionWindow = m_data->positionWindowSlider;
+                        updateVelParameters();
+                        md.setVelocityPIDparam(m_data->Kp_vel,
+                                               m_data->Ki_vel,
+                                               m_data->Kd_vel,
+                                               m_data->integralMax_vel);
                         updatePosParameters();
                         md.setPositionPIDparam(m_data->Kp_pos,
                                                m_data->Ki_pos,
