@@ -8,17 +8,14 @@ std::string                   tagFromTargetDevice(MabFileParser::TargetDevice_E 
 
 MabFileParser::MabFileParser(std::string filePath, TargetDevice_E target)
 {
-    log.m_tag   = "MAB FILE";
-    log.m_layer = Logger::ProgramLayer_E::LAYER_2;
-
-    MabFileParser::log.info("Processing file: %s", filePath.c_str());
+    MabFileParser::m_logger.info("Processing file: %s", filePath.c_str());
 
     mINI::INIFile      file(filePath);
     mINI::INIStructure ini;
     if (!file.read(ini))
     {
-        log.error("Error processing file\n\r[ %s ]\n\rCheck file path and format.",
-                  filePath.c_str());
+        m_logger.error("Error processing file!");
+        m_logger.error("Check file path and format. Path provided: [ %s ]", filePath.c_str());
         throw std::runtime_error("Error processing file");
     }
 
@@ -36,24 +33,24 @@ MabFileParser::MabFileParser(std::string filePath, TargetDevice_E target)
     // validate
     if (target != m_fwEntry.targetDevice || m_fwEntry.targetDevice == TargetDevice_E::INVALID)
     {
-        log.error("Error processing .mab file!");
-        log.error("Device target mismatch. Expected: [%s], Read: [%s].",
-                  tagFromTargetDevice(target).c_str(),
-                  tagFromTargetDevice(m_fwEntry.targetDevice).c_str());
+        m_logger.error("Error processing .mab file!");
+        m_logger.error("Device target mismatch. Expected: [%s], Read: [%s].",
+                       tagFromTargetDevice(target).c_str(),
+                       tagFromTargetDevice(m_fwEntry.targetDevice).c_str());
         throw std::runtime_error("Error processing file");
     }
     if (m_fwEntry.bootAddress < 0x8000000 || m_fwEntry.size == 0 ||
         m_fwEntry.size > m_fwEntry.data.get()->size())
     {
-        log.error("Error processing .mab file!");
-        log.error("Boot address [0x%x] or size of firmware [%d bytes] invalid!",
-                  m_fwEntry.bootAddress,
-                  m_fwEntry.size);
+        m_logger.error("Error processing .mab file!");
+        m_logger.error("Boot address [0x%x] or size of firmware [%d bytes] invalid!",
+                       m_fwEntry.bootAddress,
+                       m_fwEntry.size);
         throw std::runtime_error("Error processing file");
     }
     // TODO: Validate checksum here
 
-    log.success(".mab file OK");
+    m_logger.success(".mab file OK");
 }
 
 bool hexStringToBytes(u8 buffer[], u32 bufferLen, const std::string& str)

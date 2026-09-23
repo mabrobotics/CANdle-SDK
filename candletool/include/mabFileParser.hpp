@@ -38,7 +38,7 @@ class MabFileParser
     FirmwareEntry m_fwEntry;
 
   private:
-    Logger log;
+    Logger m_logger = Logger(Logger::ProgramLayer_E::LAYER_2, "MAB_FILE");
 };
 
 #endif /*MAB_FILE_PARSER_HPP*/

@@ -9,6 +9,8 @@
 #include <memory>
 #include <optional>
 #include <candle_types.hpp>
+#include <string_view>
+#include "mini/ini.h"
 
 namespace mab
 {
@@ -27,6 +29,15 @@ namespace mab
             const std::shared_ptr<const CandleBuilder> candleBuilder);
         bool                       registerWrite(MD& md, u16 regAdress, const std::string& value);
         std::optional<std::string> registerRead(MD& md, u16 regAdress);
+        bool                       cmdUserContinue();
+        bool        checkVersion(version_ut currentVersion, const std::string& targetVersion);
+        std::string findParsedFile(std::string& prefix, mINI::INIStructure& iniData);
+        void        resetMD(const std::shared_ptr<canId_t>             mdCanId,
+                            const std::shared_ptr<const CandleBuilder> candleBuilder);
+
+        static constexpr std::string_view websiteDownloadUrl =
+            "https://mabrobotics.github.io/MD80-x-CANdle-Documentation/_static/firmware/"
+            "api_download.ini";
 
         struct CanOptions
         {

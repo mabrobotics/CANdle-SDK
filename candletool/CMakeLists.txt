@@ -2,6 +2,25 @@ cmake_minimum_required(VERSION 3.5...3.25)
 
 include(GNUInstallDirs)
 
+if(WIN32)
+  include(FetchContent)
+  FetchContent_Declare(
+    curl
+    GIT_REPOSITORY https://github.com/curl/curl.git
+    GIT_TAG curl-8_10_1
+    GIT_SHALLOW TRUE
+  )
+  set(BUILD_CURL_EXE OFF CACHE BOOL "" FORCE)
+  set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+  set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+  set(HTTP_ONLY ON CACHE BOOL "" FORCE)
+  set(CURL_USE_SCHANNEL ON CACHE BOOL "" FORCE)
+  set(CURL_USE_OPENSSL OFF CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(curl)
+else()
+  find_package(CURL REQUIRED)
+endif()
+
 message(CMAKE_INSTALL_SYSCONFDIR: ${CMAKE_INSTALL_SYSCONFDIR})
 
 set(CANDLETOOL_VERSION_MAJOR ${CANDLESDK_VERSION_1})
@@ -51,7 +70,15 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_executable(candletool ${CANDLETOOL_SOURCES})
 
-target_link_libraries(candletool candle logger)
+target_link_libraries(candletool
+  PRIVATE
+  CURL::libcurl
+  CLI11
+)
+
+if(UNIX)
+  target_link_libraries(candletool PUBLIC candle logger)
+endif()
 
 target_include_directories(
   candletool
@@ -84,7 +111,7 @@ target_compile_definitions(
   CANDLETOOL_PACKAGE_SUFFIX="-${CANDLETOOL_PACKAGE_PLATFORM}.${CANDLETOOL_PACKAGE_EXTENSION}"
 )
 
-target_link_libraries(candletool CLI11)
+# target_link_libraries(candletool CLI11)
 
 # add_unit_test_executable(pds_cli_test tests/pds_cli_test.cpp)
 # target_include_directories(pds_cli_test PRIVATE include)
@@ -133,6 +160,7 @@ if(WIN32)
     COMPONENT _configs)
   target_link_libraries(
     candletool
+    PUBLIC
     -static
     candle
     -static-libstdc++
