@@ -18,10 +18,21 @@ set(CANDLETOOL_VERSION_FULL
   "${CANDLETOOL_VERSION_MAJOR}.${CANDLETOOL_VERSION_MINOR}.${CANDLETOOL_VERSION_PATCH}-${CANDLETOOL_VERSION_TAG_STR}"
 )
 
+# Platform part of the package file name (CPACK_PACKAGE_FILE_NAME). Also
+# compiled in as CANDLETOOL_PACKAGE_SUFFIX so `candletool update` picks the
+# release asset built for the same platform as itself.
+set(CANDLETOOL_PACKAGE_PLATFORM "${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+if(WIN32)
+  set(CANDLETOOL_PACKAGE_EXTENSION "exe")
+else()
+  set(CANDLETOOL_PACKAGE_EXTENSION "deb")
+endif()
+
 add_subdirectory(3rd_party/CLI11)
 
 set(CANDLETOOL_SOURCES
   src/candle_cli.cpp
+  src/candletool_cli.cpp
   src/canLoader.cpp
   src/web_file_module/curl_handler.cpp
   src/web_file_module/flasher.cpp
@@ -46,7 +57,9 @@ target_include_directories(
   candletool
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
   ${CMAKE_CURRENT_SOURCE_DIR}/src/web_file_module
-  ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src)
+  ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src
+  ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/sheredom_json
+  ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/picosha2)
 
 target_compile_options(candletool PRIVATE -g -Wno-unused-parameter -Wno-missing-field-initializers
   -Wswitch-enum)
@@ -68,6 +81,7 @@ target_compile_definitions(
   CANDLETOOL_VREVISION=${CANDLETOOL_VERSION_PATCH}
   CANDLETOOL_VTAG=${CANDLETOOL_VERSION_TAG}
   CANDLETOOL_VHASH=${CANDLESDK_VERSION_HASH}
+  CANDLETOOL_PACKAGE_SUFFIX="-${CANDLETOOL_PACKAGE_PLATFORM}.${CANDLETOOL_PACKAGE_EXTENSION}"
 )
 
 target_link_libraries(candletool CLI11)
