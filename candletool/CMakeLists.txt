@@ -18,9 +18,15 @@ set(CANDLETOOL_VERSION_FULL
   "${CANDLETOOL_VERSION_MAJOR}.${CANDLETOOL_VERSION_MINOR}.${CANDLETOOL_VERSION_PATCH}-${CANDLETOOL_VERSION_TAG_STR}"
 )
 
-set(CANDLETOOL_VERSION
-  "${CANDLETOOL_VERSION_MAJOR}.${CANDLETOOL_VERSION_MINOR}.${CANDLETOOL_VERSION_PATCH}"
-)
+# Platform part of the package file name (CPACK_PACKAGE_FILE_NAME). Also
+# compiled in as CANDLETOOL_PACKAGE_SUFFIX so `candletool update` picks the
+# release asset built for the same platform as itself.
+set(CANDLETOOL_PACKAGE_PLATFORM "${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+if(WIN32)
+  set(CANDLETOOL_PACKAGE_EXTENSION "exe")
+else()
+  set(CANDLETOOL_PACKAGE_EXTENSION "deb")
+endif()
 
 add_subdirectory(3rd_party/CLI11)
 
@@ -45,7 +51,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_executable(candletool ${CANDLETOOL_SOURCES})
 
-target_link_libraries(candletool PUBLIC candle logger PRIVATE CLI11)
+target_link_libraries(candletool candle logger)
 
 target_include_directories(
   candletool
@@ -74,11 +80,10 @@ target_compile_definitions(
   CANDLETOOL_VREVISION=${CANDLETOOL_VERSION_PATCH}
   CANDLETOOL_VTAG=${CANDLETOOL_VERSION_TAG}
   CANDLETOOL_VHASH=${CANDLESDK_VERSION_HASH}
-  CANDLETOOL_VERSION_FULL=${CANDLETOOL_VERSION_FULL}
-  CANDLETOOL_VERSION="${CANDLETOOL_VERSION}"
+  CANDLETOOL_PACKAGE_SUFFIX="-${CANDLETOOL_PACKAGE_PLATFORM}.${CANDLETOOL_PACKAGE_EXTENSION}"
 )
 
-# target_link_libraries(candletool CLI11)
+target_link_libraries(candletool CLI11)
 
 # add_unit_test_executable(pds_cli_test tests/pds_cli_test.cpp)
 # target_include_directories(pds_cli_test PRIVATE include)
@@ -127,7 +132,6 @@ if(WIN32)
     COMPONENT _configs)
   target_link_libraries(
     candletool
-    PUBLIC
     -static
     candle
     -static-libstdc++

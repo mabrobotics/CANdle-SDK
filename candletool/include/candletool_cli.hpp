@@ -1,5 +1,9 @@
 #pragma once
 
+#include <compare>
+#include <optional>
+#include <string>
+
 #include "CLI/CLI.hpp"
 #include "logger.hpp"
 
@@ -9,13 +13,16 @@ namespace mab
 {
     struct CandletoolVersion
     {
-        int major;
-        int minor;
-        int patch;
+        int major = 0;
+        int minor = 0;
+        int patch = 0;
+
+        auto operator<=>(const CandletoolVersion&) const = default;
     };
 
-    int compareCandletoolVersion(const CandletoolVersion* latest, const CandletoolVersion* current);
-    CandletoolVersion parseVersion(const char* s);
+    /// @brief parses a release tag such as "v1.5.0"
+    /// @return nullopt if the tag is not in [v]major.minor.patch form
+    std::optional<CandletoolVersion> parseVersion(const std::string& tag);
 
     class CandletoolCli
     {

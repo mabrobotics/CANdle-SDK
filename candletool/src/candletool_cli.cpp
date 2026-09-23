@@ -36,28 +36,16 @@ namespace mab
         return value ? json_value_as_array(value) : nullptr;
     }
 
-    int compareCandletoolVersion(const CandletoolVersion* latest, const CandletoolVersion* current)
+    std::optional<CandletoolVersion> parseVersion(const std::string& tag)
     {
-        if (latest->major != current->major)
-            return latest->major < current->major ? -1 : 1;
-        if (latest->minor != current->minor)
-            return latest->minor < current->minor ? -1 : 1;
-        if (latest->patch != current->patch)
-            return latest->patch < current->patch ? -1 : 1;
-        return 0;
-    }
-
-    CandletoolVersion parseVersion(const char* s)
-    {
-        CandletoolVersion v = {0, 0, 0};
-
-        if (!s || !*s)
-            return v;
-        if (s[0] == 'v' || s[0] == 'V')
+        const char* s = tag.c_str();
+        if (*s == 'v' || *s == 'V')
             s++;
-        std::sscanf(s, "%d.%d.%d", &v.major, &v.minor, &v.patch);
 
-        return v;
+        CandletoolVersion version;
+        if (std::sscanf(s, "%d.%d.%d", &version.major, &version.minor, &version.patch) != 3)
+            return std::nullopt;
+        return version;
     }
 
     // Both HTTP helpers use the curl executable, same as CurlHandler: it is a .deb dependency on
@@ -124,8 +112,8 @@ namespace mab
             {
                 m_logger.info("Performing candletool software update.");
 
-                // check candle version
-                const std::string currentVersion = CANDLETOOL_VERSION;
+                constexpr CandletoolVersion currentVersion{
+                    CANDLETOOL_VMAJOR, CANDLETOOL_VMINOR, CANDLETOOL_VREVISION};
 
                 std::optional<std::string> body = fetchUrl(repoUrl);
                 if (!body)
@@ -143,26 +131,27 @@ namespace mab
                     m_logger.error("Failed to parse release info.");
                     return;
                 }
-                std::string latestVersion = jsonString(release.get(), "tag_name");
-                if (latestVersion.empty())
+                std::string latestTag     = jsonString(release.get(), "tag_name");
+                auto        latestVersion = parseVersion(latestTag);
+                if (!latestVersion)
                 {
-                    m_logger.error("Failed to get response from GitHub.");
+                    m_logger.error("Unexpected release tag \"%s\" from GitHub.", latestTag.c_str());
                     return;
                 }
 
-                CandletoolVersion latestV  = parseVersion(latestVersion.c_str());
-                CandletoolVersion currentV = parseVersion(currentVersion.c_str());
-
-                if (compareCandletoolVersion(&latestV, &currentV) == 0)
+                // Builds newer than the latest release (e.g. from devel) are not downgraded
+                if (*latestVersion <= currentVersion)
                 {
-                    m_logger.info(
-                        ("candletool is already up to date (" + currentVersion + ").").c_str());
+                    m_logger.info("candletool %s is up to date (latest release: %s).",
+                                  CANDLESDK_VERSION,
+                                  latestTag.c_str());
                     return;
                 }
 
-                m_logger.info(("Update available! Found version: " + latestVersion +
-                               ". Current version installed is: " + currentVersion)
-                                  .c_str());
+                m_logger.info(
+                    "Update available! Found version: %s. Current version installed is: %s",
+                    latestTag.c_str(),
+                    CANDLESDK_VERSION);
 
                 m_logger.info("Do you want to download and install it? [y/N]");
                 std::string answer;
@@ -173,21 +162,18 @@ namespace mab
                 }
 
                 // download phase
-                std::string targetExtension;
-#ifdef _WIN32
-                targetExtension = ".exe";
-#else
-                targetExtension = "x86_64.deb";
-#endif
+                // Assets are named candletool-<version>-<tag>-<platform>.<ext>, next to mdgui and
+                // other platforms' packages. The tag letter differs between builds, so match only
+                // the package name and this build's own platform suffix.
+                constexpr std::string_view packagePrefix = "candletool-";
+                constexpr std::string_view packageSuffix = CANDLETOOL_PACKAGE_SUFFIX;
+
                 std::string   downloadUrl;
                 json_array_s* assets = jsonArray(release.get(), "assets");
                 for (auto* asset = assets ? assets->start : nullptr; asset; asset = asset->next)
                 {
                     std::string name = jsonString(asset->value, "name");
-                    if (name.size() > targetExtension.size() &&
-                        name.compare(name.size() - targetExtension.size(),
-                                     targetExtension.size(),
-                                     targetExtension) == 0)
+                    if (name.starts_with(packagePrefix) && name.ends_with(packageSuffix))
                     {
                         downloadUrl = jsonString(asset->value, "browser_download_url");
                         break;
@@ -195,7 +181,9 @@ namespace mab
                 }
                 if (downloadUrl.empty())
                 {
-                    m_logger.error("No matching release downloadable for this platform.");
+                    m_logger.error("Release %s has no candletool-*%s package for this platform.",
+                                   latestTag.c_str(),
+                                   CANDLETOOL_PACKAGE_SUFFIX);
                     return;
                 }
 
@@ -209,7 +197,7 @@ namespace mab
                     return;
                 }
 
-                m_logger.info(("Downloaded to: " + outputDirectory.string()).c_str());
+                m_logger.info("Downloaded to: %s", outputDirectory.string().c_str());
 
                 // install phase
                 if (!installPackage(outputDirectory))
@@ -224,7 +212,7 @@ namespace mab
                 std::filesystem::remove(outputDirectory, ec);
                 if (ec)
                 {
-                    m_logger.error(("Failed to remove temporary file: " + ec.message()).c_str());
+                    m_logger.error("Failed to remove temporary file: %s", ec.message().c_str());
                 }
             });
     }
