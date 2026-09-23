@@ -10,6 +10,16 @@ set(CANDLESDK_VERSION_TAG_OVERRIDE
     CACHE STRING
           "Single character version tag to use instead of the git derived one")
 
+# The tag ends up as a C char literal (CANDLETOOL_VTAG) and in package file
+# names, so anything but one letter or digit would break the build or names.
+if(NOT CANDLESDK_VERSION_TAG_OVERRIDE STREQUAL ""
+   AND NOT CANDLESDK_VERSION_TAG_OVERRIDE MATCHES "^[A-Za-z0-9]$")
+  message(
+    FATAL_ERROR
+      "CANDLESDK_VERSION_TAG_OVERRIDE must be a single letter or digit, got "
+      "'${CANDLESDK_VERSION_TAG_OVERRIDE}'")
+endif()
+
 if(UNIX)
   execute_process(
     COMMAND git log -1 --format=%h
