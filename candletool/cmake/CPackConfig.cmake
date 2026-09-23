@@ -35,7 +35,7 @@ if(WIN32)
 elseif(UNIX)
   set(CPACK_GENERATOR "DEB")
   set(CPACK_DEBIAN_PACKAGE_MAINTAINER "MAB Robotics <contact@mabrobotics.pl>")
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS libusb-1.0-0)
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "libusb-1.0-0, curl")
   set(CPACK_DEBIAN_PACKAGE_VERSION)
 
   if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "aarch64")

@@ -2,36 +2,6 @@ cmake_minimum_required(VERSION 3.5...3.25)
 
 include(GNUInstallDirs)
 
-if(WIN32)
-  include(FetchContent)
-  FetchContent_Declare(
-    curl
-    GIT_REPOSITORY https://github.com/curl/curl.git
-    GIT_TAG curl-8_10_1
-    GIT_SHALLOW TRUE
-  )
-  set(BUILD_CURL_EXE OFF CACHE BOOL "" FORCE)
-  set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-  set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
-  set(HTTP_ONLY ON CACHE BOOL "" FORCE)
-  set(CURL_USE_SCHANNEL ON CACHE BOOL "" FORCE)
-  set(CURL_USE_OPENSSL OFF CACHE BOOL "" FORCE)
-  FetchContent_MakeAvailable(curl)
-else()
-  find_package(CURL REQUIRED)
-endif()
-
-find_package(nlohmann_json QUIET)
-
-if(NOT nlohmann_json_FOUND)
-  include(FetchContent)
-  FetchContent_Declare(
-    json
-    URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
-  )
-  FetchContent_MakeAvailable(json)
-endif()
-
 message(CMAKE_INSTALL_SYSCONFDIR: ${CMAKE_INSTALL_SYSCONFDIR})
 
 set(CANDLETOOL_VERSION_MAJOR ${CANDLESDK_VERSION_1})
@@ -75,13 +45,14 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_executable(candletool ${CANDLETOOL_SOURCES})
 
-target_link_libraries(candletool PUBLIC candle logger PRIVATE CURL::libcurl CLI11 nlohmann_json::nlohmann_json)
+target_link_libraries(candletool PUBLIC candle logger PRIVATE CLI11)
 
 target_include_directories(
   candletool
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
   ${CMAKE_CURRENT_SOURCE_DIR}/src/web_file_module
-  ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src)
+  ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src
+  ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/sheredom_json)
 
 target_compile_options(candletool PRIVATE -g -Wno-unused-parameter -Wno-missing-field-initializers
   -Wswitch-enum)

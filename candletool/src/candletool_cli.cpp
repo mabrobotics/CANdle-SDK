@@ -1,19 +1,39 @@
+#include <cstdio>
+#include <cstdlib>
 #include <filesystem>
+#include <memory>
+#include <string_view>
 #include "candletool_cli.hpp"
-#include "curl/curl.h"
-#include "nlohmann/json.hpp"
+#include "json.h"
 
 namespace mab
 {
-    static size_t curlCallback(char* ptr, size_t size, size_t nmemb, std::string* out)
+    // json.h lookups; missing keys and wrong types yield nullptr / empty string
+    static json_value_s* jsonMember(json_value_s* object, std::string_view key)
     {
-        out->append(ptr, size * nmemb);
-        return size * nmemb;
+        json_object_s* obj = object ? json_value_as_object(object) : nullptr;
+        if (obj == nullptr)
+            return nullptr;
+
+        for (json_object_element_s* element = obj->start; element; element = element->next)
+        {
+            if (std::string_view(element->name->string, element->name->string_size) == key)
+                return element->value;
+        }
+        return nullptr;
     }
 
-    static size_t writeToFileCallback(char* ptr, size_t size, size_t nmemb, FILE* file)
+    static std::string jsonString(json_value_s* object, std::string_view key)
     {
-        return fwrite(ptr, size, nmemb, file);
+        json_value_s*  value = jsonMember(object, key);
+        json_string_s* str   = value ? json_value_as_string(value) : nullptr;
+        return str ? std::string(str->string, str->string_size) : std::string{};
+    }
+
+    static json_array_s* jsonArray(json_value_s* object, std::string_view key)
+    {
+        json_value_s* value = jsonMember(object, key);
+        return value ? json_value_as_array(value) : nullptr;
     }
 
     int compareCandletoolVersion(const CandletoolVersion* latest, const CandletoolVersion* current)
@@ -40,38 +60,13 @@ namespace mab
         return v;
     }
 
+    // Both HTTP helpers use the curl executable, same as CurlHandler: it is a .deb dependency on
+    // Linux and ships with Windows 10+, so nothing has to be linked on any platform.
     bool CandletoolCli::downloadFile(const std::string&           url,
                                      const std::filesystem::path& outputPath)
     {
-        FILE* file = std::fopen(outputPath.string().c_str(), "wb");
-        if (!file)
-        {
-            m_logger.error("Failed to open output file for writing.");
-            return false;
-        }
-
-        CURL* curl = curl_easy_init();
-        if (!curl)
-        {
-            std::fclose(file);
-            return false;
-        }
-
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_USERAGENT, "candletool");
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToFileCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, file);
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-
-        CURLcode res = curl_easy_perform(curl);
-
-        long httpCode = 0;
-        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
-
-        curl_easy_cleanup(curl);
-        std::fclose(file);
-
-        return (res == CURLE_OK && httpCode == 200);
+        std::string cmd = "curl --fail -L -o \"" + outputPath.string() + "\" \"" + url + "\"";
+        return !executeCommand(cmd);
     }
 
     bool CandletoolCli::installPackage(const std::filesystem::path& path)
@@ -91,30 +86,31 @@ namespace mab
 
     std::optional<std::string> CandletoolCli::fetchUrl(const std::string& url)
     {
-        CURL* curl = curl_easy_init();
-
-        std::string resBody;
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curlCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resBody);
-        curl_easy_setopt(curl, CURLOPT_USERAGENT, "candletool");
-
-        CURLcode res = curl_easy_perform(curl);
-
-        if (res != CURLE_OK)
-        {
-            curl_easy_cleanup(curl);
-            return std::nullopt;
-        }
-
-        long httpCode = 0;
-        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
-        curl_easy_cleanup(curl);
-
-        if (httpCode != 200)
+        std::string cmd = "curl --fail -sSL \"" + url + "\"";
+#ifdef _WIN32
+        FILE* pipe = _popen(cmd.c_str(), "r");
+#else
+        FILE* pipe = popen(cmd.c_str(), "r");
+#endif
+        if (!pipe)
             return std::nullopt;
 
-        return resBody;
+        std::string body;
+        char        buffer[4096];
+        size_t      bytesRead;
+        while ((bytesRead = std::fread(buffer, 1, sizeof(buffer), pipe)) > 0)
+            body.append(buffer, bytesRead);
+
+#ifdef _WIN32
+        int status = _pclose(pipe);
+#else
+        int status = pclose(pipe);
+#endif
+        // --fail makes curl exit non-zero on HTTP errors, so a zero status means a 2xx response
+        if (status != 0)
+            return std::nullopt;
+
+        return body;
     }
 
     CandletoolCli::CandletoolCli(CLI::App* rootCli, CANdleToolCtx_S ctx)
@@ -134,16 +130,20 @@ namespace mab
                 std::optional<std::string> body = fetchUrl(repoUrl);
                 if (!body)
                 {
-                    m_logger.error("Failed to reach GitHub API.");
+                    m_logger.error(
+                        "Failed to reach GitHub API. Make sure curl is installed and the "
+                        "network is available.");
                     return;
                 }
-                nlohmann::json json = nlohmann::json::parse(*body, nullptr, false);
-                if (json.is_discarded())
+                // json_parse returns a single malloc'd block holding the whole tree
+                std::unique_ptr<json_value_s, decltype(&std::free)> release(
+                    json_parse(body->data(), body->size()), &std::free);
+                if (!release)
                 {
                     m_logger.error("Failed to parse release info.");
                     return;
                 }
-                std::string latestVersion = json.value("tag_name", std::string{});
+                std::string latestVersion = jsonString(release.get(), "tag_name");
                 if (latestVersion.empty())
                 {
                     m_logger.error("Failed to get response from GitHub.");
@@ -179,16 +179,17 @@ namespace mab
 #else
                 targetExtension = "x86_64.deb";
 #endif
-                std::string downloadUrl;
-                for (const auto& asset : json["assets"])
+                std::string   downloadUrl;
+                json_array_s* assets = jsonArray(release.get(), "assets");
+                for (auto* asset = assets ? assets->start : nullptr; asset; asset = asset->next)
                 {
-                    std::string name = asset.value("name", std::string{});
+                    std::string name = jsonString(asset->value, "name");
                     if (name.size() > targetExtension.size() &&
                         name.compare(name.size() - targetExtension.size(),
                                      targetExtension.size(),
                                      targetExtension) == 0)
                     {
-                        downloadUrl = asset.value("browser_download_url", std::string{});
+                        downloadUrl = jsonString(asset->value, "browser_download_url");
                         break;
                     }
                 }
