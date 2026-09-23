@@ -39,5 +39,7 @@ namespace mab
         bool downloadFile(const std::string& url, const std::filesystem::path& outputPath);
 
         bool installPackage(const std::filesystem::path& path);
+
+        bool m_assumeYes = false;  // update -y / --yes: skip confirmation prompts
     };
 }  // namespace mab

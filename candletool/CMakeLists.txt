@@ -58,7 +58,8 @@ target_include_directories(
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
   ${CMAKE_CURRENT_SOURCE_DIR}/src/web_file_module
   ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src
-  ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/sheredom_json)
+  ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/sheredom_json
+  ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/picosha2)
 
 target_compile_options(candletool PRIVATE -g -Wno-unused-parameter -Wno-missing-field-initializers
   -Wswitch-enum)
