@@ -23,8 +23,7 @@ namespace mab
         {
             UpdateOptions(CLI::App* rootCli)
                 : fwVersion(std::make_shared<std::string>("")),
-                  pathToMabFile(std::make_shared<std::string>("")),
-                  metadataFile(std::make_shared<std::string>(""))
+                  pathToMabFile(std::make_shared<std::string>(""))
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
                     {"version",
@@ -33,17 +32,10 @@ namespace mab
                                          "Version of fw to download (\"latest\" or X.X.X format). "
                                          "For example:  candletool candle update latest")},
                     {"path",
-                     rootCli->add_option("-p,--path",
-                                         *pathToMabFile,
-                                         "Local path to .mab file")},
-                    {"meta_file",
-                     rootCli->add_option("-m,--meta-file",
-                                         *metadataFile,
-                                         "File with file metadata for managing downloads.")}};
+                     rootCli->add_option("-p,--path", *pathToMabFile, "Local path to .mab file")}};
             }
             const std::shared_ptr<std::string>  fwVersion;
             const std::shared_ptr<std::string>  pathToMabFile;
-            const std::shared_ptr<std::string>  metadataFile;
             std::map<std::string, CLI::Option*> optionsMap;
         };
     };
