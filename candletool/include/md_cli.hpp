@@ -27,13 +27,13 @@ namespace mab
             const std::shared_ptr<const CandleBuilder> candleBuilder);
         bool                       registerWrite(MD& md, u16 regAdress, const std::string& value);
         std::optional<std::string> registerRead(MD& md, u16 regAdress);
-        bool confirmUpdate(version_ut                                 targetVersion,
-                           const std::shared_ptr<canId_t>             mdCanId,
-                           const std::shared_ptr<const CandleBuilder> candleBuilder);
-        void flashMabFile(const std::filesystem::path&               path,
-                          bool                                       recovery,
-                          const std::shared_ptr<canId_t>             mdCanId,
-                          const std::shared_ptr<const CandleBuilder> candleBuilder);
+        bool                       confirmUpdate(version_ut                                 targetVersion,
+                                                 const std::shared_ptr<canId_t>             mdCanId,
+                                                 const std::shared_ptr<const CandleBuilder> candleBuilder);
+        void                       flashMabFile(const std::filesystem::path&               path,
+                                                bool                                       recovery,
+                                                const std::shared_ptr<canId_t>             mdCanId,
+                                                const std::shared_ptr<const CandleBuilder> candleBuilder);
 
         struct CanOptions
         {

@@ -8,12 +8,23 @@ namespace mab
 {
     // No overall time limit (slow links are fine), but give up on a connection that can't be
     // made in 10 s or a transfer that stalls completely for 30 s.
+    // An already downloaded file is fetched again only if the server has a newer one (-z), so
+    // e.g. updating drives in series reuses it. -R keeps the server file time for that check.
     bool CurlHandler::download(std::string_view url, const std::filesystem::path& outputPath)
     {
+        std::error_code   ec;
         std::stringstream command;
-        command << "curl --fail -L --connect-timeout 10 --speed-time 30 -o \""
-                << outputPath.string() << "\" \"" << url << "\"";
-        return !executeCommand(command.str());
+        command << "curl --fail -L -R --connect-timeout 10 --speed-time 30 ";
+        if (std::filesystem::exists(outputPath, ec))
+            command << "-z \"" << outputPath.string() << "\" ";
+        command << "-o \"" << outputPath.string() << "\" \"" << url << "\"";
+        if (executeCommand(command.str()))
+        {
+            // A partial file has local time, it would pass the -z check next time
+            std::filesystem::remove(outputPath, ec);
+            return false;
+        }
+        return true;
     }
 
     bool CurlHandler::loadIndex(mINI::INIStructure& index)
@@ -48,8 +59,8 @@ namespace mab
 
             bool match = false;
             if (latest)
-                match = section.size() >= 7 &&
-                        section.compare(section.size() - 7, 7, "_latest") == 0;
+                match =
+                    section.size() >= 7 && section.compare(section.size() - 7, 7, "_latest") == 0;
             else
                 match = section.compare(0, name.size(), name) == 0 &&
                         (section.size() == name.size() || section[name.size()] == '_');

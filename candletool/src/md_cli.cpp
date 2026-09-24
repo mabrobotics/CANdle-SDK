@@ -85,8 +85,8 @@ namespace mab
     bool parseVersion(const char* str, version_ut* version)
     {
         unsigned int major = 0, minor = 0, revision = 0;
-        if (sscanf(str, "%u.%u.%u", &major, &minor, &revision) != 3 || major > 255 ||
-            minor > 255 || revision > 255)
+        if (sscanf(str, "%u.%u.%u", &major, &minor, &revision) != 3 || major > 255 || minor > 255 ||
+            revision > 255)
             return false;
         version->i          = 0;
         version->s.major    = major;
@@ -1431,8 +1431,7 @@ namespace mab
                     CurlHandler::findIndexEntry(index, "md_app_", version, "filename");
                 if (filename.empty())
                 {
-                    m_logger.error("Firmware %s is not available on the server!",
-                                   version.c_str());
+                    m_logger.error("Firmware %s is not available on the server!", version.c_str());
                     return;
                 }
                 std::filesystem::path mabPath = tmpDir / filename;

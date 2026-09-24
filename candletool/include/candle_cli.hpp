@@ -32,9 +32,7 @@ namespace mab
                                          "Version of fw to download (\"latest\" or X.X.X format). "
                                          "For example:  candletool candle update latest")},
                     {"path",
-                     rootCli->add_option("-p,--path",
-                                         *pathToMabFile,
-                                         "Local path to .mab file")}};
+                     rootCli->add_option("-p,--path", *pathToMabFile, "Local path to .mab file")}};
             }
             const std::shared_ptr<std::string>  fwVersion;
             const std::shared_ptr<std::string>  pathToMabFile;
