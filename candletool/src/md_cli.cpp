@@ -1408,9 +1408,9 @@ namespace mab
                     WebFile_S flasherFile;
                     flasherFile.m_type = WebFile_S::Type_E::MD_FLASHER;
                     flasherFile.m_path = tmpDir / filename;
-                    if (CurlHandler::download(
+                    if (!CurlHandler::download(
                             std::string(CurlHandler::FW_SERVER_ROOT) + FW_MD_LEGACY_DIR + filename,
-                            flasherFile.m_path) != CurlHandler::CurlError_E::OK)
+                            flasherFile.m_path))
                     {
                         m_logger.error("Could not download firmware [ %s ]", filename.c_str());
                         return;
@@ -1436,9 +1436,8 @@ namespace mab
                     return;
                 }
                 std::filesystem::path mabPath = tmpDir / filename;
-                if (CurlHandler::download(
-                        std::string(CurlHandler::FW_SERVER_ROOT) + FW_MD_DIR + filename,
-                        mabPath) != CurlHandler::CurlError_E::OK)
+                if (!CurlHandler::download(
+                        std::string(CurlHandler::FW_SERVER_ROOT) + FW_MD_DIR + filename, mabPath))
                 {
                     m_logger.error("Could not download firmware [ %s ]", filename.c_str());
                     return;

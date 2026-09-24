@@ -62,9 +62,9 @@ namespace mab
                         return;
                     }
                     filepath = std::filesystem::temp_directory_path() / filename;
-                    if (CurlHandler::download(
+                    if (!CurlHandler::download(
                             std::string(CurlHandler::FW_SERVER_ROOT) + "candle/" + filename,
-                            filepath) != CurlHandler::CurlError_E::OK)
+                            filepath))
                     {
                         m_logger.error("Could not download firmware [ %s ]", filename.c_str());
                         return;
