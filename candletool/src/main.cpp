@@ -147,7 +147,8 @@ int main(int argc, char** argv)
     {
         std::cout << CANDLESDK_VERSION;
 
-        if (CANDLETOOL_VTAG != 'm')
+        // Only CI release builds ('r') print the bare version; others add tag and commit
+        if (CANDLETOOL_VTAG != 'r')
             std::cout << "_" << CANDLETOOL_VTAG << "_" << CANDLESDK_VERSION_HASH;
         std::cout << "\n";
     }
