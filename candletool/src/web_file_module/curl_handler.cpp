@@ -1,111 +1,64 @@
 #include <filesystem>
+#include <sstream>
 #include "curl_handler.hpp"
 #include "utilities.hpp"
 
 namespace mab
 {
-    CurlHandler::CurlHandler(const mINI::INIFile fallbackMetadata)
-        : m_fallbackMetadata(fallbackMetadata)
+    // No overall time limit (slow links are fine), but give up on a connection that can't be
+    // made in 10 s or a transfer that stalls completely for 30 s.
+    CurlHandler::CurlError_E CurlHandler::download(std::string_view             url,
+                                                   const std::filesystem::path& outputPath)
     {
+        std::stringstream command;
+        command << "curl --fail -L --connect-timeout 10 --speed-time 30 -o \""
+                << outputPath.string() << "\" \"" << url << "\"";
+        if (executeCommand(command.str()))
+            return CurlError_E::SYSTEM_CALL_ERROR;
+        return CurlError_E::OK;
     }
 
-    std::pair<CurlHandler::CurlError_E, WebFile_S> CurlHandler::downloadFile(
-        const std::string_view id)
+    bool CurlHandler::loadIndex(mINI::INIStructure& index)
     {
-        m_log.info("Downloading file [ %s ]", id.data());
-        WebFile_S webFile;
-        webFile.m_path = std::filesystem::current_path();
-
-        const mINI::INIFile* file;
-        // Try to get the latest LUT from the server
-        CurlError_E result = getLatestLut();
-        if (result != CurlError_E::OK)
+        Logger                log(Logger::ProgramLayer_E::LAYER_2, "CurlHandler");
+        std::filesystem::path indexPath = std::filesystem::temp_directory_path() / FW_INDEX_FILE;
+        if (download(std::string(FW_SERVER_ROOT) + FW_INDEX_FILE, indexPath) != CurlError_E::OK)
         {
-            m_log.warn(
-                "Could not get the latest LUT from the MAB servers, falling back to local LUT");
-            file = &m_fallbackMetadata;
+            log.error("Could not download firmware index!");
+            return false;
         }
-
-        // If failed, fall back to the local LUT file
-        if (file == nullptr || !file->read(m_addressLutStructure))
+        if (!mINI::INIFile(indexPath.string()).read(index))
         {
-            m_log.error("Failed to read the LUT file");
-            return std::make_pair(CurlError_E::FILE_READ_ERROR, webFile);
+            log.error("Could not read firmware index [ %s ]", indexPath.string().c_str());
+            return false;
         }
+        return true;
+    }
 
-        // DEBUG PRINT LUT
-        for (const auto& section : m_addressLutStructure)
+    std::string CurlHandler::findIndexEntry(const mINI::INIStructure& index,
+                                            const std::string&        prefix,
+                                            const std::string&        version,
+                                            const char*               key)
+    {
+        const std::string name   = prefix + version;
+        const bool        latest = version == "latest";
+        for (const auto& entry : index)
         {
-            m_log.debug("Name: %s", section.first.c_str());
-            for (const auto& pair : section.second)
-            {
-                m_log.debug("  %s = %s", pair.first.c_str(), pair.second.c_str());
-            }
-        }
+            const std::string& section = entry.first;
+            if (section.compare(0, prefix.size(), prefix) != 0)
+                continue;
 
-        std::string typeString = m_addressLutStructure[id.data()]["type"];
-        auto        type       = WebFile_S::strToType(typeString);
-        if (type == WebFile_S::Type_E::UNKNOWN)
-        {
-            m_log.error("Could not recognise filetype or no such ID in metainfo file!");
-            return std::make_pair(CurlError_E::UNRECOGNISED_FILETYPE, webFile);
-        }
-        webFile.m_type = type;
-
-        // Look for the address and filename in the LUT structure
-        std::string baseUrl       = m_addressLutStructure[id.data()]["base_url"];
-        std::string baseUrlMirror = m_addressLutStructure[id.data()]["base_url_mirror"];
-        std::string filename      = m_addressLutStructure[id.data()]["filename"];
-        // For multiarch entries
-        if (filename.empty())
-        {
-            constexpr sysArch_E arch           = getSysArch();
-            std::string         filename_field = "filename_";
-
-            if constexpr (arch == sysArch_E::ARM64)
-                filename_field += "arm64";
-            else if constexpr (arch == sysArch_E::ARMHF)
-                filename_field += "armhf";
-            else if constexpr (arch == sysArch_E::X86_64)
-                filename_field += "x86_64";
+            bool match = false;
+            if (latest)
+                match = section.size() >= 7 &&
+                        section.compare(section.size() - 7, 7, "_latest") == 0;
             else
-                m_log.warn("No architecture specific filename found");
-            filename = m_addressLutStructure[id.data()][filename_field];
+                match = section.compare(0, name.size(), name) == 0 &&
+                        (section.size() == name.size() || section[name.size()] == '_');
+
+            if (match && entry.second.has(key))
+                return entry.second.get(key);
         }
-        if (!baseUrl.empty() && !filename.empty())
-        {
-            m_log.info("Found URL [ %s ] for file [ %s ]", baseUrl.c_str(), filename.data());
-            std::string command = constructCurlCmd(filename, baseUrl);
-            bool        result  = executeCommand(command);
-            if (result)
-            {
-                m_log.warn("Failed to download file [ %s ] from URL [ %s ]",
-                           filename.data(),
-                           (baseUrl + filename).c_str());
-                m_log.warn("Trying mirror...");
-                command = constructCurlCmd(filename, baseUrlMirror);
-                result  = executeCommand(command);
-
-                if (result)
-                {
-                    m_log.error("Failed to download file [ %s ] from URL [ %s ]",
-                                filename.data(),
-                                (baseUrlMirror + filename).c_str());
-                    return std::make_pair(CurlError_E::SYSTEM_CALL_ERROR, webFile);
-                }
-            }
-            m_log.success("Successfully downloaded file [ %s ]", id.data());
-            webFile.m_path.append(filename);
-            return std::make_pair(CurlError_E::OK, webFile);
-        }
-
-        m_log.error("Could not find URL for file [ %s ] in LUT", id.data());
-        return std::make_pair(CurlError_E::ADDRESS_NOT_FOUND, webFile);
-    }
-
-    CurlHandler::CurlError_E CurlHandler::getLatestLut()
-    {
-        // Todo: implement fetching lut when ready
-        return CurlError_E::ADDRESS_NOT_FOUND;
+        return "";
     }
 }  // namespace mab
