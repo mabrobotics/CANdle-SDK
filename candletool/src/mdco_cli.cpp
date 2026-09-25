@@ -167,7 +167,7 @@ std::unique_ptr<MDCO, std::function<void(MDCO*)>> MdcoCli::getMdco(
         std::unique_ptr<MDCO, std::function<void(MDCO*)>>(new MDCO(*mdCanId, candle, od), deleter);
     if (md->init() == MDCO::Error_t::OK)
     {
-        useEdsMatchingFirmware(*md, od, m_legacyEdsPath, m_log);
+        useEdsMatchingFirmware(*md, od, m_edsPaths, m_log);
         return md;
     }
     else
@@ -195,7 +195,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         {
             exit(1);
         }
-        m_legacyEdsPath = edsPaths.value().legacy;
+        m_edsPaths = edsPaths.value();
 
         // Which dictionary a command ran against decides how its arguments were interpreted, so
         // name it before the command is carried out - visible from -v2 up

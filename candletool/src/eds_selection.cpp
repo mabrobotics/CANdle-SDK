@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <system_error>
+#include <tuple>
 
 #include "edsParser.hpp"
 #include "mini/ini.h"
@@ -300,51 +301,112 @@ namespace mab
             paths.legacy.clear();
         }
 
+        paths.standard = bundledEdsDir(configFilePath) / STANDARD_EDS_FILE;
+        if (!std::filesystem::exists(paths.standard))
+            paths.standard.clear();
+
         return paths;
     }
 
     void useEdsMatchingFirmware(MDCO&                                md,
                                 std::shared_ptr<EDSObjectDictionary> od,
-                                const std::filesystem::path&         legacyEdsPath,
+                                const EdsPaths_S&                    paths,
                                 const Logger&                        log)
     {
-        if (legacyEdsPath.empty() || od == nullptr)
+        if (od == nullptr)
             return;
 
-        const auto [firmwareVersion, err] = md.getFirmwareVersion();
+        std::error_code ec;
+        const bool usingStandard = !paths.standard.empty() &&
+                                   std::filesystem::equivalent(paths.current, paths.standard, ec);
+
+        version_ut    firmwareVersion;
+        MDCO::Error_t err;
+        std::tie(firmwareVersion, err) = md.getFirmwareVersion();
+
+        // The loaded .eds may not describe where a newer drive keeps its version (md_1.1 on a
+        // 3.x drive), so the drive is asked again through the standard one
+        if (err != MDCO::Error_t::OK && !usingStandard && !paths.standard.empty())
+        {
+            auto standardPair = EDSParser::load(paths.standard);
+            if (standardPair.first != nullptr)
+            {
+                EDSObjectDictionary selected   = std::move(*od);
+                *od                            = std::move(*standardPair.first);
+                std::tie(firmwareVersion, err) = md.getFirmwareVersion();
+                if (err == MDCO::Error_t::OK &&
+                    firmwareVersion.s.major >= LEGACY_EDS_BELOW_FW_MAJOR)
+                {
+                    log.warn(
+                        "Drive firmware is %u.%u.%u, which the selected %s does not describe - "
+                        "the .eds was automatically changed to %s",
+                        (unsigned)firmwareVersion.s.major,
+                        (unsigned)firmwareVersion.s.minor,
+                        (unsigned)firmwareVersion.s.revision,
+                        paths.current.filename().string().c_str(),
+                        paths.standard.filename().string().c_str());
+                    log.warn("To select it permanently use: candletool mdco eds %s",
+                             paths.standard.string().c_str());
+                    return;
+                }
+                *od = std::move(selected);
+            }
+        }
 
         const bool legacyDrive =
             err != MDCO::Error_t::OK || firmwareVersion.s.major < LEGACY_EDS_BELOW_FW_MAJOR;
 
         if (!legacyDrive)
         {
-            log.debug("Drive firmware is %u.%u.%u, keeping the default .eds",
-                      (unsigned)firmwareVersion.s.major,
-                      (unsigned)firmwareVersion.s.minor,
-                      (unsigned)firmwareVersion.s.revision);
+            if (!usingStandard && !paths.standard.empty())
+                log.warn(
+                    "Drive firmware is %u.%u.%u and the non-standard %s is in use - the standard "
+                    ".eds for firmware %u.0.0 and newer is %s. Make sure the selected .eds "
+                    "matches the drive firmware!",
+                    (unsigned)firmwareVersion.s.major,
+                    (unsigned)firmwareVersion.s.minor,
+                    (unsigned)firmwareVersion.s.revision,
+                    paths.current.string().c_str(),
+                    (unsigned)LEGACY_EDS_BELOW_FW_MAJOR,
+                    STANDARD_EDS_FILE);
+            else
+                log.debug("Drive firmware is %u.%u.%u, keeping the default .eds",
+                          (unsigned)firmwareVersion.s.major,
+                          (unsigned)firmwareVersion.s.minor,
+                          (unsigned)firmwareVersion.s.revision);
             return;
         }
 
-        if (err == MDCO::Error_t::OK)
-            log.info("Drive firmware is %u.%u.%u, loading the .eds for firmware older than %u.0.0",
-                     (unsigned)firmwareVersion.s.major,
-                     (unsigned)firmwareVersion.s.minor,
-                     (unsigned)firmwareVersion.s.revision,
-                     (unsigned)LEGACY_EDS_BELOW_FW_MAJOR);
-        else
-            log.info(
-                "Drive did not report its firmware version, assuming it predates %u.0.0 and "
-                "loading the legacy .eds",
-                (unsigned)LEGACY_EDS_BELOW_FW_MAJOR);
+        // Nothing to change when the legacy .eds is already the loaded one
+        if (paths.legacy.empty() || std::filesystem::equivalent(paths.legacy, paths.current, ec))
+            return;
 
-        auto legacyPair = EDSParser::load(legacyEdsPath);
+        auto legacyPair = EDSParser::load(paths.legacy);
         if (legacyPair.second != EDSParser::Error_t::OK || legacyPair.first == nullptr)
         {
             log.error("Could not load the legacy .eds from %s, keeping the default one",
-                      legacyEdsPath.c_str());
+                      paths.legacy.c_str());
             return;
         }
 
         *od = std::move(*legacyPair.first);
+
+        if (err == MDCO::Error_t::OK)
+            log.info(
+                "Drive firmware is %u.%u.%u (older than %u.0.0) - the .eds was automatically "
+                "changed from %s to %s",
+                (unsigned)firmwareVersion.s.major,
+                (unsigned)firmwareVersion.s.minor,
+                (unsigned)firmwareVersion.s.revision,
+                (unsigned)LEGACY_EDS_BELOW_FW_MAJOR,
+                paths.current.filename().string().c_str(),
+                paths.legacy.filename().string().c_str());
+        else
+            log.info(
+                "Drive did not report its firmware version, assuming it predates %u.0.0 - the "
+                ".eds was automatically changed from %s to %s",
+                (unsigned)LEGACY_EDS_BELOW_FW_MAJOR,
+                paths.current.filename().string().c_str(),
+                paths.legacy.filename().string().c_str());
     }
 }  // namespace mab

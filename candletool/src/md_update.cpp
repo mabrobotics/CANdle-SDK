@@ -114,7 +114,7 @@ namespace mab
 
             // A drive waiting to be flashed may well be running older firmware, whose dictionary
             // holds the reset command at a different address
-            useEdsMatchingFirmware(mdco, od, edsPaths.value().legacy, log);
+            useEdsMatchingFirmware(mdco, od, edsPaths.value(), log);
 
             if (versionOut != nullptr)
             {

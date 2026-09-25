@@ -36,9 +36,8 @@ namespace mab
         std::unique_ptr<MDCO, std::function<void(MDCO*)>> getMdco(
             const std::shared_ptr<canId_t> mdCanId, std::shared_ptr<EDSObjectDictionary> od);
 
-        /// @brief Path of the .eds describing drives with older firmware, empty when the
-        /// installation provides only one .eds
-        std::filesystem::path m_legacyEdsPath;
+        /// @brief .eds files the installation provides, read when the dictionary is loaded
+        EdsPaths_S m_edsPaths;
 
         struct CalibrationOptions
         {
