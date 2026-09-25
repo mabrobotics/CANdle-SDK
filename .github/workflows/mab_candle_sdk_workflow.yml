@@ -12,6 +12,12 @@ on:
       - main
       - devel
 
+# Version tag baked into package names and --version output. Releases are
+# built from main and must be tagged 'r'; other builds leave this empty so
+# CMake derives the tag from the git branch.
+env:
+  CANDLESDK_VERSION_TAG_OVERRIDE: ${{ github.ref == 'refs/heads/main' && 'r' || '' }}
+
 jobs:
   check-if-dev:
     runs-on: ubuntu-latest
@@ -131,6 +137,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: "true"
+
+      - name: Allow git to read the checked out repository
+        run: git config --global --add safe.directory '*'
       
       - name: Install OpenGl
         run: | 
@@ -139,7 +148,7 @@ jobs:
 
       - name: CMake configure
         run: |
-          cmake -DCMAKE_BUILD_TYPE=Release -B build -G "Unix Makefiles" -DCANDLE_BUILD_STATIC=OFF .
+          cmake -DCMAKE_BUILD_TYPE=Release -DCANDLESDK_VERSION_TAG_OVERRIDE=$CANDLESDK_VERSION_TAG_OVERRIDE -B build -G "Unix Makefiles" -DCANDLE_BUILD_STATIC=OFF .
 
       - name: Build
         run: cmake --build ./build -j$(nproc)
@@ -167,6 +176,9 @@ jobs:
         with:
           submodules: "true"
 
+      - name: Allow git to read the checked out repository
+        run: git config --global --add safe.directory '*'
+
       - name: Install OpenGl
         run: | 
           sudo apt-get update
@@ -177,7 +189,7 @@ jobs:
 
       - name: CMake configure
         run: |
-          cmake -DCMAKE_BUILD_TYPE=Release -B build -G "Unix Makefiles" .
+          cmake -DCMAKE_BUILD_TYPE=Release -DCANDLESDK_VERSION_TAG_OVERRIDE=$CANDLESDK_VERSION_TAG_OVERRIDE -B build -G "Unix Makefiles" .
 
       - name: Build
         run: cmake --build ./build -j$(nproc)
@@ -204,6 +216,9 @@ jobs:
         with:
           submodules: "true"
 
+      - name: Allow git to read the checked out repository
+        run: git config --global --add safe.directory '*'
+
       - name: Install OpenGL and dependencies
         run: |
           dpkg --add-architecture arm64
@@ -215,7 +230,7 @@ jobs:
       - name: CMake configure
         run: |
           export PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
-          cmake -DCMAKE_BUILD_TYPE=Release -DCANDLE_BUILD_STATIC=OFF --toolchain ./cmake/linux.arm64.toolchain.cmake ./ -B build -G "Unix Makefiles" .
+          cmake -DCMAKE_BUILD_TYPE=Release -DCANDLESDK_VERSION_TAG_OVERRIDE=$CANDLESDK_VERSION_TAG_OVERRIDE -DCANDLE_BUILD_STATIC=OFF --toolchain ./cmake/linux.arm64.toolchain.cmake ./ -B build -G "Unix Makefiles" .
 
       - name: Build
         run: cmake --build ./build -j$(nproc)
@@ -242,6 +257,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: "true"
+
+      - name: Allow git to read the checked out repository
+        run: git config --global --add safe.directory '*'
       
       - name: Install OpenGL and dependencies
         run: |
@@ -254,7 +272,7 @@ jobs:
       - name: CMake configure
         run: |
           export PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
-          cmake -DCMAKE_BUILD_TYPE=Release --toolchain ./cmake/linux.arm64.toolchain.cmake ./ -B build -G "Unix Makefiles" .
+          cmake -DCMAKE_BUILD_TYPE=Release -DCANDLESDK_VERSION_TAG_OVERRIDE=$CANDLESDK_VERSION_TAG_OVERRIDE --toolchain ./cmake/linux.arm64.toolchain.cmake ./ -B build -G "Unix Makefiles" .
 
       - name: Build
         run: cmake --build ./build -j$(nproc)
@@ -281,6 +299,9 @@ jobs:
         with:
           submodules: "true"
 
+      - name: Allow git to read the checked out repository
+        run: git config --global --add safe.directory '*'
+
       - name: Install OpenGL and dependencies
         run: |
           dpkg --add-architecture armhf
@@ -292,7 +313,7 @@ jobs:
       - name: CMake configure
         run: |
           export PKG_CONFIG_LIBDIR=/usr/lib/arm-linux-gnueabihf/pkgconfig:/usr/share/pkgconfig
-          cmake -DCMAKE_BUILD_TYPE=Release -DCANDLE_BUILD_STATIC=OFF --toolchain ./cmake/linux.armhf.toolchain.cmake ./ -B build -G "Unix Makefiles" .
+          cmake -DCMAKE_BUILD_TYPE=Release -DCANDLESDK_VERSION_TAG_OVERRIDE=$CANDLESDK_VERSION_TAG_OVERRIDE -DCANDLE_BUILD_STATIC=OFF --toolchain ./cmake/linux.armhf.toolchain.cmake ./ -B build -G "Unix Makefiles" .
 
       - name: Build
         run: cmake --build ./build -j$(nproc)
@@ -320,6 +341,9 @@ jobs:
         with:
           submodules: "true"
 
+      - name: Allow git to read the checked out repository
+        run: git config --global --add safe.directory '*'
+
       - name: Install OpenGL and dependencies
         run: |
           dpkg --add-architecture armhf
@@ -331,7 +355,7 @@ jobs:
       - name: CMake configure
         run: |
           export PKG_CONFIG_LIBDIR=/usr/lib/arm-linux-gnueabihf/pkgconfig:/usr/share/pkgconfig
-          cmake -DCMAKE_BUILD_TYPE=Release --toolchain ./cmake/linux.armhf.toolchain.cmake ./ -B build -G "Unix Makefiles" .
+          cmake -DCMAKE_BUILD_TYPE=Release -DCANDLESDK_VERSION_TAG_OVERRIDE=$CANDLESDK_VERSION_TAG_OVERRIDE --toolchain ./cmake/linux.armhf.toolchain.cmake ./ -B build -G "Unix Makefiles" .
 
       - name: Build
         run: cmake --build ./build -j$(nproc)
@@ -358,6 +382,9 @@ jobs:
         with:
           submodules: "true"
 
+      - name: Allow git to read the checked out repository
+        run: git config --global --add safe.directory '*'
+
       - name: Install dependencies and Windows GLFW3
         run: |
           apt-get update && apt-get install -y wget unzip pkg-config mingw-w64 nodejs
@@ -372,7 +399,7 @@ jobs:
           CFLAGS: "-I/opt/glfw/glfw-3.4.bin.WIN64/include"
           CXXFLAGS: "-I/opt/glfw/glfw-3.4.bin.WIN64/include"
           LDFLAGS: "-L/opt/glfw/glfw-3.4.bin.WIN64/lib-mingw-w64"
-        run: ./launch/buildForWindows.sh
+        run: ./launch/buildForWindows.sh -DCANDLESDK_VERSION_TAG_OVERRIDE=$CANDLESDK_VERSION_TAG_OVERRIDE
 
       - name: Store artifacts
         uses: actions/upload-artifact@v4
@@ -392,6 +419,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: "true"
+
+      - name: Allow git to read the checked out repository
+        run: git config --global --add safe.directory '*'
       
       - name: Install OpenGl
         run: | 
@@ -400,7 +430,7 @@ jobs:
 
       - name: CMake configure
         run: |
-          cmake -DCMAKE_BUILD_TYPE=Release -DMAKE_TESTS=ON -B build -G "Unix Makefiles" .
+          cmake -DCMAKE_BUILD_TYPE=Release -DCANDLESDK_VERSION_TAG_OVERRIDE=$CANDLESDK_VERSION_TAG_OVERRIDE -DMAKE_TESTS=ON -B build -G "Unix Makefiles" .
 
       - name: Build
         run: cmake --build ./build --parallel "$(nproc)"
