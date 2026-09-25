@@ -1,12 +1,28 @@
+# Versions of the .eds files that come with candletool, as "candletool mdco eds" matches them:
+# the FileVersion each one declares in its [FileInfo] section
+_candletool_eds_versions()
+{
+    local edsDir="/etc/candletool/config/eds"
+    local eds version
+
+    [[ -d "$edsDir" ]] || return 0
+
+    for eds in "$edsDir"/*.eds; do
+        [[ -f "$eds" ]] || continue
+        version=$(sed -n 's/^[[:space:]]*FileVersion[[:space:]]*=[[:space:]]*\([^[:space:];]*\).*/\1/p' "$eds" | head -n1)
+        [[ -n "$version" ]] && printf '%s\n' "$version"
+    done
+}
+
 _candletool_completions()
 {
     local current="${COMP_WORDS[COMP_CWORD]}"
     local previous="${COMP_WORDS[COMP_CWORD-1]}"
     local suggestions=""
     local global_flags="-h --help -d --datarate -i --id --bus --device -v --verbosity --version -s --silent --log"
-    local flags_with_args="-i --id --bus --datarate -d --device -v --verbosity -p --path -m --meta-file -e --encoder -f --mabfile -r --recovery --new_id --new_datarate --new_timeout --index --subindex --value"
+    local flags_with_args="-i --id --bus --datarate -d --device -v --verbosity -p --path -e --encoder -f --mabfile -r --recovery --new_id --new_datarate --new_timeout --index --subindex --value"
 
-    if [[ "$previous" == "-p" || "$previous" == "--path" || "$previous" == "-m" || "$previous" == "--meta-file" || "$previous" == "-f" || "$previous" == "--mabfile" || "$previous" == "upload" || "$previous" == "download" ]]; then
+    if [[ "$previous" == "-p" || "$previous" == "--path" || "$previous" == "-f" || "$previous" == "--mabfile" || "$previous" == "upload" || "$previous" == "download" ]]; then
         compopt -o filenames 2>/dev/null
         COMPREPLY=( $(compgen -f -- "$current") )
         return 0
@@ -59,7 +75,7 @@ _candletool_completions()
                 functions="discover info update can setup_cfg setup_interactive read_cfg save set_battery_level set_shutdown_time set_br get_br set_br_trigger get_br_trigger disable ps br ic"
                 ;;
             mdco)
-                functions="blink can config clear discover encoder sdo reset calibration info save test"
+                functions="blink can config clear discover eds encoder sdo reset calibration info save test"
                 ;;
             update)
                 [[ "$current" == -* ]] && functions="-y --yes"
@@ -79,7 +95,7 @@ _candletool_completions()
             candle)
                 case "$functionName" in
                     update)
-                        exclusive_flags="-p --path -m --meta-file"
+                        exclusive_flags="-p --path"
                         ;;
                 esac
                 ;;
@@ -101,7 +117,7 @@ _candletool_completions()
                         subcommands="absolute relative velocity encoder"
                         ;;
                     update)
-                        exclusive_flags="-p --path -r --recovery --force-erase -m --meta-file"
+                        exclusive_flags="-p --path -r --recovery --force-erase"
                         ;;
                 esac
                 ;;
@@ -112,6 +128,14 @@ _candletool_completions()
                         ;;
                     config)
                         subcommands="download upload"
+                        ;;
+                    eds)
+                        # an .eds is selected either by the version of one that comes with
+                        # candletool or by the path of any other one
+                        compopt -o filenames 2>/dev/null
+                        COMPREPLY=( $(compgen -W "$(_candletool_eds_versions)" -- "$current") \
+                                    $(compgen -f -- "$current") )
+                        return 0
                         ;;
                     encoder)
                         subcommands="display"

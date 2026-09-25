@@ -1,5 +1,8 @@
 #include "md_cli.hpp"
+
+#include "eds_selection.hpp"
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <ios>
 #include <memory>
@@ -8,6 +11,7 @@
 #include <string_view>
 #include <filesystem>
 #include <variant>
+#include "MDCO.hpp"
 #include "MDStatus.hpp"
 #include "canLoader.hpp"
 #include "candle.hpp"
@@ -22,7 +26,10 @@
 #include "mini/ini.h"
 #include "configHelpers.hpp"
 #include "curl_handler.hpp"
+#include "edsEntry.hpp"
+#include "edsParser.hpp"
 #include "flasher.hpp"
+#include "md_update.hpp"
 
 #ifndef WIN32
 
@@ -56,18 +63,6 @@
 
 namespace mab
 {
-    version_ut getMdFirmwareVersion(MD& md)
-    {
-        md.readRegister(md.m_mdRegisters.firmwareVersion);
-        return {.i = md.m_mdRegisters.firmwareVersion.value};
-    }
-    bool isVersionAtLeast(version_ut fwVersion, int major, int minor, int rev)
-    {
-        if (fwVersion.s.major < major || fwVersion.s.minor < minor || fwVersion.s.revision < rev)
-            return false;
-        return true;
-    }
-
     MDCli::MDCli(CLI::App* rootCli, CANdleToolCtx_S ctx)
     {
         if (ctx.candleBranchVec.empty())
@@ -226,10 +221,7 @@ namespace mab
                         "It appears the drive does not require a calibration. Are you sure you "
                         "want to proceed?");
 
-                std::string answer;
-                std::cout << "Type 'Y' to continue: ";
-                std::getline(std::cin, answer);
-                if (answer != "Y" && answer != "y")
+                if (!userConfirm())
                 {
                     m_logger.error("Calibration aborted by user!");
                     return;
@@ -546,10 +538,7 @@ namespace mab
                     "The factory reset, will erase the whole configuration from the drive, "
                     "including its CAN ID to 100 (0x64)! Proceed?");
 
-                std::string answer;
-                std::cout << "Type 'Y' to continue: ";
-                std::getline(std::cin, answer);
-                if (answer != "Y" && answer != "y")
+                if (!userConfirm())
                 {
                     m_logger.error("Factory Reset aborted by user!");
                     return;
@@ -1288,144 +1277,12 @@ namespace mab
         update->callback(
             [this, candleBuilder, mdCanId, updateOptions, ctx]()
             {
-                if (*updateOptions.forceErase)
-                {
-                    m_logger.info(
-                        "The force-erase, will erase the whole configuration from the drive, "
-                        "including"
-                        "bootloader configuration. Drives' CAN ID will be set default 100 (0x64)! "
-                        "Proceed?");
-                    std::string answer;
-                    std::cout << "Type 'Y' to continue: ";
-                    std::getline(std::cin, answer);
-                    if (answer != "Y" && answer != "y")
-                    {
-                        m_logger.error("Factory Reset aborted by user!");
-                        return;
-                    }
-                    auto candle = candleBuilder->build().value_or(nullptr);
-                    if (candle == nullptr)
-                    {
-                        m_logger.error("Could not connect to candle!");
-                        return;
-                    }
-                    if (!*updateOptions.recovery)
-                    {
-                        MD md(*mdCanId, candle);
-                        md.reset();
-                        usleep(200'000);
-                    }
-                    CanLoader canLoader(candle, nullptr, *mdCanId);
-                    if (!canLoader.forceEraseConfig())
-                    {
-                        m_logger.error("Force-erase failed!");
-                        return;
-                    }
-                    m_logger.success("Force-erase complete for MD @ %d", *mdCanId);
-                    return;
-                }
-                if (updateOptions.pathToMabFile->empty())
-                {
-                    if (updateOptions.fwVersion->empty())
-                    {
-                        m_logger.error(
-                            "Please provide version of fw or  \"latest\" keyword in the argument!");
-                        m_logger.error("For example candletool md update latest");
-                        return;
-                    }
-                    std::string fallbackPath = ctx.packageEtcPath->generic_string();
-
-                    if (!updateOptions.metadataFile->empty())
-                        fallbackPath = *updateOptions.metadataFile;
-                    else
-                        fallbackPath += "/config/web_files_metadata.ini";
-
-                    m_logger.debug("Fallback path at: %s", fallbackPath.c_str());
-                    mINI::INIFile fallbackMetadataFile(fallbackPath);
-                    CurlHandler   curl(fallbackMetadataFile);
-
-                    std::string fileId = "MAB_CAN_FLASHER_";
-                    fileId += *updateOptions.fwVersion;
-                    auto curlResult = curl.downloadFile(fileId);
-                    if (curlResult.first != CurlHandler::CurlError_E::OK)
-                    {
-                        m_logger.error("Error on curl download request!");
-                        return;
-                    }
-                    Flasher flasher(curlResult.second);
-                    canId_t flashId = *mdCanId;
-                    if (*updateOptions.recovery)
-                    {
-                        flashId = 9;
-                    }
-                    auto flashResult = flasher.flash(flashId, *updateOptions.recovery);
-                    if (flashResult != Flasher::Error_E::OK)
-                    {
-                        m_logger.error("Error while flashing firmware!");
-                        return;
-                    }
-
-                    return;
-                }
-                else
-                {
-                    m_logger.info("Overriding download of file. Using local provided path.");
-                    MabFileParser mabFile(updateOptions.pathToMabFile->string(),
-                                          MabFileParser::TargetDevice_E::MD);
-
-                    if (*(updateOptions.recovery) == false)
-                    {
-                        auto md = getMd(mdCanId, candleBuilder);
-                        if (md == nullptr)
-                        {
-                            m_logger.error("Could not communicate with MD device with ID %d",
-                                           *mdCanId);
-                            return;
-                        }
-                        auto fw = getMdFirmwareVersion(*md);
-                        if (!isVersionAtLeast(fw, 3, 0, 0))
-                        {
-                            m_logger.warn(
-                                "You are attempting to update MD from version v%d.%d.%d to version "
-                                "%s.\n This comes with changes, that in specific conditions "
-                                "(motor+encoder combinations) may require you to:\n"
-                                "- reapply .cfg file,\n"
-                                "- perform calibration,\n"
-                                "- set zero offset.\n"
-                                "Continue? [y/n]",
-                                fw.s.major,
-                                fw.s.minor,
-                                fw.s.revision,
-                                mabFile.m_fwEntry.version);
-                            char c;
-                            std::cin >> c;
-                            if (c != 'y' && c != 'Y')
-                                return;
-                        }
-
-                        md->reset();
-                        usleep(200'000);
-                    }
-                    else
-                    {
-                        m_logger.warn("Recovery mode...");
-                        m_logger.warn(
-                            "Please make sure driver is in the bootloader phase (rebooting)");
-                    }
-                    auto candle = candleBuilder->build().value_or(nullptr);
-                    if (candle == nullptr)
-                    {
-                        m_logger.error("Could not connect to candle!");
-                        return;
-                    }
-                    CanLoader canLoader(candle, &mabFile, *mdCanId);
-                    if (!canLoader.flashAndBoot(*(updateOptions.recovery)))
-                    {
-                        m_logger.error("MD flashing failed!");
-                        return;
-                    }
-                    m_logger.success("Update complete for MD @ %d", *mdCanId);
-                }
+                updateMd(updateOptions,
+                         UpdateReset_E::MD_PROTOCOL,
+                         mdCanId,
+                         candleBuilder,
+                         *ctx.packageEtcPath,
+                         m_logger);
             });
         // Version
         auto* version = mdCLi->add_subcommand("version", "Check version of the MD device.")

@@ -32,6 +32,17 @@ namespace mab
 
     std::string trim(const std::string_view s);
 
+    /// @brief Read the firmware version out of the drive
+    /// @param md drive to ask, has to be initialized
+    version_ut getMdFirmwareVersion(MD& md);
+
+    /// @brief Check a firmware version against a minimum
+    bool isVersionAtLeast(version_ut fwVersion, int major, int minor, int rev);
+
+    /// @brief Ask the user a "Continue? [y/N]" question on stdin
+    /// @return true when the user answered y/Y
+    bool userConfirm();
+
     constexpr sysArch_E getSysArch()
     {
 #if defined(_M_X64) || defined(__amd64__) || defined(__x86_64__)

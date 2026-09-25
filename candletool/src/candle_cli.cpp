@@ -32,7 +32,7 @@ namespace mab
 
         UpdateOptions updateOptions(update);
         update->callback(
-            [this, updateOptions, ctx]()
+            [this, updateOptions]()
             {
                 m_logger.info("Performing Candle firmware update.");
 
@@ -40,40 +40,36 @@ namespace mab
 
                 if (updateOptions.pathToMabFile->empty())
                 {
-                    if (updateOptions.fwVersion->empty())
+                    const std::string& version = *updateOptions.fwVersion;
+                    if (version.empty())
                     {
                         m_logger.error(
                             "Please provide version of fw or \"latest\" keyword in the argument!");
                         m_logger.error("For example candletool candle update latest");
                         return;
                     }
-                    std::string fallbackPath = ctx.packageEtcPath->generic_string();
 
-                    if (!updateOptions.metadataFile->empty())
-                        fallbackPath = *updateOptions.metadataFile;
-                    else
-                        fallbackPath += "/config/web_files_metadata.ini";
+                    mINI::INIStructure index;
+                    if (!CurlHandler::loadIndex(index))
+                        return;
 
-                    m_logger.debug("Fallback path at: %s", fallbackPath.c_str());
-                    mINI::INIFile fallbackMetadataFile(fallbackPath);
-                    CurlHandler   curl(fallbackMetadataFile);
-
-                    std::string fileId = "MAB_USB_MABFILE_";
-                    fileId += *updateOptions.fwVersion;
-                    auto curlResult = curl.downloadFile(fileId);
-                    if (curlResult.first != CurlHandler::CurlError_E::OK)
+                    std::string filename =
+                        CurlHandler::findIndexEntry(index, "candle_", version, "filename");
+                    if (filename.empty())
                     {
-                        m_logger.error("Error on curl download request!");
+                        m_logger.error("Firmware %s is not available on the server!",
+                                       version.c_str());
                         return;
                     }
-                    auto file = curlResult.second;
-                    if (file.m_type != WebFile_S::Type_E::MAB_FILE)
+                    filepath = std::filesystem::temp_directory_path() / filename;
+                    if (!CurlHandler::download(
+                            std::string(CurlHandler::FW_SERVER_ROOT) + "candle/" + filename,
+                            filepath))
                     {
-                        m_logger.error("Downloaded file is not a MAB file!");
+                        m_logger.error("Could not download firmware [ %s ]", filename.c_str());
                         return;
                     }
-                    filepath = curlResult.second.m_path;
-                    m_logger.info("Downloaded firmware to %s", filepath.c_str());
+                    m_logger.info("Downloaded firmware to %s", filepath.string().c_str());
                 }
                 else
                 {

@@ -5,6 +5,7 @@
 #include "logger.hpp"
 #include "MD.hpp"
 #include "utilities.hpp"
+#include "md_update.hpp"
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -172,41 +173,5 @@ namespace mab
             const std::shared_ptr<std::string>  encoder;
             std::map<std::string, CLI::Option*> optionsMap;
         };
-
-        struct UpdateOptions
-        {
-            UpdateOptions(CLI::App* rootCli)
-                : fwVersion(std::make_shared<std::string>("")),
-                  pathToMabFile(std::make_shared<std::filesystem::path>("")),
-                  recovery(std::make_shared<bool>(false)),
-                  forceErase(std::make_shared<bool>(false)),
-                  metadataFile(std::make_shared<std::string>(""))
-            {
-                optionsMap = std::map<std::string, CLI::Option*>{
-                    {"version",
-                     rootCli->add_option("version",
-                                         *fwVersion,
-                                         "Version of fw to download (\"latest\" or X.X.X format). "
-                                         "For example:  candletool md update latest")},
-                    {"path",
-                     rootCli->add_option("-p,--path", *pathToMabFile, "Local path to .mab file")},
-                    {"recovery",
-                     rootCli->add_flag(
-                         "-r,--recovery", *recovery, "Driver recovery after failed flashing")},
-                    {"force_erase",
-                     rootCli->add_flag(
-                         "--force-erase", *forceErase, "Force full wipe of the driver")},
-                    {"meta_file",
-                     rootCli->add_option("-m,--meta-file",
-                                         *metadataFile,
-                                         "File with file metadata for managing downloads.")}};
-            }
-            const std::shared_ptr<std::string>           fwVersion;
-            const std::shared_ptr<std::filesystem::path> pathToMabFile;
-            const std::shared_ptr<bool>                  recovery;
-            const std::shared_ptr<bool>                  forceErase;
-            const std::shared_ptr<std::string>           metadataFile;
-            std::map<std::string, CLI::Option*>          optionsMap;
-        };  // namespace mab
     };
 }  // namespace mab

@@ -6,6 +6,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include "MDObjects.hpp"
 #include "MDStatus.hpp"
 #include "candle_types.hpp"
 #include "edsEntry.hpp"
@@ -13,6 +14,97 @@
 
 namespace mab
 {
+    namespace
+    {
+        constexpr u8 SDO_ABORT_RESPONSE = 0x80;
+
+
+        /// @brief Human readable form of the CiA 301 SDO abort codes
+        const char* sdoAbortReason(u32 code)
+        {
+            switch (code)
+            {
+                case 0x05030000:
+                    return "toggle bit not alternated";
+                case 0x05040000:
+                    return "SDO protocol timed out";
+                case 0x05040001:
+                    return "command specifier not valid or unknown";
+                case 0x06010000:
+                    return "unsupported access to an object";
+                case 0x06010001:
+                    return "attempt to read a write only object";
+                case 0x06010002:
+                    return "attempt to write a read only object";
+                case 0x06020000:
+                    return "object does not exist in the object dictionary";
+                case 0x06070010:
+                    return "data type or length of service parameter does not match";
+                case 0x06090011:
+                    return "sub-index does not exist";
+                case 0x06090030:
+                    return "value range of parameter exceeded";
+                case 0x08000000:
+                    return "general error";
+                case 0x08000020:
+                    return "data cannot be transferred or stored to the application";
+                case 0x08000022:
+                    return "data cannot be transferred or stored due to the present device state";
+                default:
+                    return "unknown abort code";
+            }
+        }
+
+        /// @brief Objects the drive can only serve once the motor rating is configured
+        bool needsMotorRating(u16 index)
+        {
+            switch (index)
+            {
+                case 0x6071:  // Target Torque
+                case 0x6072:  // Max Torque
+                case 0x6073:  // Max Current
+                case 0x6077:  // Torque Actual Value
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /// @brief Detect an SDO abort response and report the reason the server gave
+        /// @return true when the server aborted the transfer
+        bool checkSdoAbort(const std::vector<u8>& response,
+                           const EDSEntry&        edsEntry,
+                           const Logger&          log)
+        {
+            if (response.size() < 8 || response[0] != SDO_ABORT_RESPONSE)
+                return false;
+
+            const u32 abortCode = (u32)response[4] | ((u32)response[5] << 8) |
+                                  ((u32)response[6] << 16) | ((u32)response[7] << 24);
+            const u16 index = edsEntry.getEntryMetaData().address.first;
+            const u8  subIndex = edsEntry.getEntryMetaData().address.second.value_or(0);
+
+            // Torque and current objects are scaled by the motor rating, the drive rejects
+            // them as long as it is missing, which is a configuration issue and not a fault
+            if (abortCode == 0x08000020 && needsMotorRating(index))
+            {
+                log.warn("%s (0x%04X:%02X) is unavailable until Motor Rated Current (0x6075) and "
+                         "Motor Rated Torque (0x6076) are configured",
+                         edsEntry.getEntryMetaData().parameterName.c_str(),
+                         index,
+                         subIndex);
+                return true;
+            }
+
+            log.error("SDO abort 0x%08X (%s) on 0x%04X:%02X %s",
+                      abortCode,
+                      sdoAbortReason(abortCode),
+                      index,
+                      subIndex,
+                      edsEntry.getEntryMetaData().parameterName.c_str());
+            return true;
+        }
+    }  // namespace
 
     MDCO::Error_t MDCO::init()
     {
@@ -60,14 +152,13 @@ namespace mab
     {
         // blink the motor led, log an error message if transfer failed
         Error_t                           err       = enterConfigMode();
-        static constexpr std::string_view blinkName = "Blink LEDs";
-        auto                              blinkOpt  = m_od->getEntryByName(blinkName);
-        if (!blinkOpt.has_value())
+        EDSEntry* blinkEntry =
+            md_objects::resolveObject(*m_od, md_objects::CMD_BLINK_LEDS, m_log);
+        if (blinkEntry == nullptr)
         {
-            m_log.error("could not locate %s object!", blinkName);
             return Error_t::UNKNOWN_OBJECT;
         }
-        auto& blinkObj = blinkOpt.value().get();
+        auto& blinkObj = *blinkEntry;
         blinkObj       = (canopen_types::BOOLEAN_t)1;
         err            = writeSDO(blinkObj);
         if (err != Error_t::OK)
@@ -80,9 +171,9 @@ namespace mab
 
     MDCO::Error_t MDCO::save()
     {
-        Error_t err     = MDCO::Error_t::OK;
-        (*m_od)[0x6060] = (canopen_types::INTEGER8_t)6;
-        err             = writeSDO((*m_od)[0x6060]);
+        Error_t err = MDCO::Error_t::OK;
+        (*m_od)[0x6040] = (canopen_types::UNSIGNED16_t)6;
+        err             = writeSDO((*m_od)[0x6040]);
         if (err != Error_t::OK)
         {
             m_log.error("Error sending shutdown cmd!");
@@ -104,14 +195,13 @@ namespace mab
         // set the motor zero position to the actual position via SDO message, log an error message
         // if transfer failed
         Error_t                           err      = enterConfigMode();
-        static constexpr std::string_view zeroName = "Set Zero";
-        auto                              zeroOpt  = m_od->getEntryByName(zeroName);
-        if (!zeroOpt.has_value())
+        EDSEntry* zeroEntry =
+            md_objects::resolveObject(*m_od, md_objects::CMD_SET_ZERO, m_log);
+        if (zeroEntry == nullptr)
         {
-            m_log.error("could not locate %s object!", zeroName.data());
             return Error_t::UNKNOWN_OBJECT;
         }
-        auto& zeroObj = zeroOpt.value().get();
+        auto& zeroObj = *zeroEntry;
         zeroObj       = (canopen_types::BOOLEAN_t)1;
         err           = writeSDO(zeroObj);
         if (err != Error_t::OK)
@@ -125,14 +215,13 @@ namespace mab
     MDCO::Error_t MDCO::reset()
     {
         Error_t                           err       = enterConfigMode();
-        static constexpr std::string_view resetName = "Reset Controller";
-        auto                              resetOpt  = m_od->getEntryByName(resetName);
-        if (!resetOpt.has_value())
+        EDSEntry* resetEntry =
+            md_objects::resolveObject(*m_od, md_objects::CMD_RESET_CONTROLLER, m_log);
+        if (resetEntry == nullptr)
         {
-            m_log.error("could not locate %s object!", resetName.data());
             return Error_t::UNKNOWN_OBJECT;
         }
-        auto& resetObj = resetOpt.value().get();
+        auto& resetObj = *resetEntry;
         resetObj       = (canopen_types::BOOLEAN_t)1;
         err            = writeSDO(resetObj);
         if (err != Error_t::OK)
@@ -146,14 +235,13 @@ namespace mab
     MDCO::Error_t MDCO::clearErrors()
     {
         Error_t                           err            = enterConfigMode();
-        static constexpr std::string_view clearErrorName = "Clear Errors";
-        auto                              clearErrorOpt  = m_od->getEntryByName(clearErrorName);
-        if (!clearErrorOpt.has_value())
+        EDSEntry* clearErrorEntry =
+            md_objects::resolveObject(*m_od, md_objects::CMD_CLEAR_ERRORS, m_log);
+        if (clearErrorEntry == nullptr)
         {
-            m_log.error("could not locate %s object!", clearErrorName.data());
             return Error_t::UNKNOWN_OBJECT;
         }
-        auto& clearErrorObj = clearErrorOpt.value().get();
+        auto& clearErrorObj = *clearErrorEntry;
         clearErrorObj       = (canopen_types::BOOLEAN_t)1;
         err                 = writeSDO(clearErrorObj);
         if (err != Error_t::OK)
@@ -166,16 +254,15 @@ namespace mab
 
     MDCO::Error_t MDCO::setCurrentLimit(float currentLimit /*A*/)
     {
-        static constexpr std::string_view            setCurrentLimitName    = "Motor Rated Current";
-        static constexpr std::string_view            setCurrentMaxLimitName = "Max Current";
-        static constexpr canopen_types::UNSIGNED16_t setMaxLimit            = 1'000;
-        auto setCurrentLimitOpt = m_od->getEntryByName(setCurrentLimitName);
-        if (!setCurrentLimitOpt.has_value())
+        static constexpr canopen_types::UNSIGNED16_t setMaxLimit = 1'000;
+
+        EDSEntry* setCurrentLimitEntry =
+            md_objects::resolveObject(*m_od, md_objects::MOTOR_RATED_CURRENT, m_log);
+        if (setCurrentLimitEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", setCurrentLimitName.data());
             return Error_t::UNKNOWN_OBJECT;
         }
-        auto& setCurrentLimitObj = setCurrentLimitOpt.value().get();
+        auto& setCurrentLimitObj = *setCurrentLimitEntry;
         setCurrentLimitObj       = (canopen_types::UNSIGNED16_t)(currentLimit * 1'000);
         Error_t err              = writeSDO(setCurrentLimitObj);
         if (err != Error_t::OK)
@@ -185,13 +272,13 @@ namespace mab
             return err;
         }
 
-        auto setCurrentMaxLimitOpt = m_od->getEntryByName(setCurrentMaxLimitName);
-        if (!setCurrentMaxLimitOpt.has_value())
+        EDSEntry* setCurrentMaxLimitEntry =
+            md_objects::resolveObject(*m_od, md_objects::MAX_CURRENT, m_log);
+        if (setCurrentMaxLimitEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", setCurrentMaxLimitName.data());
             return Error_t::UNKNOWN_OBJECT;
         }
-        auto& setCurrentMaxLimitObj = setCurrentMaxLimitOpt.value().get();
+        auto& setCurrentMaxLimitObj = *setCurrentMaxLimitEntry;
         setCurrentMaxLimitObj       = setMaxLimit;
         err                         = writeSDO(setCurrentMaxLimitObj);
         if (err != Error_t::OK)
@@ -207,15 +294,13 @@ namespace mab
     MDCO::Error_t MDCO::setTorqueBandwidth(u16 torqueBandwidth /*Hz*/)
     {
         Error_t                           err                    = enterConfigMode();
-        static constexpr std::string_view setTorqueBandwidthName = "Torque Bandwidth";
-        static constexpr std::string_view reconfigureCANName     = "Run Can Reinit";
-        auto setTorqueBandwidthOpt = m_od->getEntryByName(setTorqueBandwidthName);
-        if (!setTorqueBandwidthOpt.has_value())
+        EDSEntry* setTorqueBandwidthEntry =
+            md_objects::resolveObject(*m_od, md_objects::TORQUE_BANDWIDTH, m_log);
+        if (setTorqueBandwidthEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", setTorqueBandwidthName.data());
             return Error_t::UNKNOWN_OBJECT;
         }
-        auto& setTorqueBandwidthObj = setTorqueBandwidthOpt.value().get();
+        auto& setTorqueBandwidthObj = *setTorqueBandwidthEntry;
         setTorqueBandwidthObj       = (canopen_types::UNSIGNED16_t)torqueBandwidth;
         err                         = writeSDO(setTorqueBandwidthObj);
         if (err != Error_t::OK)
@@ -224,13 +309,13 @@ namespace mab
                         setTorqueBandwidthObj.getEntryMetaData().parameterName.c_str());
             return err;
         }
-        auto reconfigureCANOpt = m_od->getEntryByName(reconfigureCANName);
-        if (!reconfigureCANOpt.has_value())
+        EDSEntry* reconfigureCANEntry =
+            md_objects::resolveObject(*m_od, md_objects::CMD_REINIT_CAN, m_log);
+        if (reconfigureCANEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", setTorqueBandwidthName.data());
             return Error_t::UNKNOWN_OBJECT;
         }
-        auto& reconfigureCANObj = reconfigureCANOpt.value().get();
+        auto& reconfigureCANObj = *reconfigureCANEntry;
         reconfigureCANObj       = (canopen_types::BOOLEAN_t)1;
         err                     = writeSDO(reconfigureCANObj);
         if (err != Error_t::OK)
@@ -244,14 +329,13 @@ namespace mab
 
     MDCO::Error_t MDCO::setOperationMode(mab::ModesOfOperation mode)
     {
-        constexpr std::string_view operationModeName = "Modes Of Operation";
-        auto                       operationModeOpt  = m_od->getEntryByName(operationModeName);
-        if (!operationModeOpt.has_value())
+        EDSEntry* operationModeEntry =
+            md_objects::resolveObject(*m_od, md_objects::MODES_OF_OPERATION, m_log);
+        if (operationModeEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", operationModeName.data());
             return Error_t::UNKNOWN_OBJECT;
         }
-        auto& operationModeObj = operationModeOpt.value().get();
+        auto& operationModeObj = *operationModeEntry;
         operationModeObj       = (canopen_types::INTEGER8_t)mode;
         Error_t err            = writeSDO(operationModeObj);
         if (err != Error_t::OK)
@@ -263,37 +347,61 @@ namespace mab
         return err;
     }
 
+    std::pair<version_ut, MDCO::Error_t> MDCO::getFirmwareVersion()
+    {
+        version_ut version{.i = 0};
+
+        EDSEntry* versionEntry =
+            md_objects::resolveObject(*m_od, md_objects::FIRMWARE_VERSION, m_log);
+        if (versionEntry == nullptr)
+            return {version, Error_t::UNKNOWN_OBJECT};
+
+        Error_t err = readSDO(*versionEntry);
+        if (err != Error_t::OK)
+        {
+            m_log.debug("Could not read the firmware version");
+            return {version, err};
+        }
+
+        version.i = (u32)(canopen_types::UNSIGNED32_t)(*versionEntry);
+        return {version, Error_t::OK};
+    }
+
     MDCO::Error_t MDCO::setPositionPIDparam(float kp, float ki, float kd, float integralMax)
     {
         Error_t   err     = enterConfigMode();
-        const u16 address = m_od->getAdressByName("Position PID Controller").value().first;
+        EDSEntry* controller = md_objects::resolveObject(*m_od, md_objects::POSITION_PID_CONTROLLER, m_log);
+        if (controller == nullptr)
+        {
+            return Error_t::UNKNOWN_OBJECT;
+        }
 
-        (*m_od)[address][0x1] = (canopen_types::REAL32_t)kp;
-        err                   = writeSDO((*m_od)[address][0x1]);
+        (*controller)[0x1] = (canopen_types::REAL32_t)kp;
+        err                   = writeSDO((*controller)[0x1]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting position PID kp");
             return err;
         }
 
-        (*m_od)[address][0x2] = (canopen_types::REAL32_t)ki;
-        err                   = writeSDO((*m_od)[address][0x2]);
+        (*controller)[0x2] = (canopen_types::REAL32_t)ki;
+        err                   = writeSDO((*controller)[0x2]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting position PID ki");
             return err;
         }
 
-        (*m_od)[address][0x3] = (canopen_types::REAL32_t)kd;
-        err                   = writeSDO((*m_od)[address][0x3]);
+        (*controller)[0x3] = (canopen_types::REAL32_t)kd;
+        err                   = writeSDO((*controller)[0x3]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting position PID kd");
             return err;
         }
 
-        (*m_od)[address][0x4] = (canopen_types::REAL32_t)integralMax;
-        err                   = writeSDO((*m_od)[address][0x4]);
+        (*controller)[0x4] = (canopen_types::REAL32_t)integralMax;
+        err                   = writeSDO((*controller)[0x4]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting position PID integralMax");
@@ -306,34 +414,38 @@ namespace mab
     MDCO::Error_t MDCO::setVelocityPIDparam(float kp, float ki, float kd, float integralMax)
     {
         Error_t   err     = enterConfigMode();
-        const u16 address = m_od->getAdressByName("Velocity PID Controller").value().first;
+        EDSEntry* controller = md_objects::resolveObject(*m_od, md_objects::VELOCITY_PID_CONTROLLER, m_log);
+        if (controller == nullptr)
+        {
+            return Error_t::UNKNOWN_OBJECT;
+        }
 
-        (*m_od)[address][0x1] = (canopen_types::REAL32_t)kp;
-        err                   = writeSDO((*m_od)[address][0x1]);
+        (*controller)[0x1] = (canopen_types::REAL32_t)kp;
+        err                   = writeSDO((*controller)[0x1]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting velocity PID kp");
             return err;
         }
 
-        (*m_od)[address][0x2] = (canopen_types::REAL32_t)ki;
-        err                   = writeSDO((*m_od)[address][0x2]);
+        (*controller)[0x2] = (canopen_types::REAL32_t)ki;
+        err                   = writeSDO((*controller)[0x2]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting velocity PID ki");
             return err;
         }
 
-        (*m_od)[address][0x3] = (canopen_types::REAL32_t)kd;
-        err                   = writeSDO((*m_od)[address][0x3]);
+        (*controller)[0x3] = (canopen_types::REAL32_t)kd;
+        err                   = writeSDO((*controller)[0x3]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting velocity PID kd");
             return err;
         }
 
-        (*m_od)[address][0x4] = (canopen_types::REAL32_t)integralMax;
-        err                   = writeSDO((*m_od)[address][0x4]);
+        (*controller)[0x4] = (canopen_types::REAL32_t)integralMax;
+        err                   = writeSDO((*controller)[0x4]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting velocity PID integralMax");
@@ -346,18 +458,22 @@ namespace mab
     MDCO::Error_t MDCO::setImpedanceParams(float kp, float kd)
     {
         Error_t   err     = enterConfigMode();
-        const u16 address = m_od->getAdressByName("Impedance PD Controller").value().first;
+        EDSEntry* controller = md_objects::resolveObject(*m_od, md_objects::IMPEDANCE_PD_CONTROLLER, m_log);
+        if (controller == nullptr)
+        {
+            return Error_t::UNKNOWN_OBJECT;
+        }
 
-        (*m_od)[address][0x1] = (canopen_types::REAL32_t)kp;
-        err                   = writeSDO((*m_od)[address][0x1]);
+        (*controller)[0x1] = (canopen_types::REAL32_t)kp;
+        err                   = writeSDO((*controller)[0x1]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting impedance kp");
             return err;
         }
 
-        (*m_od)[address][0x2] = (canopen_types::REAL32_t)kd;
-        err                   = writeSDO((*m_od)[address][0x2]);
+        (*controller)[0x2] = (canopen_types::REAL32_t)kd;
+        err                   = writeSDO((*controller)[0x2]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting impedance kd");
@@ -458,10 +574,15 @@ namespace mab
         return err;
     }
 
-    MDCO::Error_t MDCO::setTargetTorque(float torque /*Nm*/)
+    // torque - normalized torque command, recomputed to permille value.
+    // Example:
+    // 1.0 = 1000 permille ( 100% of rated torque),
+    // 0.5 = 500 permille (50% of rated torque),
+    // -1.15 = -1150 permille ( 115% of rated torque)
+    MDCO::Error_t MDCO::setTargetTorque(float torque)
     {
-        (*m_od)[0x6074] = (canopen_types::INTEGER16_t)(torque * 1000);
-        Error_t err     = writeSDO((*m_od)[0x6074]);
+        (*m_od)[0x6071] = (canopen_types::INTEGER16_t)(torque * 1000);
+        Error_t err     = writeSDO((*m_od)[0x6071]);
         if (err != Error_t::OK)
         {
             m_log.error("Error setting Target Torque");
@@ -475,14 +596,13 @@ namespace mab
     MDCO::getMainEncoderStatus()
     {
         mab::MDStatus              statuses;
-        constexpr std::string_view encoderStatusName = "Main Encoder Status";
-        auto                       encoderStatusOpt  = m_od->getEntryByName(encoderStatusName);
-        if (!encoderStatusOpt.has_value())
+        EDSEntry* encoderStatusEntry =
+            md_objects::resolveObject(*m_od, md_objects::AUX_ENCODER_STATUS, m_log);
+        if (encoderStatusEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", encoderStatusName.data());
             return {statuses.encoderStatus, Error_t::UNKNOWN_OBJECT};
         }
-        auto&   encoderStatusObj = encoderStatusOpt.value().get();
+        auto& encoderStatusObj = *encoderStatusEntry;
         Error_t err              = readSDO(encoderStatusObj);
         if (err != Error_t::OK)
         {
@@ -499,14 +619,13 @@ namespace mab
     MDCO::getOutputEncoderStatus()
     {
         mab::MDStatus              statuses;
-        constexpr std::string_view encoderStatusName = "Output Encoder Status";
-        auto                       encoderStatusOpt  = m_od->getEntryByName(encoderStatusName);
-        if (!encoderStatusOpt.has_value())
+        EDSEntry* encoderStatusEntry =
+            md_objects::resolveObject(*m_od, md_objects::AUX_ENCODER_STATUS, m_log);
+        if (encoderStatusEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", encoderStatusName.data());
             return {statuses.encoderStatus, Error_t::UNKNOWN_OBJECT};
         }
-        auto&   encoderStatusObj = encoderStatusOpt.value().get();
+        auto& encoderStatusObj = *encoderStatusEntry;
         Error_t err              = readSDO(encoderStatusObj);
         if (err != Error_t::OK)
         {
@@ -523,14 +642,13 @@ namespace mab
     MDCO::getCalibrationStatus()
     {
         mab::MDStatus              statuses;
-        constexpr std::string_view calibrationStatusName = "Calibration Status";
-        auto calibrationStatusOpt = m_od->getEntryByName(calibrationStatusName);
-        if (!calibrationStatusOpt.has_value())
+        EDSEntry* calibrationStatusEntry =
+            md_objects::resolveObject(*m_od, md_objects::CALIBRATION_STATUS, m_log);
+        if (calibrationStatusEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", calibrationStatusName.data());
             return {statuses.calibrationStatus, Error_t::UNKNOWN_OBJECT};
         }
-        auto&   calibrationStatusObj = calibrationStatusOpt.value().get();
+        auto& calibrationStatusObj = *calibrationStatusEntry;
         Error_t err                  = readSDO(calibrationStatusObj);
         if (err != Error_t::OK)
         {
@@ -547,14 +665,13 @@ namespace mab
     MDCO::getBridgeStatus()
     {
         mab::MDStatus              statuses;
-        constexpr std::string_view bridgeStatusName = "Bridge Status";
-        auto                       bridgeStatusOpt  = m_od->getEntryByName(bridgeStatusName);
-        if (!bridgeStatusOpt.has_value())
+        EDSEntry* bridgeStatusEntry =
+            md_objects::resolveObject(*m_od, md_objects::BRIDGE_STATUS, m_log);
+        if (bridgeStatusEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", bridgeStatusName.data());
             return {statuses.bridgeStatus, Error_t::UNKNOWN_OBJECT};
         }
-        auto&   bridgeStatusObj = bridgeStatusOpt.value().get();
+        auto& bridgeStatusObj = *bridgeStatusEntry;
         Error_t err             = readSDO(bridgeStatusObj);
         if (err != Error_t::OK)
         {
@@ -570,14 +687,13 @@ namespace mab
     MDCO::getHardwareStatus()
     {
         mab::MDStatus              statuses;
-        constexpr std::string_view hardwareStatusName = "Hardware Status";
-        auto                       hardwareStatusOpt  = m_od->getEntryByName(hardwareStatusName);
-        if (!hardwareStatusOpt.has_value())
+        EDSEntry* hardwareStatusEntry =
+            md_objects::resolveObject(*m_od, md_objects::HARDWARE_STATUS, m_log);
+        if (hardwareStatusEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", hardwareStatusName.data());
             return {statuses.hardwareStatus, Error_t::UNKNOWN_OBJECT};
         }
-        auto&   hardwareStatusObj = hardwareStatusOpt.value().get();
+        auto& hardwareStatusObj = *hardwareStatusEntry;
         Error_t err               = readSDO(hardwareStatusObj);
         if (err != Error_t::OK)
         {
@@ -594,14 +710,13 @@ namespace mab
     MDCO::getCommunicationStatus()
     {
         mab::MDStatus              statuses;
-        constexpr std::string_view communicationStatusName = "Communication Status";
-        auto communicationStatusOpt = m_od->getEntryByName(communicationStatusName);
-        if (!communicationStatusOpt.has_value())
+        EDSEntry* communicationStatusEntry =
+            md_objects::resolveObject(*m_od, md_objects::COMMUNICATION_STATUS, m_log);
+        if (communicationStatusEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", communicationStatusName.data());
             return {statuses.communicationStatus, Error_t::UNKNOWN_OBJECT};
         }
-        auto&   communicationStatusObj = communicationStatusOpt.value().get();
+        auto& communicationStatusObj = *communicationStatusEntry;
         Error_t err                    = readSDO(communicationStatusObj);
         if (err != Error_t::OK)
         {
@@ -618,14 +733,13 @@ namespace mab
     MDCO::getMotionStatus()
     {
         mab::MDStatus              statuses;
-        constexpr std::string_view motionStatusName = "Motion Status";
-        auto                       motionStatusOpt  = m_od->getEntryByName(motionStatusName);
-        if (!motionStatusOpt.has_value())
+        EDSEntry* motionStatusEntry =
+            md_objects::resolveObject(*m_od, md_objects::MOTION_STATUS, m_log);
+        if (motionStatusEntry == nullptr)
         {
-            m_log.error("Could not locate %s object!", motionStatusName.data());
             return {statuses.motionStatus, Error_t::UNKNOWN_OBJECT};
         }
-        auto&   motionStatusObj = motionStatusOpt.value().get();
+        auto& motionStatusObj = *motionStatusEntry;
         Error_t err             = readSDO(motionStatusObj);
         if (err != Error_t::OK)
         {
@@ -746,9 +860,17 @@ namespace mab
             return Error_t::UNKNOWN_OBJECT;
         }
 
-        if (edsEntry.valueSize() <= 4 &&
-            edsEntry.getEntryMetaData().edsValueMeta.value().dataType !=
-                EDSEntry::DataType_E::VISIBLE_STRING)
+        // String like objects carry no fixed size, valueSize() only reports the length of the
+        // value currently held, so they always have to go through the segmented path (which
+        // still accepts an expedited answer from the server)
+        const EDSEntry::DataType_E dataType =
+            edsEntry.getEntryMetaData().edsValueMeta.value().dataType;
+        const bool isStringLike = dataType == EDSEntry::DataType_E::VISIBLE_STRING ||
+                                  dataType == EDSEntry::DataType_E::OCTET_STRING ||
+                                  dataType == EDSEntry::DataType_E::UNICODE_STRING ||
+                                  dataType == EDSEntry::DataType_E::DOMAIN_TYPE;
+
+        if (edsEntry.valueSize() <= 4 && !isStringLike)
         {
             // using expedited transfer
             std::vector<u8> transmitFrame = {
@@ -768,18 +890,14 @@ namespace mab
             }
             m_log.debug("Address: 0x%x", edsEntry.getEntryMetaData().address.first);
 
-            // Verify expedited response (bit 1 == 1)
-            if ((response[0] & 0x40) == 0)
+            if (checkSdoAbort(response, edsEntry, m_log))
+                return Error_t::REQUEST_INVALID;
+
+            // Verify expedited response (e bit of the command specifier)
+            if ((response[0] & 0x02) == 0)
             {
-                // retry
-                response = transferCanOpenFrame(
-                               SDO_REQUEST_BASE + m_canId, transmitFrame, transmitFrame.size())
-                               .first;
-                if ((response[0] & 0x40) == 0)
-                {
-                    m_log.error("Invalid expedited download response");
-                    return Error_t::TRANSFER_FAILED;
-                }
+                m_log.error("Invalid expedited upload response: 0x%02x", response[0]);
+                return Error_t::TRANSFER_FAILED;
             }
 
             // Number of unused bytes (bits 2-3)
@@ -814,6 +932,9 @@ namespace mab
                 return Error_t::TRANSFER_FAILED;
             }
 
+            if (checkSdoAbort(response, edsEntry, m_log))
+                return Error_t::REQUEST_INVALID;
+
             // If server responds with expedited transfer, handle it here
             if ((response[0] & 0x02) != 0)
             {
@@ -835,11 +956,11 @@ namespace mab
                 }
 
                 // Store value and return immediately (no segmented loop)
-                if (edsEntry.setSerializedValue(result) == EDSEntry::Error_t::OK)
+                const EDSEntry::Error_t parseError = edsEntry.setSerializedValue(result);
+                if (parseError == EDSEntry::Error_t::OK)
                     return Error_t::OK;
 
-                m_log.error("EDS parsing failed with code: %d",
-                            edsEntry.setSerializedValue(result));
+                m_log.error("EDS parsing failed with code: %d", parseError);
                 return Error_t::REQUEST_INVALID;
             }
 
@@ -861,6 +982,9 @@ namespace mab
                     return Error_t::TRANSFER_FAILED;
                 }
 
+                if (checkSdoAbort(segmentResponse, edsEntry, m_log))
+                    return Error_t::REQUEST_INVALID;
+
                 lastSegment   = (segmentResponse[0] & 0x01);
                 u8 emptyBytes = (segmentResponse[0] >> 1) & 0x07;
 
@@ -880,11 +1004,12 @@ namespace mab
                 result.push_back(static_cast<std::byte>(b));
             }
         }
-        if (edsEntry.setSerializedValue(result) == EDSEntry::Error_t::OK)
+        const EDSEntry::Error_t parseError = edsEntry.setSerializedValue(result);
+        if (parseError == EDSEntry::Error_t::OK)
             return Error_t::OK;
         else
         {
-            m_log.error("EDS parsing failed with code: %d", edsEntry.setSerializedValue(result));
+            m_log.error("EDS parsing failed with code: %d", parseError);
             return Error_t::REQUEST_INVALID;
         }
     }
@@ -931,6 +1056,9 @@ namespace mab
             m_log.debug("Address: 0x%x", edsEntry.getEntryMetaData().address.first);
             m_log.debug("Lenght: 0x%x", payloadSize);
 
+            if (checkSdoAbort(response, edsEntry, m_log))
+                return Error_t::REQUEST_INVALID;
+
             // Expect initiate download response (0x60)
             if ((response[0] & 0xE0) != 0x60)
             {
@@ -960,6 +1088,9 @@ namespace mab
                             SDO_REQUEST_BASE + m_canId);
                 return Error_t::TRANSFER_FAILED;
             }
+
+            if (checkSdoAbort(response, edsEntry, m_log))
+                return Error_t::REQUEST_INVALID;
 
             if ((response[0] & 0xE0) != 0x60)
             {
@@ -1003,6 +1134,9 @@ namespace mab
                     m_log.error("Segment download failed SDO 0x%x", SDO_REQUEST_BASE + m_canId);
                     return Error_t::TRANSFER_FAILED;
                 }
+
+                if (checkSdoAbort(segmentResponse, edsEntry, m_log))
+                    return Error_t::REQUEST_INVALID;
 
                 // Expect segment response (0x20 | toggle<<4)
                 if ((segmentResponse[0] & 0xE0) != 0x20)
