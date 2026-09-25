@@ -24,8 +24,10 @@ namespace mab
     namespace
     {
         // Firmware server directories, relative to CurlHandler::FW_SERVER_ROOT
-        constexpr const char* FW_MD_DIR        = "md/";         // .mab files, fw >= 3.0.0
-        constexpr const char* FW_MD_LEGACY_DIR = "md/legacy/";  // flasher executables, fw < 3.0.0
+        constexpr const char* FW_MD_DIR          = "md/";         // .mab files, fw >= 3.0.0
+        constexpr const char* FW_MD_LEGACY_DIR   = "md/legacy/";  // flasher executables, fw < 3.0.0
+        constexpr const char* FW_MDCO_DIR        = "mdco/";       // CANopen .mab files, fw >= 3.0.0
+        constexpr const char* FW_MDCO_LEGACY_DIR = "mdco/legacy/";  // CANopen flashers, fw < 3.0.0
 
         std::unique_ptr<MD, std::function<void(MD*)>> connectMd(
             const std::shared_ptr<canId_t>             mdCanId,
@@ -105,8 +107,7 @@ namespace mab
             MDCO mdco(*mdCanId, candle, od);
             if (mdco.init() != MDCO::Error_t::OK)
             {
-                log.error("Could not communicate with MD device with ID %d over CANopen",
-                          *mdCanId);
+                log.error("Could not communicate with MD device with ID %d over CANopen", *mdCanId);
                 detachCandle(candle);
                 return false;
             }
@@ -121,8 +122,7 @@ namespace mab
                 detachCandle(candle);
                 if (err != MDCO::Error_t::OK)
                 {
-                    log.error("Could not read firmware version of MD device with ID %d",
-                              *mdCanId);
+                    log.error("Could not read firmware version of MD device with ID %d", *mdCanId);
                     return false;
                 }
                 *versionOut = version;
@@ -220,12 +220,18 @@ namespace mab
                      targetVersion.s.minor,
                      targetVersion.s.revision);
             if ((currentVersion.s.major < 3) != (targetVersion.s.major < 3))
+            {
                 log.warn(
                     "This comes with changes, that in specific conditions "
                     "(motor+encoder combinations) may require you to:\n"
                     "- reapply .cfg file,\n"
                     "- perform calibration,\n"
                     "- set zero offset.");
+                if (resetMode == UpdateReset_E::CANOPEN)
+                    log.warn(
+                        "Firmware v2.x.x and v3.x.x use different EDS files (v1.1 and v1.2). "
+                        "The drive will require a complete reconfiguration!");
+            }
             if (!userConfirm())
             {
                 log.error("Update aborted by user!");
@@ -363,7 +369,8 @@ namespace mab
         mINI::INIStructure index;
         if (!CurlHandler::loadIndex(index))
             return;
-        std::filesystem::path tmpDir = std::filesystem::temp_directory_path();
+        std::filesystem::path tmpDir  = std::filesystem::temp_directory_path();
+        const bool            canOpen = resetMode == UpdateReset_E::CANOPEN;
 
         // Firmware older than 3.0.0 is shipped as platform specific flasher
         // executables with firmware compiled in, newer as platform independent .mab
@@ -382,31 +389,24 @@ namespace mab
             else if constexpr (arch == sysArch_E::ARMHF)
                 archKey = "filename_armhf";
 
-            std::string filename =
-                CurlHandler::findIndexEntry(index, "mab_can_flasher_", version, archKey);
+            std::string filename = CurlHandler::findIndexEntry(
+                index, canOpen ? "mab_can_flasher_canopen_" : "mab_can_flasher_", version, archKey);
             if (filename.empty())
             {
                 log.error("Firmware %s is not available for this platform!", version.c_str());
                 return;
             }
-            if (!recovery && !confirmUpdate(targetVersion,
-                                            resetMode,
-                                            mdCanId,
-                                            candleBuilder,
-                                            packageEtcPath,
-                                            log))
+            if (!recovery &&
+                !confirmUpdate(
+                    targetVersion, resetMode, mdCanId, candleBuilder, packageEtcPath, log))
                 return;
-            if (!recovery && resetMode == UpdateReset_E::CANOPEN)
-                log.warn(
-                    "The downloaded legacy flasher resets the drive on its own, over the MD "
-                    "protocol.");
-
             WebFile_S flasherFile;
             flasherFile.m_type = WebFile_S::Type_E::MD_FLASHER;
             flasherFile.m_path = tmpDir / filename;
-            if (!CurlHandler::download(
-                    std::string(CurlHandler::FW_SERVER_ROOT) + FW_MD_LEGACY_DIR + filename,
-                    flasherFile.m_path))
+            if (!CurlHandler::download(std::string(CurlHandler::FW_SERVER_ROOT) +
+                                           (canOpen ? FW_MDCO_LEGACY_DIR : FW_MD_LEGACY_DIR) +
+                                           filename,
+                                       flasherFile.m_path))
             {
                 log.error("Could not download firmware [ %s ]", filename.c_str());
                 return;
@@ -423,14 +423,16 @@ namespace mab
 #endif
         }
 
-        std::string filename = CurlHandler::findIndexEntry(index, "md_app_", version, "filename");
+        std::string filename = CurlHandler::findIndexEntry(
+            index, canOpen ? "mdco_app_" : "md_app_", version, "filename");
         if (filename.empty())
         {
             log.error("Firmware %s is not available on the server!", version.c_str());
             return;
         }
         std::filesystem::path mabPath = tmpDir / filename;
-        if (!CurlHandler::download(std::string(CurlHandler::FW_SERVER_ROOT) + FW_MD_DIR + filename,
+        if (!CurlHandler::download(std::string(CurlHandler::FW_SERVER_ROOT) +
+                                       (canOpen ? FW_MDCO_DIR : FW_MD_DIR) + filename,
                                    mabPath))
         {
             log.error("Could not download firmware [ %s ]", filename.c_str());
