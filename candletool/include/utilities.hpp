@@ -39,6 +39,10 @@ namespace mab
     /// @brief Check a firmware version against a minimum
     bool isVersionAtLeast(version_ut fwVersion, int major, int minor, int rev);
 
+    /// @brief Ask the user a "Continue? [y/N]" question on stdin
+    /// @return true when the user answered y/Y
+    bool userConfirm();
+
     constexpr sysArch_E getSysArch()
     {
 #if defined(_M_X64) || defined(__amd64__) || defined(__x86_64__)

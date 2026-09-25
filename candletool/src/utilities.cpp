@@ -1,6 +1,7 @@
 #include "utilities.hpp"
 #include <algorithm>
 #include <cctype>
+#include <iostream>
 #include <variant>
 #include <string>
 #include <string_view>
@@ -25,6 +26,14 @@ namespace mab
         if (fwVersion.s.major < major || fwVersion.s.minor < minor || fwVersion.s.revision < rev)
             return false;
         return true;
+    }
+
+    bool userConfirm()
+    {
+        std::string answer;
+        std::cout << "Continue? [y/N]: ";
+        std::getline(std::cin, answer);
+        return answer == "y" || answer == "Y";
     }
 
 }  // namespace mab
