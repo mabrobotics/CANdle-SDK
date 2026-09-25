@@ -31,8 +31,7 @@ namespace mab
             : fwVersion(std::make_shared<std::string>("")),
               pathToMabFile(std::make_shared<std::filesystem::path>("")),
               recovery(std::make_shared<bool>(false)),
-              forceErase(std::make_shared<bool>(false)),
-              metadataFile(std::make_shared<std::string>(""))
+              forceErase(std::make_shared<bool>(false))
         {
             optionsMap = std::map<std::string, CLI::Option*>{
                 {"version",
@@ -47,17 +46,12 @@ namespace mab
                  rootCli->add_flag(
                      "-r,--recovery", *recovery, "Driver recovery after failed flashing")},
                 {"force_erase",
-                 rootCli->add_flag("--force-erase", *forceErase, "Force full wipe of the driver")},
-                {"meta_file",
-                 rootCli->add_option("-m,--meta-file",
-                                     *metadataFile,
-                                     "File with file metadata for managing downloads.")}};
+                 rootCli->add_flag("--force-erase", *forceErase, "Force full wipe of the driver")}};
         }
         const std::shared_ptr<std::string>           fwVersion;
         const std::shared_ptr<std::filesystem::path> pathToMabFile;
         const std::shared_ptr<bool>                  recovery;
         const std::shared_ptr<bool>                  forceErase;
-        const std::shared_ptr<std::string>           metadataFile;
         std::map<std::string, CLI::Option*>          optionsMap;
     };
 
@@ -70,8 +64,7 @@ namespace mab
     /// @param resetMode protocol the drive is reset with
     /// @param mdCanId can node id of the drive to update
     /// @param candleBuilder builder of the candle used for communication
-    /// @param packageEtcPath etc path of the package, holds candletool.ini and the download
-    /// metadata
+    /// @param packageEtcPath etc path of the package, holds candletool.ini
     /// @param log logger of the calling cli
     void updateMd(const UpdateOptions&                       options,
                   UpdateReset_E                              resetMode,

@@ -13,7 +13,6 @@
 #include "curl_handler.hpp"
 #include "edsParser.hpp"
 #include "eds_selection.hpp"
-#include "flasher.hpp"
 #include "mabFileParser.hpp"
 #include "mab_types.hpp"
 #include "utilities.hpp"
@@ -168,12 +167,9 @@ namespace mab
             log.success("Force-erase complete for MD @ %d", *mdCanId);
             return;
         }
-        if (options.pathToMabFile->empty())
+        std::filesystem::path mabPath = *options.pathToMabFile;
+        if (mabPath.empty())
         {
-            if (resetMode == UpdateReset_E::CANOPEN)
-                log.warn(
-                    "The downloaded legacy flasher resets the drive on its own, over the MD "
-                    "protocol. Pass a local .mab file with -p to use the CANopen reset.");
             if (options.fwVersion->empty())
             {
                 log.error("Please provide version of fw or  \"latest\" keyword in the argument!");
@@ -181,104 +177,87 @@ namespace mab
                           resetMode == UpdateReset_E::CANOPEN ? "mdco" : "md");
                 return;
             }
-            std::string fallbackPath = packageEtcPath.generic_string();
-
-            if (!options.metadataFile->empty())
-                fallbackPath = *options.metadataFile;
-            else
-                fallbackPath += "/config/web_files_metadata.ini";
-
-            log.debug("Fallback path at: %s", fallbackPath.c_str());
-            mINI::INIFile fallbackMetadataFile(fallbackPath);
-            CurlHandler   curl(fallbackMetadataFile);
-
-            std::string fileId = "MAB_CAN_FLASHER_";
-            fileId += *options.fwVersion;
-            auto curlResult = curl.downloadFile(fileId);
-            if (curlResult.first != CurlHandler::CurlError_E::OK)
+            mINI::INIStructure index;
+            if (!CurlHandler::loadIndex(index))
+                return;
+            std::string filename =
+                CurlHandler::findIndexEntry(index, "md_app_", *options.fwVersion, "filename");
+            if (filename.empty())
             {
-                log.error("Error on curl download request!");
+                log.error("Firmware %s is not available on the server!",
+                          options.fwVersion->c_str());
                 return;
             }
-            Flasher flasher(curlResult.second);
-            canId_t flashId = *mdCanId;
-            if (*options.recovery)
+            mabPath = std::filesystem::temp_directory_path() / filename;
+            if (!CurlHandler::download(std::string(CurlHandler::FW_SERVER_ROOT) + "md/" + filename,
+                                       mabPath))
             {
-                flashId = 9;
-            }
-            auto flashResult = flasher.flash(flashId, *options.recovery);
-            if (flashResult != Flasher::Error_E::OK)
-            {
-                log.error("Error while flashing firmware!");
+                log.error("Could not download firmware [ %s ]", filename.c_str());
                 return;
             }
+        }
+        else
+            log.info("Overriding download of file. Using local provided path.");
 
-            return;
+        MabFileParser mabFile(mabPath.string(), MabFileParser::TargetDevice_E::MD);
+
+        if (*(options.recovery) == false && resetMode == UpdateReset_E::CANOPEN)
+        {
+            // CANopen firmware does not answer the MD protocol registers the version
+            // check reads, so the drive is only reset here
+            if (!resetOverCanOpen(mdCanId, candleBuilder, packageEtcPath, log))
+                return;
+            usleep(200'000);
+        }
+        else if (*(options.recovery) == false)
+        {
+            auto md = connectMd(mdCanId, candleBuilder, log);
+            if (md == nullptr)
+            {
+                log.error("Could not communicate with MD device with ID %d", *mdCanId);
+                return;
+            }
+            auto fw = getMdFirmwareVersion(*md);
+            if (!isVersionAtLeast(fw, 3, 0, 0))
+            {
+                log.warn(
+                    "You are attempting to update MD from version v%d.%d.%d to version "
+                    "%s.\n This comes with changes, that in specific conditions "
+                    "(motor+encoder combinations) may require you to:\n"
+                    "- reapply .cfg file,\n"
+                    "- perform calibration,\n"
+                    "- set zero offset.\n"
+                    "Continue? [y/n]",
+                    fw.s.major,
+                    fw.s.minor,
+                    fw.s.revision,
+                    mabFile.m_fwEntry.version);
+                char c;
+                std::cin >> c;
+                if (c != 'y' && c != 'Y')
+                    return;
+            }
+
+            md->reset();
+            usleep(200'000);
         }
         else
         {
-            log.info("Overriding download of file. Using local provided path.");
-            MabFileParser mabFile(options.pathToMabFile->string(),
-                                  MabFileParser::TargetDevice_E::MD);
-
-            if (*(options.recovery) == false && resetMode == UpdateReset_E::CANOPEN)
-            {
-                // CANopen firmware does not answer the MD protocol registers the version
-                // check reads, so the drive is only reset here
-                if (!resetOverCanOpen(mdCanId, candleBuilder, packageEtcPath, log))
-                    return;
-                usleep(200'000);
-            }
-            else if (*(options.recovery) == false)
-            {
-                auto md = connectMd(mdCanId, candleBuilder, log);
-                if (md == nullptr)
-                {
-                    log.error("Could not communicate with MD device with ID %d", *mdCanId);
-                    return;
-                }
-                auto fw = getMdFirmwareVersion(*md);
-                if (!isVersionAtLeast(fw, 3, 0, 0))
-                {
-                    log.warn(
-                        "You are attempting to update MD from version v%d.%d.%d to version "
-                        "%s.\n This comes with changes, that in specific conditions "
-                        "(motor+encoder combinations) may require you to:\n"
-                        "- reapply .cfg file,\n"
-                        "- perform calibration,\n"
-                        "- set zero offset.\n"
-                        "Continue? [y/n]",
-                        fw.s.major,
-                        fw.s.minor,
-                        fw.s.revision,
-                        mabFile.m_fwEntry.version);
-                    char c;
-                    std::cin >> c;
-                    if (c != 'y' && c != 'Y')
-                        return;
-                }
-
-                md->reset();
-                usleep(200'000);
-            }
-            else
-            {
-                log.warn("Recovery mode...");
-                log.warn("Please make sure driver is in the bootloader phase (rebooting)");
-            }
-            auto candle = candleBuilder->build().value_or(nullptr);
-            if (candle == nullptr)
-            {
-                log.error("Could not connect to candle!");
-                return;
-            }
-            CanLoader canLoader(candle, &mabFile, *mdCanId);
-            if (!canLoader.flashAndBoot(*(options.recovery)))
-            {
-                log.error("MD flashing failed!");
-                return;
-            }
-            log.success("Update complete for MD @ %d", *mdCanId);
+            log.warn("Recovery mode...");
+            log.warn("Please make sure driver is in the bootloader phase (rebooting)");
         }
+        auto candle = candleBuilder->build().value_or(nullptr);
+        if (candle == nullptr)
+        {
+            log.error("Could not connect to candle!");
+            return;
+        }
+        CanLoader canLoader(candle, &mabFile, *mdCanId);
+        if (!canLoader.flashAndBoot(*(options.recovery)))
+        {
+            log.error("MD flashing failed!");
+            return;
+        }
+        log.success("Update complete for MD @ %d", *mdCanId);
     }
 }  // namespace mab

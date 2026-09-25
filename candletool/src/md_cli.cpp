@@ -2,6 +2,7 @@
 
 #include "eds_selection.hpp"
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <ios>
 #include <memory>
@@ -62,6 +63,40 @@
 
 namespace mab
 {
+    // Firmware server directories, relative to CurlHandler::FW_SERVER_ROOT
+    constexpr const char* FW_MD_DIR        = "md/";         // .mab files, fw >= 3.0.0
+    constexpr const char* FW_MD_LEGACY_DIR = "md/legacy/";  // flasher executables, fw < 3.0.0
+
+    bool userConfirm()
+    {
+        std::string answer;
+        std::cout << "Continue? [y/N]: ";
+        std::getline(std::cin, answer);
+        return answer == "y" || answer == "Y";
+    }
+
+    /// @brief parse "X.Y.Z" with optional suffix (e.g. "3.0.0_3b52568")
+    bool parseVersion(const char* str, version_ut* version)
+    {
+        unsigned int major = 0, minor = 0, revision = 0;
+        if (sscanf(str, "%u.%u.%u", &major, &minor, &revision) != 3 || major > 255 || minor > 255 ||
+            revision > 255)
+            return false;
+        version->i          = 0;
+        version->s.major    = major;
+        version->s.minor    = minor;
+        version->s.revision = revision;
+        return true;
+    }
+
+    /// @brief compare versions ignoring tag, returns <0, 0 or >0
+    int compareVersion(version_ut a, version_ut b)
+    {
+        u32 va = (a.s.major << 16) | (a.s.minor << 8) | a.s.revision;
+        u32 vb = (b.s.major << 16) | (b.s.minor << 8) | b.s.revision;
+        return (va > vb) - (va < vb);
+    }
+
     MDCli::MDCli(CLI::App* rootCli, CANdleToolCtx_S ctx)
     {
         if (ctx.candleBranchVec.empty())
@@ -220,10 +255,7 @@ namespace mab
                         "It appears the drive does not require a calibration. Are you sure you "
                         "want to proceed?");
 
-                std::string answer;
-                std::cout << "Type 'Y' to continue: ";
-                std::getline(std::cin, answer);
-                if (answer != "Y" && answer != "y")
+                if (!userConfirm())
                 {
                     m_logger.error("Calibration aborted by user!");
                     return;
@@ -540,10 +572,7 @@ namespace mab
                     "The factory reset, will erase the whole configuration from the drive, "
                     "including its CAN ID to 100 (0x64)! Proceed?");
 
-                std::string answer;
-                std::cout << "Type 'Y' to continue: ";
-                std::getline(std::cin, answer);
-                if (answer != "Y" && answer != "y")
+                if (!userConfirm())
                 {
                     m_logger.error("Factory Reset aborted by user!");
                     return;
@@ -1280,14 +1309,133 @@ namespace mab
         UpdateOptions updateOptions(update);
 
         update->callback(
-            [this, candleBuilder, mdCanId, updateOptions, ctx]()
+            [this, candleBuilder, mdCanId, updateOptions]()
             {
-                updateMd(updateOptions,
-                         UpdateReset_E::MD_PROTOCOL,
-                         mdCanId,
-                         candleBuilder,
-                         *ctx.packageEtcPath,
-                         m_logger);
+                if (*updateOptions.forceErase)
+                {
+                    m_logger.info(
+                        "The force-erase, will erase the whole configuration from the drive, "
+                        "including"
+                        "bootloader configuration. Drives' CAN ID will be set default 100 (0x64)! "
+                        "Proceed?");
+                    if (!userConfirm())
+                    {
+                        m_logger.error("Factory Reset aborted by user!");
+                        return;
+                    }
+                    auto candle = candleBuilder->build().value_or(nullptr);
+                    if (candle == nullptr)
+                    {
+                        m_logger.error("Could not connect to candle!");
+                        return;
+                    }
+                    if (!*updateOptions.recovery)
+                    {
+                        MD md(*mdCanId, candle);
+                        md.reset();
+                        usleep(200'000);
+                    }
+                    CanLoader canLoader(candle, nullptr, *mdCanId);
+                    if (!canLoader.forceEraseConfig())
+                    {
+                        m_logger.error("Force-erase failed!");
+                        return;
+                    }
+                    m_logger.success("Force-erase complete for MD @ %d", *mdCanId);
+                    return;
+                }
+
+                const bool recovery = *updateOptions.recovery;
+
+                if (!updateOptions.pathToMabFile->empty())
+                {
+                    m_logger.info("Overriding download of file. Using local provided path.");
+                    flashMabFile(*updateOptions.pathToMabFile, recovery, mdCanId, candleBuilder);
+                    return;
+                }
+
+                const std::string& version       = *updateOptions.fwVersion;
+                version_ut         targetVersion = {.i = 0};
+                const bool         latest        = version == "latest";
+                if (!latest && !parseVersion(version.c_str(), &targetVersion))
+                {
+                    m_logger.error(
+                        "Please provide version of fw (X.Y.Z) or \"latest\" keyword in the "
+                        "argument!");
+                    m_logger.error("For example candletool md update latest");
+                    return;
+                }
+
+                mINI::INIStructure index;
+                if (!CurlHandler::loadIndex(index))
+                    return;
+                std::filesystem::path tmpDir = std::filesystem::temp_directory_path();
+
+                // Firmware older than 3.0.0 is shipped as platform specific flasher
+                // executables with firmware compiled in, newer as platform independent .mab
+                if (!latest && targetVersion.s.major < 3)
+                {
+#ifdef WIN32
+                    m_logger.error("Firmware older than 3.0.0 can only be installed on Linux!");
+                    return;
+#else
+                    constexpr sysArch_E arch    = getSysArch();
+                    const char*         archKey = "filename";
+                    if constexpr (arch == sysArch_E::X86_64)
+                        archKey = "filename_x86_64";
+                    else if constexpr (arch == sysArch_E::ARM64)
+                        archKey = "filename_arm64";
+                    else if constexpr (arch == sysArch_E::ARMHF)
+                        archKey = "filename_armhf";
+
+                    std::string filename =
+                        CurlHandler::findIndexEntry(index, "mab_can_flasher_", version, archKey);
+                    if (filename.empty())
+                    {
+                        m_logger.error("Firmware %s is not available for this platform!",
+                                       version.c_str());
+                        return;
+                    }
+                    if (!recovery && !confirmUpdate(targetVersion, mdCanId, candleBuilder))
+                        return;
+
+                    WebFile_S flasherFile;
+                    flasherFile.m_type = WebFile_S::Type_E::MD_FLASHER;
+                    flasherFile.m_path = tmpDir / filename;
+                    if (!CurlHandler::download(
+                            std::string(CurlHandler::FW_SERVER_ROOT) + FW_MD_LEGACY_DIR + filename,
+                            flasherFile.m_path))
+                    {
+                        m_logger.error("Could not download firmware [ %s ]", filename.c_str());
+                        return;
+                    }
+                    Flasher flasher(flasherFile);
+                    canId_t flashId = recovery ? 9 : *mdCanId;
+                    if (flasher.flash(flashId, recovery) != Flasher::Error_E::OK)
+                    {
+                        m_logger.error("Error while flashing firmware!");
+                        return;
+                    }
+                    m_logger.success("Update complete for MD @ %d", *mdCanId);
+                    return;
+#endif
+                }
+
+                std::string filename =
+                    CurlHandler::findIndexEntry(index, "md_app_", version, "filename");
+                if (filename.empty())
+                {
+                    m_logger.error("Firmware %s is not available on the server!", version.c_str());
+                    return;
+                }
+                std::filesystem::path mabPath = tmpDir / filename;
+                if (!CurlHandler::download(
+                        std::string(CurlHandler::FW_SERVER_ROOT) + FW_MD_DIR + filename, mabPath))
+                {
+                    m_logger.error("Could not download firmware [ %s ]", filename.c_str());
+                    return;
+                }
+                flashMabFile(mabPath, recovery, mdCanId, candleBuilder);
             });
         // Version
         auto* version = mdCLi->add_subcommand("version", "Check version of the MD device.")
@@ -1343,6 +1491,94 @@ namespace mab
                     m_logger.error("Failed to zero MD!");
                 }
             });
+    }
+
+    bool MDCli::confirmUpdate(version_ut                                 targetVersion,
+                              const std::shared_ptr<canId_t>             mdCanId,
+                              const std::shared_ptr<const CandleBuilder> candleBuilder)
+    {
+        version_ut currentVersion;
+        {
+            auto md = getMd(mdCanId, candleBuilder);
+            if (md == nullptr)
+            {
+                m_logger.error("Could not communicate with MD device with ID %d", *mdCanId);
+                return false;
+            }
+            currentVersion = getMdFirmwareVersion(*md);
+        }
+
+        int cmp = compareVersion(targetVersion, currentVersion);
+        m_logger.info("%s MD firmware v%d.%d.%d -> v%d.%d.%d",
+                      cmp > 0 ? "Upgrading" : (cmp < 0 ? "Downgrading" : "Reinstalling"),
+                      currentVersion.s.major,
+                      currentVersion.s.minor,
+                      currentVersion.s.revision,
+                      targetVersion.s.major,
+                      targetVersion.s.minor,
+                      targetVersion.s.revision);
+        if ((currentVersion.s.major < 3) != (targetVersion.s.major < 3))
+            m_logger.warn(
+                "This comes with changes, that in specific conditions "
+                "(motor+encoder combinations) may require you to:\n"
+                "- reapply .cfg file,\n"
+                "- perform calibration,\n"
+                "- set zero offset.");
+        if (!userConfirm())
+        {
+            m_logger.error("Update aborted by user!");
+            return false;
+        }
+        return true;
+    }
+
+    void MDCli::flashMabFile(const std::filesystem::path&               path,
+                             bool                                       recovery,
+                             const std::shared_ptr<canId_t>             mdCanId,
+                             const std::shared_ptr<const CandleBuilder> candleBuilder)
+    {
+        MabFileParser mabFile(path.string(), MabFileParser::TargetDevice_E::MD);
+
+        version_ut targetVersion = {.i = 0};
+        if (!parseVersion((const char*)mabFile.m_fwEntry.version, &targetVersion))
+        {
+            m_logger.error("Invalid firmware version in .mab file!");
+            return;
+        }
+
+        // In recovery the drive sits in bootloader and can not report its version
+        if (!recovery)
+        {
+            if (!confirmUpdate(targetVersion, mdCanId, candleBuilder))
+                return;
+            auto md = getMd(mdCanId, candleBuilder);
+            if (md == nullptr)
+            {
+                m_logger.error("Could not communicate with MD device with ID %d", *mdCanId);
+                return;
+            }
+            md->reset();
+            usleep(200'000);
+        }
+        else
+        {
+            m_logger.warn("Recovery mode...");
+            m_logger.warn("Please make sure driver is in the bootloader phase (rebooting)");
+        }
+
+        auto candle = candleBuilder->build().value_or(nullptr);
+        if (candle == nullptr)
+        {
+            m_logger.error("Could not connect to candle!");
+            return;
+        }
+        CanLoader canLoader(candle, &mabFile, *mdCanId);
+        if (!canLoader.flashAndBoot(recovery))
+        {
+            m_logger.error("MD flashing failed!");
+            return;
+        }
+        m_logger.success("Update complete for MD @ %d", *mdCanId);
     }
 
     std::unique_ptr<MD, std::function<void(MD*)>> MDCli::getMd(
