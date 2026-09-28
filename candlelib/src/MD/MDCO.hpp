@@ -157,6 +157,9 @@ namespace mab
 
         Error_t resetNMT() const;
 
+        /// @brief NMT Start remote node: pre-operational -> operational (PDOs enabled)
+        Error_t startNMT() const;
+
         static std::vector<canId_t> discoverOpenMDs(Candle*                              candle,
                                                     std::shared_ptr<EDSObjectDictionary> od);
 
@@ -168,6 +171,9 @@ namespace mab
         /// @brief Generate the Object Dictionary from the EDS file
         /// @return A vector of edsObject representing the Object Dictionary
         std::shared_ptr<EDSObjectDictionary> m_od;
+
+        /// @brief Send an NMT command (CiA301: COB-ID 0x000, DLC 2) to this node
+        Error_t sendNMT(u8 command) const;
 
         inline std::pair<std::vector<u8>, mab::candleTypes::Error_t> transferCanOpenFrame(
             i16 Id, std::vector<u8> frameToSend, size_t responseSize) const

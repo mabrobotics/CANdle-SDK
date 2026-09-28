@@ -108,7 +108,11 @@ namespace mab
 
     MDCO::Error_t MDCO::init()
     {
-        return readSDO((*m_od)[0x1000]);
+        Error_t err = readSDO((*m_od)[0x1000]);
+        if (err != Error_t::OK)
+            return err;
+        // the drive boots into NMT pre-operational (CiA301), start it like an NMT master would
+        return startNMT();
     }
 
     MDCO::Error_t MDCO::enable()
@@ -1153,22 +1157,34 @@ namespace mab
         return Error_t::OK;
     }
 
-    MDCO::Error_t MDCO::resetNMT() const
+    MDCO::Error_t MDCO::sendNMT(u8 command) const
     {
-        // NMT Reset Node command (0x81) to this node ID
-        std::vector<u8> frame(8, 0);
-        frame[0] = 0x81;     // Reset Node command
-        frame[1] = m_canId;  // Target node ID
-
-        auto [response, error] = transferCanOpenFrame(0x000, frame, 2);
-
-        if (error != candleTypes::Error_t::OK)
+        if (m_candle == nullptr)
         {
-            m_log.error("Failed to send NMT Reset to node %d", m_canId);
+            m_log.error("Candle empty!");
             return Error_t::TRANSFER_FAILED;
         }
-
+        std::vector<u8> frame = {command, (u8)m_canId};  // DLC must be 2, else ignored
+        // NMT has no response, so CANdle reporting no response is expected
+        auto [response, error] = m_candle->transferCANFrame(
+            0x000, frame, 0, m_timeout.value_or(DEFAULT_CAN_TIMEOUT + 1));
+        if (error != candleTypes::Error_t::OK &&
+            error != candleTypes::Error_t::CAN_DEVICE_NOT_RESPONDING)
+        {
+            m_log.error("Failed to send NMT command 0x%02X to node %d", command, m_canId);
+            return Error_t::TRANSFER_FAILED;
+        }
         return Error_t::OK;
+    }
+
+    MDCO::Error_t MDCO::resetNMT() const
+    {
+        return sendNMT(0x81);  // Reset Node
+    }
+
+    MDCO::Error_t MDCO::startNMT() const
+    {
+        return sendNMT(0x01);  // Start remote node
     }
 
     std::vector<canId_t> MDCO::discoverOpenMDs(Candle*                              candle,

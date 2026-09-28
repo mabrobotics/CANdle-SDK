@@ -245,9 +245,23 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             constexpr std::string_view canIdName = "Can ID";
             auto                       od        = loadEDS().first;
             auto                       mdco      = getMdco(mdCanId, od);
-            if (*canOptions.canId < 10 || *canOptions.canId > 127)
+            if (mdco == nullptr)
+                return;
+
+            // node-ID range changed with firmware 3.0.0, a drive not reporting its version is
+            // older than that
+            canId_t minId = 1, maxId = 32;
+            auto [version, versionErr] = mdco->getFirmwareVersion();
+            if (versionErr == MDCO::Error_t::OK && version.s.major >= LEGACY_EDS_BELOW_FW_MAJOR)
             {
-                m_log.error("CAN id out of range!");
+                minId = 10;
+                maxId = 127;
+            }
+            if (*canOptions.canId < minId || *canOptions.canId > maxId)
+            {
+                m_log.error("CAN id out of range! Valid range for this firmware is %u-%u",
+                            (unsigned)minId,
+                            (unsigned)maxId);
                 return;
             }
 
