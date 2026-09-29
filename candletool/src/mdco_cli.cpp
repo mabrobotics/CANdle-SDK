@@ -54,9 +54,9 @@ namespace
         if (argument.starts_with("0x") || argument.starts_with("0X"))
             return;
 
-        u32        asHex    = 0;
-        const auto [ptr, ec] = std::from_chars(
-            argument.data(), argument.data() + argument.size(), asHex, 16);
+        u32 asHex = 0;
+        const auto [ptr, ec] =
+            std::from_chars(argument.data(), argument.data() + argument.size(), asHex, 16);
 
         if (ec != std::errc{} || ptr != argument.data() + argument.size())
             return;
@@ -104,12 +104,13 @@ namespace
                 for (const u8 available : subIndices)
                     ss << "0x" << std::hex << std::setw(2) << std::setfill('0')
                        << (unsigned)available << " ";
-                log.error("Object %u (0x%04X) '%s' is a record, it has to be accessed with "
-                          "--subindex. Subindices defined in the .eds: %s",
-                          index,
-                          index,
-                          entryName.c_str(),
-                          ss.str().c_str());
+                log.error(
+                    "Object %u (0x%04X) '%s' is a record, it has to be accessed with "
+                    "--subindex. Subindices defined in the .eds: %s",
+                    index,
+                    index,
+                    entryName.c_str(),
+                    ss.str().c_str());
                 return false;
             }
             return true;
@@ -117,11 +118,12 @@ namespace
 
         if (subIndices.empty())
         {
-            log.error("Object %u (0x%04X) '%s' is a single value, it has no subindices - drop "
-                      "the --subindex option",
-                      index,
-                      index,
-                      entryName.c_str());
+            log.error(
+                "Object %u (0x%04X) '%s' is a single value, it has no subindices - drop "
+                "the --subindex option",
+                index,
+                index,
+                entryName.c_str());
             return false;
         }
 
@@ -129,8 +131,8 @@ namespace
         {
             std::stringstream ss;
             for (const u8 available : subIndices)
-                ss << "0x" << std::hex << std::setw(2) << std::setfill('0')
-                   << (unsigned)available << " ";
+                ss << "0x" << std::hex << std::setw(2) << std::setfill('0') << (unsigned)available
+                   << " ";
             log.error(
                 "Subindex %u (0x%02X) is not present in object %u (0x%04X) '%s'. Either the "
                 "subindex is wrong or the .eds does not match the firmware of the drive. "
@@ -235,9 +237,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
 
     // CAN ============================================================================
 
-    CLI::App* can = mdco->add_subcommand("can", "Configure CAN id of the driver.")
-                        ->needs(mdCanIdOption)
-                        ->require_option();
+    CLI::App*  can = mdco->add_subcommand("can", "Configure CAN id of the driver.")
+                         ->needs(mdCanIdOption)
+                         ->require_option();
     CanOptions canOptions(can);
     can->callback(
         [this, mdCanId, canOptions, loadEDS]()
@@ -890,11 +892,6 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
                 m_log.error("Failed to conect to mdco!");
-            if (mdco->zero() != MDCO::Error_t::OK)
-            {
-                m_log.error("Failed move");
-                return;
-            }
             if (mdco->disable() != MDCO::Error_t::OK)
             {
                 m_log.error("Failed move");
@@ -905,38 +902,27 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error("Failed move");
                 return;
             }
+
+            // Arbitrary clamping, better to change that in the future
+            *moveOptionsRel.target = std::clamp(*moveOptionsRel.target, -320'000, 320'000);
+
+            i32 target = mdco->getPosition().first;
+            i32 step   = *moveOptionsRel.target / 100;
+            mdco->setTargetPosition(target);
+
             if (mdco->enable() != MDCO::Error_t::OK)
             {
                 m_log.error("Failed move");
                 return;
             }
-            if (mdco->setOperationMode(mab::ModesOfOperation::Impedance) != MDCO::Error_t::OK)
+
+            for (i32 i = 0; i < 100; i++)
             {
-                m_log.error("Failed move");
-                return;
-            }
-            // Arbitrary clamping, better to change that in the future
-            *moveOptionsRel.target = std::clamp(*moveOptionsRel.target, -320'000, 320'000);
-
-            auto             position       = mdco->getPosition().first;
-            auto             targetPosition = *moveOptionsRel.target;
-            constexpr size_t steps          = 100;
-
-            std::array<i32, steps> trajectory;
-
-            size_t i = 0;
-            for (auto& elem : trajectory)
-            {
-                elem = position + (targetPosition - position) * (double)(i++) / (steps);
-            }
-
-            for (const auto& trajectoryPoint : trajectory)
-            {
+                target += step;
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                position = mdco->getPosition().first;
-                m_log << "Pos: " << position << '\n';
-                m_log << "Target: " << trajectoryPoint << '\n';
-                mdco->setTargetPosition(trajectoryPoint);
+                m_log << "Pos: " << mdco->getPosition().first << '\n';
+                m_log << "Target: " << target << '\n';
+                mdco->setTargetPosition(target);
             }
 
             m_log.success("Target Reached!");
