@@ -199,6 +199,7 @@ namespace mab
         }
 
         bool confirmUpdate(version_ut                                 targetVersion,
+                           bool                                       targetCanOpen,
                            UpdateReset_E                              resetMode,
                            const std::shared_ptr<canId_t>             mdCanId,
                            const std::shared_ptr<const CandleBuilder> candleBuilder,
@@ -232,6 +233,14 @@ namespace mab
                         "Firmware v2.x.x and v3.x.x use different EDS files (v1.1 and v1.2). "
                         "The drive will require a complete reconfiguration!");
             }
+            if (targetCanOpen != (resetMode == UpdateReset_E::CANOPEN))
+                log.warn(
+                    "Switching firmware communication module from %s to %s! After the update the "
+                    "drive must be "
+                    "handled with \"candletool %s\" commands.",
+                    targetCanOpen ? "MD Protocol" : "CANOpen",
+                    targetCanOpen ? "CANOpen" : "MD Protocol",
+                    targetCanOpen ? "mdco" : "md");
             if (!userConfirm())
             {
                 log.error("Update aborted by user!");
@@ -249,6 +258,7 @@ namespace mab
                           const Logger&                              log)
         {
             MabFileParser mabFile(path.string(), MabFileParser::TargetDevice_E::MD);
+            const bool targetCanOpen = mabFile.m_fwEntry.variant == MabFileParser::Variant_E::MDCO;
 
             version_ut targetVersion = {.i = 0};
             if (!parseVersion((const char*)mabFile.m_fwEntry.version, &targetVersion))
@@ -260,8 +270,13 @@ namespace mab
             // In recovery the drive sits in bootloader and can not report its version
             if (!recovery)
             {
-                if (!confirmUpdate(
-                        targetVersion, resetMode, mdCanId, candleBuilder, packageEtcPath, log))
+                if (!confirmUpdate(targetVersion,
+                                   targetCanOpen,
+                                   resetMode,
+                                   mdCanId,
+                                   candleBuilder,
+                                   packageEtcPath,
+                                   log))
                     return;
                 if (!resetDrive(resetMode, mdCanId, candleBuilder, packageEtcPath, log))
                     return;
@@ -271,6 +286,7 @@ namespace mab
             {
                 log.warn("Recovery mode...");
                 log.warn("Please make sure driver is in the bootloader phase (rebooting)");
+                log.info("Flashing %s firmware", targetCanOpen ? "MDCO" : "MD");
             }
 
             auto candle = candleBuilder->build().value_or(nullptr);
@@ -369,13 +385,22 @@ namespace mab
         mINI::INIStructure index;
         if (!CurlHandler::loadIndex(index))
             return;
-        std::filesystem::path tmpDir  = std::filesystem::temp_directory_path();
-        const bool            canOpen = resetMode == UpdateReset_E::CANOPEN;
+        std::filesystem::path tmpDir = std::filesystem::temp_directory_path();
+        // Variant of the firmware to download, the drive is still reset per resetMode
+        const bool canOpen = (resetMode == UpdateReset_E::CANOPEN) != *options.otherVariant;
 
         // Firmware older than 3.0.0 is shipped as platform specific flasher
         // executables with firmware compiled in, newer as platform independent .mab
         if (!latest && targetVersion.s.major < 3)
         {
+            if (*options.otherVariant)
+            {
+                log.error(
+                    "Switching between MD and MDCO firmware requires firmware >= 3.0.0! Refer to "
+                    "https://mabrobotics.github.io/MD80-x-CANdle-Documentation Downloads section, "
+                    "for manual procedure of migration between MD Protocol and CANOpen.");
+                return;
+            }
 #ifdef WIN32
             log.error("Firmware older than 3.0.0 can only be installed on Linux!");
             return;
@@ -398,7 +423,7 @@ namespace mab
             }
             if (!recovery &&
                 !confirmUpdate(
-                    targetVersion, resetMode, mdCanId, candleBuilder, packageEtcPath, log))
+                    targetVersion, canOpen, resetMode, mdCanId, candleBuilder, packageEtcPath, log))
                 return;
             WebFile_S flasherFile;
             flasherFile.m_type = WebFile_S::Type_E::MD_FLASHER;

@@ -31,8 +31,15 @@ namespace mab
             : fwVersion(std::make_shared<std::string>("")),
               pathToMabFile(std::make_shared<std::filesystem::path>("")),
               recovery(std::make_shared<bool>(false)),
-              forceErase(std::make_shared<bool>(false))
+              forceErase(std::make_shared<bool>(false)),
+              otherVariant(std::make_shared<bool>(false))
         {
+            // Drives accept both MD and MDCO firmware, the flag downloads the variant opposite
+            // to the one the command resets the drive for
+            const bool        canOpen     = commandName == "mdco";
+            const std::string variantFlag = canOpen ? "--md" : "--mdco";
+            CLI::Option*      pathOption =
+                rootCli->add_option("-p,--path", *pathToMabFile, "Local path to .mab file");
             optionsMap = std::map<std::string, CLI::Option*>{
                 {"version",
                  rootCli->add_option("version",
@@ -40,8 +47,14 @@ namespace mab
                                      "Version of fw to download (\"latest\" or X.X.X format). "
                                      "For example:  candletool " +
                                          commandName + " update latest")},
-                {"path",
-                 rootCli->add_option("-p,--path", *pathToMabFile, "Local path to .mab file")},
+                {"path", pathOption},
+                {"other_variant",
+                 rootCli
+                     ->add_flag(variantFlag,
+                                *otherVariant,
+                                std::string("Download ") + (canOpen ? "MD" : "MDCO") +
+                                    " firmware instead, switching the drive to it")
+                     ->excludes(pathOption)},
                 {"recovery",
                  rootCli->add_flag(
                      "-r,--recovery", *recovery, "Driver recovery after failed flashing")},
@@ -52,6 +65,7 @@ namespace mab
         const std::shared_ptr<std::filesystem::path> pathToMabFile;
         const std::shared_ptr<bool>                  recovery;
         const std::shared_ptr<bool>                  forceErase;
+        const std::shared_ptr<bool>                  otherVariant;
         std::map<std::string, CLI::Option*>          optionsMap;
     };
 
