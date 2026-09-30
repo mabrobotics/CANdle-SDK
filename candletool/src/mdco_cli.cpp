@@ -842,28 +842,25 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             auto od   = loadEDS().first;
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
-                m_log.error("Failed to conect to mdco!");
-            if (mdco->enable() != MDCO::Error_t::OK)
-            {
-                m_log.error("Failed move");
-                return;
-            }
+                return m_log.error("Failed to conect to mdco!");
             if (mdco->setOperationMode(mab::ModesOfOperation::ProfilePosition) != MDCO::Error_t::OK)
-            {
-                m_log.error("Failed move");
-                return;
-            }
+                return m_log.error("Failed move");
+
+            if (mdco->setTargetVelocity(1'000'000) != MDCO::Error_t::OK)
+                return m_log.error("Failed move");
+
             if (mdco->setTargetPosition(*moveOptionsAbs.target) != MDCO::Error_t::OK)
-            {
-                m_log.error("Failed move");
-                return;
-            }
+                return m_log.error("Failed move");
+
+            if (mdco->enable() != MDCO::Error_t::OK)
+                return m_log.error("Failed move");
+
             std::signal(SIGINT, [](int) { testRunning = false; });
             while (!mdco->targetReached().first && testRunning)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
                 auto position = mdco->getPosition().first;
-                std::cout << "Pos: " << position << '\n';
+                std::cout << "Pos: " << position << "\t\r" << std::flush;
                 mdco->setTargetPosition(
                     *moveOptionsAbs.target);  // get driver unstuck from quickstop
             }
