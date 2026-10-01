@@ -25,10 +25,9 @@
 #include "edsEntry.hpp"
 #include "edsParser.hpp"
 #include "mab_types.hpp"
-#include "md_cfg_map.hpp"
+#include "cfg_map.hpp"
 #include "md_update.hpp"
 #include "mini/ini.h"
-#include "mdco_config_adapter.hpp"
 
 using namespace mab;
 bool testRunning = true;
@@ -316,61 +315,18 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 return;
             }
 
-            std::string configFilePath = *downloadConfigOptions.configFile;
+            std::filesystem::path configFilePath = *downloadConfigOptions.configFile;
             if (configFilePath.empty())
             {
                 m_log.error("Configuration file path is empty!");
                 return;
             }
-            // If the path is not specified, prepend the standard path
-            if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
-                configFilePath.end())
-            {
-                configFilePath = "/etc/candletool/config/motors/" + configFilePath;
-            }
 
-            MDConfigMap       cfgMap;
-            MDCOConfigAdapter odCfgAdapter;
-            for (auto& [regAddr, objRef] : odCfgAdapter.manufacturerRegMaping)
-            {
-                EDSEntry* objPtr = md_objects::resolveObject(*od, objRef, m_log);
-                if (objPtr == nullptr)
-                {
-                    continue;
-                }
-                if (md->readSDO(*objPtr) != MDCO::Error_t::OK)
-                {
-                    m_log.error("Obj %s could not be read from md!", objRef.label.data());
-                    continue;
-                }
-            }
-            for (auto& [regAddr, objAddress, subidxOpt] : odCfgAdapter.standardRegMaping)
-            {
-                auto& obj = subidxOpt.has_value() ? (*od)[objAddress][subidxOpt.value()]
-                                                  : (*od)[objAddress];
-                if (md->readSDO(obj) != MDCO::Error_t::OK)
-                {
-                    m_log.error("Obj %d could not be read from md!", objAddress);
-                    continue;
-                }
-            }
-
-            odCfgAdapter.configFromOd(od, cfgMap);
-            // // Write the configuration to the file
-            mINI::INIFile      configFile(configFilePath);
-            mINI::INIStructure ini;
-            for (const auto& [regAddress, cfgElement] : cfgMap.m_map)
-            {
-                if (!cfgElement.getReadable().empty())
-                    ini[cfgElement.m_tomlSection.data()][cfgElement.m_tomlKey.data()] =
-                        cfgElement.getReadable();
-            }
-            if (!configFile.generate(ini, true))
-            {
-                m_log.error("Could not write configuration to file: %s", configFilePath.c_str());
+            CfgValues_S cfg;
+            if (!cfgDownloadMdco(*md, *od, cfg) || !cfgSave(configFilePath, cfg))
                 return;
-            }
-            m_log.success("Configuration downloaded successfully to %s", configFilePath.c_str());
+            m_log.success("Configuration downloaded successfully to %s",
+                          configFilePath.string().c_str());
         });
 
     // Upload configuration file
@@ -389,58 +345,25 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 return;
             }
 
-            std::string configFilePath = *uploadConfigOptions.configFile;
+            std::filesystem::path configFilePath = *uploadConfigOptions.configFile;
             if (configFilePath.empty())
             {
                 m_log.error("Configuration file path is empty!");
                 return;
             }
-            // If the path is not specified, prepend the standard path
-            if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
-                configFilePath.end())
-            {
-                configFilePath = "/etc/candletool/config/motors/" + configFilePath;
-            }
+            // Same as md: absolute, relative to cwd with `./`, otherwise relative to the motors
+            // config directory
+            if (!configFilePath.is_absolute() && !configFilePath.string().starts_with("./") &&
+                !configFilePath.string().starts_with("../"))
+                configFilePath = getMotorsConfigPath() / configFilePath;
 
-            mINI::INIFile      configFile(configFilePath);
-            mINI::INIStructure ini;
-            if (!configFile.read(ini))
-            {
-                m_log.error("Could not read configuration file: %s", configFilePath.c_str());
+            CfgValues_S cfg;
+            if (!cfgLoad(configFilePath, cfg))
                 return;
-            }
-
-            MDConfigMap       cfgMap;
-            MDCOConfigAdapter odCfgAdapter;
-
-            for (auto& [address, toml] : cfgMap.m_map)
+            if (!cfgUploadMdco(*md, *od, cfg))
             {
-                auto it = ini[toml.m_tomlSection.data()][toml.m_tomlKey.data()];
-                if (it.empty())
-                {
-                    m_log.warn("Key %s.%s not found in configuration file. Skipping.",
-                               toml.m_tomlSection.data(),
-                               toml.m_tomlKey.data());
-                    continue;
-                }
-                if (!toml.setFromReadable(it))
-                {
-                    m_log.error("Could not set value for %s.%s",
-                                toml.m_tomlSection.data(),
-                                toml.m_tomlKey.data());
-                    return;
-                }
-            }
-
-            auto entries = odCfgAdapter.configToOd(cfgMap, od);
-
-            for (auto& entry : entries)
-            {
-                if (md->writeSDO(entry.get()) != MDCO::Error_t::OK)
-                {
-                    m_log.error("Error writing %s",
-                                entry.get().getEntryMetaData().parameterName.c_str());
-                }
+                m_log.error("Configuration not saved, fix the errors above and upload again");
+                return;
             }
 
             if (md->save() != MDCO::Error_t::OK)

@@ -20,7 +20,7 @@
 #include "manufacturer_data.hpp"
 #include "md_types.hpp"
 #include "mabFileParser.hpp"
-#include "md_cfg_map.hpp"
+#include "cfg_map.hpp"
 #include "utilities.hpp"
 #include "MDStatus.hpp"
 #include "mini/ini.h"
@@ -425,25 +425,17 @@ namespace mab
                     return;
                 }
 
-                MDConfigMap cfgMap;
-                for (auto& [regAddress, cfgElement] : cfgMap.m_map)
+                CfgValues_S cfg;
+                for (size_t i = 0; i < CFG_MAP_SIZE; i++)
                 {
-                    cfgElement.m_value = registerRead(*md, regAddress).value_or("NOT FOUND");
+                    if (CFG_MAP[i].mdReg == 0)
+                        continue;
+                    std::optional<std::string> value = registerRead(*md, CFG_MAP[i].mdReg);
+                    if (value.has_value())
+                        cfg.value[i] = cfgFromRaw(CFG_MAP[i], value.value());
                 }
-                // Write the configuration to the file
-                mINI::INIFile      configFile(configFilePath.string());
-                mINI::INIStructure ini;
-                for (const auto& [regAddress, cfgElement] : cfgMap.m_map)
-                {
-                    ini[cfgElement.m_tomlSection.data()][cfgElement.m_tomlKey.data()] =
-                        cfgElement.getReadable();
-                }
-                if (!configFile.generate(ini, true))
-                {
-                    m_logger.error("Could not write configuration to file: %s",
-                                   configFilePath.c_str());
+                if (!cfgSave(configFilePath, cfg))
                     return;
-                }
                 m_logger.success("Configuration downloaded successfully to %s",
                                  configFilePath.c_str());
             });
@@ -478,41 +470,27 @@ namespace mab
                     !configFilePath.string().starts_with("../"))
                     configFilePath = getMotorsConfigPath() / configFilePath;
 
-                mINI::INIFile      configFile(configFilePath.string());
-                mINI::INIStructure ini;
-                if (!configFile.read(ini))
-                {
-                    m_logger.error("Could not read configuration file: %s", configFilePath.c_str());
+                CfgValues_S cfg;
+                if (!cfgLoad(configFilePath, cfg))
                     return;
-                }
 
-                MDConfigMap cfgMap;
-
-                for (auto& [address, toml] : cfgMap.m_map)
+                for (size_t i = 0; i < CFG_MAP_SIZE; i++)
                 {
-                    auto it = ini[toml.m_tomlSection.data()][toml.m_tomlKey.data()];
-                    if (it.empty())
-                    {
-                        m_logger.warn("Key %s.%s not found in configuration file. Skipping.",
-                                      toml.m_tomlSection.data(),
-                                      toml.m_tomlKey.data());
+                    const CfgMap_S& entry = CFG_MAP[i];
+                    if (entry.mdReg == 0 || cfg.value[i].empty())
                         continue;
-                    }
-                    if (!toml.setFromReadable(it))
+                    // Note: after fw 3.0, shuntResistance is Read only
+                    if (entry.mdReg == (u16)MDRegisterAddress_E::shuntResistance &&
+                        isVersionAtLeast(fwVersion, 3, 0, 0))
+                        continue;
+                    std::optional<std::string> raw = cfgToRaw(entry, cfg.value[i]);
+                    if (!raw.has_value())
                     {
-                        m_logger.error("Could not set value for %s.%s",
-                                       toml.m_tomlSection.data(),
-                                       toml.m_tomlKey.data());
+                        m_logger.error(
+                            "Could not set value for %s.%s", entry.section, entry.key);
                         return;
                     }
-                    // Write the value to the MD
-
-                    // Note: after fw 3.0, shuntResistance is Read only
-                    if (address == (u16)MDRegisterAddress_E::shuntResistance &&
-                        isVersionAtLeast(fwVersion, 3, 0, 0))
-                        md->readRegister(md->m_mdRegisters.firmwareVersion);
-                    else
-                        registerWrite(*md, address, toml.m_value);
+                    registerWrite(*md, entry.mdReg, raw.value());
                 }
 
                 if (md->save() != MD::Error_t::OK)
@@ -561,8 +539,6 @@ namespace mab
         verifyCfg->callback(
             [this, verifyConfigOptions, ctx]()
             {
-                static constexpr std::string_view REQUIRED_SUFFIX = "_required";
-
                 const std::filesystem::path schemaPathSuf = "config/md_config_schema.ini";
                 const std::filesystem::path schemaPath    = *ctx.packageEtcPath / schemaPathSuf;
                 m_logger.debug("Looking at schema: %s", schemaPath.c_str());
@@ -585,47 +561,9 @@ namespace mab
                     m_logger.error("Error while loading schema file: %s", schemaPath.c_str());
                     exit(1);
                 }
-                MDConfigMap        mdCfgMap(schemaStruct);
-                mINI::INIFile      configFile(*verifyConfigOptions.configFile);
-                mINI::INIStructure cfgini;
-                if (!configFile.read(cfgini))
-                {
-                    m_logger.error("Error while loading schema file: %s", schemaPath.c_str());
+                CfgValues_S cfg;
+                if (!cfgLoad(*verifyConfigOptions.configFile, cfg) || !cfgVerify(cfg, schemaStruct))
                     exit(1);
-                }
-
-                for (auto& [address, toml] : mdCfgMap.m_map)
-                {
-                    std::string val = cfgini[toml.m_tomlSection.data()][toml.m_tomlKey.data()];
-                    if (val.empty())
-                    {
-                        m_logger.warn("Key %s.%s not found in configuration file. Skipping.",
-                                      toml.m_tomlSection.data(),
-                                      toml.m_tomlKey.data());
-                        std::string reqKey(toml.m_tomlKey);
-                        reqKey.append(REQUIRED_SUFFIX);
-                        if (schemaStruct[std::string(toml.m_tomlSection)][reqKey] == "true")
-                        {
-                            m_logger.error("This key is required for proper MD operation!");
-                            exit(1);
-                        }
-
-                        continue;
-                    }
-                    if (!toml.setFromReadable(val))
-                    {
-                        m_logger.error(
-                            "Can not set %s.%s", toml.m_tomlSection.data(), toml.m_tomlKey.data());
-                        continue;
-                    }
-                    if (!toml.verify())
-                    {
-                        m_logger.error("Found invalid parameter %s.%s",
-                                       toml.m_tomlSection.data(),
-                                       toml.m_tomlKey.data());
-                        exit(1);
-                    }
-                }
                 m_logger.success("The config file is valid!");
             });
 
@@ -1422,7 +1360,7 @@ namespace mab
                         return;
                     }
 
-                    if (strV.length() > sizeof(reg.value) + 1)
+                    if (strV.length() >= sizeof(reg.value))  // room for the terminating NUL
                     {
                         m_logger.error("Value too long for register 0x%04X", reg.m_regAddress);
                         return;

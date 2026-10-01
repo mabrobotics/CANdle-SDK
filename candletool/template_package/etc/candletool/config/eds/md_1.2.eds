@@ -8,8 +8,8 @@ Description=MD Motor Controller
 CreationTime=4:41PM
 CreationDate=09-17-2026
 CreatedBy=MAB Robotics
-ModificationTime=11:20AM
-ModificationDate=09-21-2026
+ModificationTime=1:19PM
+ModificationDate=09-28-2026
 ModifiedBy=Jakub Matyszczak
 
 [DeviceInfo]
@@ -17,7 +17,7 @@ VendorName=MAB ROBOTICS
 VendorNumber=0
 ProductName=MD
 ProductNumber=1
-RevisionNumber=0
+RevisionNumber=0x00010002
 BaudRate_10=0
 BaudRate_20=0
 BaudRate_50=0
@@ -112,7 +112,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
 AccessType=ro
-DefaultValue=0x00000000
+DefaultValue=0x00010002
 PDOMapping=0
 
 [1018sub4]
@@ -125,60 +125,151 @@ DefaultValue=0x00000000
 PDOMapping=0
 
 [OptionalObjects]
-SupportedObjects=53
-1=0x1005
-2=0x1008
-3=0x1009
-4=0x1010
-5=0x1011
-6=0x1014
-7=0x1016
-8=0x1017
-9=0x1400
-10=0x1401
-11=0x1402
-12=0x1403
-13=0x1600
-14=0x1601
-15=0x1602
-16=0x1603
-17=0x1800
-18=0x1801
-19=0x1802
-20=0x1803
-21=0x1A00
-22=0x1A01
-23=0x1A02
-24=0x1A03
-25=0x603F
-26=0x6040
-27=0x6041
-28=0x6060
-29=0x6061
-30=0x6064
-31=0x6067
-32=0x606C
-33=0x606D
-34=0x6071
-35=0x6072
-36=0x6073
-37=0x6075
-38=0x6076
-39=0x6077
-40=0x6079
-41=0x607A
-42=0x607B
-43=0x607D
-44=0x6080
-45=0x6083
-46=0x6084
-47=0x6085
-48=0x6091
-49=0x60A8
-50=0x60A9
-51=0x60AA
-52=0x60FF
-53=0x6502
+SupportedObjects=57
+1=0x1003
+2=0x1005
+3=0x1008
+4=0x1009
+5=0x1010
+6=0x1011
+7=0x1014
+8=0x1016
+9=0x1017
+10=0x1400
+11=0x1401
+12=0x1402
+13=0x1403
+14=0x1600
+15=0x1601
+16=0x1602
+17=0x1603
+18=0x1800
+19=0x1801
+20=0x1802
+21=0x1803
+22=0x1A00
+23=0x1A01
+24=0x1A02
+25=0x1A03
+26=0x603F
+27=0x6040
+28=0x6041
+29=0x6060
+30=0x6061
+31=0x6064
+32=0x6067
+33=0x606C
+34=0x606D
+35=0x6071
+36=0x6072
+37=0x6073
+38=0x6075
+39=0x6076
+40=0x6077
+41=0x6079
+42=0x607A
+43=0x607B
+44=0x607D
+45=0x6080
+46=0x6081
+47=0x6083
+48=0x6084
+49=0x6085
+50=0x6091
+51=0x60A8
+52=0x60A9
+53=0x60AA
+54=0x60C5
+55=0x60C6
+56=0x60FF
+57=0x6502
+
+[1003]
+ParameterName=Pre-defined Error Field
+ObjectType=0x8
+;StorageLocation=RAM
+SubNumber=0x9
+
+[1003sub0]
+ParameterName=Number of errors
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[1003sub1]
+ParameterName=Standard error field 1
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=ro
+DefaultValue=0
+PDOMapping=0
+
+[1003sub2]
+ParameterName=Standard error field 2
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=ro
+DefaultValue=0
+PDOMapping=0
+
+[1003sub3]
+ParameterName=Standard error field 3
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=ro
+DefaultValue=0
+PDOMapping=0
+
+[1003sub4]
+ParameterName=Standard error field 4
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=ro
+DefaultValue=0
+PDOMapping=0
+
+[1003sub5]
+ParameterName=Standard error field 5
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=ro
+DefaultValue=0
+PDOMapping=0
+
+[1003sub6]
+ParameterName=Standard error field 6
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=ro
+DefaultValue=0
+PDOMapping=0
+
+[1003sub7]
+ParameterName=Standard error field 7
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=ro
+DefaultValue=0
+PDOMapping=0
+
+[1003sub8]
+ParameterName=Standard error field 8
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=ro
+DefaultValue=0
+PDOMapping=0
 
 [1005]
 ParameterName=COB-ID SYNC Message
@@ -219,7 +310,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0005
 AccessType=ro
-DefaultValue=0x04
+DefaultValue=0x01
 PDOMapping=0
 
 [1010sub1]
@@ -227,15 +318,15 @@ ParameterName=Save all Parameters
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
-AccessType=wo
-DefaultValue=0x00000000
+AccessType=rw
+DefaultValue=0x00000001
 PDOMapping=0
 
 [1011]
 ParameterName=Restore Default Parameters
 ObjectType=0x8
 ;StorageLocation=RAM
-SubNumber=0x2
+SubNumber=0x3
 
 [1011sub0]
 ParameterName=Highest sub-index supported
@@ -246,13 +337,22 @@ AccessType=ro
 DefaultValue=0x04
 PDOMapping=0
 
+[1011sub1]
+ParameterName=Restore all Default Parameters
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000001
+PDOMapping=0
+
 [1011sub4]
 ParameterName=Restore manufacturer defined default Parameters
 ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
-AccessType=wo
-DefaultValue=0x00000000
+AccessType=rw
+DefaultValue=0x00000001
 PDOMapping=0
 
 [1014]
@@ -318,7 +418,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
 AccessType=rw
-DefaultValue=0x200
+DefaultValue=$NODEID+0x200
 PDOMapping=0
 
 [1400sub2]
@@ -360,7 +460,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
 AccessType=rw
-DefaultValue=0x300
+DefaultValue=$NODEID+0x300
 PDOMapping=0
 
 [1401sub2]
@@ -402,7 +502,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
 AccessType=rw
-DefaultValue=0x400
+DefaultValue=$NODEID+0x400
 PDOMapping=0
 
 [1402sub2]
@@ -444,7 +544,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
 AccessType=rw
-DefaultValue=0x500
+DefaultValue=$NODEID+0x500
 PDOMapping=0
 
 [1403sub2]
@@ -834,7 +934,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
 AccessType=rw
-DefaultValue=0x180
+DefaultValue=$NODEID+0x180
 PDOMapping=0
 
 [1800sub2]
@@ -876,7 +976,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0005
 AccessType=ro
-DefaultValue=0x06
+DefaultValue=0x05
 PDOMapping=0
 
 [1801sub1]
@@ -885,7 +985,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
 AccessType=rw
-DefaultValue=0x280
+DefaultValue=$NODEID+0x280
 PDOMapping=0
 
 [1801sub2]
@@ -927,7 +1027,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0005
 AccessType=ro
-DefaultValue=0x06
+DefaultValue=0x05
 PDOMapping=0
 
 [1802sub1]
@@ -936,7 +1036,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
 AccessType=rw
-DefaultValue=0x380
+DefaultValue=$NODEID+0x380
 PDOMapping=0
 
 [1802sub2]
@@ -978,7 +1078,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0005
 AccessType=ro
-DefaultValue=0x06
+DefaultValue=0x05
 PDOMapping=0
 
 [1803sub1]
@@ -987,7 +1087,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
 AccessType=rw
-DefaultValue=0x480
+DefaultValue=$NODEID+0x480
 PDOMapping=0
 
 [1803sub2]
@@ -1593,6 +1693,15 @@ AccessType=rw
 DefaultValue=0
 PDOMapping=0
 
+[6081]
+ParameterName=Profile Velocity
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=1
+
 [6083]
 ParameterName=Profile Acceleration
 ObjectType=0x7
@@ -1678,6 +1787,24 @@ ObjectType=0x7
 DataType=0x0007
 AccessType=ro
 DefaultValue=0xFAB45700
+PDOMapping=0
+
+[60C5]
+ParameterName=Max Acceleration
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+PDOMapping=0
+
+[60C6]
+ParameterName=Max Deceleration
+ObjectType=0x7
+;StorageLocation=RAM
+DataType=0x0007
+AccessType=rw
+DefaultValue=15915494
 PDOMapping=0
 
 [60FF]
@@ -1818,9 +1945,9 @@ PDOMapping=0
 ParameterName=Motor KV Rating
 ObjectType=0x7
 ;StorageLocation=RAM
-DataType=0x0008
+DataType=0x0006
 AccessType=rw
-DefaultValue=0.0
+DefaultValue=0
 PDOMapping=0
 
 [2001]

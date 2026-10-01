@@ -271,7 +271,7 @@ namespace mab
     template <typename T, size_t N>
     struct MDRegisterEntry_S<T[N]>
     {
-        T value[N];
+        T value[N] = {};
 
         const RegisterAccessLevel_E m_accessLevel;
         const u16                   m_regAddress;
