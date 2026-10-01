@@ -447,7 +447,7 @@ namespace mab
                 for (size_t i = 0; i < CFG_MAP_SIZE; i++)
                 {
                     const CfgMap_S& entry = CFG_MAP[i];
-                    if (entry.mdReg == 0 || cfg.value[i].empty())
+                    if (entry.mdReg == 0 || !cfgIsSet(entry, cfg.value[i]))
                         continue;
                     // Note: after fw 3.0, shuntResistance is Read only
                     if (entry.mdReg == (u16)MDRegisterAddress_E::shuntResistance &&
@@ -460,7 +460,14 @@ namespace mab
                             "Could not set value for %s.%s", entry.section, entry.key);
                         return;
                     }
-                    registerWrite(*md, entry.mdReg, raw.value());
+                    if (registerWrite(*md, entry.mdReg, raw.value(), true))
+                    {
+                        const std::string source =
+                            std::string(entry.section) + "." + entry.key + " = " + cfg.value[i];
+                        char target[8];
+                        std::snprintf(target, sizeof(target), "0x%03X", entry.mdReg);
+                        cfgPrintWrite(m_logger, source, cfg.isDefault[i], target, raw.value());
+                    }
                 }
 
                 if (md->save() != MD::Error_t::OK)
@@ -1221,7 +1228,7 @@ namespace mab
         }
     }
 
-    bool MDCli::registerWrite(MD& md, u16 regAdress, const std::string& value)
+    bool MDCli::registerWrite(MD& md, u16 regAdress, const std::string& value, bool quiet)
     {
         std::string trimmedValue = trim(value);
 
@@ -1229,6 +1236,7 @@ namespace mab
         std::variant<int64_t, float, std::string> regValue;
         bool                                      foundRegister      = false;
         bool                                      registerCompatible = false;
+        bool                                      written            = false;
 
         // Check if the value is a string or a number
         if (trimmedValue.find_first_not_of("-0123456789.f") == std::string::npos)
@@ -1264,7 +1272,9 @@ namespace mab
                         m_logger.error("Failed to write register 0x%04X", reg.m_regAddress);
                         return;
                     }
-                    m_logger.success("Writing register %s successful!", reg.m_name.data());
+                    written = true;
+                    if (!quiet)
+                        m_logger.success("Writing register %s successful!", reg.m_name.data());
                 }
                 else if constexpr (std::is_same<std::decay_t<T>, char*>::value)
                 {
@@ -1293,7 +1303,9 @@ namespace mab
                         m_logger.error("Failed to write register 0x%04X", reg.m_regAddress);
                         return;
                     }
-                    m_logger.success("Writing register %s successful!", reg.m_name.data());
+                    written = true;
+                    if (!quiet)
+                        m_logger.success("Writing register %s successful!", reg.m_name.data());
                 }
             }
         };
@@ -1309,7 +1321,7 @@ namespace mab
                 "Register 0x%04X not compatible with value %s", regAdress, value.c_str());
             return false;
         }
-        return true;
+        return written;
     }
 
     std::optional<std::string> MDCli::registerRead(MD& md, u16 regAdress)

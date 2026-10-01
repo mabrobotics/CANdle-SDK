@@ -203,9 +203,19 @@ namespace mab
             return false;
         }
 
-        bool writeObject(MDCO& mdco, EDSEntry& obj, const std::string& value, const Logger& log)
+        /// @brief Write one object and print it next to the file value it came from
+        /// @param source "section.key = value" as in the file, empty for a value derived from
+        /// the line above
+        /// @param isDefault the file value is a default from CFG_MAP
+        bool writeObject(MDCO&              mdco,
+                         EDSEntry&          obj,
+                         const std::string& value,
+                         const std::string& source,
+                         bool               isDefault,
+                         const Logger&      log)
         {
-            const char*       name = obj.getEntryMetaData().parameterName.c_str();
+            const EDSEntry::EDSEntryMetaData& meta = obj.getEntryMetaData();
+            const char*                       name = meta.parameterName.c_str();
             EDSEntry::Error_t err  = EDSEntry::Error_t::PARSING_FAILED;
             try
             {
@@ -224,7 +234,13 @@ namespace mab
                 log.error("Could not write %s", name);
                 return false;
             }
-            log.debug("%s = %s", name, value.c_str());
+            char address[16];
+            std::snprintf(address,
+                          sizeof(address),
+                          "0x%04X:%02X ",
+                          meta.address.first,
+                          meta.address.second.value_or(0));
+            cfgPrintWrite(log, source, isDefault, address + meta.parameterName, value);
             return true;
         }
 
@@ -264,6 +280,8 @@ namespace mab
         bool writeGearRatio(MDCO&                mdco,
                             EDSObjectDictionary& od,
                             const std::string&   text,
+                            const std::string&   source,
+                            bool                 isDefault,
                             const Logger&        log)
         {
             EDSEntry*    motorRevs = findObject(od, 0x6091, 0x01);
@@ -277,8 +295,8 @@ namespace mab
                 log.error("Invalid gear ratio %s", text.c_str());
                 return false;
             }
-            return writeObject(mdco, *motorRevs, std::to_string(num), log) &&
-                   writeObject(mdco, *shaftRevs, std::to_string(den), log);
+            return writeObject(mdco, *motorRevs, std::to_string(num), source, isDefault, log) &&
+                   writeObject(mdco, *shaftRevs, std::to_string(den), "", isDefault, log);
         }
 
         std::optional<std::string> readGearRatio(MDCO&                mdco,
@@ -334,7 +352,9 @@ namespace mab
         }
         // Without an output encoder the rest of its section means nothing, so it is ignored
         const std::string outputEncoder   = ini.get("output encoder").get("output encoder");
-        const bool        noOutputEncoder = outputEncoder == "NONE" || outputEncoder == "0";
+        const bool        noOutputEncoder = outputEncoder.empty() || outputEncoder == "NONE" ||
+                                     outputEncoder == "0";
+        bool ok = true;
         for (size_t i = 0; i < CFG_MAP_SIZE; i++)
         {
             const CfgMap_S& entry = CFG_MAP[i];
@@ -343,12 +363,66 @@ namespace mab
                 continue;
             if (ini.has(entry.section))
                 cfg.value[i] = ini.get(entry.section).get(entry.key);
-            if (cfg.value[i].empty())
+            if (!cfg.value[i].empty())
+                continue;
+            if (entry.flags & CFG_CRITICAL)
+            {
+                log.error("Key %s.%s is required", entry.section, entry.key);
+                ok = false;
+            }
+            else if (entry.defaultValue != nullptr)
+            {
+                // reported when it is written, see cfgPrintWrite
+                cfg.value[i]     = entry.defaultValue;
+                cfg.isDefault[i] = true;
+            }
+            else
                 log.warn("Key %s.%s not found in configuration file. Skipping.",
                          entry.section,
                          entry.key);
         }
-        return true;
+
+        // The drive needs KV or the torque constant, 0 leaves one of them unset
+        bool hasMotorConstant = false;
+        for (size_t i = 0; i < CFG_MAP_SIZE; i++)
+        {
+            if ((CFG_MAP[i].mdReg == 0x01D || CFG_MAP[i].mdReg == 0x012) &&
+                cfgIsSet(CFG_MAP[i], cfg.value[i]))
+                hasMotorConstant = true;
+        }
+        if (!hasMotorConstant)
+        {
+            log.error("Both motor.KV and motor.torque constant are 0, set at least one of them");
+            ok = false;
+        }
+        return ok;
+    }
+
+    bool cfgIsSet(const CfgMap_S& entry, const std::string& value)
+    {
+        if (value.empty())
+            return false;
+        if (!(entry.flags & CFG_SKIP_ZERO))
+            return true;
+        // text that is not a number is passed on, so writing it reports the error
+        char*        end    = nullptr;
+        const double number = std::strtod(value.c_str(), &end);
+        return *end != '\0' || number != 0.0;
+    }
+
+    void cfgPrintWrite(const Logger&      log,
+                       const std::string& source,
+                       bool               isDefault,
+                       const std::string& target,
+                       const std::string& value)
+    {
+        if (isDefault)
+            log.info(YELLOW "%-50s -> %s = %s [WARN - default]" RESETCLR,
+                     source.c_str(),
+                     target.c_str(),
+                     value.c_str());
+        else
+            log.info("%-50s -> %s = %s", source.c_str(), target.c_str(), value.c_str());
     }
 
     bool cfgSave(const std::filesystem::path& path, const CfgValues_S& cfg)
@@ -382,16 +456,9 @@ namespace mab
             const mINI::INIMap<std::string> rules = schema.get(entry.section);
             const std::string               key   = entry.key;
 
+            // missing keys are handled by cfgLoad, from the flags in CFG_MAP
             if (value.empty())
-            {
-                if (rules.get(key + "_required") == "true")
-                {
-                    log.error(
-                        "%s.%s is required for proper MD operation!", entry.section, entry.key);
-                    valid = false;
-                }
                 continue;
-            }
 
             // enums are listed as "<key>_<number> = <name>", either of the two is accepted
             const std::string prefix    = toLower(key) + "_";
@@ -478,7 +545,7 @@ namespace mab
         for (size_t i = 0; i < CFG_MAP_SIZE; i++)
         {
             const CfgMap_S& entry = CFG_MAP[i];
-            if (entry.coIndex == 0 || cfg.value[i].empty())
+            if (entry.coIndex == 0 || !cfgIsSet(entry, cfg.value[i]))
                 continue;
             EDSEntry* obj = findObject(od, entry.coIndex, entry.coSubindex);
             if (obj == nullptr)
@@ -497,9 +564,11 @@ namespace mab
                 ok = false;
                 continue;
             }
+            const std::string source =
+                std::string(entry.section) + "." + entry.key + " = " + cfg.value[i];
             if (entry.coIndex == 0x6091)
             {
-                if (!writeGearRatio(mdco, od, raw.value(), log))
+                if (!writeGearRatio(mdco, od, raw.value(), source, cfg.isDefault[i], log))
                     ok = false;
                 continue;
             }
@@ -522,7 +591,7 @@ namespace mab
                 }
                 value = std::to_string(counts);
             }
-            const bool written = writeObject(mdco, *obj, value, log);
+            const bool written = writeObject(mdco, *obj, value, source, cfg.isDefault[i], log);
             if (!written)
                 ok = false;
             if (written && entry.coIndex == 0x6075)
@@ -534,9 +603,13 @@ namespace mab
         // The drive accepts the permille limits only once both rated values are set
         EDSEntry* maxCurrent = findObject(od, permilleOf(0x6075), 0);
         EDSEntry* maxTorque  = findObject(od, permilleOf(0x6076), 0);
-        if (ratedCurrent && (maxCurrent == nullptr || !writeObject(mdco, *maxCurrent, "1000", log)))
+        if (ratedCurrent &&
+            (maxCurrent == nullptr ||
+             !writeObject(mdco, *maxCurrent, "1000", "motor.max current (permille)", false, log)))
             ok = false;
-        if (ratedTorque && (maxTorque == nullptr || !writeObject(mdco, *maxTorque, "1000", log)))
+        if (ratedTorque &&
+            (maxTorque == nullptr ||
+             !writeObject(mdco, *maxTorque, "1000", "limits.max torque (permille)", false, log)))
             ok = false;
         return ok;
     }
