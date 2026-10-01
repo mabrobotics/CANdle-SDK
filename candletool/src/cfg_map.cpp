@@ -77,8 +77,10 @@ namespace mab
                 case 0x6075:  // motor rated current
                 case 0x6076:  // motor rated torque
                     return UNIT_MILLI;
+                case 0x6067:  // position window
                 case 0x607D:  // software position limit
                     return UNIT_POSITION;
+                case 0x606D:  // velocity window
                 case 0x6080:  // max motor speed
                 case 0x6081:  // profile velocity
                     return UNIT_VELOCITY;
