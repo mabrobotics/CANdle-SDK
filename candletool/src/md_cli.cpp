@@ -31,36 +31,6 @@
 #include "flasher.hpp"
 #include "md_update.hpp"
 
-#ifndef WIN32
-
-#define REDSTART    "\033[1;31m"
-#define GREENSTART  "\033[1;32m"
-#define YELLOWSTART "\033[1;33m"
-#define BLUESTART   "\x1b[38;5;33m"
-#define RESETTEXT   "\033[0m"
-
-#else
-
-#define REDSTART    ""
-#define GREENSTART  ""
-#define YELLOWSTART ""
-#define BLUESTART   ""
-#define RESETTEXT   ""
-
-#endif
-
-#define RED__(x) REDSTART x RESETTEXT
-#define RED_(x)  REDSTART + x + RESETTEXT
-
-#define GREEN__(x) GREENSTART x RESETTEXT
-#define GREEN_(x)  GREENSTART + x + RESETTEXT
-
-#define YELLOW__(x) YELLOWSTART x RESETTEXT
-#define YELLOW_(x)  YELLOWSTART + x + RESETTEXT
-
-#define BLUE__(x) BLUESTART x RESETTEXT
-#define BLUE_(x)  BLUESTART + x + RESETTEXT
-
 namespace mab
 {
     MDCli::MDCli(CLI::App* rootCli, CANdleToolCtx_S ctx)
@@ -817,69 +787,17 @@ namespace mab
                              << readableRegisters.motorTemperature.value << " *C" << std::endl;
 
                 m_logger << std::endl;
-                auto statusToString =
-                    []<typename T>(
-                        const std::unordered_map<T, MDStatus::StatusItem_S> statusItemList)
-                    -> std::string
-                {
-                    std::string result;
-                    for (const auto& [key, item] : statusItemList)
-                    {
-                        if (item.isSet())
-                        {
-                            if (!result.empty())
-                                result += ", ";
-                            if (item.isError)
-                                result += RED_(item.name);
-                            else
-                                result += YELLOW_(item.name);
-                        }
-                    }
-                    if (result.empty())
-                        result = GREEN__("OK");
-                    else
-                        result = "Set flags: " + result;
-                    return result;
-                };
-
-                m_logger << "***** ERRORS *****" << std::endl;
-                m_logger << "- main encoder error: 	0x" << std::hex
-                         << readableRegisters.mainEncoderStatus.value << std::dec << " ("
-                         << statusToString(md->getMainEncoderStatus().first) << ")" << std::endl;
-
-                if (readableRegisters.auxEncoder.value != 0)
-                {
-                    m_logger << "- aux encoder status: 	0x" << std::hex
-                             << readableRegisters.auxEncoderStatus.value << std::dec << " ("
-                             << statusToString(md->getOutputEncoderStatus().first) << ")"
-                             << std::endl;
-                }
-
-                m_logger << "- calibration status: 	0x" << std::hex
-                         << readableRegisters.calibrationStatus.value << std::dec << " ("
-                         << statusToString(md->getCalibrationStatus().first) << ")" << std::endl;
-
-                m_logger << "- bridge status: 	0x" << std::hex
-                         << readableRegisters.bridgeStatus.value << std::dec << " ("
-                         << statusToString(md->getBridgeStatus().first) << ")" << std::endl;
-
-                m_logger << "- hardware status: 	0x" << std::hex
-                         << readableRegisters.hardwareStatus.value << std::dec << " ("
-                         << statusToString(md->getHardwareStatus().first) << ")" << std::endl;
-
-                m_logger << "- communication status:  0x" << std::hex
-                         << readableRegisters.communicationStatus.value << std::dec << " ("
-                         << statusToString(md->getCommunicationStatus().first) << ")" << std::endl;
-
-                m_logger << "- motion status: 	0x" << std::hex
-                         << readableRegisters.motionStatus.value << std::dec << " ("
-                         << statusToString(md->getMotionStatus().first) << ")" << std::endl;
-                m_logger << "- misc status: 	0x" << std::hex
-                         << readableRegisters.miscStatus.value << std::dec << " ("
-                         << statusToString(md->getMiscStatus().first) << ")" << std::endl;
-                m_logger << "- config status: 	0x" << std::hex
-                         << readableRegisters.configStatus.value << std::dec << " ("
-                         << statusToString(md->getConfigStatus().first) << ")" << std::endl;
+                printStatusSummary(m_logger,
+                                   {.mainEncoder   = readableRegisters.mainEncoderStatus.value,
+                                    .auxEncoder    = readableRegisters.auxEncoderStatus.value,
+                                    .calibration   = readableRegisters.calibrationStatus.value,
+                                    .bridge        = readableRegisters.bridgeStatus.value,
+                                    .hardware      = readableRegisters.hardwareStatus.value,
+                                    .communication = readableRegisters.communicationStatus.value,
+                                    .motion        = readableRegisters.motionStatus.value,
+                                    .misc          = readableRegisters.miscStatus.value,
+                                    .config        = readableRegisters.configStatus.value,
+                                    .hasAuxEncoder = readableRegisters.auxEncoder.value != 0});
             });
 
         // Register =======================================================================

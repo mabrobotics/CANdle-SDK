@@ -176,6 +176,16 @@ namespace mab
                                                  .label    = "motion status",
                                                  .aliases  = {"Motion Status"}};
 
+        inline constexpr ObjectRef MISC_STATUS{.index    = 0x2022,
+                                               .subIndex = u8{0x09},
+                                               .label    = "misc status",
+                                               .aliases  = {"Misc Status"}};
+
+        inline constexpr ObjectRef CONFIG_STATUS{.index    = 0x2022,
+                                                 .subIndex = u8{0x0A},
+                                                 .label    = "config status",
+                                                 .aliases  = {"Config Status"}};
+
         // Command record, 0x2023 in md_1.2, was 0x2003 "System Command" in MDv1.0.0
         inline constexpr ObjectRef CMD_RESET_CONTROLLER{.index    = 0x2023,
                                                         .subIndex = u8{0x08},

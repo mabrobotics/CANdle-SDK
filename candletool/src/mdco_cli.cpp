@@ -26,6 +26,7 @@
 #include "edsParser.hpp"
 #include "mab_types.hpp"
 #include "cfg_map.hpp"
+#include "MDObjects.hpp"
 #include "md_update.hpp"
 #include "mini/ini.h"
 
@@ -666,7 +667,10 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             auto od   = loadEDS().first;
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
+            {
                 m_log.error("Failed to conect to mdco!");
+                return;
+            }
 
             for (auto& object : *od)
             {
@@ -721,6 +725,32 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                    << object.second.getAsString();
                 m_log.info("%s", ss.str().c_str());
             }
+
+            // Same summary as md info
+            auto readStatus = [&](const md_objects::ObjectRef& ref) -> u32
+            {
+                EDSEntry* obj = md_objects::resolveObject(*od, ref, m_log);
+                if (obj == nullptr)
+                    return 0;
+                if (mdco->readSDO(*obj) != MDCO::Error_t::OK)
+                {
+                    m_log.error("could not read %s", ref.label.data());
+                    return 0;
+                }
+                return (u32)std::strtoul(obj->getAsString().c_str(), nullptr, 0);
+            };
+            m_log << std::endl;
+            printStatusSummary(m_log,
+                               {.mainEncoder   = readStatus(md_objects::MAIN_ENCODER_STATUS),
+                                .auxEncoder    = readStatus(md_objects::AUX_ENCODER_STATUS),
+                                .calibration   = readStatus(md_objects::CALIBRATION_STATUS),
+                                .bridge        = readStatus(md_objects::BRIDGE_STATUS),
+                                .hardware      = readStatus(md_objects::HARDWARE_STATUS),
+                                .communication = readStatus(md_objects::COMMUNICATION_STATUS),
+                                .motion        = readStatus(md_objects::MOTION_STATUS),
+                                .misc          = readStatus(md_objects::MISC_STATUS),
+                                .config        = readStatus(md_objects::CONFIG_STATUS),
+                                .hasAuxEncoder = readStatus(md_objects::AUX_ENCODER_TYPE) != 0});
         });
 
     // Save
