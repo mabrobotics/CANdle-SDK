@@ -95,15 +95,26 @@ namespace mab
             }
         }
 
-        /// @brief Max torque and max current are permille of the rated values, the file holds
-        /// the limit directly, so the rated value carries it and the permille is kept at 1000
-        u16 permilleOf(u16 ratedIndex)
+        /// @brief Max current and max torque are permille of the rated values, the file holds
+        /// both in SI
+        /// @return rated object of a limit object, 0 for other objects
+        u16 ratedOf(u16 limitIndex)
         {
-            if (ratedIndex == 0x6075)
-                return 0x6073;
-            if (ratedIndex == 0x6076)
-                return 0x6072;
+            if (limitIndex == 0x6073)
+                return 0x6075;
+            if (limitIndex == 0x6072)
+                return 0x6076;
             return 0;
+        }
+
+        size_t rowOf(u16 coIndex)
+        {
+            for (size_t i = 0; i < CFG_MAP_SIZE; i++)
+            {
+                if (CFG_MAP[i].coIndex == coIndex)
+                    return i;
+            }
+            return CFG_MAP_SIZE;
         }
 
         /// @brief Decode a CiA402 SI unit object (0x60A8..0x60AA) into the SI value of one count
@@ -319,14 +330,76 @@ namespace mab
             return formatSi(shaft / motor);
         }
 
-        double readPermille(MDCO& mdco, EDSObjectDictionary& od, u16 index, const Logger& log)
+        /// @brief Write the rated value and the limit as permille of it. A rated value that is
+        /// not set is replaced by the limit, the permille is then 1000
+        /// @param limitRow CFG_MAP row of max current or max torque
+        bool writeLimit(MDCO&                mdco,
+                        EDSObjectDictionary& od,
+                        const CfgValues_S&   cfg,
+                        size_t               limitRow,
+                        const Logger&        log)
+        {
+            const CfgMap_S&    limit      = CFG_MAP[limitRow];
+            const size_t       ratedRow   = rowOf(ratedOf(limit.coIndex));
+            const CfgMap_S&    rated      = CFG_MAP[ratedRow];
+            const std::string& limitText  = cfg.value[limitRow];
+            const std::string  limitSource =
+                std::string(limit.section) + "." + limit.key + " = " + limitText;
+            std::string ratedText   = cfg.value[ratedRow];
+            std::string ratedSource =
+                std::string(rated.section) + "." + rated.key + " = " + ratedText;
+            bool ratedIsDefault = cfg.isDefault[ratedRow];
+            if (!cfgIsSet(rated, ratedText))
+            {
+                log.warn("%s.%s is not set, %s.%s is used as the rated value",
+                         rated.section,
+                         rated.key,
+                         limit.section,
+                         limit.key);
+                ratedText      = limitText;
+                ratedSource    = limitSource;
+                ratedIsDefault = true;
+            }
+
+            EDSEntry* ratedObj = findObject(od, rated.coIndex, 0);
+            EDSEntry* limitObj = findObject(od, limit.coIndex, 0);
+            if (ratedObj == nullptr || limitObj == nullptr)
+            {
+                log.error("Objects 0x%04X and 0x%04X are missing from the .eds",
+                          rated.coIndex,
+                          limit.coIndex);
+                return false;
+            }
+            const double    ratedSi  = std::strtod(ratedText.c_str(), nullptr);
+            const double    limitSi  = std::strtod(limitText.c_str(), nullptr);
+            const long long counts   = std::llround(ratedSi * 1000.0);  // mA, mNm
+            const long long permille = counts > 0 ? std::llround(limitSi * 1000.0 / ratedSi) : 0;
+            if (counts <= 0 || !fitsType(*ratedObj, counts) || !fitsType(*limitObj, permille))
+            {
+                log.error("%s.%s = %s does not fit object 0x%04X as permille of %s",
+                          limit.section,
+                          limit.key,
+                          limitText.c_str(),
+                          limit.coIndex,
+                          ratedText.c_str());
+                return false;
+            }
+            // the drive accepts the permille limit only once the rated value is set
+            return writeObject(
+                       mdco, *ratedObj, std::to_string(counts), ratedSource, ratedIsDefault, log) &&
+                   writeObject(mdco,
+                               *limitObj,
+                               std::to_string(permille),
+                               ratedIsDefault ? "" : limitSource,
+                               cfg.isDefault[limitRow],
+                               log);
+        }
+
+        std::optional<double> readNumber(MDCO& mdco, EDSObjectDictionary& od, u16 index)
         {
             EDSEntry* obj = findObject(od, index, 0);
             if (obj == nullptr || mdco.readSDO(*obj) != MDCO::Error_t::OK)
-            {
-                log.warn("Could not read object 0x%04X, assuming 1000 permille", index);
-                return 1000.0;
-            }
+                return std::nullopt;
             return std::strtod(obj->getAsString().c_str(), nullptr);
         }
 
@@ -539,14 +612,20 @@ namespace mab
         if (!isSupportedOd(od, log) || !loadScale(od, scale, log))
             return false;
 
-        bool ok           = true;
-        bool ratedCurrent = false;
-        bool ratedTorque  = false;
+        bool ok = true;
         for (size_t i = 0; i < CFG_MAP_SIZE; i++)
         {
             const CfgMap_S& entry = CFG_MAP[i];
-            if (entry.coIndex == 0 || !cfgIsSet(entry, cfg.value[i]))
+            // rated values are written together with their limit
+            if (entry.coIndex == 0 || entry.coIndex == 0x6075 || entry.coIndex == 0x6076 ||
+                !cfgIsSet(entry, cfg.value[i]))
                 continue;
+            if (ratedOf(entry.coIndex) != 0)
+            {
+                if (!writeLimit(mdco, od, cfg, i, log))
+                    ok = false;
+                continue;
+            }
             EDSEntry* obj = findObject(od, entry.coIndex, entry.coSubindex);
             if (obj == nullptr)
             {
@@ -591,26 +670,9 @@ namespace mab
                 }
                 value = std::to_string(counts);
             }
-            const bool written = writeObject(mdco, *obj, value, source, cfg.isDefault[i], log);
-            if (!written)
+            if (!writeObject(mdco, *obj, value, source, cfg.isDefault[i], log))
                 ok = false;
-            if (written && entry.coIndex == 0x6075)
-                ratedCurrent = true;
-            if (written && entry.coIndex == 0x6076)
-                ratedTorque = true;
         }
-
-        // The drive accepts the permille limits only once both rated values are set
-        EDSEntry* maxCurrent = findObject(od, permilleOf(0x6075), 0);
-        EDSEntry* maxTorque  = findObject(od, permilleOf(0x6076), 0);
-        if (ratedCurrent &&
-            (maxCurrent == nullptr ||
-             !writeObject(mdco, *maxCurrent, "1000", "motor.max current (permille)", false, log)))
-            ok = false;
-        if (ratedTorque &&
-            (maxTorque == nullptr ||
-             !writeObject(mdco, *maxTorque, "1000", "limits.max torque (permille)", false, log)))
-            ok = false;
         return ok;
     }
 
@@ -652,11 +714,20 @@ namespace mab
             std::string     raw  = obj->getAsString();
             const CfgUnit_E unit = unitOf(entry.coIndex);
             if (unit != UNIT_NONE)
+                raw = formatSi(std::strtod(raw.c_str(), nullptr) * scale[unit]);
+            if (ratedOf(entry.coIndex) != 0)
             {
-                double si = std::strtod(raw.c_str(), nullptr) * scale[unit];
-                if (permilleOf(entry.coIndex) != 0)
-                    si *= readPermille(mdco, od, permilleOf(entry.coIndex), log) / 1000.0;
-                raw = formatSi(si);
+                const std::optional<double> rated = readNumber(mdco, od, ratedOf(entry.coIndex));
+                if (!rated.has_value())
+                {
+                    log.error("Could not read %s.%s, object 0x%04X is not readable",
+                              entry.section,
+                              entry.key,
+                              ratedOf(entry.coIndex));
+                    continue;
+                }
+                raw = formatSi(std::strtod(raw.c_str(), nullptr) / 1000.0 * rated.value() *
+                               scale[UNIT_MILLI]);
             }
             cfg.value[i] = cfgFromRaw(entry, raw);
         }
