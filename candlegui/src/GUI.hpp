@@ -19,25 +19,43 @@ class GraphicInterface
     void loop();
 
   private:
+    enum SelectedPage_E : uint8_t
+    {
+        TUNING      = 0,
+        MONITOR     = 1,
+        TEST_SCRIPT = 2,
+        BUS_INFO    = 3
+    };
+    SelectedPage_E currentPage = TUNING;
+
     std::shared_ptr<commonMemory_S> m_data;
     ImGuiIO&                        m_io;
 
     GLFWwindow* m_window = nullptr;
 
+    float insideWindowPadding = 10.0f;
+    float windowsPadding      = 20.0f;
+    float leftMenuPadding     = 30.f;
+
     float leftMenuBarWidth = 325.0f;
     float leftMenuBarHeight;
-    float rightMenuBarWidth     = 225.0f;
-    float testMenuBarHeight     = 145.0f;
-    float errorMenuBarHeight    = 40.0f;
-    float lowBarHeight          = 30.0f;
-    float marginPlot            = 10.f;
-    float paddingButtons        = 30.f;
-    float rightMenuButtonWidth  = rightMenuBarWidth - 20.f;
-    float mediumButtonHeight    = 40.0f;
+    float rightMenuBarWidth  = 250.0f;
+    float testMenuBarHeight  = 170.0f;
+    float errorMenuBarHeight = 40.0f;
+    float topBarHeight       = 40.0f;
+    float lowBarHeight       = 20.0f;
+    float marginPlot         = 10.f;
+
+    float rightMenuButtonWidth = rightMenuBarWidth - 20.f;
+
+    float smallButtonHeight  = 20.0f;
+    float mediumButtonHeight = 30.0f;
+    float largeButtonHeight  = 40.0f;
+
     float roundingFrameButton   = 12.0f;
     float roundingFrameCheckbox = 8.0f;
 
-    float saveButtonWidth = leftMenuBarWidth - (paddingButtons * 2.0f) - 40.f;
+    float saveButtonWidth = leftMenuBarWidth - (leftMenuPadding * 2.0f) - 40.f;
     float resizeButton    = 15.0f;
 
     float menuTopHeightRatio   = 0.5f;
@@ -125,14 +143,22 @@ class GraphicInterface
 
     // Main menu draw functions
     void drawErrorMenuBar();
-    void drawMenuLowerBar();
+    void drawMenuTopBar();
+    void drawMenuBottomBar();
     void drawTestMenuBar();
     void drawLeftMenuBar();
     void drawRightMenuBar();
     void drawMainMenu();
-    void drawErrorMenuPopup();
+    void drawErrorPopup();
+
+    void drawTuningMenu();
+    void drawMonitorButton();
+    void drawBusInfoButton();
+    void drawTestScriptButton();
 
     // Buttons
+    void drawTuningButton();
+
     void drawTestManualButton();
     void drawTestEndButton();
     void drawDiscoverMDButton();
@@ -188,10 +214,12 @@ class GraphicInterface
     // Style edit
     void        comboStyle(const char* text);
     void        buttonStyle();
+    void        buttonSelectStyle(bool flag);
     void        buttonImportantStyle(bool& flag);
     void        checkboxStyle();
     void        endComboStyle();
     void        endButtonStyle();
+    void        endButtonSelectStyle();
     void        endButtonImportantStyle();
     void        endCheckboxStyle();
     void        centerText(const char* text);
@@ -204,5 +232,5 @@ class GraphicInterface
                                   float       windowWidth,
                                   const char* unit = nullptr);
     bool        buttonColorInputFloat(
-        const char* label, float* v, float step, float step_fast, const char* format);
+               const char* label, float* v, float step, float step_fast, const char* format);
 };
