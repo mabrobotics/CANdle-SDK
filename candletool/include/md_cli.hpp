@@ -113,7 +113,7 @@ namespace mab
                              "Path to the MD .cfg file \n note: \ncan be absolute path, "
                              "\ncurrent directory relative path (starting with `./`, eg. "
                              "`./myCustomMotor.cfg`), "
-                             "\ndefault config relative path (eg. `CubeMars/AK/AK80-9.cfg`)")
+                             "\ndefault config relative path (eg. `CubeMars/AK80-9.cfg`)")
                          ->required()}};
             }
 

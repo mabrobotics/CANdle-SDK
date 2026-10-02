@@ -449,10 +449,40 @@ namespace mab
                     const CfgMap_S& entry = CFG_MAP[i];
                     if (entry.mdReg == 0 || !cfgIsSet(entry, cfg.value[i]))
                         continue;
-                    // Note: after fw 3.0, shuntResistance is Read only
-                    if (entry.mdReg == (u16)MDRegisterAddress_E::shuntResistance &&
-                        isVersionAtLeast(fwVersion, 3, 0, 0))
-                        continue;
+                    if (entry.mdReg == (u16)MDRegisterAddress_E::shuntResistance)
+                    {
+                        // Note: after fw 3.0, shuntResistance is Read only
+                        if (isVersionAtLeast(fwVersion, 3, 0, 0))
+                            continue;
+                        // Legacy firmware reports MD20 as HD10 (5), every other board has 1 mOhm
+                        MDRegisters_S regs;
+                        if (md->readRegister(regs.legacyHardwareVersion) != MD::Error_t::OK)
+                            m_logger.warn("Could not read hardware version, shunt resistance "
+                                          "is not checked");
+                        else
+                        {
+                            const bool   isMd20   = regs.legacyHardwareVersion.value == 5;
+                            const double expected = isMd20 ? 0.004 : 0.001;
+                            const double shunt = std::strtod(cfg.value[i].c_str(), nullptr);
+                            if (std::abs(shunt - expected) > 1e-6)
+                            {
+                                m_logger.warn(
+                                    "hardware.shunt resistance = %s, but %s hardware has %.3f "
+                                    "ohm. Write it anyway?",
+                                    cfg.value[i].c_str(),
+                                    MDLegacyHwVersion_S::toReadable(
+                                        regs.legacyHardwareVersion.value)
+                                        .value_or("Unknown")
+                                        .c_str(),
+                                    expected);
+                                if (!userConfirm())
+                                {
+                                    m_logger.error("Upload aborted by user!");
+                                    return;
+                                }
+                            }
+                        }
+                    }
                     std::optional<std::string> raw = cfgToRaw(entry, cfg.value[i]);
                     if (!raw.has_value())
                     {
