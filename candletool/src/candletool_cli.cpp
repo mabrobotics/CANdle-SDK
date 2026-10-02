@@ -7,6 +7,7 @@
 #include <memory>
 #include <string_view>
 #include "candletool_cli.hpp"
+#include "curl_handler.hpp"
 #include "json.h"
 #include "picosha2.h"
 
@@ -84,18 +85,6 @@ namespace mab
     };
 #endif
 
-    // Both HTTP helpers use the curl executable, same as CurlHandler: it is a .deb dependency on
-    // Linux and ships with Windows 10+, so nothing has to be linked on any platform.
-    // No overall time limit for the package (slow links are fine), but give up on a connection
-    // that can't be made in 10 s or a transfer that stalls completely for 30 s.
-    bool CandletoolCli::downloadFile(const std::string&           url,
-                                     const std::filesystem::path& outputPath)
-    {
-        std::string cmd = "curl --fail -L --connect-timeout 10 --speed-time 30 -o \"" +
-                          outputPath.string() + "\" \"" + url + "\"";
-        return !executeCommand(cmd);
-    }
-
     bool CandletoolCli::installPackage(const std::filesystem::path& path)
     {
 #ifdef __linux__
@@ -124,6 +113,8 @@ namespace mab
 #endif
     }
 
+    // Uses the curl executable, same as CurlHandler: it is a .deb dependency on Linux and ships
+    // with Windows 10+, so nothing has to be linked on any platform.
     std::optional<std::string> CandletoolCli::fetchUrl(const std::string& url)
     {
         std::string cmd = "curl --fail -sSL --connect-timeout 10 --max-time 30 \"" + url + "\"";
@@ -284,7 +275,7 @@ namespace mab
                 std::string fileName = downloadUrl.substr(downloadUrl.find_last_of('/') + 1);
                 std::filesystem::path packagePath = downloadDirectory / fileName;
 
-                if (!downloadFile(downloadUrl, packagePath))
+                if (!CurlHandler::download(downloadUrl, packagePath))
                 {
                     m_logger.error("Failed to download update file.");
                     return;

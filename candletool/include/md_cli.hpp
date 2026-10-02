@@ -27,6 +27,13 @@ namespace mab
             const std::shared_ptr<const CandleBuilder> candleBuilder);
         bool                       registerWrite(MD& md, u16 regAdress, const std::string& value);
         std::optional<std::string> registerRead(MD& md, u16 regAdress);
+        bool                       confirmUpdate(version_ut                                 targetVersion,
+                                                 const std::shared_ptr<canId_t>             mdCanId,
+                                                 const std::shared_ptr<const CandleBuilder> candleBuilder);
+        void                       flashMabFile(const std::filesystem::path&               path,
+                                                bool                                       recovery,
+                                                const std::shared_ptr<canId_t>             mdCanId,
+                                                const std::shared_ptr<const CandleBuilder> candleBuilder);
 
         struct CanOptions
         {
@@ -179,8 +186,7 @@ namespace mab
                 : fwVersion(std::make_shared<std::string>("")),
                   pathToMabFile(std::make_shared<std::filesystem::path>("")),
                   recovery(std::make_shared<bool>(false)),
-                  forceErase(std::make_shared<bool>(false)),
-                  metadataFile(std::make_shared<std::string>(""))
+                  forceErase(std::make_shared<bool>(false))
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
                     {"version",
@@ -195,17 +201,12 @@ namespace mab
                          "-r,--recovery", *recovery, "Driver recovery after failed flashing")},
                     {"force_erase",
                      rootCli->add_flag(
-                         "--force-erase", *forceErase, "Force full wipe of the driver")},
-                    {"meta_file",
-                     rootCli->add_option("-m,--meta-file",
-                                         *metadataFile,
-                                         "File with file metadata for managing downloads.")}};
+                         "--force-erase", *forceErase, "Force full wipe of the driver")}};
             }
             const std::shared_ptr<std::string>           fwVersion;
             const std::shared_ptr<std::filesystem::path> pathToMabFile;
             const std::shared_ptr<bool>                  recovery;
             const std::shared_ptr<bool>                  forceErase;
-            const std::shared_ptr<std::string>           metadataFile;
             std::map<std::string, CLI::Option*>          optionsMap;
         };  // namespace mab
     };

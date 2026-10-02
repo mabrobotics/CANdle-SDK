@@ -36,8 +36,6 @@ namespace mab
         std::optional<std::string> fetchUrl(const std::string& url);
         Logger                     m_logger = Logger(Logger::ProgramLayer_E::TOP, "CANDLETOOL_CLI");
 
-        bool downloadFile(const std::string& url, const std::filesystem::path& outputPath);
-
         bool installPackage(const std::filesystem::path& path);
 
         bool m_assumeYes = false;  // update -y / --yes: skip confirmation prompts
