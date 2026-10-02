@@ -182,6 +182,15 @@ namespace mab
 
         const EDSEntry& operator[](u8 subIndex) const;
 
+        /// @brief Check if this entry holds the given subindex
+        /// @param subIndex subindex to look for
+        /// @return true when the subindex is defined in the .eds
+        bool hasSubEntry(u8 subIndex) const noexcept;
+
+        /// @brief List the subindices defined for this entry
+        /// @return subindices in ascending order, empty for a value entry
+        std::vector<u8> subEntryIndices() const noexcept;
+
         std::map<u8, std::unique_ptr<EDSEntry>>::const_iterator begin() const;
         std::map<u8, std::unique_ptr<EDSEntry>>::const_iterator end() const;
         std::map<u8, std::unique_ptr<EDSEntry>>::iterator       begin();
@@ -227,6 +236,11 @@ namespace mab
         }
 
         EDSEntry& operator[](u16 idx);
+
+        /// @brief Check if the dictionary holds the given index
+        /// @param idx object index to look for
+        /// @return true when the index is defined in the .eds
+        bool hasEntry(u16 idx) const noexcept;
 
         std::map<u16, EDSEntry>::iterator       begin();
         std::map<u16, EDSEntry>::iterator       end();

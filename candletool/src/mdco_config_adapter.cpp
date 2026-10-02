@@ -8,7 +8,7 @@ namespace mab
         std::vector<std::reference_wrapper<EDSEntry>> result;
         Logger                                        log(Logger::ProgramLayer_E::TOP, "MDCO CFG");
         // Manufacturer part parsing
-        for (const auto& [regAddr, objName, subIdx] : manufacturerRegMaping)
+        for (const auto& [regAddr, objRef] : manufacturerRegMaping)
         {
             const std::string cfgValue =
                 cfgToOdUnitConversions.find(regAddr) != cfgToOdUnitConversions.end()
@@ -16,21 +16,19 @@ namespace mab
                     : config.getValueByAddress(regAddr);
             if (cfgValue.empty())
             {
-                log.warn("Manufacturer register %s not found in config", objName.data());
+                log.warn("Manufacturer register %s not found in config", objRef.label.data());
                 continue;
             }
 
-            auto objOpt = od->getEntryByName(objName);
-            if (!objOpt.has_value())
+            EDSEntry* objPtr = md_objects::resolveObject(*od, objRef, log);
+            if (objPtr == nullptr)
             {
-                log.warn("Manufacturer register %s not found in OD - skipping", objName.data());
                 continue;
             }
-            EDSEntry& obj =
-                subIdx.has_value() ? objOpt.value().get()[subIdx.value()] : objOpt.value().get();
+            EDSEntry& obj = *objPtr;
             if (obj.setFromString(cfgValue) != EDSEntry::Error_t::OK)
             {
-                log.error("Failed to set value for manufacturer register %s", objName.data());
+                log.error("Failed to set value for manufacturer register %s", objRef.label.data());
                 continue;
             }
             log.debug("%s = %s", obj.getEntryMetaData().parameterName.c_str(), cfgValue.c_str());
@@ -69,16 +67,14 @@ namespace mab
                                          MDConfigMap&                         config)
     {
         Logger log(Logger::ProgramLayer_E::TOP, "MDCO CFG");
-        for (const auto& [regAddr, objName, subIdx] : manufacturerRegMaping)
+        for (const auto& [regAddr, objRef] : manufacturerRegMaping)
         {
-            auto objOpt = od->getEntryByName(objName);
-            if (!objOpt.has_value())
+            EDSEntry* objPtr = md_objects::resolveObject(*od, objRef, log);
+            if (objPtr == nullptr)
             {
-                log.warn("Manufacturer register %s not found in OD - skipping", objName.data());
                 continue;
             }
-            EDSEntry& obj =
-                subIdx.has_value() ? objOpt.value().get()[subIdx.value()] : objOpt.value().get();
+            EDSEntry& obj = *objPtr;
             config.setValueByAddress(
                 regAddr,
                 odToCfgUnitConversions.find(regAddr) != odToCfgUnitConversions.end()
