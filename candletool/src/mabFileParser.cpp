@@ -32,6 +32,11 @@ MabFileParser::MabFileParser(std::string filePath, TargetDevice_E target)
     hexStringToBytes(m_fwEntry.aes_iv, sizeof(m_fwEntry.aes_iv), ini.get("firmware").get("iv"));
     hexStringToBytes(
         m_fwEntry.data.get()->data(), m_fwEntry.size, ini.get("firmware").get("binary"));
+    // Older candletool versions do not read the variant key, so both variants stay tagged "md"
+    // and flash there without variant checks. Missing key means MD protocol firmware
+    const std::string variant = ini.get("firmware").get("variant");
+    if (variant == "mdco")
+        m_fwEntry.variant = Variant_E::MDCO;
 
     // validate
     if (target != m_fwEntry.targetDevice || m_fwEntry.targetDevice == TargetDevice_E::INVALID)
@@ -40,6 +45,12 @@ MabFileParser::MabFileParser(std::string filePath, TargetDevice_E target)
         log.error("Device target mismatch. Expected: [%s], Read: [%s].",
                   tagFromTargetDevice(target).c_str(),
                   tagFromTargetDevice(m_fwEntry.targetDevice).c_str());
+        throw std::runtime_error("Error processing file");
+    }
+    if (!variant.empty() && variant != "md" && variant != "mdco")
+    {
+        log.error("Error processing .mab file!");
+        log.error("Unknown firmware variant [%s]!", variant.c_str());
         throw std::runtime_error("Error processing file");
     }
     if (m_fwEntry.bootAddress < 0x8000000 || m_fwEntry.size == 0 ||
@@ -78,9 +89,10 @@ std::string tagFromTargetDevice(MabFileParser::TargetDevice_E type)
             return "pds";
         case MabFileParser::TargetDevice_E::CANDLE:
             return "candle";
-        default:
-            return "UNKNOWN";
+        case MabFileParser::TargetDevice_E::INVALID:
+            break;
     }
+    return "INVALID";
 }
 MabFileParser::TargetDevice_E parseTargetDevice(std::string tag)
 {

@@ -5,7 +5,7 @@
 #include "logger.hpp"
 #include "MD.hpp"
 #include "utilities.hpp"
-#include <algorithm>
+#include "md_update.hpp"
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -62,25 +62,19 @@ namespace mab
         struct CalibrationOptions
         {
             CalibrationOptions(CLI::App* rootCli)
-                : calibrationOfEncoder(std::make_shared<std::string>("all")),
-                  runTests(std::make_shared<bool>(false))
+                : calibrationOfEncoder(std::make_shared<std::string>("all"))
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
-
                     {"encoder",
                      rootCli
                          ->add_option("-e,--encoder",
                                       *calibrationOfEncoder,
                                       "Type of encoder calibration to perform. "
                                       "Possible values: all, main, aux.")
-                         ->default_str("all")},
-                    {"run-tests",
-                     rootCli->add_flag(
-                         "-t,--run-tests", *runTests, "Run accuracy tests after calibration. ")}};
+                         ->default_str("all")}};
             }
 
             const std::shared_ptr<std::string>  calibrationOfEncoder;
-            const std::shared_ptr<bool>         runTests;
             std::map<std::string, CLI::Option*> optionsMap;
         };
 
@@ -104,7 +98,8 @@ namespace mab
 
         struct ConfigOptions
         {
-            ConfigOptions(CLI::App* rootCli) : configFile(std::make_shared<std::filesystem::path>(""))
+            ConfigOptions(CLI::App* rootCli)
+                : configFile(std::make_shared<std::filesystem::path>(""))
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
                     {"file",
@@ -112,13 +107,15 @@ namespace mab
                          ->add_option(
                              "file",
                              *configFile,
-                             "Path to the MD config file \n note: if no \"/\" sign is present than "
-                             "global config path will be prepended.")
+                             "Path to the MD .cfg file \n note: \ncan be absolute path, "
+                             "\ncurrent directory relative path (starting with `./`, eg. "
+                             "`./myCustomMotor.cfg`), "
+                             "\ndefault config relative path (eg. `CubeMars/AK/AK80-9.cfg`)")
                          ->required()}};
             }
 
-            const std::shared_ptr<std::filesystem::path>  configFile;
-            std::map<std::string, CLI::Option*> optionsMap;
+            const std::shared_ptr<std::filesystem::path> configFile;
+            std::map<std::string, CLI::Option*>          optionsMap;
         };
 
         struct RegisterReadOption
@@ -153,9 +150,9 @@ namespace mab
             const std::shared_ptr<std::string> registerValue;
         };
 
-        struct TestOptions
+        struct MoveTestOptions
         {
-            TestOptions(CLI::App* rootCli) : target(std::make_shared<float>(0.0f))
+            MoveTestOptions(CLI::App* rootCli) : target(std::make_shared<float>(0.0f))
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
                     {"target",
@@ -164,36 +161,17 @@ namespace mab
             const std::shared_ptr<float>        target;
             std::map<std::string, CLI::Option*> optionsMap;
         };
-
-        struct UpdateOptions
+        struct EncoderTestOptions
         {
-            UpdateOptions(CLI::App* rootCli)
-                : fwVersion(std::make_shared<std::string>("")),
-                  pathToMabFile(std::make_shared<std::filesystem::path>("")),
-                  recovery(std::make_shared<bool>(false)),
-                  metadataFile(std::make_shared<std::string>(""))
+            EncoderTestOptions(CLI::App* rootCli) : encoder(std::make_shared<std::string>("main"))
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
-                    {"version",
-                     rootCli->add_option("version",
-                                         *fwVersion,
-                                         "Version of fw to download (\"latest\" or X.X.X format). "
-                                         "For example:  candletool md update latest")},
-                    {"path",
-                     rootCli->add_option("-p,--path", *pathToMabFile, "Local path to .mab file")},
-                    {"recovery",
-                     rootCli->add_flag(
-                         "-r,--recovery", *recovery, "Driver recovery after failed flashing")},
-                    {"meta_file",
-                     rootCli->add_option("-m,--meta-file",
-                                         *metadataFile,
-                                         "File with file metadata for managing downloads.")}};
+                    {"encoder",
+                     rootCli->add_option(
+                         "encoder", *encoder, "Encoder to test - `main` or `aux`")}};
             }
-            const std::shared_ptr<std::string>  fwVersion;
-            const std::shared_ptr<std::filesystem::path>  pathToMabFile;
-            const std::shared_ptr<bool>         recovery;
-            const std::shared_ptr<std::string>  metadataFile;
+            const std::shared_ptr<std::string>  encoder;
             std::map<std::string, CLI::Option*> optionsMap;
-        };  // namespace mab
+        };
     };
 }  // namespace mab

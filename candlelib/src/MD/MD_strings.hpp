@@ -41,8 +41,8 @@ namespace mab
     {
         static inline const std::map<u32, std::string_view> fromNumericMap{
             {0, "NONE"},
-            {1, "ME_AS_CENTER"},
-            {2, "ME_AS_OFFAXIS"},
+            {1, "ME_AM_CENTER"},
+            {2, "ME_AM_OFFAXIS"},
             {3, "RLS_17B_RS422"},
             {4, "CM_OFFAXIS"},
             {5, "M24B_CENTER"},
@@ -51,11 +51,17 @@ namespace mab
             {8, "ONBOARD"},
             {9, "RLS_17B_SPI"},
             {10, "RLS_ORBIS_RS422"},
+            {11, "CE300"},
+            {12, "RLS_MB022"},
+            {13, "AR50"},
+
         };
         static inline const std::map<std::string_view, u32> toNumericMap{
             {"NONE", 0},
             {"ME_AS_CENTER", 1},
+            {"ME_AM_CENTER", 1},
             {"ME_AS_OFFAXIS", 2},
+            {"ME_AM_OFFAXIS", 2},
             {"RLS_17B_RS422", 3},
             {"MB053SFA17BENT00", 3},  // deprecated
             {"CM_OFFAXIS", 4},
@@ -65,6 +71,9 @@ namespace mab
             {"ONBOARD", 8},
             {"RLS_17B_SPI", 9},
             {"RLS_ORBIS_RS422", 10},
+            {"CE300", 11},
+            {"RLS_MB022", 12},
+            {"AR50", 13},
         };
 
         static std::optional<u32> toNumeric(const std::string_view val)
@@ -92,19 +101,20 @@ namespace mab
     // DIR IS BROKEN! So it is not included here until it is fixed
     struct MDAuxEncoderModeValue_S
     {
-        static inline const std::map<u32, std::string_view> fromNumericMap{
-            {0, "NONE"},
-            {1, "STARTUP"},
-            {2, "MOTION"},
-            {3, "REPORT"},
-            {4, "MAIN"},
-            {5, "CALIBRATED_REPORT"}};
+        static inline const std::map<u32, std::string_view> fromNumericMap{{0, "NONE"},
+                                                                           {1, "STARTUP"},
+                                                                           {2, "MOTION"},
+                                                                           {3, "REPORT"},
+                                                                           {4, "MAIN"},
+                                                                           {5, "CALIBRATED_REPORT"},
+                                                                           {6, "DUAL"}};
         static inline const std::map<std::string_view, u32> toNumericMap{{"NONE", 0},
                                                                          {"STARTUP", 1},
                                                                          {"MOTION", 2},
                                                                          {"REPORT", 3},
                                                                          {"MAIN", 4},
-                                                                         {"CALIBRATED_REPORT", 5}};
+                                                                         {"CALIBRATED_REPORT", 5},
+                                                                         {"DUAL", 6}};
 
         static std::optional<u32> toNumeric(const std::string_view val)
         {
@@ -189,9 +199,9 @@ namespace mab
     struct MDUserGpioConfigurationValue_S
     {
         static inline const std::map<u32, std::string_view> fromNumericMap{
-            {0, "OFF"}, {1, "AUTO_BRAKE"}, {2, "GPIO_INPUT"}};
+            {0, "OFF"}, {1, "BRAKE"}, {2, "GPIO_INPUT"}};
         static inline const std::map<std::string_view, u32> toNumericMap{
-            {"OFF", 0}, {"AUTO_BRAKE", 1}, {"GPIO_INPUT", 2}};
+            {"OFF", 0}, {"AUTO_BRAKE", 1}, {"BRAKE", 1}, {"GPIO_INPUT", 2}};
 
         static std::optional<u32> toNumeric(const std::string_view val)
         {
@@ -212,6 +222,28 @@ namespace mab
             {
                 return std::string(it->second);
             }
+            return std::nullopt;
+        }
+    };
+    struct MDTorqueSensorType_S
+    {
+        static inline const std::map<u32, std::string_view> fromNumericMap{{0, "OFF"}, {1, "XJC"}};
+        static inline const std::map<std::string_view, u32> toNumericMap{{"OFF", 0}, {"XJC", 1}};
+
+        static std::optional<u32> toNumeric(const std::string_view val)
+        {
+            if (std::isdigit(val[0]))
+                return std::stoi(val.data());
+            auto it = toNumericMap.find(val);
+            if (it != toNumericMap.end())
+                return it->second;
+            return std::nullopt;
+        }
+        static std::optional<std::string> toReadable(u32 val)
+        {
+            auto it = fromNumericMap.find(val);
+            if (it != fromNumericMap.end())
+                return std::string(it->second);
             return std::nullopt;
         }
     };
@@ -262,6 +294,17 @@ namespace mab
                 default:
                     return "UNKNOWN";
             }
+        }
+    };
+    struct MDDeviceRev_S
+    {
+        static std::optional<u32> toNumeric(const std::string_view val) = delete;
+
+        static std::optional<std::string> toReadable(u8 val)
+        {
+            int major = val / 10;
+            int minor = val % 10;
+            return "v" + std::to_string(major) + "." + std::to_string(minor);
         }
     };
     struct MDRegisterAccessError_S

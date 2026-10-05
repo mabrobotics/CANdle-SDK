@@ -9,6 +9,7 @@
 #include "configHelpers.hpp"
 #include "edsParser.hpp"
 #include "mab_types.hpp"
+#include "eds_selection.hpp"
 #include "utilities.hpp"
 
 #include <filesystem>
@@ -34,6 +35,9 @@ namespace mab
 
         std::unique_ptr<MDCO, std::function<void(MDCO*)>> getMdco(
             const std::shared_ptr<canId_t> mdCanId, std::shared_ptr<EDSObjectDictionary> od);
+
+        /// @brief .eds files the installation provides, read when the dictionary is loaded
+        EdsPaths_S m_edsPaths;
 
         struct CalibrationOptions
         {
@@ -96,12 +100,11 @@ namespace mab
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
                     {"index",
-                     rootCli
-                         ->add_option("--index", *index, "Register ID (offset) to read data from.")
+                     rootCli->add_option("index", *index, "Register ID (offset) to read data from.")
                          ->required()},
                     {"subindex",
                      rootCli->add_option(
-                         "--subindex", *subindex, "Register ID (offset) to read data from.")}};
+                         "--subindex", *subindex, "Subindex of the object to read data from.")}};
             }
 
             const std::shared_ptr<u16>               index;
@@ -111,14 +114,14 @@ namespace mab
 
         struct MoveOptions
         {
-            MoveOptions(CLI::App* rootCli) : position(std::make_shared<i32>(0))
+            MoveOptions(CLI::App* rootCli) : target(std::make_shared<i32>(0))
             {
                 rootCli
                     ->add_option(
-                        "position", *position, "Absolute position to reach [encoder ticks].")
+                        "target", *target, "Target to reach [encoder ticks].")
                     ->required();
             }
-            const std::shared_ptr<i32>          position;
+            const std::shared_ptr<i32>          target;
             std::map<std::string, CLI::Option*> optionsMap;
         };
 
@@ -132,11 +135,11 @@ namespace mab
                 optionsMap = std::map<std::string, CLI::Option*>{
                     {"index",
                      rootCli
-                         ->add_option("--index", *index, "Register ID (offset) to read data from.")
+                         ->add_option("index", *index, "Register ID (offset) to write data to.")
                          ->required()},
                     {"subindex",
                      rootCli->add_option(
-                         "--subindex", *subindex, "Register ID (offset) to read data from.")},
+                         "--subindex", *subindex, "Subindex of the object to write data to.")},
                     {"value",
                      rootCli->add_option("--value", *valueStr, "Value to write by sdo")
                          ->required()}};

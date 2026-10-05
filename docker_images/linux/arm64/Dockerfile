@@ -1,17 +1,22 @@
 FROM mabroboticsofficial/mab_build_environment:v3
 
-RUN echo "deb [arch=arm64] http://ports.ubuntu.com/ jammy main multiverse universe" | sudo tee -a /etc/apt/sources.list
-RUN echo "deb [arch=arm64] http://ports.ubuntu.com/ jammy-security main multiverse universe" | sudo tee -a /etc/apt/sources.list
-RUN echo "deb [arch=arm64] http://ports.ubuntu.com/ jammy-backports main multiverse universe" | sudo tee -a /etc/apt/sources.list
-RUN echo "deb [arch=arm64] http://ports.ubuntu.com/ jammy-updates main multiverse universe" | sudo tee -a /etc/apt/sources.list
-
-# exit 0 because update will fail due to incomplete backport repository
-RUN sudo apt update ; exit 0
-
-RUN sudo apt install -y gcc-aarch64-linux-gnu
-RUN sudo apt install -y binutils-aarch64-linux-gnu
-RUN sudo apt install -y g++-aarch64-linux-gnu
-
 RUN sudo dpkg --add-architecture arm64
 
-RUN sudo apt install -y libusb-1.0-0-dev:arm64
+RUN sudo sed -i -e 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list && \
+    sudo sed -i -e 's/^deb-src http/deb-src [arch=amd64] http/g' /etc/apt/sources.list
+
+RUN echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy main multiverse universe restricted" | sudo tee -a /etc/apt/sources.list && \
+    echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy-security main multiverse universe restricted" | sudo tee -a /etc/apt/sources.list && \
+    echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main multiverse universe restricted" | sudo tee -a /etc/apt/sources.list
+
+RUN sudo apt-get update -y
+
+RUN sudo apt-get install -y \
+    gcc-aarch64-linux-gnu \
+    binutils-aarch64-linux-gnu \
+    g++-aarch64-linux-gnu \
+    libusb-1.0-0-dev:arm64 \
+    libgl1-mesa-dev:arm64 \
+    libx11-dev:arm64 \
+    libglfw3-dev:arm64 \
+    pkg-config

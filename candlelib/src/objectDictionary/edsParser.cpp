@@ -122,6 +122,7 @@ std::pair<std::shared_ptr<EDSObjectDictionary>, EDSParser::Error_t> EDSParser::l
             auto&                      entry = key_val.second;
             metaData.parameterName           = entry["ParameterName"];
             u32 idx                          = std::stoul(key_val.first, nullptr, 16);
+            metaData.address                 = std::pair<u16, std::optional<u8>>(idx, std::nullopt);
 
             // Fill object type
             switch (std::stoul(entry["ObjectType"].c_str(), nullptr, 0))
@@ -154,19 +155,40 @@ std::pair<std::shared_ptr<EDSObjectDictionary>, EDSParser::Error_t> EDSParser::l
             // Create either value or container
             if (metaData.objectType != EDSEntry::ObjectType_E::VALUE)
             {
-                EDSEntry::EDSContainerMetaData edsContainerMetadata;
-                edsContainerMetadata.numberOfSubindices =
-                    std::stoul(entry["SubNumber"], nullptr, 16);
-                metaData.edsContainerMeta = std::move(edsContainerMetadata);
-
                 std::map<u8, std::unique_ptr<EDSEntry>> map;
 
-                for (size_t i = 0; i < std::stoul(entry["SubNumber"], nullptr, 16); i++)
+                // Subindices do not have to be contiguous (eg. 0..2 and then 5), so take
+                // whatever subentries were actually parsed for this index instead of
+                // assuming a dense 0..SubNumber-1 range.
+                for (auto it = subEntryMap.lower_bound(std::pair<u16, u8>(idx, 0));
+                     it != subEntryMap.end() && it->first.first == idx;
+                     ++it)
                 {
-                    map.emplace(i,
-                                std::make_unique<EDSEntry>(
-                                    std::move(subEntryMap.at(std::pair<u32, u8>(idx, i)))));
+                    map.emplace(it->first.second,
+                                std::make_unique<EDSEntry>(std::move(it->second)));
                 }
+
+                size_t declaredSubindices = 0;
+                try
+                {
+                    declaredSubindices = std::stoul(entry["SubNumber"], nullptr, 0);
+                }
+                catch (const std::exception&)
+                {
+                    declaredSubindices = map.size();
+                }
+                if (declaredSubindices != map.size())
+                {
+                    log.warn("Entry 0x%X declares %zu subindices but %zu were found in the file",
+                             idx,
+                             declaredSubindices,
+                             map.size());
+                }
+
+                EDSEntry::EDSContainerMetaData edsContainerMetadata;
+                edsContainerMetadata.numberOfSubindices = map.size();
+                metaData.edsContainerMeta               = std::move(edsContainerMetadata);
+
                 odMap.emplace(idx, EDSEntry(std::move(metaData), std::move(map)));
             }
         }

@@ -211,8 +211,42 @@ namespace mab
             data->insert(data->begin(), result.first.begin(), result.first.end());
             // *data = result.first;
 
-            if (result.second)
-                return candleTypes::Error_t::UNKNOWN_ERROR;
+            switch (result.second)
+            {
+                case I_CommunicationInterface::DATA_EMPTY:
+                    return candleTypes::Error_t::DATA_EMPTY;
+                    break;
+                case I_CommunicationInterface::DATA_TOO_LONG:
+                    return candleTypes::Error_t::DATA_TOO_LONG;
+                    break;
+                case I_CommunicationInterface::INITIALIZATION_ERROR:
+                    return candleTypes::Error_t::INITIALIZATION_ERROR;
+                    break;
+                case I_CommunicationInterface::NOT_CONNECTED:
+                    return candleTypes::Error_t::DEVICE_NOT_CONNECTED;
+                    break;
+                case I_CommunicationInterface::OK:
+                    return candleTypes::Error_t::OK;
+                    break;
+                case I_CommunicationInterface::RECEIVER_ERROR:
+                    return candleTypes::Error_t::RECEIVER_ERROR;
+                    break;
+                case I_CommunicationInterface::TIMEOUT:
+                    return candleTypes::Error_t::RESPONSE_TIMEOUT;
+                    break;
+                case I_CommunicationInterface::TRANSMITTER_ERROR:
+                    return candleTypes::Error_t::TRANSMITTER_ERROR;
+                    break;
+                case I_CommunicationInterface::UNKNOWN_ERROR:
+                    return candleTypes::Error_t::UNKNOWN_ERROR;
+                    break;
+                case I_CommunicationInterface::NOT_SUPPORTED:
+                    return candleTypes::Error_t::NOT_SUPPORTED;
+                    break;
+                default:
+                    return candleTypes::Error_t::UNKNOWN_ERROR;
+                    break;
+            }
         }
         // frameDump(*data);
 
@@ -235,7 +269,7 @@ namespace mab
                                                                     communicationStatus);
 
         m_log.debug("SEND");
-        // frameDump(dataToSend);  // can be enabled for in depth debugging
+        frameDump(dataToSend);  // can be enabled for in depth debugging
 
         if (dataToSend.size() > m_maxCANFrameSize)
         {
@@ -257,7 +291,7 @@ namespace mab
                         timeoutMs + 1);
         if (!m_dontUseFDCANFrames && buffer.at(1) != 0x01)
         {
-            m_log.error("CAN frame did not reach target device with id: %d!", canId);
+            m_log.debug("CAN frame did not reach target device with id: %d!", canId);
             return std::pair<std::vector<u8>, candleTypes::Error_t>(
                 dataToSend, candleTypes::Error_t::CAN_DEVICE_NOT_RESPONDING);
         }
@@ -268,8 +302,8 @@ namespace mab
         auto response = buffer;
 
         m_log.debug("Expected received len: %d", responseSize);
-        m_log.debug("RECEIVE");
-        // frameDump(response);
+        m_log.debug("RECEIVED %d", response.size());
+        frameDump(response);
 
         return std::pair<std::vector<u8>, candleTypes::Error_t>(response, communicationStatus);
     }

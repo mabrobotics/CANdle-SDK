@@ -34,8 +34,8 @@ bool Logger ::setStream(const char* path_)
 }
 
 /* progress bar */
-#define PBSTR   "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"
-#define PBWIDTH 60
+#define PBSTR   "||||||||||||||||||||||||||||||||||||||||"
+#define PBWIDTH 40
 
 void Logger::progress(double percentage) const
 {
