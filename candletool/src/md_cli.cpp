@@ -410,7 +410,7 @@ namespace mab
         ConfigOptions downloadConfigOptions(downloadConfig);
 
         downloadConfig->callback(
-            [this, candleBuilder, mdCanId, downloadConfigOptions, ctx]()
+            [this, candleBuilder, mdCanId, downloadConfigOptions]()
             {
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
@@ -455,7 +455,7 @@ namespace mab
         ConfigOptions uploadConfigOptions(uploadConfig);
 
         uploadConfig->callback(
-            [this, candleBuilder, mdCanId, uploadConfigOptions, ctx]()
+            [this, candleBuilder, mdCanId, uploadConfigOptions]()
             {
                 auto md = getMd(mdCanId, candleBuilder);
                 if (md == nullptr)
