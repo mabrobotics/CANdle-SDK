@@ -29,6 +29,7 @@
 #include "md_update.hpp"
 #include "mini/ini.h"
 #include "mdco_config_adapter.hpp"
+#include "configHelpers.hpp"
 
 using namespace mab;
 bool testRunning = true;
@@ -326,7 +327,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
                 configFilePath.end())
             {
-                configFilePath = "/etc/candletool/config/motors/" + configFilePath;
+                configFilePath = getMotorsConfigPath() / configFilePath;
             }
 
             MDConfigMap       cfgMap;
@@ -399,7 +400,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
                 configFilePath.end())
             {
-                configFilePath = "/etc/candletool/config/motors/" + configFilePath;
+                configFilePath = getMotorsConfigPath() / configFilePath;
             }
 
             mINI::INIFile      configFile(configFilePath);
