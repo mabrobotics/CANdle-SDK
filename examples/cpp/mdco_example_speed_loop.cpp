@@ -17,7 +17,7 @@ int main()
     // This parameters sets global internal logging level
     Logger::g_m_verbosity = Logger::Verbosity_E::VERBOSITY_1;
 
-    auto od = EDSParser::load("/etc/candletool/config/eds/MDv1.0.0.eds").first;
+    auto od = EDSParser::load("/etc/candletool/config/eds/md_1.2.eds").first;
 
     mab::Candle* candle = mab::attachCandle(
         mab::CANdleDatarate_E::CAN_DATARATE_1M, mab::candleTypes::busTypes_t::USB, true);

@@ -26,6 +26,7 @@
 #define GREY     "\x1b[38;5;240m"
 #define RESETCLR "\x1b[0m"
 #define NEW_LINE "\n"
+#define END_LINE "\033[K"
 
 #else
 
@@ -37,6 +38,7 @@
 #define GREY     ""
 #define RESETCLR ""
 #define NEW_LINE "\n"
+#define END_LINE ""
 
 #endif
 

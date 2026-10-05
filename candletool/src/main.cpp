@@ -12,7 +12,7 @@
 #include "CLI/CLI.hpp"
 #include "candletool/pds_cli.hpp"
 #include "candletool/mdco_cli.hpp"
-#include "candletool/utilities.hpp"
+#include "candletool/candletool_cli.hpp"
 
 //     ___     _     _  _      _   _         _____               _
 //    / __|   /_\   | \| |  __| | | |  ___  |_   _|  ___   ___  | |
@@ -135,15 +135,21 @@ int main(int argc, char** argv)
     // of parsers
     candleBuilder->preBuildTask = preBuildTask;
 
-    CandleCli candleCli(&app, candleToolCtx);
-    MDCli     mdCli(&app, candleToolCtx);
-    PdsCli    pdsCli(app, candleBuilder);
-    MdcoCli   mdcoCli(app, candleToolCtx);
+    CandleCli     candleCli(&app, candleToolCtx);
+    MDCli         mdCli(&app, candleToolCtx);
+    PdsCli        pdsCli(app, candleBuilder);
+    MdcoCli       mdcoCli(app, candleToolCtx);
+    CandletoolCli candletoolCli(&app, candleToolCtx);
 
     CLI11_PARSE(app, argc, argv);
     if (showCandleSDKVersion)
     {
-        std::cout << "CandleSDK version: " << CANDLESDK_VERSION << "\n";
+        std::cout << CANDLESDK_VERSION;
+
+        // Only CI release builds ('r') print the bare version; others add tag and commit
+        if (CANDLETOOL_VTAG != 'r')
+            std::cout << "_" << CANDLETOOL_VTAG << "_" << CANDLESDK_VERSION_HASH;
+        std::cout << "\n";
     }
 
     std::optional<mab::CANdleDatarate_E> dataOpt = stringToData(cmd.data);

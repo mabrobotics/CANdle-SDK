@@ -45,6 +45,7 @@ namespace mab
         if (err)
         {
             m_log.error("Error executing flasher device!");
+            m_log.error("On Linux make sure your user is in the 'dialout' group.");
             return Error_E::EXECUTION_ERROR;
         }
         return Error_E::OK;

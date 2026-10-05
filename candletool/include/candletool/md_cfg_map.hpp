@@ -367,6 +367,20 @@ namespace mab
             return std::to_string(MDUserGpioConfigurationValue_S::toNumeric(output).value_or(0));
         };
 
+        const std::function<std::string(std::string_view)> TorqueSensorToReadable =
+            [](const std::string_view value) -> std::string
+        {
+            std::string output = trim(value);
+            return MDTorqueSensorType_S::toReadable(std::stoll(value.data())).value_or("NONE");
+        };
+        const std::function<std::optional<std::string>(const std::string_view)>
+            TorqueSensorFromReadable =
+                [](const std::string_view value) -> std::optional<std::string>
+        {
+            std::string output = trim(value);
+            return std::to_string(MDTorqueSensorType_S::toNumeric(output).value_or(0));
+        };
+
         // ADD NEW CONFIGURATION PARAMETERS HERE
         std::map<u16, MDCfgElement> m_map{
             // Motor parameters
@@ -388,21 +402,6 @@ namespace mab
              MDCfgElement(
                  "motor", "torque bandwidth", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
             {0x01D, MDCfgElement("motor", "KV", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
-            {0x013,
-             MDCfgElement(
-                 "motor", "torque constant a", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
-            {0x014,
-             MDCfgElement(
-                 "motor", "torque constant b", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
-            {0x015,
-             MDCfgElement(
-                 "motor", "torque constant c", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
-            {0x019,
-             MDCfgElement(
-                 "motor", "dynamic friction", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
-            {0x01A,
-             MDCfgElement(
-                 "motor", "static friction", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
             {0x01E,
              MDCfgElement("motor",
                           "calibration mode",
@@ -410,7 +409,6 @@ namespace mab
                                                           mainEncoderCalibrationModeFromReadable,
                                                           verifyEnum))},
             {0x808, MDCfgElement("motor", "shutdown temp")},
-            {0x600, MDCfgElement("motor", "reverse direction")},
 
             // Encoder parameters
             {0x020,
@@ -429,6 +427,15 @@ namespace mab
                           MDCfgElement::ParserFunctions_S(encoderCalibrationModeToReadable,
                                                           encoderCalibrationModeFromReadable,
                                                           verifyEnum))},
+
+            {0x02A,
+             MDCfgElement("main encoder",
+                          "main encoder",
+                          MDCfgElement::ParserFunctions_S(
+                              encoderToReadable, encoderFromReadable, verifyEnum))},
+            {0x02B,
+             MDCfgElement(
+                 "main encoder", "dir", MDCfgElement::ParserFunctions_S(verifyMinMaxType))},
 
             // PID parameters
             {0x030,
@@ -498,7 +505,13 @@ namespace mab
              MDCfgElement("GPIO",
                           "mode",
                           MDCfgElement::ParserFunctions_S(
-                              GPIOModeToReadable, GPIOModeFromReadable, verifyEnum))}};
+                              GPIOModeToReadable, GPIOModeFromReadable, verifyEnum))},
+
+            {0x200,
+             MDCfgElement("sensors",
+                          "torque",
+                          MDCfgElement::ParserFunctions_S(
+                              TorqueSensorToReadable, TorqueSensorFromReadable, verifyEnum))}};
 
       private:
         MDRegisters_S registers;  // only for verification purposes

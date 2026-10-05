@@ -1,4 +1,4 @@
 CompileFlags:
-  Add: [ ]
-  CompilationDatabase: ./build
-  Compiler: /usr/bin/c++
+  CompilationDatabase: build
+  Add:
+    - -std=c++20
