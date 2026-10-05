@@ -29,6 +29,7 @@
 #include "md_update.hpp"
 #include "mini/ini.h"
 #include "mdco_config_adapter.hpp"
+#include "configHelpers.hpp"
 
 using namespace mab;
 bool testRunning = true;
@@ -316,17 +317,18 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 return;
             }
 
-            std::string configFilePath = *downloadConfigOptions.configFile;
+            std::filesystem::path configFilePath = *downloadConfigOptions.configFile;
             if (configFilePath.empty())
             {
                 m_log.error("Configuration file path is empty!");
                 return;
             }
-            // If the path is not specified, prepend the standard path
-            if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
-                configFilePath.end())
+            // Allows using absolute paths, relative path to cwd (with `./`), relative path to
+            // getMotorsConfigPath
+            if (!configFilePath.is_absolute() && !configFilePath.string().starts_with("./") &&
+                !configFilePath.string().starts_with("../"))
             {
-                configFilePath = "/etc/candletool/config/motors/" + configFilePath;
+                configFilePath = getMotorsConfigPath() / configFilePath;
             }
 
             MDConfigMap       cfgMap;
@@ -389,17 +391,18 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 return;
             }
 
-            std::string configFilePath = *uploadConfigOptions.configFile;
+            std::filesystem::path configFilePath = *uploadConfigOptions.configFile;
             if (configFilePath.empty())
             {
                 m_log.error("Configuration file path is empty!");
                 return;
             }
-            // If the path is not specified, prepend the standard path
-            if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
-                configFilePath.end())
+            // Allows using absolute paths, relative path to cwd (with `./`), relative path to
+            // getMotorsConfigPath
+            if (!configFilePath.is_absolute() && !configFilePath.string().starts_with("./") &&
+                !configFilePath.string().starts_with("../"))
             {
-                configFilePath = "/etc/candletool/config/motors/" + configFilePath;
+                configFilePath = getMotorsConfigPath() / configFilePath;
             }
 
             mINI::INIFile      configFile(configFilePath);

@@ -127,10 +127,10 @@ if(WIN32)
     
     target_compile_definitions(mdgui PRIVATE DEFAULT_custom_CONFIG_DIR="${CMAKE_INSTALL_SYSCONFDIR}/custom/config")
 elseif(UNIX)
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/udev/rules.d/99-mdgui.rules DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/" COMPONENT rulesgui)
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/udev/rules.d/99-mdgui.rules DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/" COMPONENT rulesgui)
     list(APPEND CANDLEGUI_CPACK_COMPONENTS rulesgui)
 
-    target_compile_definitions(mdgui PRIVATE DEFAULT_custom_CONFIG_DIR="/${CMAKE_INSTALL_SYSCONFDIR}/custom")
+    target_compile_definitions(mdgui PRIVATE DEFAULT_custom_CONFIG_DIR="${CMAKE_INSTALL_SYSCONFDIR}/custom")
     add_custom_target(mdgui_install_rules COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_BINARY_DIR}" --component rulesgui)
 else()
     message(FATAL_ERROR "System not UNIX nor Windows, cannot compile!")

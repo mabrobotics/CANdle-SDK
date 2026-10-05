@@ -140,23 +140,19 @@ if(WIN32)
     -static-libgcc
     -static
     logger)
-
-  add_compile_definitions(
-    DEFAULT_CANDLETOOL_CONFIG_DIR="${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
-  )
 elseif(UNIX)
   install(TARGETS candletool RUNTIME COMPONENT candletool)
 
   install(
     DIRECTORY
     ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/motors
-    DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
+    DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
     COMPONENT _configs)
 
   install(
     DIRECTORY
     ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/eds
-    DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
+    DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
     COMPONENT _configs)
 
   set(BASH_COMPLETION_DIR "share/bash-completion/completions")
@@ -173,7 +169,7 @@ elseif(UNIX)
     ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini
     ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/candletoolco.ini
     ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/candletool/config/md_config_schema.ini
-    DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
+    DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
     WORLD_WRITE
     COMPONENT _configs)
@@ -181,7 +177,7 @@ elseif(UNIX)
   install(
     FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/template_package/etc/udev/rules.d/99-candletool.rules
-    DESTINATION "/${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/"
+    DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/udev/rules.d/"
     COMPONENT rules)
   list(APPEND CANDLETOOL_CPACK_COMPONENTS rules)
 
@@ -189,11 +185,10 @@ elseif(UNIX)
     FILES
     "${PROJECT_SOURCE_DIR}/template_package/etc/candletool/config/candletool.ini"
     "${PROJECT_SOURCE_DIR}/template_package/etc/candletool/config/candletoolco.ini"
-    DESTINATION "/etc/candletool/"
+    DESTINATION "${CMAKE_INSTALL_SYSCONFDIR}/candletool/"
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
     WORLD_WRITE
     EXCLUDE_FROM_ALL)
-  add_compile_definitions(DEFAULT_CANDLETOOL_CONFIG_DIR="/${CMAKE_INSTALL_SYSCONFDIR}/candletool")
   add_custom_target(install_rules
     COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_BINARY_DIR}" --component rules)
 else()
