@@ -1,4 +1,4 @@
-#include "brake_resistor.hpp"
+#include "candle/pds/brake_resistor.hpp"
 #include <string>
 
 namespace mab

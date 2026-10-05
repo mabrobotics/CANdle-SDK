@@ -6,8 +6,8 @@
 #include <iterator>
 #include <memory>
 #include <string_view>
-#include "candletool_cli.hpp"
-#include "curl_handler.hpp"
+#include "candletool/candletool_cli.hpp"
+#include "candletool/web_file_module/curl_handler.hpp"
 #include "json.h"
 #include "picosha2.h"
 

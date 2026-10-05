@@ -1,4 +1,4 @@
-#include "md_update.hpp"
+#include "candletool/md_update.hpp"
 
 #include <cstdio>
 #include <functional>
@@ -6,17 +6,17 @@
 #include <memory>
 #include <string>
 
-#include "MD.hpp"
-#include "MDCO.hpp"
-#include "canLoader.hpp"
-#include "candle.hpp"
-#include "curl_handler.hpp"
-#include "edsParser.hpp"
-#include "eds_selection.hpp"
-#include "flasher.hpp"
-#include "mabFileParser.hpp"
-#include "mab_types.hpp"
-#include "utilities.hpp"
+#include "candle/MD/MD.hpp"
+#include "candle/MD/MDCO.hpp"
+#include "candletool/canLoader.hpp"
+#include "candle/communication_device/candle.hpp"
+#include "candletool/web_file_module/curl_handler.hpp"
+#include "candle/objectDictionary/edsParser.hpp"
+#include "candletool/eds_selection.hpp"
+#include "candletool/web_file_module/flasher.hpp"
+#include "candletool/mabFileParser.hpp"
+#include "candle/types/mab_types.hpp"
+#include "candletool/utilities.hpp"
 #include "mini/ini.h"
 
 namespace mab

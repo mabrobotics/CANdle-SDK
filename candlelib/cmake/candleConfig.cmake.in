@@ -1,0 +1,12 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+find_dependency(Threads REQUIRED)
+if(UNIX)
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
+    find_dependency(libusb REQUIRED)
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/candleTargets.cmake")
+
+check_required_components(candle)

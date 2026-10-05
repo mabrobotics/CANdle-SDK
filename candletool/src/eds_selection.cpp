@@ -1,11 +1,11 @@
-#include "eds_selection.hpp"
+#include "candletool/eds_selection.hpp"
 
 #include <algorithm>
 #include <cctype>
 #include <system_error>
 #include <tuple>
 
-#include "edsParser.hpp"
+#include "candle/objectDictionary/edsParser.hpp"
 #include "mini/ini.h"
 
 namespace mab

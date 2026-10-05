@@ -53,13 +53,11 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_executable(candletool ${CANDLETOOL_SOURCES})
 
-target_link_libraries(candletool candle logger)
+target_link_libraries(candletool candle mINI)
 
 target_include_directories(
   candletool
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/web_file_module
-  ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/mINI/src
   ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/sheredom_json
   ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/picosha2)
 
@@ -138,8 +136,7 @@ if(WIN32)
     candle
     -static-libstdc++
     -static-libgcc
-    -static
-    logger)
+    -static)
 
   add_compile_definitions(
     DEFAULT_CANDLETOOL_CONFIG_DIR="${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"

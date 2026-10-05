@@ -134,3 +134,10 @@ else ()                                                                         
         message(FATAL_ERROR "libusb library not found on your system! Install libusb 1.0.x from your package repository.")
     endif ()
 endif ()
+
+if(LIBUSB_FOUND AND NOT TARGET libusb::libusb)
+    add_library(libusb::libusb UNKNOWN IMPORTED)
+    set_target_properties(libusb::libusb PROPERTIES
+        IMPORTED_LOCATION "${LIBUSB_LIBRARY}"
+        INTERFACE_INCLUDE_DIRECTORIES "${LIBUSB_INCLUDE_DIR}")
+endif()

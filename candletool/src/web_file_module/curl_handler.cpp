@@ -1,8 +1,11 @@
+#include "candletool/web_file_module/curl_handler.hpp"
+
 #include <filesystem>
 #include <sstream>
-#include "curl_handler.hpp"
-#include "logger.hpp"
-#include "utilities.hpp"
+
+#include "candletool/web_file_module/curl_handler.hpp"
+#include "candle/logger/logger.hpp"
+#include "candletool/utilities.hpp"
 
 namespace mab
 {

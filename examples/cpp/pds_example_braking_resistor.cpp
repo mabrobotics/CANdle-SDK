@@ -6,9 +6,9 @@
     Power stage and braking resistor
 */
 
-#include "candle.hpp"
-#include "mab_types.hpp"
-#include "pds.hpp"
+#include "candle/communication_device/candle.hpp"
+#include "candle/types/mab_types.hpp"
+#include "candle/pds/pds.hpp"
 
 using namespace mab;
 

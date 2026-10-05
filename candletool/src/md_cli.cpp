@@ -1,6 +1,5 @@
-#include "md_cli.hpp"
+#include "candletool/md_cli.hpp"
 
-#include "eds_selection.hpp"
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -11,25 +10,27 @@
 #include <string_view>
 #include <filesystem>
 #include <variant>
-#include "MDCO.hpp"
-#include "MDStatus.hpp"
-#include "canLoader.hpp"
-#include "candle.hpp"
-#include "logger.hpp"
-#include "mab_types.hpp"
-#include "manufacturer_data.hpp"
-#include "md_types.hpp"
-#include "mabFileParser.hpp"
-#include "md_cfg_map.hpp"
-#include "utilities.hpp"
-#include "MDStatus.hpp"
+
+#include "candle/MD/MDCO.hpp"
+#include "candle/MD/MDStatus.hpp"
+#include "candletool/canLoader.hpp"
+#include "candle/communication_device/candle.hpp"
+#include "candle/logger/logger.hpp"
+#include "candle/types/mab_types.hpp"
+#include "candle/types/manufacturer_data.hpp"
+#include "candle/types/md_types.hpp"
+#include "candletool/mabFileParser.hpp"
+#include "candletool/md_cfg_map.hpp"
+#include "candletool/utilities.hpp"
+#include "candle/MD/MDStatus.hpp"
 #include "mini/ini.h"
-#include "configHelpers.hpp"
-#include "curl_handler.hpp"
-#include "edsEntry.hpp"
-#include "edsParser.hpp"
-#include "flasher.hpp"
-#include "md_update.hpp"
+#include "candletool/configHelpers.hpp"
+#include "candletool/eds_selection.hpp"
+#include "candletool/web_file_module/curl_handler.hpp"
+#include "candle/objectDictionary/edsEntry.hpp"
+#include "candle/objectDictionary/edsParser.hpp"
+#include "candletool/web_file_module/flasher.hpp"
+#include "candletool/web_file_module/web_file.hpp"
 
 #ifndef WIN32
 
