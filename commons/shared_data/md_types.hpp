@@ -24,8 +24,8 @@
     MD_REG(motorIMax, float, 0x016, RW)              \
     MD_REG(motorGearRatio, float, 0x017, RW)         \
     MD_REG(motorTorqueBandwidth, u16, 0x018, RW)     \
-    MD_REG(motorResistance, float, 0x01B, RO)        \
-    MD_REG(motorInductance, float, 0x01C, RO)        \
+    MD_REG(motorResistance, float, 0x01B, RW)        \
+    MD_REG(motorInductance, float, 0x01C, RW)        \
     MD_REG(motorKV, u16, 0x01D, RW)                  \
     MD_REG(motorCalibrationMode, u8, 0x01E, RW)      \
     MD_REG(motorThermistorType, u8, 0x01F, RW)       \
@@ -74,6 +74,7 @@
     MD_REG(runZero, u8, 0x08C, WO)                   \
     MD_REG(runCanReinit, u8, 0x08D, WO)              \
     MD_REG(runTorqueSensorZero, u8, 0x008E, WO)      \
+    MD_REG(runCustomTest, u8, 0x008F, WO)            \
                                                      \
     MD_REG(calAuxEncoderStdDev, float, 0x100, RO)    \
     MD_REG(calAuxEncoderMinE, float, 0x101, RO)      \
