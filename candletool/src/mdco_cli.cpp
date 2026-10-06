@@ -25,10 +25,10 @@
 #include "edsEntry.hpp"
 #include "edsParser.hpp"
 #include "mab_types.hpp"
-#include "md_cfg_map.hpp"
+#include "cfg_map.hpp"
+#include "MDObjects.hpp"
 #include "md_update.hpp"
 #include "mini/ini.h"
-#include "mdco_config_adapter.hpp"
 
 using namespace mab;
 bool testRunning = true;
@@ -244,9 +244,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     can->callback(
         [this, mdCanId, canOptions, loadEDS]()
         {
-            constexpr std::string_view canIdName = "Can ID";
-            auto                       od        = loadEDS().first;
-            auto                       mdco      = getMdco(mdCanId, od);
+            auto od   = loadEDS().first;
+            auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
                 return;
 
@@ -254,7 +253,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             // older than that
             canId_t minId = 1, maxId = 32;
             auto [version, versionErr] = mdco->getFirmwareVersion();
-            if (versionErr == MDCO::Error_t::OK && version.s.major >= LEGACY_EDS_BELOW_FW_MAJOR)
+            bool legacy = versionErr != MDCO::Error_t::OK ||
+                          version.s.major < LEGACY_EDS_BELOW_FW_MAJOR;
+            if (!legacy)
             {
                 minId = 10;
                 maxId = 127;
@@ -266,34 +267,67 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                             (unsigned)maxId);
                 return;
             }
-
-            // Get id object
-            auto canIdOpt = od->getEntryByName(canIdName);
-            if (!canIdOpt.has_value())
+            if (*canOptions.canId == *mdCanId)
             {
-                m_log.error("%s not found in eds!", canIdName.data());
+                m_log.warn("Drive already has CAN id %u, nothing to change", (unsigned)*mdCanId);
                 return;
             }
-            auto& canIdObj = canIdOpt.value().get();
 
-            if (!canOptions.optionsMap.at("id")->empty() && !(*canOptions.canId == *mdCanId))
+            // set new can id, its data type differs between .eds revisions
+            EDSEntry* canIdObj = md_objects::resolveObject(*od, md_objects::CAN_ID, m_log);
+            if (canIdObj == nullptr)
+                return;
+            if (canIdObj->setFromString(std::to_string(*canOptions.canId)) !=
+                    EDSEntry::Error_t::OK ||
+                mdco->writeSDO(*canIdObj) != MDCO::Error_t::OK)
             {
-                // set new can id
-                canIdObj = (canopen_types::UNSIGNED32_t)(*canOptions.canId);
-                if (mdco->writeSDO(canIdObj) != MDCO::Error_t::OK)
-                {
-                    m_log.error("Failed setting id of %d", *canOptions.canId);
-                    return;
-                }
+                m_log.error("Failed setting id of %u", (unsigned)*canOptions.canId);
+                return;
             }
 
-            if (mdco->save() != MDCO::Error_t::OK)
+            // activate the new id, firmware 3.0.0+ applies it on NMT reset communication, older
+            // ones on CAN reinit. The drive may already answer from the new id, so a failed
+            // transfer here is not conclusive, the validation below is
+            if (legacy)
+            {
+                EDSEntry* reinitObj =
+                    md_objects::resolveObject(*od, md_objects::CMD_REINIT_CAN, m_log);
+                if (reinitObj == nullptr)
+                    return;
+                reinitObj->setFromString("1");
+                mdco->writeSDO(*reinitObj);
+            }
+            else
+                mdco->resetCommunicationNMT();
+            mdco = nullptr;
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+            // validate by reading the id back from the new address
+            auto newCanId = std::make_shared<canId_t>(*canOptions.canId);
+            mdco          = getMdco(newCanId, od);
+            if (mdco == nullptr)
+            {
+                m_log.error("Drive does not respond on new CAN id %u", (unsigned)*newCanId);
+                return;
+            }
+            canIdObj = md_objects::resolveObject(*od, md_objects::CAN_ID, m_log);
+            if (canIdObj == nullptr || mdco->readSDO(*canIdObj) != MDCO::Error_t::OK ||
+                std::strtoul(canIdObj->getAsString().c_str(), nullptr, 0) != *newCanId)
+            {
+                m_log.error("Could not validate new CAN id %u", (unsigned)*newCanId);
+                return;
+            }
+
+            if (*canOptions.save && mdco->save() != MDCO::Error_t::OK)
             {
                 m_log.error("Failed to save parameters!");
                 return;
             }
 
-            m_log.success("Succesfully updated CAN parameters!");
+            m_log.success("CAN id changed from %u to %u%s",
+                          (unsigned)*mdCanId,
+                          (unsigned)*newCanId,
+                          *canOptions.save ? " and saved" : ", use --save to make it persistent");
         });
 
     // CONFIG ===========================================================================
@@ -316,61 +350,18 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 return;
             }
 
-            std::string configFilePath = *downloadConfigOptions.configFile;
+            std::filesystem::path configFilePath = *downloadConfigOptions.configFile;
             if (configFilePath.empty())
             {
                 m_log.error("Configuration file path is empty!");
                 return;
             }
-            // If the path is not specified, prepend the standard path
-            if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
-                configFilePath.end())
-            {
-                configFilePath = "/etc/candletool/config/motors/" + configFilePath;
-            }
 
-            MDConfigMap       cfgMap;
-            MDCOConfigAdapter odCfgAdapter;
-            for (auto& [regAddr, objRef] : odCfgAdapter.manufacturerRegMaping)
-            {
-                EDSEntry* objPtr = md_objects::resolveObject(*od, objRef, m_log);
-                if (objPtr == nullptr)
-                {
-                    continue;
-                }
-                if (md->readSDO(*objPtr) != MDCO::Error_t::OK)
-                {
-                    m_log.error("Obj %s could not be read from md!", objRef.label.data());
-                    continue;
-                }
-            }
-            for (auto& [regAddr, objAddress, subidxOpt] : odCfgAdapter.standardRegMaping)
-            {
-                auto& obj = subidxOpt.has_value() ? (*od)[objAddress][subidxOpt.value()]
-                                                  : (*od)[objAddress];
-                if (md->readSDO(obj) != MDCO::Error_t::OK)
-                {
-                    m_log.error("Obj %d could not be read from md!", objAddress);
-                    continue;
-                }
-            }
-
-            odCfgAdapter.configFromOd(od, cfgMap);
-            // // Write the configuration to the file
-            mINI::INIFile      configFile(configFilePath);
-            mINI::INIStructure ini;
-            for (const auto& [regAddress, cfgElement] : cfgMap.m_map)
-            {
-                if (!cfgElement.getReadable().empty())
-                    ini[cfgElement.m_tomlSection.data()][cfgElement.m_tomlKey.data()] =
-                        cfgElement.getReadable();
-            }
-            if (!configFile.generate(ini, true))
-            {
-                m_log.error("Could not write configuration to file: %s", configFilePath.c_str());
+            CfgValues_S cfg;
+            if (!cfgDownloadMdco(*md, *od, cfg) || !cfgSave(configFilePath, cfg))
                 return;
-            }
-            m_log.success("Configuration downloaded successfully to %s", configFilePath.c_str());
+            m_log.success("Configuration downloaded successfully to %s",
+                          configFilePath.string().c_str());
         });
 
     // Upload configuration file
@@ -389,58 +380,25 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 return;
             }
 
-            std::string configFilePath = *uploadConfigOptions.configFile;
+            std::filesystem::path configFilePath = *uploadConfigOptions.configFile;
             if (configFilePath.empty())
             {
                 m_log.error("Configuration file path is empty!");
                 return;
             }
-            // If the path is not specified, prepend the standard path
-            if (std::find(configFilePath.begin(), configFilePath.end(), '/') ==
-                configFilePath.end())
-            {
-                configFilePath = "/etc/candletool/config/motors/" + configFilePath;
-            }
+            // Same as md: absolute, relative to cwd with `./`, otherwise relative to the motors
+            // config directory
+            if (!configFilePath.is_absolute() && !configFilePath.string().starts_with("./") &&
+                !configFilePath.string().starts_with("../"))
+                configFilePath = getMotorsConfigPath() / configFilePath;
 
-            mINI::INIFile      configFile(configFilePath);
-            mINI::INIStructure ini;
-            if (!configFile.read(ini))
-            {
-                m_log.error("Could not read configuration file: %s", configFilePath.c_str());
+            CfgValues_S cfg;
+            if (!cfgLoad(configFilePath, cfg))
                 return;
-            }
-
-            MDConfigMap       cfgMap;
-            MDCOConfigAdapter odCfgAdapter;
-
-            for (auto& [address, toml] : cfgMap.m_map)
+            if (!cfgUploadMdco(*md, *od, cfg))
             {
-                auto it = ini[toml.m_tomlSection.data()][toml.m_tomlKey.data()];
-                if (it.empty())
-                {
-                    m_log.warn("Key %s.%s not found in configuration file. Skipping.",
-                               toml.m_tomlSection.data(),
-                               toml.m_tomlKey.data());
-                    continue;
-                }
-                if (!toml.setFromReadable(it))
-                {
-                    m_log.error("Could not set value for %s.%s",
-                                toml.m_tomlSection.data(),
-                                toml.m_tomlKey.data());
-                    return;
-                }
-            }
-
-            auto entries = odCfgAdapter.configToOd(cfgMap, od);
-
-            for (auto& entry : entries)
-            {
-                if (md->writeSDO(entry.get()) != MDCO::Error_t::OK)
-                {
-                    m_log.error("Error writing %s",
-                                entry.get().getEntryMetaData().parameterName.c_str());
-                }
+                m_log.error("Configuration not saved, fix the errors above and upload again");
+                return;
             }
 
             if (md->save() != MDCO::Error_t::OK)
@@ -718,6 +676,34 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error("Could not enter config mode!");
                 return;
             }
+
+            // Resistance and inductance are measured by the main encoder calibration, the aux
+            // one uses them, so they are cleared only when the main one runs
+            if (*calibrationOptions.autodetect)
+            {
+                if (*calibrationOptions.calibrationOfEncoder != std::string_view("main"))
+                {
+                    m_log.error("--autodetect needs the main encoder calibration");
+                    return;
+                }
+                for (const char* name : {"Phase Resistance", "Phase Inductance"})
+                {
+                    auto obj = od->getEntryByName(name);
+                    if (!obj.has_value())
+                    {
+                        m_log.error("Could not find %s in the .eds file!", name);
+                        return;
+                    }
+                    obj.value().get() = (canopen_types::REAL32_t)0.f;
+                    if (mdco->writeSDO(obj.value().get()) != MDCO::Error_t::OK)
+                    {
+                        m_log.error("Could not clear %s!", name);
+                        return;
+                    }
+                }
+                m_log.info("Motor resistance and inductance cleared");
+            }
+
             auto calibrationOpt = od->getEntryByName(calibrationName);
             if (!calibrationOpt.has_value())
             {
@@ -743,7 +729,10 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             auto od   = loadEDS().first;
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
+            {
                 m_log.error("Failed to conect to mdco!");
+                return;
+            }
 
             for (auto& object : *od)
             {
@@ -798,6 +787,32 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                    << object.second.getAsString();
                 m_log.info("%s", ss.str().c_str());
             }
+
+            // Same summary as md info
+            auto readStatus = [&](const md_objects::ObjectRef& ref) -> u32
+            {
+                EDSEntry* obj = md_objects::resolveObject(*od, ref, m_log);
+                if (obj == nullptr)
+                    return 0;
+                if (mdco->readSDO(*obj) != MDCO::Error_t::OK)
+                {
+                    m_log.error("could not read %s", ref.label.data());
+                    return 0;
+                }
+                return (u32)std::strtoul(obj->getAsString().c_str(), nullptr, 0);
+            };
+            m_log << std::endl;
+            printStatusSummary(m_log,
+                               {.mainEncoder   = readStatus(md_objects::MAIN_ENCODER_STATUS),
+                                .auxEncoder    = readStatus(md_objects::AUX_ENCODER_STATUS),
+                                .calibration   = readStatus(md_objects::CALIBRATION_STATUS),
+                                .bridge        = readStatus(md_objects::BRIDGE_STATUS),
+                                .hardware      = readStatus(md_objects::HARDWARE_STATUS),
+                                .communication = readStatus(md_objects::COMMUNICATION_STATUS),
+                                .motion        = readStatus(md_objects::MOTION_STATUS),
+                                .misc          = readStatus(md_objects::MISC_STATUS),
+                                .config        = readStatus(md_objects::CONFIG_STATUS),
+                                .hasAuxEncoder = readStatus(md_objects::AUX_ENCODER_TYPE) != 0});
         });
 
     // Save

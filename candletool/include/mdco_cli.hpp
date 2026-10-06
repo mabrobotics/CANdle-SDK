@@ -42,7 +42,8 @@ namespace mab
         struct CalibrationOptions
         {
             CalibrationOptions(CLI::App* rootCli)
-                : calibrationOfEncoder(std::make_shared<std::string>("main"))
+                : calibrationOfEncoder(std::make_shared<std::string>("main")),
+                  autodetect(std::make_shared<bool>(false))
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
 
@@ -52,10 +53,16 @@ namespace mab
                                       *calibrationOfEncoder,
                                       "Type of encoder calibration to perform. "
                                       "Possible values: main, aux.")
-                         ->default_val("main")}};
+                         ->default_val("main")},
+                    {"autodetect",
+                     rootCli->add_flag("--autodetect",
+                                       *autodetect,
+                                       "Clear motor resistance and inductance first, so "
+                                       "the calibration measures them again.")}};
             }
 
             const std::shared_ptr<std::string>  calibrationOfEncoder;
+            const std::shared_ptr<bool>         autodetect;
             std::map<std::string, CLI::Option*> optionsMap;
         };
 
@@ -80,15 +87,20 @@ namespace mab
 
         struct CanOptions
         {
-            CanOptions(CLI::App* rootCli) : canId(std::make_shared<canId_t>(10))
+            CanOptions(CLI::App* rootCli)
+                : canId(std::make_shared<canId_t>(10)), save(std::make_shared<bool>(false))
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
                     {"id",
                      rootCli
                          ->add_option("--new_id", *canId, "New CAN node id for the MD controller.")
-                         ->required()}};
+                         ->required()},
+                    {"save",
+                     rootCli->add_flag(
+                         "--save", *save, "Save the new CAN id to the MD controller.")}};
             }
             const std::shared_ptr<canId_t> canId;
+            const std::shared_ptr<bool>    save;
 
             std::map<std::string, CLI::Option*> optionsMap;
         };

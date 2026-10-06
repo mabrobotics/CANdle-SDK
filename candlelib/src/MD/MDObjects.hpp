@@ -176,6 +176,16 @@ namespace mab
                                                  .label    = "motion status",
                                                  .aliases  = {"Motion Status"}};
 
+        inline constexpr ObjectRef MISC_STATUS{.index    = 0x2022,
+                                               .subIndex = u8{0x09},
+                                               .label    = "misc status",
+                                               .aliases  = {"Misc Status"}};
+
+        inline constexpr ObjectRef CONFIG_STATUS{.index    = 0x2022,
+                                                 .subIndex = u8{0x0A},
+                                                 .label    = "config status",
+                                                 .aliases  = {"Config Status"}};
+
         // Command record, 0x2023 in md_1.2, was 0x2003 "System Command" in MDv1.0.0
         inline constexpr ObjectRef CMD_RESET_CONTROLLER{.index    = 0x2023,
                                                         .subIndex = u8{0x08},
@@ -225,6 +235,13 @@ namespace mab
                                               .label         = "motor name",
                                               .aliases       = {"Motor Name"},
                                               .parentAliases = ACTUATOR_CONFIG_NAMES};
+
+        // "Can ID" at 0x2000:0A in MDv1.0.0
+        inline constexpr ObjectRef CAN_ID{.index         = 0x2000,
+                                          .subIndex      = u8{0x01},
+                                          .label         = "CAN ID",
+                                          .aliases       = {"CAN ID", "Can ID"},
+                                          .parentAliases = ACTUATOR_CONFIG_NAMES};
 
         inline constexpr ObjectRef POLE_PAIRS{.index         = 0x2000,
                                               .subIndex      = u8{0x02},

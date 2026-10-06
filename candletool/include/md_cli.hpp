@@ -26,7 +26,10 @@ namespace mab
         std::unique_ptr<MD, std::function<void(MD*)>> getMd(
             const std::shared_ptr<canId_t>             mdCanId,
             const std::shared_ptr<const CandleBuilder> candleBuilder);
-        bool                       registerWrite(MD& md, u16 regAdress, const std::string& value);
+        bool                       registerWrite(MD&                md,
+                                                 u16                regAdress,
+                                                 const std::string& value,
+                                                 bool               quiet = false);
         std::optional<std::string> registerRead(MD& md, u16 regAdress);
 
         struct CanOptions
@@ -62,7 +65,8 @@ namespace mab
         struct CalibrationOptions
         {
             CalibrationOptions(CLI::App* rootCli)
-                : calibrationOfEncoder(std::make_shared<std::string>("all"))
+                : calibrationOfEncoder(std::make_shared<std::string>("all")),
+                  autodetect(std::make_shared<bool>(false))
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
                     {"encoder",
@@ -71,10 +75,16 @@ namespace mab
                                       *calibrationOfEncoder,
                                       "Type of encoder calibration to perform. "
                                       "Possible values: all, main, aux.")
-                         ->default_str("all")}};
+                         ->default_str("all")},
+                    {"autodetect",
+                     rootCli->add_flag("--autodetect",
+                                       *autodetect,
+                                       "Clear motor resistance and inductance first, so "
+                                       "the calibration measures them again.")}};
             }
 
             const std::shared_ptr<std::string>  calibrationOfEncoder;
+            const std::shared_ptr<bool>         autodetect;
             std::map<std::string, CLI::Option*> optionsMap;
         };
 
@@ -110,7 +120,7 @@ namespace mab
                              "Path to the MD .cfg file \n note: \ncan be absolute path, "
                              "\ncurrent directory relative path (starting with `./`, eg. "
                              "`./myCustomMotor.cfg`), "
-                             "\ndefault config relative path (eg. `CubeMars/AK/AK80-9.cfg`)")
+                             "\ndefault config relative path (eg. `CubeMars/AK80-9.cfg`)")
                          ->required()}};
             }
 

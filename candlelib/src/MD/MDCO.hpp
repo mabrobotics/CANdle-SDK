@@ -157,6 +157,9 @@ namespace mab
 
         Error_t resetNMT() const;
 
+        /// @brief NMT Reset communication, activates a newly written node-ID (0x2000:01)
+        Error_t resetCommunicationNMT() const;
+
         /// @brief NMT Start remote node: pre-operational -> operational (PDOs enabled)
         Error_t startNMT() const;
 
