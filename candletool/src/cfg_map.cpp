@@ -402,13 +402,6 @@ namespace mab
                 return std::nullopt;
             return std::strtod(obj->getAsString().c_str(), nullptr);
         }
-
-        std::string toLower(std::string text)
-        {
-            for (char& c : text)
-                c = (char)std::tolower((unsigned char)c);
-            return text;
-        }
     }  // namespace
 
     // ---- File ------------------------------------------------------------------------------
@@ -533,22 +526,13 @@ namespace mab
             if (value.empty())
                 continue;
 
-            // enums are listed as "<key>_<number> = <name>", either of the two is accepted
-            const std::string prefix    = toLower(key) + "_";
-            bool              isEnum    = false;
-            bool              enumMatch = false;
-            for (const auto& [ruleKey, ruleValue] : rules)
-            {
-                if (ruleKey.rfind(prefix, 0) != 0)
-                    continue;
-                const std::string number = ruleKey.substr(prefix.size());
-                if (number.empty() || number.find_first_not_of("0123456789") != std::string::npos)
-                    continue;
-                isEnum = true;
-                if (value == ruleValue || value == number)
-                    enumMatch = true;
-            }
-            if (isEnum && !enumMatch)
+            // enums come from MD_strings.hpp, a name, an alias or a known number is accepted
+            const CfgEnum_S*   codec  = enumOf(entry.mdReg);
+            std::optional<u32> enumValue = std::nullopt;
+            if (codec != nullptr)
+                enumValue = codec->toNumeric(value);
+            if (codec != nullptr &&
+                (!enumValue.has_value() || !codec->toReadable(enumValue.value()).has_value()))
             {
                 log.error("Invalid enum value for [%s] [%s] = %s",
                           entry.section,
