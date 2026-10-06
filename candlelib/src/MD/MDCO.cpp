@@ -1182,6 +1182,11 @@ namespace mab
         return sendNMT(0x81);  // Reset Node
     }
 
+    MDCO::Error_t MDCO::resetCommunicationNMT() const
+    {
+        return sendNMT(0x82);  // Reset Communication
+    }
+
     MDCO::Error_t MDCO::startNMT() const
     {
         return sendNMT(0x01);  // Start remote node

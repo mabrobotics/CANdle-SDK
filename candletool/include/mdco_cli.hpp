@@ -87,15 +87,20 @@ namespace mab
 
         struct CanOptions
         {
-            CanOptions(CLI::App* rootCli) : canId(std::make_shared<canId_t>(10))
+            CanOptions(CLI::App* rootCli)
+                : canId(std::make_shared<canId_t>(10)), save(std::make_shared<bool>(false))
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
                     {"id",
                      rootCli
                          ->add_option("--new_id", *canId, "New CAN node id for the MD controller.")
-                         ->required()}};
+                         ->required()},
+                    {"save",
+                     rootCli->add_flag(
+                         "--save", *save, "Save the new CAN id to the MD controller.")}};
             }
             const std::shared_ptr<canId_t> canId;
+            const std::shared_ptr<bool>    save;
 
             std::map<std::string, CLI::Option*> optionsMap;
         };

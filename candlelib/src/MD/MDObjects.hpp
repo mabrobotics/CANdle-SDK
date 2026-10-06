@@ -236,6 +236,13 @@ namespace mab
                                               .aliases       = {"Motor Name"},
                                               .parentAliases = ACTUATOR_CONFIG_NAMES};
 
+        // "Can ID" at 0x2000:0A in MDv1.0.0
+        inline constexpr ObjectRef CAN_ID{.index         = 0x2000,
+                                          .subIndex      = u8{0x01},
+                                          .label         = "CAN ID",
+                                          .aliases       = {"CAN ID", "Can ID"},
+                                          .parentAliases = ACTUATOR_CONFIG_NAMES};
+
         inline constexpr ObjectRef POLE_PAIRS{.index         = 0x2000,
                                               .subIndex      = u8{0x02},
                                               .label         = "pole pairs",

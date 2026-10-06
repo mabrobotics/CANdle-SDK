@@ -244,9 +244,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     can->callback(
         [this, mdCanId, canOptions, loadEDS]()
         {
-            constexpr std::string_view canIdName = "Can ID";
-            auto                       od        = loadEDS().first;
-            auto                       mdco      = getMdco(mdCanId, od);
+            auto od   = loadEDS().first;
+            auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
                 return;
 
@@ -254,7 +253,9 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             // older than that
             canId_t minId = 1, maxId = 32;
             auto [version, versionErr] = mdco->getFirmwareVersion();
-            if (versionErr == MDCO::Error_t::OK && version.s.major >= LEGACY_EDS_BELOW_FW_MAJOR)
+            bool legacy = versionErr != MDCO::Error_t::OK ||
+                          version.s.major < LEGACY_EDS_BELOW_FW_MAJOR;
+            if (!legacy)
             {
                 minId = 10;
                 maxId = 127;
@@ -266,34 +267,67 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                             (unsigned)maxId);
                 return;
             }
-
-            // Get id object
-            auto canIdOpt = od->getEntryByName(canIdName);
-            if (!canIdOpt.has_value())
+            if (*canOptions.canId == *mdCanId)
             {
-                m_log.error("%s not found in eds!", canIdName.data());
+                m_log.warn("Drive already has CAN id %u, nothing to change", (unsigned)*mdCanId);
                 return;
             }
-            auto& canIdObj = canIdOpt.value().get();
 
-            if (!canOptions.optionsMap.at("id")->empty() && !(*canOptions.canId == *mdCanId))
+            // set new can id, its data type differs between .eds revisions
+            EDSEntry* canIdObj = md_objects::resolveObject(*od, md_objects::CAN_ID, m_log);
+            if (canIdObj == nullptr)
+                return;
+            if (canIdObj->setFromString(std::to_string(*canOptions.canId)) !=
+                    EDSEntry::Error_t::OK ||
+                mdco->writeSDO(*canIdObj) != MDCO::Error_t::OK)
             {
-                // set new can id
-                canIdObj = (canopen_types::UNSIGNED32_t)(*canOptions.canId);
-                if (mdco->writeSDO(canIdObj) != MDCO::Error_t::OK)
-                {
-                    m_log.error("Failed setting id of %d", *canOptions.canId);
-                    return;
-                }
+                m_log.error("Failed setting id of %u", (unsigned)*canOptions.canId);
+                return;
             }
 
-            if (mdco->save() != MDCO::Error_t::OK)
+            // activate the new id, firmware 3.0.0+ applies it on NMT reset communication, older
+            // ones on CAN reinit. The drive may already answer from the new id, so a failed
+            // transfer here is not conclusive, the validation below is
+            if (legacy)
+            {
+                EDSEntry* reinitObj =
+                    md_objects::resolveObject(*od, md_objects::CMD_REINIT_CAN, m_log);
+                if (reinitObj == nullptr)
+                    return;
+                reinitObj->setFromString("1");
+                mdco->writeSDO(*reinitObj);
+            }
+            else
+                mdco->resetCommunicationNMT();
+            mdco = nullptr;
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+            // validate by reading the id back from the new address
+            auto newCanId = std::make_shared<canId_t>(*canOptions.canId);
+            mdco          = getMdco(newCanId, od);
+            if (mdco == nullptr)
+            {
+                m_log.error("Drive does not respond on new CAN id %u", (unsigned)*newCanId);
+                return;
+            }
+            canIdObj = md_objects::resolveObject(*od, md_objects::CAN_ID, m_log);
+            if (canIdObj == nullptr || mdco->readSDO(*canIdObj) != MDCO::Error_t::OK ||
+                std::strtoul(canIdObj->getAsString().c_str(), nullptr, 0) != *newCanId)
+            {
+                m_log.error("Could not validate new CAN id %u", (unsigned)*newCanId);
+                return;
+            }
+
+            if (*canOptions.save && mdco->save() != MDCO::Error_t::OK)
             {
                 m_log.error("Failed to save parameters!");
                 return;
             }
 
-            m_log.success("Succesfully updated CAN parameters!");
+            m_log.success("CAN id changed from %u to %u%s",
+                          (unsigned)*mdCanId,
+                          (unsigned)*newCanId,
+                          *canOptions.save ? " and saved" : ", use --save to make it persistent");
         });
 
     // CONFIG ===========================================================================
