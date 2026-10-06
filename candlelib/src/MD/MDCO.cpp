@@ -506,9 +506,17 @@ namespace mab
         return err;
     }
 
-    MDCO::Error_t MDCO::setProfileVelocity(float profileVelocity /*s^-1*/)
+    MDCO::Error_t MDCO::setProfileVelocity(float value /*rad/s*/)
     {
-        (*m_od)[0x6081] = (canopen_types::UNSIGNED32_t)(profileVelocity * 1000);
+        double scale;
+        if (!md_objects::siUnitScale(*m_od, md_objects::SI_UNIT_VELOCITY, scale, m_log))
+            return Error_t::UNKNOWN_OBJECT;
+        return setProfileVelocityCO((u32)std::llround(value / scale));
+    }
+
+    MDCO::Error_t MDCO::setProfileVelocityCO(u32 value)
+    {
+        (*m_od)[0x6081] = (canopen_types::UNSIGNED32_t)value;
         Error_t err     = writeSDO((*m_od)[0x6081]);
         if (err != Error_t::OK)
         {
@@ -518,9 +526,17 @@ namespace mab
         return err;
     }
 
-    MDCO::Error_t MDCO::setProfileAcceleration(float profileAcceleration /*s^-2*/)
+    MDCO::Error_t MDCO::setProfileAcceleration(float value /*rad/s^2*/)
     {
-        (*m_od)[0x6083] = (canopen_types::UNSIGNED32_t)(profileAcceleration * 1000);
+        double scale;
+        if (!md_objects::siUnitScale(*m_od, md_objects::SI_UNIT_ACCELERATION, scale, m_log))
+            return Error_t::UNKNOWN_OBJECT;
+        return setProfileAccelerationCO((u32)std::llround(value / scale));
+    }
+
+    MDCO::Error_t MDCO::setProfileAccelerationCO(u32 value)
+    {
+        (*m_od)[0x6083] = (canopen_types::UNSIGNED32_t)value;
         Error_t err     = writeSDO((*m_od)[0x6083]);
         if (err != Error_t::OK)
         {
@@ -530,9 +546,17 @@ namespace mab
         return err;
     }
 
-    MDCO::Error_t MDCO::setProfileDeceleration(float profileDeceleration /*s^-2*/)
+    MDCO::Error_t MDCO::setProfileDeceleration(float value /*rad/s^2*/)
     {
-        (*m_od)[0x6084] = (canopen_types::UNSIGNED32_t)(profileDeceleration * 1000);
+        double scale;
+        if (!md_objects::siUnitScale(*m_od, md_objects::SI_UNIT_ACCELERATION, scale, m_log))
+            return Error_t::UNKNOWN_OBJECT;
+        return setProfileDecelerationCO((u32)std::llround(value / scale));
+    }
+
+    MDCO::Error_t MDCO::setProfileDecelerationCO(u32 value)
+    {
+        (*m_od)[0x6084] = (canopen_types::UNSIGNED32_t)value;
         Error_t err     = writeSDO((*m_od)[0x6084]);
         if (err != Error_t::OK)
         {
@@ -542,9 +566,17 @@ namespace mab
         return err;
     }
 
-    MDCO::Error_t MDCO::setPositionWindow(u32 windowSize /*encode tics*/)
+    MDCO::Error_t MDCO::setPositionWindow(float value /*rad*/)
     {
-        (*m_od)[0x6067] = (canopen_types::UNSIGNED32_t)(windowSize);
+        double scale;
+        if (!md_objects::siUnitScale(*m_od, md_objects::SI_UNIT_POSITION, scale, m_log))
+            return Error_t::UNKNOWN_OBJECT;
+        return setPositionWindowCO((u32)std::llround(value / scale));
+    }
+
+    MDCO::Error_t MDCO::setPositionWindowCO(u32 value)
+    {
+        (*m_od)[0x6067] = (canopen_types::UNSIGNED32_t)value;
         Error_t err     = writeSDO((*m_od)[0x6067]);
         if (err != Error_t::OK)
         {
@@ -554,9 +586,17 @@ namespace mab
         return err;
     }
 
-    MDCO::Error_t MDCO::setTargetPosition(i32 position /*encoder ticks*/)
+    MDCO::Error_t MDCO::setTargetPosition(float value /*rad*/)
     {
-        (*m_od)[0x607A] = (canopen_types::INTEGER32_t)(position);
+        double scale;
+        if (!md_objects::siUnitScale(*m_od, md_objects::SI_UNIT_POSITION, scale, m_log))
+            return Error_t::UNKNOWN_OBJECT;
+        return setTargetPositionCO((i32)std::llround(value / scale));
+    }
+
+    MDCO::Error_t MDCO::setTargetPositionCO(i32 value)
+    {
+        (*m_od)[0x607A] = (canopen_types::INTEGER32_t)value;
         Error_t err     = writeSDO((*m_od)[0x607A]);
         if (err != Error_t::OK)
         {
@@ -566,9 +606,17 @@ namespace mab
         return err;
     }
 
-    MDCO::Error_t MDCO::setTargetVelocity(float velocity /*rad/s*/)
+    MDCO::Error_t MDCO::setTargetVelocity(float value /*rad/s*/)
     {
-        (*m_od)[0x60FF] = (canopen_types::INTEGER32_t)(velocity * 60 / (M_PI * 2));
+        double scale;
+        if (!md_objects::siUnitScale(*m_od, md_objects::SI_UNIT_VELOCITY, scale, m_log))
+            return Error_t::UNKNOWN_OBJECT;
+        return setTargetVelocityCO((i32)std::llround(value / scale));
+    }
+
+    MDCO::Error_t MDCO::setTargetVelocityCO(i32 value)
+    {
+        (*m_od)[0x60FF] = (canopen_types::INTEGER32_t)value;
         Error_t err     = writeSDO((*m_od)[0x60FF]);
         if (err != Error_t::OK)
         {
@@ -754,33 +802,46 @@ namespace mab
         return {statuses.motionStatus, err};
     }
 
-    std::pair<i32, MDCO::Error_t> MDCO::getPosition()
+    std::pair<float, MDCO::Error_t> MDCO::getPosition()
+    {
+        double scale;
+        if (!md_objects::siUnitScale(*m_od, md_objects::SI_UNIT_POSITION, scale, m_log))
+            return {0.0f, Error_t::UNKNOWN_OBJECT};
+        auto [value, err] = getPositionCO();
+        return {(float)(value * scale), err};
+    }
+
+    std::pair<i32, MDCO::Error_t> MDCO::getPositionCO()
     {
         Error_t err = readSDO((*m_od)[0x6064]);
         if (err != Error_t::OK)
         {
             m_log.error("Error reading Position");
-            return {0.0f, err};
+            return {0, err};
         }
 
-        i32 positionRaw = (i32)(canopen_types::INTEGER32_t)(*m_od)[0x6064];
-
-        return {positionRaw, err};
+        return {(i32)(canopen_types::INTEGER32_t)(*m_od)[0x6064], err};
     }
 
     std::pair<float, MDCO::Error_t> MDCO::getVelocity()
+    {
+        double scale;
+        if (!md_objects::siUnitScale(*m_od, md_objects::SI_UNIT_VELOCITY, scale, m_log))
+            return {0.0f, Error_t::UNKNOWN_OBJECT};
+        auto [value, err] = getVelocityCO();
+        return {(float)(value * scale), err};
+    }
+
+    std::pair<i32, MDCO::Error_t> MDCO::getVelocityCO()
     {
         Error_t err = readSDO((*m_od)[0x606C]);
         if (err != Error_t::OK)
         {
             m_log.error("Error reading Velocity");
-            return {0.0f, err};
+            return {0, err};
         }
 
-        i32   velocityRaw = (i32)(canopen_types::INTEGER32_t)(*m_od)[0x606C];
-        float velocity    = velocityRaw;
-
-        return {velocity, err};
+        return {(i32)(canopen_types::INTEGER32_t)(*m_od)[0x606C], err};
     }
 
     std::pair<float, MDCO::Error_t> MDCO::getTorque()
@@ -800,44 +861,69 @@ namespace mab
 
     std::pair<float, MDCO::Error_t> MDCO::getOutputEncoderPosition()
     {
-        Error_t err = readSDO((*m_od)[0x2200][0x1]);
+        double scale;
+        if (!md_objects::siUnitScale(*m_od, md_objects::SI_UNIT_POSITION, scale, m_log))
+            return {0.0f, Error_t::UNKNOWN_OBJECT};
+        auto [value, err] = getOutputEncoderPositionCO();
+        return {(float)(value * scale), err};
+    }
+
+    std::pair<i32, MDCO::Error_t> MDCO::getOutputEncoderPositionCO()
+    {
+        EDSEntry* entry = md_objects::resolveObject(*m_od, md_objects::AUX_ENCODER_POSITION, m_log);
+        if (entry == nullptr)
+            return {0, Error_t::UNKNOWN_OBJECT};
+
+        Error_t err = readSDO(*entry);
         if (err != Error_t::OK)
         {
             m_log.error("Error reading Output Encoder Position");
-            return {0.0f, err};
+            return {0, err};
         }
 
-        i32   positionRaw = (i32)(canopen_types::INTEGER32_t)(*m_od)[0x2200][0x1];
-        float position    = positionRaw / 1000000.0f;
-
-        return {position, err};
+        return {(i32)(canopen_types::INTEGER32_t)(*entry), err};
     }
 
     std::pair<float, MDCO::Error_t> MDCO::getOutputEncoderVelocity()
     {
-        Error_t err = readSDO((*m_od)[0x2200][0x2]);
+        double scale;
+        if (!md_objects::siUnitScale(*m_od, md_objects::SI_UNIT_VELOCITY, scale, m_log))
+            return {0.0f, Error_t::UNKNOWN_OBJECT};
+        auto [value, err] = getOutputEncoderVelocityCO();
+        return {(float)(value * scale), err};
+    }
+
+    std::pair<i32, MDCO::Error_t> MDCO::getOutputEncoderVelocityCO()
+    {
+        EDSEntry* entry = md_objects::resolveObject(*m_od, md_objects::AUX_ENCODER_VELOCITY, m_log);
+        if (entry == nullptr)
+            return {0, Error_t::UNKNOWN_OBJECT};
+
+        Error_t err = readSDO(*entry);
         if (err != Error_t::OK)
         {
             m_log.error("Error reading Output Encoder Velocity");
-            return {0.0f, err};
+            return {0, err};
         }
 
-        i32   velocityRaw = (i32)(canopen_types::INTEGER32_t)(*m_od)[0x2200][0x2];
-        float velocity    = velocityRaw / 1000000.0f;
-
-        return {velocity, err};
+        return {(i32)(canopen_types::INTEGER32_t)(*entry), err};
     }
 
     std::pair<u8, MDCO::Error_t> MDCO::getTemperature()
     {
-        Error_t err = readSDO((*m_od)[0x2300]);
+        EDSEntry* temperatureEntry =
+            md_objects::resolveObject(*m_od, md_objects::MOTOR_TEMPERATURE, m_log);
+        if (temperatureEntry == nullptr)
+            return {0, Error_t::UNKNOWN_OBJECT};
+
+        Error_t err = readSDO(*temperatureEntry);
         if (err != Error_t::OK)
         {
             m_log.error("Error reading Temperature");
             return {0, err};
         }
 
-        u8 temperature = (u8)(canopen_types::UNSIGNED8_t)(*m_od)[0x2300];
+        u8 temperature = (u8)(canopen_types::UNSIGNED8_t)(*temperatureEntry);
 
         return {temperature, err};
     }

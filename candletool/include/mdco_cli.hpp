@@ -126,14 +126,13 @@ namespace mab
 
         struct MoveOptions
         {
-            MoveOptions(CLI::App* rootCli) : target(std::make_shared<i32>(0))
+            MoveOptions(CLI::App* rootCli, const std::string& unit)
+                : target(std::make_shared<float>(0.0f))
             {
-                rootCli
-                    ->add_option(
-                        "target", *target, "Target to reach [encoder ticks].")
+                rootCli->add_option("target", *target, "Target to reach [" + unit + "].")
                     ->required();
             }
-            const std::shared_ptr<i32>          target;
+            const std::shared_ptr<float>        target;
             std::map<std::string, CLI::Option*> optionsMap;
         };
 

@@ -117,62 +117,17 @@ namespace mab
             return CFG_MAP_SIZE;
         }
 
-        /// @brief Decode a CiA402 SI unit object (0x60A8..0x60AA) into the SI value of one count
-        /// @param code [31:24] power of ten, [23:16] unit, [15:8] time denominator
-        bool decodeSiUnit(u32 code, double& factor)
-        {
-            factor = std::pow(10.0, (i8)(code >> 24));
-            switch ((code >> 16) & 0xFF)
-            {
-                case 0x10:  // radian
-                    break;
-                case 0x41:  // degree
-                    factor *= M_PI / 180.0;
-                    break;
-                case 0xB4:  // revolution
-                    factor *= 2.0 * M_PI;
-                    break;
-                default:
-                    return false;
-            }
-            switch ((code >> 8) & 0xFF)
-            {
-                case 0x00:  // none
-                case 0x03:  // second
-                case 0x57:  // second squared
-                    break;
-                case 0x47:  // minute
-                    factor /= 60.0;
-                    break;
-                default:
-                    return false;
-            }
-            return true;
-        }
-
         /// @brief SI value of one drive count for every unit, taken from the .eds
         bool loadScale(EDSObjectDictionary& od, double* scale, const Logger& log)
         {
-            static constexpr u16 SI_UNIT_OBJECTS[] = {0x60A8, 0x60A9, 0x60AA};
-
             scale[UNIT_NONE]  = 1.0;
             scale[UNIT_MILLI] = 0.001;
-            for (int i = 0; i < 3; i++)
-            {
-                const u16 index = SI_UNIT_OBJECTS[i];
-                if (!od.hasEntry(index))
-                {
-                    log.error("SI unit object 0x%04X is missing from the .eds", index);
-                    return false;
-                }
-                const u32 code = (u32)std::strtoul(od[index].getAsString().c_str(), nullptr, 0);
-                if (!decodeSiUnit(code, scale[UNIT_POSITION + i]))
-                {
-                    log.error("Unsupported SI unit 0x%08X in object 0x%04X", code, index);
-                    return false;
-                }
-            }
-            return true;
+            return md_objects::siUnitScale(
+                       od, md_objects::SI_UNIT_POSITION, scale[UNIT_POSITION], log) &&
+                   md_objects::siUnitScale(
+                       od, md_objects::SI_UNIT_VELOCITY, scale[UNIT_VELOCITY], log) &&
+                   md_objects::siUnitScale(
+                       od, md_objects::SI_UNIT_ACCELERATION, scale[UNIT_ACCELERATION], log);
         }
 
         // ---- Object access -----------------------------------------------------------------
