@@ -51,6 +51,9 @@ namespace mab
         {"motor",           "max current",                     0x016,  0x6073,  0x00,   CFG_CRITICAL,  nullptr},
         {"motor",           "gear ratio",                      0x017,  0x6091,  0x01,   CFG_CRITICAL,  nullptr},
         {"motor",           "torque bandwidth",                0x018,  0x2000,  0x05,   CFG_CRITICAL,  nullptr},
+        // 0 leaves them to be measured during calibration
+        {"motor",           "resistance",                      0x01B,  0x2000,  0x04,   CFG_SKIP_ZERO, "0.0"},
+        {"motor",           "inductance",                      0x01C,  0x2000,  0x03,   CFG_SKIP_ZERO, "0.0"},
         {"motor",           "calibration mode",                0x01E,  0x2000,  0x08,   CFG_NORMAL,    "FULL"},
         {"motor",           "shutdown temp",                   0x808,  0x2000,  0x07,   CFG_NORMAL,    "80"},
         {"output encoder",  "output encoder",                  0x020,  0x2002,  0x01,   CFG_NORMAL,    "NONE"},

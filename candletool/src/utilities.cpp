@@ -77,9 +77,11 @@ namespace mab
 
     bool isVersionAtLeast(version_ut fwVersion, int major, int minor, int rev)
     {
-        if (fwVersion.s.major < major || fwVersion.s.minor < minor || fwVersion.s.revision < rev)
-            return false;
-        return true;
+        if (fwVersion.s.major != major)
+            return fwVersion.s.major > major;
+        if (fwVersion.s.minor != minor)
+            return fwVersion.s.minor > minor;
+        return fwVersion.s.revision >= rev;
     }
 
     bool userConfirm()

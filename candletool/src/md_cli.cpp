@@ -449,6 +449,16 @@ namespace mab
                     const CfgMap_S& entry = CFG_MAP[i];
                     if (entry.mdReg == 0 || !cfgIsSet(entry, cfg.value[i]))
                         continue;
+                    // Note: before fw 3.0.1, motor resistance and inductance are Read only
+                    if ((entry.mdReg == (u16)MDRegisterAddress_E::motorResistance ||
+                         entry.mdReg == (u16)MDRegisterAddress_E::motorInductance) &&
+                        !isVersionAtLeast(fwVersion, 3, 0, 1))
+                    {
+                        m_logger.warn("%s.%s is read only before firmware 3.0.1, skipping",
+                                      entry.section,
+                                      entry.key);
+                        continue;
+                    }
                     if (entry.mdReg == (u16)MDRegisterAddress_E::shuntResistance)
                     {
                         // Note: after fw 3.0, shuntResistance is Read only
@@ -1269,10 +1279,10 @@ namespace mab
         bool                                      written            = false;
 
         // Check if the value is a string or a number
-        if (trimmedValue.find_first_not_of("-0123456789.f") == std::string::npos)
+        if (trimmedValue.find_first_not_of("-+0123456789.eEf") == std::string::npos)
         {
-            /// Check if the value is a float or an integer
-            if (trimmedValue.find('.') != std::string::npos)
+            /// Check if the value is a float (also in scientific notation) or an integer
+            if (trimmedValue.find_first_of(".eE") != std::string::npos)
                 regValue = std::stof(value);
             else
                 regValue = std::stoll(value);
@@ -1294,6 +1304,13 @@ namespace mab
                         reg.value = std::get<int64_t>(regValue);
                     else if (std::holds_alternative<float>(regValue))
                         reg.value = std::get<float>(regValue);
+                    else
+                    {
+                        m_logger.error("Invalid value %s for register 0x%04X",
+                                       trimmedValue.c_str(),
+                                       reg.m_regAddress);
+                        return;
+                    }
 
                     auto result = md.writeRegisters(reg);
 
@@ -1372,7 +1389,14 @@ namespace mab
                         m_logger.error("Failed to read register 0x%04X", regAdress);
                         return false;
                     }
-                    std::string value   = std::to_string(reg.value);
+                    std::string value = std::to_string(reg.value);
+                    // to_string keeps 6 decimals, too few for small values like inductance
+                    if constexpr (std::is_floating_point_v<T>)
+                    {
+                        char buffer[32];
+                        std::snprintf(buffer, sizeof(buffer), "%.7g", (double)reg.value);
+                        value = buffer;
+                    }
                     registerStringValue = value;  // Store the value in the result
                     m_logger.success(
                         "Register %s value = %s", nameOfRegister.c_str(), value.c_str());
