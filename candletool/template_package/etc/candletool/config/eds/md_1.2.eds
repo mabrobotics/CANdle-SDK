@@ -1690,6 +1690,7 @@ ObjectType=0x7
 ;StorageLocation=RAM
 DataType=0x0007
 AccessType=rw
+HighLimit=0x7FFFFFFF
 DefaultValue=0
 PDOMapping=0
 
