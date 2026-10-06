@@ -14,6 +14,25 @@ _candletool_eds_versions()
     done
 }
 
+# Entries of the motors config directory that comes with candletool, as "config upload" resolves
+# a path that is neither absolute nor starts with ./ or ../
+_candletool_motor_configs()
+{
+    local motorsDir="/etc/candletool/config/motors"
+    local entry
+
+    [[ -d "$motorsDir" ]] || return 0
+
+    for entry in "$motorsDir/$1"*; do
+        if [[ -d "$entry" ]]; then
+            [[ "$entry" == "$motorsDir/CANopen" ]] && continue # legacy
+            printf '%s/\n' "${entry#"$motorsDir/"}"
+        elif [[ "$entry" == *.cfg ]]; then
+            printf '%s\n' "${entry#"$motorsDir/"}"
+        fi
+    done
+}
+
 _candletool_completions()
 {
     local current="${COMP_WORDS[COMP_CWORD]}"
@@ -21,6 +40,12 @@ _candletool_completions()
     local suggestions=""
     local global_flags="-h --help -d --datarate -i --id --bus --device -v --verbosity --version -s --silent --log"
     local flags_with_args="-i --id --bus --datarate -d --device -v --verbosity -p --path -e --encoder -f --mabfile -r --recovery --new_id --new_datarate --new_timeout --index --subindex --value"
+
+    if [[ "$previous" == "upload" && "$current" != [/.~]* ]]; then
+        COMPREPLY=( $(_candletool_motor_configs "$current") )
+        [[ ${#COMPREPLY[@]} -eq 1 && "${COMPREPLY[0]}" == */ ]] && compopt -o nospace 2>/dev/null
+        return 0
+    fi
 
     if [[ "$previous" == "-p" || "$previous" == "--path" || "$previous" == "-f" || "$previous" == "--mabfile" || "$previous" == "upload" || "$previous" == "download" ]]; then
         compopt -o filenames 2>/dev/null
