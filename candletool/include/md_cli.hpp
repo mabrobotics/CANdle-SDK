@@ -65,7 +65,8 @@ namespace mab
         struct CalibrationOptions
         {
             CalibrationOptions(CLI::App* rootCli)
-                : calibrationOfEncoder(std::make_shared<std::string>("all"))
+                : calibrationOfEncoder(std::make_shared<std::string>("all")),
+                  autodetect(std::make_shared<bool>(false))
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
                     {"encoder",
@@ -74,10 +75,16 @@ namespace mab
                                       *calibrationOfEncoder,
                                       "Type of encoder calibration to perform. "
                                       "Possible values: all, main, aux.")
-                         ->default_str("all")}};
+                         ->default_str("all")},
+                    {"autodetect",
+                     rootCli->add_flag("--autodetect",
+                                       *autodetect,
+                                       "Clear motor resistance and inductance first, so "
+                                       "the calibration measures them again.")}};
             }
 
             const std::shared_ptr<std::string>  calibrationOfEncoder;
+            const std::shared_ptr<bool>         autodetect;
             std::map<std::string, CLI::Option*> optionsMap;
         };
 

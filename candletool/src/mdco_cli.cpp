@@ -642,6 +642,34 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error("Could not enter config mode!");
                 return;
             }
+
+            // Resistance and inductance are measured by the main encoder calibration, the aux
+            // one uses them, so they are cleared only when the main one runs
+            if (*calibrationOptions.autodetect)
+            {
+                if (*calibrationOptions.calibrationOfEncoder != std::string_view("main"))
+                {
+                    m_log.error("--autodetect needs the main encoder calibration");
+                    return;
+                }
+                for (const char* name : {"Phase Resistance", "Phase Inductance"})
+                {
+                    auto obj = od->getEntryByName(name);
+                    if (!obj.has_value())
+                    {
+                        m_log.error("Could not find %s in the .eds file!", name);
+                        return;
+                    }
+                    obj.value().get() = (canopen_types::REAL32_t)0.f;
+                    if (mdco->writeSDO(obj.value().get()) != MDCO::Error_t::OK)
+                    {
+                        m_log.error("Could not clear %s!", name);
+                        return;
+                    }
+                }
+                m_log.info("Motor resistance and inductance cleared");
+            }
+
             auto calibrationOpt = od->getEntryByName(calibrationName);
             if (!calibrationOpt.has_value())
             {

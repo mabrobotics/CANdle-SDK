@@ -229,6 +229,30 @@ namespace mab
                 if (*calibrationOptions.calibrationOfEncoder == "main")
                     doOnAuxEncoder = false;
 
+                // Resistance and inductance are measured by the main encoder calibration, the
+                // aux one uses them, so they are cleared only when the main one runs
+                if (*calibrationOptions.autodetect)
+                {
+                    if (!doOnMainEncoder)
+                    {
+                        m_logger.error("--autodetect needs the main encoder calibration");
+                        return;
+                    }
+                    // Note: before fw 3.0.1 the drive measures them during every calibration
+                    if (isVersionAtLeast(getMdFirmwareVersion(*md), 3, 0, 1))
+                    {
+                        registers.motorResistance = 0.f;
+                        registers.motorInductance = 0.f;
+                        if (md->writeRegisters(registers.motorResistance,
+                                               registers.motorInductance) != MD::Error_t::OK)
+                        {
+                            m_logger.error("Could not clear motor resistance and inductance!");
+                            return;
+                        }
+                        m_logger.info("Motor resistance and inductance cleared");
+                    }
+                }
+
                 // Perform main encoder calibration
                 f32 calibrationTime = 40;  // seconds
                 if (isVersionAtLeast(getMdFirmwareVersion(*md), 3, 0, 0))
