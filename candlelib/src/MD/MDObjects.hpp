@@ -3,6 +3,8 @@
 
 #include <array>
 #include <cctype>
+#include <cmath>
+#include <cstdlib>
 #include <iomanip>
 #include <mutex>
 #include <set>
@@ -378,6 +380,93 @@ namespace mab
                                                         .label         = "torque bandwidth",
                                                         .aliases       = {"Torque Bandwidth"},
                                                         .parentAliases = ACTUATOR_CONFIG_NAMES};
+
+        // ---- measurements -------------------------------------------------------------------
+        // Auxiliary encoder readings use the same units as 0x6064 and 0x606C
+        inline constexpr ObjectRef AUX_ENCODER_POSITION{.index         = 0x2002,
+                                                        .subIndex      = u8{0x05},
+                                                        .label         = "auxiliary encoder position",
+                                                        .aliases       = {"Position"},
+                                                        .parentAliases = AUX_ENCODER_NAMES};
+
+        inline constexpr ObjectRef AUX_ENCODER_VELOCITY{.index         = 0x2002,
+                                                        .subIndex      = u8{0x06},
+                                                        .label         = "auxiliary encoder velocity",
+                                                        .aliases       = {"Velocity"},
+                                                        .parentAliases = AUX_ENCODER_NAMES};
+
+        inline constexpr std::array<std::string_view, 2> TEMPERATURE_NAMES{"Temperature"};
+
+        inline constexpr ObjectRef MOTOR_TEMPERATURE{.index         = 0x2004,
+                                                     .subIndex      = u8{0x02},
+                                                     .label         = "motor temperature",
+                                                     .aliases       = {"Motor Temperature"},
+                                                     .parentAliases = TEMPERATURE_NAMES};
+
+        // ---- CiA 402 SI units of position, velocity and acceleration objects ---------------
+        inline constexpr u16 SI_UNIT_POSITION     = 0x60A8;
+        inline constexpr u16 SI_UNIT_VELOCITY     = 0x60A9;
+        inline constexpr u16 SI_UNIT_ACCELERATION = 0x60AA;
+
+        /// @brief Decode a CiA402 SI unit object (0x60A8..0x60AA) into the SI value of one count
+        /// @param code [31:24] power of ten, [23:16] unit, [15:8] time denominator
+        /// @param factor rad, rad/s or rad/s^2 of one count
+        /// @return false for a unit that has no SI angular equivalent
+        inline bool decodeSiUnit(u32 code, double& factor)
+        {
+            factor = std::pow(10.0, (i8)(code >> 24));
+            switch ((code >> 16) & 0xFF)
+            {
+                case 0x10:  // radian
+                    break;
+                case 0x41:  // degree
+                    factor *= M_PI / 180.0;
+                    break;
+                case 0xB4:  // revolution
+                    factor *= 2.0 * M_PI;
+                    break;
+                default:
+                    return false;
+            }
+            switch ((code >> 8) & 0xFF)
+            {
+                case 0x00:  // none
+                case 0x03:  // second
+                case 0x57:  // second squared
+                    break;
+                case 0x47:  // minute
+                    factor /= 60.0;
+                    break;
+                default:
+                    return false;
+            }
+            return true;
+        }
+
+        /// @brief SI value of one drive count in the unit the .eds declares
+        /// @param od object dictionary parsed from the .eds file
+        /// @param unitIndex SI_UNIT_POSITION, SI_UNIT_VELOCITY or SI_UNIT_ACCELERATION
+        /// @param scale rad, rad/s or rad/s^2 of one count
+        /// @param log logger used to report a missing or unsupported unit
+        /// @return false when the .eds does not declare a usable unit
+        inline bool siUnitScale(EDSObjectDictionary& od,
+                                u16                  unitIndex,
+                                double&              scale,
+                                const Logger&        log)
+        {
+            if (!od.hasEntry(unitIndex))
+            {
+                log.error("SI unit object 0x%04X is missing from the .eds", unitIndex);
+                return false;
+            }
+            const u32 code = (u32)std::strtoul(od[unitIndex].getAsString().c_str(), nullptr, 0);
+            if (!decodeSiUnit(code, scale))
+            {
+                log.error("Unsupported SI unit 0x%08X in object 0x%04X", code, unitIndex);
+                return false;
+            }
+            return true;
+        }
 
         /// @brief Format an object address for diagnostics
         inline std::string addressToString(u16 index, const std::optional<u8>& subIndex)

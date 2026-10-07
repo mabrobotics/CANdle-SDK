@@ -33,8 +33,12 @@ namespace mab
         std::shared_ptr<CandleBuilder> m_candleBuilder;
         CANdleToolCtx_S                m_ctx;
 
+        /// @param allowLegacy true to also accept drives older than LEGACY_EDS_BELOW_FW_MAJOR,
+        /// described by the legacy .eds
         std::unique_ptr<MDCO, std::function<void(MDCO*)>> getMdco(
-            const std::shared_ptr<canId_t> mdCanId, std::shared_ptr<EDSObjectDictionary> od);
+            const std::shared_ptr<canId_t>       mdCanId,
+            std::shared_ptr<EDSObjectDictionary> od,
+            bool                                 allowLegacy = false);
 
         /// @brief .eds files the installation provides, read when the dictionary is loaded
         EdsPaths_S m_edsPaths;
@@ -126,14 +130,13 @@ namespace mab
 
         struct MoveOptions
         {
-            MoveOptions(CLI::App* rootCli) : target(std::make_shared<i32>(0))
+            MoveOptions(CLI::App* rootCli, const std::string& unit)
+                : target(std::make_shared<float>(0.0f))
             {
-                rootCli
-                    ->add_option(
-                        "target", *target, "Target to reach [encoder ticks].")
+                rootCli->add_option("target", *target, "Target to reach [" + unit + "].")
                     ->required();
             }
-            const std::shared_ptr<i32>          target;
+            const std::shared_ptr<float>        target;
             std::map<std::string, CLI::Option*> optionsMap;
         };
 

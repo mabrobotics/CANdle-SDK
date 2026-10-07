@@ -24,8 +24,8 @@ namespace mab
     {
         /// @brief dictionary of drives running current firmware
         std::filesystem::path current;
-        /// @brief dictionary of drives older than LEGACY_EDS_BELOW_FW_MAJOR, empty when the
-        /// installation configures only one .eds
+        /// @brief dictionary of drives older than LEGACY_EDS_BELOW_FW_MAJOR, used only to update
+        /// their firmware, empty when the installation configures only one .eds
         std::filesystem::path legacy;
         /// @brief bundled STANDARD_EDS_FILE, empty when the installation does not ship it
         std::filesystem::path standard;
@@ -85,12 +85,19 @@ namespace mab
     /// keeps working and sees the new layout. Every automatic change is reported to the user, as
     /// is a non-standard .eds used with a drive the standard one describes.
     ///
+    /// Drives older than LEGACY_EDS_BELOW_FW_MAJOR are only supported far enough to update
+    /// their firmware, every other command refuses them.
+    ///
     /// @param md drive to ask for its firmware version
     /// @param od dictionary loaded from paths.current, replaced in place
     /// @param paths .eds files the installation provides
     /// @param log logger used to report which dictionary is in use
-    void useEdsMatchingFirmware(MDCO&                                md,
+    /// @param allowLegacy true to describe an older drive with the legacy .eds, false to refuse it
+    /// @return false when the drive is older than LEGACY_EDS_BELOW_FW_MAJOR and allowLegacy is
+    /// false, the dictionary is left unchanged then
+    bool useEdsMatchingFirmware(MDCO&                                md,
                                 std::shared_ptr<EDSObjectDictionary> od,
                                 const EdsPaths_S&                    paths,
-                                const Logger&                        log);
+                                const Logger&                        log,
+                                bool                                 allowLegacy);
 }  // namespace mab

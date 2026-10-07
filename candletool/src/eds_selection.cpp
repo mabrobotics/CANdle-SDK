@@ -146,6 +146,19 @@ namespace mab
 
             return matches.front().path;
         }
+
+        /// @brief Ask the drive for its firmware version, a version of 0.0.0 counts as no answer
+        ///
+        /// A dictionary that does not describe the drive (md_1.1 on a 3.x drive) may point at an
+        /// object the drive does serve but which holds 0 rather than the version
+        std::pair<version_ut, MDCO::Error_t> readFirmwareVersion(MDCO& md)
+        {
+            auto result = md.getFirmwareVersion();
+            if (result.second == MDCO::Error_t::OK && result.first.s.major == 0 &&
+                result.first.s.minor == 0 && result.first.s.revision == 0)
+                result.second = MDCO::Error_t::REQUEST_INVALID;
+            return result;
+        }
     }  // namespace
 
     std::filesystem::path bundledEdsDir(const std::filesystem::path& configFilePath)
@@ -252,7 +265,7 @@ namespace mab
                      std::filesystem::exists(current) ? "" : " (missing!)");
 
         if (!legacy.empty())
-            log.info("Used for firmware older than %u.0.0: %s",
+            log.info("Used only to update firmware older than %u.0.0: %s",
                      (unsigned)LEGACY_EDS_BELOW_FW_MAJOR,
                      legacy.c_str());
 
@@ -287,14 +300,14 @@ namespace mab
             return std::nullopt;
         }
 
-        // Older drives use a different object dictionary layout. An installation that configures
-        // only one .eds keeps using it for every drive, which is how candletool behaved before
+        // Older drives use a different object dictionary layout, which is only needed to put them
+        // into the bootloader for a firmware update
         paths.legacy = std::filesystem::path(configStruct["eds"]["legacy path"]);
         if (!paths.legacy.empty() && !std::filesystem::exists(paths.legacy))
         {
             log.warn(
                 "legacy .eds configured in %s does not exist: %s - drives with firmware older "
-                "than %u.0.0 will not be described correctly",
+                "than %u.0.0 can not be updated over CANopen",
                 configFilePath.c_str(),
                 paths.legacy.c_str(),
                 (unsigned)LEGACY_EDS_BELOW_FW_MAJOR);
@@ -308,13 +321,14 @@ namespace mab
         return paths;
     }
 
-    void useEdsMatchingFirmware(MDCO&                                md,
+    bool useEdsMatchingFirmware(MDCO&                                md,
                                 std::shared_ptr<EDSObjectDictionary> od,
                                 const EdsPaths_S&                    paths,
-                                const Logger&                        log)
+                                const Logger&                        log,
+                                bool                                 allowLegacy)
     {
         if (od == nullptr)
-            return;
+            return true;
 
         std::error_code ec;
         const bool usingStandard = !paths.standard.empty() &&
@@ -322,7 +336,7 @@ namespace mab
 
         version_ut    firmwareVersion;
         MDCO::Error_t err;
-        std::tie(firmwareVersion, err) = md.getFirmwareVersion();
+        std::tie(firmwareVersion, err) = readFirmwareVersion(md);
 
         // The loaded .eds may not describe where a newer drive keeps its version (md_1.1 on a
         // 3.x drive), so the drive is asked again through the standard one
@@ -333,7 +347,7 @@ namespace mab
             {
                 EDSObjectDictionary selected   = std::move(*od);
                 *od                            = std::move(*standardPair.first);
-                std::tie(firmwareVersion, err) = md.getFirmwareVersion();
+                std::tie(firmwareVersion, err) = readFirmwareVersion(md);
                 if (err == MDCO::Error_t::OK &&
                     firmwareVersion.s.major >= LEGACY_EDS_BELOW_FW_MAJOR)
                 {
@@ -347,7 +361,7 @@ namespace mab
                         paths.standard.filename().string().c_str());
                     log.warn("To select it permanently use: candletool mdco eds %s",
                              paths.standard.string().c_str());
-                    return;
+                    return true;
                 }
                 *od = std::move(selected);
             }
@@ -374,19 +388,37 @@ namespace mab
                           (unsigned)firmwareVersion.s.major,
                           (unsigned)firmwareVersion.s.minor,
                           (unsigned)firmwareVersion.s.revision);
-            return;
+            return true;
+        }
+
+        if (!allowLegacy)
+        {
+            if (err == MDCO::Error_t::OK)
+                log.error("Drive firmware is %u.%u.%u, CANopen firmware older than %u.0.0 is "
+                          "not supported by this candletool",
+                          (unsigned)firmwareVersion.s.major,
+                          (unsigned)firmwareVersion.s.minor,
+                          (unsigned)firmwareVersion.s.revision,
+                          (unsigned)LEGACY_EDS_BELOW_FW_MAJOR);
+            else
+                log.error("Drive did not report its firmware version, it predates %u.0.0 which "
+                          "is not supported by this candletool",
+                          (unsigned)LEGACY_EDS_BELOW_FW_MAJOR);
+            log.error("Update the drive firmware with: candletool mdco update latest -i %u",
+                      (unsigned)md.m_canId);
+            return false;
         }
 
         // Nothing to change when the legacy .eds is already the loaded one
         if (paths.legacy.empty() || std::filesystem::equivalent(paths.legacy, paths.current, ec))
-            return;
+            return true;
 
         auto legacyPair = EDSParser::load(paths.legacy);
         if (legacyPair.second != EDSParser::Error_t::OK || legacyPair.first == nullptr)
         {
             log.error("Could not load the legacy .eds from %s, keeping the default one",
                       paths.legacy.c_str());
-            return;
+            return true;
         }
 
         *od = std::move(*legacyPair.first);
@@ -408,5 +440,6 @@ namespace mab
                 (unsigned)LEGACY_EDS_BELOW_FW_MAJOR,
                 paths.current.filename().string().c_str(),
                 paths.legacy.filename().string().c_str());
+        return true;
     }
 }  // namespace mab

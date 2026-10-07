@@ -94,17 +94,27 @@ namespace mab
 
         Error_t setMaxTorque(float maxTorque /*Nm*/);
 
-        Error_t setProfileVelocity(float profileVelocity /*s^-1*/);
+        // Position, velocity and acceleration are in rad, rad/s and rad/s^2, converted to the
+        // drive units declared by the SI unit objects (0x60A8..0x60AA) of the .eds. The CO
+        // variants take and return the raw CANopen values of the objects instead
 
-        Error_t setProfileAcceleration(float profileAcceleration /*s^-2*/);
+        Error_t setProfileVelocity(float profileVelocity /*rad/s*/);
+        Error_t setProfileVelocityCO(u32 profileVelocity /*0x60A9 units*/);
 
-        Error_t setProfileDeceleration(float profileDeceleration /*s^-2*/);
+        Error_t setProfileAcceleration(float profileAcceleration /*rad/s^2*/);
+        Error_t setProfileAccelerationCO(u32 profileAcceleration /*0x60AA units*/);
 
-        Error_t setPositionWindow(u32 windowSize /*encode tics*/);
+        Error_t setProfileDeceleration(float profileDeceleration /*rad/s^2*/);
+        Error_t setProfileDecelerationCO(u32 profileDeceleration /*0x60AA units*/);
 
-        Error_t setTargetPosition(i32 position /*encoder ticks*/);
+        Error_t setPositionWindow(float windowSize /*rad*/);
+        Error_t setPositionWindowCO(u32 windowSize /*0x60A8 units*/);
+
+        Error_t setTargetPosition(float position /*rad*/);
+        Error_t setTargetPositionCO(i32 position /*0x60A8 units*/);
 
         Error_t setTargetVelocity(float velocity /*rad/s*/);
+        Error_t setTargetVelocityCO(i32 velocity /*0x60A9 units*/);
 
         Error_t setTargetTorque(float torque /*Nm*/);
 
@@ -137,17 +147,21 @@ namespace mab
                   Error_t>
         getMotionStatus();
 
-        std::pair<i32, Error_t> getPosition();
+        std::pair<float, Error_t> getPosition(/*rad*/);
+        std::pair<i32, Error_t>   getPositionCO(/*0x60A8 units*/);
 
-        std::pair<float, Error_t> getVelocity();
+        std::pair<float, Error_t> getVelocity(/*rad/s*/);
+        std::pair<i32, Error_t>   getVelocityCO(/*0x60A9 units*/);
 
         std::pair<float, Error_t> getTorque();
 
-        std::pair<float, Error_t> getOutputEncoderPosition();
+        std::pair<float, Error_t> getOutputEncoderPosition(/*rad*/);
+        std::pair<i32, Error_t>   getOutputEncoderPositionCO(/*0x60A8 units*/);
 
-        std::pair<float, Error_t> getOutputEncoderVelocity();
+        std::pair<float, Error_t> getOutputEncoderVelocity(/*rad/s*/);
+        std::pair<i32, Error_t>   getOutputEncoderVelocityCO(/*0x60A9 units*/);
 
-        std::pair<u8, Error_t> getTemperature();
+        std::pair<u8, Error_t> getTemperature(/*motor, C*/);
 
         std::pair<bool, Error_t> targetReached();
 

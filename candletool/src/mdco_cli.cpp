@@ -151,7 +151,9 @@ namespace
 }  // namespace
 
 std::unique_ptr<MDCO, std::function<void(MDCO*)>> MdcoCli::getMdco(
-    const std::shared_ptr<canId_t> mdCanId, std::shared_ptr<EDSObjectDictionary> od)
+    const std::shared_ptr<canId_t>       mdCanId,
+    std::shared_ptr<EDSObjectDictionary> od,
+    bool                                 allowLegacy)
 {
     m_candleBuilder->useCAN20Frames = true;
     auto candle                     = m_candleBuilder->build().value_or(nullptr);
@@ -169,7 +171,9 @@ std::unique_ptr<MDCO, std::function<void(MDCO*)>> MdcoCli::getMdco(
         std::unique_ptr<MDCO, std::function<void(MDCO*)>>(new MDCO(*mdCanId, candle, od), deleter);
     if (md->init() == MDCO::Error_t::OK)
     {
-        useEdsMatchingFirmware(*md, od, m_edsPaths, m_log);
+        // Drives older than 3.0.0 are only reachable through the update and reset commands
+        if (!useEdsMatchingFirmware(*md, od, m_edsPaths, m_log, allowLegacy))
+            return nullptr;
         return md;
     }
     else
@@ -226,7 +230,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             auto od   = loadEDS().first;
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
-                m_log.error("Failed to conect to mdco!");
+                return m_log.error("Failed to conect to mdco!");
             if (mdco->blink() != MDCO::Error_t::OK)
             {
                 m_log.error("Failed to blink MD device with ID %d", *mdCanId);
@@ -249,22 +253,11 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             if (mdco == nullptr)
                 return;
 
-            // node-ID range changed with firmware 3.0.0, a drive not reporting its version is
-            // older than that
-            canId_t minId = 1, maxId = 32;
-            auto [version, versionErr] = mdco->getFirmwareVersion();
-            bool legacy = versionErr != MDCO::Error_t::OK ||
-                          version.s.major < LEGACY_EDS_BELOW_FW_MAJOR;
-            if (!legacy)
-            {
-                minId = 10;
-                maxId = 127;
-            }
+            constexpr canId_t minId = 10, maxId = 127;
             if (*canOptions.canId < minId || *canOptions.canId > maxId)
             {
-                m_log.error("CAN id out of range! Valid range for this firmware is %u-%u",
-                            (unsigned)minId,
-                            (unsigned)maxId);
+                m_log.error(
+                    "CAN id out of range! Valid range is %u-%u", (unsigned)minId, (unsigned)maxId);
                 return;
             }
             if (*canOptions.canId == *mdCanId)
@@ -285,20 +278,10 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 return;
             }
 
-            // activate the new id, firmware 3.0.0+ applies it on NMT reset communication, older
-            // ones on CAN reinit. The drive may already answer from the new id, so a failed
-            // transfer here is not conclusive, the validation below is
-            if (legacy)
-            {
-                EDSEntry* reinitObj =
-                    md_objects::resolveObject(*od, md_objects::CMD_REINIT_CAN, m_log);
-                if (reinitObj == nullptr)
-                    return;
-                reinitObj->setFromString("1");
-                mdco->writeSDO(*reinitObj);
-            }
-            else
-                mdco->resetCommunicationNMT();
+            // activate the new id, it is applied on NMT reset communication. The drive may
+            // already answer from the new id, so a failed transfer here is not conclusive, the
+            // validation below is
+            mdco->resetCommunicationNMT();
             mdco = nullptr;
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
@@ -418,7 +401,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             auto od   = loadEDS().first;
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
-                m_log.error("Failed to conect to mdco!");
+                return m_log.error("Failed to conect to mdco!");
             if (mdco->clearErrors() != MDCO::Error_t::OK)
             {
                 m_log.error("Failed to clear errors!");
@@ -479,9 +462,11 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     encoderDisplay->callback(
         [this, mdCanId, loadEDS]()
         {
-            auto          od   = loadEDS().first;
-            auto          mdco = getMdco(mdCanId, od);
-            MDCO::Error_t err  = mdco->readSDO(((*od)[0x6064]));
+            auto od   = loadEDS().first;
+            auto mdco = getMdco(mdCanId, od);
+            if (mdco == nullptr)
+                return m_log.error("Failed to conect to mdco!");
+            MDCO::Error_t err = mdco->readSDO(((*od)[0x6064]));
             if (err != MDCO::Error_t::OK)
             {
                 m_log.error("Error reading encoder value");
@@ -512,7 +497,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
 
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
-                m_log.error("Failed to conect to mdco!");
+                return m_log.error("Failed to conect to mdco!");
 
             if (readOption.subindex->has_value())
             {
@@ -574,7 +559,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
 
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
-                m_log.error("Failed to conect to mdco!");
+                return m_log.error("Failed to conect to mdco!");
 
             if (writeOption.subindex->has_value())
             {
@@ -629,8 +614,12 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     reset->callback(
         [this, mdCanId, loadEDS]()
         {
-            auto          od  = loadEDS().first;
-            auto          md  = getMdco(mdCanId, od);
+            // the reset command lives at 0x2003:02 in md_1.1 and at 0x2023:08 in md_1.2, the
+            // dictionary matching the drive firmware is picked so both are reachable
+            auto od = loadEDS().first;
+            auto md = getMdco(mdCanId, od, true);
+            if (md == nullptr)
+                return m_log.error("Failed to conect to mdco!");
             MDCO::Error_t err = md->reset();
             if (err != MDCO::Error_t::OK)
             {
@@ -670,7 +659,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             auto od   = loadEDS().first;
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
-                m_log.error("Failed to conect to mdco!");
+                return m_log.error("Failed to conect to mdco!");
             if (mdco->enterConfigMode() != MDCO::Error_t::OK)
             {
                 m_log.error("Could not enter config mode!");
@@ -849,7 +838,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     CLI::App* testMoveAbs = testMove->add_subcommand(
         "absolute", "Move motor to absolute position using position profile mode.");
 
-    MoveOptions moveOptionsAbs(testMoveAbs);
+    MoveOptions moveOptionsAbs(testMoveAbs, "rad");
 
     testMoveAbs->callback(
         [this, mdCanId, loadEDS, moveOptionsAbs]()
@@ -861,7 +850,8 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             if (mdco->setOperationMode(mab::ModesOfOperation::ProfilePosition) != MDCO::Error_t::OK)
                 return m_log.error("Failed move");
 
-            if (mdco->setTargetVelocity(1'000'000) != MDCO::Error_t::OK)
+            // cruise speed of the profile
+            if (mdco->setProfileVelocity(10.0f) != MDCO::Error_t::OK)
                 return m_log.error("Failed move");
 
             if (mdco->setTargetPosition(*moveOptionsAbs.target) != MDCO::Error_t::OK)
@@ -895,7 +885,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     CLI::App* testMoveRel = testMove->add_subcommand(
         "relative", "Move motor to relative position using impedance mode.");
 
-    MoveOptions moveOptionsRel(testMoveRel);
+    MoveOptions moveOptionsRel(testMoveRel, "rad");
 
     testMoveRel->callback(
         [this, mdCanId, loadEDS, moveOptionsRel]()
@@ -903,7 +893,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             auto od   = loadEDS().first;
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
-                m_log.error("Failed to conect to mdco!");
+                return m_log.error("Failed to conect to mdco!");
             if (mdco->disable() != MDCO::Error_t::OK)
             {
                 m_log.error("Failed move");
@@ -916,10 +906,10 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             }
 
             // Arbitrary clamping, better to change that in the future
-            *moveOptionsRel.target = std::clamp(*moveOptionsRel.target, -320'000, 320'000);
+            *moveOptionsRel.target = std::clamp(*moveOptionsRel.target, -2.0f, 2.0f);
 
-            i32 target = mdco->getPosition().first;
-            i32 step   = *moveOptionsRel.target / 100;
+            float target = mdco->getPosition().first;
+            float step   = *moveOptionsRel.target / 100;
             mdco->setTargetPosition(target);
 
             if (mdco->enable() != MDCO::Error_t::OK)
@@ -949,7 +939,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     CLI::App* testMoveVel =
         testMove->add_subcommand("velocity", "Move motor with specified velocity.");
 
-    MoveOptions moveOptionsVel(testMoveVel);
+    MoveOptions moveOptionsVel(testMoveVel, "rad/s");
 
     testMoveVel->callback(
         [this, mdCanId, loadEDS, moveOptionsVel]()
@@ -957,14 +947,13 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             auto od   = loadEDS().first;
             auto mdco = getMdco(mdCanId, od);
             if (mdco == nullptr)
-                m_log.error("Failed to conect to mdco!");
+                return m_log.error("Failed to conect to mdco!");
             if (mdco->disable() != MDCO::Error_t::OK)
             {
                 m_log.error("Failed move");
                 return;
             }
-            if (mdco->setOperationMode(mab::ModesOfOperation::CyclicSyncVelocity) !=
-                MDCO::Error_t::OK)
+            if (mdco->setOperationMode(mab::ModesOfOperation::ProfileVelocity) != MDCO::Error_t::OK)
             {
                 m_log.error("Failed move");
                 return;
@@ -976,8 +965,7 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 m_log.error("Failed move");
                 return;
             }
-            if (mdco->setOperationMode(mab::ModesOfOperation::CyclicSyncVelocity) !=
-                MDCO::Error_t::OK)
+            if (mdco->setOperationMode(mab::ModesOfOperation::ProfileVelocity) != MDCO::Error_t::OK)
             {
                 m_log.error("Failed move");
                 return;
