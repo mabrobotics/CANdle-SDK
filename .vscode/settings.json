@@ -1,7 +1,8 @@
 {
-    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
-    "clangd.enable": false,
-    "C_Cpp.intelliSenseEngine": "default",
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "clangd.arguments": [
+        "--query-driver=/usr/bin/*g++*,/usr/bin/c++"
+    ],
     "cmake.buildDirectory": "${workspaceFolder}/build",
     "cmake.generator": "Unix Makefiles",
     "editor.formatOnSave": true,
@@ -85,10 +86,19 @@
         "hash_map": "cpp"
     },
     "cSpell.words": [
+        "ARMHF",
         "Bootloader",
         "Candletool",
+        "CANOPEN",
         "Devcontainers",
         "MDCO"
     ],
-    "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
+    "[cpp]": {
+        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
+        "editor.formatOnSave": true
+    },
+    "[c]": {
+        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
+        "editor.formatOnSave": true
+    }
 }

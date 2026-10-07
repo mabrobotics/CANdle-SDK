@@ -11,6 +11,7 @@
 #include "CLI/CLI.hpp"
 #include "pds_cli.hpp"
 #include "mdco_cli.hpp"
+#include "candletool_cli.hpp"
 
 #include "utilities.hpp"
 
@@ -135,16 +136,19 @@ int main(int argc, char** argv)
     // of parsers
     candleBuilder->preBuildTask = preBuildTask;
 
-    CandleCli candleCli(&app, candleToolCtx);
-    MDCli     mdCli(&app, candleToolCtx);
-    PdsCli    pdsCli(app, candleBuilder);
-    MdcoCli   mdcoCli(app, candleToolCtx);
+    CandleCli     candleCli(&app, candleToolCtx);
+    MDCli         mdCli(&app, candleToolCtx);
+    PdsCli        pdsCli(app, candleBuilder);
+    MdcoCli       mdcoCli(app, candleToolCtx);
+    CandletoolCli candletoolCli(&app, candleToolCtx);
 
     CLI11_PARSE(app, argc, argv);
     if (showCandleSDKVersion)
     {
-        std::cout << CANDLESDK_VERSION;;
-        if (CANDLETOOL_VTAG != 'm')
+        std::cout << CANDLESDK_VERSION;
+
+        // Only CI release builds ('r') print the bare version; others add tag and commit
+        if (CANDLETOOL_VTAG != 'r')
             std::cout << "_" << CANDLETOOL_VTAG << "_" << CANDLESDK_VERSION_HASH;
         std::cout << "\n";
     }

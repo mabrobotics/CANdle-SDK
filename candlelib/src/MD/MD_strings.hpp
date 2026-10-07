@@ -201,7 +201,7 @@ namespace mab
         static inline const std::map<u32, std::string_view> fromNumericMap{
             {0, "OFF"}, {1, "BRAKE"}, {2, "GPIO_INPUT"}};
         static inline const std::map<std::string_view, u32> toNumericMap{
-            {"OFF", 0}, {"AUTO_BRAKE", 1}, {"BRAKE", 1}, {"GPIO_INPUT", 2}};
+            {"OFF", 0}, {"NONE", 0}, {"AUTO_BRAKE", 1}, {"BRAKE", 1}, {"GPIO_INPUT", 2}};
 
         static std::optional<u32> toNumeric(const std::string_view val)
         {

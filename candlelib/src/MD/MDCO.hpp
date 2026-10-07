@@ -82,6 +82,10 @@ namespace mab
 
         Error_t setOperationMode(mab::ModesOfOperation mode);
 
+        /// @brief Read the firmware version of the drive
+        /// @return version of the firmware and the result of the transfer
+        std::pair<version_ut, Error_t> getFirmwareVersion();
+
         Error_t setPositionPIDparam(float kp, float ki, float kd, float integralMax);
 
         Error_t setVelocityPIDparam(float kp, float ki, float kd, float integralMax);
@@ -90,17 +94,27 @@ namespace mab
 
         Error_t setMaxTorque(float maxTorque /*Nm*/);
 
-        Error_t setProfileVelocity(float profileVelocity /*s^-1*/);
+        // Position, velocity and acceleration are in rad, rad/s and rad/s^2, converted to the
+        // drive units declared by the SI unit objects (0x60A8..0x60AA) of the .eds. The CO
+        // variants take and return the raw CANopen values of the objects instead
 
-        Error_t setProfileAcceleration(float profileAcceleration /*s^-2*/);
+        Error_t setProfileVelocity(float profileVelocity /*rad/s*/);
+        Error_t setProfileVelocityCO(u32 profileVelocity /*0x60A9 units*/);
 
-        Error_t setProfileDeceleration(float profileDeceleration /*s^-2*/);
+        Error_t setProfileAcceleration(float profileAcceleration /*rad/s^2*/);
+        Error_t setProfileAccelerationCO(u32 profileAcceleration /*0x60AA units*/);
 
-        Error_t setPositionWindow(u32 windowSize /*encode tics*/);
+        Error_t setProfileDeceleration(float profileDeceleration /*rad/s^2*/);
+        Error_t setProfileDecelerationCO(u32 profileDeceleration /*0x60AA units*/);
 
-        Error_t setTargetPosition(i32 position /*encoder ticks*/);
+        Error_t setPositionWindow(float windowSize /*rad*/);
+        Error_t setPositionWindowCO(u32 windowSize /*0x60A8 units*/);
+
+        Error_t setTargetPosition(float position /*rad*/);
+        Error_t setTargetPositionCO(i32 position /*0x60A8 units*/);
 
         Error_t setTargetVelocity(float velocity /*rad/s*/);
+        Error_t setTargetVelocityCO(i32 velocity /*0x60A9 units*/);
 
         Error_t setTargetTorque(float torque /*Nm*/);
 
@@ -133,17 +147,21 @@ namespace mab
                   Error_t>
         getMotionStatus();
 
-        std::pair<i32, Error_t> getPosition();
+        std::pair<float, Error_t> getPosition(/*rad*/);
+        std::pair<i32, Error_t>   getPositionCO(/*0x60A8 units*/);
 
-        std::pair<float, Error_t> getVelocity();
+        std::pair<float, Error_t> getVelocity(/*rad/s*/);
+        std::pair<i32, Error_t>   getVelocityCO(/*0x60A9 units*/);
 
         std::pair<float, Error_t> getTorque();
 
-        std::pair<float, Error_t> getOutputEncoderPosition();
+        std::pair<float, Error_t> getOutputEncoderPosition(/*rad*/);
+        std::pair<i32, Error_t>   getOutputEncoderPositionCO(/*0x60A8 units*/);
 
-        std::pair<float, Error_t> getOutputEncoderVelocity();
+        std::pair<float, Error_t> getOutputEncoderVelocity(/*rad/s*/);
+        std::pair<i32, Error_t>   getOutputEncoderVelocityCO(/*0x60A9 units*/);
 
-        std::pair<u8, Error_t> getTemperature();
+        std::pair<u8, Error_t> getTemperature(/*motor, C*/);
 
         std::pair<bool, Error_t> targetReached();
 
@@ -152,6 +170,12 @@ namespace mab
         Error_t writeSDO(EDSEntry& edsEntry) const;
 
         Error_t resetNMT() const;
+
+        /// @brief NMT Reset communication, activates a newly written node-ID (0x2000:01)
+        Error_t resetCommunicationNMT() const;
+
+        /// @brief NMT Start remote node: pre-operational -> operational (PDOs enabled)
+        Error_t startNMT() const;
 
         static std::vector<canId_t> discoverOpenMDs(Candle*                              candle,
                                                     std::shared_ptr<EDSObjectDictionary> od);
@@ -164,6 +188,9 @@ namespace mab
         /// @brief Generate the Object Dictionary from the EDS file
         /// @return A vector of edsObject representing the Object Dictionary
         std::shared_ptr<EDSObjectDictionary> m_od;
+
+        /// @brief Send an NMT command (CiA301: COB-ID 0x000, DLC 2) to this node
+        Error_t sendNMT(u8 command) const;
 
         inline std::pair<std::vector<u8>, mab::candleTypes::Error_t> transferCanOpenFrame(
             i16 Id, std::vector<u8> frameToSend, size_t responseSize) const

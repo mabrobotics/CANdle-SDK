@@ -1,5 +1,8 @@
 #include "md_cli.hpp"
+
+#include "eds_selection.hpp"
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <ios>
 #include <memory>
@@ -8,6 +11,7 @@
 #include <string_view>
 #include <filesystem>
 #include <variant>
+#include "MDCO.hpp"
 #include "MDStatus.hpp"
 #include "canLoader.hpp"
 #include "candle.hpp"
@@ -16,58 +20,19 @@
 #include "manufacturer_data.hpp"
 #include "md_types.hpp"
 #include "mabFileParser.hpp"
-#include "md_cfg_map.hpp"
+#include "cfg_map.hpp"
 #include "utilities.hpp"
 #include "MDStatus.hpp"
 #include "mini/ini.h"
 #include "configHelpers.hpp"
 #include "curl_handler.hpp"
+#include "edsEntry.hpp"
+#include "edsParser.hpp"
 #include "flasher.hpp"
-
-#ifndef WIN32
-
-#define REDSTART    "\033[1;31m"
-#define GREENSTART  "\033[1;32m"
-#define YELLOWSTART "\033[1;33m"
-#define BLUESTART   "\x1b[38;5;33m"
-#define RESETTEXT   "\033[0m"
-
-#else
-
-#define REDSTART    ""
-#define GREENSTART  ""
-#define YELLOWSTART ""
-#define BLUESTART   ""
-#define RESETTEXT   ""
-
-#endif
-
-#define RED__(x) REDSTART x RESETTEXT
-#define RED_(x)  REDSTART + x + RESETTEXT
-
-#define GREEN__(x) GREENSTART x RESETTEXT
-#define GREEN_(x)  GREENSTART + x + RESETTEXT
-
-#define YELLOW__(x) YELLOWSTART x RESETTEXT
-#define YELLOW_(x)  YELLOWSTART + x + RESETTEXT
-
-#define BLUE__(x) BLUESTART x RESETTEXT
-#define BLUE_(x)  BLUESTART + x + RESETTEXT
+#include "md_update.hpp"
 
 namespace mab
 {
-    version_ut getMdFirmwareVersion(MD& md)
-    {
-        md.readRegister(md.m_mdRegisters.firmwareVersion);
-        return {.i = md.m_mdRegisters.firmwareVersion.value};
-    }
-    bool isVersionAtLeast(version_ut fwVersion, int major, int minor, int rev)
-    {
-        if (fwVersion.s.major < major || fwVersion.s.minor < minor || fwVersion.s.revision < rev)
-            return false;
-        return true;
-    }
-
     MDCli::MDCli(CLI::App* rootCli, CANdleToolCtx_S ctx)
     {
         if (ctx.candleBranchVec.empty())
@@ -226,10 +191,7 @@ namespace mab
                         "It appears the drive does not require a calibration. Are you sure you "
                         "want to proceed?");
 
-                std::string answer;
-                std::cout << "Type 'Y' to continue: ";
-                std::getline(std::cin, answer);
-                if (answer != "Y" && answer != "y")
+                if (!userConfirm())
                 {
                     m_logger.error("Calibration aborted by user!");
                     return;
@@ -266,6 +228,30 @@ namespace mab
                     doOnMainEncoder = false;
                 if (*calibrationOptions.calibrationOfEncoder == "main")
                     doOnAuxEncoder = false;
+
+                // Resistance and inductance are measured by the main encoder calibration, the
+                // aux one uses them, so they are cleared only when the main one runs
+                if (*calibrationOptions.autodetect)
+                {
+                    if (!doOnMainEncoder)
+                    {
+                        m_logger.error("--autodetect needs the main encoder calibration");
+                        return;
+                    }
+                    // Note: before fw 3.0.1 the drive measures them during every calibration
+                    if (isVersionAtLeast(getMdFirmwareVersion(*md), 3, 0, 1))
+                    {
+                        registers.motorResistance = 0.f;
+                        registers.motorInductance = 0.f;
+                        if (md->writeRegisters(registers.motorResistance,
+                                               registers.motorInductance) != MD::Error_t::OK)
+                        {
+                            m_logger.error("Could not clear motor resistance and inductance!");
+                            return;
+                        }
+                        m_logger.info("Motor resistance and inductance cleared");
+                    }
+                }
 
                 // Perform main encoder calibration
                 f32 calibrationTime = 40;  // seconds
@@ -433,25 +419,17 @@ namespace mab
                     return;
                 }
 
-                MDConfigMap cfgMap;
-                for (auto& [regAddress, cfgElement] : cfgMap.m_map)
+                CfgValues_S cfg;
+                for (size_t i = 0; i < CFG_MAP_SIZE; i++)
                 {
-                    cfgElement.m_value = registerRead(*md, regAddress).value_or("NOT FOUND");
+                    if (CFG_MAP[i].mdReg == 0)
+                        continue;
+                    std::optional<std::string> value = registerRead(*md, CFG_MAP[i].mdReg);
+                    if (value.has_value())
+                        cfg.value[i] = cfgFromRaw(CFG_MAP[i], value.value());
                 }
-                // Write the configuration to the file
-                mINI::INIFile      configFile(configFilePath.string());
-                mINI::INIStructure ini;
-                for (const auto& [regAddress, cfgElement] : cfgMap.m_map)
-                {
-                    ini[cfgElement.m_tomlSection.data()][cfgElement.m_tomlKey.data()] =
-                        cfgElement.getReadable();
-                }
-                if (!configFile.generate(ini, true))
-                {
-                    m_logger.error("Could not write configuration to file: %s",
-                                   configFilePath.c_str());
+                if (!cfgSave(configFilePath, cfg))
                     return;
-                }
                 m_logger.success("Configuration downloaded successfully to %s",
                                  configFilePath.c_str());
             });
@@ -486,41 +464,74 @@ namespace mab
                     !configFilePath.string().starts_with("../"))
                     configFilePath = getMotorsConfigPath() / configFilePath;
 
-                mINI::INIFile      configFile(configFilePath.string());
-                mINI::INIStructure ini;
-                if (!configFile.read(ini))
-                {
-                    m_logger.error("Could not read configuration file: %s", configFilePath.c_str());
+                CfgValues_S cfg;
+                if (!cfgLoad(configFilePath, cfg))
                     return;
-                }
 
-                MDConfigMap cfgMap;
-
-                for (auto& [address, toml] : cfgMap.m_map)
+                for (size_t i = 0; i < CFG_MAP_SIZE; i++)
                 {
-                    auto it = ini[toml.m_tomlSection.data()][toml.m_tomlKey.data()];
-                    if (it.empty())
+                    const CfgMap_S& entry = CFG_MAP[i];
+                    if (entry.mdReg == 0 || !cfgIsSet(entry, cfg.value[i]))
+                        continue;
+                    // Note: before fw 3.0.1, motor resistance and inductance are Read only
+                    if ((entry.mdReg == (u16)MDRegisterAddress_E::motorResistance ||
+                         entry.mdReg == (u16)MDRegisterAddress_E::motorInductance) &&
+                        !isVersionAtLeast(fwVersion, 3, 0, 1))
                     {
-                        m_logger.warn("Key %s.%s not found in configuration file. Skipping.",
-                                      toml.m_tomlSection.data(),
-                                      toml.m_tomlKey.data());
+                        m_logger.warn("%s.%s is read only before firmware 3.0.1, skipping",
+                                      entry.section,
+                                      entry.key);
                         continue;
                     }
-                    if (!toml.setFromReadable(it))
+                    if (entry.mdReg == (u16)MDRegisterAddress_E::shuntResistance)
                     {
-                        m_logger.error("Could not set value for %s.%s",
-                                       toml.m_tomlSection.data(),
-                                       toml.m_tomlKey.data());
+                        // Note: after fw 3.0, shuntResistance is Read only
+                        if (isVersionAtLeast(fwVersion, 3, 0, 0))
+                            continue;
+                        // Legacy firmware reports MD20 as HD10 (5), every other board has 1 mOhm
+                        MDRegisters_S regs;
+                        if (md->readRegister(regs.legacyHardwareVersion) != MD::Error_t::OK)
+                            m_logger.warn("Could not read hardware version, shunt resistance "
+                                          "is not checked");
+                        else
+                        {
+                            const bool   isMd20   = regs.legacyHardwareVersion.value == 5;
+                            const double expected = isMd20 ? 0.004 : 0.001;
+                            const double shunt = std::strtod(cfg.value[i].c_str(), nullptr);
+                            if (std::abs(shunt - expected) > 1e-6)
+                            {
+                                m_logger.warn(
+                                    "hardware.shunt resistance = %s, but %s hardware has %.3f "
+                                    "ohm. Write it anyway?",
+                                    cfg.value[i].c_str(),
+                                    MDLegacyHwVersion_S::toReadable(
+                                        regs.legacyHardwareVersion.value)
+                                        .value_or("Unknown")
+                                        .c_str(),
+                                    expected);
+                                if (!userConfirm())
+                                {
+                                    m_logger.error("Upload aborted by user!");
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                    std::optional<std::string> raw = cfgToRaw(entry, cfg.value[i]);
+                    if (!raw.has_value())
+                    {
+                        m_logger.error(
+                            "Could not set value for %s.%s", entry.section, entry.key);
                         return;
                     }
-                    // Write the value to the MD
-
-                    // Note: after fw 3.0, shuntResistance is Read only
-                    if (address == (u16)MDRegisterAddress_E::shuntResistance &&
-                        isVersionAtLeast(fwVersion, 3, 0, 0))
-                        md->readRegister(md->m_mdRegisters.firmwareVersion);
-                    else
-                        registerWrite(*md, address, toml.m_value);
+                    if (registerWrite(*md, entry.mdReg, raw.value(), true))
+                    {
+                        const std::string source =
+                            std::string(entry.section) + "." + entry.key + " = " + cfg.value[i];
+                        char target[8];
+                        std::snprintf(target, sizeof(target), "0x%03X", entry.mdReg);
+                        cfgPrintWrite(m_logger, source, cfg.isDefault[i], target, raw.value());
+                    }
                 }
 
                 if (md->save() != MD::Error_t::OK)
@@ -546,10 +557,7 @@ namespace mab
                     "The factory reset, will erase the whole configuration from the drive, "
                     "including its CAN ID to 100 (0x64)! Proceed?");
 
-                std::string answer;
-                std::cout << "Type 'Y' to continue: ";
-                std::getline(std::cin, answer);
-                if (answer != "Y" && answer != "y")
+                if (!userConfirm())
                 {
                     m_logger.error("Factory Reset aborted by user!");
                     return;
@@ -572,8 +580,6 @@ namespace mab
         verifyCfg->callback(
             [this, verifyConfigOptions, ctx]()
             {
-                static constexpr std::string_view REQUIRED_SUFFIX = "_required";
-
                 const std::filesystem::path schemaPathSuf = "config/md_config_schema.ini";
                 const std::filesystem::path schemaPath    = *ctx.packageEtcPath / schemaPathSuf;
                 m_logger.debug("Looking at schema: %s", schemaPath.c_str());
@@ -596,47 +602,9 @@ namespace mab
                     m_logger.error("Error while loading schema file: %s", schemaPath.c_str());
                     exit(1);
                 }
-                MDConfigMap        mdCfgMap(schemaStruct);
-                mINI::INIFile      configFile(*verifyConfigOptions.configFile);
-                mINI::INIStructure cfgini;
-                if (!configFile.read(cfgini))
-                {
-                    m_logger.error("Error while loading schema file: %s", schemaPath.c_str());
+                CfgValues_S cfg;
+                if (!cfgLoad(*verifyConfigOptions.configFile, cfg) || !cfgVerify(cfg, schemaStruct))
                     exit(1);
-                }
-
-                for (auto& [address, toml] : mdCfgMap.m_map)
-                {
-                    std::string val = cfgini[toml.m_tomlSection.data()][toml.m_tomlKey.data()];
-                    if (val.empty())
-                    {
-                        m_logger.warn("Key %s.%s not found in configuration file. Skipping.",
-                                      toml.m_tomlSection.data(),
-                                      toml.m_tomlKey.data());
-                        std::string reqKey(toml.m_tomlKey);
-                        reqKey.append(REQUIRED_SUFFIX);
-                        if (schemaStruct[std::string(toml.m_tomlSection)][reqKey] == "true")
-                        {
-                            m_logger.error("This key is required for proper MD operation!");
-                            exit(1);
-                        }
-
-                        continue;
-                    }
-                    if (!toml.setFromReadable(val))
-                    {
-                        m_logger.error(
-                            "Can not set %s.%s", toml.m_tomlSection.data(), toml.m_tomlKey.data());
-                        continue;
-                    }
-                    if (!toml.verify())
-                    {
-                        m_logger.error("Found invalid parameter %s.%s",
-                                       toml.m_tomlSection.data(),
-                                       toml.m_tomlKey.data());
-                        exit(1);
-                    }
-                }
                 m_logger.success("The config file is valid!");
             });
 
@@ -744,11 +712,16 @@ namespace mab
                              << std::endl;
                     m_logger << "- batch: " << std::string(readableRegisters.productionBatch.value)
                              << std::endl;
-                    m_logger << "- manufactured: "
-                             << std::string(readableRegisters.productionDate.value)
-                                    .insert(4, ".")
-                                    .insert(2, ".")
-                             << std::endl;
+                    std::string manufactured(readableRegisters.productionDate.value);
+                    if (manufactured.size() >= 6)
+                    {
+                        manufactured.insert(4, ".").insert(2, ".");
+                    }
+                    else
+                    {
+                        manufactured = "NONE";
+                    }
+                    m_logger << "- manufactured: " << manufactured << std::endl;
                 }
                 else
                 {
@@ -885,69 +858,17 @@ namespace mab
                              << readableRegisters.motorTemperature.value << " *C" << std::endl;
 
                 m_logger << std::endl;
-                auto statusToString =
-                    []<typename T>(
-                        const std::unordered_map<T, MDStatus::StatusItem_S> statusItemList)
-                    -> std::string
-                {
-                    std::string result;
-                    for (const auto& [key, item] : statusItemList)
-                    {
-                        if (item.isSet())
-                        {
-                            if (!result.empty())
-                                result += ", ";
-                            if (item.isError)
-                                result += RED_(item.name);
-                            else
-                                result += YELLOW_(item.name);
-                        }
-                    }
-                    if (result.empty())
-                        result = GREEN__("OK");
-                    else
-                        result = "Set flags: " + result;
-                    return result;
-                };
-
-                m_logger << "***** ERRORS *****" << std::endl;
-                m_logger << "- main encoder error: 	0x" << std::hex
-                         << readableRegisters.mainEncoderStatus.value << std::dec << " ("
-                         << statusToString(md->getMainEncoderStatus().first) << ")" << std::endl;
-
-                if (readableRegisters.auxEncoder.value != 0)
-                {
-                    m_logger << "- aux encoder status: 	0x" << std::hex
-                             << readableRegisters.auxEncoderStatus.value << std::dec << " ("
-                             << statusToString(md->getOutputEncoderStatus().first) << ")"
-                             << std::endl;
-                }
-
-                m_logger << "- calibration status: 	0x" << std::hex
-                         << readableRegisters.calibrationStatus.value << std::dec << " ("
-                         << statusToString(md->getCalibrationStatus().first) << ")" << std::endl;
-
-                m_logger << "- bridge status: 	0x" << std::hex
-                         << readableRegisters.bridgeStatus.value << std::dec << " ("
-                         << statusToString(md->getBridgeStatus().first) << ")" << std::endl;
-
-                m_logger << "- hardware status: 	0x" << std::hex
-                         << readableRegisters.hardwareStatus.value << std::dec << " ("
-                         << statusToString(md->getHardwareStatus().first) << ")" << std::endl;
-
-                m_logger << "- communication status:  0x" << std::hex
-                         << readableRegisters.communicationStatus.value << std::dec << " ("
-                         << statusToString(md->getCommunicationStatus().first) << ")" << std::endl;
-
-                m_logger << "- motion status: 	0x" << std::hex
-                         << readableRegisters.motionStatus.value << std::dec << " ("
-                         << statusToString(md->getMotionStatus().first) << ")" << std::endl;
-                m_logger << "- misc status: 	0x" << std::hex
-                         << readableRegisters.miscStatus.value << std::dec << " ("
-                         << statusToString(md->getMiscStatus().first) << ")" << std::endl;
-                m_logger << "- config status: 	0x" << std::hex
-                         << readableRegisters.configStatus.value << std::dec << " ("
-                         << statusToString(md->getConfigStatus().first) << ")" << std::endl;
+                printStatusSummary(m_logger,
+                                   {.mainEncoder   = readableRegisters.mainEncoderStatus.value,
+                                    .auxEncoder    = readableRegisters.auxEncoderStatus.value,
+                                    .calibration   = readableRegisters.calibrationStatus.value,
+                                    .bridge        = readableRegisters.bridgeStatus.value,
+                                    .hardware      = readableRegisters.hardwareStatus.value,
+                                    .communication = readableRegisters.communicationStatus.value,
+                                    .motion        = readableRegisters.motionStatus.value,
+                                    .misc          = readableRegisters.miscStatus.value,
+                                    .config        = readableRegisters.configStatus.value,
+                                    .hasAuxEncoder = readableRegisters.auxEncoder.value != 0});
             });
 
         // Register =======================================================================
@@ -1283,144 +1204,12 @@ namespace mab
         update->callback(
             [this, candleBuilder, mdCanId, updateOptions, ctx]()
             {
-                if (*updateOptions.forceErase)
-                {
-                    m_logger.info(
-                        "The force-erase, will erase the whole configuration from the drive, "
-                        "including"
-                        "bootloader configuration. Drives' CAN ID will be set default 100 (0x64)! "
-                        "Proceed?");
-                    std::string answer;
-                    std::cout << "Type 'Y' to continue: ";
-                    std::getline(std::cin, answer);
-                    if (answer != "Y" && answer != "y")
-                    {
-                        m_logger.error("Factory Reset aborted by user!");
-                        return;
-                    }
-                    auto candle = candleBuilder->build().value_or(nullptr);
-                    if (candle == nullptr)
-                    {
-                        m_logger.error("Could not connect to candle!");
-                        return;
-                    }
-                    if (!*updateOptions.recovery)
-                    {
-                        MD md(*mdCanId, candle);
-                        md.reset();
-                        usleep(200'000);
-                    }
-                    CanLoader canLoader(candle, nullptr, *mdCanId);
-                    if (!canLoader.forceEraseConfig())
-                    {
-                        m_logger.error("Force-erase failed!");
-                        return;
-                    }
-                    m_logger.success("Force-erase complete for MD @ %d", *mdCanId);
-                    return;
-                }
-                if (updateOptions.pathToMabFile->empty())
-                {
-                    if (updateOptions.fwVersion->empty())
-                    {
-                        m_logger.error(
-                            "Please provide version of fw or  \"latest\" keyword in the argument!");
-                        m_logger.error("For example candletool md update latest");
-                        return;
-                    }
-                    std::string fallbackPath = ctx.packageEtcPath->generic_string();
-
-                    if (!updateOptions.metadataFile->empty())
-                        fallbackPath = *updateOptions.metadataFile;
-                    else
-                        fallbackPath += "/config/web_files_metadata.ini";
-
-                    m_logger.debug("Fallback path at: %s", fallbackPath.c_str());
-                    mINI::INIFile fallbackMetadataFile(fallbackPath);
-                    CurlHandler   curl(fallbackMetadataFile);
-
-                    std::string fileId = "MAB_CAN_FLASHER_";
-                    fileId += *updateOptions.fwVersion;
-                    auto curlResult = curl.downloadFile(fileId);
-                    if (curlResult.first != CurlHandler::CurlError_E::OK)
-                    {
-                        m_logger.error("Error on curl download request!");
-                        return;
-                    }
-                    Flasher flasher(curlResult.second);
-                    canId_t flashId = *mdCanId;
-                    if (*updateOptions.recovery)
-                    {
-                        flashId = 9;
-                    }
-                    auto flashResult = flasher.flash(flashId, *updateOptions.recovery);
-                    if (flashResult != Flasher::Error_E::OK)
-                    {
-                        m_logger.error("Error while flashing firmware!");
-                        return;
-                    }
-
-                    return;
-                }
-                else
-                {
-                    m_logger.info("Overriding download of file. Using local provided path.");
-                    MabFileParser mabFile(updateOptions.pathToMabFile->string(),
-                                          MabFileParser::TargetDevice_E::MD);
-
-                    if (*(updateOptions.recovery) == false)
-                    {
-                        auto md = getMd(mdCanId, candleBuilder);
-                        if (md == nullptr)
-                        {
-                            m_logger.error("Could not communicate with MD device with ID %d",
-                                           *mdCanId);
-                            return;
-                        }
-                        auto fw = getMdFirmwareVersion(*md);
-                        if (!isVersionAtLeast(fw, 3, 0, 0))
-                        {
-                            m_logger.warn(
-                                "You are attempting to update MD from version v%d.%d.%d to version "
-                                "%s.\n This comes with changes, that in specific conditions "
-                                "(motor+encoder combinations) may require you to:\n"
-                                "- reapply .cfg file,\n"
-                                "- perform calibration,\n"
-                                "- set zero offset.\n"
-                                "Continue? [y/n]",
-                                fw.s.major,
-                                fw.s.minor,
-                                fw.s.revision,
-                                mabFile.m_fwEntry.version);
-                            char c;
-                            std::cin >> c;
-                            if (c != 'y' && c != 'Y')
-                                return;
-                        }
-
-                        md->reset();
-                        usleep(200'000);
-                    }
-                    else
-                    {
-                        m_logger.warn("Recovery mode...");
-                        m_logger.warn(
-                            "Please make sure driver is in the bootloader phase (rebooting)");
-                    }
-                    auto candle = candleBuilder->build().value_or(nullptr);
-                    if (candle == nullptr)
-                    {
-                        m_logger.error("Could not connect to candle!");
-                        return;
-                    }
-                    CanLoader canLoader(candle, &mabFile, *mdCanId);
-                    if (!canLoader.flashAndBoot(*(updateOptions.recovery)))
-                    {
-                        m_logger.error("MD flashing failed!");
-                        return;
-                    }
-                    m_logger.success("Update complete for MD @ %d", *mdCanId);
-                }
+                updateMd(updateOptions,
+                         UpdateReset_E::MD_PROTOCOL,
+                         mdCanId,
+                         candleBuilder,
+                         *ctx.packageEtcPath,
+                         m_logger);
             });
         // Version
         auto* version = mdCLi->add_subcommand("version", "Check version of the MD device.")
@@ -1503,7 +1292,7 @@ namespace mab
         }
     }
 
-    bool MDCli::registerWrite(MD& md, u16 regAdress, const std::string& value)
+    bool MDCli::registerWrite(MD& md, u16 regAdress, const std::string& value, bool quiet)
     {
         std::string trimmedValue = trim(value);
 
@@ -1511,12 +1300,13 @@ namespace mab
         std::variant<int64_t, float, std::string> regValue;
         bool                                      foundRegister      = false;
         bool                                      registerCompatible = false;
+        bool                                      written            = false;
 
         // Check if the value is a string or a number
-        if (trimmedValue.find_first_not_of("-0123456789.f") == std::string::npos)
+        if (trimmedValue.find_first_not_of("-+0123456789.eEf") == std::string::npos)
         {
-            /// Check if the value is a float or an integer
-            if (trimmedValue.find('.') != std::string::npos)
+            /// Check if the value is a float (also in scientific notation) or an integer
+            if (trimmedValue.find_first_of(".eE") != std::string::npos)
                 regValue = std::stof(value);
             else
                 regValue = std::stoll(value);
@@ -1538,6 +1328,13 @@ namespace mab
                         reg.value = std::get<int64_t>(regValue);
                     else if (std::holds_alternative<float>(regValue))
                         reg.value = std::get<float>(regValue);
+                    else
+                    {
+                        m_logger.error("Invalid value %s for register 0x%04X",
+                                       trimmedValue.c_str(),
+                                       reg.m_regAddress);
+                        return;
+                    }
 
                     auto result = md.writeRegisters(reg);
 
@@ -1546,7 +1343,9 @@ namespace mab
                         m_logger.error("Failed to write register 0x%04X", reg.m_regAddress);
                         return;
                     }
-                    m_logger.success("Writing register %s successful!", reg.m_name.data());
+                    written = true;
+                    if (!quiet)
+                        m_logger.success("Writing register %s successful!", reg.m_name.data());
                 }
                 else if constexpr (std::is_same<std::decay_t<T>, char*>::value)
                 {
@@ -1560,7 +1359,7 @@ namespace mab
                         return;
                     }
 
-                    if (strV.length() > sizeof(reg.value) + 1)
+                    if (strV.length() >= sizeof(reg.value))  // room for the terminating NUL
                     {
                         m_logger.error("Value too long for register 0x%04X", reg.m_regAddress);
                         return;
@@ -1575,7 +1374,9 @@ namespace mab
                         m_logger.error("Failed to write register 0x%04X", reg.m_regAddress);
                         return;
                     }
-                    m_logger.success("Writing register %s successful!", reg.m_name.data());
+                    written = true;
+                    if (!quiet)
+                        m_logger.success("Writing register %s successful!", reg.m_name.data());
                 }
             }
         };
@@ -1591,7 +1392,7 @@ namespace mab
                 "Register 0x%04X not compatible with value %s", regAdress, value.c_str());
             return false;
         }
-        return true;
+        return written;
     }
 
     std::optional<std::string> MDCli::registerRead(MD& md, u16 regAdress)
@@ -1612,7 +1413,14 @@ namespace mab
                         m_logger.error("Failed to read register 0x%04X", regAdress);
                         return false;
                     }
-                    std::string value   = std::to_string(reg.value);
+                    std::string value = std::to_string(reg.value);
+                    // to_string keeps 6 decimals, too few for small values like inductance
+                    if constexpr (std::is_floating_point_v<T>)
+                    {
+                        char buffer[32];
+                        std::snprintf(buffer, sizeof(buffer), "%.7g", (double)reg.value);
+                        value = buffer;
+                    }
                     registerStringValue = value;  // Store the value in the result
                     m_logger.success(
                         "Register %s value = %s", nameOfRegister.c_str(), value.c_str());

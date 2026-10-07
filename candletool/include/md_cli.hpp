@@ -5,6 +5,7 @@
 #include "logger.hpp"
 #include "MD.hpp"
 #include "utilities.hpp"
+#include "md_update.hpp"
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -25,7 +26,10 @@ namespace mab
         std::unique_ptr<MD, std::function<void(MD*)>> getMd(
             const std::shared_ptr<canId_t>             mdCanId,
             const std::shared_ptr<const CandleBuilder> candleBuilder);
-        bool                       registerWrite(MD& md, u16 regAdress, const std::string& value);
+        bool                       registerWrite(MD&                md,
+                                                 u16                regAdress,
+                                                 const std::string& value,
+                                                 bool               quiet = false);
         std::optional<std::string> registerRead(MD& md, u16 regAdress);
 
         struct CanOptions
@@ -61,7 +65,8 @@ namespace mab
         struct CalibrationOptions
         {
             CalibrationOptions(CLI::App* rootCli)
-                : calibrationOfEncoder(std::make_shared<std::string>("all"))
+                : calibrationOfEncoder(std::make_shared<std::string>("all")),
+                  autodetect(std::make_shared<bool>(false))
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
                     {"encoder",
@@ -70,10 +75,16 @@ namespace mab
                                       *calibrationOfEncoder,
                                       "Type of encoder calibration to perform. "
                                       "Possible values: all, main, aux.")
-                         ->default_str("all")}};
+                         ->default_str("all")},
+                    {"autodetect",
+                     rootCli->add_flag("--autodetect",
+                                       *autodetect,
+                                       "Clear motor resistance and inductance first, so "
+                                       "the calibration measures them again.")}};
             }
 
             const std::shared_ptr<std::string>  calibrationOfEncoder;
+            const std::shared_ptr<bool>         autodetect;
             std::map<std::string, CLI::Option*> optionsMap;
         };
 
@@ -109,7 +120,7 @@ namespace mab
                              "Path to the MD .cfg file \n note: \ncan be absolute path, "
                              "\ncurrent directory relative path (starting with `./`, eg. "
                              "`./myCustomMotor.cfg`), "
-                             "\ndefault config relative path (eg. `CubeMars/AK/AK80-9.cfg`)")
+                             "\ndefault config relative path (eg. `CubeMars/AK80-9.cfg`)")
                          ->required()}};
             }
 
@@ -172,41 +183,5 @@ namespace mab
             const std::shared_ptr<std::string>  encoder;
             std::map<std::string, CLI::Option*> optionsMap;
         };
-
-        struct UpdateOptions
-        {
-            UpdateOptions(CLI::App* rootCli)
-                : fwVersion(std::make_shared<std::string>("")),
-                  pathToMabFile(std::make_shared<std::filesystem::path>("")),
-                  recovery(std::make_shared<bool>(false)),
-                  forceErase(std::make_shared<bool>(false)),
-                  metadataFile(std::make_shared<std::string>(""))
-            {
-                optionsMap = std::map<std::string, CLI::Option*>{
-                    {"version",
-                     rootCli->add_option("version",
-                                         *fwVersion,
-                                         "Version of fw to download (\"latest\" or X.X.X format). "
-                                         "For example:  candletool md update latest")},
-                    {"path",
-                     rootCli->add_option("-p,--path", *pathToMabFile, "Local path to .mab file")},
-                    {"recovery",
-                     rootCli->add_flag(
-                         "-r,--recovery", *recovery, "Driver recovery after failed flashing")},
-                    {"force_erase",
-                     rootCli->add_flag(
-                         "--force-erase", *forceErase, "Force full wipe of the driver")},
-                    {"meta_file",
-                     rootCli->add_option("-m,--meta-file",
-                                         *metadataFile,
-                                         "File with file metadata for managing downloads.")}};
-            }
-            const std::shared_ptr<std::string>           fwVersion;
-            const std::shared_ptr<std::filesystem::path> pathToMabFile;
-            const std::shared_ptr<bool>                  recovery;
-            const std::shared_ptr<bool>                  forceErase;
-            const std::shared_ptr<std::string>           metadataFile;
-            std::map<std::string, CLI::Option*>          optionsMap;
-        };  // namespace mab
     };
 }  // namespace mab
