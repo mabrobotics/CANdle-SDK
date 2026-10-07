@@ -2,7 +2,7 @@
 #include "imgui.h"
 
 GraphicInterface::GraphicInterface(std::shared_ptr<commonMemory_S> commonMemory, ImGuiIO& io)
-    : m_data(commonMemory), m_io(io)
+    : m_data(commonMemory), m_io(io), m_monitorWindow(commonMemory, io)
 {
 }
 
@@ -85,21 +85,23 @@ void GraphicInterface::loop()
         ImGui::SetNextWindowPos(viewport->WorkPos);
         ImGui::SetNextWindowSize(viewport->WorkSize);
 
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(windowsPadding, windowsPadding));
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(windowsPadding, windowsPadding));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
+                            ImVec2(m_data->windowsPadding, m_data->windowsPadding));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
+                            ImVec2(m_data->windowsPadding, m_data->windowsPadding));
 
-        if (ImGui::Begin("Main Window", nullptr, flagsBackMenu))
+        if (ImGui::Begin("Main Window", nullptr, m_data->flagsBackMenu))
         {
             drawMenuTopBar();
 
             ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, roundingFrameButton);
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 
-            float contentHeight = -(lowBarHeight + windowsPadding);
+            float contentHeight = -(lowBarHeight + m_data->windowsPadding);
             if (ImGui::BeginChild("Content Menu", ImVec2(0, contentHeight), ImGuiChildFlags_None))
             {
                 ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                                    ImVec2(windowsPadding, windowsPadding));
+                                    ImVec2(m_data->windowsPadding, m_data->windowsPadding));
 
                 if (m_data->candleAvailable)
                 {
@@ -111,6 +113,7 @@ void GraphicInterface::loop()
                             drawTuningMenu();
                             break;
                         case MONITOR:
+                            m_monitorWindow.drawMonitorMenu();
                             break;
                         case TEST_SCRIPT:
                             break;
@@ -133,6 +136,7 @@ void GraphicInterface::loop()
                             drawTuningMenu();
                             break;
                         case MONITOR:
+                            m_monitorWindow.drawMonitorMenu();
                             break;
                         case TEST_SCRIPT:
                             break;
@@ -180,29 +184,80 @@ Main menu draw functions
 
 void GraphicInterface::drawMenuTopBar()
 {
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(windowsPadding, insideWindowPadding));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
+                        ImVec2(m_data->windowsPadding, m_data->insideWindowPadding));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(insideWindowPadding, insideWindowPadding));
+                        ImVec2(m_data->insideWindowPadding, m_data->insideWindowPadding));
+
+    bool candleAvailable = m_data->candleAvailable;
+
     if (ImGui::BeginChild("TopBar", ImVec2(0, topBarHeight), ImGuiChildFlags_None))
     {
-        buttonSelectStyle(currentPage == TUNING);
-        drawTuningButton();
-        endButtonSelectStyle();
+        float rightChildWidth = 200.0f;
+        float spacing         = ImGui::GetStyle().ItemSpacing.x;
+
+        if (ImGui::BeginChild(
+                "TopLeft", ImVec2(-(rightChildWidth + spacing), 0), ImGuiChildFlags_None))
+        {
+            buttonSelectStyle(currentPage == TUNING);
+            drawTuningButton();
+            endButtonSelectStyle();
+            ImGui::SameLine();
+
+            buttonSelectStyle(currentPage == MONITOR);
+            drawMonitorButton();
+            endButtonSelectStyle();
+            ImGui::SameLine();
+
+            buttonSelectStyle(currentPage == TEST_SCRIPT);
+            drawTestScriptButton();
+            endButtonSelectStyle();
+
+            ImGui::SameLine();
+            buttonSelectStyle(currentPage == BUS_INFO);
+            drawBusInfoButton();
+            endButtonSelectStyle();
+        }
+        ImGui::EndChild();
+
         ImGui::SameLine();
 
-        buttonSelectStyle(currentPage == MONITOR);
-        drawMonitorButton();
-        endButtonSelectStyle();
-        ImGui::SameLine();
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, roundingFrameButton);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
+                            ImVec2(m_data->insideWindowPadding, m_data->insideWindowPadding));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
+                            ImVec2(m_data->insideWindowPadding, m_data->insideWindowPadding));
 
-        buttonSelectStyle(currentPage == TEST_SCRIPT);
-        drawTestScriptButton();
-        endButtonSelectStyle();
+        if (ImGui::BeginChild("RightAlignedChild", ImVec2(0, 0), ImGuiChildFlags_Borders))
+        {
+            float  radius = 5.0f;
+            ImVec2 pos    = ImGui::GetCursorScreenPos();
+            ImVec2 center = ImVec2(pos.x + radius, pos.y + ImGui::GetTextLineHeight() * 0.5f);
 
-        ImGui::SameLine();
-        buttonSelectStyle(currentPage == BUS_INFO);
-        drawBusInfoButton();
-        endButtonSelectStyle();
+            ImVec4 chosenColorVec4 = candleAvailable ? greenColor : redColor;
+            ImU32  colorU32        = ImGui::GetColorU32(chosenColorVec4);
+
+            ImGui::GetWindowDrawList()->AddCircleFilled(center, radius, colorU32);
+
+            ImGui::Dummy(ImVec2(radius * 1.5f, 0.0f));
+
+            ImGui::SameLine();
+            ImGui::Text("CANdle");
+
+            ImGui::SameLine();
+            ImGui::Text("|");
+
+            ImGui::SameLine();
+            ImGui::TextUnformatted(m_data->busTypeToString(m_data->busType));
+
+            ImGui::SameLine();
+            ImGui::Text("|");
+
+            ImGui::SameLine();
+            ImGui::Text("%zu drives", m_data->mdIDs.size());
+        }
+        ImGui::EndChild();
+        ImGui::PopStyleVar(3);
     }
     ImGui::EndChild();
     ImGui::PopStyleVar(2);
@@ -243,10 +298,12 @@ void GraphicInterface::drawMenuBottomBar()
 
 void GraphicInterface::drawTestMenuBar()
 {
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(leftMenuPadding, insideWindowPadding));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
+                        ImVec2(m_data->leftMenuPadding, m_data->insideWindowPadding));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(insideWindowPadding / 2, insideWindowPadding));
-    if (ImGui::BeginChild("Test menu", ImVec2(0, 0), ImGuiChildFlags_Borders, flagsBackMenu))
+                        ImVec2(m_data->insideWindowPadding / 2, m_data->insideWindowPadding));
+    if (ImGui::BeginChild(
+            "Test menu", ImVec2(0, 0), ImGuiChildFlags_Borders, m_data->flagsBackMenu))
     {
         bool errorOccured = m_data->errorOccured;
 
@@ -387,9 +444,10 @@ void GraphicInterface::drawErrorMenuBar()
 
 void GraphicInterface::drawLeftMenuBar()
 {
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(leftMenuPadding, windowsPadding));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
+                        ImVec2(m_data->leftMenuPadding, m_data->windowsPadding));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(insideWindowPadding / 2, insideWindowPadding));
+                        ImVec2(m_data->insideWindowPadding / 2, m_data->insideWindowPadding));
     if (ImGui::BeginChild("Left Menu", ImVec2(0, -testMenuBarHeight), ImGuiChildFlags_Borders))
     {
         bool testOngoing = m_data->testOngoing;
@@ -459,11 +517,14 @@ void GraphicInterface::drawLeftMenuBar()
 
 void GraphicInterface::drawRightMenuBar()
 {
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(windowsPadding, insideWindowPadding));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
+                        ImVec2(m_data->windowsPadding, m_data->insideWindowPadding));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(insideWindowPadding, insideWindowPadding));
-    if (ImGui::BeginChild(
-            "Right Menu", ImVec2(rightMenuBarWidth, 0), ImGuiChildFlags_Borders, flagsBackMenu))
+                        ImVec2(m_data->insideWindowPadding, m_data->insideWindowPadding));
+    if (ImGui::BeginChild("Right Menu",
+                          ImVec2(rightMenuBarWidth, 0),
+                          ImGuiChildFlags_Borders,
+                          m_data->flagsBackMenu))
     {
         mab::MdMode_E currentMode = m_data->currentMode;
         bool          testStarted = m_data->testStarted;
@@ -543,11 +604,12 @@ void GraphicInterface::drawRightMenuBar()
 
 void GraphicInterface::drawMainMenu()
 {
-    float mainWidth = showCursorMenu ? -(rightMenuBarWidth + windowsPadding) : 0.0f;
+    float mainWidth = showCursorMenu ? -(rightMenuBarWidth + m_data->windowsPadding) : 0.0f;
 
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(windowsPadding, insideWindowPadding));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
+                        ImVec2(m_data->windowsPadding, m_data->insideWindowPadding));
     if (ImGui::BeginChild(
-            "Main menu", ImVec2(mainWidth, 0), ImGuiChildFlags_Borders, flagsBackMenu))
+            "Main menu", ImVec2(mainWidth, 0), ImGuiChildFlags_Borders, m_data->flagsBackMenu))
     {
         mab::MdMode_E currentModeLocal = m_data->currentMode;
 
@@ -675,9 +737,9 @@ void GraphicInterface::drawErrorPopup()
     ImGui::PushStyleColor(ImGuiCol_TitleBgActive, mabColor);
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                        ImVec2(insideWindowPadding, insideWindowPadding));
+                        ImVec2(m_data->insideWindowPadding, m_data->insideWindowPadding));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(insideWindowPadding, insideWindowPadding));
+                        ImVec2(m_data->insideWindowPadding, m_data->insideWindowPadding));
 
     if (ImGui::BeginPopupModal(popupTitle, nullptr, flags))
     {
@@ -784,7 +846,8 @@ void GraphicInterface::drawTestManualButton()
 
     buttonImportantStyle(buttonManualTestPressed);
 
-    ImVec2 tableSize = ImVec2(leftMenuBarWidth - (leftMenuPadding * 2.0f), largeButtonHeight);
+    ImVec2 tableSize =
+        ImVec2(leftMenuBarWidth - (m_data->leftMenuPadding * 2.0f), largeButtonHeight);
 
     ImGui::PushButtonRepeat(true);
 
@@ -836,7 +899,8 @@ void GraphicInterface::drawTestEndButton()
 
     buttonImportantStyle(startCondition);
 
-    ImVec2 tableSize = ImVec2(leftMenuBarWidth - (leftMenuPadding * 2.0f), largeButtonHeight);
+    ImVec2 tableSize =
+        ImVec2(leftMenuBarWidth - (m_data->leftMenuPadding * 2.0f), largeButtonHeight);
 
     if (ImGui::Button(
             m_data->buttonAutomaticTestPressed ? "End test" : "Apply Parameters & Test AUTO",
@@ -874,9 +938,10 @@ void GraphicInterface::drawDiscoverMDButton()
     }
 
     buttonStyle();
-    ImGui::SetCursorPosX(leftMenuPadding);
-    if (ImGui::Button(chosenIDname.c_str(),
-                      ImVec2(leftMenuBarWidth - (leftMenuPadding * 2.0f), largeButtonHeight)))
+    ImGui::SetCursorPosX(m_data->leftMenuPadding);
+    if (ImGui::Button(
+            chosenIDname.c_str(),
+            ImVec2(leftMenuBarWidth - (m_data->leftMenuPadding * 2.0f), largeButtonHeight)))
     {
         m_data->buttonDiscoverMdPressed = true;
     }
@@ -1057,7 +1122,7 @@ void GraphicInterface::drawSaveButton()
 
     ImGui::SetCursorPosX((leftMenuBarWidth - saveButtonWidth) / 2.0f);
 
-    float saveButtonY = ImGui::GetWindowHeight() - (mediumButtonHeight + windowsPadding);
+    float saveButtonY = ImGui::GetWindowHeight() - (mediumButtonHeight + m_data->windowsPadding);
 
     float currentY = ImGui::GetCursorPosY();
 
@@ -1214,7 +1279,7 @@ void GraphicInterface::drawCursorMenu()
         ImGui::BeginDisabled();
     }
 
-    ImGui::SetCursorPosX(leftMenuPadding);
+    ImGui::SetCursorPosX(m_data->leftMenuPadding);
     checkboxStyle();
     ImGui::Checkbox("##Show Cursor Menu", &showCursorMenu);
     ImGui::SameLine();
@@ -1263,8 +1328,8 @@ void GraphicInterface::drawParametersVelocity()
 
     centerText("Velocity loop - PID tuning parameters");
 
-    ImGui::SetCursorPosX(leftMenuPadding);
-    ImVec2 tableSize = ImVec2(leftMenuBarWidth - 2 * leftMenuPadding, 0.0f);
+    ImGui::SetCursorPosX(m_data->leftMenuPadding);
+    ImVec2 tableSize = ImVec2(leftMenuBarWidth - 2 * m_data->leftMenuPadding, 0.0f);
     if (ImGui::BeginTable("ParamTableVelocity", numberOfColumns, flags, tableSize))
     {
         ImGui::TableSetupColumn("Variable name");
@@ -1340,8 +1405,8 @@ void GraphicInterface::drawParametersPosition()
 
     centerText("Position loop - PID tuning parameters");
 
-    ImGui::SetCursorPosX(leftMenuPadding);
-    ImVec2 tableSize = ImVec2(leftMenuBarWidth - 2 * leftMenuPadding, 0.0f);
+    ImGui::SetCursorPosX(m_data->leftMenuPadding);
+    ImVec2 tableSize = ImVec2(leftMenuBarWidth - 2 * m_data->leftMenuPadding, 0.0f);
     if (ImGui::BeginTable("ParamTablePosition", numberOfColumns, flags, tableSize))
     {
         ImGui::TableSetupColumn("Variable name");
@@ -1417,8 +1482,8 @@ void GraphicInterface::drawParametersImpedance()
 
     centerText("Impedance PD tuner");
 
-    ImGui::SetCursorPosX(leftMenuPadding);
-    ImVec2 tableSize = ImVec2(leftMenuBarWidth - 2 * leftMenuPadding, 0.0f);
+    ImGui::SetCursorPosX(m_data->leftMenuPadding);
+    ImVec2 tableSize = ImVec2(leftMenuBarWidth - 2 * m_data->leftMenuPadding, 0.0f);
     if (ImGui::BeginTable("ParamTablePosition", numberOfColumns, flags, tableSize))
     {
         ImGui::TableSetupColumn("Variable name");
@@ -1464,7 +1529,7 @@ void GraphicInterface::drawParametersImpedance()
 
 void GraphicInterface::drawSetTargetVelocity()
 {
-    ImGui::SetCursorPosX(leftMenuPadding);
+    ImGui::SetCursorPosX(m_data->leftMenuPadding);
     ImGui::Text("Target Velocity");
 
     if (drawBigInputFloat("##Target Velocity",
@@ -1482,7 +1547,7 @@ void GraphicInterface::drawSetTargetVelocity()
 
 void GraphicInterface::drawSetTargetPosition()
 {
-    ImGui::SetCursorPosX(leftMenuPadding);
+    ImGui::SetCursorPosX(m_data->leftMenuPadding);
     ImGui::Text("Target Position");
 
     drawBigInputFloat("##Target Position",
@@ -1496,7 +1561,7 @@ void GraphicInterface::drawSetTargetPosition()
 
 void GraphicInterface::drawSetTargetTorque()
 {
-    ImGui::SetCursorPosX(leftMenuPadding);
+    ImGui::SetCursorPosX(m_data->leftMenuPadding);
     ImGui::Text("Target Torque");
 
     if (drawBigInputFloat("##Target Torque",
@@ -1514,7 +1579,7 @@ void GraphicInterface::drawSetTargetTorque()
 
 void GraphicInterface::drawSetTargetAcceleration()
 {
-    ImGui::SetCursorPosX(leftMenuPadding);
+    ImGui::SetCursorPosX(m_data->leftMenuPadding);
     ImGui::Text("Acceleration");
 
     if (drawBigInputFloat("##Acceleration",
@@ -1532,7 +1597,7 @@ void GraphicInterface::drawSetTargetAcceleration()
 
 void GraphicInterface::drawSetTargetDeceleration()
 {
-    ImGui::SetCursorPosX(leftMenuPadding);
+    ImGui::SetCursorPosX(m_data->leftMenuPadding);
     ImGui::Text("Deceleration");
 
     if (drawBigInputFloat("##Deceleration",
@@ -1550,7 +1615,7 @@ void GraphicInterface::drawSetTargetDeceleration()
 
 void GraphicInterface::drawSetPositionWindow()
 {
-    ImGui::SetCursorPosX(leftMenuPadding);
+    ImGui::SetCursorPosX(m_data->leftMenuPadding);
     ImGui::Text("Position Window");
 
     drawBigInputFloat("##Position Window",
@@ -1564,7 +1629,7 @@ void GraphicInterface::drawSetPositionWindow()
 
 void GraphicInterface::drawSetVelocityWindow()
 {
-    ImGui::SetCursorPosX(leftMenuPadding);
+    ImGui::SetCursorPosX(m_data->leftMenuPadding);
     ImGui::Text("Velocity Window");
 
     drawBigInputFloat("##Velocity Window",
@@ -2323,11 +2388,11 @@ void GraphicInterface::comboStyle(const char* text)
     ImVec2 currentPadding = ImGui::GetStyle().FramePadding;
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(currentPadding.x, roundingFrameButton));
 
-    ImGui::SetCursorPosX(leftMenuPadding);
+    ImGui::SetCursorPosX(m_data->leftMenuPadding);
     ImGui::Text("%s", text);
 
-    ImGui::SetCursorPosX(leftMenuPadding);
-    ImGui::SetNextItemWidth(leftMenuBarWidth - 2 * leftMenuPadding);
+    ImGui::SetCursorPosX(m_data->leftMenuPadding);
+    ImGui::SetNextItemWidth(leftMenuBarWidth - 2 * m_data->leftMenuPadding);
 }
 
 void GraphicInterface::endComboStyle()

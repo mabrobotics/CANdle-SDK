@@ -54,6 +54,7 @@ add_library(imgui STATIC
 set(CANDLEGUI_SOURCES
     src/main.cpp 
     src/GUI.cpp 
+    src/MonitorMenu.cpp
     src/HardwareCandle.cpp
     logo.rc
    )

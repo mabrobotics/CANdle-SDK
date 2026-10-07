@@ -1,5 +1,8 @@
 #pragma once
+#include "MD.hpp"
 #include "candle.hpp"
+#include "imgui.h"
+#include <memory>
 #include <mutex>
 #include <atomic>
 #include <vector>
@@ -14,6 +17,21 @@ struct commonMemory_S
         UNKNOWN
     };
     busType_E busType;
+
+    const char* busTypeToString(busType_E type)
+    {
+        switch (type)
+        {
+            case busType_E::USB:
+                return "USB";
+            case busType_E::SPI:
+                return "SPI";
+            case busType_E::UNKNOWN:
+                return "UNKNOWN";
+            default:
+                return "UNKNOWN";
+        }
+    }
 
     std::atomic<int> actual_thread_hz{0};
     std::mutex       mtx;
@@ -44,6 +62,16 @@ struct commonMemory_S
 
     float Kp_imp = 0.0f;
     float Kd_imp = 0.0f;
+
+    // COMMON GUI PARAMS
+
+    ImGuiWindowFlags flagsBackMenu = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+                                     ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
+                                     ImGuiWindowFlags_NoBringToFrontOnFocus;
+
+    float insideWindowPadding = 10.0f;
+    float windowsPadding      = 20.0f;
+    float leftMenuPadding     = 30.f;
 
     // MAXIMUM VALUES
     float maxVelocityClamp     = 0.0f;
@@ -78,9 +106,10 @@ struct commonMemory_S
     float targetDecelerationSlider = 0.0f;
 
     // MAB
-    mab::MdMode_E             currentMode = mab::MdMode_E::IDLE;
-    std::vector<mab::canId_t> mdIDs;
-    mab::canId_t              chosenID = 0;
+    mab::MdMode_E                         currentMode = mab::MdMode_E::IDLE;
+    std::vector<mab::canId_t>             mdIDs;
+    std::vector<std::unique_ptr<mab::MD>> mds;
+    mab::canId_t                          chosenID = 0;
 
     // Logic
     std::atomic<bool> testStarted{false};

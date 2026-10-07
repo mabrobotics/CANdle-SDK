@@ -21,14 +21,18 @@ class HardwareCandle
     mab::MDStatus statuses;
     mab::canId_t  chosenID;
 
-    int   timeoutCounter = 0;
-    float beginStepTime  = 0.025f;
+    int timeoutCounter = 0;
+    inline static std::map<mab::canId_t, std::chrono::time_point<std::chrono::steady_clock>>
+          errorStartTimes;
+    float beginStepTime = 0.025f;
 
     mab::canId_t min = 0;
     mab::canId_t max = 100;
 
     const mab::canId_t MAX_VALID_ID        = 0x7FF;
     const int          MAX_CONNECT_RETRIES = 100;
+
+    mab::MD::Error_t communicationCheck(mab::MD& md);
 
     void testMD(mab::MD& md);
     void checkConnectionStatus(mab::MD& md, mab::canId_t chosenID);

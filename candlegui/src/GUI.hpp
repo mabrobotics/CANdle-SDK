@@ -8,6 +8,7 @@
 
 #include <filesystem>
 #include "commonMemory.hpp"
+#include "MonitorMenu.hpp"
 
 class GraphicInterface
 {
@@ -33,9 +34,7 @@ class GraphicInterface
 
     GLFWwindow* m_window = nullptr;
 
-    float insideWindowPadding = 10.0f;
-    float windowsPadding      = 20.0f;
-    float leftMenuPadding     = 30.f;
+    MonitorMenu m_monitorWindow;
 
     float leftMenuBarWidth = 325.0f;
     float leftMenuBarHeight;
@@ -55,7 +54,7 @@ class GraphicInterface
     float roundingFrameButton   = 12.0f;
     float roundingFrameCheckbox = 8.0f;
 
-    float saveButtonWidth = leftMenuBarWidth - (leftMenuPadding * 2.0f) - 40.f;
+    float saveButtonWidth = leftMenuBarWidth - 100.f;
     float resizeButton    = 15.0f;
 
     float menuTopHeightRatio   = 0.5f;
@@ -114,9 +113,6 @@ class GraphicInterface
     bool showCursorMenu = false;
 
     // Back menu settings
-    ImGuiWindowFlags flagsBackMenu = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-                                     ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
-                                     ImGuiWindowFlags_NoBringToFrontOnFocus;
 
     // Table settings
     ImGuiTableFlags flagsTables = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;

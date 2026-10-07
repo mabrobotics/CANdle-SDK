@@ -1,7 +1,16 @@
 #include "HardwareCandle.hpp"
+#include <memory>
+#include "mab_types.hpp"
 
 HardwareCandle::HardwareCandle(std::shared_ptr<commonMemory_S> commonMemory) : m_data(commonMemory)
 {
+}
+
+mab::MD::Error_t HardwareCandle::communicationCheck(mab::MD& md)
+{
+    mab::MD::Error_t err = md.readRegisters(md.m_mdRegisters.communicationStatus);
+
+    return err;
 }
 
 void HardwareCandle::testMD(mab::MD& md)
@@ -63,7 +72,6 @@ void HardwareCandle::checkConnectionStatus(mab::MD& md, mab::canId_t chosenID)
         m_data->errorMessage = "CANdle Connected";
     }
 }
-
 void HardwareCandle::checkQuickStatus(mab::MD& md)
 {
     md.readRegisters(md.m_mdRegisters.quickStatus,
@@ -106,11 +114,11 @@ void HardwareCandle::checkQuickStatus(mab::MD& md)
         {
             case mab::MDStatus::QuickStatusBits::MosfetBridgeStatus:
                 mab::MDStatus::decode(md.m_mdRegisters.bridgeStatus.value, statuses.bridgeStatus);
-                for (const auto& [bit, status] : statuses.bridgeStatus)
+                for (const auto& [bridgeBit, bridgeStatus] : statuses.bridgeStatus)
                 {
-                    if (status.isSet())
+                    if (bridgeStatus.isSet())
                     {
-                        m_data->errorBridgeStatusMessage = status.name;
+                        m_data->errorBridgeStatusMessage = bridgeStatus.name;
                         m_data->errorBridgeOccured       = true;
                     }
                 }
@@ -120,11 +128,11 @@ void HardwareCandle::checkQuickStatus(mab::MD& md)
             case mab::MDStatus::QuickStatusBits::CalibrationEncoderStatus:
                 mab::MDStatus::decode(md.m_mdRegisters.mainEncoderStatus.value,
                                       statuses.encoderStatus);
-                for (const auto& [bit, status] : statuses.encoderStatus)
+                for (const auto& [encBit, encStatus] : statuses.encoderStatus)
                 {
-                    if (status.isSet())
+                    if (encStatus.isSet())
                     {
-                        m_data->errorEncoderStatusMessage = status.name;
+                        m_data->errorEncoderStatusMessage = encStatus.name;
                         m_data->errorEncoderOccured       = true;
                     }
                 }
@@ -132,22 +140,22 @@ void HardwareCandle::checkQuickStatus(mab::MD& md)
             case mab::MDStatus::QuickStatusBits::HardwareStatus:
                 mab::MDStatus::decode(md.m_mdRegisters.hardwareStatus.value,
                                       statuses.hardwareStatus);
-                for (const auto& [bit, status] : statuses.hardwareStatus)
+                for (const auto& [hwBit, hwStatus] : statuses.hardwareStatus)
                 {
-                    if (status.isSet())
+                    if (hwStatus.isSet())
                     {
-                        m_data->errorHardwareStatusMessage = status.name;
+                        m_data->errorHardwareStatusMessage = hwStatus.name;
                         m_data->errorHardwareOccured       = true;
                     }
                 }
                 break;
             case mab::MDStatus::QuickStatusBits::MotionStatus:
                 mab::MDStatus::decode(md.m_mdRegisters.motionStatus.value, statuses.motionStatus);
-                for (const auto& [bit, status] : statuses.motionStatus)
+                for (const auto& [motionBit, motionStatus] : statuses.motionStatus)
                 {
-                    if (status.isSet())
+                    if (motionStatus.isSet())
                     {
-                        m_data->errorMotionStatusMessage = status.name;
+                        m_data->errorMotionStatusMessage = motionStatus.name;
                         m_data->errorMotionOccured       = true;
                     }
                 }
@@ -155,11 +163,11 @@ void HardwareCandle::checkQuickStatus(mab::MD& md)
             case mab::MDStatus::QuickStatusBits::CommunicationStatus:
                 mab::MDStatus::decode(md.m_mdRegisters.communicationStatus.value,
                                       statuses.communicationStatus);
-                for (const auto& [bit, status] : statuses.communicationStatus)
+                for (const auto& [commBit, commStatus] : statuses.communicationStatus)
                 {
-                    if (status.isSet())
+                    if (commStatus.isSet())
                     {
-                        m_data->errorCommunicationStatusMessage = status.name;
+                        m_data->errorCommunicationStatusMessage = commStatus.name;
                         m_data->errorCommunicationOccured       = true;
                     }
                 }
@@ -311,7 +319,7 @@ void HardwareCandle::init()
 
 void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
 {
-    const std::chrono::microseconds                    dt = std::chrono::microseconds(200);
+    const std::chrono::microseconds                    dt = std::chrono::microseconds(1000);
     std::chrono::time_point<std::chrono::steady_clock> nextExecTime =
         std::chrono::steady_clock::now();
 
@@ -397,6 +405,7 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                 m_data->testOngoing     = false;
                 m_data->candleAvailable = false;
                 m_data->mdIDs.clear();
+                m_data->mds.clear();
                 buttonDiscoverMdPressed = false;
                 m_data->discoverOngoing = false;
                 m_data->selectedMD      = false;
@@ -415,6 +424,7 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                 m_data->candleAvailable = false;
                 m_data->updatedVersion  = false;
                 m_data->mdIDs.clear();
+                m_data->mds.clear();
                 buttonDiscoverMdPressed = false;
                 m_data->discoverOngoing = false;
                 m_data->selectedMD      = false;
@@ -431,298 +441,13 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
 
         if (candle != nullptr)
         {
-            mab::MD md(chosenID, candle);
-
-            checkConnectionStatus(md, chosenID);
-
-            if (buttonClearErrorsPressed)
-            {
-                if (md.clearErrors() == mab::MD::Error_t::OK)
-                {
-                    m_data->errorOccured = false;
-                }
-            }
-
-            if (!testStarted && selectedMD)
-            {
-                checkQuickStatus(md);
-            }
-
-            if (!testStarted && buttonSavePressed)
-            {
-                switch (currentMode)
-                {
-                    case mab::MdMode_E::IDLE:
-                        break;
-                    case mab::MdMode_E::VELOCITY_PID:
-                        updateVelParameters();
-                        md.setVelocityPIDparam(m_data->Kp_vel,
-                                               m_data->Ki_vel,
-                                               m_data->Kd_vel,
-                                               m_data->integralMax_vel);
-                        md.save();
-                        break;
-                    case mab::MdMode_E::POSITION_PID:
-                        updateVelParameters();
-                        updatePosParameters();
-                        md.setVelocityPIDparam(m_data->Kp_vel,
-                                               m_data->Ki_vel,
-                                               m_data->Kd_vel,
-                                               m_data->integralMax_vel);
-                        md.setPositionPIDparam(m_data->Kp_pos,
-                                               m_data->Ki_pos,
-                                               m_data->Kd_pos,
-                                               m_data->integralMax_pos);
-                        md.save();
-                        break;
-                    case mab::MdMode_E::IMPEDANCE:
-                        updateImpParameters();
-                        md.setImpedanceParams(m_data->Kp_imp, m_data->Kd_imp);
-                        md.save();
-                        break;
-                    case mab::MdMode_E::RAW_TORQUE:  // case unused
-                        break;
-                    case mab::MdMode_E::VELOCITY_PROFILE:
-                        updateVelParameters();
-                        updatePosParameters();
-                        md.setVelocityPIDparam(m_data->Kp_vel,
-                                               m_data->Ki_vel,
-                                               m_data->Kd_vel,
-                                               m_data->integralMax_vel);
-                        md.setPositionPIDparam(m_data->Kp_pos,
-                                               m_data->Ki_pos,
-                                               m_data->Kd_pos,
-                                               m_data->integralMax_pos);
-                        md.save();
-                        break;
-                    case mab::MdMode_E::POSITION_PROFILE:
-                        updateVelParameters();
-                        updatePosParameters();
-                        md.setVelocityPIDparam(m_data->Kp_vel,
-                                               m_data->Ki_vel,
-                                               m_data->Kd_vel,
-                                               m_data->integralMax_vel);
-                        md.setPositionPIDparam(m_data->Kp_pos,
-                                               m_data->Ki_pos,
-                                               m_data->Kd_pos,
-                                               m_data->integralMax_pos);
-                        md.save();
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            if (buttonSelectMdPressed)
-            {
-                min = 0;
-                max = 100;
-                md.init();
-                downloadParameters(md);
-            }
-
-            if (!testStarted && hardwareLastTestStarted)
-            {
-                {
-                    std::lock_guard<std::mutex> lock(m_data->mtx);
-                    m_data->testOngoing                = false;
-                    m_data->buttonAutomaticTestPressed = false;
-                }
-                md.disable();
-            }
-
-            if (testStarted && !hardwareLastTestStarted)
-            {
-                updateParametersTest         = true;
-                m_data->updateParametersTest = true;
-            }
-            hardwareLastTestStarted = testStarted;
-
-            if (updateParametersTest)
-            {
-                m_data->reset();
-
-                md.zero();  // ZEROING FOR SAFETY TODO
-                if (md.setMotionMode(currentMode) != mab::MD::Error_t::OK)
-                {
-                    std::cout << "MD mode setting failed \n";
-                }
-
-                switch (currentMode)
-                {
-                    case mab::MdMode_E::IDLE:
-                        break;
-                    case mab::MdMode_E::VELOCITY_PID:
-                        m_data->targetVelocity = m_data->targetVelocitySlider;
-                        m_data->targetPosition = 0.0f;
-                        m_data->positionWindow = 0.01;
-                        m_data->velocityWindow = m_data->velocityWindowSlider;
-                        updateVelParameters();
-                        md.setVelocityPIDparam(m_data->Kp_vel,
-                                               m_data->Ki_vel,
-                                               m_data->Kd_vel,
-                                               m_data->integralMax_vel);
-                        break;
-                    case mab::MdMode_E::POSITION_PID:
-                        m_data->targetPosition = m_data->targetPositionSlider;
-                        m_data->targetVelocity = 0.0f;
-                        m_data->velocityWindow = 0.01;
-                        m_data->positionWindow = m_data->positionWindowSlider;
-                        updateVelParameters();
-                        md.setVelocityPIDparam(m_data->Kp_vel,
-                                               m_data->Ki_vel,
-                                               m_data->Kd_vel,
-                                               m_data->integralMax_vel);
-                        updatePosParameters();
-                        md.setPositionPIDparam(m_data->Kp_pos,
-                                               m_data->Ki_pos,
-                                               m_data->Kd_pos,
-                                               m_data->integralMax_pos);
-                        break;
-                    case mab::MdMode_E::IMPEDANCE:
-                        m_data->targetPosition = m_data->targetPositionSlider;
-                        updateImpParameters();
-                        md.setImpedanceParams(m_data->Kp_imp, m_data->Kd_imp);
-                        break;
-                    case mab::MdMode_E::RAW_TORQUE:  // case unused
-                        break;
-                    case mab::MdMode_E::VELOCITY_PROFILE:
-                        m_data->targetPosition     = m_data->targetPositionSlider;
-                        m_data->targetVelocity     = m_data->targetVelocitySlider;
-                        m_data->targetAcceleration = m_data->targetAccelerationSlider;
-                        m_data->targetDeceleration = m_data->targetDecelerationSlider;
-                        m_data->positionWindow     = 0.01;
-                        m_data->velocityWindow     = m_data->velocityWindowSlider;
-                        updateVelParameters();
-                        updatePosParameters();
-                        md.setVelocityPIDparam(m_data->Kp_vel,
-                                               m_data->Ki_vel,
-                                               m_data->Kd_vel,
-                                               m_data->integralMax_vel);
-                        md.setPositionPIDparam(m_data->Kp_pos,
-                                               m_data->Ki_pos,
-                                               m_data->Kd_pos,
-                                               m_data->integralMax_pos);
-                        break;
-                    case mab::MdMode_E::POSITION_PROFILE:
-                        m_data->targetPosition     = m_data->targetPositionSlider;
-                        m_data->targetVelocity     = m_data->targetVelocitySlider;
-                        m_data->targetAcceleration = m_data->targetAccelerationSlider;
-                        m_data->targetDeceleration = m_data->targetDecelerationSlider;
-                        m_data->velocityWindow     = 0.01;
-                        m_data->positionWindow     = m_data->positionWindowSlider;
-                        updateVelParameters();
-                        updatePosParameters();
-                        md.setVelocityPIDparam(m_data->Kp_vel,
-                                               m_data->Ki_vel,
-                                               m_data->Kd_vel,
-                                               m_data->integralMax_vel);
-                        md.setPositionPIDparam(m_data->Kp_pos,
-                                               m_data->Ki_pos,
-                                               m_data->Kd_pos,
-                                               m_data->integralMax_pos);
-                        break;
-                    default:
-                        break;
-                }
-
-                {
-                    std::lock_guard<std::mutex> lock(m_data->mtx);
-                    uint32_t writeData = m_data->plotWriteData.load(std::memory_order_relaxed);
-
-                    uint32_t indexBeforeStep = writeData % commonMemory_S::PLOT_BUFFER_SIZE;
-                    m_data->plotTime[indexBeforeStep]           = 0.0f;
-                    m_data->plotVelocity[indexBeforeStep]       = 0.0f;
-                    m_data->plotPosition[indexBeforeStep]       = 0.0f;
-                    m_data->plotTorque[indexBeforeStep]         = 0.0f;
-                    m_data->plotTargetVelocity[indexBeforeStep] = 0.0f;
-                    m_data->plotTargetPosition[indexBeforeStep] = 0.0f;
-                    m_data->plotTargetTorque[indexBeforeStep]   = 0.0f;
-
-                    uint32_t indexOnStep = (writeData + 1) % commonMemory_S::PLOT_BUFFER_SIZE;
-                    m_data->plotTime[indexOnStep]           = beginStepTime;
-                    m_data->plotVelocity[indexOnStep]       = 0.0f;
-                    m_data->plotPosition[indexOnStep]       = 0.0f;
-                    m_data->plotTorque[indexOnStep]         = 0.0f;
-                    m_data->plotTargetVelocity[indexOnStep] = m_data->targetVelocity;
-                    m_data->plotTargetPosition[indexOnStep] = m_data->targetPosition;
-                    m_data->plotTargetTorque[indexOnStep]   = m_data->targetTorque;
-
-                    m_data->plotWriteData.store(writeData + 2, std::memory_order_release);
-                }
-
-                md.enable();
-                m_data->updateParametersTest = false;
-
-                std::chrono::microseconds delayStep(static_cast<int>(beginStepTime * 1000000.0f));
-                testStartTime = std::chrono::steady_clock::now() - delayStep;
-            }
-
-            if ((testStarted && currentMode != mab::MdMode_E::IDLE))
-            {
-                {
-                    std::lock_guard<std::mutex> lock(m_data->mtx);
-                    m_data->testOngoing = true;
-                }
-
-                std::chrono::time_point<std::chrono::steady_clock> now =
-                    std::chrono::steady_clock::now();
-                std::chrono::duration<float> elapsed         = now - testStartTime;
-                float                        realTimeSeconds = elapsed.count();
-
-                testMD(md);
-
-                md.readRegisters(md.m_mdRegisters.velocity,
-                                 md.m_mdRegisters.position,
-                                 md.m_mdRegisters.torque,
-                                 md.m_mdRegisters.quickStatus);
-
-                float vel = float(md.m_mdRegisters.velocity.value);
-                float pos = float(md.m_mdRegisters.position.value);
-                float trq = float(md.m_mdRegisters.torque.value);
-
-                mab::MDStatus::decode(md.m_mdRegisters.quickStatus.value, statuses.quickStatus);
-
-                for (const auto& [bit, status] : statuses.quickStatus)
-                {
-                    if (bit == mab::MDStatus::QuickStatusBits::TargetPositionReached)
-                    {
-                        continue;
-                    }
-                    if (!status.isSet())
-                    {
-                        continue;
-                    }
-                    m_data->testStarted             = false;
-                    m_data->errorQuickStatusMessage = status.name;
-                    m_data->errorQuickStatusOccured = true;
-                    m_data->currentMode             = mab::MdMode_E::IDLE;
-                    m_data->mdIDs.clear();
-                    m_data->buttonAutomaticTestPressed = false;
-                    m_data->selectedMD                 = false;
-                }
-
-                std::lock_guard<std::mutex> lock(m_data->mtx);
-                uint32_t writeData = m_data->plotWriteData.load(std::memory_order_relaxed);
-                uint32_t idx       = writeData % commonMemory_S::PLOT_BUFFER_SIZE;
-
-                m_data->plotTime[idx]           = realTimeSeconds;
-                m_data->plotVelocity[idx]       = vel;
-                m_data->plotPosition[idx]       = pos;
-                m_data->plotTorque[idx]         = trq;
-                m_data->plotTargetVelocity[idx] = m_data->targetVelocity;
-                m_data->plotTargetPosition[idx] = m_data->targetPosition;
-                m_data->plotTargetTorque[idx]   = m_data->targetTorque;
-
-                m_data->plotWriteData.store(writeData + 1, std::memory_order_release);
-            }
-
             if (buttonDiscoverMdPressed)
             {
                 m_data->discoverOngoing = true;
                 {
                     std::lock_guard<std::mutex> lock(m_data->mtx);
                     m_data->mdIDs.clear();
+                    m_data->mds.clear();
                 }
             }
 
@@ -731,6 +456,7 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                 for (const mab::canId_t& id : mab::MD::discoverMDs(candle, min, max))
                 {
                     m_data->mdIDs.push_back(id);
+                    m_data->mds.push_back(std::make_unique<mab::MD>(id, candle));
                 }
                 min += 100;
                 max += 100;
@@ -740,6 +466,343 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                     min                     = 0;
                     max                     = 100;
                 }
+            }
+
+            for (auto it = m_data->mds.begin(); it != m_data->mds.end();)
+            {
+                mab::MD& md = **it;
+
+                if (!testStarted)
+                {
+                    if (communicationCheck(md) == mab::MD::Error_t::TRANSFER_FAILED)
+                    {
+                        auto now = std::chrono::steady_clock::now();
+
+                        if (errorStartTimes.find(md.m_canId) == errorStartTimes.end())
+                        {
+                            errorStartTimes[md.m_canId] = now;
+                        }
+                        else
+                        {
+                            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                               now - errorStartTimes[md.m_canId])
+                                               .count();
+
+                            if (elapsed > 1000)
+                            {
+                                mab::canId_t removeID = md.m_canId;
+                                it                    = m_data->mds.erase(it);
+
+                                m_data->mdIDs.erase(
+                                    std::remove(
+                                        m_data->mdIDs.begin(), m_data->mdIDs.end(), removeID),
+                                    m_data->mdIDs.end());
+
+                                m_data->selectedMD = false;
+
+                                errorStartTimes.erase(removeID);
+
+                                continue;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        errorStartTimes.erase(md.m_canId);
+                    }
+                }
+
+                if (md.m_canId == chosenID)
+                {
+                    checkConnectionStatus(md, chosenID);
+
+                    if (buttonClearErrorsPressed)
+                    {
+                        if (md.clearErrors() == mab::MD::Error_t::OK)
+                        {
+                            m_data->errorOccured = false;
+                        }
+                    }
+
+                    if (!testStarted && selectedMD)
+                    {
+                        checkQuickStatus(md);
+                    }
+
+                    if (!testStarted && buttonSavePressed)
+                    {
+                        switch (currentMode)
+                        {
+                            case mab::MdMode_E::IDLE:
+                                break;
+                            case mab::MdMode_E::VELOCITY_PID:
+                                updateVelParameters();
+                                md.setVelocityPIDparam(m_data->Kp_vel,
+                                                       m_data->Ki_vel,
+                                                       m_data->Kd_vel,
+                                                       m_data->integralMax_vel);
+                                md.save();
+                                break;
+                            case mab::MdMode_E::POSITION_PID:
+                                updateVelParameters();
+                                updatePosParameters();
+                                md.setVelocityPIDparam(m_data->Kp_vel,
+                                                       m_data->Ki_vel,
+                                                       m_data->Kd_vel,
+                                                       m_data->integralMax_vel);
+                                md.setPositionPIDparam(m_data->Kp_pos,
+                                                       m_data->Ki_pos,
+                                                       m_data->Kd_pos,
+                                                       m_data->integralMax_pos);
+                                md.save();
+                                break;
+                            case mab::MdMode_E::IMPEDANCE:
+                                updateImpParameters();
+                                md.setImpedanceParams(m_data->Kp_imp, m_data->Kd_imp);
+                                md.save();
+                                break;
+                            case mab::MdMode_E::RAW_TORQUE:  // case unused
+                                break;
+                            case mab::MdMode_E::VELOCITY_PROFILE:
+                                updateVelParameters();
+                                updatePosParameters();
+                                md.setVelocityPIDparam(m_data->Kp_vel,
+                                                       m_data->Ki_vel,
+                                                       m_data->Kd_vel,
+                                                       m_data->integralMax_vel);
+                                md.setPositionPIDparam(m_data->Kp_pos,
+                                                       m_data->Ki_pos,
+                                                       m_data->Kd_pos,
+                                                       m_data->integralMax_pos);
+                                md.save();
+                                break;
+                            case mab::MdMode_E::POSITION_PROFILE:
+                                updateVelParameters();
+                                updatePosParameters();
+                                md.setVelocityPIDparam(m_data->Kp_vel,
+                                                       m_data->Ki_vel,
+                                                       m_data->Kd_vel,
+                                                       m_data->integralMax_vel);
+                                md.setPositionPIDparam(m_data->Kp_pos,
+                                                       m_data->Ki_pos,
+                                                       m_data->Kd_pos,
+                                                       m_data->integralMax_pos);
+                                md.save();
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+
+                    if (buttonSelectMdPressed)
+                    {
+                        min = 0;
+                        max = 100;
+                        md.init();
+                        downloadParameters(md);
+                    }
+
+                    if (!testStarted && hardwareLastTestStarted)
+                    {
+                        {
+                            std::lock_guard<std::mutex> lock(m_data->mtx);
+                            m_data->testOngoing                = false;
+                            m_data->buttonAutomaticTestPressed = false;
+                        }
+                        md.disable();
+                    }
+
+                    if (testStarted && !hardwareLastTestStarted)
+                    {
+                        updateParametersTest         = true;
+                        m_data->updateParametersTest = true;
+                    }
+                    hardwareLastTestStarted = testStarted;
+
+                    if (updateParametersTest)
+                    {
+                        m_data->reset();
+
+                        md.zero();  // ZEROING FOR SAFETY TODO
+                        if (md.setMotionMode(currentMode) != mab::MD::Error_t::OK)
+                        {
+                            std::cout << "MD mode setting failed \n";
+                        }
+
+                        switch (currentMode)
+                        {
+                            case mab::MdMode_E::IDLE:
+                                break;
+                            case mab::MdMode_E::VELOCITY_PID:
+                                m_data->targetVelocity = m_data->targetVelocitySlider;
+                                m_data->targetPosition = 0.0f;
+                                m_data->positionWindow = 0.01;
+                                m_data->velocityWindow = m_data->velocityWindowSlider;
+                                updateVelParameters();
+                                md.setVelocityPIDparam(m_data->Kp_vel,
+                                                       m_data->Ki_vel,
+                                                       m_data->Kd_vel,
+                                                       m_data->integralMax_vel);
+                                break;
+                            case mab::MdMode_E::POSITION_PID:
+                                m_data->targetPosition = m_data->targetPositionSlider;
+                                m_data->targetVelocity = 0.0f;
+                                m_data->velocityWindow = 0.01;
+                                m_data->positionWindow = m_data->positionWindowSlider;
+                                updateVelParameters();
+                                md.setVelocityPIDparam(m_data->Kp_vel,
+                                                       m_data->Ki_vel,
+                                                       m_data->Kd_vel,
+                                                       m_data->integralMax_vel);
+                                updatePosParameters();
+                                md.setPositionPIDparam(m_data->Kp_pos,
+                                                       m_data->Ki_pos,
+                                                       m_data->Kd_pos,
+                                                       m_data->integralMax_pos);
+                                break;
+                            case mab::MdMode_E::IMPEDANCE:
+                                m_data->targetPosition = m_data->targetPositionSlider;
+                                updateImpParameters();
+                                md.setImpedanceParams(m_data->Kp_imp, m_data->Kd_imp);
+                                break;
+                            case mab::MdMode_E::RAW_TORQUE:  // case unused
+                                break;
+                            case mab::MdMode_E::VELOCITY_PROFILE:
+                                m_data->targetPosition     = m_data->targetPositionSlider;
+                                m_data->targetVelocity     = m_data->targetVelocitySlider;
+                                m_data->targetAcceleration = m_data->targetAccelerationSlider;
+                                m_data->targetDeceleration = m_data->targetDecelerationSlider;
+                                m_data->positionWindow     = 0.01;
+                                m_data->velocityWindow     = m_data->velocityWindowSlider;
+                                updateVelParameters();
+                                updatePosParameters();
+                                md.setVelocityPIDparam(m_data->Kp_vel,
+                                                       m_data->Ki_vel,
+                                                       m_data->Kd_vel,
+                                                       m_data->integralMax_vel);
+                                md.setPositionPIDparam(m_data->Kp_pos,
+                                                       m_data->Ki_pos,
+                                                       m_data->Kd_pos,
+                                                       m_data->integralMax_pos);
+                                break;
+                            case mab::MdMode_E::POSITION_PROFILE:
+                                m_data->targetPosition     = m_data->targetPositionSlider;
+                                m_data->targetVelocity     = m_data->targetVelocitySlider;
+                                m_data->targetAcceleration = m_data->targetAccelerationSlider;
+                                m_data->targetDeceleration = m_data->targetDecelerationSlider;
+                                m_data->velocityWindow     = 0.01;
+                                m_data->positionWindow     = m_data->positionWindowSlider;
+                                updateVelParameters();
+                                updatePosParameters();
+                                md.setVelocityPIDparam(m_data->Kp_vel,
+                                                       m_data->Ki_vel,
+                                                       m_data->Kd_vel,
+                                                       m_data->integralMax_vel);
+                                md.setPositionPIDparam(m_data->Kp_pos,
+                                                       m_data->Ki_pos,
+                                                       m_data->Kd_pos,
+                                                       m_data->integralMax_pos);
+                                break;
+                            default:
+                                break;
+                        }
+
+                        {
+                            std::lock_guard<std::mutex> lock(m_data->mtx);
+                            uint32_t                    writeData =
+                                m_data->plotWriteData.load(std::memory_order_relaxed);
+
+                            uint32_t indexBeforeStep = writeData % commonMemory_S::PLOT_BUFFER_SIZE;
+                            m_data->plotTime[indexBeforeStep]           = 0.0f;
+                            m_data->plotVelocity[indexBeforeStep]       = 0.0f;
+                            m_data->plotPosition[indexBeforeStep]       = 0.0f;
+                            m_data->plotTorque[indexBeforeStep]         = 0.0f;
+                            m_data->plotTargetVelocity[indexBeforeStep] = 0.0f;
+                            m_data->plotTargetPosition[indexBeforeStep] = 0.0f;
+                            m_data->plotTargetTorque[indexBeforeStep]   = 0.0f;
+
+                            uint32_t indexOnStep =
+                                (writeData + 1) % commonMemory_S::PLOT_BUFFER_SIZE;
+                            m_data->plotTime[indexOnStep]           = beginStepTime;
+                            m_data->plotVelocity[indexOnStep]       = 0.0f;
+                            m_data->plotPosition[indexOnStep]       = 0.0f;
+                            m_data->plotTorque[indexOnStep]         = 0.0f;
+                            m_data->plotTargetVelocity[indexOnStep] = m_data->targetVelocity;
+                            m_data->plotTargetPosition[indexOnStep] = m_data->targetPosition;
+                            m_data->plotTargetTorque[indexOnStep]   = m_data->targetTorque;
+
+                            m_data->plotWriteData.store(writeData + 2, std::memory_order_release);
+                        }
+
+                        md.enable();
+                        m_data->updateParametersTest = false;
+
+                        std::chrono::microseconds delayStep(
+                            static_cast<int>(beginStepTime * 1000000.0f));
+                        testStartTime = std::chrono::steady_clock::now() - delayStep;
+                    }
+
+                    if ((testStarted && currentMode != mab::MdMode_E::IDLE))
+                    {
+                        {
+                            std::lock_guard<std::mutex> lock(m_data->mtx);
+                            m_data->testOngoing = true;
+                        }
+
+                        std::chrono::time_point<std::chrono::steady_clock> now =
+                            std::chrono::steady_clock::now();
+                        std::chrono::duration<float> elapsed         = now - testStartTime;
+                        float                        realTimeSeconds = elapsed.count();
+
+                        testMD(md);
+
+                        md.readRegisters(md.m_mdRegisters.velocity,
+                                         md.m_mdRegisters.position,
+                                         md.m_mdRegisters.torque,
+                                         md.m_mdRegisters.quickStatus);
+
+                        float vel = float(md.m_mdRegisters.velocity.value);
+                        float pos = float(md.m_mdRegisters.position.value);
+                        float trq = float(md.m_mdRegisters.torque.value);
+
+                        mab::MDStatus::decode(md.m_mdRegisters.quickStatus.value,
+                                              statuses.quickStatus);
+
+                        for (const auto& [bit, status] : statuses.quickStatus)
+                        {
+                            if (bit == mab::MDStatus::QuickStatusBits::TargetPositionReached)
+                            {
+                                continue;
+                            }
+                            if (!status.isSet())
+                            {
+                                continue;
+                            }
+                            m_data->testStarted             = false;
+                            m_data->errorQuickStatusMessage = status.name;
+                            m_data->errorQuickStatusOccured = true;
+                            m_data->currentMode             = mab::MdMode_E::IDLE;
+                            m_data->mdIDs.clear();
+                            m_data->buttonAutomaticTestPressed = false;
+                            m_data->selectedMD                 = false;
+                        }
+
+                        std::lock_guard<std::mutex> lock(m_data->mtx);
+                        uint32_t writeData = m_data->plotWriteData.load(std::memory_order_relaxed);
+                        uint32_t idx       = writeData % commonMemory_S::PLOT_BUFFER_SIZE;
+
+                        m_data->plotTime[idx]           = realTimeSeconds;
+                        m_data->plotVelocity[idx]       = vel;
+                        m_data->plotPosition[idx]       = pos;
+                        m_data->plotTorque[idx]         = trq;
+                        m_data->plotTargetVelocity[idx] = m_data->targetVelocity;
+                        m_data->plotTargetPosition[idx] = m_data->targetPosition;
+                        m_data->plotTargetTorque[idx]   = m_data->targetTorque;
+
+                        m_data->plotWriteData.store(writeData + 1, std::memory_order_release);
+                    }
+                }
+                ++it;
             }
         }
         nextExecTime += dt;
