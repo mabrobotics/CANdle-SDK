@@ -151,7 +151,9 @@ namespace
 }  // namespace
 
 std::unique_ptr<MDCO, std::function<void(MDCO*)>> MdcoCli::getMdco(
-    const std::shared_ptr<canId_t> mdCanId, std::shared_ptr<EDSObjectDictionary> od)
+    const std::shared_ptr<canId_t>       mdCanId,
+    std::shared_ptr<EDSObjectDictionary> od,
+    bool                                 allowLegacy)
 {
     m_candleBuilder->useCAN20Frames = true;
     auto candle                     = m_candleBuilder->build().value_or(nullptr);
@@ -169,8 +171,8 @@ std::unique_ptr<MDCO, std::function<void(MDCO*)>> MdcoCli::getMdco(
         std::unique_ptr<MDCO, std::function<void(MDCO*)>>(new MDCO(*mdCanId, candle, od), deleter);
     if (md->init() == MDCO::Error_t::OK)
     {
-        // Drives older than 3.0.0 are only reachable through the update command
-        if (!useEdsMatchingFirmware(*md, od, m_edsPaths, m_log, false))
+        // Drives older than 3.0.0 are only reachable through the update and reset commands
+        if (!useEdsMatchingFirmware(*md, od, m_edsPaths, m_log, allowLegacy))
             return nullptr;
         return md;
     }
@@ -612,8 +614,10 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     reset->callback(
         [this, mdCanId, loadEDS]()
         {
+            // the reset command lives at 0x2003:02 in md_1.1 and at 0x2023:08 in md_1.2, the
+            // dictionary matching the drive firmware is picked so both are reachable
             auto od = loadEDS().first;
-            auto md = getMdco(mdCanId, od);
+            auto md = getMdco(mdCanId, od, true);
             if (md == nullptr)
                 return m_log.error("Failed to conect to mdco!");
             MDCO::Error_t err = md->reset();

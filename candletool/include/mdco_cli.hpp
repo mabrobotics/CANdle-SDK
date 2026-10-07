@@ -33,8 +33,12 @@ namespace mab
         std::shared_ptr<CandleBuilder> m_candleBuilder;
         CANdleToolCtx_S                m_ctx;
 
+        /// @param allowLegacy true to also accept drives older than LEGACY_EDS_BELOW_FW_MAJOR,
+        /// described by the legacy .eds
         std::unique_ptr<MDCO, std::function<void(MDCO*)>> getMdco(
-            const std::shared_ptr<canId_t> mdCanId, std::shared_ptr<EDSObjectDictionary> od);
+            const std::shared_ptr<canId_t>       mdCanId,
+            std::shared_ptr<EDSObjectDictionary> od,
+            bool                                 allowLegacy = false);
 
         /// @brief .eds files the installation provides, read when the dictionary is loaded
         EdsPaths_S m_edsPaths;

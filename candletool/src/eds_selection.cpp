@@ -146,6 +146,19 @@ namespace mab
 
             return matches.front().path;
         }
+
+        /// @brief Ask the drive for its firmware version, a version of 0.0.0 counts as no answer
+        ///
+        /// A dictionary that does not describe the drive (md_1.1 on a 3.x drive) may point at an
+        /// object the drive does serve but which holds 0 rather than the version
+        std::pair<version_ut, MDCO::Error_t> readFirmwareVersion(MDCO& md)
+        {
+            auto result = md.getFirmwareVersion();
+            if (result.second == MDCO::Error_t::OK && result.first.s.major == 0 &&
+                result.first.s.minor == 0 && result.first.s.revision == 0)
+                result.second = MDCO::Error_t::REQUEST_INVALID;
+            return result;
+        }
     }  // namespace
 
     std::filesystem::path bundledEdsDir(const std::filesystem::path& configFilePath)
@@ -323,7 +336,7 @@ namespace mab
 
         version_ut    firmwareVersion;
         MDCO::Error_t err;
-        std::tie(firmwareVersion, err) = md.getFirmwareVersion();
+        std::tie(firmwareVersion, err) = readFirmwareVersion(md);
 
         // The loaded .eds may not describe where a newer drive keeps its version (md_1.1 on a
         // 3.x drive), so the drive is asked again through the standard one
@@ -334,7 +347,7 @@ namespace mab
             {
                 EDSObjectDictionary selected   = std::move(*od);
                 *od                            = std::move(*standardPair.first);
-                std::tie(firmwareVersion, err) = md.getFirmwareVersion();
+                std::tie(firmwareVersion, err) = readFirmwareVersion(md);
                 if (err == MDCO::Error_t::OK &&
                     firmwareVersion.s.major >= LEGACY_EDS_BELOW_FW_MAJOR)
                 {

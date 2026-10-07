@@ -154,6 +154,9 @@ _candletool_completions()
                     config)
                         subcommands="download upload"
                         ;;
+                    update)
+                        exclusive_flags="-p --path -r --recovery --force-erase --legacy-migration"
+                        ;;
                     eds)
                         # an .eds is selected either by the version of one that comes with
                         # candletool or by the path of any other one

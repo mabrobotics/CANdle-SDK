@@ -32,7 +32,8 @@ namespace mab
               pathToMabFile(std::make_shared<std::filesystem::path>("")),
               recovery(std::make_shared<bool>(false)),
               forceErase(std::make_shared<bool>(false)),
-              otherVariant(std::make_shared<bool>(false))
+              otherVariant(std::make_shared<bool>(false)),
+              legacyMigration(std::make_shared<bool>(false))
         {
             // Drives accept both MD and MDCO firmware, the flag downloads the variant opposite
             // to the one the command resets the drive for
@@ -60,12 +61,26 @@ namespace mab
                      "-r,--recovery", *recovery, "Driver recovery after failed flashing")},
                 {"force_erase",
                  rootCli->add_flag("--force-erase", *forceErase, "Force full wipe of the driver")}};
+
+            // Legacy drives may not report a usable firmware version, so they are reset into the
+            // bootloader blindly and flashed as in recovery
+            if (canOpen)
+                optionsMap["legacy_migration"] =
+                    rootCli
+                        ->add_flag("--legacy-migration",
+                                   *legacyMigration,
+                                   "Reset the drive and flash it in recovery mode, without reading "
+                                   "its firmware version. For drives running firmware older than "
+                                   "3.0.0")
+                        ->excludes(optionsMap["recovery"])
+                        ->excludes(optionsMap["force_erase"]);
         }
         const std::shared_ptr<std::string>           fwVersion;
         const std::shared_ptr<std::filesystem::path> pathToMabFile;
         const std::shared_ptr<bool>                  recovery;
         const std::shared_ptr<bool>                  forceErase;
         const std::shared_ptr<bool>                  otherVariant;
+        const std::shared_ptr<bool>                  legacyMigration;
         std::map<std::string, CLI::Option*>          optionsMap;
     };
 

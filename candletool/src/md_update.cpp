@@ -272,6 +272,7 @@ namespace mab
 
         void flashMabFile(const std::filesystem::path&               path,
                           bool                                       recovery,
+                          bool                                       legacyMigration,
                           UpdateReset_E                              resetMode,
                           const std::shared_ptr<canId_t>             mdCanId,
                           const std::shared_ptr<const CandleBuilder> candleBuilder,
@@ -290,8 +291,30 @@ namespace mab
             if (targetCanOpen && !isSupportedCanOpenTarget(targetVersion, log))
                 return;
 
+            // The version of a legacy drive is not trusted, it is reset right before flashing so
+            // the bootloader window is not missed, and then caught as in recovery
+            if (legacyMigration)
+            {
+                log.warn("Migrating MD @ %d to %s firmware v%d.%d.%d without checking its current "
+                         "firmware!",
+                         *mdCanId,
+                         targetCanOpen ? "MDCO" : "MD",
+                         targetVersion.s.major,
+                         targetVersion.s.minor,
+                         targetVersion.s.revision);
+                log.warn("Firmware v2.x.x and v3.x.x use different EDS files (v1.1 and v1.2). The "
+                         "drive will require a complete reconfiguration!");
+                if (!userConfirm())
+                {
+                    log.error("Update aborted by user!");
+                    return;
+                }
+                if (!resetDrive(resetMode, mdCanId, candleBuilder, packageEtcPath, log))
+                    return;
+                recovery = true;
+            }
             // In recovery the drive sits in bootloader and can not report its version
-            if (!recovery)
+            else if (!recovery)
             {
                 if (!confirmUpdate(targetVersion,
                                    targetCanOpen,
@@ -378,13 +401,15 @@ namespace mab
             return;
         }
 
-        const bool recovery = *options.recovery;
+        const bool recovery        = *options.recovery;
+        const bool legacyMigration = *options.legacyMigration;
 
         if (!options.pathToMabFile->empty())
         {
             log.info("Overriding download of file. Using local provided path.");
             flashMabFile(*options.pathToMabFile,
                          recovery,
+                         legacyMigration,
                          resetMode,
                          mdCanId,
                          candleBuilder,
@@ -419,6 +444,11 @@ namespace mab
         // executables with firmware compiled in, newer as platform independent .mab
         if (!latest && targetVersion.s.major < 3)
         {
+            if (legacyMigration)
+            {
+                log.error("Legacy migration only installs firmware 3.0.0 or newer!");
+                return;
+            }
             if (*options.otherVariant)
             {
                 log.error(
@@ -488,6 +518,13 @@ namespace mab
             log.error("Could not download firmware [ %s ]", filename.c_str());
             return;
         }
-        flashMabFile(mabPath, recovery, resetMode, mdCanId, candleBuilder, packageEtcPath, log);
+        flashMabFile(mabPath,
+                     recovery,
+                     legacyMigration,
+                     resetMode,
+                     mdCanId,
+                     candleBuilder,
+                     packageEtcPath,
+                     log);
     }
 }  // namespace mab
