@@ -16,10 +16,18 @@ class HardwareCandle
   private:
     std::shared_ptr<commonMemory_S> m_data;
 
-    mab::Candle* candle = nullptr;
+    mab::Candle*                          candle = nullptr;
+    std::vector<std::unique_ptr<mab::MD>> mds;
+    std::vector<MDStatus_S>               mdStatusLocal;
 
     mab::MDStatus statuses;
     mab::canId_t  chosenID;
+
+    bool                                       mdListChanged = true;
+    std::chrono::steady_clock::time_point      lastStatusTime{};
+    std::chrono::steady_clock::time_point      lastSlowTime{};
+    static constexpr std::chrono::milliseconds STATUS_PERIOD{500};
+    static constexpr std::chrono::milliseconds SLOW_PERIOD{100};
 
     int timeoutCounter = 0;
     inline static std::map<mab::canId_t, std::chrono::time_point<std::chrono::steady_clock>>
@@ -33,6 +41,8 @@ class HardwareCandle
     const int          MAX_CONNECT_RETRIES = 100;
 
     mab::MD::Error_t communicationCheck(mab::MD& md);
+
+    float readDriverTemp(mab::MD& md);
 
     void testMD(mab::MD& md);
     void checkConnectionStatus(mab::MD& md, mab::canId_t chosenID);

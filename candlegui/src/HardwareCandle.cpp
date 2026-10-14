@@ -1,5 +1,6 @@
 #include "HardwareCandle.hpp"
 #include <memory>
+#include "commonMemory.hpp"
 #include "mab_types.hpp"
 
 HardwareCandle::HardwareCandle(std::shared_ptr<commonMemory_S> commonMemory) : m_data(commonMemory)
@@ -11,6 +12,14 @@ mab::MD::Error_t HardwareCandle::communicationCheck(mab::MD& md)
     mab::MD::Error_t err = md.readRegisters(md.m_mdRegisters.communicationStatus);
 
     return err;
+}
+
+float HardwareCandle::readDriverTemp(mab::MD& md)
+{
+    if (md.readRegisters(md.m_mdRegisters.mosfetTemperature) != mab::MD::Error_t::OK)
+        return NAN;
+
+    return float(md.m_mdRegisters.mosfetTemperature.value);
 }
 
 void HardwareCandle::testMD(mab::MD& md)
@@ -53,18 +62,18 @@ void HardwareCandle::checkConnectionStatus(mab::MD& md, mab::canId_t chosenID)
     bool selectedMD      = m_data->selectedMD;
     bool discoverOngoing = m_data->discoverOngoing;
 
-    m_data->errorConnectionOccured = false;
+    m_data->errorConnectionOccurred = false;
 
     if (discoverOngoing)
     {
-        m_data->errorMessage           = "Discover ongoing";
-        m_data->errorConnectionOccured = true;
+        m_data->errorMessage            = "Discover ongoing";
+        m_data->errorConnectionOccurred = true;
     }
 
     else if (selectedMD)
     {
-        m_data->errorMessage           = "Connected to MD" + std::to_string(chosenID);
-        m_data->errorConnectionOccured = false;
+        m_data->errorMessage            = "Connected to MD" + std::to_string(chosenID);
+        m_data->errorConnectionOccurred = false;
     }
 
     else
@@ -79,16 +88,17 @@ void HardwareCandle::checkQuickStatus(mab::MD& md)
                      md.m_mdRegisters.hardwareStatus,
                      md.m_mdRegisters.bridgeStatus,
                      md.m_mdRegisters.motionStatus,
-                     md.m_mdRegisters.communicationStatus);
+                     md.m_mdRegisters.communicationStatus,
+                     md.m_mdRegisters.mosfetTemperature);
 
     mab::MDStatus::decode(md.m_mdRegisters.quickStatus.value, statuses.quickStatus);
 
-    m_data->errorQuickStatusOccured   = false;
-    m_data->errorEncoderOccured       = false;
-    m_data->errorHardwareOccured      = false;
-    m_data->errorMotionOccured        = false;
-    m_data->errorCommunicationOccured = false;
-    m_data->errorQuickStatusMessage   = "No errors";
+    m_data->errorQuickStatusOccurred   = false;
+    m_data->errorEncoderOccurred       = false;
+    m_data->errorHardwareOccurred      = false;
+    m_data->errorMotionOccurred        = false;
+    m_data->errorCommunicationOccurred = false;
+    m_data->errorQuickStatusMessage    = "No errors";
 
     for (const auto& [bit, status] : statuses.quickStatus)
     {
@@ -104,11 +114,10 @@ void HardwareCandle::checkQuickStatus(mab::MD& md)
         m_data->currentMode                = mab::MdMode_E::IDLE;
         m_data->testStarted                = false;
         m_data->buttonAutomaticTestPressed = false;
-        m_data->mdIDs.clear();
-        m_data->selectedMD              = false;
-        m_data->errorOccured            = true;
-        m_data->errorQuickStatusOccured = true;
-        m_data->errorQuickStatusMessage = "ERROR";
+        m_data->selectedMD                 = false;
+        m_data->errorOccurred              = true;
+        m_data->errorQuickStatusOccurred   = true;
+        m_data->errorQuickStatusMessage    = "ERROR";
 
         switch (bit)
         {
@@ -119,7 +128,7 @@ void HardwareCandle::checkQuickStatus(mab::MD& md)
                     if (bridgeStatus.isSet())
                     {
                         m_data->errorBridgeStatusMessage = bridgeStatus.name;
-                        m_data->errorBridgeOccured       = true;
+                        m_data->errorBridgeOccurred      = true;
                     }
                 }
                 break;
@@ -133,7 +142,7 @@ void HardwareCandle::checkQuickStatus(mab::MD& md)
                     if (encStatus.isSet())
                     {
                         m_data->errorEncoderStatusMessage = encStatus.name;
-                        m_data->errorEncoderOccured       = true;
+                        m_data->errorEncoderOccurred      = true;
                     }
                 }
                 break;
@@ -145,7 +154,7 @@ void HardwareCandle::checkQuickStatus(mab::MD& md)
                     if (hwStatus.isSet())
                     {
                         m_data->errorHardwareStatusMessage = hwStatus.name;
-                        m_data->errorHardwareOccured       = true;
+                        m_data->errorHardwareOccurred      = true;
                     }
                 }
                 break;
@@ -156,7 +165,7 @@ void HardwareCandle::checkQuickStatus(mab::MD& md)
                     if (motionStatus.isSet())
                     {
                         m_data->errorMotionStatusMessage = motionStatus.name;
-                        m_data->errorMotionOccured       = true;
+                        m_data->errorMotionOccurred      = true;
                     }
                 }
                 break;
@@ -168,7 +177,7 @@ void HardwareCandle::checkQuickStatus(mab::MD& md)
                     if (commStatus.isSet())
                     {
                         m_data->errorCommunicationStatusMessage = commStatus.name;
-                        m_data->errorCommunicationOccured       = true;
+                        m_data->errorCommunicationOccurred      = true;
                     }
                 }
                 break;
@@ -337,6 +346,13 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
         bool buttonClearErrorsPressed = m_data->buttonClearErrorsPressed.exchange(false);
         bool buttonSavePressed        = m_data->buttonSavePressed.exchange(false);
 
+        std::chrono::steady_clock::time_point statusNow = std::chrono::steady_clock::now();
+        bool refreshStatus = mdListChanged || (statusNow - lastStatusTime >= STATUS_PERIOD);
+
+        bool slowTick = (statusNow - lastSlowTime >= SLOW_PERIOD);
+        if (slowTick)
+            lastSlowTime = statusNow;
+
         mab::MdMode_E currentMode;
 
         currentMode = m_data->currentMode;
@@ -344,8 +360,8 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
 
         if (candle == nullptr)
         {
-            m_data->errorMessage           = "CANdle Disconnected";
-            m_data->errorConnectionOccured = true;
+            m_data->errorMessage            = "CANdle Disconnected";
+            m_data->errorConnectionOccurred = true;
 
             std::unique_ptr<mab::I_CommunicationInterface> bus;
 
@@ -387,7 +403,7 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
             }
         }
 
-        if (candle != nullptr)
+        if (candle != nullptr && slowTick)
         {
             mab::candleTypes::Error_t errMsg = candle->legacyCheckConnection();
 
@@ -404,8 +420,9 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                 m_data->testStarted     = false;
                 m_data->testOngoing     = false;
                 m_data->candleAvailable = false;
-                m_data->mdIDs.clear();
-                m_data->mds.clear();
+                mds.clear();
+                mdStatusLocal.clear();
+                m_data->mdStatus.clear();
                 buttonDiscoverMdPressed = false;
                 m_data->discoverOngoing = false;
                 m_data->selectedMD      = false;
@@ -423,8 +440,9 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                 m_data->testOngoing     = false;
                 m_data->candleAvailable = false;
                 m_data->updatedVersion  = false;
-                m_data->mdIDs.clear();
-                m_data->mds.clear();
+                mds.clear();
+                mdStatusLocal.clear();
+                m_data->mdStatus.clear();
                 buttonDiscoverMdPressed = false;
                 m_data->discoverOngoing = false;
                 m_data->selectedMD      = false;
@@ -446,17 +464,17 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                 m_data->discoverOngoing = true;
                 {
                     std::lock_guard<std::mutex> lock(m_data->mtx);
-                    m_data->mdIDs.clear();
-                    m_data->mds.clear();
+                    mds.clear();
                 }
+                mdListChanged = true;
             }
 
             if (m_data->discoverOngoing)
             {
                 for (const mab::canId_t& id : mab::MD::discoverMDs(candle, min, max))
                 {
-                    m_data->mdIDs.push_back(id);
-                    m_data->mds.push_back(std::make_unique<mab::MD>(id, candle));
+                    mds.push_back(std::make_unique<mab::MD>(id, candle));
+                    mdListChanged = true;
                 }
                 min += 100;
                 max += 100;
@@ -468,11 +486,14 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                 }
             }
 
-            for (auto it = m_data->mds.begin(); it != m_data->mds.end();)
+            if (refreshStatus)
+                mdStatusLocal.clear();
+
+            for (auto it = mds.begin(); it != mds.end();)
             {
                 mab::MD& md = **it;
 
-                if (!testStarted)
+                if (!testStarted && slowTick)
                 {
                     if (communicationCheck(md) == mab::MD::Error_t::TRANSFER_FAILED)
                     {
@@ -491,16 +512,13 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                             if (elapsed > 1000)
                             {
                                 mab::canId_t removeID = md.m_canId;
-                                it                    = m_data->mds.erase(it);
-
-                                m_data->mdIDs.erase(
-                                    std::remove(
-                                        m_data->mdIDs.begin(), m_data->mdIDs.end(), removeID),
-                                    m_data->mdIDs.end());
+                                it                    = mds.erase(it);
 
                                 m_data->selectedMD = false;
 
                                 errorStartTimes.erase(removeID);
+
+                                mdListChanged = true;
 
                                 continue;
                             }
@@ -512,6 +530,14 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                     }
                 }
 
+                if (refreshStatus)
+                {
+                    MDStatus_S status;
+                    status.id         = md.m_canId;
+                    status.driverTemp = readDriverTemp(md);
+                    mdStatusLocal.push_back(status);
+                }
+
                 if (md.m_canId == chosenID)
                 {
                     checkConnectionStatus(md, chosenID);
@@ -520,11 +546,11 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                     {
                         if (md.clearErrors() == mab::MD::Error_t::OK)
                         {
-                            m_data->errorOccured = false;
+                            m_data->errorOccurred = false;
                         }
                     }
 
-                    if (!testStarted && selectedMD)
+                    if (!testStarted && selectedMD && slowTick)
                     {
                         checkQuickStatus(md);
                     }
@@ -778,11 +804,10 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                             {
                                 continue;
                             }
-                            m_data->testStarted             = false;
-                            m_data->errorQuickStatusMessage = status.name;
-                            m_data->errorQuickStatusOccured = true;
-                            m_data->currentMode             = mab::MdMode_E::IDLE;
-                            m_data->mdIDs.clear();
+                            m_data->testStarted                = false;
+                            m_data->errorQuickStatusMessage    = status.name;
+                            m_data->errorQuickStatusOccurred   = true;
+                            m_data->currentMode                = mab::MdMode_E::IDLE;
                             m_data->buttonAutomaticTestPressed = false;
                             m_data->selectedMD                 = false;
                         }
@@ -803,6 +828,16 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                     }
                 }
                 ++it;
+            }
+
+            if (refreshStatus)
+            {
+                {
+                    std::lock_guard<std::mutex> lock(m_data->mtx);
+                    m_data->mdStatus.swap(mdStatusLocal);
+                }
+                mdListChanged  = false;
+                lastStatusTime = statusNow;
             }
         }
         nextExecTime += dt;

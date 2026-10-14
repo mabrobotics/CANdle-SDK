@@ -2,11 +2,18 @@
 #include "MD.hpp"
 #include "candle.hpp"
 #include "imgui.h"
+#include "mab_types.hpp"
 #include <memory>
 #include <mutex>
 #include <atomic>
 #include <vector>
 #include <cmath>
+
+struct MDStatus_S
+{
+    mab::canId_t id;
+    float        driverTemp;
+};
 
 struct commonMemory_S
 {
@@ -106,10 +113,9 @@ struct commonMemory_S
     float targetDecelerationSlider = 0.0f;
 
     // MAB
-    mab::MdMode_E                         currentMode = mab::MdMode_E::IDLE;
-    std::vector<mab::canId_t>             mdIDs;
-    std::vector<std::unique_ptr<mab::MD>> mds;
-    mab::canId_t                          chosenID = 0;
+    mab::MdMode_E           currentMode = mab::MdMode_E::IDLE;
+    std::vector<MDStatus_S> mdStatus;
+    mab::canId_t            chosenID = 0;
 
     // Logic
     std::atomic<bool> testStarted{false};
@@ -130,14 +136,14 @@ struct commonMemory_S
     std::atomic<bool> discoverOngoing{false};
 
     // Errors
-    std::atomic<bool> errorOccured{false};
-    std::atomic<bool> errorConnectionOccured{false};
-    std::atomic<bool> errorQuickStatusOccured{false};
-    std::atomic<bool> errorEncoderOccured{false};
-    std::atomic<bool> errorHardwareOccured{false};
-    std::atomic<bool> errorBridgeOccured{false};
-    std::atomic<bool> errorMotionOccured{false};
-    std::atomic<bool> errorCommunicationOccured{false};
+    std::atomic<bool> errorOccurred{false};
+    std::atomic<bool> errorConnectionOccurred{false};
+    std::atomic<bool> errorQuickStatusOccurred{false};
+    std::atomic<bool> errorEncoderOccurred{false};
+    std::atomic<bool> errorHardwareOccurred{false};
+    std::atomic<bool> errorBridgeOccurred{false};
+    std::atomic<bool> errorMotionOccurred{false};
+    std::atomic<bool> errorCommunicationOccurred{false};
 
     // Plots
     static const uint32_t PLOT_BUFFER_SIZE = 100000;

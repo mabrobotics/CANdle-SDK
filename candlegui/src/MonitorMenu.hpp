@@ -19,7 +19,11 @@ class MonitorMenu
     std::shared_ptr<commonMemory_S> m_data;
     ImGuiIO&                        m_io;
 
+    std::vector<MDStatus_S> MonitorMenuMDStatus;
+
     // Dimensions of windows
     float canBusInfoBarHeight   = 170.0f;
     float actuatorsMenuBarWidth = 325.0f;
+
+    void refreshMDStatus();
 };

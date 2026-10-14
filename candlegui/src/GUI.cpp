@@ -1,5 +1,7 @@
 #include "GUI.hpp"
+#include <mutex>
 #include "imgui.h"
+#include "mab_types.hpp"
 
 GraphicInterface::GraphicInterface(std::shared_ptr<commonMemory_S> commonMemory, ImGuiIO& io)
     : m_data(commonMemory), m_io(io), m_monitorWindow(commonMemory, io)
@@ -92,6 +94,7 @@ void GraphicInterface::loop()
 
         if (ImGui::Begin("Main Window", nullptr, m_data->flagsBackMenu))
         {
+            refreshMDStatus();
             drawMenuTopBar();
 
             ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, roundingFrameButton);
@@ -254,7 +257,7 @@ void GraphicInterface::drawMenuTopBar()
             ImGui::Text("|");
 
             ImGui::SameLine();
-            ImGui::Text("%zu drives", m_data->mdIDs.size());
+            ImGui::Text("%zu drives", guiMDStatus.size());
         }
         ImGui::EndChild();
         ImGui::PopStyleVar(3);
@@ -305,13 +308,13 @@ void GraphicInterface::drawTestMenuBar()
     if (ImGui::BeginChild(
             "Test menu", ImVec2(0, 0), ImGuiChildFlags_Borders, m_data->flagsBackMenu))
     {
-        bool errorOccured = m_data->errorOccured;
+        bool errorOccurred = m_data->errorOccurred;
 
         drawCursorMenu();
 
         ImGui::Separator();
 
-        if (errorOccured)
+        if (errorOccurred)
         {
             ImGui::BeginDisabled();
         }
@@ -324,7 +327,7 @@ void GraphicInterface::drawTestMenuBar()
 
         drawTestEndButton();
 
-        if (errorOccured)
+        if (errorOccurred)
         {
             ImGui::EndDisabled();
         }
@@ -335,20 +338,20 @@ void GraphicInterface::drawTestMenuBar()
 
 void GraphicInterface::drawErrorMenuBar()
 {
-    bool errorConnectionOccured    = m_data->errorConnectionOccured;
-    bool errorQuickStatusOccured   = m_data->errorQuickStatusOccured;
-    bool errorEncoderOccured       = m_data->errorEncoderOccured;
-    bool errorHardwareOccured      = m_data->errorHardwareOccured;
-    bool errorBridgeOccured        = m_data->errorBridgeOccured;
-    bool errorMotionOccured        = m_data->errorMotionOccured;
-    bool errorCommunicationOccured = m_data->errorCommunicationOccured;
-    bool selectedMD                = m_data->selectedMD;
+    bool errorConnectionOccurred    = m_data->errorConnectionOccurred;
+    bool errorQuickStatusOccurred   = m_data->errorQuickStatusOccurred;
+    bool errorEncoderOccurred       = m_data->errorEncoderOccurred;
+    bool errorHardwareOccurred      = m_data->errorHardwareOccurred;
+    bool errorBridgeOccurred        = m_data->errorBridgeOccurred;
+    bool errorMotionOccurred        = m_data->errorMotionOccurred;
+    bool errorCommunicationOccurred = m_data->errorCommunicationOccurred;
+    bool selectedMD                 = m_data->selectedMD;
 
     ImGui::AlignTextToFramePadding();
 
     ImGui::Text("Connection status:");
     ImGui::SameLine();
-    if (errorConnectionOccured)
+    if (errorConnectionOccurred)
     {
         ImGui::PushStyleColor(ImGuiCol_Text, redColor);
         ImGui::Text("%s", m_data->errorMessage.c_str());
@@ -364,7 +367,7 @@ void GraphicInterface::drawErrorMenuBar()
     ImGui::SameLine();
     ImGui::Text("Status:");
     ImGui::SameLine();
-    if (errorQuickStatusOccured)
+    if (errorQuickStatusOccurred)
     {
         ImGui::PushStyleColor(ImGuiCol_Text, redColor);
         ImGui::Text("%s", m_data->errorQuickStatusMessage.c_str());
@@ -379,7 +382,7 @@ void GraphicInterface::drawErrorMenuBar()
 
     if (selectedMD)
     {
-        if (errorEncoderOccured)
+        if (errorEncoderOccurred)
         {
             ImGui::SameLine();
             ImGui::Text("Encoder status:");
@@ -390,7 +393,7 @@ void GraphicInterface::drawErrorMenuBar()
             ImGui::PopStyleColor();
         }
 
-        if (errorHardwareOccured)
+        if (errorHardwareOccurred)
         {
             ImGui::SameLine();
             ImGui::Text("Hardware status:");
@@ -401,7 +404,7 @@ void GraphicInterface::drawErrorMenuBar()
             ImGui::PopStyleColor();
         }
 
-        if (errorBridgeOccured)
+        if (errorBridgeOccurred)
         {
             ImGui::SameLine();
             ImGui::Text("Bridge status:");
@@ -412,7 +415,7 @@ void GraphicInterface::drawErrorMenuBar()
             ImGui::PopStyleColor();
         }
 
-        if (errorMotionOccured)
+        if (errorMotionOccurred)
         {
             ImGui::SameLine();
             ImGui::Text("Motion status:");
@@ -423,7 +426,7 @@ void GraphicInterface::drawErrorMenuBar()
             ImGui::PopStyleColor();
         }
 
-        if (errorCommunicationOccured)
+        if (errorCommunicationOccurred)
         {
             ImGui::SameLine();
             ImGui::Text("Communication status:");
@@ -955,32 +958,28 @@ void GraphicInterface::drawDiscoverMDButton()
 
 void GraphicInterface::drawSelectMDButton()
 {
-    std::vector<mab::canId_t> mdIDs;
-    mab::canId_t              chosenID     = 0;
-    std::string               chosenIDname = "";
+    {
+        std::lock_guard<std::mutex> lock(m_data->mtx);
+        guiMDStatus = m_data->mdStatus;
+    }
 
-    bool selectedMD = m_data->selectedMD;
+    bool         selectedMD = m_data->selectedMD;
+    mab::canId_t chosenID   = m_data->chosenID;
+    bool         noMDs      = guiMDStatus.empty();
 
-    mdIDs    = m_data->mdIDs;
-    chosenID = m_data->chosenID;
-
-    if (mdIDs.empty())
+    if (noMDs)
     {
         std::lock_guard<std::mutex> lock(m_data->mtx);
         m_data->selectedMD   = false;
         m_data->selectedMode = false;
-    }
 
-    if (mdIDs.empty())
-    {
         chosenIDstr = "No MDs available.";
         ImGui::BeginDisabled();
     }
     else if (!selectedMD)
         chosenIDstr = "Select Your MD";
 
-    std::string comboText = "MD Select";
-    comboStyle(comboText.c_str());
+    comboStyle("MD Select");
     if (ImGui::BeginCombo("##MD Select", chosenIDstr.c_str()))
     {
         if (ImGui::Selectable("None"))
@@ -988,36 +987,33 @@ void GraphicInterface::drawSelectMDButton()
             std::lock_guard<std::mutex> lock(m_data->mtx);
             m_data->selectedMD = false;
         }
-        for (const mab::canId_t& id : mdIDs)
+        char name[16];
+        for (size_t i = 0; i < guiMDStatus.size(); i++)
         {
-            chosenIDname = "MD" + std::to_string(uint16_t((id)));
+            mab::canId_t id = guiMDStatus[i].id;
 
-            bool selectedID = (chosenID == id);
+            snprintf(name, sizeof(name), "MD%u", (unsigned)id);
 
-            if (ImGui::Selectable(chosenIDname.c_str()))
+            bool isChosen = (chosenID == id);
+
+            if (ImGui::Selectable(name, isChosen))
             {
                 std::lock_guard<std::mutex> lock(m_data->mtx);
                 m_data->chosenID              = id;
                 m_data->buttonSelectMdPressed = true;
                 m_data->selectedMD            = true;
-                chosenIDstr                   = chosenIDname;
                 m_data->discoverOngoing       = false;
+                chosenIDstr                   = name;
             }
-            if (selectedID)
+            if (isChosen)
                 ImGui::SetItemDefaultFocus();
         }
         ImGui::EndCombo();
     }
     endComboStyle();
 
-    if (m_data->discoverOngoing && mdIDs.empty())
-    {
+    if (noMDs)
         ImGui::EndDisabled();
-    }
-    else if (mdIDs.empty())
-    {
-        ImGui::EndDisabled();
-    }
 }
 
 void GraphicInterface::drawSelectModeButton()
@@ -1646,6 +1642,12 @@ void GraphicInterface::drawSetVelocityWindow()
 Draw plots
 
 */
+
+void GraphicInterface::refreshMDStatus()
+{
+    std::lock_guard<std::mutex> lock(m_data->mtx);
+    guiMDStatus = m_data->mdStatus;
+}
 
 void GraphicInterface::updatePlotData()
 {

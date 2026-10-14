@@ -34,7 +34,8 @@ class GraphicInterface
 
     GLFWwindow* m_window = nullptr;
 
-    MonitorMenu m_monitorWindow;
+    MonitorMenu             m_monitorWindow;
+    std::vector<MDStatus_S> guiMDStatus;
 
     float leftMenuBarWidth = 325.0f;
     float leftMenuBarHeight;
@@ -191,6 +192,7 @@ class GraphicInterface
 
     // Draw plots
     void updatePlotData();
+    void refreshMDStatus();
     void timeInTarget(bool& inWindow, float& timeInTargetWindow, float& dt);
     void drawVelocityPlot(ImVec2 size, ImPlotFlags plotFlag);
     void drawPositionPlot(ImVec2 size, ImPlotFlags plotFlag);
@@ -228,5 +230,5 @@ class GraphicInterface
                                   float       windowWidth,
                                   const char* unit = nullptr);
     bool        buttonColorInputFloat(
-               const char* label, float* v, float step, float step_fast, const char* format);
+        const char* label, float* v, float step, float step_fast, const char* format);
 };

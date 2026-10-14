@@ -1,4 +1,5 @@
 #include "MonitorMenu.hpp"
+#include "commonMemory.hpp"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "mab_types.hpp"
@@ -21,6 +22,7 @@ void MonitorMenu::drawMonitorMenu()
                           ImGuiChildFlags_None,
                           m_data->flagsBackMenu))
     {
+        refreshMDStatus();
         drawActuatorMenu();
         drawCanBusInfoMenu();
     }
@@ -38,27 +40,23 @@ void MonitorMenu::drawActuatorMenu()
                           ImGuiChildFlags_Borders,
                           m_data->flagsBackMenu))
     {
-        bool                      testOngoing = m_data->testOngoing;
-        std::vector<mab::canId_t> mdIds       = m_data->mdIDs;
-
-        std::string chosenIDname = "";
+        bool testOngoing = m_data->testOngoing;
 
         if (testOngoing)
-        {
             ImGui::BeginDisabled();
-        }
 
         ImGui::Text("Actuators");
 
-        if (!mdIds.empty())
+        if (!MonitorMenuMDStatus.empty())
         {
-            for (const mab::canId_t& id : m_data->mdIDs)
+            for (size_t i = 0; i < MonitorMenuMDStatus.size(); i++)
             {
-                chosenIDname = "ID " + std::to_string(uint16_t((id)));
+                const MDStatus_S& status = MonitorMenuMDStatus[i];
 
-                ImGui::TextUnformatted(chosenIDname.c_str());
-
-                ImGui::SameLine();
+                if (std::isnan(status.driverTemp))
+                    ImGui::Text("ID %u   --", (unsigned)status.id);
+                else
+                    ImGui::Text("ID %u   %.1f C", (unsigned)status.id, status.driverTemp);
             }
         }
 
@@ -88,4 +86,15 @@ void MonitorMenu::drawCanBusInfoMenu()
     }
     ImGui::EndChild();
     ImGui::PopStyleVar(2);
+}
+
+/*
+
+ Help functions
+
+*/
+void MonitorMenu::refreshMDStatus()
+{
+    std::lock_guard<std::mutex> lock(m_data->mtx);
+    MonitorMenuMDStatus = m_data->mdStatus;
 }
