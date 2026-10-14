@@ -26,8 +26,10 @@ class HardwareCandle
     bool                                       mdListChanged = true;
     std::chrono::steady_clock::time_point      lastStatusTime{};
     std::chrono::steady_clock::time_point      lastSlowTime{};
-    static constexpr std::chrono::milliseconds STATUS_PERIOD{500};
+    static constexpr std::chrono::milliseconds STATUS_PERIOD{100};
     static constexpr std::chrono::milliseconds SLOW_PERIOD{100};
+
+    bool quickStatusOk(uint16_t raw);
 
     int timeoutCounter = 0;
     inline static std::map<mab::canId_t, std::chrono::time_point<std::chrono::steady_clock>>
@@ -43,6 +45,8 @@ class HardwareCandle
     mab::MD::Error_t communicationCheck(mab::MD& md);
 
     float readDriverTemp(mab::MD& md);
+    void  copyLiveValues(mab::MD& md, MDStatus_S& status);
+    bool  readLiveValues(mab::MD& md, MDStatus_S& status);
 
     void testMD(mab::MD& md);
     void checkConnectionStatus(mab::MD& md, mab::canId_t chosenID);

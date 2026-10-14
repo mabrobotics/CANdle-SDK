@@ -196,7 +196,7 @@ void GraphicInterface::drawMenuTopBar()
 
     if (ImGui::BeginChild("TopBar", ImVec2(0, topBarHeight), ImGuiChildFlags_None))
     {
-        float rightChildWidth = 200.0f;
+        float rightChildWidth = 250.0f;
         float spacing         = ImGui::GetStyle().ItemSpacing.x;
 
         if (ImGui::BeginChild(
@@ -252,6 +252,12 @@ void GraphicInterface::drawMenuTopBar()
 
             ImGui::SameLine();
             ImGui::TextUnformatted(m_data->busTypeToString(m_data->busType));
+
+            ImGui::SameLine();
+            ImGui::Text("|");
+
+            ImGui::SameLine();
+            ImGui::TextUnformatted(m_data->baudrateToString(m_data->candleDatarate));
 
             ImGui::SameLine();
             ImGui::Text("|");

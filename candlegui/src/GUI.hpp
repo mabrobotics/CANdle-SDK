@@ -123,7 +123,7 @@ class GraphicInterface
     ImVec4 buttonColor  = ImVec4(0.167f, 0.165f, 0.196f, 1.0f);
 
     const ImVec4 redColor   = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
-    const ImVec4 greenColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
+    const ImVec4 greenColor = ImVec4(0.30f, 0.80f, 0.40f, 1.0f);
 
     const ImVec4 mabColor        = ImVec4(1.0f, 0.468f, 0.0f, 1.0f);
     const ImVec4 mabColorHovered = ImVec4(1.0f, 0.468f, 0.0f, 0.5f);

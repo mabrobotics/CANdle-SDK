@@ -14,12 +14,51 @@ mab::MD::Error_t HardwareCandle::communicationCheck(mab::MD& md)
     return err;
 }
 
+bool HardwareCandle::quickStatusOk(uint16_t raw)
+{
+    mab::MDStatus::decode(raw, statuses.quickStatus);
+
+    for (const auto& [bit, status] : statuses.quickStatus)
+    {
+        if (bit == mab::MDStatus::QuickStatusBits::TargetPositionReached)
+            continue;
+        if (status.isSet())
+            return false;
+    }
+    return true;
+}
+
 float HardwareCandle::readDriverTemp(mab::MD& md)
 {
     if (md.readRegisters(md.m_mdRegisters.mosfetTemperature) != mab::MD::Error_t::OK)
         return NAN;
 
     return float(md.m_mdRegisters.mosfetTemperature.value);
+}
+
+void HardwareCandle::copyLiveValues(mab::MD& md, MDStatus_S& status)
+{
+    status.position   = float(md.m_mdRegisters.position.value);
+    status.velocity   = float(md.m_mdRegisters.velocity.value);
+    status.torque     = float(md.m_mdRegisters.torque.value);
+    status.motorTemp  = float(md.m_mdRegisters.motorTemperature.value);
+    status.driverTemp = float(md.m_mdRegisters.mosfetTemperature.value);
+    status.ok         = quickStatusOk(md.m_mdRegisters.quickStatus.value);
+    status.valid      = true;
+}
+
+bool HardwareCandle::readLiveValues(mab::MD& md, MDStatus_S& status)
+{
+    if (md.readRegisters(md.m_mdRegisters.position,
+                         md.m_mdRegisters.velocity,
+                         md.m_mdRegisters.torque,
+                         md.m_mdRegisters.motorTemperature,
+                         md.m_mdRegisters.mosfetTemperature,
+                         md.m_mdRegisters.quickStatus) != mab::MD::Error_t::OK)
+        return false;
+
+    copyLiveValues(md, status);
+    return true;
 }
 
 void HardwareCandle::testMD(mab::MD& md)
@@ -392,13 +431,15 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
 
                 if (interfaceConnected)
                 {
-                    candle =
-                        mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M, std::move(bus));
+                    mab::CANdleDatarate_E candleDatarate = mab::CANdleDatarate_E::CAN_DATARATE_1M;
+
+                    candle = mab::attachCandle(candleDatarate, std::move(bus));
                     if (candle != nullptr)
                     {
                         m_data->candleAvailable = true;
                         m_data->updatedVersion  = true;
                     }
+                    m_data->candleDatarate = candleDatarate;
                 }
             }
         }
@@ -533,8 +574,11 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                 if (refreshStatus)
                 {
                     MDStatus_S status;
-                    status.id         = md.m_canId;
-                    status.driverTemp = readDriverTemp(md);
+                    status.id     = md.m_canId;
+                    bool testedMD = testStarted && md.m_canId == chosenID;
+                    if (!testedMD)
+                        readLiveValues(md, status);
+
                     mdStatusLocal.push_back(status);
                 }
 
@@ -785,11 +829,15 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                         md.readRegisters(md.m_mdRegisters.velocity,
                                          md.m_mdRegisters.position,
                                          md.m_mdRegisters.torque,
-                                         md.m_mdRegisters.quickStatus);
+                                         md.m_mdRegisters.quickStatus,
+                                         md.m_mdRegisters.motorTemperature,
+                                         md.m_mdRegisters.mosfetTemperature);
 
                         float vel = float(md.m_mdRegisters.velocity.value);
                         float pos = float(md.m_mdRegisters.position.value);
                         float trq = float(md.m_mdRegisters.torque.value);
+                        if (refreshStatus && !mdStatusLocal.empty())
+                            copyLiveValues(md, mdStatusLocal.back());
 
                         mab::MDStatus::decode(md.m_mdRegisters.quickStatus.value,
                                               statuses.quickStatus);

@@ -12,7 +12,13 @@
 struct MDStatus_S
 {
     mab::canId_t id;
-    float        driverTemp;
+    float        position   = NAN;
+    float        velocity   = NAN;
+    float        torque     = NAN;
+    float        motorTemp  = NAN;
+    float        driverTemp = NAN;
+    bool         ok         = false;
+    bool         valid      = false;
 };
 
 struct commonMemory_S
@@ -37,6 +43,23 @@ struct commonMemory_S
                 return "UNKNOWN";
             default:
                 return "UNKNOWN";
+        }
+    }
+
+    const char* baudrateToString(mab::CANdleDatarate_E type)
+    {
+        switch (type)
+        {
+            case mab::CANdleDatarate_E::CAN_DATARATE_1M:
+                return "1 Mbps";
+            case mab::CANdleDatarate_E::CAN_DATARATE_2M:
+                return "2 Mbps";
+            case mab::CANdleDatarate_E::CAN_DATARATE_5M:
+                return "5 Mbps";
+            case mab::CANdleDatarate_E::CAN_DATARATE_8M:
+                return "8 Mbps";
+            default:
+                return "-";
         }
     }
 
@@ -116,6 +139,7 @@ struct commonMemory_S
     mab::MdMode_E           currentMode = mab::MdMode_E::IDLE;
     std::vector<MDStatus_S> mdStatus;
     mab::canId_t            chosenID = 0;
+    mab::CANdleDatarate_E   candleDatarate;
 
     // Logic
     std::atomic<bool> testStarted{false};
