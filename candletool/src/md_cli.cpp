@@ -880,9 +880,14 @@ namespace mab
         auto regRead = reg->add_subcommand("read", "Read register value.");
 
         RegisterReadOption regReadOptions(regRead);
+        auto               regType = std::make_shared<std::string>();
+        regRead->add_option("-t,--type",
+                            *regType,
+                            "Type of a register not listed by candletool, read by its address: "
+                            "u8, i8, u16, i16, u32, i32, f32 or char[N] (eg. \"char[24]\")");
 
         regRead->callback(
-            [this, candleBuilder, mdCanId, regReadOptions]()
+            [this, candleBuilder, mdCanId, regReadOptions, regType]()
             {
                 std::string result      = "Failed to read";
                 auto        md          = getMd(mdCanId, candleBuilder);
@@ -895,12 +900,27 @@ namespace mab
                 if (std::string("0x").compare(registerStr.substr(0, 2)) == 0)
                 {
                     address = std::stoll(registerStr, nullptr, 16);
-                    if (address != 0x0)
-                        result = registerRead(*md, address).value_or(result);
-                    else
+                    if (address == 0x0)
                     {
                         m_logger.error("Could not find provided register!");
                         return;
+                    }
+                    if (!regType->empty())
+                        result = registerReadRaw(*md, address, *regType).value_or(result);
+                    else
+                    {
+                        MDRegisters_S regs;
+                        bool          listed = false;
+                        regs.forEachRegister([&]<typename T>(MDRegisterEntry_S<T> reg)
+                                             { listed |= reg.m_regAddress == address; });
+                        if (!listed)
+                        {
+                            m_logger.error(
+                                "Register 0x%04X is not listed, provide its type with --type",
+                                address);
+                            return;
+                        }
+                        result = registerRead(*md, address).value_or(result);
                     }
                 }
                 else
@@ -1444,5 +1464,70 @@ namespace mab
         };
         regs.forEachRegister(getValueByAdress);
         return registerStringValue;
+    }
+
+    std::optional<std::string> MDCli::registerReadRaw(MD&                md,
+                                                      u16                regAdress,
+                                                      const std::string& type)
+    {
+        // Largest value fitting a CAN FD frame next to the header and the address, one more
+        // char keeps the string terminated
+        union
+        {
+            u8   u8v;
+            i8   i8v;
+            u16  u16v;
+            i16  i16v;
+            u32  u32v;
+            i32  i32v;
+            f32  f32v;
+            char str[61];
+        } value = {};
+
+        size_t       size   = 0;
+        unsigned int length = 0;
+        if (type == "u8" || type == "i8")
+            size = 1;
+        else if (type == "u16" || type == "i16")
+            size = 2;
+        else if (type == "u32" || type == "i32" || type == "f32")
+            size = 4;
+        else if (sscanf(type.c_str(), "char[%u]", &length) == 1 && length > 0 &&
+                 length < sizeof(value.str))
+            size = length;
+        else
+        {
+            m_logger.error("Unknown register type %s! Use u8, i8, u16, i16, u32, i32, f32 or "
+                           "char[N] with N up to %u",
+                           type.c_str(),
+                           (unsigned int)sizeof(value.str) - 1);
+            return std::nullopt;
+        }
+
+        if (md.readRegisterRaw(regAdress, (u8*)&value, size) != MD::Error_t::OK)
+        {
+            m_logger.error("Failed to read register 0x%04X", regAdress);
+            return std::nullopt;
+        }
+
+        if (type == "u8")
+            return std::to_string(value.u8v);
+        if (type == "i8")
+            return std::to_string(value.i8v);
+        if (type == "u16")
+            return std::to_string(value.u16v);
+        if (type == "i16")
+            return std::to_string(value.i16v);
+        if (type == "u32")
+            return std::to_string(value.u32v);
+        if (type == "i32")
+            return std::to_string(value.i32v);
+        if (type == "f32")
+        {
+            char buffer[32];
+            std::snprintf(buffer, sizeof(buffer), "%.7g", (double)value.f32v);
+            return std::string(buffer);
+        }
+        return std::string(value.str);
     }
 }  // namespace mab

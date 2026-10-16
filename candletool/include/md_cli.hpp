@@ -31,6 +31,9 @@ namespace mab
                                                  const std::string& value,
                                                  bool               quiet = false);
         std::optional<std::string> registerRead(MD& md, u16 regAdress);
+        /// @brief Read a register not listed in MDRegisters_S
+        /// @param type u8, i8, u16, i16, u32, i32, f32 or char[N]
+        std::optional<std::string> registerReadRaw(MD& md, u16 regAdress, const std::string& type);
 
         struct CanOptions
         {

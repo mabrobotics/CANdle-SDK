@@ -107,6 +107,37 @@ namespace mab
         return MD::Error_t::OK;
     }
 
+    MD::Error_t MD::readRegisterRaw(u16 address, u8* data, size_t size)
+    {
+        // Frame layout [0x41, 0x00, LSB addr, MSB addr, payload ...]
+        std::vector<u8> frame = {
+            (u8)MdFrameId_E::READ_REGISTER, 0x0, (u8)address, (u8)(address >> 8)};
+        frame.resize(frame.size() + size, 0);
+
+        auto response = transferCanFrame(frame, frame.size());
+        if (response.second != candleTypes::Error_t::OK || response.first.size() < 4)
+        {
+            m_log.error("Error while reading register!");
+            return Error_t::TRANSFER_FAILED;
+        }
+        if ((MdFrameId_E)response.first[0] == MdFrameId_E::RESPONSE_ERROR)
+        {
+            MdRegisterAccessErrorCode code = (MdRegisterAccessErrorCode)response.first[1];
+            m_log.error("Error in register access %s, for register 0x%04X",
+                        MDRegisterAccessError_S::toReadable(code).c_str(),
+                        address);
+            return Error_t::REQUEST_INVALID;
+        }
+        if (response.first.size() < frame.size() || response.first[2] != frame[2] ||
+            response.first[3] != frame[3])
+        {
+            m_log.error("Error while parsing response!");
+            return Error_t::TRANSFER_FAILED;
+        }
+        std::memcpy(data, response.first.data() + 4, size);
+        return Error_t::OK;
+    }
+
     MD::Error_t MD::clearErrors()
     {
         m_mdRegisters.runClearErrors = 0x1;
