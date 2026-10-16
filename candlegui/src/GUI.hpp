@@ -9,8 +9,9 @@
 #include <filesystem>
 #include "commonMemory.hpp"
 #include "MonitorMenu.hpp"
+#include "BusActuatorsMenu.hpp"
 
-class GraphicInterface
+class GraphicInterface : private GuiStyle
 {
   public:
     GraphicInterface(std::shared_ptr<commonMemory_S> commonMemory, ImGuiIO& io);
@@ -34,10 +35,11 @@ class GraphicInterface
 
     GLFWwindow* m_window = nullptr;
 
-    MonitorMenu             m_monitorWindow;
+    MonitorMenu     m_monitorWindow;
+    BusActuatorMenu m_busActuatorWindow;
+
     std::vector<MDStatus_S> guiMDStatus;
 
-    float leftMenuBarWidth = 325.0f;
     float leftMenuBarHeight;
     float rightMenuBarWidth  = 250.0f;
     float testMenuBarHeight  = 170.0f;
@@ -48,14 +50,7 @@ class GraphicInterface
 
     float rightMenuButtonWidth = rightMenuBarWidth - 20.f;
 
-    float smallButtonHeight  = 20.0f;
-    float mediumButtonHeight = 30.0f;
-    float largeButtonHeight  = 40.0f;
-
-    float roundingFrameButton   = 12.0f;
-    float roundingFrameCheckbox = 8.0f;
-
-    float saveButtonWidth = leftMenuBarWidth - 100.f;
+    float saveButtonWidth = GuiStyle::leftMenuBarWidth - 100.f;
     float resizeButton    = 15.0f;
 
     float menuTopHeightRatio   = 0.5f;
@@ -113,23 +108,8 @@ class GraphicInterface
 
     bool showCursorMenu = false;
 
-    // Back menu settings
-
     // Table settings
     ImGuiTableFlags flagsTables = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
-
-    ImVec4 clear_color2 = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-    ImVec4 clear_color  = ImVec4(0.055f, 0.059f, 0.067f, 1.00f);
-    ImVec4 buttonColor  = ImVec4(0.167f, 0.165f, 0.196f, 1.0f);
-
-    const ImVec4 redColor   = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
-    const ImVec4 greenColor = ImVec4(0.30f, 0.80f, 0.40f, 1.0f);
-
-    const ImVec4 mabColor        = ImVec4(1.0f, 0.468f, 0.0f, 1.0f);
-    const ImVec4 mabColorHovered = ImVec4(1.0f, 0.468f, 0.0f, 0.5f);
-
-    const ImVec4 colA = mabColorHovered;
-    const ImVec4 colB = mabColorHovered;
 
     std::string chosenIDstr = "Select Your MD";
 
@@ -137,6 +117,8 @@ class GraphicInterface
 
     const float step      = 0.1f;
     const float step_fast = 1.0f;
+
+    const char* getModeName(mab::MdMode_E mode);
 
     // Main menu draw functions
     void drawErrorMenuBar();
@@ -208,27 +190,4 @@ class GraphicInterface
     void drawValuesVelocity();
     void drawValuesPosition();
     void drawValuesTorque();
-
-    // Style edit
-    void        comboStyle(const char* text);
-    void        buttonStyle();
-    void        buttonSelectStyle(bool flag);
-    void        buttonImportantStyle(bool& flag);
-    void        checkboxStyle();
-    void        endComboStyle();
-    void        endButtonStyle();
-    void        endButtonSelectStyle();
-    void        endButtonImportantStyle();
-    void        endCheckboxStyle();
-    void        centerText(const char* text);
-    const char* getModeName(mab::MdMode_E mode);
-    bool        drawBigInputFloat(const char* label,
-                                  float*      v,
-                                  float       step,
-                                  float       step_fast,
-                                  const char* format,
-                                  float       windowWidth,
-                                  const char* unit = nullptr);
-    bool        buttonColorInputFloat(
-        const char* label, float* v, float step, float step_fast, const char* format);
 };

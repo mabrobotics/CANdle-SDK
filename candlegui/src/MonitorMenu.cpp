@@ -1,4 +1,5 @@
 #include "MonitorMenu.hpp"
+#include "BusActuatorsMenu.hpp"
 #include "commonMemory.hpp"
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -19,9 +20,9 @@ Monitor Menu Draw Functions
 void MonitorMenu::drawMonitorMenu()
 {
     if (ImGui::BeginChild("Left Column Monitor",
-                          ImVec2(actuatorsMenuBarWidth, 0),
+                          ImVec2(GuiStyle::leftMenuBarWidth, 0),
                           ImGuiChildFlags_None,
-                          m_data->flagsBackMenu))
+                          GuiStyle::flagsBackMenu))
     {
         refreshMDStatus();
         drawActuatorMenu();
@@ -30,9 +31,9 @@ void MonitorMenu::drawMonitorMenu()
     ImGui::EndChild();
     ImGui::SameLine();
     if (ImGui::BeginChild("Middle Column Monitor",
-                          ImVec2(plotsMenuWidth, 0),
+                          ImVec2(GuiStyle::middleWindowWidth, 0),
                           ImGuiChildFlags_None,
-                          m_data->flagsBackMenu))
+                          GuiStyle::flagsBackMenu))
     {
         refreshMDStatus();
         drawPlotsMenu();
@@ -46,13 +47,13 @@ void MonitorMenu::drawMonitorMenu()
 void MonitorMenu::drawActuatorMenu()
 {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                        ImVec2(m_data->leftMenuPadding, m_data->insideWindowPadding));
+                        ImVec2(GuiStyle::leftMenuPadding, GuiStyle::insideWindowPadding));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(m_data->insideWindowPadding / 2, m_data->insideWindowPadding));
+                        ImVec2(GuiStyle::insideWindowPadding / 2, GuiStyle::insideWindowPadding));
     if (ImGui::BeginChild("Actuators Menu",
-                          ImVec2(actuatorsMenuBarWidth, -canBusInfoBarHeight),
+                          ImVec2(GuiStyle::leftMenuBarWidth, -canBusInfoBarHeight),
                           ImGuiChildFlags_Borders,
-                          m_data->flagsBackMenu))
+                          GuiStyle::flagsBackMenu))
     {
         bool testOngoing = m_data->testOngoing;
 
@@ -80,9 +81,9 @@ void MonitorMenu::drawActuatorMenu()
                 if (!status.valid)
                     ImGui::TextDisabled("--");
                 else if (status.ok)
-                    ImGui::TextColored(ImVec4(0.30f, 0.80f, 0.40f, 1.0f), "OK");
+                    ImGui::TextColored(GuiStyle::greenColor, "OK");
                 else
-                    ImGui::TextColored(ImVec4(0.90f, 0.30f, 0.30f, 1.0f), "ERR");
+                    ImGui::TextColored(GuiStyle::redColor, "ERR");
             }
         }
         ImGui::PopFont();
@@ -99,11 +100,11 @@ void MonitorMenu::drawActuatorMenu()
 void MonitorMenu::drawCanBusInfoMenu()
 {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                        ImVec2(m_data->leftMenuPadding, m_data->insideWindowPadding));
+                        ImVec2(GuiStyle::leftMenuPadding, GuiStyle::insideWindowPadding));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(m_data->insideWindowPadding / 2, m_data->insideWindowPadding));
+                        ImVec2(GuiStyle::insideWindowPadding / 2, GuiStyle::insideWindowPadding));
     if (ImGui::BeginChild(
-            "Can Bus Info Menu", ImVec2(0, 0), ImGuiChildFlags_Borders, m_data->flagsBackMenu))
+            "Can Bus Info Menu", ImVec2(0, 0), ImGuiChildFlags_Borders, GuiStyle::flagsBackMenu))
     {
         ImGui::Text("CAN Bus Info");
     }
@@ -115,19 +116,19 @@ void MonitorMenu::drawPlotsMenu()
 {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(m_data->insideWindowPadding, m_data->insideWindowPadding));
+                        ImVec2(GuiStyle::insideWindowPadding, GuiStyle::insideWindowPadding));
 
     if (ImGui::BeginChild("##Plots Menu",
-                          ImVec2(plotsMenuWidth, -liveValuesMenuHeight),
+                          ImVec2(GuiStyle::middleWindowWidth, -liveValuesMenuHeight),
                           ImGuiChildFlags_None,
-                          m_data->flagsBackMenu))
+                          GuiStyle::flagsBackMenu))
     {
         const ImVec2 avail   = ImGui::GetContentRegionAvail();
         const ImVec2 spacing = ImGui::GetStyle().ItemSpacing;
         const ImVec2 cellSize((avail.x - spacing.x) * 0.5f, (avail.y - spacing.y) * 0.5f);
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                            ImVec2(m_data->leftMenuPadding, m_data->insideWindowPadding));
+                            ImVec2(GuiStyle::leftMenuPadding, GuiStyle::insideWindowPadding));
 
         if (ImGui::BeginChild("##Plot1", cellSize, ImGuiChildFlags_Borders))
         {
@@ -178,12 +179,12 @@ void MonitorMenu::drawPlotsMenu()
 void MonitorMenu::drawLiveValuesMenu()
 {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                        ImVec2(m_data->leftMenuPadding, m_data->insideWindowPadding));
+                        ImVec2(GuiStyle::leftMenuPadding, GuiStyle::insideWindowPadding));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(m_data->insideWindowPadding / 2, m_data->insideWindowPadding));
+                        ImVec2(GuiStyle::insideWindowPadding / 2, GuiStyle::insideWindowPadding));
 
     if (ImGui::BeginChild(
-            "##Live Values Menu", ImVec2(0, 0), ImGuiChildFlags_Borders, m_data->flagsBackMenu))
+            "##Live Values Menu", ImVec2(0, 0), ImGuiChildFlags_Borders, GuiStyle::flagsBackMenu))
     {
         ImGui::Text("Live Values");
 
@@ -228,7 +229,7 @@ void MonitorMenu::drawLiveValuesMenu()
                 if (!status.valid)
                     ImGui::TextDisabled("--");
                 else if (status.ok)
-                    ImGui::TextColored(greenColor, "OK");
+                    ImGui::TextColored(GuiStyle::greenColor, "OK");
                 else
                     ImGui::TextColored(redColor, "ERR");
             }
@@ -242,11 +243,11 @@ void MonitorMenu::drawLiveValuesMenu()
 void MonitorMenu::drawPlaceHolderMenu()
 {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                        ImVec2(m_data->leftMenuPadding, m_data->insideWindowPadding));
+                        ImVec2(GuiStyle::leftMenuPadding, GuiStyle::insideWindowPadding));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(m_data->insideWindowPadding / 2, m_data->insideWindowPadding));
+                        ImVec2(GuiStyle::insideWindowPadding / 2, GuiStyle::insideWindowPadding));
     if (ImGui::BeginChild(
-            "##Placeholder Menu", ImVec2(0, 0), ImGuiChildFlags_Borders, m_data->flagsBackMenu))
+            "##Placeholder Menu", ImVec2(0, 0), ImGuiChildFlags_Borders, GuiStyle::flagsBackMenu))
     {
         ImGui::Text("Placeholders");
     }

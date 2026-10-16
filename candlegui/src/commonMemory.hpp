@@ -131,16 +131,6 @@ struct commonMemory_S
     float Kp_imp = 0.0f;
     float Kd_imp = 0.0f;
 
-    // COMMON GUI PARAMS
-
-    ImGuiWindowFlags flagsBackMenu = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-                                     ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar |
-                                     ImGuiWindowFlags_NoBringToFrontOnFocus;
-
-    float insideWindowPadding = 10.0f;
-    float windowsPadding      = 20.0f;
-    float leftMenuPadding     = 30.f;
-
     // MAXIMUM VALUES
     float maxVelocityClamp     = 0.0f;
     float maxPositionClamp     = 0.0f;

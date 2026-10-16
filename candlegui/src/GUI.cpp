@@ -1,10 +1,14 @@
 #include "GUI.hpp"
 #include <mutex>
+#include "BusActuatorsMenu.hpp"
 #include "imgui.h"
 #include "mab_types.hpp"
 
 GraphicInterface::GraphicInterface(std::shared_ptr<commonMemory_S> commonMemory, ImGuiIO& io)
-    : m_data(commonMemory), m_io(io), m_monitorWindow(commonMemory, io)
+    : m_data(commonMemory),
+      m_io(io),
+      m_monitorWindow(commonMemory, io),
+      m_busActuatorWindow(commonMemory, io)
 {
 }
 
@@ -88,23 +92,24 @@ void GraphicInterface::loop()
         ImGui::SetNextWindowSize(viewport->WorkSize);
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                            ImVec2(m_data->windowsPadding, m_data->windowsPadding));
+                            ImVec2(GuiStyle::windowsPadding, GuiStyle::windowsPadding));
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                            ImVec2(m_data->windowsPadding, m_data->windowsPadding));
+                            ImVec2(GuiStyle::windowsPadding, GuiStyle::windowsPadding));
 
-        if (ImGui::Begin("Main Window", nullptr, m_data->flagsBackMenu))
+        if (ImGui::Begin("Main Window", nullptr, GuiStyle::flagsBackMenu))
         {
             refreshMDStatus();
             drawMenuTopBar();
 
-            ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, roundingFrameButton);
+            ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, GuiStyle::roundingFrameButton);
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 
-            float contentHeight = -(lowBarHeight + m_data->windowsPadding);
-            if (ImGui::BeginChild("Content Menu", ImVec2(0, contentHeight), ImGuiChildFlags_None))
+            float contentHeight = -(lowBarHeight + GuiStyle::windowsPadding);
+            if (ImGui::BeginChild(
+                    "Content Menu", ImVec2(0.0f, contentHeight), ImGuiChildFlags_None))
             {
                 ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                                    ImVec2(m_data->windowsPadding, m_data->windowsPadding));
+                                    ImVec2(GuiStyle::windowsPadding, GuiStyle::windowsPadding));
 
                 if (m_data->candleAvailable)
                 {
@@ -121,6 +126,7 @@ void GraphicInterface::loop()
                         case TEST_SCRIPT:
                             break;
                         case BUS_INFO:
+                            m_busActuatorWindow.drawBusActuatorMenu();
                             break;
                         default:
                             drawTuningMenu();
@@ -168,10 +174,10 @@ void GraphicInterface::loop()
         int display_w, display_h;
         glfwGetFramebufferSize(m_window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
-        glClearColor(clear_color.x * clear_color.w,
-                     clear_color.y * clear_color.w,
-                     clear_color.z * clear_color.w,
-                     clear_color.w);
+        glClearColor(GuiStyle::clear_color.x * GuiStyle::clear_color.w,
+                     GuiStyle::clear_color.y * GuiStyle::clear_color.w,
+                     GuiStyle::clear_color.z * GuiStyle::clear_color.w,
+                     GuiStyle::clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
@@ -188,48 +194,48 @@ Main menu draw functions
 void GraphicInterface::drawMenuTopBar()
 {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                        ImVec2(m_data->windowsPadding, m_data->insideWindowPadding));
+                        ImVec2(GuiStyle::windowsPadding, GuiStyle::insideWindowPadding));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(m_data->insideWindowPadding, m_data->insideWindowPadding));
+                        ImVec2(GuiStyle::insideWindowPadding, GuiStyle::insideWindowPadding));
 
     bool candleAvailable = m_data->candleAvailable;
 
-    if (ImGui::BeginChild("TopBar", ImVec2(0, topBarHeight), ImGuiChildFlags_None))
+    if (ImGui::BeginChild("TopBar", ImVec2(0.0f, topBarHeight), ImGuiChildFlags_None))
     {
         float rightChildWidth = 250.0f;
         float spacing         = ImGui::GetStyle().ItemSpacing.x;
 
         if (ImGui::BeginChild(
-                "TopLeft", ImVec2(-(rightChildWidth + spacing), 0), ImGuiChildFlags_None))
+                "TopLeft", ImVec2(-(rightChildWidth + spacing), 0.0f), ImGuiChildFlags_None))
         {
             buttonSelectStyle(currentPage == TUNING);
             drawTuningButton();
-            endButtonSelectStyle();
+            GuiStyle::endButtonSelectStyle();
             ImGui::SameLine();
 
             buttonSelectStyle(currentPage == MONITOR);
             drawMonitorButton();
-            endButtonSelectStyle();
+            GuiStyle::endButtonSelectStyle();
             ImGui::SameLine();
 
             buttonSelectStyle(currentPage == TEST_SCRIPT);
             drawTestScriptButton();
-            endButtonSelectStyle();
+            GuiStyle::endButtonSelectStyle();
 
             ImGui::SameLine();
             buttonSelectStyle(currentPage == BUS_INFO);
             drawBusInfoButton();
-            endButtonSelectStyle();
+            GuiStyle::endButtonSelectStyle();
         }
         ImGui::EndChild();
 
         ImGui::SameLine();
 
-        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, roundingFrameButton);
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, GuiStyle::roundingFrameButton);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                            ImVec2(m_data->insideWindowPadding, m_data->insideWindowPadding));
+                            ImVec2(GuiStyle::insideWindowPadding, GuiStyle::insideWindowPadding));
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                            ImVec2(m_data->insideWindowPadding, m_data->insideWindowPadding));
+                            ImVec2(GuiStyle::insideWindowPadding, GuiStyle::insideWindowPadding));
 
         if (ImGui::BeginChild("RightAlignedChild", ImVec2(0, 0), ImGuiChildFlags_Borders))
         {
@@ -237,7 +243,7 @@ void GraphicInterface::drawMenuTopBar()
             ImVec2 pos    = ImGui::GetCursorScreenPos();
             ImVec2 center = ImVec2(pos.x + radius, pos.y + ImGui::GetTextLineHeight() * 0.5f);
 
-            ImVec4 chosenColorVec4 = candleAvailable ? greenColor : redColor;
+            ImVec4 chosenColorVec4 = candleAvailable ? GuiStyle::greenColor : GuiStyle::redColor;
             ImU32  colorU32        = ImGui::GetColorU32(chosenColorVec4);
 
             ImGui::GetWindowDrawList()->AddCircleFilled(center, radius, colorU32);
@@ -308,11 +314,11 @@ void GraphicInterface::drawMenuBottomBar()
 void GraphicInterface::drawTestMenuBar()
 {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                        ImVec2(m_data->leftMenuPadding, m_data->insideWindowPadding));
+                        ImVec2(GuiStyle::leftMenuPadding, GuiStyle::insideWindowPadding));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(m_data->insideWindowPadding / 2, m_data->insideWindowPadding));
+                        ImVec2(GuiStyle::insideWindowPadding / 2, GuiStyle::insideWindowPadding));
     if (ImGui::BeginChild(
-            "Test menu", ImVec2(0, 0), ImGuiChildFlags_Borders, m_data->flagsBackMenu))
+            "Test menu", ImVec2(0, 0), ImGuiChildFlags_Borders, GuiStyle::flagsBackMenu))
     {
         bool errorOccurred = m_data->errorOccurred;
 
@@ -372,13 +378,13 @@ void GraphicInterface::drawErrorMenuBar()
     ImGui::SameLine();
     if (errorConnectionOccurred)
     {
-        ImGui::PushStyleColor(ImGuiCol_Text, redColor);
+        ImGui::PushStyleColor(ImGuiCol_Text, GuiStyle::redColor);
         ImGui::Text("%s", errorMessage.c_str());
         ImGui::PopStyleColor();
     }
     else
     {
-        ImGui::PushStyleColor(ImGuiCol_Text, greenColor);
+        ImGui::PushStyleColor(ImGuiCol_Text, GuiStyle::greenColor);
         ImGui::Text("%s", errorMessage.c_str());
         ImGui::PopStyleColor();
     }
@@ -388,13 +394,13 @@ void GraphicInterface::drawErrorMenuBar()
     ImGui::SameLine();
     if (errorQuickStatusOccurred)
     {
-        ImGui::PushStyleColor(ImGuiCol_Text, redColor);
+        ImGui::PushStyleColor(ImGuiCol_Text, GuiStyle::redColor);
         ImGui::Text("%s", quickStatusMessage.c_str());
         ImGui::PopStyleColor();
     }
     else
     {
-        ImGui::PushStyleColor(ImGuiCol_Text, greenColor);
+        ImGui::PushStyleColor(ImGuiCol_Text, GuiStyle::greenColor);
         ImGui::Text("%s", quickStatusMessage.c_str());
         ImGui::PopStyleColor();
     }
@@ -407,7 +413,7 @@ void GraphicInterface::drawErrorMenuBar()
             ImGui::Text("Encoder status:");
             ImGui::SameLine();
 
-            ImGui::PushStyleColor(ImGuiCol_Text, redColor);
+            ImGui::PushStyleColor(ImGuiCol_Text, GuiStyle::redColor);
             ImGui::Text("%s", encoderMessage.c_str());
             ImGui::PopStyleColor();
         }
@@ -418,7 +424,7 @@ void GraphicInterface::drawErrorMenuBar()
             ImGui::Text("Hardware status:");
             ImGui::SameLine();
 
-            ImGui::PushStyleColor(ImGuiCol_Text, redColor);
+            ImGui::PushStyleColor(ImGuiCol_Text, GuiStyle::redColor);
             ImGui::Text("%s", hardwareMessage.c_str());
             ImGui::PopStyleColor();
         }
@@ -429,7 +435,7 @@ void GraphicInterface::drawErrorMenuBar()
             ImGui::Text("Bridge status:");
             ImGui::SameLine();
 
-            ImGui::PushStyleColor(ImGuiCol_Text, redColor);
+            ImGui::PushStyleColor(ImGuiCol_Text, GuiStyle::redColor);
             ImGui::Text("%s", bridgeMessage.c_str());
             ImGui::PopStyleColor();
         }
@@ -440,7 +446,7 @@ void GraphicInterface::drawErrorMenuBar()
             ImGui::Text("Motion status:");
             ImGui::SameLine();
 
-            ImGui::PushStyleColor(ImGuiCol_Text, redColor);
+            ImGui::PushStyleColor(ImGuiCol_Text, GuiStyle::redColor);
             ImGui::Text("%s", motionMessage.c_str());
             ImGui::PopStyleColor();
         }
@@ -451,7 +457,7 @@ void GraphicInterface::drawErrorMenuBar()
             ImGui::Text("Communication status:");
             ImGui::SameLine();
 
-            ImGui::PushStyleColor(ImGuiCol_Text, redColor);
+            ImGui::PushStyleColor(ImGuiCol_Text, GuiStyle::redColor);
             ImGui::Text("%s", communicationMessage.c_str());
             ImGui::PopStyleColor();
         }
@@ -467,9 +473,9 @@ void GraphicInterface::drawErrorMenuBar()
 void GraphicInterface::drawLeftMenuBar()
 {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                        ImVec2(m_data->leftMenuPadding, m_data->windowsPadding));
+                        ImVec2(GuiStyle::leftMenuPadding, GuiStyle::windowsPadding));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(m_data->insideWindowPadding / 2, m_data->insideWindowPadding));
+                        ImVec2(GuiStyle::insideWindowPadding / 2, GuiStyle::insideWindowPadding));
     if (ImGui::BeginChild("Left Menu", ImVec2(0, -testMenuBarHeight), ImGuiChildFlags_Borders))
     {
         bool testOngoing = m_data->testOngoing;
@@ -540,13 +546,13 @@ void GraphicInterface::drawLeftMenuBar()
 void GraphicInterface::drawRightMenuBar()
 {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                        ImVec2(m_data->windowsPadding, m_data->insideWindowPadding));
+                        ImVec2(GuiStyle::windowsPadding, GuiStyle::insideWindowPadding));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(m_data->insideWindowPadding, m_data->insideWindowPadding));
+                        ImVec2(GuiStyle::insideWindowPadding, GuiStyle::insideWindowPadding));
     if (ImGui::BeginChild("Right Menu",
                           ImVec2(rightMenuBarWidth, 0),
                           ImGuiChildFlags_Borders,
-                          m_data->flagsBackMenu))
+                          GuiStyle::flagsBackMenu))
     {
         mab::MdMode_E currentMode = m_data->currentMode;
         bool          testStarted = m_data->testStarted;
@@ -626,12 +632,12 @@ void GraphicInterface::drawRightMenuBar()
 
 void GraphicInterface::drawMainMenu()
 {
-    float mainWidth = showCursorMenu ? -(rightMenuBarWidth + m_data->windowsPadding) : 0.0f;
+    float mainWidth = showCursorMenu ? -(rightMenuBarWidth + GuiStyle::windowsPadding) : 0.0f;
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                        ImVec2(m_data->windowsPadding, m_data->insideWindowPadding));
+                        ImVec2(GuiStyle::windowsPadding, GuiStyle::insideWindowPadding));
     if (ImGui::BeginChild(
-            "Main menu", ImVec2(mainWidth, 0), ImGuiChildFlags_Borders, m_data->flagsBackMenu))
+            "Main menu", ImVec2(mainWidth, 0), ImGuiChildFlags_Borders, GuiStyle::flagsBackMenu))
     {
         mab::MdMode_E currentModeLocal = m_data->currentMode;
 
@@ -756,12 +762,12 @@ void GraphicInterface::drawErrorPopup()
 
     ImGuiWindowFlags flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove;
 
-    ImGui::PushStyleColor(ImGuiCol_TitleBgActive, mabColor);
+    ImGui::PushStyleColor(ImGuiCol_TitleBgActive, GuiStyle::mabColor);
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                        ImVec2(m_data->insideWindowPadding, m_data->insideWindowPadding));
+                        ImVec2(GuiStyle::insideWindowPadding, GuiStyle::insideWindowPadding));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(m_data->insideWindowPadding, m_data->insideWindowPadding));
+                        ImVec2(GuiStyle::insideWindowPadding, GuiStyle::insideWindowPadding));
 
     if (ImGui::BeginPopupModal(popupTitle, nullptr, flags))
     {
@@ -775,11 +781,10 @@ void GraphicInterface::drawErrorPopup()
         ImGui::Separator();
 
         if (!m_data->updatedVersion)
-            ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f),
+            ImGui::TextColored(GuiStyle::redColor,
                                "Install new USB drivers by runing candlesdk-win-driver.exe!");
         else
-            ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f),
-                               "Continue by connecting CANdle via USB!");
+            ImGui::TextColored(GuiStyle::redColor, "Continue by connecting CANdle via USB!");
 
         ImGui::EndPopup();
     }
@@ -790,7 +795,8 @@ void GraphicInterface::drawErrorPopup()
 
 void GraphicInterface::drawTuningMenu()
 {
-    if (ImGui::BeginChild("LeftColumn", ImVec2(leftMenuBarWidth, 0), ImGuiChildFlags_None))
+    if (ImGui::BeginChild(
+            "LeftColumn", ImVec2(GuiStyle::leftMenuBarWidth, 0), ImGuiChildFlags_None))
     {
         drawLeftMenuBar();
         drawTestMenuBar();
@@ -816,7 +822,7 @@ BUTTONS
 
 void GraphicInterface::drawTuningButton()
 {
-    ImVec2 tableSize = ImVec2(0, largeButtonHeight);
+    ImVec2 tableSize = ImVec2(0, GuiStyle::largeButtonHeight);
 
     if (ImGui::Button("Tuning", tableSize))
     {
@@ -826,7 +832,7 @@ void GraphicInterface::drawTuningButton()
 
 void GraphicInterface::drawMonitorButton()
 {
-    ImVec2 tableSize = ImVec2(0, largeButtonHeight);
+    ImVec2 tableSize = ImVec2(0, GuiStyle::largeButtonHeight);
 
     if (ImGui::Button("Monitor", tableSize))
     {
@@ -836,7 +842,7 @@ void GraphicInterface::drawMonitorButton()
 
 void GraphicInterface::drawTestScriptButton()
 {
-    ImVec2 tableSize = ImVec2(0, largeButtonHeight);
+    ImVec2 tableSize = ImVec2(0, GuiStyle::largeButtonHeight);
 
     if (ImGui::Button("Test Script", tableSize))
     {
@@ -846,7 +852,7 @@ void GraphicInterface::drawTestScriptButton()
 
 void GraphicInterface::drawBusInfoButton()
 {
-    ImVec2 tableSize = ImVec2(0, largeButtonHeight);
+    ImVec2 tableSize = ImVec2(0, GuiStyle::largeButtonHeight);
 
     if (ImGui::Button("Bus & Actuators", tableSize))
     {
@@ -866,10 +872,9 @@ void GraphicInterface::drawTestManualButton()
         ImGui::BeginDisabled();
     }
 
-    buttonImportantStyle(buttonManualTestPressed);
+    GuiStyle::buttonImportantStyle(buttonManualTestPressed);
 
-    ImVec2 tableSize =
-        ImVec2(leftMenuBarWidth - (m_data->leftMenuPadding * 2.0f), largeButtonHeight);
+    ImVec2 tableSize = ImVec2(GuiStyle::leftMenuWideButtonWidth, GuiStyle::largeButtonHeight);
 
     ImGui::PushButtonRepeat(true);
 
@@ -903,7 +908,7 @@ void GraphicInterface::drawTestManualButton()
         ImGui::EndDisabled();
     }
 
-    endButtonImportantStyle();
+    GuiStyle::endButtonImportantStyle();
 }
 
 void GraphicInterface::drawTestEndButton()
@@ -919,10 +924,9 @@ void GraphicInterface::drawTestEndButton()
         ImGui::BeginDisabled();
     }
 
-    buttonImportantStyle(startCondition);
+    GuiStyle::buttonImportantStyle(startCondition);
 
-    ImVec2 tableSize =
-        ImVec2(leftMenuBarWidth - (m_data->leftMenuPadding * 2.0f), largeButtonHeight);
+    ImVec2 tableSize = ImVec2(GuiStyle::leftMenuWideButtonWidth, GuiStyle::largeButtonHeight);
 
     if (ImGui::Button(
             m_data->buttonAutomaticTestPressed ? "End test" : "Apply Parameters & Test AUTO",
@@ -939,7 +943,7 @@ void GraphicInterface::drawTestEndButton()
         ImGui::EndDisabled();
     }
 
-    endButtonImportantStyle();
+    GuiStyle::endButtonImportantStyle();
 }
 
 void GraphicInterface::drawDiscoverMDButton()
@@ -959,15 +963,14 @@ void GraphicInterface::drawDiscoverMDButton()
         chosenIDname = "Discover MD";
     }
 
-    buttonStyle();
-    ImGui::SetCursorPosX(m_data->leftMenuPadding);
-    if (ImGui::Button(
-            chosenIDname.c_str(),
-            ImVec2(leftMenuBarWidth - (m_data->leftMenuPadding * 2.0f), largeButtonHeight)))
+    GuiStyle::buttonStyle();
+    ImGui::SetCursorPosX(GuiStyle::leftMenuPadding);
+    if (ImGui::Button(chosenIDname.c_str(),
+                      ImVec2(GuiStyle::leftMenuWideButtonWidth, GuiStyle::largeButtonHeight)))
     {
         m_data->buttonDiscoverMdPressed = true;
     }
-    endButtonStyle();
+    GuiStyle::endButtonStyle();
 
     if (m_data->discoverOngoing)
     {
@@ -998,7 +1001,7 @@ void GraphicInterface::drawSelectMDButton()
     else if (!selectedMD)
         chosenIDstr = "Select Your MD";
 
-    comboStyle("MD Select");
+    GuiStyle::comboStyle("MD Select");
     if (ImGui::BeginCombo("##MD Select", chosenIDstr.c_str()))
     {
         if (ImGui::Selectable("None"))
@@ -1029,7 +1032,7 @@ void GraphicInterface::drawSelectMDButton()
         }
         ImGui::EndCombo();
     }
-    endComboStyle();
+    GuiStyle::endComboStyle();
 
     if (noMDs)
         ImGui::EndDisabled();
@@ -1047,7 +1050,7 @@ void GraphicInterface::drawSelectModeButton()
     }
 
     std::string comboText = "MD Motion Mode";
-    comboStyle(comboText.c_str());
+    GuiStyle::comboStyle(comboText.c_str());
     if (ImGui::BeginCombo("##MD Motion Mode", getModeName(m_data->currentMode)))
     {
         if (ImGui::Selectable("None", m_data->currentMode == mab::MdMode_E::IDLE))
@@ -1091,7 +1094,7 @@ void GraphicInterface::drawSelectModeButton()
 
         ImGui::EndCombo();
     }
-    endComboStyle();
+    GuiStyle::endComboStyle();
 
     if (!selectedMD)
     {
@@ -1101,22 +1104,22 @@ void GraphicInterface::drawSelectModeButton()
 
 void GraphicInterface::drawRestorePlotsButton()
 {
-    buttonStyle();
-    if (ImGui::Button("Restore Plots", ImVec2(0, smallButtonHeight)))
+    GuiStyle::buttonStyle();
+    if (ImGui::Button("Restore Plots", ImVec2(0, GuiStyle::smallButtonHeight)))
     {
         buttonRestorePlotsPressed = true;
     }
-    endButtonStyle();
+    GuiStyle::endButtonStyle();
 }
 
 void GraphicInterface::drawClearErrorsButton()
 {
-    buttonStyle();
-    if (ImGui::Button("Clear Errors", ImVec2(0, smallButtonHeight)))
+    GuiStyle::buttonStyle();
+    if (ImGui::Button("Clear Errors", ImVec2(0, GuiStyle::smallButtonHeight)))
     {
         m_data->buttonClearErrorsPressed = true;
     }
-    endButtonStyle();
+    GuiStyle::endButtonStyle();
 }
 
 void GraphicInterface::drawSaveButton()
@@ -1135,22 +1138,24 @@ void GraphicInterface::drawSaveButton()
 
     ImGui::Separator();
 
-    ImGui::SetCursorPosX((leftMenuBarWidth - saveButtonWidth) / 2.0f);
+    ImGui::SetCursorPosX((GuiStyle::leftMenuBarWidth - saveButtonWidth) / 2.0f);
 
-    float saveButtonY = ImGui::GetWindowHeight() - (mediumButtonHeight + m_data->windowsPadding);
+    float saveButtonY =
+        ImGui::GetWindowHeight() - (GuiStyle::mediumButtonHeight + GuiStyle::windowsPadding);
 
     float currentY = ImGui::GetCursorPosY();
 
     ImGui::SetCursorPosY(currentY > saveButtonY ? currentY : saveButtonY);
 
-    buttonImportantStyle(buttonSavePressed);
+    GuiStyle::buttonImportantStyle(buttonSavePressed);
 
-    if (ImGui::Button("Save Config To Flash Memory", ImVec2(saveButtonWidth, mediumButtonHeight)))
+    if (ImGui::Button("Save Config To Flash Memory",
+                      ImVec2(saveButtonWidth, GuiStyle::mediumButtonHeight)))
     {
         ImGui::OpenPopup("Warning: Save config");
     }
 
-    endButtonImportantStyle();
+    GuiStyle::endButtonImportantStyle();
 
     ImGui::SameLine();
     drawHelper(
@@ -1166,7 +1171,7 @@ void GraphicInterface::drawSaveButton()
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-    ImGui::PushStyleColor(ImGuiCol_TitleBgActive, mabColor);
+    ImGui::PushStyleColor(ImGuiCol_TitleBgActive, GuiStyle::mabColor);
     if (ImGui::BeginPopupModal("Warning: Save config", NULL, ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImGui::SetWindowFontScale(1.3f);
@@ -1178,8 +1183,8 @@ void GraphicInterface::drawSaveButton()
         ImGui::Separator();
 
         ImGui::SetCursorPosX((windowSize.x - 248.f) / 2);
-        buttonStyle();
-        if (ImGui::Button("OK", ImVec2(120, 0)))
+        GuiStyle::buttonStyle();
+        if (ImGui::Button("OK", ImVec2(GuiStyle::decisionButtonWidth, 0.0f)))
         {
             m_data->buttonSavePressed = true;
             ImGui::CloseCurrentPopup();
@@ -1188,12 +1193,12 @@ void GraphicInterface::drawSaveButton()
         ImGui::SetItemDefaultFocus();
         ImGui::SameLine();
 
-        if (ImGui::Button("Cancel", ImVec2(120, 0)))
+        if (ImGui::Button("Cancel", ImVec2(GuiStyle::decisionButtonWidth, 0.0f)))
         {
             ImGui::CloseCurrentPopup();
         }
 
-        endButtonStyle();
+        GuiStyle::endButtonStyle();
 
         ImGui::EndPopup();
     }
@@ -1202,14 +1207,14 @@ void GraphicInterface::drawSaveButton()
 
 void GraphicInterface::drawCheckboxCrosshairsButton()
 {
-    checkboxStyle();
+    GuiStyle::checkboxStyle();
     ImGui::Checkbox("Show Crosshairs", &buttonShowCrosshairsChecked);
-    endCheckboxStyle();
+    GuiStyle::endCheckboxStyle();
 }
 
 void GraphicInterface::drawCheckboxVerCursorsVelButton()
 {
-    checkboxStyle();
+    GuiStyle::checkboxStyle();
     if (ImGui::Checkbox("##Show Cursors Vel", &cursorsVerticalVelocityEnabled))
     {
         cursorAPositionVel = 0.2 * timeElapsedOnPlot;
@@ -1217,12 +1222,12 @@ void GraphicInterface::drawCheckboxVerCursorsVelButton()
     }
     ImGui::SameLine();
     ImGui::Text("Vertical Cursors");
-    endCheckboxStyle();
+    GuiStyle::endCheckboxStyle();
 }
 
 void GraphicInterface::drawCheckboxVerCursorsPosButton()
 {
-    checkboxStyle();
+    GuiStyle::checkboxStyle();
     if (ImGui::Checkbox("##Show Cursors Pos", &cursorsVerticalPositionEnabled))
     {
         cursorAPositionPos = 0.2 * timeElapsedOnPlot;
@@ -1230,12 +1235,12 @@ void GraphicInterface::drawCheckboxVerCursorsPosButton()
     }
     ImGui::SameLine();
     ImGui::Text("Vertical Cursors");
-    endCheckboxStyle();
+    GuiStyle::endCheckboxStyle();
 }
 
 void GraphicInterface::drawCheckboxVerCursorsTrqButton()
 {
-    checkboxStyle();
+    GuiStyle::checkboxStyle();
     if (ImGui::Checkbox("##Show Cursors Trq", &cursorsVerticalTorqueEnabled))
     {
         cursorAPositionTrq = 0.2 * timeElapsedOnPlot;
@@ -1243,12 +1248,12 @@ void GraphicInterface::drawCheckboxVerCursorsTrqButton()
     }
     ImGui::SameLine();
     ImGui::Text("Vertical Cursors");
-    endCheckboxStyle();
+    GuiStyle::endCheckboxStyle();
 }
 
 void GraphicInterface::drawCheckboxHorCursorsVelButton()
 {
-    checkboxStyle();
+    GuiStyle::checkboxStyle();
     if (ImGui::Checkbox("##Show Horizontal Cursors Vel", &cursorsHorizontalVelocityEnabled))
     {
         cursorAHorPositionVel = minVel;
@@ -1256,12 +1261,12 @@ void GraphicInterface::drawCheckboxHorCursorsVelButton()
     }
     ImGui::SameLine();
     ImGui::Text("Horizontal Cursors");
-    endCheckboxStyle();
+    GuiStyle::endCheckboxStyle();
 }
 
 void GraphicInterface::drawCheckboxHorCursorsPosButton()
 {
-    checkboxStyle();
+    GuiStyle::checkboxStyle();
     if (ImGui::Checkbox("##Show Horizontal Cursors Pos", &cursorsHorizontalPositionEnabled))
     {
         cursorAHorPositionPos = minPos;
@@ -1269,12 +1274,12 @@ void GraphicInterface::drawCheckboxHorCursorsPosButton()
     }
     ImGui::SameLine();
     ImGui::Text("Horizontal Cursors");
-    endCheckboxStyle();
+    GuiStyle::endCheckboxStyle();
 }
 
 void GraphicInterface::drawCheckboxHorCursorsTrqButton()
 {
-    checkboxStyle();
+    GuiStyle::checkboxStyle();
     if (ImGui::Checkbox("##Show Horizontal Cursors Trq", &cursorsHorizontalTorqueEnabled))
     {
         cursorAHorPositionTrq = minTrq;
@@ -1282,7 +1287,7 @@ void GraphicInterface::drawCheckboxHorCursorsTrqButton()
     }
     ImGui::SameLine();
     ImGui::Text("Horizontal Cursors");
-    endCheckboxStyle();
+    GuiStyle::endCheckboxStyle();
 }
 
 void GraphicInterface::drawCursorMenu()
@@ -1294,12 +1299,12 @@ void GraphicInterface::drawCursorMenu()
         ImGui::BeginDisabled();
     }
 
-    ImGui::SetCursorPosX(m_data->leftMenuPadding);
-    checkboxStyle();
+    ImGui::SetCursorPosX(GuiStyle::leftMenuPadding);
+    GuiStyle::checkboxStyle();
     ImGui::Checkbox("##Show Cursor Menu", &showCursorMenu);
     ImGui::SameLine();
     ImGui::Text("Show Cursor Menu");
-    endCheckboxStyle();
+    GuiStyle::endCheckboxStyle();
 
     if (currentMode == mab::MdMode_E::IDLE)
     {
@@ -1341,10 +1346,10 @@ void GraphicInterface::drawParametersVelocity()
 
     const uint8_t numberOfColumns = 3;
 
-    centerText("Velocity loop - PID tuning parameters");
+    GuiStyle::centerText("Velocity loop - PID tuning parameters");
 
-    ImGui::SetCursorPosX(m_data->leftMenuPadding);
-    ImVec2 tableSize = ImVec2(leftMenuBarWidth - 2 * m_data->leftMenuPadding, 0.0f);
+    ImGui::SetCursorPosX(GuiStyle::leftMenuPadding);
+    ImVec2 tableSize = ImVec2(GuiStyle::leftMenuBarWidth - 2 * GuiStyle::leftMenuPadding, 0.0f);
     if (ImGui::BeginTable("ParamTableVelocity", numberOfColumns, flags, tableSize))
     {
         ImGui::TableSetupColumn("Variable name");
@@ -1360,7 +1365,8 @@ void GraphicInterface::drawParametersVelocity()
         ImGui::TableNextColumn();
         ImGui::PushID(1);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        buttonColorInputFloat("##hidden_label", &m_data->Kp_velSlider, 0.0f, 0.0f, "%.3f");
+        GuiStyle::buttonColorInputFloat(
+            "##hidden_label", &m_data->Kp_velSlider, 0.0f, 0.0f, "%.3f");
         ImGui::PopID();
 
         ImGui::TableNextRow();
@@ -1371,7 +1377,8 @@ void GraphicInterface::drawParametersVelocity()
         ImGui::TableNextColumn();
         ImGui::PushID(2);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        buttonColorInputFloat("##hidden_label", &m_data->Ki_velSlider, 0.0f, 0.0f, "%.3f");
+        GuiStyle::buttonColorInputFloat(
+            "##hidden_label", &m_data->Ki_velSlider, 0.0f, 0.0f, "%.3f");
         ImGui::PopID();
 
         ImGui::TableNextRow();
@@ -1382,7 +1389,8 @@ void GraphicInterface::drawParametersVelocity()
         ImGui::TableNextColumn();
         ImGui::PushID(3);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        buttonColorInputFloat("##hidden_label", &m_data->Kd_velSlider, 0.0f, 0.0f, "%.3f");
+        GuiStyle::buttonColorInputFloat(
+            "##hidden_label", &m_data->Kd_velSlider, 0.0f, 0.0f, "%.3f");
         ImGui::PopID();
 
         ImGui::TableNextRow();
@@ -1393,23 +1401,24 @@ void GraphicInterface::drawParametersVelocity()
         ImGui::TableNextColumn();
         ImGui::PushID(4);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        buttonColorInputFloat("##hidden_label", &m_data->integralMax_velSlider, 0.0f, 0.0f, "%.3f");
+        GuiStyle::buttonColorInputFloat(
+            "##hidden_label", &m_data->integralMax_velSlider, 0.0f, 0.0f, "%.3f");
         ImGui::PopID();
 
         ImGui::EndTable();
     }
 
-    buttonStyle();
-    ImGui::SetCursorPosX(leftMenuBarWidth / 4);
+    GuiStyle::buttonStyle();
+    ImGui::SetCursorPosX(GuiStyle::leftMenuBarWidth / 4);
     if (ImGui::Button("Reset Velocity Parameters",
-                      ImVec2(leftMenuBarWidth / 2.0f, mediumButtonHeight)))
+                      ImVec2(GuiStyle::leftMenuBarWidth / 2.0f, GuiStyle::mediumButtonHeight)))
     {
         m_data->Kp_velSlider          = 0.0f;
         m_data->Ki_velSlider          = 0.0f;
         m_data->Kd_velSlider          = 0.0f;
         m_data->integralMax_velSlider = 0.0f;
     }
-    endButtonStyle();
+    GuiStyle::endButtonStyle();
 }
 
 void GraphicInterface::drawParametersPosition()
@@ -1418,10 +1427,10 @@ void GraphicInterface::drawParametersPosition()
 
     const uint8_t numberOfColumns = 3;
 
-    centerText("Position loop - PID tuning parameters");
+    GuiStyle::centerText("Position loop - PID tuning parameters");
 
-    ImGui::SetCursorPosX(m_data->leftMenuPadding);
-    ImVec2 tableSize = ImVec2(leftMenuBarWidth - 2 * m_data->leftMenuPadding, 0.0f);
+    ImGui::SetCursorPosX(GuiStyle::leftMenuPadding);
+    ImVec2 tableSize = ImVec2(GuiStyle::leftMenuBarWidth - 2 * GuiStyle::leftMenuPadding, 0.0f);
     if (ImGui::BeginTable("ParamTablePosition", numberOfColumns, flags, tableSize))
     {
         ImGui::TableSetupColumn("Variable name");
@@ -1437,7 +1446,8 @@ void GraphicInterface::drawParametersPosition()
         ImGui::TableNextColumn();
         ImGui::PushID(1);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        buttonColorInputFloat("##hidden_label", &m_data->Kp_posSlider, 0.0f, 0.0f, "%.3f");
+        GuiStyle::buttonColorInputFloat(
+            "##hidden_label", &m_data->Kp_posSlider, 0.0f, 0.0f, "%.3f");
         ImGui::PopID();
 
         ImGui::TableNextRow();
@@ -1448,7 +1458,8 @@ void GraphicInterface::drawParametersPosition()
         ImGui::TableNextColumn();
         ImGui::PushID(2);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        buttonColorInputFloat("##hidden_label", &m_data->Ki_posSlider, 0.0f, 0.0f, "%.3f");
+        GuiStyle::buttonColorInputFloat(
+            "##hidden_label", &m_data->Ki_posSlider, 0.0f, 0.0f, "%.3f");
         ImGui::PopID();
 
         ImGui::TableNextRow();
@@ -1459,7 +1470,8 @@ void GraphicInterface::drawParametersPosition()
         ImGui::TableNextColumn();
         ImGui::PushID(3);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        buttonColorInputFloat("##hidden_label", &m_data->Kd_posSlider, 0.0f, 0.0f, "%.3f");
+        GuiStyle::buttonColorInputFloat(
+            "##hidden_label", &m_data->Kd_posSlider, 0.0f, 0.0f, "%.3f");
         ImGui::PopID();
 
         ImGui::TableNextRow();
@@ -1470,23 +1482,24 @@ void GraphicInterface::drawParametersPosition()
         ImGui::TableNextColumn();
         ImGui::PushID(4);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        buttonColorInputFloat("##hidden_label", &m_data->integralMax_posSlider, 0.0f, 0.0f, "%.3f");
+        GuiStyle::buttonColorInputFloat(
+            "##hidden_label", &m_data->integralMax_posSlider, 0.0f, 0.0f, "%.3f");
         ImGui::PopID();
 
         ImGui::EndTable();
     }
 
-    buttonStyle();
-    ImGui::SetCursorPosX(leftMenuBarWidth / 4);
+    GuiStyle::buttonStyle();
+    ImGui::SetCursorPosX(GuiStyle::leftMenuBarWidth / 4);
     if (ImGui::Button("Reset Position Parameters",
-                      ImVec2(leftMenuBarWidth / 2.0f, mediumButtonHeight)))
+                      ImVec2(GuiStyle::leftMenuBarWidth / 2.0f, GuiStyle::mediumButtonHeight)))
     {
         m_data->Kp_posSlider          = 0.0f;
         m_data->Ki_posSlider          = 0.0f;
         m_data->Kd_posSlider          = 0.0f;
         m_data->integralMax_posSlider = 0.0f;
     }
-    endButtonStyle();
+    GuiStyle::endButtonStyle();
 }
 
 void GraphicInterface::drawParametersImpedance()
@@ -1495,10 +1508,10 @@ void GraphicInterface::drawParametersImpedance()
 
     const uint8_t numberOfColumns = 3;
 
-    centerText("Impedance PD tuner");
+    GuiStyle::centerText("Impedance PD tuner");
 
-    ImGui::SetCursorPosX(m_data->leftMenuPadding);
-    ImVec2 tableSize = ImVec2(leftMenuBarWidth - 2 * m_data->leftMenuPadding, 0.0f);
+    ImGui::SetCursorPosX(GuiStyle::leftMenuPadding);
+    ImVec2 tableSize = ImVec2(GuiStyle::leftMenuBarWidth - 2 * GuiStyle::leftMenuPadding, 0.0f);
     if (ImGui::BeginTable("ParamTablePosition", numberOfColumns, flags, tableSize))
     {
         ImGui::TableSetupColumn("Variable name");
@@ -1514,7 +1527,8 @@ void GraphicInterface::drawParametersImpedance()
         ImGui::TableNextColumn();
         ImGui::PushID(1);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        buttonColorInputFloat("##hidden_label", &m_data->Kp_impSlider, 0.0f, 0.0f, "%.3f");
+        GuiStyle::buttonColorInputFloat(
+            "##hidden_label", &m_data->Kp_impSlider, 0.0f, 0.0f, "%.3f");
         ImGui::PopID();
 
         ImGui::TableNextRow();
@@ -1525,35 +1539,36 @@ void GraphicInterface::drawParametersImpedance()
         ImGui::TableNextColumn();
         ImGui::PushID(2);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        buttonColorInputFloat("##hidden_label", &m_data->Kd_impSlider, 0.0f, 0.0f, "%.3f");
+        GuiStyle::buttonColorInputFloat(
+            "##hidden_label", &m_data->Kd_impSlider, 0.0f, 0.0f, "%.3f");
         ImGui::PopID();
 
         ImGui::EndTable();
     }
 
-    buttonStyle();
-    ImGui::SetCursorPosX(leftMenuBarWidth / 4);
+    GuiStyle::buttonStyle();
+    ImGui::SetCursorPosX(GuiStyle::leftMenuBarWidth / 4);
     if (ImGui::Button("Reset Impedance Parameters",
-                      ImVec2(leftMenuBarWidth / 2.0f, mediumButtonHeight)))
+                      ImVec2(GuiStyle::leftMenuBarWidth / 2.0f, GuiStyle::mediumButtonHeight)))
     {
         m_data->Kp_impSlider = 0.0f;
         m_data->Kd_impSlider = 0.0f;
     }
-    endButtonStyle();
+    GuiStyle::endButtonStyle();
 }
 
 void GraphicInterface::drawSetTargetVelocity()
 {
-    ImGui::SetCursorPosX(m_data->leftMenuPadding);
+    ImGui::SetCursorPosX(GuiStyle::leftMenuPadding);
     ImGui::Text("Target Velocity");
 
-    if (drawBigInputFloat("##Target Velocity",
-                          &m_data->targetVelocitySlider,
-                          1.0f,
-                          2.0f,
-                          "%.2f",
-                          leftMenuBarWidth,
-                          "rad/s"))
+    if (GuiStyle::drawBigInputFloat("##Target Velocity",
+                                    &m_data->targetVelocitySlider,
+                                    1.0f,
+                                    2.0f,
+                                    "%.2f",
+                                    GuiStyle::leftMenuBarWidth,
+                                    "rad/s"))
     {
         m_data->targetVelocitySlider = std::clamp(
             m_data->targetVelocitySlider, -m_data->maxVelocityClamp, m_data->maxVelocityClamp);
@@ -1562,30 +1577,30 @@ void GraphicInterface::drawSetTargetVelocity()
 
 void GraphicInterface::drawSetTargetPosition()
 {
-    ImGui::SetCursorPosX(m_data->leftMenuPadding);
+    ImGui::SetCursorPosX(GuiStyle::leftMenuPadding);
     ImGui::Text("Target Position");
 
-    drawBigInputFloat("##Target Position",
-                      &m_data->targetPositionSlider,
-                      1.0f,
-                      2.0f,
-                      "%.2f",
-                      leftMenuBarWidth,
-                      "rad");
+    GuiStyle::drawBigInputFloat("##Target Position",
+                                &m_data->targetPositionSlider,
+                                1.0f,
+                                2.0f,
+                                "%.2f",
+                                GuiStyle::leftMenuBarWidth,
+                                "rad");
 }
 
 void GraphicInterface::drawSetTargetTorque()
 {
-    ImGui::SetCursorPosX(m_data->leftMenuPadding);
+    ImGui::SetCursorPosX(GuiStyle::leftMenuPadding);
     ImGui::Text("Target Torque");
 
-    if (drawBigInputFloat("##Target Torque",
-                          &m_data->targetTorqueSlider,
-                          1.0f,
-                          2.0f,
-                          "%.2f",
-                          leftMenuBarWidth,
-                          "Nm"))
+    if (GuiStyle::drawBigInputFloat("##Target Torque",
+                                    &m_data->targetTorqueSlider,
+                                    1.0f,
+                                    2.0f,
+                                    "%.2f",
+                                    GuiStyle::leftMenuBarWidth,
+                                    "Nm"))
     {
         m_data->targetTorqueSlider =
             std::clamp(m_data->targetTorqueSlider, -m_data->maxTorqueClamp, m_data->maxTorqueClamp);
@@ -1594,16 +1609,16 @@ void GraphicInterface::drawSetTargetTorque()
 
 void GraphicInterface::drawSetTargetAcceleration()
 {
-    ImGui::SetCursorPosX(m_data->leftMenuPadding);
+    ImGui::SetCursorPosX(GuiStyle::leftMenuPadding);
     ImGui::Text("Acceleration");
 
-    if (drawBigInputFloat("##Acceleration",
-                          &m_data->targetAccelerationSlider,
-                          step,
-                          step_fast,
-                          "%.2f",
-                          leftMenuBarWidth,
-                          "rad/s^2"))
+    if (GuiStyle::drawBigInputFloat("##Acceleration",
+                                    &m_data->targetAccelerationSlider,
+                                    step,
+                                    step_fast,
+                                    "%.2f",
+                                    GuiStyle::leftMenuBarWidth,
+                                    "rad/s^2"))
     {
         m_data->targetAccelerationSlider =
             std::clamp(m_data->targetAccelerationSlider, 0.0f, m_data->maxAccelerationClamp);
@@ -1612,16 +1627,16 @@ void GraphicInterface::drawSetTargetAcceleration()
 
 void GraphicInterface::drawSetTargetDeceleration()
 {
-    ImGui::SetCursorPosX(m_data->leftMenuPadding);
+    ImGui::SetCursorPosX(GuiStyle::leftMenuPadding);
     ImGui::Text("Deceleration");
 
-    if (drawBigInputFloat("##Deceleration",
-                          &m_data->targetDecelerationSlider,
-                          step,
-                          step_fast,
-                          "%.2f",
-                          leftMenuBarWidth,
-                          "rad/s^2"))
+    if (GuiStyle::drawBigInputFloat("##Deceleration",
+                                    &m_data->targetDecelerationSlider,
+                                    step,
+                                    step_fast,
+                                    "%.2f",
+                                    GuiStyle::leftMenuBarWidth,
+                                    "rad/s^2"))
     {
         m_data->targetDecelerationSlider =
             std::clamp(m_data->targetDecelerationSlider, 0.0f, m_data->maxDecelerationClamp);
@@ -1630,30 +1645,30 @@ void GraphicInterface::drawSetTargetDeceleration()
 
 void GraphicInterface::drawSetPositionWindow()
 {
-    ImGui::SetCursorPosX(m_data->leftMenuPadding);
+    ImGui::SetCursorPosX(GuiStyle::leftMenuPadding);
     ImGui::Text("Position Window");
 
-    drawBigInputFloat("##Position Window",
-                      &m_data->positionWindowSlider,
-                      step,
-                      step_fast,
-                      "%.2f",
-                      leftMenuBarWidth,
-                      "rad");
+    GuiStyle::drawBigInputFloat("##Position Window",
+                                &m_data->positionWindowSlider,
+                                step,
+                                step_fast,
+                                "%.2f",
+                                GuiStyle::leftMenuBarWidth,
+                                "rad");
 }
 
 void GraphicInterface::drawSetVelocityWindow()
 {
-    ImGui::SetCursorPosX(m_data->leftMenuPadding);
+    ImGui::SetCursorPosX(GuiStyle::leftMenuPadding);
     ImGui::Text("Velocity Window");
 
-    drawBigInputFloat("##Velocity Window",
-                      &m_data->velocityWindowSlider,
-                      step,
-                      step_fast,
-                      "%.2f",
-                      leftMenuBarWidth,
-                      "rad/s");
+    GuiStyle::drawBigInputFloat("##Velocity Window",
+                                &m_data->velocityWindowSlider,
+                                step,
+                                step_fast,
+                                "%.2f",
+                                GuiStyle::leftMenuBarWidth,
+                                "rad/s");
 }
 
 /*
@@ -2097,7 +2112,8 @@ void GraphicInterface::drawValuesVelocity()
         ImGui::PushID(1);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float cursorAPositionVelTemp = static_cast<float>(cursorAPositionVel) * 1000;
-        if (buttonColorInputFloat("##hidden_label", &cursorAPositionVelTemp, 0.0f, 0.0f, "%.3f ms"))
+        if (GuiStyle::buttonColorInputFloat(
+                "##hidden_label", &cursorAPositionVelTemp, 0.0f, 0.0f, "%.3f ms"))
         {
             cursorAPositionVel = cursorAPositionVelTemp;
         }
@@ -2110,7 +2126,8 @@ void GraphicInterface::drawValuesVelocity()
         ImGui::PushID(2);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float cursorBPositionVelTemp = static_cast<float>(cursorBPositionVel) * 1000;
-        if (buttonColorInputFloat("##hidden_label", &cursorBPositionVelTemp, 0.0f, 0.0f, "%.3f ms"))
+        if (GuiStyle::buttonColorInputFloat(
+                "##hidden_label", &cursorBPositionVelTemp, 0.0f, 0.0f, "%.3f ms"))
         {
             cursorBPositionVel = cursorBPositionVelTemp;
         }
@@ -2123,7 +2140,7 @@ void GraphicInterface::drawValuesVelocity()
         ImGui::PushID(3);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float deltaT = std::abs(cursorAPositionVel - cursorBPositionVel) * 1000;
-        buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f ms");
+        GuiStyle::buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f ms");
         ImGui::PopID();
 
         ImGui::TableNextRow();
@@ -2135,7 +2152,7 @@ void GraphicInterface::drawValuesVelocity()
         float freq;
         if (deltaT != 0.0f)
             freq = std::abs(1 / deltaT) * 1000;
-        buttonColorInputFloat("##hidden_label", &freq, 0.0f, 0.0f, "%.3f Hz");
+        GuiStyle::buttonColorInputFloat("##hidden_label", &freq, 0.0f, 0.0f, "%.3f Hz");
         ImGui::PopID();
 
         ImGui::TableNextRow();
@@ -2145,7 +2162,7 @@ void GraphicInterface::drawValuesVelocity()
         ImGui::PushID(5);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float cursorAHorPositionVelTemp = static_cast<float>(cursorAHorPositionVel);
-        if (buttonColorInputFloat(
+        if (GuiStyle::buttonColorInputFloat(
                 "##hidden_label", &cursorAHorPositionVelTemp, 0.0f, 0.0f, "%.3f rad/s"))
         {
             cursorAHorPositionVel = cursorAHorPositionVelTemp;
@@ -2159,7 +2176,7 @@ void GraphicInterface::drawValuesVelocity()
         ImGui::PushID(6);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float cursorBHorPositionVelTemp = static_cast<float>(cursorBHorPositionVel);
-        if (buttonColorInputFloat(
+        if (GuiStyle::buttonColorInputFloat(
                 "##hidden_label", &cursorBHorPositionVelTemp, 0.0f, 0.0f, "%.3f rad/s"))
         {
             cursorBHorPositionVelTemp = cursorBHorPositionVelTemp;
@@ -2173,7 +2190,7 @@ void GraphicInterface::drawValuesVelocity()
         ImGui::PushID(7);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float deltaY = std::abs(cursorAHorPositionVel - cursorBHorPositionVel);
-        buttonColorInputFloat("##hidden_label", &deltaY, 0.0f, 0.0f, "%.3f rad/s");
+        GuiStyle::buttonColorInputFloat("##hidden_label", &deltaY, 0.0f, 0.0f, "%.3f rad/s");
         ImGui::PopID();
 
         ImGui::EndTable();
@@ -2200,7 +2217,8 @@ void GraphicInterface::drawValuesPosition()
         ImGui::PushID(1);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float cursorAPositionPosTemp = static_cast<float>(cursorAPositionPos) * 1000;
-        if (buttonColorInputFloat("##hidden_label", &cursorAPositionPosTemp, 0.0f, 0.0f, "%.3f ms"))
+        if (GuiStyle::buttonColorInputFloat(
+                "##hidden_label", &cursorAPositionPosTemp, 0.0f, 0.0f, "%.3f ms"))
         {
             cursorAPositionPos = cursorAPositionPosTemp;
         }
@@ -2213,7 +2231,8 @@ void GraphicInterface::drawValuesPosition()
         ImGui::PushID(2);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float cursorBPositionPosTemp = static_cast<float>(cursorBPositionPos) * 1000;
-        if (buttonColorInputFloat("##hidden_label", &cursorBPositionPosTemp, 0.0f, 0.0f, "%.3f ms"))
+        if (GuiStyle::buttonColorInputFloat(
+                "##hidden_label", &cursorBPositionPosTemp, 0.0f, 0.0f, "%.3f ms"))
         {
             cursorBPositionPos = cursorBPositionPosTemp;
         }
@@ -2226,7 +2245,7 @@ void GraphicInterface::drawValuesPosition()
         ImGui::PushID(3);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float deltaT = std::abs(cursorAPositionPos - cursorBPositionPos) * 1000;
-        buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f ms");
+        GuiStyle::buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f ms");
         ImGui::PopID();
 
         ImGui::TableNextRow();
@@ -2238,7 +2257,7 @@ void GraphicInterface::drawValuesPosition()
         float freq;
         if (deltaT != 0.0f)
             freq = std::abs(1 / deltaT) * 1000;
-        buttonColorInputFloat("##hidden_label", &freq, 0.0f, 0.0f, "%.3f Hz");
+        GuiStyle::buttonColorInputFloat("##hidden_label", &freq, 0.0f, 0.0f, "%.3f Hz");
         ImGui::PopID();
 
         ImGui::TableNextRow();
@@ -2248,7 +2267,7 @@ void GraphicInterface::drawValuesPosition()
         ImGui::PushID(5);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float cursorAHorPositionPosTemp = static_cast<float>(cursorAHorPositionPos);
-        if (buttonColorInputFloat(
+        if (GuiStyle::buttonColorInputFloat(
                 "##hidden_label", &cursorAHorPositionPosTemp, 0.0f, 0.0f, "%.3f rad"))
         {
             cursorAHorPositionPos = cursorAHorPositionPosTemp;
@@ -2262,7 +2281,7 @@ void GraphicInterface::drawValuesPosition()
         ImGui::PushID(6);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float cursorBHorPositionPosTemp = static_cast<float>(cursorBHorPositionPos);
-        if (buttonColorInputFloat(
+        if (GuiStyle::buttonColorInputFloat(
                 "##hidden_label", &cursorBHorPositionPosTemp, 0.0f, 0.0f, "%.3f rad"))
         {
             cursorBHorPositionPos = cursorBHorPositionPosTemp;
@@ -2276,7 +2295,7 @@ void GraphicInterface::drawValuesPosition()
         ImGui::PushID(7);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float deltaY = std::abs(cursorAHorPositionPos - cursorBHorPositionPos);
-        buttonColorInputFloat("##hidden_label", &deltaY, 0.0f, 0.0f, "%.3f rad");
+        GuiStyle::buttonColorInputFloat("##hidden_label", &deltaY, 0.0f, 0.0f, "%.3f rad");
         ImGui::PopID();
 
         ImGui::EndTable();
@@ -2303,7 +2322,8 @@ void GraphicInterface::drawValuesTorque()
         ImGui::PushID(1);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float cursorAPositionTrqTemp = static_cast<float>(cursorAPositionTrq) * 1000;
-        if (buttonColorInputFloat("##hidden_label", &cursorAPositionTrqTemp, 0.0f, 0.0f, "%.3f ms"))
+        if (GuiStyle::buttonColorInputFloat(
+                "##hidden_label", &cursorAPositionTrqTemp, 0.0f, 0.0f, "%.3f ms"))
         {
             cursorAPositionTrq = cursorAPositionTrqTemp;
         }
@@ -2316,7 +2336,8 @@ void GraphicInterface::drawValuesTorque()
         ImGui::PushID(2);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float cursorBPositionTrqTemp = static_cast<float>(cursorBPositionTrq) * 1000;
-        if (buttonColorInputFloat("##hidden_label", &cursorBPositionTrqTemp, 0.0f, 0.0f, "%.3f ms"))
+        if (GuiStyle::buttonColorInputFloat(
+                "##hidden_label", &cursorBPositionTrqTemp, 0.0f, 0.0f, "%.3f ms"))
         {
             cursorBPositionTrq = cursorBPositionTrqTemp;
         }
@@ -2329,7 +2350,7 @@ void GraphicInterface::drawValuesTorque()
         ImGui::PushID(3);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float deltaT = std::abs(cursorAPositionTrq - cursorBPositionTrq) * 1000;
-        buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f ms");
+        GuiStyle::buttonColorInputFloat("##hidden_label", &deltaT, 0.0f, 0.0f, "%.3f ms");
         ImGui::PopID();
 
         ImGui::TableNextRow();
@@ -2341,7 +2362,7 @@ void GraphicInterface::drawValuesTorque()
         float freq;
         if (deltaT != 0.0f)
             freq = std::abs(1 / deltaT) * 1000;
-        buttonColorInputFloat("##hidden_label", &freq, 0.0f, 0.0f, "%.3f Hz");
+        GuiStyle::buttonColorInputFloat("##hidden_label", &freq, 0.0f, 0.0f, "%.3f Hz");
         ImGui::PopID();
 
         ImGui::TableNextRow();
@@ -2351,7 +2372,7 @@ void GraphicInterface::drawValuesTorque()
         ImGui::PushID(5);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float cursorAHorPositionTrqTemp = static_cast<float>(cursorAHorPositionTrq);
-        if (buttonColorInputFloat(
+        if (GuiStyle::buttonColorInputFloat(
                 "##hidden_label", &cursorAHorPositionTrqTemp, 0.0f, 0.0f, "%.3f Nm"))
         {
             cursorAHorPositionTrq = cursorAHorPositionTrqTemp;
@@ -2365,7 +2386,7 @@ void GraphicInterface::drawValuesTorque()
         ImGui::PushID(6);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float cursorBHorPositionTrqTemp = static_cast<float>(cursorBHorPositionTrq);
-        if (buttonColorInputFloat(
+        if (GuiStyle::buttonColorInputFloat(
                 "##hidden_label", &cursorBHorPositionTrqTemp, 0.0f, 0.0f, "%.3f Nm"))
         {
             cursorBHorPositionTrq = cursorBHorPositionTrqTemp;
@@ -2379,151 +2400,11 @@ void GraphicInterface::drawValuesTorque()
         ImGui::PushID(7);
         ImGui::SetNextItemWidth(-FLT_MIN);
         float deltaY = std::abs(cursorAHorPositionTrq - cursorBHorPositionTrq);
-        buttonColorInputFloat("##hidden_label", &deltaY, 0.0f, 0.0f, "%.3f Nm");
+        GuiStyle::buttonColorInputFloat("##hidden_label", &deltaY, 0.0f, 0.0f, "%.3f Nm");
         ImGui::PopID();
 
         ImGui::EndTable();
     }
-}
-
-/*
-
-Style
-
-*/
-
-void GraphicInterface::comboStyle(const char* text)
-{
-    ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, buttonColor);
-    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, mabColorHovered);
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, mabColor);
-    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, mabColor);
-    ImGui::PushStyleColor(ImGuiCol_HeaderActive, mabColorHovered);
-    ImGui::PushStyleColor(ImGuiCol_Header, mabColorHovered);
-
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, roundingFrameButton);
-    ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 4.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 4.0f));
-
-    ImVec2 currentPadding = ImGui::GetStyle().FramePadding;
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(currentPadding.x, roundingFrameButton));
-
-    ImGui::SetCursorPosX(m_data->leftMenuPadding);
-    ImGui::Text("%s", text);
-
-    ImGui::SetCursorPosX(m_data->leftMenuPadding);
-    ImGui::SetNextItemWidth(leftMenuBarWidth - 2 * m_data->leftMenuPadding);
-}
-
-void GraphicInterface::endComboStyle()
-{
-    ImGui::PopStyleVar(4);
-    ImGui::PopStyleColor(7);
-}
-
-void GraphicInterface::buttonStyle()
-{
-    ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, mabColor);
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, buttonColor);
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, roundingFrameButton);
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 4.0f));
-}
-
-void GraphicInterface::buttonSelectStyle(bool flag)
-{
-    ImVec4 colorNormal, colorHovered, colorActive;
-
-    if (flag)
-    {
-        colorNormal  = buttonColor;
-        colorHovered = mabColorHovered;
-        colorActive  = buttonColor;
-    }
-    else
-    {
-        colorNormal  = clear_color;
-        colorHovered = mabColorHovered;
-        colorActive  = mabColor;
-    }
-
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 4.0f));
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, roundingFrameButton);
-
-    ImGui::PushStyleColor(ImGuiCol_Button, colorNormal);
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, colorHovered);
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, colorActive);
-}
-
-void GraphicInterface::endButtonStyle()
-{
-    ImGui::PopStyleColor(3);
-    ImGui::PopStyleVar(2);
-}
-
-void GraphicInterface::endButtonSelectStyle()
-{
-    ImGui::PopStyleColor(3);
-    ImGui::PopStyleVar(2);
-}
-
-void GraphicInterface::buttonImportantStyle(bool& flag)
-{
-    ImVec4 colorNormal, colorHovered, colorActive;
-    float  borderSize;
-
-    if (flag)
-    {
-        borderSize   = 0.0f;
-        colorNormal  = mabColor;
-        colorHovered = mabColorHovered;
-        colorActive  = mabColor;
-    }
-    else
-    {
-        borderSize   = 1.0f;
-        colorNormal  = buttonColor;
-        colorHovered = mabColorHovered;
-        colorActive  = mabColor;
-    }
-
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, borderSize);
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, roundingFrameButton);
-
-    ImGui::PushStyleColor(ImGuiCol_Border, mabColor);
-    ImGui::PushStyleColor(ImGuiCol_Button, colorNormal);
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, colorHovered);
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, colorActive);
-}
-
-void GraphicInterface::endButtonImportantStyle()
-{
-    ImGui::PopStyleColor(4);
-    ImGui::PopStyleVar(2);
-}
-
-void GraphicInterface::checkboxStyle()
-{
-    ImGui::PushStyleColor(ImGuiCol_CheckMark, mabColor);
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, buttonColor);
-    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, mabColorHovered);
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, roundingFrameCheckbox);
-}
-
-void GraphicInterface::endCheckboxStyle()
-{
-    ImGui::PopStyleColor(3);
-    ImGui::PopStyleVar();
-}
-
-void GraphicInterface::centerText(const char* text)
-{
-    float windowWidth = ImGui::GetWindowSize().x;
-    float textWidth   = ImGui::CalcTextSize(text).x;
-
-    ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
-    ImGui::TextUnformatted(text);
 }
 
 const char* GraphicInterface::getModeName(mab::MdMode_E mode)
@@ -2547,100 +2428,4 @@ const char* GraphicInterface::getModeName(mab::MdMode_E mode)
         default:
             return "Unknown mode";
     }
-}
-
-bool GraphicInterface::drawBigInputFloat(const char* label,
-                                         float*      v,
-                                         float       step,
-                                         float       step_fast,
-                                         const char* format,
-                                         float       windowWidth,
-                                         const char* unit)
-{
-    bool valueChanged = false;
-
-    std::string formatStr = format;
-    if (unit != nullptr && unit[0] != '\0')
-    {
-        formatStr += " ";
-        formatStr += unit;
-    }
-
-    ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, mabColor);
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, mabColor);
-
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, buttonColor);
-    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, mabColor);
-    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, mabColor);
-
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,
-                        ImVec2(roundingFrameButton, roundingFrameButton));
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, roundingFrameButton);
-
-    ImGui::PushID(label);
-    float frameHeight = ImGui::GetFrameHeight();
-    float buttonSize  = frameHeight;
-    float spacing     = ImGui::GetStyle().ItemInnerSpacing.x;
-
-    float interactableWidth = ImGui::CalcItemWidth();
-    float inputWidth        = interactableWidth - (buttonSize + spacing) * 2.0f;
-
-    float labelWidth = 0.0f;
-
-    float totalWidgetWidth = interactableWidth + labelWidth;
-
-    if (windowWidth > totalWidgetWidth)
-    {
-        float offsetX = (windowWidth - totalWidgetWidth) / 2.0f;
-        ImGui::SetCursorPosX(offsetX);
-    }
-
-    ImGui::PushButtonRepeat(true);
-
-    if (ImGui::Button("-", ImVec2(buttonSize, 0)))
-    {
-        *v -= ImGui::GetIO().KeyCtrl ? step_fast : step;
-        valueChanged = true;
-    }
-    ImGui::SameLine(0, spacing);
-
-    ImGui::SetNextItemWidth(inputWidth);
-    if (ImGui::InputFloat("##input", v, 0.0f, 0.0f, formatStr.c_str(), ImGuiInputTextFlags_None))
-    {
-        valueChanged = true;
-    }
-    ImGui::SameLine(0, spacing);
-
-    if (ImGui::Button("+", ImVec2(buttonSize, 0)))
-    {
-        *v += ImGui::GetIO().KeyCtrl ? step_fast : step;
-        valueChanged = true;
-    }
-
-    ImGui::PopButtonRepeat();
-
-    ImGui::PopID();
-
-    ImGui::PopStyleVar(2);
-    ImGui::PopStyleColor(6);
-
-    ImGui::SetWindowFontScale(1.0f);
-
-    return valueChanged;
-}
-
-bool GraphicInterface::buttonColorInputFloat(const char* label,
-                                             float*      v,
-                                             float       step      = 0.0f,
-                                             float       step_fast = 0.0f,
-                                             const char* format    = "%.3f")
-{
-    ImVec4 bgColor = ImVec4(0.167f, 0.165f, 0.196f, 1.0f);
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, bgColor);
-    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, bgColor);
-    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, bgColor);
-    bool valueChanged = ImGui::InputFloat(label, v, step, step_fast, format);
-    ImGui::PopStyleColor(3);
-    return valueChanged;
 }
