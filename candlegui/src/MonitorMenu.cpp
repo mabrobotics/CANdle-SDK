@@ -2,6 +2,7 @@
 #include "commonMemory.hpp"
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "implot.h"
 #include "mab_types.hpp"
 
 MonitorMenu::MonitorMenu(std::shared_ptr<commonMemory_S> commonMemory, ImGuiIO& io)
@@ -130,7 +131,10 @@ void MonitorMenu::drawPlotsMenu()
 
         if (ImGui::BeginChild("##Plot1", cellSize, ImGuiChildFlags_Borders))
         {
-            ImGui::Text("Plot 1");
+            ImGui::PushFont(nullptr, 18.0f);
+            ImGui::Text("Velocity");
+            ImGui::PopFont();
+            drawVelocityPlots();
         }
         ImGui::EndChild();
 
@@ -138,13 +142,19 @@ void MonitorMenu::drawPlotsMenu()
 
         if (ImGui::BeginChild("##Plot2", cellSize, ImGuiChildFlags_Borders))
         {
-            ImGui::Text("Plot 2");
+            ImGui::PushFont(nullptr, 18.0f);
+            ImGui::Text("Position");
+            ImGui::PopFont();
+            drawPositionPlots();
         }
         ImGui::EndChild();
 
         if (ImGui::BeginChild("##Plot3", cellSize, ImGuiChildFlags_Borders))
         {
-            ImGui::Text("Plot 3");
+            ImGui::PushFont(nullptr, 18.0f);
+            ImGui::Text("Torque");
+            ImGui::PopFont();
+            drawTorquePlots();
         }
         ImGui::EndChild();
 
@@ -152,7 +162,10 @@ void MonitorMenu::drawPlotsMenu()
 
         if (ImGui::BeginChild("##Plot4", cellSize, ImGuiChildFlags_Borders))
         {
-            ImGui::Text("Plot 4");
+            ImGui::PushFont(nullptr, 18.0f);
+            ImGui::Text("MOSFET temperature");
+            ImGui::PopFont();
+            drawMosfetTempPlots();
         }
         ImGui::EndChild();
 
@@ -184,7 +197,7 @@ void MonitorMenu::drawLiveValuesMenu()
             ImGui::TableSetupScrollFreeze(0, 1);
             ImGui::TableSetupColumn("ID");
             ImGui::TableSetupColumn("Pos rad");
-            ImGui::TableSetupColumn("Vel rad/status");
+            ImGui::TableSetupColumn("Vel rad/s");
             ImGui::TableSetupColumn("Torque Nm");
             ImGui::TableSetupColumn("T motor C");
             ImGui::TableSetupColumn("T MOSFET C");
@@ -247,56 +260,65 @@ void MonitorMenu::drawPlaceHolderMenu()
 
 */
 
-// void MonitorMenu::drawVelocityPlot(ImVec2 size, ImPlotFlags plotFlag)
-// {
-//     int processedSamples = static_cast<int>(m_data->readData);
-//     int bufferSize       = static_cast<int>(commonMemory_S::PLOT_BUFFER_SIZE);
-//     int pointsCount      = (processedSamples < bufferSize) ? processedSamples : bufferSize;
+void MonitorMenu::drawDevicePlot(PlotSignal_E signal, const char* plotId, const char* yLabel)
+{
+    const int devices = m_data->devicePlotsCount.load(std::memory_order_acquire);
 
-//     ImPlotSpec spec;
-//     spec.Offset = (processedSamples < bufferSize) ? 0 : static_cast<int>(m_data->offset);
+    float startTime   = 0.0f;
+    float currentTime = 0.0f;
+    bool  first       = true;
 
-//     bool testStarted = m_data->testStarted;
+    for (int i = 0; i < devices; ++i)
+    {
+        const DevicePlot_S& p = m_data->devicePlots[i];
+        const uint32_t      n = p.writeData.load(std::memory_order_acquire);
+        if (n == 0)
+            continue;
 
-//     ImPlot::PushStyleColor(ImPlotCol_FrameBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+        const float oldest = (n < DevicePlot_S::SIZE) ? p.time[0] : p.time[n % DevicePlot_S::SIZE];
+        const float newest = p.time[(n - 1) % DevicePlot_S::SIZE];
 
-//     if (ImPlot::BeginPlot("##VelocityPlot", size, plotFlag))
+        startTime   = first ? oldest : std::min(startTime, oldest);
+        currentTime = first ? newest : std::max(currentTime, newest);
+        first       = false;
+    }
+    if (currentTime <= startTime)
+        currentTime = startTime + 1.0f;
 
-//     {
-//         ImPlotCond plotCondition = testStarted ? ImPlotCond_Always : ImPlotCond_Once;
-//         ImPlot::SetupLegend(ImPlotLocation_NorthEast, ImPlotLegendFlags_None);
+    ImPlot::PushStyleColor(ImPlotCol_FrameBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
 
-//         float currentTime =
-//             m_data->plotTime[(m_data->offset == 0) ? commonMemory_S::PLOT_BUFFER_SIZE - 1
-//                                                    : m_data->offset - 1];
+    if (ImPlot::BeginPlot(plotId, ImGui::GetContentRegionAvail()))
+    {
+        ImPlot::SetupLegend(ImPlotLocation_NorthEast, ImPlotLegendFlags_None);
 
-//         ImPlot::SetupAxis(ImAxis_X1, "Time [s]", ImPlotAxisFlags_NoHighlight);
-//         ImPlot::SetupAxisLimits(ImAxis_X1, 0, currentTime, plotCondition);
+        ImPlot::SetupAxis(ImAxis_X1, "Time [s]", ImPlotAxisFlags_NoHighlight);
+        ImPlot::SetupAxisLimits(ImAxis_X1, startTime, currentTime, ImPlotCond_Always);
 
-//         timeElapsedOnPlot = currentTime;
+        ImPlot::SetupAxis(ImAxis_Y1, yLabel, ImPlotAxisFlags_NoHighlight | ImPlotAxisFlags_AutoFit);
 
-//         float bottomY =
-//             (m_data->minVel < 0.0f) ? (m_data->minVel - 0.2f * std::abs(m_data->minVel)) : 0.0f;
-//         float topY = (m_data->maxVel > 0.0f) ? (m_data->maxVel + 0.2f * m_data->maxVel) : 0.0f;
+        for (int i = 0; i < devices; ++i)
+        {
+            const DevicePlot_S& p = m_data->devicePlots[i];
+            const uint32_t      n = p.writeData.load(std::memory_order_acquire);
+            if (n == 0)
+                continue;
 
-//         if (m_data->targetVelocity > topY)
-//             topY = m_data->targetVelocity + 0.2f * m_data->targetVelocity;
-//         if (m_data->targetVelocity < bottomY)
-//             bottomY = m_data->targetVelocity - 0.2f * std::abs(m_data->targetVelocity);
+            const int pointsCount = static_cast<int>(std::min(n, DevicePlot_S::SIZE));
 
-//         if (topY == 0.0f && bottomY == 0.0f)
-//         {
-//             topY    = marginPlot;
-//             bottomY = -marginPlot;
-//         }
+            ImPlotSpec spec;
+            spec.Offset = (n < DevicePlot_S::SIZE) ? 0 : static_cast<int>(n % DevicePlot_S::SIZE);
 
-//         ImPlot::SetupAxis(ImAxis_Y1, "Velocity [rad/s]", ImPlotAxisFlags_NoHighlight);
-//         ImPlot::SetupAxisLimits(ImAxis_Y1, bottomY, topY, plotCondition);
+            char label[16];
+            std::snprintf(label, sizeof(label), "ID %u", static_cast<unsigned>(p.id));
 
-//         ImPlot::EndPlot();
-//     }
-//     ImPlot::PopStyleColor();
-// }
+            ImPlot::PlotLine(label, p.time, p.signal(signal), pointsCount, spec);
+        }
+
+        ImPlot::EndPlot();
+    }
+
+    ImPlot::PopStyleColor();
+}
 
 /*
 

@@ -25,6 +25,7 @@ class HardwareCandle
 
     bool                                       mdListChanged = true;
     std::chrono::steady_clock::time_point      lastStatusTime{};
+    std::chrono::steady_clock::time_point      monitorStartTime = std::chrono::steady_clock::now();
     std::chrono::steady_clock::time_point      lastSlowTime{};
     static constexpr std::chrono::milliseconds STATUS_PERIOD{100};
     static constexpr std::chrono::milliseconds SLOW_PERIOD{100};

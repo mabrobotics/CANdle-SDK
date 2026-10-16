@@ -9,6 +9,44 @@
 #include <vector>
 #include <cmath>
 
+enum class PlotSignal_E
+{
+    VELOCITY,
+    POSITION,
+    TORQUE,
+    MOSFET_TEMP
+};
+
+struct DevicePlot_S
+{
+    static const uint32_t SIZE = 20000;
+
+    mab::canId_t          id = 0;
+    std::atomic<uint32_t> writeData{0};
+
+    float time[SIZE];
+    float velocity[SIZE];
+    float position[SIZE];
+    float torque[SIZE];
+    float mosfetTemp[SIZE];
+
+    const float* signal(PlotSignal_E s) const
+    {
+        switch (s)
+        {
+            case PlotSignal_E::VELOCITY:
+                return velocity;
+            case PlotSignal_E::POSITION:
+                return position;
+            case PlotSignal_E::TORQUE:
+                return torque;
+            case PlotSignal_E::MOSFET_TEMP:
+                return mosfetTemp;
+        }
+        return velocity;
+    }
+};
+
 struct MDStatus_S
 {
     mab::canId_t id;
@@ -136,10 +174,10 @@ struct commonMemory_S
     float targetDecelerationSlider = 0.0f;
 
     // MAB
-    mab::MdMode_E           currentMode = mab::MdMode_E::IDLE;
-    std::vector<MDStatus_S> mdStatus;
-    mab::canId_t            chosenID = 0;
-    mab::CANdleDatarate_E   candleDatarate;
+    std::atomic<mab::MdMode_E> currentMode{mab::MdMode_E::IDLE};
+    std::vector<MDStatus_S>    mdStatus;
+    mab::canId_t               chosenID = 0;
+    mab::CANdleDatarate_E      candleDatarate;
 
     // Logic
     std::atomic<bool> testStarted{false};
@@ -171,6 +209,11 @@ struct commonMemory_S
 
     // Plots
     static const uint32_t PLOT_BUFFER_SIZE = 100000;
+    static const int      MAX_DEVICES      = 20;
+
+    DevicePlot_S          devicePlots[MAX_DEVICES];
+    std::atomic<int>      devicePlotsCount{0};
+    std::atomic<uint32_t> plotWriteData{0};
 
     float plotTime[PLOT_BUFFER_SIZE];
     float plotVelocity[PLOT_BUFFER_SIZE];
@@ -179,8 +222,6 @@ struct commonMemory_S
     float plotTargetVelocity[PLOT_BUFFER_SIZE];
     float plotTargetPosition[PLOT_BUFFER_SIZE];
     float plotTargetTorque[PLOT_BUFFER_SIZE];
-
-    std::atomic<uint32_t> plotWriteData{0};
 
     float guiElapsedTime = 0.0f;
 
@@ -213,5 +254,20 @@ struct commonMemory_S
             plotTargetPosition[i] = 0.0f;
             plotTargetTorque[i]   = 0.0f;
         }
+    }
+
+    // Plots for MonitorMenu
+    void setupDevicePlots(const std::vector<MDStatus_S>& statuses)
+    {
+        devicePlotsCount.store(0, std::memory_order_release);
+
+        const int count = std::min(static_cast<int>(statuses.size()), MAX_DEVICES);
+        for (int i = 0; i < count; ++i)
+        {
+            devicePlots[i].id = statuses[i].id;
+            devicePlots[i].writeData.store(0, std::memory_order_release);
+        }
+
+        devicePlotsCount.store(count, std::memory_order_release);
     }
 };

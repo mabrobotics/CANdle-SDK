@@ -101,6 +101,8 @@ void HardwareCandle::checkConnectionStatus(mab::MD& md, mab::canId_t chosenID)
     bool selectedMD      = m_data->selectedMD;
     bool discoverOngoing = m_data->discoverOngoing;
 
+    std::lock_guard<std::mutex> lock(m_data->mtx);
+
     m_data->errorConnectionOccurred = false;
 
     if (discoverOngoing)
@@ -122,19 +124,29 @@ void HardwareCandle::checkConnectionStatus(mab::MD& md, mab::canId_t chosenID)
 }
 void HardwareCandle::checkQuickStatus(mab::MD& md)
 {
-    md.readRegisters(md.m_mdRegisters.quickStatus,
-                     md.m_mdRegisters.mainEncoderStatus,
-                     md.m_mdRegisters.hardwareStatus,
-                     md.m_mdRegisters.bridgeStatus,
-                     md.m_mdRegisters.motionStatus,
-                     md.m_mdRegisters.communicationStatus,
-                     md.m_mdRegisters.mosfetTemperature);
+    mab::MD::Error_t error = md.readRegisters(md.m_mdRegisters.quickStatus,
+                                              md.m_mdRegisters.mainEncoderStatus,
+                                              md.m_mdRegisters.hardwareStatus,
+                                              md.m_mdRegisters.bridgeStatus,
+                                              md.m_mdRegisters.motionStatus,
+                                              md.m_mdRegisters.communicationStatus);
+
+    std::lock_guard<std::mutex> lock(m_data->mtx);
+    if (error != mab::MD::Error_t::OK)
+    {
+        m_data->errorQuickStatusOccurred = true;
+        m_data->errorQuickStatusMessage  = "Status read failed";
+        return;
+    }
 
     mab::MDStatus::decode(md.m_mdRegisters.quickStatus.value, statuses.quickStatus);
+
+    bool anyError = false;
 
     m_data->errorQuickStatusOccurred   = false;
     m_data->errorEncoderOccurred       = false;
     m_data->errorHardwareOccurred      = false;
+    m_data->errorBridgeOccurred        = false;
     m_data->errorMotionOccurred        = false;
     m_data->errorCommunicationOccurred = false;
     m_data->errorQuickStatusMessage    = "No errors";
@@ -153,8 +165,7 @@ void HardwareCandle::checkQuickStatus(mab::MD& md)
         m_data->currentMode                = mab::MdMode_E::IDLE;
         m_data->testStarted                = false;
         m_data->buttonAutomaticTestPressed = false;
-        m_data->selectedMD                 = false;
-        m_data->errorOccurred              = true;
+        anyError                           = true;
         m_data->errorQuickStatusOccurred   = true;
         m_data->errorQuickStatusMessage    = "ERROR";
 
@@ -224,6 +235,7 @@ void HardwareCandle::checkQuickStatus(mab::MD& md)
                 break;
         }
     }
+    m_data->errorOccurred = anyError;
 }
 
 void HardwareCandle::downloadParameters(mab::MD& md)
@@ -377,8 +389,10 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
 
     while (isRunning)
     {
-        bool testStarted              = m_data->testStarted.load();
-        bool selectedMD               = m_data->selectedMD.load();
+        bool testStarted = m_data->testStarted.load();
+        bool selectedMD  = m_data->selectedMD.load();
+        if (!selectedMD)
+            m_data->errorOccurred = false;
         bool updateParametersTest     = m_data->updateParametersTest.exchange(false);
         bool buttonDiscoverMdPressed  = m_data->buttonDiscoverMdPressed.exchange(false);
         bool buttonSelectMdPressed    = m_data->buttonSelectMdPressed.exchange(false);
@@ -399,8 +413,11 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
 
         if (candle == nullptr)
         {
-            m_data->errorMessage            = "CANdle Disconnected";
-            m_data->errorConnectionOccurred = true;
+            {
+                std::lock_guard<std::mutex> lock(m_data->mtx);
+                m_data->errorMessage            = "CANdle Disconnected";
+                m_data->errorConnectionOccurred = true;
+            }
 
             std::unique_ptr<mab::I_CommunicationInterface> bus;
 
@@ -440,6 +457,11 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                         m_data->updatedVersion  = true;
                     }
                     m_data->candleDatarate = candleDatarate;
+                    {
+                        std::lock_guard<std::mutex> lock(m_data->mtx);
+                        m_data->errorMessage            = "CANdle Connected";
+                        m_data->errorConnectionOccurred = false;
+                    }
                 }
             }
         }
@@ -464,6 +486,7 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                 mds.clear();
                 mdStatusLocal.clear();
                 m_data->mdStatus.clear();
+                m_data->devicePlotsCount.store(0, std::memory_order_release);
                 buttonDiscoverMdPressed = false;
                 m_data->discoverOngoing = false;
                 m_data->selectedMD      = false;
@@ -484,6 +507,7 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                 mds.clear();
                 mdStatusLocal.clear();
                 m_data->mdStatus.clear();
+                m_data->devicePlotsCount.store(0, std::memory_order_release);
                 buttonDiscoverMdPressed = false;
                 m_data->discoverOngoing = false;
                 m_data->selectedMD      = false;
@@ -588,10 +612,8 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
 
                     if (buttonClearErrorsPressed)
                     {
-                        if (md.clearErrors() == mab::MD::Error_t::OK)
-                        {
-                            m_data->errorOccurred = false;
-                        }
+                        md.clearErrors();
+                        checkQuickStatus(md);
                     }
 
                     if (!testStarted && selectedMD && slowTick)
@@ -836,11 +858,14 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                         float vel = float(md.m_mdRegisters.velocity.value);
                         float pos = float(md.m_mdRegisters.position.value);
                         float trq = float(md.m_mdRegisters.torque.value);
+
                         if (refreshStatus && !mdStatusLocal.empty())
                             copyLiveValues(md, mdStatusLocal.back());
 
                         mab::MDStatus::decode(md.m_mdRegisters.quickStatus.value,
                                               statuses.quickStatus);
+
+                        std::lock_guard<std::mutex> lock(m_data->mtx);
 
                         for (const auto& [bit, status] : statuses.quickStatus)
                         {
@@ -857,10 +882,9 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                             m_data->errorQuickStatusOccurred   = true;
                             m_data->currentMode                = mab::MdMode_E::IDLE;
                             m_data->buttonAutomaticTestPressed = false;
-                            m_data->selectedMD                 = false;
+                            m_data->errorOccurred              = true;
                         }
 
-                        std::lock_guard<std::mutex> lock(m_data->mtx);
                         uint32_t writeData = m_data->plotWriteData.load(std::memory_order_relaxed);
                         uint32_t idx       = writeData % commonMemory_S::PLOT_BUFFER_SIZE;
 
@@ -871,7 +895,6 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                         m_data->plotTargetVelocity[idx] = m_data->targetVelocity;
                         m_data->plotTargetPosition[idx] = m_data->targetPosition;
                         m_data->plotTargetTorque[idx]   = m_data->targetTorque;
-
                         m_data->plotWriteData.store(writeData + 1, std::memory_order_release);
                     }
                 }
@@ -882,6 +905,33 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
             {
                 {
                     std::lock_guard<std::mutex> lock(m_data->mtx);
+
+                    if (mdListChanged)
+                    {
+                        m_data->setupDevicePlots(mdStatusLocal);
+                        monitorStartTime = statusNow;
+                    }
+                    const float monitorTime =
+                        std::chrono::duration<float>(statusNow - monitorStartTime).count();
+                    const int count =
+                        std::min(m_data->devicePlotsCount.load(std::memory_order_relaxed),
+                                 static_cast<int>(mdStatusLocal.size()));
+                    for (int i = 0; i < count; ++i)
+                    {
+                        const MDStatus_S& status = mdStatusLocal[i];
+                        if (!status.valid)
+                            continue;
+                        DevicePlot_S& plot      = m_data->devicePlots[i];
+                        uint32_t      writeData = plot.writeData.load(std::memory_order_relaxed);
+                        uint32_t      idx       = writeData % DevicePlot_S::SIZE;
+                        plot.time[idx]          = monitorTime;
+                        plot.velocity[idx]      = status.velocity;
+                        plot.position[idx]      = status.position;
+                        plot.torque[idx]        = status.torque;
+                        plot.mosfetTemp[idx]    = status.driverTemp;
+                        plot.writeData.store(writeData + 1, std::memory_order_release);
+                    }
+
                     m_data->mdStatus.swap(mdStatusLocal);
                 }
                 mdListChanged  = false;

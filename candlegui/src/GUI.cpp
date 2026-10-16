@@ -353,6 +353,19 @@ void GraphicInterface::drawErrorMenuBar()
     bool errorCommunicationOccurred = m_data->errorCommunicationOccurred;
     bool selectedMD                 = m_data->selectedMD;
 
+    std::string errorMessage, quickStatusMessage, encoderMessage, hardwareMessage, bridgeMessage,
+        motionMessage, communicationMessage;
+    {
+        std::lock_guard<std::mutex> lock(m_data->mtx);
+        errorMessage         = m_data->errorMessage;
+        quickStatusMessage   = m_data->errorQuickStatusMessage;
+        encoderMessage       = m_data->errorEncoderStatusMessage;
+        hardwareMessage      = m_data->errorHardwareStatusMessage;
+        bridgeMessage        = m_data->errorBridgeStatusMessage;
+        motionMessage        = m_data->errorMotionStatusMessage;
+        communicationMessage = m_data->errorCommunicationStatusMessage;
+    }
+
     ImGui::AlignTextToFramePadding();
 
     ImGui::Text("Connection status:");
@@ -360,13 +373,13 @@ void GraphicInterface::drawErrorMenuBar()
     if (errorConnectionOccurred)
     {
         ImGui::PushStyleColor(ImGuiCol_Text, redColor);
-        ImGui::Text("%s", m_data->errorMessage.c_str());
+        ImGui::Text("%s", errorMessage.c_str());
         ImGui::PopStyleColor();
     }
     else
     {
         ImGui::PushStyleColor(ImGuiCol_Text, greenColor);
-        ImGui::Text("%s", m_data->errorMessage.c_str());
+        ImGui::Text("%s", errorMessage.c_str());
         ImGui::PopStyleColor();
     }
 
@@ -376,13 +389,13 @@ void GraphicInterface::drawErrorMenuBar()
     if (errorQuickStatusOccurred)
     {
         ImGui::PushStyleColor(ImGuiCol_Text, redColor);
-        ImGui::Text("%s", m_data->errorQuickStatusMessage.c_str());
+        ImGui::Text("%s", quickStatusMessage.c_str());
         ImGui::PopStyleColor();
     }
     else
     {
         ImGui::PushStyleColor(ImGuiCol_Text, greenColor);
-        ImGui::Text("%s", m_data->errorQuickStatusMessage.c_str());
+        ImGui::Text("%s", quickStatusMessage.c_str());
         ImGui::PopStyleColor();
     }
 
@@ -395,7 +408,7 @@ void GraphicInterface::drawErrorMenuBar()
             ImGui::SameLine();
 
             ImGui::PushStyleColor(ImGuiCol_Text, redColor);
-            ImGui::Text("%s", m_data->errorEncoderStatusMessage.c_str());
+            ImGui::Text("%s", encoderMessage.c_str());
             ImGui::PopStyleColor();
         }
 
@@ -406,7 +419,7 @@ void GraphicInterface::drawErrorMenuBar()
             ImGui::SameLine();
 
             ImGui::PushStyleColor(ImGuiCol_Text, redColor);
-            ImGui::Text("%s", m_data->errorHardwareStatusMessage.c_str());
+            ImGui::Text("%s", hardwareMessage.c_str());
             ImGui::PopStyleColor();
         }
 
@@ -417,7 +430,7 @@ void GraphicInterface::drawErrorMenuBar()
             ImGui::SameLine();
 
             ImGui::PushStyleColor(ImGuiCol_Text, redColor);
-            ImGui::Text("%s", m_data->errorBridgeStatusMessage.c_str());
+            ImGui::Text("%s", bridgeMessage.c_str());
             ImGui::PopStyleColor();
         }
 
@@ -428,7 +441,7 @@ void GraphicInterface::drawErrorMenuBar()
             ImGui::SameLine();
 
             ImGui::PushStyleColor(ImGuiCol_Text, redColor);
-            ImGui::Text("%s", m_data->errorMotionStatusMessage.c_str());
+            ImGui::Text("%s", motionMessage.c_str());
             ImGui::PopStyleColor();
         }
 
@@ -439,7 +452,7 @@ void GraphicInterface::drawErrorMenuBar()
             ImGui::SameLine();
 
             ImGui::PushStyleColor(ImGuiCol_Text, redColor);
-            ImGui::Text("%s", m_data->errorCommunicationStatusMessage.c_str());
+            ImGui::Text("%s", communicationMessage.c_str());
             ImGui::PopStyleColor();
         }
 
