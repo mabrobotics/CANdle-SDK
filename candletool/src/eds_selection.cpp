@@ -159,6 +159,16 @@ namespace mab
                 result.second = MDCO::Error_t::REQUEST_INVALID;
             return result;
         }
+
+        // Relative .eds paths in candletool.ini are relative to its directory, so the same file
+        // works wherever the package is installed
+        std::filesystem::path iniEdsPath(const std::filesystem::path& configFilePath,
+                                         const std::string&           value)
+        {
+            if (value.empty())
+                return {};
+            return configFilePath.parent_path() / value;
+        }
     }  // namespace
 
     std::filesystem::path bundledEdsDir(const std::filesystem::path& configFilePath)
@@ -254,8 +264,10 @@ namespace mab
         mINI::INIStructure configStruct;
         configFile.read(configStruct);
 
-        const std::string current = configStruct["eds"]["path"];
-        const std::string legacy  = configStruct["eds"]["legacy path"];
+        const std::string current =
+            iniEdsPath(configFilePath, configStruct["eds"]["path"]).string();
+        const std::string legacy =
+            iniEdsPath(configFilePath, configStruct["eds"]["legacy path"]).string();
 
         if (current.empty())
             log.warn("no .eds is configured in %s", configFilePath.c_str());
@@ -289,7 +301,7 @@ namespace mab
         configFile.read(configStruct);
 
         EdsPaths_S paths;
-        paths.current = std::filesystem::path(configStruct["eds"]["path"]);
+        paths.current = iniEdsPath(configFilePath, configStruct["eds"]["path"]);
         if (paths.current.empty() || !std::filesystem::exists(paths.current))
         {
             log.error(
@@ -302,7 +314,7 @@ namespace mab
 
         // Older drives use a different object dictionary layout, which is only needed to put them
         // into the bootloader for a firmware update
-        paths.legacy = std::filesystem::path(configStruct["eds"]["legacy path"]);
+        paths.legacy = iniEdsPath(configFilePath, configStruct["eds"]["legacy path"]);
         if (!paths.legacy.empty() && !std::filesystem::exists(paths.legacy))
         {
             log.warn(
