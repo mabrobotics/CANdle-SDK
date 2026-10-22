@@ -288,6 +288,13 @@ namespace mab
             return result;
         }
 
+        /// @brief Read register by its address, for registers not listed in MDRegisters_S
+        /// @param address Address of the register
+        /// @param data Buffer the register value is read into
+        /// @param size Size of the register value in bytes, has to match the register exactly
+        /// @return Error type on failure
+        Error_t readRegisterRaw(u16 address, u8* data, size_t size);
+
         /// @brief Write register to the memory of the MD
         /// @tparam T Register entry underlying type (should be deducible)
         /// @param reg Register entry reference to be written to memory

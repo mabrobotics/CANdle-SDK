@@ -35,6 +35,52 @@ bool testRunning = true;
 
 namespace
 {
+    /// @brief Build an entry for an object not listed in the .eds, so it can be read by address
+    /// @param index object index
+    /// @param subIndex object subindex, if any
+    /// @param typeName CANopen name of the data type, as used in the .eds
+    /// @return entry of the given type, nullptr when the type is unknown
+    std::unique_ptr<EDSEntry> makeUnlistedEntry(u16                      index,
+                                                const std::optional<u8>& subIndex,
+                                                const std::string&       typeName)
+    {
+        struct
+        {
+            const char*          name;
+            EDSEntry::DataType_E type;
+        } const types[] = {{"BOOLEAN", EDSEntry::DataType_E::BOOLEAN},
+                           {"INTEGER8", EDSEntry::DataType_E::INTEGER8},
+                           {"INTEGER16", EDSEntry::DataType_E::INTEGER16},
+                           {"INTEGER32", EDSEntry::DataType_E::INTEGER32},
+                           {"INTEGER64", EDSEntry::DataType_E::INTEGER64},
+                           {"UNSIGNED8", EDSEntry::DataType_E::UNSIGNED8},
+                           {"UNSIGNED16", EDSEntry::DataType_E::UNSIGNED16},
+                           {"UNSIGNED32", EDSEntry::DataType_E::UNSIGNED32},
+                           {"UNSIGNED64", EDSEntry::DataType_E::UNSIGNED64},
+                           {"REAL32", EDSEntry::DataType_E::REAL32},
+                           {"VISIBLE_STRING", EDSEntry::DataType_E::VISIBLE_STRING},
+                           {"OCTET_STRING", EDSEntry::DataType_E::OCTET_STRING}};
+
+        for (const auto& type : types)
+        {
+            if (typeName != type.name)
+                continue;
+            // The default value only satisfies the constructor, the value is read from the drive
+            return std::make_unique<EDSEntry>(EDSEntry::EDSEntryMetaData{
+                .address         = {index, subIndex},
+                .parameterName   = md_objects::addressToString(index, subIndex),
+                .objectType      = EDSEntry::ObjectType_E::VALUE,
+                .storageLocation = EDSEntry::StorageLocation_E::RAM,
+                .edsValueMeta    = EDSEntry::EDSValueMetaData{.dataType   = type.type,
+                                                              .accessType =
+                                                                  EDSEntry::AccessRights_E::READ_ONLY,
+                                                              .PDOMapping      = false,
+                                                              .defaultValueStr = "0"},
+                .edsContainerMeta = std::nullopt});
+        }
+        return nullptr;
+    }
+
     /// @brief CANopen object indices are written in hex, so an argument without the 0x prefix
     /// is usually a forgotten prefix rather than a decimal index - point the user at the hex
     /// reading of what was passed, as long as that one exists in the .eds
@@ -489,6 +535,28 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
         [this, mdCanId, readOption, loadEDS]()
         {
             auto od = loadEDS().first;
+            if (!readOption.type->empty())
+            {
+                auto entry =
+                    makeUnlistedEntry(*readOption.index, *readOption.subindex, *readOption.type);
+                if (entry == nullptr)
+                {
+                    m_log.error("Unknown data type %s!", readOption.type->c_str());
+                    return;
+                }
+                auto mdco = getMdco(mdCanId, od);
+                if (mdco == nullptr)
+                    return m_log.error("Failed to conect to mdco!");
+                if (mdco->readSDO(*entry) != MDCO::Error_t::OK)
+                {
+                    m_log.error("could not read this sdo!");
+                    return;
+                }
+                m_log.success("%s = %s",
+                              entry->getEntryMetaData().parameterName.c_str(),
+                              entry->getAsString().c_str());
+                return;
+            }
             if (!checkAddressInEds(*od, *readOption.index, *readOption.subindex, m_log))
             {
                 hintHexIndex(*od, readOption.optionsMap.at("index"), *readOption.index, m_log);
