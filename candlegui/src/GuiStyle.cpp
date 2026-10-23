@@ -7,7 +7,7 @@ Style
 
 */
 
-void GuiStyle::comboStyle(const char* text)
+void GuiStyle::comboStyle(const char* text, float framePaddingY)
 {
     ImGui::PushStyleColor(ImGuiCol_Button, buttonColor);
     ImGui::PushStyleColor(ImGuiCol_FrameBg, buttonColor);
@@ -19,22 +19,13 @@ void GuiStyle::comboStyle(const char* text)
 
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, roundingFrameButton);
     ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 4.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 4.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, framePaddingY));
 
-    ImVec2 currentPadding = ImGui::GetStyle().FramePadding;
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(currentPadding.x, roundingFrameButton));
-
-    ImGui::SetCursorPosX(leftMenuPadding);
-    ImGui::Text("%s", text);
-
-    ImGui::SetCursorPosX(leftMenuPadding);
-    ImGui::SetNextItemWidth(leftMenuBarWidth - 2 * leftMenuPadding);
-}
-
-void GuiStyle::endComboStyle()
-{
-    ImGui::PopStyleVar(4);
-    ImGui::PopStyleColor(7);
+    if (text)
+    {
+        ImGui::SetCursorPosX(leftMenuPadding);
+        ImGui::Text("%s", text);
+    }
 }
 
 void GuiStyle::buttonStyle()
@@ -71,18 +62,6 @@ void GuiStyle::buttonSelectStyle(bool flag)
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, colorActive);
 }
 
-void GuiStyle::endButtonStyle()
-{
-    ImGui::PopStyleColor(3);
-    ImGui::PopStyleVar(2);
-}
-
-void GuiStyle::endButtonSelectStyle()
-{
-    ImGui::PopStyleColor(3);
-    ImGui::PopStyleVar(2);
-}
-
 void GuiStyle::buttonImportantStyle(bool& flag)
 {
     ImVec4 colorNormal, colorHovered, colorActive;
@@ -112,12 +91,6 @@ void GuiStyle::buttonImportantStyle(bool& flag)
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, colorActive);
 }
 
-void GuiStyle::endButtonImportantStyle()
-{
-    ImGui::PopStyleColor(4);
-    ImGui::PopStyleVar(2);
-}
-
 void GuiStyle::buttonInvisibleStyle()
 {
     ImGui::PushStyleColor(ImGuiCol_Button, transparent);
@@ -129,12 +102,6 @@ void GuiStyle::buttonInvisibleStyle()
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 4.0f));
 }
 
-void GuiStyle::endButtonInvisibleStyle()
-{
-    ImGui::PopStyleColor(3);
-    ImGui::PopStyleVar(3);
-}
-
 void GuiStyle::checkboxStyle()
 {
     ImGui::PushStyleColor(ImGuiCol_CheckMark, mabColor);
@@ -143,11 +110,109 @@ void GuiStyle::checkboxStyle()
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, roundingFrameCheckbox);
 }
 
+void GuiStyle::popupStyle()
+{
+    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+    ImGui::PushStyleColor(ImGuiCol_TitleBgActive, GuiStyle::mabColor);
+}
+
+void GuiStyle::tableStyle()
+{
+    ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, GuiStyle::buttonColorDimmed);
+    ImGui::PushStyleColor(ImGuiCol_TableHeaderBg, GuiStyle::buttonColor);
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, mabColorHovered);
+    ImGui::PushStyleColor(ImGuiCol_HeaderActive, mabColor);
+
+    ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(8.0f, 6.0f));
+}
+
+void GuiStyle::childInnerStyle()
+{
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, GuiStyle::roundingFrameButton);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
+                        ImVec2(GuiStyle::insideWindowPadding_y, GuiStyle::insideWindowPadding_y));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
+                        ImVec2(GuiStyle::insideWindowPadding_y, GuiStyle::insideWindowPadding_y));
+}
+
+void GuiStyle::childOuterStyle()
+{
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
+                        ImVec2(GuiStyle::leftMenuPadding, GuiStyle::windowsPadding));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
+                        ImVec2(GuiStyle::insideWindowPadding_x, GuiStyle::insideWindowPadding_y));
+}
+
+/*
+
+End style functions
+
+*/
+
+void GuiStyle::endComboStyle()
+{
+    ImGui::PopStyleVar(3);
+    ImGui::PopStyleColor(7);
+}
+
+void GuiStyle::endButtonStyle()
+{
+    ImGui::PopStyleColor(3);
+    ImGui::PopStyleVar(2);
+}
+
+void GuiStyle::endButtonSelectStyle()
+{
+    ImGui::PopStyleColor(3);
+    ImGui::PopStyleVar(2);
+}
+
+void GuiStyle::endButtonImportantStyle()
+{
+    ImGui::PopStyleColor(4);
+    ImGui::PopStyleVar(2);
+}
+
+void GuiStyle::endButtonInvisibleStyle()
+{
+    ImGui::PopStyleColor(3);
+    ImGui::PopStyleVar(3);
+}
+
 void GuiStyle::endCheckboxStyle()
 {
     ImGui::PopStyleColor(3);
     ImGui::PopStyleVar();
 }
+
+void GuiStyle::endPopupStyle()
+{
+    ImGui::PopStyleColor();
+}
+
+void GuiStyle::endTableStyle()
+{
+    ImGui::PopStyleColor(4);
+    ImGui::PopStyleVar();
+}
+
+void GuiStyle::endChildInnerStyle()
+{
+    ImGui::PopStyleVar(3);
+}
+
+void GuiStyle::endChildOuterStyle()
+{
+    ImGui::PopStyleVar(2);
+}
+
+/*
+
+Helper functions
+
+*/
 
 void GuiStyle::centerText(const char* text)
 {
@@ -234,16 +299,11 @@ bool GuiStyle::drawBigInputFloat(const char* label,
     ImGui::PopStyleVar(2);
     ImGui::PopStyleColor(6);
 
-    ImGui::SetWindowFontScale(1.0f);
-
     return valueChanged;
 }
 
-bool GuiStyle::buttonColorInputFloat(const char* label,
-                                     float*      v,
-                                     float       step      = 0.0f,
-                                     float       step_fast = 0.0f,
-                                     const char* format    = "%.3f")
+bool GuiStyle::buttonColorInputFloat(
+    const char* label, float* v, float step, float step_fast, const char* format)
 {
     ImVec4 bgColor = ImVec4(0.167f, 0.165f, 0.196f, 1.0f);
     ImGui::PushStyleColor(ImGuiCol_FrameBg, bgColor);

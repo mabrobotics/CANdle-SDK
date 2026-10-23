@@ -1,6 +1,7 @@
 #include "GUI.hpp"
 #include <mutex>
 #include "BusActuatorsMenu.hpp"
+#include "GuiStyle.hpp"
 #include "imgui.h"
 #include "mab_types.hpp"
 
@@ -50,6 +51,10 @@ void GraphicInterface::init()
     if (m_window == nullptr)
         return;
 
+    const int minWidth =
+        static_cast<int>(GuiStyle::leftMenuBarWidth + GuiStyle::windowsPadding * 2.0f);
+
+    glfwSetWindowSizeLimits(m_window, minWidth, 720, GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwMakeContextCurrent(m_window);
     glfwSwapInterval(1);  // Enable vsync
 
@@ -150,6 +155,7 @@ void GraphicInterface::loop()
                         case TEST_SCRIPT:
                             break;
                         case BUS_INFO:
+                            m_busActuatorWindow.drawBusActuatorMenu();
                             break;
                         default:
                             drawTuningMenu();
@@ -193,13 +199,7 @@ Main menu draw functions
 
 void GraphicInterface::drawMenuTopBar()
 {
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                        ImVec2(GuiStyle::windowsPadding, GuiStyle::insideWindowPadding));
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(GuiStyle::insideWindowPadding, GuiStyle::insideWindowPadding));
-
-    bool candleAvailable = m_data->candleAvailable;
-
+    GuiStyle::childOuterStyle();
     if (ImGui::BeginChild("TopBar", ImVec2(0.0f, topBarHeight), ImGuiChildFlags_None))
     {
         float rightChildWidth = 250.0f;
@@ -208,22 +208,22 @@ void GraphicInterface::drawMenuTopBar()
         if (ImGui::BeginChild(
                 "TopLeft", ImVec2(-(rightChildWidth + spacing), 0.0f), ImGuiChildFlags_None))
         {
-            buttonSelectStyle(currentPage == TUNING);
+            GuiStyle::buttonSelectStyle(currentPage == TUNING);
             drawTuningButton();
             GuiStyle::endButtonSelectStyle();
             ImGui::SameLine();
 
-            buttonSelectStyle(currentPage == MONITOR);
+            GuiStyle::buttonSelectStyle(currentPage == MONITOR);
             drawMonitorButton();
             GuiStyle::endButtonSelectStyle();
             ImGui::SameLine();
 
-            buttonSelectStyle(currentPage == TEST_SCRIPT);
+            GuiStyle::buttonSelectStyle(currentPage == TEST_SCRIPT);
             drawTestScriptButton();
             GuiStyle::endButtonSelectStyle();
 
             ImGui::SameLine();
-            buttonSelectStyle(currentPage == BUS_INFO);
+            GuiStyle::buttonSelectStyle(currentPage == BUS_INFO);
             drawBusInfoButton();
             GuiStyle::endButtonSelectStyle();
         }
@@ -231,51 +231,11 @@ void GraphicInterface::drawMenuTopBar()
 
         ImGui::SameLine();
 
-        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, GuiStyle::roundingFrameButton);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                            ImVec2(GuiStyle::insideWindowPadding, GuiStyle::insideWindowPadding));
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                            ImVec2(GuiStyle::insideWindowPadding, GuiStyle::insideWindowPadding));
-
-        if (ImGui::BeginChild("RightAlignedChild", ImVec2(0, 0), ImGuiChildFlags_Borders))
-        {
-            float  radius = 5.0f;
-            ImVec2 pos    = ImGui::GetCursorScreenPos();
-            ImVec2 center = ImVec2(pos.x + radius, pos.y + ImGui::GetTextLineHeight() * 0.5f);
-
-            ImVec4 chosenColorVec4 = candleAvailable ? GuiStyle::greenColor : GuiStyle::redColor;
-            ImU32  colorU32        = ImGui::GetColorU32(chosenColorVec4);
-
-            ImGui::GetWindowDrawList()->AddCircleFilled(center, radius, colorU32);
-
-            ImGui::Dummy(ImVec2(radius * 1.5f, 0.0f));
-
-            ImGui::SameLine();
-            ImGui::Text("CANdle");
-
-            ImGui::SameLine();
-            ImGui::Text("|");
-
-            ImGui::SameLine();
-            ImGui::TextUnformatted(m_data->busTypeToString(m_data->busType));
-
-            ImGui::SameLine();
-            ImGui::Text("|");
-
-            ImGui::SameLine();
-            ImGui::TextUnformatted(m_data->baudrateToString(m_data->candleDatarate));
-
-            ImGui::SameLine();
-            ImGui::Text("|");
-
-            ImGui::SameLine();
-            ImGui::Text("%zu drives", guiMDStatus.size());
-        }
-        ImGui::EndChild();
-        ImGui::PopStyleVar(3);
+        if (currentPage != BUS_INFO)
+            drawTopCANdleStatusMenu();
     }
     ImGui::EndChild();
-    ImGui::PopStyleVar(2);
+    GuiStyle::endChildOuterStyle();
 }
 
 void GraphicInterface::drawMenuBottomBar()
@@ -313,12 +273,11 @@ void GraphicInterface::drawMenuBottomBar()
 
 void GraphicInterface::drawTestMenuBar()
 {
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                        ImVec2(GuiStyle::leftMenuPadding, GuiStyle::insideWindowPadding));
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(GuiStyle::insideWindowPadding / 2, GuiStyle::insideWindowPadding));
-    if (ImGui::BeginChild(
-            "Test menu", ImVec2(0, 0), ImGuiChildFlags_Borders, GuiStyle::flagsBackMenu))
+    GuiStyle::childOuterStyle();
+    if (ImGui::BeginChild("Test menu",
+                          ImVec2(0, 0),
+                          ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY,
+                          GuiStyle::flagsBackMenu))
     {
         bool errorOccurred = m_data->errorOccurred;
 
@@ -345,7 +304,9 @@ void GraphicInterface::drawTestMenuBar()
         }
     }
     ImGui::EndChild();
-    ImGui::PopStyleVar(2);
+    GuiStyle::endChildOuterStyle();
+
+    testMenuBarHeight = ImGui::GetItemRectSize().y;
 }
 
 void GraphicInterface::drawErrorMenuBar()
@@ -472,11 +433,10 @@ void GraphicInterface::drawErrorMenuBar()
 
 void GraphicInterface::drawLeftMenuBar()
 {
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                        ImVec2(GuiStyle::leftMenuPadding, GuiStyle::windowsPadding));
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(GuiStyle::insideWindowPadding / 2, GuiStyle::insideWindowPadding));
-    if (ImGui::BeginChild("Left Menu", ImVec2(0, -testMenuBarHeight), ImGuiChildFlags_Borders))
+    const float spaceForTestMenu = testMenuBarHeight + ImGui::GetStyle().ItemSpacing.y;
+
+    GuiStyle::childOuterStyle();
+    if (ImGui::BeginChild("Left Menu", ImVec2(0, -spaceForTestMenu), ImGuiChildFlags_Borders))
     {
         bool testOngoing = m_data->testOngoing;
 
@@ -494,6 +454,7 @@ void GraphicInterface::drawLeftMenuBar()
                 break;
             case mab::MdMode_E::VELOCITY_PID:
                 drawParametersVelocity();
+                ImGui::Separator();
                 drawSetTargetVelocity();
                 drawSetVelocityWindow();
                 drawSaveButton();
@@ -501,12 +462,14 @@ void GraphicInterface::drawLeftMenuBar()
             case mab::MdMode_E::POSITION_PID:
                 drawParametersVelocity();
                 drawParametersPosition();
+                ImGui::Separator();
                 drawSetTargetPosition();
                 drawSetPositionWindow();
                 drawSaveButton();
                 break;
             case mab::MdMode_E::IMPEDANCE:
                 drawParametersImpedance();
+                ImGui::Separator();
                 drawSetTargetPosition();
                 drawSetPositionWindow();
                 drawSaveButton();
@@ -516,6 +479,7 @@ void GraphicInterface::drawLeftMenuBar()
                 break;
             case mab::MdMode_E::VELOCITY_PROFILE:
                 drawParametersVelocity();
+                ImGui::Separator();
                 drawSetTargetVelocity();
                 drawSetTargetAcceleration();
                 drawSetTargetDeceleration();
@@ -525,6 +489,7 @@ void GraphicInterface::drawLeftMenuBar()
             case mab::MdMode_E::POSITION_PROFILE:
                 drawParametersVelocity();
                 drawParametersPosition();
+                ImGui::Separator();
                 drawSetTargetPosition();
                 drawSetTargetAcceleration();
                 drawSetTargetDeceleration();
@@ -540,15 +505,12 @@ void GraphicInterface::drawLeftMenuBar()
         }
     }
     ImGui::EndChild();
-    ImGui::PopStyleVar(2);
+    GuiStyle::endChildOuterStyle();
 }
 
 void GraphicInterface::drawRightMenuBar()
 {
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                        ImVec2(GuiStyle::windowsPadding, GuiStyle::insideWindowPadding));
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(GuiStyle::insideWindowPadding, GuiStyle::insideWindowPadding));
+    GuiStyle::childOuterStyle();
     if (ImGui::BeginChild("Right Menu",
                           ImVec2(rightMenuBarWidth, 0),
                           ImGuiChildFlags_Borders,
@@ -627,15 +589,14 @@ void GraphicInterface::drawRightMenuBar()
         }
     }
     ImGui::EndChild();
-    ImGui::PopStyleVar(2);
+    GuiStyle::endChildOuterStyle();
 }
 
 void GraphicInterface::drawMainMenu()
 {
     float mainWidth = showCursorMenu ? -(rightMenuBarWidth + GuiStyle::windowsPadding) : 0.0f;
 
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                        ImVec2(GuiStyle::windowsPadding, GuiStyle::insideWindowPadding));
+    GuiStyle::childOuterStyle();
     if (ImGui::BeginChild(
             "Main menu", ImVec2(mainWidth, 0), ImGuiChildFlags_Borders, GuiStyle::flagsBackMenu))
     {
@@ -749,7 +710,7 @@ void GraphicInterface::drawMainMenu()
     }
 
     ImGui::EndChild();
-    ImGui::PopStyleVar();
+    GuiStyle::endChildOuterStyle();
 }
 
 void GraphicInterface::drawErrorPopup()
@@ -764,11 +725,7 @@ void GraphicInterface::drawErrorPopup()
 
     ImGui::PushStyleColor(ImGuiCol_TitleBgActive, GuiStyle::mabColor);
 
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                        ImVec2(GuiStyle::insideWindowPadding, GuiStyle::insideWindowPadding));
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(GuiStyle::insideWindowPadding, GuiStyle::insideWindowPadding));
-
+    GuiStyle::childInnerStyle();
     if (ImGui::BeginPopupModal(popupTitle, nullptr, flags))
     {
         ImGui::SetWindowFontScale(1.3f);
@@ -788,13 +745,56 @@ void GraphicInterface::drawErrorPopup()
 
         ImGui::EndPopup();
     }
-
-    ImGui::PopStyleVar(2);
+    GuiStyle::endChildInnerStyle();
     ImGui::PopStyleColor(1);
+}
+
+void GraphicInterface::drawTopCANdleStatusMenu()
+{
+    bool candleAvailable = m_data->candleAvailable;
+
+    GuiStyle::childInnerStyle();
+    if (ImGui::BeginChild("RightAlignedChild", ImVec2(0, 0), ImGuiChildFlags_Borders))
+    {
+        float  radius = 5.0f;
+        ImVec2 pos    = ImGui::GetCursorScreenPos();
+        ImVec2 center = ImVec2(pos.x + radius, pos.y + ImGui::GetTextLineHeight() * 0.5f);
+
+        ImVec4 chosenColorVec4 = candleAvailable ? GuiStyle::greenColor : GuiStyle::redColor;
+        ImU32  colorU32        = ImGui::GetColorU32(chosenColorVec4);
+
+        ImGui::GetWindowDrawList()->AddCircleFilled(center, radius, colorU32);
+
+        ImGui::Dummy(ImVec2(radius * 1.5f, 0.0f));
+
+        ImGui::SameLine();
+        ImGui::Text("CANdle");
+
+        ImGui::SameLine();
+        ImGui::Text("|");
+
+        ImGui::SameLine();
+        ImGui::TextUnformatted(m_data->busTypeToString(m_data->busType));
+
+        ImGui::SameLine();
+        ImGui::Text("|");
+
+        ImGui::SameLine();
+        ImGui::TextUnformatted(m_data->baudrateToString(m_data->candleDatarate));
+
+        ImGui::SameLine();
+        ImGui::Text("|");
+
+        ImGui::SameLine();
+        ImGui::Text("%zu drives", guiMDStatus.size());
+    }
+    ImGui::EndChild();
+    GuiStyle::endChildInnerStyle();
 }
 
 void GraphicInterface::drawTuningMenu()
 {
+    GuiStyle::childOuterStyle();
     if (ImGui::BeginChild(
             "LeftColumn", ImVec2(GuiStyle::leftMenuBarWidth, 0), ImGuiChildFlags_None))
     {
@@ -802,6 +802,7 @@ void GraphicInterface::drawTuningMenu()
         drawTestMenuBar();
     }
     ImGui::EndChild();
+    GuiStyle::endChildOuterStyle();
 
     ImGui::SameLine();
 
@@ -1002,6 +1003,8 @@ void GraphicInterface::drawSelectMDButton()
         chosenIDstr = "Select Your MD";
 
     GuiStyle::comboStyle("MD Select");
+    ImGui::SetCursorPosX(GuiStyle::leftMenuPadding);
+    ImGui::SetNextItemWidth(GuiStyle::leftMenuBarWidth - 2 * GuiStyle::leftMenuPadding);
     if (ImGui::BeginCombo("##MD Select", chosenIDstr.c_str()))
     {
         if (ImGui::Selectable("None"))
@@ -1049,8 +1052,9 @@ void GraphicInterface::drawSelectModeButton()
         ImGui::BeginDisabled();
     }
 
-    std::string comboText = "MD Motion Mode";
-    GuiStyle::comboStyle(comboText.c_str());
+    GuiStyle::comboStyle("MD Motion Mode");
+    ImGui::SetCursorPosX(GuiStyle::leftMenuPadding);
+    ImGui::SetNextItemWidth(GuiStyle::leftMenuBarWidth - 2 * GuiStyle::leftMenuPadding);
     if (ImGui::BeginCombo("##MD Motion Mode", getModeName(m_data->currentMode)))
     {
         if (ImGui::Selectable("None", m_data->currentMode == mab::MdMode_E::IDLE))
@@ -1346,6 +1350,7 @@ void GraphicInterface::drawParametersVelocity()
 
     const uint8_t numberOfColumns = 3;
 
+    ImGui::Separator();
     GuiStyle::centerText("Velocity loop - PID tuning parameters");
 
     ImGui::SetCursorPosX(GuiStyle::leftMenuPadding);
@@ -1427,6 +1432,7 @@ void GraphicInterface::drawParametersPosition()
 
     const uint8_t numberOfColumns = 3;
 
+    ImGui::Separator();
     GuiStyle::centerText("Position loop - PID tuning parameters");
 
     ImGui::SetCursorPosX(GuiStyle::leftMenuPadding);
@@ -1508,6 +1514,7 @@ void GraphicInterface::drawParametersImpedance()
 
     const uint8_t numberOfColumns = 3;
 
+    ImGui::Separator();
     GuiStyle::centerText("Impedance PD tuner");
 
     ImGui::SetCursorPosX(GuiStyle::leftMenuPadding);
@@ -2029,19 +2036,19 @@ void GraphicInterface::plotCursors(
 
         ImPlotDragToolFlags flags = ImPlotDragToolFlags_NoFit;
 
-        bool dragA = ImPlot::DragLineX(0, &xA, colA, 1.0f, flags);
-        bool dragB = ImPlot::DragLineX(1, &xB, colB, 1.0f, flags);
+        bool dragA = ImPlot::DragLineX(0, &xA, GuiStyle::colA, 1.0f, flags);
+        bool dragB = ImPlot::DragLineX(1, &xB, GuiStyle::colB, 1.0f, flags);
 
-        ImPlot::TagX(xA, colA, "tA");
-        ImPlot::TagX(xB, colB, "tB");
+        ImPlot::TagX(xA, GuiStyle::colA, "tA");
+        ImPlot::TagX(xB, GuiStyle::colB, "tB");
 
         if (dragA || ImGui::IsItemHovered())
         {
-            ImPlot::Annotation(xA, dynamicY, colA, offsetXA, true, "tA: %.3fs", xA);
+            ImPlot::Annotation(xA, dynamicY, GuiStyle::colA, offsetXA, true, "tA: %.3fs", xA);
         }
         if (dragB || ImGui::IsItemHovered())
         {
-            ImPlot::Annotation(xB, dynamicY, colB, offsetXB, true, "tB: %.3fs", xB);
+            ImPlot::Annotation(xB, dynamicY, GuiStyle::colB, offsetXB, true, "tB: %.3fs", xB);
         }
     }
 
@@ -2067,21 +2074,21 @@ void GraphicInterface::plotCursors(
 
         ImPlotDragToolFlags flags = ImPlotDragToolFlags_NoFit;
 
-        bool dragA  = ImPlot::DragLineY(0, &yA, colA, 1.0f, flags);
+        bool dragA  = ImPlot::DragLineY(0, &yA, GuiStyle::colA, 1.0f, flags);
         bool hoverA = ImGui::IsItemHovered();
-        bool dragB  = ImPlot::DragLineY(1, &yB, colB, 1.0f, flags);
+        bool dragB  = ImPlot::DragLineY(1, &yB, GuiStyle::colB, 1.0f, flags);
         bool hoverB = ImGui::IsItemHovered();
 
-        ImPlot::TagY(yA, colA, "yA");
-        ImPlot::TagY(yB, colB, "yB");
+        ImPlot::TagY(yA, GuiStyle::colA, "yA");
+        ImPlot::TagY(yB, GuiStyle::colB, "yB");
 
         if (dragA || hoverA)
         {
-            ImPlot::Annotation(dynamicX, yA, colA, offsetYA, true, "yA: %.3f", yA);
+            ImPlot::Annotation(dynamicX, yA, GuiStyle::colA, offsetYA, true, "yA: %.3f", yA);
         }
         if (dragB || hoverB)
         {
-            ImPlot::Annotation(dynamicX, yB, colB, offsetYB, true, "yB: %.3f", yB);
+            ImPlot::Annotation(dynamicX, yB, GuiStyle::colB, offsetYB, true, "yB: %.3f", yB);
         }
     }
 }

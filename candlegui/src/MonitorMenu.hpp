@@ -6,7 +6,7 @@
 
 #include "commonMemory.hpp"
 
-class MonitorMenu : private GuiStyle
+class MonitorMenu
 {
   public:
     MonitorMenu(std::shared_ptr<commonMemory_S> commonMemory, ImGuiIO& io);

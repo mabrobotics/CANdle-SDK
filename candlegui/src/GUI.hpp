@@ -11,7 +11,7 @@
 #include "MonitorMenu.hpp"
 #include "BusActuatorsMenu.hpp"
 
-class GraphicInterface : private GuiStyle
+class GraphicInterface
 {
   public:
     GraphicInterface(std::shared_ptr<commonMemory_S> commonMemory, ImGuiIO& io);
@@ -42,7 +42,7 @@ class GraphicInterface : private GuiStyle
 
     float leftMenuBarHeight;
     float rightMenuBarWidth  = 250.0f;
-    float testMenuBarHeight  = 170.0f;
+    float testMenuBarHeight  = 0.0f;
     float errorMenuBarHeight = 40.0f;
     float topBarHeight       = 40.0f;
     float lowBarHeight       = 20.0f;
@@ -129,6 +129,8 @@ class GraphicInterface : private GuiStyle
     void drawRightMenuBar();
     void drawMainMenu();
     void drawErrorPopup();
+
+    void drawTopCANdleStatusMenu();
 
     void drawTuningMenu();
     void drawMonitorButton();

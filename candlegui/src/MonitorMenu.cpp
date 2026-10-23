@@ -1,5 +1,6 @@
 #include "MonitorMenu.hpp"
 #include "BusActuatorsMenu.hpp"
+#include "GuiStyle.hpp"
 #include "commonMemory.hpp"
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -46,10 +47,7 @@ void MonitorMenu::drawMonitorMenu()
 
 void MonitorMenu::drawActuatorMenu()
 {
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                        ImVec2(GuiStyle::leftMenuPadding, GuiStyle::insideWindowPadding));
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(GuiStyle::insideWindowPadding / 2, GuiStyle::insideWindowPadding));
+    GuiStyle::childOuterStyle();
     if (ImGui::BeginChild("Actuators Menu",
                           ImVec2(GuiStyle::leftMenuBarWidth, -canBusInfoBarHeight),
                           ImGuiChildFlags_Borders,
@@ -94,30 +92,24 @@ void MonitorMenu::drawActuatorMenu()
         }
     }
     ImGui::EndChild();
-    ImGui::PopStyleVar(2);
+    GuiStyle::endChildOuterStyle();
 }
 
 void MonitorMenu::drawCanBusInfoMenu()
 {
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                        ImVec2(GuiStyle::leftMenuPadding, GuiStyle::insideWindowPadding));
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(GuiStyle::insideWindowPadding / 2, GuiStyle::insideWindowPadding));
+    GuiStyle::childOuterStyle();
     if (ImGui::BeginChild(
             "Can Bus Info Menu", ImVec2(0, 0), ImGuiChildFlags_Borders, GuiStyle::flagsBackMenu))
     {
         ImGui::Text("CAN Bus Info");
     }
     ImGui::EndChild();
-    ImGui::PopStyleVar(2);
+    GuiStyle::endChildOuterStyle();
 }
 
 void MonitorMenu::drawPlotsMenu()
 {
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(GuiStyle::insideWindowPadding, GuiStyle::insideWindowPadding));
-
+    GuiStyle::childOuterStyle();
     if (ImGui::BeginChild("##Plots Menu",
                           ImVec2(GuiStyle::middleWindowWidth, -liveValuesMenuHeight),
                           ImGuiChildFlags_None,
@@ -127,9 +119,7 @@ void MonitorMenu::drawPlotsMenu()
         const ImVec2 spacing = ImGui::GetStyle().ItemSpacing;
         const ImVec2 cellSize((avail.x - spacing.x) * 0.5f, (avail.y - spacing.y) * 0.5f);
 
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                            ImVec2(GuiStyle::leftMenuPadding, GuiStyle::insideWindowPadding));
-
+        GuiStyle::childOuterStyle();
         if (ImGui::BeginChild("##Plot1", cellSize, ImGuiChildFlags_Borders))
         {
             ImGui::PushFont(nullptr, 18.0f);
@@ -170,30 +160,24 @@ void MonitorMenu::drawPlotsMenu()
         }
         ImGui::EndChild();
 
-        ImGui::PopStyleVar();
+        GuiStyle::endChildOuterStyle();
     }
     ImGui::EndChild();
-    ImGui::PopStyleVar(2);
+    GuiStyle::endChildOuterStyle();
 }
 
 void MonitorMenu::drawLiveValuesMenu()
 {
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                        ImVec2(GuiStyle::leftMenuPadding, GuiStyle::insideWindowPadding));
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(GuiStyle::insideWindowPadding / 2, GuiStyle::insideWindowPadding));
-
+    GuiStyle::childOuterStyle();
     if (ImGui::BeginChild(
             "##Live Values Menu", ImVec2(0, 0), ImGuiChildFlags_Borders, GuiStyle::flagsBackMenu))
     {
         ImGui::Text("Live Values");
 
-        ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerH |
-                                ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingStretchProp;
-
         ImVec2 tableSize = ImVec2(0.0f, ImGui::GetContentRegionAvail().y);
 
-        if (ImGui::BeginTable("##LiveValuesTable", 7, flags, tableSize))
+        GuiStyle::tableStyle();
+        if (ImGui::BeginTable("##LiveValuesTable", 7, GuiStyle::flagsTable, tableSize))
         {
             ImGui::TableSetupScrollFreeze(0, 1);
             ImGui::TableSetupColumn("ID");
@@ -231,28 +215,26 @@ void MonitorMenu::drawLiveValuesMenu()
                 else if (status.ok)
                     ImGui::TextColored(GuiStyle::greenColor, "OK");
                 else
-                    ImGui::TextColored(redColor, "ERR");
+                    ImGui::TextColored(GuiStyle::redColor, "ERR");
             }
             ImGui::EndTable();
         }
+        GuiStyle::endTableStyle();
     }
     ImGui::EndChild();
-    ImGui::PopStyleVar(2);
+    GuiStyle::endChildOuterStyle();
 }
 
 void MonitorMenu::drawPlaceHolderMenu()
 {
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
-                        ImVec2(GuiStyle::leftMenuPadding, GuiStyle::insideWindowPadding));
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
-                        ImVec2(GuiStyle::insideWindowPadding / 2, GuiStyle::insideWindowPadding));
+    GuiStyle::childOuterStyle();
     if (ImGui::BeginChild(
             "##Placeholder Menu", ImVec2(0, 0), ImGuiChildFlags_Borders, GuiStyle::flagsBackMenu))
     {
         ImGui::Text("Placeholders");
     }
     ImGui::EndChild();
-    ImGui::PopStyleVar(2);
+    GuiStyle::endChildOuterStyle();
 }
 
 /*
