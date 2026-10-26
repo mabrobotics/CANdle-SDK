@@ -236,4 +236,4 @@ For more information check out our documentation page [here](https://mabrobotics
 
 ## License
 
-CANdle-SDK is released under the [MIT License](LICENSE.txt).
+CANdle-SDK is released under the [MIT License](LICENSE.txt). Bundled third-party components are listed with their licenses in [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt).

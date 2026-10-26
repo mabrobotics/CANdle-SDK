@@ -110,6 +110,9 @@ target_compile_definitions(
 
 set(CANDLEGUI_CPACK_COMPONENTS candlegui)
 
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../LICENSE.txt" "${CMAKE_CURRENT_SOURCE_DIR}/../THIRD_PARTY_NOTICES.txt"
+        DESTINATION share/doc/mdgui COMPONENT candlegui)
+
 if(WIN32)
     install(TARGETS mdgui RUNTIME DESTINATION . COMPONENT candlegui)
     install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/fonts" DESTINATION . COMPONENT candlegui)

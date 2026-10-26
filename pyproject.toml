@@ -20,9 +20,9 @@ authors = [{ name = "MAB Robotics", email = "support@mabrobotics.pl" }]
 maintainers = [{ name = "MAB Robotics", email = "support@mabrobotics.pl" }]
 description = "Python package for controlling MD-based actuators"
 readme = { file = "README.md", content-type = "text/markdown" }
-license = { file = "LICENSE.txt" }
+license = "MIT"
+license-files = ["LICENSE.txt", "THIRD_PARTY_NOTICES.txt"]
 classifiers = [
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Natural Language :: English",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",

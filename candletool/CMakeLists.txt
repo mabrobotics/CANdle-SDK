@@ -102,6 +102,12 @@ add_custom_command(
 
 set(CANDLETOOL_CPACK_COMPONENTS candletool _configs)
 
+install(
+  FILES ${CMAKE_CURRENT_SOURCE_DIR}/../LICENSE.txt
+        ${CMAKE_CURRENT_SOURCE_DIR}/../THIRD_PARTY_NOTICES.txt
+  DESTINATION share/doc/candletool
+  COMPONENT candletool)
+
 if(WIN32)
   add_executable(candle-win-driver IMPORTED
     ${CMAKE_CURRENT_SOURCE_DIR}/tools/candlesdk-win-driver.exe)
