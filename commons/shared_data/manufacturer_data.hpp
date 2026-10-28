@@ -21,6 +21,7 @@ namespace mab
         MD80EC         = 0x06,
         MD200          = 0x07,
         MD80HV_HS      = 0x08,
+        MD80ECAT       = 0x09,
 
         MD0004 = 0xB0,
 
