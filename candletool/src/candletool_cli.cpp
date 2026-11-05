@@ -92,6 +92,10 @@ namespace mab
         // when already root, e.g. in containers that have no sudo.
         std::string cmd = geteuid() == 0 ? "" : "sudo ";
         cmd += m_assumeYes ? "apt-get install -y " : "apt-get install ";
+        // Nightlies keep the version of the release they follow, so apt would otherwise skip a
+        // package that matches the installed version or refuse one that is lower
+        if (m_nightly || m_stable)
+            cmd += "--reinstall --allow-downgrades ";
         cmd += "\"" + path.string() + "\"";
         return !executeCommand(cmd);
 #elif _WIN32
@@ -151,6 +155,13 @@ namespace mab
             rootCli->add_subcommand("update", "Automatically update candletool to newest version.");
         updateCandletool->add_flag(
             "-y,--yes", m_assumeYes, "Install without asking for confirmation (for scripts).");
+        auto* nightlyFlag = updateCandletool->add_flag(
+            "--devel,--nightly",
+            m_nightly,
+            "Install the newest nightly build of the devel branch instead of the latest stable "
+            "release.");
+        updateCandletool->add_flag("--stable", m_stable, "Install the latest stable release.")
+            ->excludes(nightlyFlag);
 
         updateCandletool->callback(
             [this, ctx]()
@@ -160,38 +171,68 @@ namespace mab
                 constexpr CandletoolVersion currentVersion{
                     CANDLETOOL_VMAJOR, CANDLETOOL_VMINOR, CANDLETOOL_VREVISION};
 
-                std::optional<std::string> body = fetchUrl(repoUrl);
-                if (!body)
+                // json_parse returns a single malloc'd block holding the whole tree
+                using JsonPtr     = std::unique_ptr<json_value_s, decltype(&std::free)>;
+                auto fetchRelease = [this](const std::string& url)
+                {
+                    std::optional<std::string> body = fetchUrl(url);
+                    return JsonPtr(body ? json_parse(body->data(), body->size()) : nullptr,
+                                   &std::free);
+                };
+                JsonPtr stable  = fetchRelease(repoUrl);
+                JsonPtr nightly = fetchRelease(nightlyUrl);
+                if (m_nightly ? !nightly : !stable)
                 {
                     m_logger.error(
-                        "Failed to reach GitHub API. Make sure curl is installed and the "
-                        "network is available.");
-                    return;
-                }
-                // json_parse returns a single malloc'd block holding the whole tree
-                std::unique_ptr<json_value_s, decltype(&std::free)> release(
-                    json_parse(body->data(), body->size()), &std::free);
-                if (!release)
-                {
-                    m_logger.error("Failed to parse release info.");
-                    return;
-                }
-                std::string latestTag     = jsonString(release.get(), "tag_name");
-                auto        latestVersion = parseVersion(latestTag);
-                if (!latestVersion)
-                {
-                    m_logger.error("Unexpected release tag \"%s\" from GitHub.", latestTag.c_str());
+                        "Failed to get release info from GitHub. Make sure curl is installed and "
+                        "the network is available.");
                     return;
                 }
 
-                // Builds newer than the latest release (e.g. from devel) are not downgraded
-                if (*latestVersion <= currentVersion)
+                std::string stableTag     = jsonString(stable.get(), "tag_name");
+                auto        stableVersion = parseVersion(stableTag);
+                if (!m_nightly && !stableVersion)
                 {
-                    m_logger.info("candletool %s is up to date (latest release: %s).",
-                                  CANDLESDK_VERSION,
-                                  latestTag.c_str());
+                    m_logger.error("Unexpected release tag \"%s\" from GitHub.", stableTag.c_str());
                     return;
                 }
+                // Only CI release builds are tagged 'r', so a devel build of the same version is
+                // not taken for the stable release
+                bool stableInstalled = CANDLETOOL_VTAG == 'r' && stableVersion == currentVersion;
+
+                // The nightly tag is moved on every devel build, so it carries no version. Its
+                // release name holds the date and commit, e.g. "Nightly 2026-10-28 (devel
+                // abc1234)", and target_commitish the full hash of that commit.
+                std::string      nightlyName      = jsonString(nightly.get(), "name");
+                std::string      commit           = jsonString(nightly.get(), "target_commitish");
+                std::string_view own              = CANDLESDK_VERSION_HASH;
+                bool             nightlyInstalled = !own.empty() && commit.starts_with(own);
+
+                bool upToDate;
+                if (m_nightly)
+                    upToDate = nightlyInstalled;
+                else if (m_stable)
+                    upToDate = stableInstalled;
+                else  // builds newer than the latest release (e.g. from devel) are not downgraded
+                    upToDate = *stableVersion <= currentVersion;
+
+                if (upToDate)
+                {
+                    m_logger.info("candletool %s is up to date. Available versions:",
+                                  CANDLESDK_VERSION);
+                    if (stable)
+                        m_logger.info("  stable: %s%s",
+                                      stableTag.c_str(),
+                                      stableInstalled ? " (installed)" : "");
+                    if (nightly)
+                        m_logger.info("  devel:  %s%s",
+                                      nightlyName.c_str(),
+                                      nightlyInstalled ? " (installed)" : "");
+                    return;
+                }
+
+                json_value_s* release   = m_nightly ? nightly.get() : stable.get();
+                std::string   latestTag = m_nightly ? nightlyName : stableTag;
 
                 m_logger.info(
                     "Update available! Found version: %s. Current version installed is: %s",
@@ -220,7 +261,7 @@ namespace mab
 
                 std::string   downloadUrl;
                 std::string   digest;  // "sha256:<hex>", empty if GitHub has none for the asset
-                json_array_s* assets = jsonArray(release.get(), "assets");
+                json_array_s* assets = jsonArray(release, "assets");
                 for (auto* asset = assets ? assets->start : nullptr; asset; asset = asset->next)
                 {
                     std::string name = jsonString(asset->value, "name");
@@ -267,10 +308,10 @@ namespace mab
                 // directory (not list or write it) so it can, instead of printing a notice about
                 // falling back to root; the package itself stays writable only by us.
                 namespace fs = std::filesystem;
-                fs::permissions(downloadDirectory,
-                                fs::perms::owner_all | fs::perms::group_exec |
-                                    fs::perms::others_exec,
-                                ec);
+                fs::permissions(
+                    downloadDirectory,
+                    fs::perms::owner_all | fs::perms::group_exec | fs::perms::others_exec,
+                    ec);
 #endif
                 std::string fileName = downloadUrl.substr(downloadUrl.find_last_of('/') + 1);
                 std::filesystem::path packagePath = downloadDirectory / fileName;

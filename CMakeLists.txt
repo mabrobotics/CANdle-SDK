@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5...3.25)
 
-include(git_func.cmake)
+include(cmake/helpers.cmake)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -9,6 +9,7 @@ set(CANDLESDK_VERSION_2 5)
 set(CANDLESDK_VERSION_3 2)
 set(CANDLESDK_VERSION
     ${CANDLESDK_VERSION_1}.${CANDLESDK_VERSION_2}.${CANDLESDK_VERSION_3})
+check_pyproject_version(${CANDLESDK_VERSION})
 add_compile_definitions(CANDLESDK_VERSION="${CANDLESDK_VERSION}")
 add_compile_definitions(CANDLESDK_VERSION_HASH="${GIT_HASH}")
 get_tag(CANDLESDK_VERSION_TAG)

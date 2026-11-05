@@ -1,5 +1,6 @@
 #include "md_cli.hpp"
 
+#include "MD_strings.hpp"
 #include "eds_selection.hpp"
 #include <cstdint>
 #include <cstdio>
@@ -491,13 +492,14 @@ namespace mab
                         // Legacy firmware reports MD20 as HD10 (5), every other board has 1 mOhm
                         MDRegisters_S regs;
                         if (md->readRegister(regs.legacyHardwareVersion) != MD::Error_t::OK)
-                            m_logger.warn("Could not read hardware version, shunt resistance "
-                                          "is not checked");
+                            m_logger.warn(
+                                "Could not read hardware version, shunt resistance "
+                                "is not checked");
                         else
                         {
                             const bool   isMd20   = regs.legacyHardwareVersion.value == 5;
                             const double expected = isMd20 ? 0.004 : 0.001;
-                            const double shunt = std::strtod(cfg.value[i].c_str(), nullptr);
+                            const double shunt    = std::strtod(cfg.value[i].c_str(), nullptr);
                             if (std::abs(shunt - expected) > 1e-6)
                             {
                                 m_logger.warn(
@@ -520,8 +522,7 @@ namespace mab
                     std::optional<std::string> raw = cfgToRaw(entry, cfg.value[i]);
                     if (!raw.has_value())
                     {
-                        m_logger.error(
-                            "Could not set value for %s.%s", entry.section, entry.key);
+                        m_logger.error("Could not set value for %s.%s", entry.section, entry.key);
                         return;
                     }
                     if (registerWrite(*md, entry.mdReg, raw.value(), true))
@@ -819,6 +820,11 @@ namespace mab
                         m_logger << " - velocity: " << std::setprecision(1)
                                  << readableRegisters.auxEncoderVelocity.value << " rad/s"
                                  << std::endl;
+                        if (readableRegisters.auxEncoderMode.value ==
+                            MDAuxEncoderModeValue_S::toNumeric("DUAL"))
+                            m_logger << " - abs position: " << std::setprecision(2)
+                                     << readableRegisters.dualEncoderAbsPosition.value << " rad"
+                                     << std::endl;
                     }
                 }
 
@@ -1497,10 +1503,11 @@ namespace mab
             size = length;
         else
         {
-            m_logger.error("Unknown register type %s! Use u8, i8, u16, i16, u32, i32, f32 or "
-                           "char[N] with N up to %u",
-                           type.c_str(),
-                           (unsigned int)sizeof(value.str) - 1);
+            m_logger.error(
+                "Unknown register type %s! Use u8, i8, u16, i16, u32, i32, f32 or "
+                "char[N] with N up to %u",
+                type.c_str(),
+                (unsigned int)sizeof(value.str) - 1);
             return std::nullopt;
         }
 
