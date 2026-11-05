@@ -57,6 +57,7 @@ set(CANDLEGUI_SOURCES
     src/MonitorMenu.cpp
     src/BusActuatorsMenu.cpp
     src/HardwareCandle.cpp
+    src/Recorder.cpp
     src/GuiStyle.cpp
     logo.rc
    )

@@ -18,8 +18,8 @@ class BusActuatorMenu
     struct MDGroup_S
     {
         std::string               groupName;
-        bool                      isSelected = false;
         std::vector<mab::canId_t> mdIds;
+        bool                      isSelected = false;
     };
 
     enum class ActionType_E
@@ -52,7 +52,8 @@ class BusActuatorMenu
     // Add Group Popup
     char        newGroupName[64] = "";
     std::string creatingGroupError;
-    bool        addGroupPopupOpen = false;
+    bool        addGroupPopupOpen       = false;
+    bool        showAlreadyInGroupError = false;
 
     // Bus & Actuators draw functions
     void candleInfo();
@@ -72,6 +73,8 @@ class BusActuatorMenu
     void drawAddGroupButton();
 
     // Helper Functions
-    bool groupNameCheck(const std::string& name);
-    void drawAddGroupPopup();
+    const std::string getGroupName(mab::canId_t id);
+    void              deleteFromGroup(mab::canId_t id);
+    bool              groupNameCheck(const std::string& name);
+    void              drawAddGroupPopup();
 };

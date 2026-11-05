@@ -29,7 +29,13 @@ void BusActuatorMenu::drawBusActuatorMenu()
     }
     ImGui::EndChild();
 
-    if (chosenAction != ActionType_E::NONE)
+    bool areMDsOnTheBus;
+    {
+        std::lock_guard<std::mutex> lock(m_data->mtx);
+        areMDsOnTheBus = m_data->mdStatus.empty();
+    }
+
+    if (chosenAction != ActionType_E::NONE && !areMDsOnTheBus)
     {
         ImGui::SameLine();
         drawActionMenu();
@@ -217,7 +223,7 @@ void BusActuatorMenu::drawFoundOnBusMenu()
             ImGui::TableSetupColumn("Model", ImGuiTableColumnFlags_WidthStretch, 1.0f);
             ImGui::TableSetupColumn("Firmware", ImGuiTableColumnFlags_WidthStretch, 1.0f);
             ImGui::TableSetupColumn("Calibration", ImGuiTableColumnFlags_WidthStretch, 1.0f);
-            ImGui::TableSetupColumn("Notes", ImGuiTableColumnFlags_WidthStretch, 0.8f);
+            ImGui::TableSetupColumn("Status", ImGuiTableColumnFlags_WidthStretch, 0.8f);
             ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_WidthFixed, 100.0f);
             ImGui::TableHeadersRow();
 
@@ -228,7 +234,8 @@ void BusActuatorMenu::drawFoundOnBusMenu()
 
                 ImGui::TableNextColumn();
                 ImGui::AlignTextToFramePadding();
-                ImGui::TextUnformatted("—");  // Group
+                const std::string groupName = getGroupName(md.id);
+                ImGui::TextUnformatted(groupName.empty() ? "—" : groupName.c_str());  // Group
 
                 ImGui::TableNextColumn();
                 ImGui::AlignTextToFramePadding();
@@ -236,19 +243,19 @@ void BusActuatorMenu::drawFoundOnBusMenu()
 
                 ImGui::TableNextColumn();
                 ImGui::AlignTextToFramePadding();
-                ImGui::TextUnformatted("—");  // Model
+                ImGui::TextUnformatted("—");  // Model TODO
 
                 ImGui::TableNextColumn();
                 ImGui::AlignTextToFramePadding();
-                ImGui::TextUnformatted("—");  // Firmware
+                ImGui::TextUnformatted("—");  // Firmware TODO
 
                 ImGui::TableNextColumn();
                 ImGui::AlignTextToFramePadding();
-                ImGui::TextUnformatted("—");  // Calibration
+                ImGui::TextUnformatted("—");  // Calibration TODO
 
                 ImGui::TableNextColumn();
                 ImGui::AlignTextToFramePadding();
-                ImGui::TextUnformatted(md.ok ? "OK" : "Error");  // Notes
+                ImGui::TextUnformatted(md.quickStatusIsOK ? "OK" : "Error");  // Status
 
                 ImGui::TableNextColumn();
                 GuiStyle::comboStyle(nullptr, 3.0f);
@@ -257,9 +264,10 @@ void BusActuatorMenu::drawFoundOnBusMenu()
                 {
                     if (ImGui::Selectable("Add to group"))
                     {
-                        chosenAction    = ActionType_E::ADD_TO_GROUP;
-                        chosenGroupName = defaultGroupName;
-                        idCopy          = md.id;
+                        chosenAction            = ActionType_E::ADD_TO_GROUP;
+                        chosenGroupName         = defaultGroupName;
+                        idCopy                  = md.id;
+                        showAlreadyInGroupError = false;
                     }
                     if (ImGui::Selectable("Set Limits"))
                     {
@@ -311,6 +319,8 @@ void BusActuatorMenu::drawActionMenu()
 
 void BusActuatorMenu::drawAddToGroupMenu()
 {
+    const std::string currentGroup = getGroupName(idCopy);
+
     ImGui::Text("Chosen MD");
     GuiStyle::childInnerStyle();
     if (ImGui::BeginChild(
@@ -329,10 +339,8 @@ void BusActuatorMenu::drawAddToGroupMenu()
         {
             chosenGroupName = defaultGroupName;
         }
-        for (size_t i = 0; i < MDGroups.size(); i++)
+        for (const MDGroup_S& group : MDGroups)
         {
-            MDGroup_S group = MDGroups[i];
-
             if (ImGui::Selectable(group.groupName.c_str()))
             {
                 chosenGroupName = group.groupName;
@@ -342,6 +350,58 @@ void BusActuatorMenu::drawAddToGroupMenu()
     }
     GuiStyle::endChildInnerStyle();
     GuiStyle::endComboStyle();
+
+    GuiStyle::buttonStyle();
+    ImGui::BeginDisabled(chosenGroupName == defaultGroupName);
+    std::string label;
+    if (chosenGroupName != defaultGroupName)
+        label = "Add to group " + chosenGroupName + "##addToGroup";
+    else
+        label = "Add to group";
+    if (ImGui::Button(
+            label.c_str(),
+            ImVec2(actionMenuWidth - 2 * GuiStyle::leftMenuPadding, GuiStyle::largeButtonHeight)))
+    {
+        if (currentGroup == chosenGroupName)
+        {
+            showAlreadyInGroupError = true;
+        }
+        else
+        {
+            deleteFromGroup(idCopy);
+            for (MDGroup_S& group : MDGroups)
+            {
+                if (group.groupName == chosenGroupName)
+                {
+                    group.mdIds.push_back(idCopy);
+                    break;
+                }
+            }
+            showAlreadyInGroupError = false;
+        }
+    }
+    ImGui::EndDisabled();
+    GuiStyle::endButtonStyle();
+
+    GuiStyle::buttonStyle();
+    ImGui::BeginDisabled(currentGroup.empty());
+    if (ImGui::Button(
+            "Remove from group",
+            ImVec2(actionMenuWidth - 2 * GuiStyle::leftMenuPadding, GuiStyle::largeButtonHeight)))
+    {
+        deleteFromGroup(idCopy);
+        showAlreadyInGroupError = false;
+    }
+    ImGui::EndDisabled();
+    GuiStyle::endButtonStyle();
+
+    if (showAlreadyInGroupError && currentGroup == chosenGroupName)
+    {
+        ImGui::TextColored(GuiStyle::redColor,
+                           "MD%u is already in group %s",
+                           static_cast<unsigned>(idCopy),
+                           currentGroup.c_str());
+    }
 }
 
 /*
@@ -434,6 +494,26 @@ void BusActuatorMenu::drawAddGroupButton()
 Helper Functions
 
 */
+
+const std::string BusActuatorMenu::getGroupName(mab::canId_t id)
+{
+    for (const MDGroup_S& group : MDGroups)
+    {
+        const std::vector<mab::canId_t>& ids = group.mdIds;
+        if (std::find(ids.begin(), ids.end(), id) != ids.end())
+            return group.groupName;
+    }
+    return "";
+}
+
+void BusActuatorMenu::deleteFromGroup(mab::canId_t id)
+{
+    for (MDGroup_S& group : MDGroups)
+    {
+        std::vector<mab::canId_t>& ids = group.mdIds;
+        ids.erase(std::remove(ids.begin(), ids.end(), id), ids.end());
+    }
+}
 
 bool BusActuatorMenu::groupNameCheck(const std::string& rawName)
 {
