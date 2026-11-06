@@ -48,6 +48,9 @@ class GraphicInterface
     float lowBarHeight       = 20.0f;
     float marginPlot         = 10.f;
 
+    float recordChildWidth       = 0.0f;
+    float candleStatusChildWidth = 0.0f;
+
     float rightMenuButtonWidth = rightMenuBarWidth - 20.f;
 
     float saveButtonWidth = GuiStyle::leftMenuBarWidth - 100.f;
@@ -106,7 +109,8 @@ class GraphicInterface
     bool cursorsHorizontalPositionEnabled = false;
     bool cursorsHorizontalTorqueEnabled   = false;
 
-    bool showCursorMenu = false;
+    bool showCursorMenu  = false;
+    bool enableRecording = false;
 
     // Table settings
     ImGuiTableFlags flagsTables = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
@@ -131,6 +135,7 @@ class GraphicInterface
     void drawErrorPopup();
 
     void drawTopCANdleStatusMenu();
+    void drawRecordingMenu();
 
     void drawTuningMenu();
     void drawMonitorButton();
@@ -157,6 +162,7 @@ class GraphicInterface
     void drawCheckboxHorCursorsPosButton();
     void drawCheckboxHorCursorsTrqButton();
     void drawCursorMenu();
+    void drawCheckboxEnableRecording();
 
     // Helper
     void drawHelper(const char* description);

@@ -50,13 +50,23 @@ struct DevicePlot_S
 struct MDStatus_S
 {
     mab::canId_t id;
+    float        position        = NAN;
+    float        velocity        = NAN;
+    float        torque          = NAN;
+    float        motorTemp       = NAN;
+    float        driverTemp      = NAN;
+    bool         quickStatusIsOK = false;
+    bool         valid           = false;
+};
+
+struct RecordSample_S
+{
+    double       time = NAN;
+    mab::canId_t id;
     float        position   = NAN;
     float        velocity   = NAN;
     float        torque     = NAN;
-    float        motorTemp  = NAN;
-    float        driverTemp = NAN;
-    bool         ok         = false;
-    bool         valid      = false;
+    float        mosfetTemp = NAN;
 };
 
 struct commonMemory_S
@@ -100,6 +110,11 @@ struct commonMemory_S
                 return "-";
         }
     }
+
+    std::atomic<bool>           recording{false};
+    std::atomic<bool>           recordDuringTest{false};
+    std::atomic<uint64_t>       recSamplesWritten{0};
+    std::vector<RecordSample_S> recPending;
 
     std::atomic<int> actual_thread_hz{0};
     std::mutex       mtx;

@@ -6,10 +6,14 @@
 #include "imgui_internal.h"
 #include "implot.h"
 #include "mab_types.hpp"
+#include <cfloat>
+#include <filesystem>
+#include "Recorder.hpp"
 
 MonitorMenu::MonitorMenu(std::shared_ptr<commonMemory_S> commonMemory, ImGuiIO& io)
     : m_data(commonMemory), m_io(io)
 {
+    exportDir = defaultExportDir();
 }
 
 /*
@@ -42,7 +46,7 @@ void MonitorMenu::drawMonitorMenu()
     }
     ImGui::EndChild();
     ImGui::SameLine();
-    drawPlaceHolderMenu();
+    drawRecordDataMenu();
 }
 
 void MonitorMenu::drawActuatorMenu()
@@ -78,7 +82,7 @@ void MonitorMenu::drawActuatorMenu()
 
                 if (!status.valid)
                     ImGui::TextDisabled("--");
-                else if (status.ok)
+                else if (status.quickStatusIsOK)
                     ImGui::TextColored(GuiStyle::greenColor, "OK");
                 else
                     ImGui::TextColored(GuiStyle::redColor, "ERR");
@@ -212,7 +216,7 @@ void MonitorMenu::drawLiveValuesMenu()
                 ImGui::TableNextColumn();
                 if (!status.valid)
                     ImGui::TextDisabled("--");
-                else if (status.ok)
+                else if (status.quickStatusIsOK)
                     ImGui::TextColored(GuiStyle::greenColor, "OK");
                 else
                     ImGui::TextColored(GuiStyle::redColor, "ERR");
@@ -225,16 +229,266 @@ void MonitorMenu::drawLiveValuesMenu()
     GuiStyle::endChildOuterStyle();
 }
 
-void MonitorMenu::drawPlaceHolderMenu()
+void MonitorMenu::drawRecordDataMenu()
 {
+    bool availableToRecord = m_data->mdStatus.empty();
+
     GuiStyle::childOuterStyle();
-    if (ImGui::BeginChild(
-            "##Placeholder Menu", ImVec2(0, 0), ImGuiChildFlags_Borders, GuiStyle::flagsBackMenu))
+    if (ImGui::BeginChild("##Record Data Menu",
+                          ImVec2(0, 0),
+                          ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY,
+                          GuiStyle::flagsBackMenu))
     {
-        ImGui::Text("Placeholders");
+        ImGui::PushFont(nullptr, 18.0f);
+        ImGui::Text("Record Data");
+        ImGui::PopFont();
+
+        if (availableToRecord)
+            ImGui::BeginDisabled();
+
+        drawRecordingButtons();
+        drawExportButtons();
+
+        if (availableToRecord)
+            ImGui::EndDisabled();
     }
     ImGui::EndChild();
     GuiStyle::endChildOuterStyle();
+}
+
+void MonitorMenu::drawRecordingButtons()
+{
+    bool recording = m_data->recording.load();
+
+    ImVec2 tableSize = ImVec2(-FLT_MIN, GuiStyle::mediumButtonHeight);
+
+    GuiStyle::buttonImportantStyle(recording);
+    if (ImGui::Button(
+            recording ? "Stop recording###RecordButton" : "Start recording###RecordButton",
+            tableSize))
+    {
+        m_data->recording.store(!recording);
+    }
+    GuiStyle::endButtonImportantStyle();
+
+    float spacing     = ImGui::GetStyle().ItemSpacing.x;
+    float columnWidth = (ImGui::GetContentRegionAvail().x - spacing) * 0.5f;
+
+    int seconds = static_cast<int>(
+        std::chrono::duration<double>(std::chrono::steady_clock::now() - recordTimeStart).count());
+    double megabytes = m_data->recSamplesWritten.load() * sizeof(RecordSample_S) / 1e6;
+
+    ImGui::BeginGroup();
+    ImGui::Text("Time");
+    GuiStyle::childInnerStyle();
+    if (ImGui::BeginChild("##TimeValue",
+                          ImVec2(columnWidth, 0.0f),
+                          ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY))
+    {
+        if (recording)
+            ImGui::Text("%02d:%02d:%02d", seconds / 3600, (seconds / 60) % 60, seconds % 60);
+        else
+            ImGui::TextDisabled("Record not started");
+    }
+    ImGui::EndChild();
+    GuiStyle::endChildInnerStyle();
+    ImGui::EndGroup();
+
+    ImGui::SameLine();
+
+    ImGui::BeginGroup();
+    ImGui::Text("Memory");
+    GuiStyle::childInnerStyle();
+    if (ImGui::BeginChild("##MemoryValue",
+                          ImVec2(columnWidth, 0.0f),
+                          ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY))
+    {
+        if (recording)
+            ImGui::Text("%.1f MB", megabytes);
+        else
+            ImGui::TextDisabled("--");
+    }
+    ImGui::EndChild();
+    GuiStyle::endChildInnerStyle();
+    ImGui::EndGroup();
+}
+
+void MonitorMenu::drawExportButtons()
+{
+    const float browseWidth = ImGui::CalcTextSize("Browse...").x + 16.0f;
+
+    ImGui::AlignTextToFramePadding();
+    ImGui::Text("Save CSV to directory:");
+    ImGui::SameLine();
+    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - browseWidth);
+
+    GuiStyle::buttonStyle();
+    if (ImGui::Button("Browse...", ImVec2(browseWidth, GuiStyle::smallButtonHeight)))
+        ImGui::OpenPopup("Choose export folder");
+    GuiStyle::endButtonStyle();
+
+    drawFolderBrowserPopup("Choose export folder", exportDir);
+
+    GuiStyle::childInnerStyle();
+    if (ImGui::BeginChild(
+            "##Path", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY))
+    {
+        ImGui::TextWrapped("%s", exportDir.string().c_str());
+    }
+    ImGui::EndChild();
+    GuiStyle::endChildInnerStyle();
+
+    const char* preview =
+        (selectedRecording >= 0) ? recordingFiles[selectedRecording].c_str() : "None";
+
+    ImGui::Text("Select Recording");
+    GuiStyle::comboStyle();
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    if (ImGui::BeginCombo("##Recording", preview))
+    {
+        if (ImGui::IsWindowAppearing())
+            refreshRecordingList();
+
+        for (int i = 0; i < (int)recordingFiles.size(); ++i)
+        {
+            if (ImGui::Selectable(recordingFiles[i].c_str(), i == selectedRecording))
+            {
+                selectedRecording = i;
+            }
+        }
+        ImGui::EndCombo();
+    }
+    GuiStyle::endComboStyle();
+
+    ImGui::BeginDisabled(selectedRecording < 0);
+    GuiStyle::buttonStyle();
+    if (ImGui::Button("Export to CSV", ImVec2(-FLT_MIN, GuiStyle::smallButtonHeight)))
+    {
+        std::filesystem::path bin(recordingFiles[selectedRecording]);
+        std::filesystem::path csv = exportDir / bin.filename();
+        csv.replace_extension("");
+
+        std::error_code error;
+        std::filesystem::create_directories(exportDir, error);
+
+        exportOk = !error && exportToCsv(bin.string(), csv.string());
+    }
+    GuiStyle::endButtonStyle();
+    ImGui::EndDisabled();
+}
+
+bool MonitorMenu::drawFolderBrowserPopup(const char* popupId, std::filesystem::path& result)
+{
+    bool picked = false;
+
+    GuiStyle::popupStyle();
+    ImGui::SetNextWindowSize(ImVec2(500.0f, 400.0f), ImGuiCond_Appearing);
+    if (ImGui::BeginPopupModal(popupId, nullptr, ImGuiWindowFlags_NoSavedSettings))
+    {
+        if (ImGui::IsWindowAppearing())
+        {
+            std::error_code error;
+            if (std::filesystem::is_directory(result, error))
+                setBrowsePath(result);
+            else if (std::filesystem::is_directory(result.parent_path(), error))
+                setBrowsePath(result.parent_path());
+            else
+                setBrowsePath(std::filesystem::current_path());
+        }
+        GuiStyle::buttonStyle();
+        if (ImGui::Button("Up", ImVec2(GuiStyle::decisionButtonWidth * 0.5f, 0.0f)) &&
+            browsePath.has_parent_path())
+            setBrowsePath(browsePath.parent_path());
+        GuiStyle::endButtonStyle();
+
+        ImGui::SameLine();
+
+        GuiStyle::comboStyle(nullptr, 4.0f);
+        ImGui::PushStyleColor(ImGuiCol_FrameBgActive, GuiStyle::buttonColor);
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::InputText("##path", pathBuf, sizeof(pathBuf));
+        ImGui::PopStyleColor();
+        GuiStyle::endComboStyle();
+
+        if (ImGui::IsItemDeactivatedAfterEdit())
+        {
+            std::string typed = pathBuf;
+            if (!typed.empty() && typed[0] == '~')
+                if (const char* home = std::getenv("HOME"))
+                    typed = home + typed.substr(1);
+
+            std::error_code       error;
+            std::filesystem::path target = std::filesystem::weakly_canonical(typed, error);
+            if (!error && std::filesystem::is_directory(target, error))
+                setBrowsePath(target);
+            else
+                pathError = true;
+        }
+
+        if (pathError)
+            ImGui::TextColored(GuiStyle::redColor, "Folder not found");
+
+        std::vector<std::filesystem::path> directories;
+        std::error_code                    error;
+        for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(
+                 browsePath, std::filesystem::directory_options::skip_permission_denied, error))
+            if (entry.is_directory(error) && entry.path().filename().string()[0] != '.')
+                directories.push_back(entry.path());
+        std::sort(directories.begin(), directories.end());
+
+        const float footerHeight = GuiStyle::mediumButtonHeight + ImGui::GetStyle().ItemSpacing.y;
+
+        GuiStyle::tableStyle();
+        if (ImGui::BeginTable(
+                "##directories", 1, GuiStyle::flagsTable, ImVec2(0.0f, -footerHeight)))
+        {
+            for (const std::filesystem::path& directory : directories)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                if (ImGui::Selectable(directory.filename().string().c_str(),
+                                      false,
+                                      ImGuiSelectableFlags_SpanAllColumns))
+                    setBrowsePath(directory);
+            }
+
+            if (directories.empty())
+            {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::TextDisabled("(no subfolders)");
+            }
+            ImGui::EndTable();
+        }
+        GuiStyle::endTableStyle();
+
+        const ImVec2 decisionSize(GuiStyle::decisionButtonWidth, GuiStyle::smallButtonHeight);
+        const float  spacing = ImGui::GetStyle().ItemSpacing.x;
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x -
+                             decisionSize.x * 2.0f - spacing);
+
+        GuiStyle::buttonStyle();
+        if (ImGui::Button("Cancel", decisionSize))
+            ImGui::CloseCurrentPopup();
+        GuiStyle::endButtonStyle();
+
+        ImGui::SameLine();
+
+        bool primary = true;
+        GuiStyle::buttonImportantStyle(primary);
+        if (ImGui::Button("Select", decisionSize))
+        {
+            result = browsePath;
+            picked = true;
+            ImGui::CloseCurrentPopup();
+        }
+        GuiStyle::endButtonImportantStyle();
+
+        ImGui::EndPopup();
+    }
+    GuiStyle::endPopupStyle();
+
+    return picked;
 }
 
 /*
@@ -321,4 +575,62 @@ void MonitorMenu::cellFloat(float v, const char* fmt)
         ImGui::TextDisabled("--");
     else
         ImGui::Text(fmt, v);
+}
+
+void MonitorMenu::refreshRecordingList()
+{
+    std::string previous;
+    if (selectedRecording >= 0 && selectedRecording < (int)recordingFiles.size())
+        previous = recordingFiles[selectedRecording];
+
+    recordingFiles.clear();
+    selectedRecording = -1;
+
+    if (!std::filesystem::exists("recordings"))
+        return;
+
+    for (const std::filesystem::directory_entry& entry :
+         std::filesystem::directory_iterator("recordings"))
+    {
+        if (entry.path().extension() == ".bin")
+            recordingFiles.push_back(entry.path().string());
+    }
+    std::sort(recordingFiles.begin(), recordingFiles.end());
+
+    for (int i = 0; i < (int)recordingFiles.size(); ++i)
+    {
+        if (recordingFiles[i] == previous)
+            selectedRecording = i;
+    }
+}
+
+std::filesystem::path MonitorMenu::defaultExportDir()
+{
+    const char* home = std::getenv("HOME");
+    return std::filesystem::path(home ? home : ".") / "Documents" / "recordings";
+}
+
+void MonitorMenu::setBrowsePath(const std::filesystem::path& path)
+{
+    browsePath = path;
+    snprintf(pathBuf, sizeof(pathBuf), "%s", path.string().c_str());
+    pathError = false;
+}
+
+void MonitorMenu::updateRecordingState()
+{
+    const bool recording = m_data->recording.load();
+
+    if (recording && !guiWasRecording)
+    {
+        recordTimeStart           = std::chrono::steady_clock::now();
+        m_data->recSamplesWritten = 0;
+    }
+    if (!recording && guiWasRecording)
+    {
+        refreshRecordingList();
+        selectedRecording = (int)recordingFiles.size() - 1;
+    }
+
+    guiWasRecording = recording;
 }

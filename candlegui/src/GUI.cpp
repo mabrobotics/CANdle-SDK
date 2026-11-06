@@ -61,6 +61,8 @@ void GraphicInterface::init()
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(m_window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
+
+    m_monitorWindow.refreshRecordingList();
 }
 
 void GraphicInterface::close()
@@ -199,14 +201,23 @@ Main menu draw functions
 
 void GraphicInterface::drawMenuTopBar()
 {
+    m_monitorWindow.updateRecordingState();
+
     GuiStyle::childOuterStyle();
     if (ImGui::BeginChild("TopBar", ImVec2(0.0f, topBarHeight), ImGuiChildFlags_None))
     {
-        float rightChildWidth = 250.0f;
-        float spacing         = ImGui::GetStyle().ItemSpacing.x;
+        float rightWidth = 0.0f;
+        float spacing    = ImGui::GetStyle().ItemSpacing.x;
 
-        if (ImGui::BeginChild(
-                "TopLeft", ImVec2(-(rightChildWidth + spacing), 0.0f), ImGuiChildFlags_None))
+        const bool showRecording    = (currentPage == TUNING);
+        const bool showCandleStatus = (currentPage != BUS_INFO);
+
+        if (showRecording)
+            rightWidth += recordChildWidth + spacing;
+        if (showCandleStatus)
+            rightWidth += candleStatusChildWidth + spacing;
+
+        if (ImGui::BeginChild("TopLeft", ImVec2(-rightWidth, 0.0f), ImGuiChildFlags_None))
         {
             GuiStyle::buttonSelectStyle(currentPage == TUNING);
             drawTuningButton();
@@ -229,10 +240,17 @@ void GraphicInterface::drawMenuTopBar()
         }
         ImGui::EndChild();
 
-        ImGui::SameLine();
+        if (showRecording)
+        {
+            ImGui::SameLine();
+            drawRecordingMenu();
+        }
 
-        if (currentPage != BUS_INFO)
+        if (showCandleStatus)
+        {
+            ImGui::SameLine();
             drawTopCANdleStatusMenu();
+        }
     }
     ImGui::EndChild();
     GuiStyle::endChildOuterStyle();
@@ -282,6 +300,8 @@ void GraphicInterface::drawTestMenuBar()
         bool errorOccurred = m_data->errorOccurred;
 
         drawCursorMenu();
+        ImGui::SameLine();
+        drawCheckboxEnableRecording();
 
         ImGui::Separator();
 
@@ -754,7 +774,9 @@ void GraphicInterface::drawTopCANdleStatusMenu()
     bool candleAvailable = m_data->candleAvailable;
 
     GuiStyle::childInnerStyle();
-    if (ImGui::BeginChild("RightAlignedChild", ImVec2(0, 0), ImGuiChildFlags_Borders))
+    if (ImGui::BeginChild("Candle Status Bar",
+                          ImVec2(0, 0),
+                          ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeX))
     {
         float  radius = 5.0f;
         ImVec2 pos    = ImGui::GetCursorScreenPos();
@@ -790,6 +812,64 @@ void GraphicInterface::drawTopCANdleStatusMenu()
     }
     ImGui::EndChild();
     GuiStyle::endChildInnerStyle();
+
+    candleStatusChildWidth = ImGui::GetItemRectSize().x;
+}
+
+void GraphicInterface::drawRecordingMenu()
+{
+    GuiStyle::childInnerStyle();
+    if (ImGui::BeginChild(
+            "Record child", ImVec2(0, 0), ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeX))
+    {
+        const bool isRecording = m_data->recording.load();
+
+        float  radius = 5.0f;
+        ImVec2 pos    = ImGui::GetCursorScreenPos();
+        ImVec2 center = ImVec2(pos.x + radius, pos.y + ImGui::GetTextLineHeight() * 0.5f);
+
+        ImVec4 dotColor;
+        if (!isRecording)
+        {
+            dotColor = ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled);
+        }
+        else
+        {
+            const bool blinkOn = std::fmod(ImGui::GetTime(), 1.0) < 0.5;
+            dotColor           = GuiStyle::redColor;
+            if (!blinkOn)
+                dotColor.w = 0.25f;
+        }
+
+        ImGui::GetWindowDrawList()->AddCircleFilled(center, radius, ImGui::GetColorU32(dotColor));
+        ImGui::Dummy(ImVec2(radius * 1.5f, 0.0f));
+
+        ImGui::SameLine();
+
+        if (isRecording)
+        {
+            const int seconds =
+                static_cast<int>(std::chrono::duration<double>(std::chrono::steady_clock::now() -
+                                                               m_monitorWindow.recordTimeStart)
+                                     .count());
+            const double megabytes =
+                m_data->recSamplesWritten.load() * sizeof(RecordSample_S) / 1e6;
+
+            ImGui::Text("REC %02d:%02d:%02d", seconds / 3600, (seconds / 60) % 60, seconds % 60);
+            ImGui::SameLine();
+            ImGui::Text("|");
+            ImGui::SameLine();
+            ImGui::Text("%.1f MB", megabytes);
+        }
+        else
+        {
+            ImGui::Text("Not recording");
+        }
+    }
+    ImGui::EndChild();
+    GuiStyle::endChildInnerStyle();
+
+    recordChildWidth = ImGui::GetItemRectSize().x;
 }
 
 void GraphicInterface::drawTuningMenu()
@@ -1297,7 +1377,9 @@ void GraphicInterface::drawCheckboxHorCursorsTrqButton()
 void GraphicInterface::drawCursorMenu()
 {
     mab::MdMode_E currentMode = m_data->currentMode;
-    if (currentMode == mab::MdMode_E::IDLE)
+    const bool    disabled    = (currentMode == mab::MdMode_E::IDLE);
+
+    if (disabled)
     {
         showCursorMenu = false;
         ImGui::BeginDisabled();
@@ -1310,7 +1392,33 @@ void GraphicInterface::drawCursorMenu()
     ImGui::Text("Show Cursor Menu");
     GuiStyle::endCheckboxStyle();
 
-    if (currentMode == mab::MdMode_E::IDLE)
+    if (disabled)
+    {
+        ImGui::EndDisabled();
+    }
+}
+
+void GraphicInterface::drawCheckboxEnableRecording()
+{
+    mab::MdMode_E currentMode = m_data->currentMode;
+    const bool    disabled    = (currentMode == mab::MdMode_E::IDLE || m_data->testStarted.load());
+
+    if (disabled)
+    {
+        enableRecording = false;
+        ImGui::BeginDisabled();
+    }
+
+    bool recording = m_data->recordDuringTest.load();
+
+    GuiStyle::checkboxStyle();
+    if (ImGui::Checkbox("##Enable recording", &recording))
+        m_data->recordDuringTest.store(recording);
+    ImGui::SameLine();
+    ImGui::Text("Record Test");
+    GuiStyle::endCheckboxStyle();
+
+    if (disabled)
     {
         ImGui::EndDisabled();
     }

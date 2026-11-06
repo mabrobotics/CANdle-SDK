@@ -38,13 +38,13 @@ float HardwareCandle::readDriverTemp(mab::MD& md)
 
 void HardwareCandle::copyLiveValues(mab::MD& md, MDStatus_S& status)
 {
-    status.position   = float(md.m_mdRegisters.position.value);
-    status.velocity   = float(md.m_mdRegisters.velocity.value);
-    status.torque     = float(md.m_mdRegisters.torque.value);
-    status.motorTemp  = float(md.m_mdRegisters.motorTemperature.value);
-    status.driverTemp = float(md.m_mdRegisters.mosfetTemperature.value);
-    status.ok         = quickStatusOk(md.m_mdRegisters.quickStatus.value);
-    status.valid      = true;
+    status.position        = float(md.m_mdRegisters.position.value);
+    status.velocity        = float(md.m_mdRegisters.velocity.value);
+    status.torque          = float(md.m_mdRegisters.torque.value);
+    status.motorTemp       = float(md.m_mdRegisters.motorTemperature.value);
+    status.driverTemp      = float(md.m_mdRegisters.mosfetTemperature.value);
+    status.quickStatusIsOK = quickStatusOk(md.m_mdRegisters.quickStatus.value);
+    status.valid           = true;
 }
 
 bool HardwareCandle::readLiveValues(mab::MD& md, MDStatus_S& status)
@@ -386,6 +386,10 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
     static std::chrono::time_point<std::chrono::steady_clock> testStartTime =
         std::chrono::steady_clock::now();
     static bool hardwareLastTestStarted = false;
+    bool        wasRecording            = false;
+    bool        wasTestStarted          = false;
+    bool        recordingStartedByTest  = false;
+    auto        recordStartTime         = std::chrono::steady_clock::now();
 
     while (isRunning)
     {
@@ -410,6 +414,25 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
 
         currentMode = m_data->currentMode;
         chosenID    = m_data->chosenID;
+
+        if (testStarted && !wasTestStarted && m_data->recordDuringTest.load() &&
+            !m_data->recording.load())
+        {
+            m_data->recording.store(true);
+            recordingStartedByTest = true;
+        }
+
+        if (!testStarted && wasTestStarted && recordingStartedByTest)
+        {
+            m_data->recording.store(false);
+            recordingStartedByTest = false;
+        }
+        wasTestStarted = testStarted;
+
+        const bool isRecording = m_data->recording.load(std::memory_order_acquire);
+        if (isRecording && !wasRecording)
+            recordStartTime = std::chrono::steady_clock::now();
+        wasRecording = isRecording;
 
         if (candle == nullptr)
         {
@@ -855,9 +878,10 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                                          md.m_mdRegisters.motorTemperature,
                                          md.m_mdRegisters.mosfetTemperature);
 
-                        float vel = float(md.m_mdRegisters.velocity.value);
-                        float pos = float(md.m_mdRegisters.position.value);
-                        float trq = float(md.m_mdRegisters.torque.value);
+                        float vel        = float(md.m_mdRegisters.velocity.value);
+                        float pos        = float(md.m_mdRegisters.position.value);
+                        float trq        = float(md.m_mdRegisters.torque.value);
+                        float mosfetTemp = float(md.m_mdRegisters.mosfetTemperature.value);
 
                         if (refreshStatus && !mdStatusLocal.empty())
                             copyLiveValues(md, mdStatusLocal.back());
@@ -896,6 +920,19 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                         m_data->plotTargetPosition[idx] = m_data->targetPosition;
                         m_data->plotTargetTorque[idx]   = m_data->targetTorque;
                         m_data->plotWriteData.store(writeData + 1, std::memory_order_release);
+
+                        if (isRecording)
+                        {
+                            RecordSample_S sample = {};
+                            sample.time =
+                                std::chrono::duration<double>(now - recordStartTime).count();
+                            sample.id         = md.m_canId;
+                            sample.position   = pos;
+                            sample.velocity   = vel;
+                            sample.torque     = trq;
+                            sample.mosfetTemp = mosfetTemp;
+                            m_data->recPending.push_back(sample);
+                        }
                     }
                 }
                 ++it;
@@ -930,6 +967,31 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                         plot.torque[idx]        = status.torque;
                         plot.mosfetTemp[idx]    = status.driverTemp;
                         plot.writeData.store(writeData + 1, std::memory_order_release);
+                    }
+
+                    if (isRecording)
+                    {
+                        const double recordTime =
+                            std::chrono::duration<double>(statusNow - recordStartTime).count();
+
+                        for (size_t i = 0; i < mdStatusLocal.size(); ++i)
+                        {
+                            const MDStatus_S& status = mdStatusLocal[i];
+                            if (!status.valid)
+                                continue;
+                            if (testStarted && currentMode != mab::MdMode_E::IDLE &&
+                                status.id == chosenID)
+                                continue;
+
+                            RecordSample_S sample;
+                            sample.time       = recordTime;
+                            sample.id         = status.id;
+                            sample.position   = status.position;
+                            sample.velocity   = status.velocity;
+                            sample.torque     = status.torque;
+                            sample.mosfetTemp = status.driverTemp;
+                            m_data->recPending.push_back(sample);
+                        }
                     }
 
                     m_data->mdStatus.swap(mdStatusLocal);

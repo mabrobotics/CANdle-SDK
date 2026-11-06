@@ -1,6 +1,7 @@
 #define GL_SILENCE_DEPRECATION
 #include "GUI.hpp"
 #include "HardwareCandle.hpp"
+#include "Recorder.hpp"
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
 #pragma comment(lib, "legacy_stdio_definitions")
@@ -24,7 +25,6 @@ int main(int argc, char** argv)
     ImPlot::CreateContext();
 
     ImGuiIO& io = ImGui::GetIO();
-    (void)io;
 
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
@@ -90,6 +90,10 @@ int main(int argc, char** argv)
     hardwareCandle.init();
     std::thread hardware(&HardwareCandle::candleLoop, &hardwareCandle, std::ref(isRunning));
 
+    // Initialization of recorder
+    Recorder    recorder(m_common);
+    std::thread recordThread(&Recorder::recordLoop, &recorder, std::ref(isRunning));
+
     interface.init();
 
     // MAIN LOOP
@@ -99,6 +103,7 @@ int main(int argc, char** argv)
     interface.close();
     isRunning = false;
     hardware.join();
+    recordThread.join();
 
     ImPlot::DestroyContext();
     ImGui::DestroyContext();
