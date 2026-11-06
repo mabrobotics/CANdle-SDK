@@ -1,4 +1,5 @@
 #pragma once
+#include <chrono>
 #include <memory>
 
 #include "commonMemory.hpp"
@@ -29,6 +30,8 @@ class HardwareCandle
     std::chrono::steady_clock::time_point      lastSlowTime{};
     static constexpr std::chrono::milliseconds STATUS_PERIOD{100};
     static constexpr std::chrono::milliseconds SLOW_PERIOD{100};
+
+    long md_timeout = 4000;
 
     bool quickStatusOk(uint16_t raw);
 

@@ -1,4 +1,5 @@
 #include "HardwareCandle.hpp"
+#include <chrono>
 #include <memory>
 #include "commonMemory.hpp"
 #include "mab_types.hpp"
@@ -314,6 +315,7 @@ void HardwareCandle::updateVelParameters()
     m_data->Ki_vel          = m_data->Ki_velSlider;
     m_data->Kd_vel          = m_data->Kd_velSlider;
     m_data->integralMax_vel = m_data->integralMax_velSlider;
+    m_data->velocityWindow  = m_data->velocityWindowSlider;
 }
 
 void HardwareCandle::updatePosParameters()
@@ -322,6 +324,7 @@ void HardwareCandle::updatePosParameters()
     m_data->Ki_pos          = m_data->Ki_posSlider;
     m_data->Kd_pos          = m_data->Kd_posSlider;
     m_data->integralMax_pos = m_data->integralMax_posSlider;
+    m_data->positionWindow  = m_data->positionWindowSlider;
 }
 
 void HardwareCandle::updateImpParameters()
@@ -585,7 +588,8 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                 {
                     if (communicationCheck(md) == mab::MD::Error_t::TRANSFER_FAILED)
                     {
-                        auto now = std::chrono::steady_clock::now();
+                        std::chrono::time_point<std::chrono::steady_clock> now =
+                            std::chrono::steady_clock::now();
 
                         if (errorStartTimes.find(md.m_canId) == errorStartTimes.end())
                         {
@@ -593,11 +597,11 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                         }
                         else
                         {
-                            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                            long elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
                                                now - errorStartTimes[md.m_canId])
                                                .count();
 
-                            if (elapsed > 1000)
+                            if (elapsed > md_timeout)
                             {
                                 mab::canId_t removeID = md.m_canId;
                                 it                    = mds.erase(it);
@@ -656,6 +660,7 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                                                        m_data->Ki_vel,
                                                        m_data->Kd_vel,
                                                        m_data->integralMax_vel);
+                                md.setVelocityWindow(m_data->velocityWindow);
                                 md.save();
                                 break;
                             case mab::MdMode_E::POSITION_PID:
@@ -669,6 +674,7 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                                                        m_data->Ki_pos,
                                                        m_data->Kd_pos,
                                                        m_data->integralMax_pos);
+                                md.setPositionWindow(m_data->positionWindow);
                                 md.save();
                                 break;
                             case mab::MdMode_E::IMPEDANCE:
@@ -689,6 +695,8 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                                                        m_data->Ki_pos,
                                                        m_data->Kd_pos,
                                                        m_data->integralMax_pos);
+                                md.setVelocityWindow(m_data->velocityWindow);
+                                md.setPositionWindow(m_data->positionWindow);
                                 md.save();
                                 break;
                             case mab::MdMode_E::POSITION_PROFILE:
@@ -702,6 +710,8 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                                                        m_data->Ki_pos,
                                                        m_data->Kd_pos,
                                                        m_data->integralMax_pos);
+                                md.setVelocityWindow(m_data->velocityWindow);
+                                md.setPositionWindow(m_data->positionWindow);
                                 md.save();
                                 break;
                             default:
@@ -751,29 +761,27 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                             case mab::MdMode_E::VELOCITY_PID:
                                 m_data->targetVelocity = m_data->targetVelocitySlider;
                                 m_data->targetPosition = 0.0f;
-                                m_data->positionWindow = 0.01;
-                                m_data->velocityWindow = m_data->velocityWindowSlider;
                                 updateVelParameters();
                                 md.setVelocityPIDparam(m_data->Kp_vel,
                                                        m_data->Ki_vel,
                                                        m_data->Kd_vel,
                                                        m_data->integralMax_vel);
+                                md.setVelocityWindow(m_data->velocityWindow);
                                 break;
                             case mab::MdMode_E::POSITION_PID:
                                 m_data->targetPosition = m_data->targetPositionSlider;
                                 m_data->targetVelocity = 0.0f;
-                                m_data->velocityWindow = 0.01;
-                                m_data->positionWindow = m_data->positionWindowSlider;
                                 updateVelParameters();
+                                updatePosParameters();
                                 md.setVelocityPIDparam(m_data->Kp_vel,
                                                        m_data->Ki_vel,
                                                        m_data->Kd_vel,
                                                        m_data->integralMax_vel);
-                                updatePosParameters();
                                 md.setPositionPIDparam(m_data->Kp_pos,
                                                        m_data->Ki_pos,
                                                        m_data->Kd_pos,
                                                        m_data->integralMax_pos);
+                                md.setPositionWindow(m_data->positionWindow);
                                 break;
                             case mab::MdMode_E::IMPEDANCE:
                                 m_data->targetPosition = m_data->targetPositionSlider;
@@ -787,8 +795,6 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                                 m_data->targetVelocity     = m_data->targetVelocitySlider;
                                 m_data->targetAcceleration = m_data->targetAccelerationSlider;
                                 m_data->targetDeceleration = m_data->targetDecelerationSlider;
-                                m_data->positionWindow     = 0.01;
-                                m_data->velocityWindow     = m_data->velocityWindowSlider;
                                 updateVelParameters();
                                 updatePosParameters();
                                 md.setVelocityPIDparam(m_data->Kp_vel,
@@ -799,14 +805,14 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                                                        m_data->Ki_pos,
                                                        m_data->Kd_pos,
                                                        m_data->integralMax_pos);
+                                md.setVelocityWindow(m_data->velocityWindow);
+                                md.setPositionWindow(m_data->positionWindow);
                                 break;
                             case mab::MdMode_E::POSITION_PROFILE:
                                 m_data->targetPosition     = m_data->targetPositionSlider;
                                 m_data->targetVelocity     = m_data->targetVelocitySlider;
                                 m_data->targetAcceleration = m_data->targetAccelerationSlider;
                                 m_data->targetDeceleration = m_data->targetDecelerationSlider;
-                                m_data->velocityWindow     = 0.01;
-                                m_data->positionWindow     = m_data->positionWindowSlider;
                                 updateVelParameters();
                                 updatePosParameters();
                                 md.setVelocityPIDparam(m_data->Kp_vel,
@@ -817,6 +823,8 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                                                        m_data->Ki_pos,
                                                        m_data->Kd_pos,
                                                        m_data->integralMax_pos);
+                                md.setVelocityWindow(m_data->velocityWindow);
+                                md.setPositionWindow(m_data->positionWindow);
                                 break;
                             default:
                                 break;
