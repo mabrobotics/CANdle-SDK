@@ -9,6 +9,7 @@ GraphicInterface::GraphicInterface(std::shared_ptr<commonMemory_S> commonMemory,
     : m_data(commonMemory),
       m_io(io),
       m_monitorWindow(commonMemory, io),
+      m_testScriptWindow(commonMemory, io),
       m_busActuatorWindow(commonMemory, io)
 {
 }
@@ -131,6 +132,7 @@ void GraphicInterface::loop()
                             m_monitorWindow.drawMonitorMenu();
                             break;
                         case TEST_SCRIPT:
+                            m_testScriptWindow.drawTestScriptMenu();
                             break;
                         case BUS_INFO:
                             m_busActuatorWindow.drawBusActuatorMenu();
@@ -155,6 +157,7 @@ void GraphicInterface::loop()
                             m_monitorWindow.drawMonitorMenu();
                             break;
                         case TEST_SCRIPT:
+                            m_testScriptWindow.drawTestScriptMenu();
                             break;
                         case BUS_INFO:
                             m_busActuatorWindow.drawBusActuatorMenu();

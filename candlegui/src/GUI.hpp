@@ -9,6 +9,7 @@
 #include <filesystem>
 #include "commonMemory.hpp"
 #include "MonitorMenu.hpp"
+#include "TestScript.hpp"
 #include "BusActuatorsMenu.hpp"
 
 class GraphicInterface
@@ -36,6 +37,7 @@ class GraphicInterface
     GLFWwindow* m_window = nullptr;
 
     MonitorMenu     m_monitorWindow;
+    TestScript      m_testScriptWindow;
     BusActuatorMenu m_busActuatorWindow;
 
     std::vector<MDStatus_S> guiMDStatus;
