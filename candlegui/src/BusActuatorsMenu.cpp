@@ -235,7 +235,7 @@ void BusActuatorMenu::drawFoundOnBusMenu()
                 ImGui::TableNextColumn();
                 ImGui::AlignTextToFramePadding();
                 const std::string groupName = getGroupName(md.id);
-                ImGui::TextUnformatted(groupName.empty() ? "—" : groupName.c_str());  // Group
+                ImGui::TextUnformatted(groupName.empty() ? "-" : groupName.c_str());  // Group
 
                 ImGui::TableNextColumn();
                 ImGui::AlignTextToFramePadding();
@@ -243,15 +243,15 @@ void BusActuatorMenu::drawFoundOnBusMenu()
 
                 ImGui::TableNextColumn();
                 ImGui::AlignTextToFramePadding();
-                ImGui::TextUnformatted("—");  // Model TODO
+                ImGui::TextUnformatted("-");  // Model TODO
 
                 ImGui::TableNextColumn();
                 ImGui::AlignTextToFramePadding();
-                ImGui::TextUnformatted("—");  // Firmware TODO
+                ImGui::TextUnformatted("-");  // Firmware TODO
 
                 ImGui::TableNextColumn();
                 ImGui::AlignTextToFramePadding();
-                ImGui::TextUnformatted("—");  // Calibration TODO
+                ImGui::TextUnformatted("-");  // Calibration TODO
 
                 ImGui::TableNextColumn();
                 ImGui::AlignTextToFramePadding();
