@@ -325,6 +325,18 @@ namespace mab
         return MD::Error_t::OK;
     }
 
+    MD::Error_t MD::setVelocityWindow(float windowSize /*rad*/)
+    {
+        m_mdRegisters.velocityWindow = windowSize;
+        if (writeRegisters(m_mdRegisters.velocityWindow) != MD::Error_t::OK)
+        {
+            m_log.error("Velocity window setting failed!");
+            return MD::Error_t::TRANSFER_FAILED;
+        }
+        m_log.info("Velocity window set to value %.2f", windowSize);
+        return MD::Error_t::OK;
+    }
+
     MD::Error_t MD::setTargetPosition(float position /*rad*/)
     {
         m_mdRegisters.targetPosition = position;

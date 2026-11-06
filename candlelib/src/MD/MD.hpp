@@ -158,6 +158,12 @@ namespace mab
         /// @return
         Error_t setPositionWindow(float windowSize /*rad*/);
 
+        /// @brief  Set the symmetrical velocity window at which velocity reached flag is raised
+        /// @param windowSize size of the window in radians/s. Spans symmetrically around target
+        /// velocity.
+        /// @return
+        Error_t setVelocityWindow(float windowSize /*rad/s*/);
+
         /// @brief Set target position
         /// @param position target position in radians
         /// @return
