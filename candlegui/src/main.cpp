@@ -1,7 +1,9 @@
+#include <string>
 #define GL_SILENCE_DEPRECATION
 #include "GUI.hpp"
 #include "HardwareCandle.hpp"
 #include "Recorder.hpp"
+#include <filesystem>
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
 #pragma comment(lib, "legacy_stdio_definitions")
@@ -10,6 +12,23 @@
 static void glfw_error_callback(int error, const char* description)
 {
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
+}
+
+static std::filesystem::path getConfigDir()
+{
+    std::filesystem::path base;
+#ifdef _WIN32
+    if (const wchar_t* appData = _wgetenv(L"APPDATA"))
+        base = appData;
+#else
+    if (const char* xdg = std::getenv("XDG_CONFIG_HOME"); xdg && *xdg)
+        base = xdg;
+    else if (const char* home = std::getenv("HOME"))
+        base = std::filesystem::path(home) / ".config";
+#endif
+    if (base.empty())
+        return {};
+    return base / "mdgui";
 }
 
 // Main code
@@ -25,6 +44,21 @@ int main(int argc, char** argv)
     ImPlot::CreateContext();
 
     ImGuiIO& io = ImGui::GetIO();
+
+    static std::string iniPath;
+
+    std::filesystem::path configDir = getConfigDir();
+    if (!configDir.empty())
+    {
+        std::error_code error;
+        std::filesystem::create_directories(configDir, error);
+        if (!error)
+        {
+            std::u8string u8 = (configDir / "imgui.ini").u8string();
+            iniPath.assign(u8.begin(), u8.end());
+            io.IniFilename = iniPath.c_str();
+        }
+    }
 
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;   // Enable Gamepad Controls
