@@ -259,7 +259,8 @@ namespace mab
         std::pair<u8, Error_t> getTemperature();
 
         /// @brief Set logging verbosity for this MD instance
-        void setLogLevel(Logger::LogLevel_E level);
+        /// @param level log level, std::nullopt restores the default (global verbosity)
+        void setLogLevel(std::optional<Logger::LogLevel_E> level);
 
         /// @brief Read register from the memory of the MD
         /// @tparam T Register entry underlying type (should be deducible)

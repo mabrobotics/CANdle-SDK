@@ -776,6 +776,39 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
                 return;
             }
             m_log.info("Calibration is running...");
+
+            // Wait up to calibrationTime, finish early once the "routine in progress" flag has
+            // been seen and then cleared (firmware without the flag -> full wait)
+            constexpr f32 calibrationTime = 25;  // seconds
+            constexpr u32 ROUTINE_BIT = 1u << (u32)MDStatus::MiscStatusBits::WarnRoutineInProgress;
+            EDSEntry*     miscStatus  = md_objects::resolveObject(*od, md_objects::MISC_STATUS, m_log);
+            bool          seenRunning = false;
+            f32           dt          = 0.25;
+            // drive resets after calibration, failed reads are expected -> mute them
+            mdco->setLogLevel(Logger::LogLevel_E::SILENT);
+            for (f32 t = 0.; t < calibrationTime; t += dt)
+            {
+                m_log.progress(t / calibrationTime);
+                usleep(dt * 1'000'000);
+                if (miscStatus == nullptr || mdco->readSDO(*miscStatus) != MDCO::Error_t::OK)
+                    continue;
+                bool running = (canopen_types::UNSIGNED32_t)*miscStatus & ROUTINE_BIT;
+                if (running)
+                    seenRunning = true;
+                else if (seenRunning)
+                    break;
+            }
+            mdco->setLogLevel(std::nullopt);
+            m_log.progress(1.0f);
+
+            auto encoderStatus = *calibrationOptions.calibrationOfEncoder == std::string_view("main")
+                                     ? mdco->getMainEncoderStatus()
+                                     : mdco->getOutputEncoderStatus();
+            if (encoderStatus.second != MDCO::Error_t::OK)
+                return m_log.error("Could not get calibration status from MD!");
+            if (encoderStatus.first.at(MDStatus::EncoderStatusBits::ErrorCalibration).isSet())
+                return m_log.error("Calibration failed!");
+            m_log.success("Calibration completed!");
         });
 
     // SETUP info

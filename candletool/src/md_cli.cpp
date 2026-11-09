@@ -258,6 +258,33 @@ namespace mab
                 f32 calibrationTime = 40;  // seconds
                 if (isVersionAtLeast(getMdFirmwareVersion(*md), 3, 0, 0))
                     calibrationTime = 25;
+
+                // Wait up to calibrationTime, finish early once the "routine in progress" flag
+                // has been seen and then cleared (older firmware never sets it -> full wait)
+                auto waitForCalibration = [&]()
+                {
+                    constexpr u32 ROUTINE_BIT =
+                        1u << (u32)MDStatus::MiscStatusBits::WarnRoutineInProgress;
+                    bool seenRunning = false;
+                    f32  dt          = 0.25;
+                    // drive resets after calibration, failed reads are expected -> mute them
+                    md->setLogLevel(Logger::LogLevel_E::SILENT);
+                    for (f32 t = 0.; t < calibrationTime; t += dt)
+                    {
+                        m_logger.progress(t / (f32)calibrationTime);
+                        usleep(dt * 1'000'000);
+                        if (md->readRegister(registers.miscStatus) != MD::Error_t::OK)
+                            continue;
+                        bool running = registers.miscStatus.value & ROUTINE_BIT;
+                        if (running)
+                            seenRunning = true;
+                        else if (seenRunning)
+                            break;
+                    }
+                    md->setLogLevel(std::nullopt);
+                    m_logger.progress(1.0f);  // Ensure progress is at 100%
+                };
+
                 if (doOnMainEncoder)
                 {
                     m_logger.info("Starting main encoder calibration...");
@@ -265,13 +292,7 @@ namespace mab
                     if (md->writeRegister(registers.runCalibrateCmd) != MD::Error_t::OK)
                         m_logger.error("Main encoder calibration failed!");
 
-                    f32 dt = 0.25;
-                    for (f32 t = 0.; t < calibrationTime; t += dt)
-                    {
-                        m_logger.progress(t / (f32)calibrationTime);
-                        usleep(dt * 1'000'000);
-                    }
-                    m_logger.progress(1.0f);  // Ensure progress is at 100%
+                    waitForCalibration();
 
                     // Check if main encoder calibration was successful
                     auto mainEncoderStatus = md->getMainEncoderStatus();
@@ -306,13 +327,7 @@ namespace mab
                     if (md->writeRegister(registers.runCalibrateAuxEncoderCmd) != MD::Error_t::OK)
                         return;
 
-                    f32 dt = 0.25;
-                    for (f32 t = 0.; t < calibrationTime; t += dt)
-                    {
-                        m_logger.progress(t / (f32)calibrationTime);
-                        usleep(dt * 1'000'000);
-                    }
-                    m_logger.progress(1.0f);  // Ensure progress is at 100%
+                    waitForCalibration();
 
                     // Check if aux encoder calibration was successful
                     auto auxEncoderStatus = md->getOutputEncoderStatus();

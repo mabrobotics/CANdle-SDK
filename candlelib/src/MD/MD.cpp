@@ -597,7 +597,7 @@ namespace mab
         return std::make_pair(m_mdRegisters.motorTemperature.value, result);
     }
 
-    void MD::setLogLevel(Logger::LogLevel_E level)
+    void MD::setLogLevel(std::optional<Logger::LogLevel_E> level)
     {
         m_log.m_optionalLevel = level;
     }
