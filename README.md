@@ -101,7 +101,7 @@ if md.init() == pc.MD_Error_t.OK:
 
 ### Running the Python examples
 
-Ready-to-run scripts covering both MD and PDS control are in [examples/py](examples/py), e.g. `md_impedance.py` and `pds_example_basic.py`. Grab the folder (or the whole repo) with the [git clone](#get-the-source) instructions below, then, with `candlesdk` installed and your hardware connected, run:
+Ready-to-run scripts covering both MD and PDS control are in [examples/py](examples/py), e.g. `md_impedance.py` and `pds_basic.py`. Grab the folder (or the whole repo) with the [git clone](#get-the-source) instructions below, then, with `candlesdk` installed and your hardware connected, run:
 
 ```bash
 python3 examples/py/md_impedance.py
@@ -188,7 +188,7 @@ Both produce a `build/` directory containing the `candlelib` library and, by def
 Example programs demonstrating MD and PDS usage — impedance control, diagnostics, PDS power stage/braking resistor handling, and more — are in [examples/cpp](examples/cpp). Each file builds into its own executable as part of the normal build above; run one directly from the build output, e.g.:
 
 ```bash
-./build/examples/md_example_impedance
+./build/examples/md_impedance
 ```
 
 ### Building the Python module from source

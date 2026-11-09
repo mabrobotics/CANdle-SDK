@@ -176,10 +176,10 @@
       "MIMode": "gdb",
     },
     {
-      "name": "mdco_example_speed_loop",
+      "name": "mdco_speed_loop",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/examples/mdco_example_speed_loop",
+      "program": "${workspaceFolder}/build/examples/mdco_speed_loop",
       "stopAtEntry": true,
       "environment": [],
       "externalConsole": false,

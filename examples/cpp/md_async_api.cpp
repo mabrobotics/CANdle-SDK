@@ -1,4 +1,4 @@
-/// @file md_example_async_api.cpp
+/// @file md_async_api.cpp
 /// @brief Example of using asynchronous API for MD drives. This API is designated for advanced
 /// users that want to achieve low-latency when using multiple drives on the CAN bus. The API is
 /// prepared to handle multiple frame requests in parallel but it can be overloaded if too many
