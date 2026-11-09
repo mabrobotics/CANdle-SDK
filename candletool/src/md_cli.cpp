@@ -632,13 +632,12 @@ namespace mab
                                   ->excludes(mdCanIdOption);
         auto  discoverMinId = std::make_shared<canId_t>(10);
         auto  discoverMaxId = std::make_shared<canId_t>(1000);
-        // discoverMDs scans [min, max) and clamps to [10, 0x7FF], so the highest usable id is 0x7FE
         discover->add_option("--min-id", *discoverMinId, "Lowest CAN ID to scan.")
             ->capture_default_str()
-            ->check(CLI::Range(10, 0x7FE));
+            ->check(CLI::Range(10, 0x7FF));
         discover->add_option("--max-id", *discoverMaxId, "Highest CAN ID to scan (inclusive).")
             ->capture_default_str()
-            ->check(CLI::Range(10, 0x7FE));
+            ->check(CLI::Range(10, 0x7FF));
         auto discoverExpected = std::make_shared<u32>(0);
         discover->add_option("-e,--expected",
                              *discoverExpected,
@@ -667,12 +666,12 @@ namespace mab
                 std::vector<canId_t> ids;
                 for (u32 start = *discoverMinId; start <= *discoverMaxId;)
                 {
-                    u32 end = (start / BATCH + 1) * BATCH;  // exclusive
-                    if (end >= *discoverMaxId)
-                        end = *discoverMaxId + 1;
+                    u32 end = (start / BATCH + 1) * BATCH - 1;  // inclusive
+                    if (end + 1 >= *discoverMaxId)
+                        end = *discoverMaxId;
                     m_logger.info("Scanning ID range %u - %u at %s datarate",
                                   start,
-                                  end - 1,
+                                  end,
                                   datarate.c_str());
                     u32 remaining = *discoverExpected > 0 ? *discoverExpected - ids.size() : 0;
                     auto found    = MD::discoverMDs(candle, start, end, remaining);
@@ -684,7 +683,7 @@ namespace mab
                         m_logger.info("Found %zu drive(s), stopping scan", ids.size());
                         break;
                     }
-                    start = end;
+                    start = end + 1;
                 }
 
                 if (ids.empty())
