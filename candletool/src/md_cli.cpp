@@ -31,9 +31,190 @@
 #include "edsParser.hpp"
 #include "flasher.hpp"
 #include "md_update.hpp"
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <future>
 
 namespace mab
 {
+    /// @brief Run request LATENCY_SAMPLES times and log round trip time statistics
+    /// (host -> USB -> CANdle -> CAN -> MD and back)
+    template <typename F>
+    static void measureLatency(Logger& log, const char* name, F request)
+    {
+        constexpr u32 LATENCY_SAMPLES = 1000;
+        u32           samples[LATENCY_SAMPLES];  // us, successful transfers only
+        u32           n = 0;
+        for (u32 i = 0; i < LATENCY_SAMPLES; i++)
+        {
+            auto start = std::chrono::steady_clock::now();
+            bool ok    = request();
+            auto end   = std::chrono::steady_clock::now();
+            // Failed transfers end on timeout, so they are excluded and only counted
+            if (ok)
+                samples[n++] =
+                    std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+        }
+        if (n == 0)
+        {
+            log.error("%s: all %u transfers failed!", name, LATENCY_SAMPLES);
+            return;
+        }
+        if (n < LATENCY_SAMPLES)
+            log.warn("%s: %u of %u transfers failed, excluded from the results",
+                     name,
+                     LATENCY_SAMPLES - n,
+                     LATENCY_SAMPLES);
+
+        std::sort(samples, samples + n);
+        double sum = 0;
+        for (u32 i = 0; i < n; i++)
+            sum += samples[i];
+        double avg = sum / n;
+        double var = 0;
+        for (u32 i = 0; i < n; i++)
+            var += (samples[i] - avg) * (samples[i] - avg);
+        double stdDev = std::sqrt(var / n);
+        u32    median = samples[n / 2];
+        u32    p99    = samples[(n * 99 + 99) / 100 - 1];  // nearest-rank 99th percentile
+
+        log.info("%s:", name);
+        log.info("  avg %.0f us | median %u us | p99 %u us | min %u us | max %u us",
+                 avg,
+                 median,
+                 p99,
+                 samples[0],
+                 samples[n - 1]);
+        log.info("  jitter (std dev) %.1f us | rate @avg %.3f kHz | rate @p99 %.3f kHz",
+                 stdDev,
+                 avg > 0 ? 1'000.0 / avg : 0.0,
+                 p99 > 0 ? 1'000.0 / p99 : 0.0);
+    }
+
+    /// @brief Measure round trip time of 1 and 4 register reads, and 1 and 4 register
+    /// write + read cycles, the last one also with async API. Each sample sends the request to
+    /// every drive, so with multiple drives the result is a full bus cycle. Blocking API waits for
+    /// each drive's response before sending the next request, async API sends requests to all
+    /// drives first and then collects the responses. Writes use current register values, so the
+    /// drive state is not changed.
+    static void testLatency(std::vector<MD>& mds, Logger& log)
+    {
+        using Error_t = MD::Error_t;
+        std::vector<MDRegisters_S> regs(mds.size());  // separate buffer for each drive
+
+        // Run request for every drive, fail the sample if any drive fails
+        auto forAll = [&](auto request)
+        {
+            return [&, request]()
+            {
+                for (size_t i = 0; i < mds.size(); i++)
+                    if (!request(mds[i], regs[i]))
+                        return false;
+                return true;
+            };
+        };
+
+        // CANdle packs up to FRAME_BUFFER_SIZE frames into one USB transfer, more pending requests
+        // only wait for the next transfer and may time out, so collect responses at that limit
+        constexpr size_t MAX_IN_FLIGHT = CANdleFrameAdapter::FRAME_BUFFER_SIZE;
+        using Pending                  = std::vector<std::future<Error_t>>;
+        auto forAllAsync               = [&](auto submit)
+        {
+            return [&, submit]()
+            {
+                Pending pending;
+                pending.reserve(MAX_IN_FLIGHT);
+                bool ok    = true;
+                auto drain = [&]()
+                {
+                    for (auto& f : pending)
+                        ok = f.get() == Error_t::OK && ok;
+                    pending.clear();
+                };
+                for (size_t i = 0; i < mds.size(); i++)
+                {
+                    if (pending.size() + 2 > MAX_IN_FLIGHT)  // up to 2 requests per drive
+                        drain();
+                    submit(mds[i], regs[i], pending);
+                }
+                drain();
+                return ok;
+            };
+        };
+
+        // 1. Single register read
+        measureLatency(log,
+                       "1 register read",
+                       forAll([](MD& md, MDRegisters_S& r)
+                              { return md.readRegisters(r.mainEncoderPosition) == Error_t::OK; }));
+
+        // 2. Typical feedback read in one request
+        measureLatency(log,
+                       "4 register read",
+                       forAll(
+                           [](MD& md, MDRegisters_S& r)
+                           {
+                               return md.readRegisters(r.quickStatus,
+                                                       r.mainEncoderPosition,
+                                                       r.mainEncoderVelocity,
+                                                       r.motorTorque) == Error_t::OK;
+                           }));
+
+        // Write tests write back current values, so the drive state does not change
+        for (size_t i = 0; i < mds.size(); i++)
+        {
+            if (mds[i].readRegisters(regs[i].targetPosition,
+                                     regs[i].targetVelocity,
+                                     regs[i].targetTorque,
+                                     regs[i].motorImpPidKp) != Error_t::OK)
+            {
+                log.error("Could not read target registers of MD %u, skipping write tests!",
+                          mds[i].m_canId);
+                return;
+            }
+        }
+
+        // 3. Minimal control loop cycle: write 1 register, then read 1 (two requests)
+        measureLatency(log,
+                       "1 register write + 1 register read",
+                       forAll(
+                           [](MD& md, MDRegisters_S& r)
+                           {
+                               return md.writeRegisters(r.targetVelocity) == Error_t::OK &&
+                                      md.readRegisters(r.mainEncoderPosition) == Error_t::OK;
+                           }));
+
+        // 4. Typical control loop cycle: write 4 registers, then read 4 (two requests)
+        measureLatency(log,
+                       "4 register write + 4 register read",
+                       forAll(
+                           [](MD& md, MDRegisters_S& r)
+                           {
+                               return md.writeRegisters(r.targetPosition,
+                                                        r.targetVelocity,
+                                                        r.targetTorque,
+                                                        r.motorImpPidKp) == Error_t::OK &&
+                                      md.readRegisters(r.quickStatus,
+                                                       r.mainEncoderPosition,
+                                                       r.mainEncoderVelocity,
+                                                       r.motorTorque) == Error_t::OK;
+                           }));
+        measureLatency(
+            log,
+            "async 4 register write + 4 register read",
+            forAllAsync(
+                [](MD& md, MDRegisters_S& r, Pending& p)
+                {
+                    p.push_back(md.writeRegistersAsync(
+                        r.targetPosition, r.targetVelocity, r.targetTorque, r.motorImpPidKp));
+                    p.push_back(md.readRegistersAsync(r.quickStatus,
+                                                      r.mainEncoderPosition,
+                                                      r.mainEncoderVelocity,
+                                                      r.motorTorque));
+                }));
+    }
+
     MDCli::MDCli(CLI::App* rootCli, CANdleToolCtx_S ctx)
     {
         if (ctx.candleBranchVec.empty())
@@ -661,20 +842,19 @@ namespace mab
                 }
 
                 // Scan in batches aligned to multiples of BATCH so the user sees progress
-                constexpr u32 BATCH    = 250;
-                std::string   datarate = datarateToStr(*(candleBuilder->datarate)).value_or("UNKNOWN");
+                constexpr u32 BATCH = 250;
+                std::string   datarate =
+                    datarateToStr(*(candleBuilder->datarate)).value_or("UNKNOWN");
                 std::vector<canId_t> ids;
                 for (u32 start = *discoverMinId; start <= *discoverMaxId;)
                 {
                     u32 end = (start / BATCH + 1) * BATCH - 1;  // inclusive
                     if (end + 1 >= *discoverMaxId)
                         end = *discoverMaxId;
-                    m_logger.info("Scanning ID range %u - %u at %s datarate",
-                                  start,
-                                  end,
-                                  datarate.c_str());
-                    u32 remaining = *discoverExpected > 0 ? *discoverExpected - ids.size() : 0;
-                    auto found    = MD::discoverMDs(candle, start, end, remaining);
+                    m_logger.info(
+                        "Scanning ID range %u - %u at %s datarate", start, end, datarate.c_str());
+                    u32  remaining = *discoverExpected > 0 ? *discoverExpected - ids.size() : 0;
+                    auto found     = MD::discoverMDs(candle, start, end, remaining);
                     if (found.empty())
                         m_logger.info(" - None found");
                     ids.insert(ids.end(), found.begin(), found.end());
@@ -691,6 +871,58 @@ namespace mab
                                    datarateToStr(*(candleBuilder->datarate))
                                        .value_or("NOT A DATARATE")
                                        .c_str());
+                detachCandle(candle);
+            });
+
+        // candletool md latency
+        auto* latency =
+            mdCLi
+                ->add_subcommand("latency",
+                                 "Measure communication round trip time of all drives on the bus "
+                                 "tested together.")
+                ->excludes(mdCanIdOption);
+        auto latencyExpected = std::make_shared<u32>(0);
+        latency->add_option("-e,--expected",
+                            *latencyExpected,
+                            "Stop scanning after N drives have been found (0 = scan all).");
+        latency->callback(
+            [this, candleBuilder, latencyExpected]()
+            {
+                auto candleOpt = candleBuilder->build();
+                if (!candleOpt.has_value())
+                {
+                    m_logger.error("Could not initialize Candle!");
+                    return;
+                }
+                Candle* candle = candleOpt.value();
+
+                m_logger.info("Scanning the bus for drives...");
+                std::vector<canId_t> ids = MD::discoverMDs(candle, 10, 0x7FF, *latencyExpected);
+                if (*latencyExpected > 0 && ids.size() < *latencyExpected)
+                    m_logger.warn("Expected %u drive(s), found %zu", *latencyExpected, ids.size());
+
+                std::vector<MD> mds;
+                mds.reserve(ids.size());
+                for (canId_t id : ids)
+                {
+                    mds.emplace_back(id, candle);
+                    if (mds.back().init() != MD::Error_t::OK)
+                    {
+                        m_logger.error("Could not initialize MD %u!", id);
+                        mds.pop_back();
+                    }
+                }
+                if (mds.empty())
+                {
+                    m_logger.error("No MD to test!");
+                    detachCandle(candle);
+                    return;
+                }
+
+                m_logger.info(
+                    "Measuring round trip time for %zu drive(s), 1000 samples per test...",
+                    mds.size());
+                testLatency(mds, m_logger);
                 detachCandle(candle);
             });
 
