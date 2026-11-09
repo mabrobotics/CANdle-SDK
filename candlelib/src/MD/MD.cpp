@@ -650,7 +650,8 @@ namespace mab
 
     std::vector<canId_t> MD::discoverMDs(Candle* candle,
                                          canId_t minValueRange,
-                                         canId_t maxValueRange)
+                                         canId_t maxValueRange,
+                                         u32     expected)
     {
         constexpr canId_t MIN_VALID_ID = 10;     // ids less than that are reserved for special
         constexpr canId_t MAX_VALID_ID = 0x7FF;  // 11-bit value (standard can ID max)
@@ -673,7 +674,7 @@ namespace mab
         // workaround for ping error spam
         Logger::Verbosity_E prevVerbosity =
             Logger::g_m_verbosity.value_or(Logger::Verbosity_E::VERBOSITY_1);
-        for (canId_t id = minValueRange; id < maxValueRange; id++)
+        for (canId_t id = minValueRange; id < maxValueRange + 1; id++)
         {
             log.debug("Trying to bind MD with id %d", id);
             // log.progress(float(id) / float(maxValueRange));
@@ -687,6 +688,8 @@ namespace mab
                 log.info("\r - Found '%s' at @%d" END_LINE, md.m_mdRegisters.motorName.value, id);
             }
             Logger::g_m_verbosity = prevVerbosity;
+            if (expected > 0 && ids.size() >= expected)
+                break;
         }
         // log.progress(1.);
         return ids;

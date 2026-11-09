@@ -610,14 +610,27 @@ namespace mab
             });
 
         // candletool md discover
-        auto* discover = mdCLi
-                             ->add_subcommand("discover",
-                                              "Discover MD drives on the"
-                                              " network.")
-                             ->excludes(mdCanIdOption);
+        auto* discover      = mdCLi
+                                  ->add_subcommand("discover",
+                                                   "Discover MD drives on the"
+                                                   " network.")
+                                  ->excludes(mdCanIdOption);
+        auto  discoverMinId = std::make_shared<canId_t>(10);
+        auto  discoverMaxId = std::make_shared<canId_t>(1000);
+        // discoverMDs scans [min, max) and clamps to [10, 0x7FF], so the highest usable id is 0x7FE
+        discover->add_option("--min-id", *discoverMinId, "Lowest CAN ID to scan.")
+            ->capture_default_str()
+            ->check(CLI::Range(10, 0x7FE));
+        discover->add_option("--max-id", *discoverMaxId, "Highest CAN ID to scan (inclusive).")
+            ->capture_default_str()
+            ->check(CLI::Range(10, 0x7FE));
+        auto discoverExpected = std::make_shared<u32>(0);
+        discover->add_option("-e,--expected",
+                             *discoverExpected,
+                             "Stop scanning after N drives have been found (0 = scan all).");
 
         discover->callback(
-            [this, candleBuilder]()
+            [this, candleBuilder, discoverMinId, discoverMaxId, discoverExpected]()
             {
                 auto candleOpt = candleBuilder->build();
                 if (!candleOpt.has_value())
@@ -626,7 +639,38 @@ namespace mab
                     return;
                 }
                 Candle* candle = candleOpt.value();
-                auto    ids    = MD::discoverMDs(candle);
+                if (*discoverMinId > *discoverMaxId)
+                {
+                    m_logger.error("--min-id must not be greater than --max-id!");
+                    detachCandle(candle);
+                    return;
+                }
+
+                // Scan in batches aligned to multiples of BATCH so the user sees progress
+                constexpr u32 BATCH    = 250;
+                std::string   datarate = datarateToStr(*(candleBuilder->datarate)).value_or("UNKNOWN");
+                std::vector<canId_t> ids;
+                for (u32 start = *discoverMinId; start <= *discoverMaxId;)
+                {
+                    u32 end = (start / BATCH + 1) * BATCH;  // exclusive
+                    if (end >= *discoverMaxId)
+                        end = *discoverMaxId + 1;
+                    m_logger.info("Scanning ID range %u - %u at %s datarate",
+                                  start,
+                                  end - 1,
+                                  datarate.c_str());
+                    u32 remaining = *discoverExpected > 0 ? *discoverExpected - ids.size() : 0;
+                    auto found    = MD::discoverMDs(candle, start, end, remaining);
+                    if (found.empty())
+                        m_logger.info(" - None found");
+                    ids.insert(ids.end(), found.begin(), found.end());
+                    if (*discoverExpected > 0 && ids.size() >= *discoverExpected)
+                    {
+                        m_logger.info("Found %zu drive(s), stopping scan", ids.size());
+                        break;
+                    }
+                    start = end;
+                }
 
                 if (ids.empty())
                     m_logger.error("No MD found on the bus for data %s",

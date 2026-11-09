@@ -16,8 +16,8 @@ int main()
     mab::Candle* candle = mab::attachCandle(mab::CANdleDatarate_E::CAN_DATARATE_1M,
                                             mab::candleTypes::busTypes_t::USB);
 
-    // Look for MAB devices present on the can network
-    auto ids = mab::MD::discoverMDs(candle);
+    // Look for MAB devices present on the can network, stop at the first one (only one is used)
+    auto ids = mab::MD::discoverMDs(candle, 10, 0x7FF, 1);
 
     // This method provides you with memory-safe map handle which you can assign MDs too manually
     // via addMD method or via discoverDevices

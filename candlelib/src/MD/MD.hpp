@@ -630,9 +630,12 @@ namespace mab
         void testLatency();
 
         static std::vector<canId_t> discoverMDs(Candle* candle);
+        /// @brief Discover MDs with ids in range [minValueRange, maxValueRange)
+        /// @param expected stop scanning once this many drives are found (0 = scan whole range)
         static std::vector<canId_t> discoverMDs(Candle* candle,
                                                 canId_t minValueRange,
-                                                canId_t maxValueRange);
+                                                canId_t maxValueRange,
+                                                u32     expected = 0);
 
       private:
         Candle* const m_candle;

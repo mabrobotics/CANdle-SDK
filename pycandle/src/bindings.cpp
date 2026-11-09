@@ -644,8 +644,14 @@ PYBIND11_MODULE(pyCandle, m)
           py::arg("value"),
           "Write a register to the MD device.");
     m.def("discoverMDs",
-          py::overload_cast<mab::Candle*, mab::canId_t, mab::canId_t>(&mab::MD::discoverMDs),
-          "Discover MD connected to the system within a specific ID range.");
+          py::overload_cast<mab::Candle*, mab::canId_t, mab::canId_t, u32>(
+              &mab::MD::discoverMDs),
+          py::arg("candle"),
+          py::arg("minValueRange"),
+          py::arg("maxValueRange"),
+          py::arg("expected") = 0,
+          "Discover MD connected to the system within a specific ID range [min, max). "
+          "Stops after 'expected' drives are found (0 = scan whole range).");
     m.def("discoverMDs",
           py::overload_cast<mab::Candle*>(&mab::MD::discoverMDs),
           "Discover MD devices connected to the system.");
