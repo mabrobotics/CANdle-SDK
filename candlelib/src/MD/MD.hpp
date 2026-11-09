@@ -627,9 +627,6 @@ namespace mab
             return true;
         }
 
-        /// @brief Debugging method to test communication efficiency
-        void testLatency();
-
         static std::vector<canId_t> discoverMDs(Candle* candle);
         /// @brief Discover MDs with ids in range [minValueRange, maxValueRange)
         /// @param expected stop scanning once this many drives are found (0 = scan whole range)
