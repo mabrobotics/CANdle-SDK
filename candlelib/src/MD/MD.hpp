@@ -628,7 +628,7 @@ namespace mab
         }
 
         static std::vector<canId_t> discoverMDs(Candle* candle);
-        /// @brief Discover MDs with ids in range [minValueRange, maxValueRange)
+        /// @brief Discover MDs with ids in range [minValueRange, maxValueRange] (inclusive)
         /// @param expected stop scanning once this many drives are found (0 = scan whole range)
         static std::vector<canId_t> discoverMDs(Candle* candle,
                                                 canId_t minValueRange,
