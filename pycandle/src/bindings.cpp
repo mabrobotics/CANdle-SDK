@@ -172,6 +172,44 @@ namespace mab
         return err;
     }
 
+    using StatusFlags = std::vector<std::pair<std::string, bool>>;
+
+    template <typename T>
+    StatusFlags setStatusFlags(u32 value, std::unordered_map<T, MDStatus::StatusItem_S>& map)
+    {
+        MDStatus::decode(value, map);
+        StatusFlags flags;
+        for (const auto& [bit, item] : map)
+            if (item.isSet())
+                flags.emplace_back(item.name, item.isError);
+        return flags;
+    }
+
+    /// @brief Decode MD status register value into set flags as (name, isError) pairs
+    StatusFlags decodeMDStatus(const std::string& regName, u32 value)
+    {
+        MDStatus s;
+        if (regName == "quickStatus")
+            return setStatusFlags(value, s.quickStatus);
+        if (regName == "mainEncoderStatus" || regName == "auxEncoderStatus")
+            return setStatusFlags(value, s.encoderStatus);
+        if (regName == "calibrationStatus")
+            return setStatusFlags(value, s.calibrationStatus);
+        if (regName == "bridgeStatus")
+            return setStatusFlags(value, s.bridgeStatus);
+        if (regName == "hardwareStatus")
+            return setStatusFlags(value, s.hardwareStatus);
+        if (regName == "communicationStatus")
+            return setStatusFlags(value, s.communicationStatus);
+        if (regName == "motionStatus")
+            return setStatusFlags(value, s.motionStatus);
+        if (regName == "miscStatus")
+            return setStatusFlags(value, s.miscStatus);
+        if (regName == "configStatus")
+            return setStatusFlags(value, s.configStatus);
+        throw std::invalid_argument("Not a status register: " + regName);
+    }
+
     // PDS Wrapper Functions
     // Pds class wrappers
     std::pair<pdsFwMetadata_S, PdsModule::error_E> pdsFwMetadataWrapper(Pds& pds)
@@ -476,7 +514,7 @@ PYBIND11_MODULE(pyCandle, m)
           &mab::pyAttachCandle,
           py::arg("datarate"),
           py::arg("busType"),
-          py::arg("dontUseFDCANFrames") = true,
+          py::arg("dontUseFDCANFrames") = false,
           py::return_value_policy::take_ownership,
           "Attach a CANdle device to the system.");
 
@@ -643,9 +681,21 @@ PYBIND11_MODULE(pyCandle, m)
           py::arg("regName"),
           py::arg("value"),
           "Write a register to the MD device.");
+    m.def("decodeMDStatus",
+          &mab::decodeMDStatus,
+          py::arg("regName"),
+          py::arg("value"),
+          "Decode MD status register value (eg. \"motionStatus\") into a list of set flags as "
+          "(name, isError) tuples.");
     m.def("discoverMDs",
-          py::overload_cast<mab::Candle*, mab::canId_t, mab::canId_t>(&mab::MD::discoverMDs),
-          "Discover MD connected to the system within a specific ID range.");
+          py::overload_cast<mab::Candle*, mab::canId_t, mab::canId_t, u32>(
+              &mab::MD::discoverMDs),
+          py::arg("candle"),
+          py::arg("minValueRange"),
+          py::arg("maxValueRange"),
+          py::arg("expected") = 0,
+          "Discover MD connected to the system within a specific ID range [min, max] (inclusive). "
+          "Stops after 'expected' drives are found (0 = scan whole range).");
     m.def("discoverMDs",
           py::overload_cast<mab::Candle*>(&mab::MD::discoverMDs),
           "Discover MD devices connected to the system.");

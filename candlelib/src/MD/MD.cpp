@@ -597,47 +597,9 @@ namespace mab
         return std::make_pair(m_mdRegisters.motorTemperature.value, result);
     }
 
-    void MD::setLogLevel(Logger::LogLevel_E level)
+    void MD::setLogLevel(std::optional<Logger::LogLevel_E> level)
     {
         m_log.m_optionalLevel = level;
-    }
-
-    /// @brief This test should be performed with 1M datarate on CAN network
-    void MD::testLatency()
-    {
-        u64 latencyTransmit = 0;  // us
-        // u64 latencyReceive  = 0;  // us
-
-        constexpr u64 transmitSamples = 1000;
-        // constexpr u64 receiveSamples  = 1000;
-
-        constexpr u64 transmissionFramesTime = 407;
-        // constexpr u64 receptionFramesTime    = 1;
-
-        m_mdRegisters.userGpioConfiguration = 0;
-        auto transmitParameter =
-            std::make_tuple(std::reference_wrapper(m_mdRegisters.userGpioConfiguration));
-        // auto receiveParameter =
-        //     std::make_tuple(std::reference_wrapper(m_mdRegisters.canTermination));
-
-        for (u32 i = 0; i < transmitSamples; i++)
-        {
-            auto start = std::chrono::high_resolution_clock::now();
-            writeRegisters(transmitParameter);
-            auto end = std::chrono::high_resolution_clock::now();
-            latencyTransmit +=
-                std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-        }
-        latencyTransmit /= transmitSamples;
-        m_log.info("Overall transmission time: %d us", latencyTransmit);
-        m_log.info("Overall transmission frequency: %.6f kHz",
-                   1.0f / (static_cast<float>(latencyTransmit) / 1'000.0f));
-        u64 latencyTransmitCropped = latencyTransmit - transmissionFramesTime;
-        m_log.info("Only USB transmission time: %d us", latencyTransmitCropped);
-        m_log.info("Can bus utilization %.2f%%",
-                   100.0f - (static_cast<float>(latencyTransmitCropped) /
-                             static_cast<float>(latencyTransmit)) *
-                                100.0f);
     }
 
     std::vector<canId_t> MD::discoverMDs(Candle* candle)
@@ -650,7 +612,8 @@ namespace mab
 
     std::vector<canId_t> MD::discoverMDs(Candle* candle,
                                          canId_t minValueRange,
-                                         canId_t maxValueRange)
+                                         canId_t maxValueRange,
+                                         u32     expected)
     {
         constexpr canId_t MIN_VALID_ID = 10;     // ids less than that are reserved for special
         constexpr canId_t MAX_VALID_ID = 0x7FF;  // 11-bit value (standard can ID max)
@@ -673,7 +636,7 @@ namespace mab
         // workaround for ping error spam
         Logger::Verbosity_E prevVerbosity =
             Logger::g_m_verbosity.value_or(Logger::Verbosity_E::VERBOSITY_1);
-        for (canId_t id = minValueRange; id < maxValueRange; id++)
+        for (canId_t id = minValueRange; id < maxValueRange + 1; id++)
         {
             log.debug("Trying to bind MD with id %d", id);
             // log.progress(float(id) / float(maxValueRange));
@@ -687,6 +650,8 @@ namespace mab
                 log.info("\r - Found '%s' at @%d" END_LINE, md.m_mdRegisters.motorName.value, id);
             }
             Logger::g_m_verbosity = prevVerbosity;
+            if (expected > 0 && ids.size() >= expected)
+                break;
         }
         // log.progress(1.);
         return ids;

@@ -259,7 +259,8 @@ namespace mab
         std::pair<u8, Error_t> getTemperature();
 
         /// @brief Set logging verbosity for this MD instance
-        void setLogLevel(Logger::LogLevel_E level);
+        /// @param level log level, std::nullopt restores the default (global verbosity)
+        void setLogLevel(std::optional<Logger::LogLevel_E> level);
 
         /// @brief Read register from the memory of the MD
         /// @tparam T Register entry underlying type (should be deducible)
@@ -626,13 +627,13 @@ namespace mab
             return true;
         }
 
-        /// @brief Debugging method to test communication efficiency
-        void testLatency();
-
         static std::vector<canId_t> discoverMDs(Candle* candle);
+        /// @brief Discover MDs with ids in range [minValueRange, maxValueRange] (inclusive)
+        /// @param expected stop scanning once this many drives are found (0 = scan whole range)
         static std::vector<canId_t> discoverMDs(Candle* candle,
                                                 canId_t minValueRange,
-                                                canId_t maxValueRange);
+                                                canId_t maxValueRange,
+                                                u32     expected = 0);
 
       private:
         Candle* const m_candle;

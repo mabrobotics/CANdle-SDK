@@ -139,7 +139,9 @@ namespace mab
         std::shared_ptr<std::function<void(void)>> m_cfsync;
         CANdleFrameAdapter                         m_cfAdapter;
         std::jthread                               m_cfTransferThread;
-        std::counting_semaphore<7>                 m_cfTransferSemaphore{0};
+        // Released once per accumulated frame, the transfer thread sends all queued frames per
+        // acquire, so the count can exceed the frame buffer size - it must not be capped
+        std::counting_semaphore<>                  m_cfTransferSemaphore{0};
         std::atomic_bool                           m_cfTransferAlive{false};
 
         void cfTransferLoop(std::stop_token stopToken) noexcept;
