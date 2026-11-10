@@ -18,8 +18,11 @@ namespace mab
         static constexpr const char* FW_INDEX_FILE = "api_download.ini";
 
         /// @brief download a single file from url to outputPath
+        /// @param quiet true to print neither progress nor failure, for files that may not exist
         /// @return true on success
-        static bool download(std::string_view url, const std::filesystem::path& outputPath);
+        static bool download(std::string_view             url,
+                             const std::filesystem::path& outputPath,
+                             bool                         quiet = false);
 
         /// @brief download firmware index from the server and parse it
         static bool loadIndex(mINI::INIStructure& index);
