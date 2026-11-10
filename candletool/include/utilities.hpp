@@ -93,9 +93,8 @@ namespace mab
     /// @brief this struct will be used to share information across CANdleTool
     struct CANdleToolCtx_S
     {
-        std::vector<CANdleBranch_S>                  candleBranchVec;
-        const std::shared_ptr<std::filesystem::path> packageEtcPath =
-            std::make_shared<std::filesystem::path>(DEFAULT_CANDLETOOL_CONFIG_DIR);
+        std::vector<CANdleBranch_S>            candleBranchVec;
+        std::shared_ptr<std::filesystem::path> packageEtcPath;
     };
 
     class MABDescriptionFormatter : public CLI::Formatter

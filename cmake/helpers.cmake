@@ -63,3 +63,19 @@ function(get_tag TAG_VAR)
         PARENT_SCOPE)
   endif()
 endfunction()
+
+# Fails configuration when the version in pyproject.toml (next to the calling
+# CMakeLists.txt) differs from VERSION, so the python package and the C++
+# libraries cannot be released with different numbers.
+function(check_pyproject_version VERSION)
+  file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/pyproject.toml PYPROJECT_VERSION
+       REGEX "^version = \"[^\"]*\"")
+  string(REGEX REPLACE "^version = \"([^\"]*)\".*" "\\1" PYPROJECT_VERSION
+                       "${PYPROJECT_VERSION}")
+  if(NOT PYPROJECT_VERSION STREQUAL VERSION)
+    message(
+      FATAL_ERROR
+        "Version mismatch: CMakeLists.txt has ${VERSION}, pyproject.toml has '${PYPROJECT_VERSION}'"
+    )
+  endif()
+endfunction()

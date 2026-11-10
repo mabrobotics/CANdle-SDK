@@ -112,7 +112,9 @@ namespace mab
         struct ReadOptions
         {
             ReadOptions(CLI::App* rootCli)
-                : index(std::make_shared<u16>(0)), subindex(std::make_shared<std::optional<u8>>())
+                : index(std::make_shared<u16>(0)),
+                  subindex(std::make_shared<std::optional<u8>>()),
+                  type(std::make_shared<std::string>())
             {
                 optionsMap = std::map<std::string, CLI::Option*>{
                     {"index",
@@ -120,11 +122,19 @@ namespace mab
                          ->required()},
                     {"subindex",
                      rootCli->add_option(
-                         "--subindex", *subindex, "Subindex of the object to read data from.")}};
+                         "--subindex", *subindex, "Subindex of the object to read data from.")},
+                    {"type",
+                     rootCli->add_option("-t,--type",
+                                         *type,
+                                         "Data type of an object not listed in the .eds, read by "
+                                         "its address: BOOLEAN, INTEGER8/16/32/64, "
+                                         "UNSIGNED8/16/32/64, REAL32, VISIBLE_STRING or "
+                                         "OCTET_STRING")}};
             }
 
             const std::shared_ptr<u16>               index;
             const std::shared_ptr<std::optional<u8>> subindex;
+            const std::shared_ptr<std::string>       type;
             std::map<std::string, CLI::Option*>      optionsMap;
         };
 

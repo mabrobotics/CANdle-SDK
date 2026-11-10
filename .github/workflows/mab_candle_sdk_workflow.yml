@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - devel
   workflow_dispatch:
   pull_request:
     types: [assigned, opened, synchronize, reopened]
@@ -437,6 +438,41 @@ jobs:
 
       - name: Test
         run: ./launch/run_all_tests.sh
+
+  # Newest devel build, replaces the previous one so only a single draft is kept
+  nightly:
+    if: github.ref == 'refs/heads/devel' && github.event_name != 'pull_request'
+    needs:
+      - build-candleSDK-linux-static
+      - build-candleSDK-linux-arm64-static
+      - build-candleSDK-linux-armhf-static
+      - build-candleSDK-windows-static
+      - build-candleSDK-python-linux
+      - build-candleSDK-python-windows
+    runs-on: ubuntu-latest
+    concurrency:
+      group: nightly
+      cancel-in-progress: true
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Replace nightly draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release delete nightly --yes --cleanup-tag || true
+          gh release create nightly artifacts/*/* \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Nightly $(date -u +%Y-%m-%d) (devel ${GITHUB_SHA::7})" \
+            --notes "Automatic build of devel at $GITHUB_SHA. Not a stable release."
 
   release:
     if: contains('

@@ -101,7 +101,16 @@ if md.init() == pc.MD_Error_t.OK:
 
 ### Running the Python examples
 
-Ready-to-run scripts covering both MD and PDS control are in [examples/py](examples/py), e.g. `md_impedance.py` and `pds_example_basic.py`. Grab the folder (or the whole repo) with the [git clone](#get-the-source) instructions below, then, with `candlesdk` installed and your hardware connected, run:
+Ready-to-run scripts covering both MD and PDS control are in [examples/py](examples/py):
+
+| Script | Description |
+|---|---|
+| `md_impedance.py` | Finds the first MD on the bus and moves it 5 rad from its current position in impedance mode, printing position and torque. |
+| `md_register_access.py` | Reads and writes MD registers by name (integer and float), using the type-specific `readRegister*` / `writeRegister*` functions. |
+| `md_status.py` | Reads all MD status registers and decodes them into named flags with `decodeMDStatus`, like `candletool md info`. |
+| `pds_basic.py` | Discovers a PDS, lists its modules and reads the status of power stages, brake resistors and isolated converters. |
+
+Grab the folder (or the whole repo) with the [git clone](#get-the-source) instructions below, then, with `candlesdk` installed and your hardware connected, run:
 
 ```bash
 python3 examples/py/md_impedance.py
@@ -185,10 +194,24 @@ Both produce a `build/` directory containing the `candlelib` library and, by def
 
 ### C++ examples
 
-Example programs demonstrating MD and PDS usage — impedance control, diagnostics, PDS power stage/braking resistor handling, and more — are in [examples/cpp](examples/cpp). Each file builds into its own executable as part of the normal build above; run one directly from the build output, e.g.:
+Example programs demonstrating MD and PDS usage are in [examples/cpp](examples/cpp):
+
+| Example | Description |
+|---|---|
+| `app_template` | Starting point for your own application: discovers all MDs and PDSes and periodically prints MD position/velocity and PDS bus voltage. |
+| `md_impedance` | Finds the first MD on the bus and moves it 5 rad from its current position in impedance mode. |
+| `md_register_access` | Reads and writes MD registers, including several registers in one request. |
+| `md_status` | Reads all MD status registers and prints the decoded flags, like `candletool md info`. |
+| `mdco_speed_loop` | Runs an MD over CANopen in Cyclic Sync Velocity mode for 10 s, printing its position. |
+| `pds_ping_and_status` | Discovers a PDS and reads control board status, bus voltage, shutdown time, battery levels and connected modules. |
+| `pds_power_stage` | Configures and enables a PDS power stage (OCD, temperature limit) with a bound brake resistor and reads its status. |
+| `pds_braking_resistor` | Configures a PDS brake resistor's temperature limit and reads its status and temperature. |
+| `pds_isolated_converter` | Configures and enables a PDS isolated converter (OCD, temperature limit) and reads its output voltage and current. |
+
+The PDS examples (except `pds_ping_and_status`) expect a PDS with CAN ID 100 and modules in the sockets defined at the top of each file. Each file builds into its own executable as part of the normal build above; run one directly from the build output, e.g.:
 
 ```bash
-./build/examples/md_example_impedance
+./build/examples/md_impedance
 ```
 
 ### Building the Python module from source
@@ -236,4 +259,4 @@ For more information check out our documentation page [here](https://mabrobotics
 
 ## License
 
-CANdle-SDK is released under the [MIT License](LICENSE.txt).
+CANdle-SDK is released under the [MIT License](LICENSE.txt). Bundled third-party components are listed with their licenses in [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt).

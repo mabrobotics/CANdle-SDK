@@ -304,6 +304,30 @@ namespace mab
             return Error_t::OK;
         }
     }
+    std::vector<std::string> USB::listSerials(const u16 vid, const u16 pid)
+    {
+        std::vector<std::string> serials;
+        libusb_context*          ctx = nullptr;
+        if (libusb_init(&ctx))
+            return serials;
+
+        libusb_device** deviceList    = nullptr;
+        ssize_t         deviceListLen = libusb_get_device_list(ctx, &deviceList);
+        for (ssize_t i = 0; i < deviceListLen; i++)
+        {
+            libusb_device_descriptor desc;
+            if (libusb_get_device_descriptor(deviceList[i], &desc) || desc.idVendor != vid ||
+                desc.idProduct != pid)
+                continue;
+            LibusbDevice device(deviceList[i], IN_ENDPOINT, OUT_ENDPOINT, true /*peek*/);
+            serials.push_back(device.getSerialNo().c_str());  // drop trailing '\0' padding
+        }
+        if (deviceListLen > 0)
+            libusb_free_device_list(deviceList, true);
+        libusb_exit(ctx);
+        return serials;
+    }
+
     USB::Error_t USB::disconnect()
     {
         if (m_libusbDevice == nullptr)
