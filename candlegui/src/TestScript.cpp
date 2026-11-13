@@ -149,8 +149,11 @@ void TestScript::drawMainScriptMenu()
                 ImGui::BeginGroup();
                 switch (block.type)
                 {
-                    case CodeBlockType_E::MOVE:
+                    case CodeBlockType_E::MOVE_TO_POSITION:
                         drawMoveFunction(block);
+                        break;
+                    case CodeBlockType_E::ADD_MDS:
+                        drawAddMDsFunction(block);
                         break;
                     case CodeBlockType_E::SET_MODE:
                         drawSetModeFunction(block);
@@ -274,7 +277,7 @@ void TestScript::drawCodeDetailsMenu()
 
             switch (block.type)
             {
-                case CodeBlockType_E::MOVE:
+                case CodeBlockType_E::MOVE_TO_POSITION:
                     drawMoveDetails(block);
                     break;
                 default:
@@ -299,31 +302,47 @@ Block Draw Functions
 void TestScript::drawMoveFunction(CodeBlock_S& block)
 {
     ImGui::AlignTextToFramePadding();
-    ImGui::Text("Move MD");
-
-    ImGui::SameLine();
-    GuiStyle::comboStyle(nullptr, blockComboHeight);
-    ImGui::SetNextItemWidth(70);
-    if (ImGui::BeginCombo("##Select MD or Group", std::to_string(block.id).c_str()))
-    {
-        for (MDStatus_S md : m_data->mdStatus)  // TODO risky
-        {
-            if (ImGui::Selectable(std::to_string(md.id).c_str(), block.id == md.id))
-                block.id = md.id;
-        }
-
-        // TODO add groups list
-
-        ImGui::EndCombo();
-    }
-    GuiStyle::endComboStyle();
-
-    ImGui::SameLine();
-    ImGui::Text("to position");
+    ImGui::Text("Move MD to position");
 
     ImGui::SameLine();
     ImGui::SetNextItemWidth(70);
     ImGui::InputFloat("##pos", &block.movePosition, 0.0f, 0.0f, "%.2f");
+}
+
+void TestScript::drawAddMDsFunction(CodeBlock_S& block)
+{
+    ImGui::AlignTextToFramePadding();
+    ImGui::Text("Use MDs");
+
+    int removeAt = -1;
+
+    for (int id = 0; id < (int)block.mdIds.size(); id++)
+    {
+        ImGui::PushID(id);
+
+        ImGui::SameLine();
+        drawMDSelectCombo(block.mdIds[id]);
+
+        ImGui::SameLine();
+        GuiStyle::buttonStyle();
+        if (ImGui::SmallButton("x"))
+            removeAt = id;
+        GuiStyle::endButtonStyle();
+
+        ImGui::PopID();
+    }
+
+    if (removeAt >= 0)
+        block.mdIds.erase(block.mdIds.begin() + removeAt);
+
+    ImGui::SameLine();
+    GuiStyle::buttonStyle();
+    if (ImGui::Button("+ add"))
+        block.mdIds.push_back(0);
+    GuiStyle::endButtonStyle();
+
+    ImGui::SameLine();
+    ImGui::Text("for the test");
 }
 
 void TestScript::drawSetModeFunction(CodeBlock_S& block)
@@ -497,4 +516,22 @@ void TestScript::drawBlockBackground(
 
     if (isSelected)
         dl->AddRect(minimumPos, maximumPos, IM_COL32(255, 255, 255, 255), rounding, 0, 2.0f);
+}
+
+void TestScript::drawMDSelectCombo(mab::canId_t& id)
+{
+    GuiStyle::comboStyle(nullptr, blockComboHeight);
+    ImGui::SetNextItemWidth(70);
+    if (ImGui::BeginCombo("##Select MD or Group", std::to_string(id).c_str()))
+    {
+        for (MDStatus_S md : m_data->mdStatus)  // TODO risky
+        {
+            if (ImGui::Selectable(std::to_string(md.id).c_str(), id == md.id))
+                id = md.id;
+        }
+
+        // TODO add groups list
+        ImGui::EndCombo();
+    }
+    GuiStyle::endComboStyle();
 }

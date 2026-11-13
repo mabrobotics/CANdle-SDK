@@ -25,23 +25,34 @@ class TestScript
         GROUP_SETTERS,  // 2
         GROUP_COUNTER   // 3
     };
-    const char* groupNames[CodeGroupType_E::GROUP_COUNTER] = {"Motion", "Control", "Setters"};
+    const char* groupNames[CodeGroupType_E::GROUP_COUNTER] = {"Motion",    // 1
+                                                              "Control",   // 2
+                                                              "Setters"};  // 3
 
     enum CodeBlockType_E
     {
-        MOVE,       // 0
-        WAIT,       // 1
-        SET_MODE,   // 2
-        SET_VALUE,  // 3
-        SET_GAINS,  // 4
-        COUNT       // 5
+        MOVE_TO_POSITION,  // 0
+        MOVE_VELOCITY,     // 1
+        WAIT,              // 2
+        ADD_MDS,           // 3
+        SET_MODE,          // 4
+        SET_VALUE,         // 5
+        SET_GAINS,         // 6
+        COUNT              // 7
     };
-    const char* blockNames[CodeBlockType_E::COUNT] = {
-        "Move", "Wait", "Set mode", "Set value", "Set gains"};
+    const char* blockNames[CodeBlockType_E::COUNT] = {"Move to position",    // 0
+                                                      "Move with velocity",  // 1
+                                                      "Wait",                // 2
+                                                      "Add MDs",             // 3
+                                                      "Set mode",            // 4
+                                                      "Set value",           // 5
+                                                      "Set gains"};          // 6
 
     CodeGroupType_E blockGroup[CodeBlockType_E::COUNT] = {
-        GROUP_MOTION,   // MOVE
+        GROUP_MOTION,   // MOVE_TO_POSITION
+        GROUP_MOTION,   // MOVE_VELOCITY
         GROUP_CONTROL,  // WAIT
+        GROUP_SETTERS,  // ADD_MDS
         GROUP_SETTERS,  // SET_MODE
         GROUP_SETTERS,  // SET_VALUE
         GROUP_SETTERS   // SET_GAINS
@@ -51,8 +62,9 @@ class TestScript
     {
         CodeBlockType_E type;
 
-        mab::canId_t id;
-        MDGroup_S    group;
+        mab::canId_t              id;
+        MDGroup_S                 group;
+        std::vector<mab::canId_t> mdIds;
 
         // SETTER PARAMETERS
         mab::MdMode_E setMode = mab::MdMode_E::IDLE;
@@ -96,6 +108,7 @@ class TestScript
     void drawMoveFunction(CodeBlock_S& block);
     void drawControlFunction();
     void drawSetterFunction();
+    void drawAddMDsFunction(CodeBlock_S& block);
     void drawSetModeFunction(CodeBlock_S& block);
     void drawSetGainsFunction(CodeBlock_S& block);
 
@@ -108,4 +121,6 @@ class TestScript
     std::string getModeName(mab::MdMode_E& modeName);
     void        drawBlockBackground(
         ImDrawList* dl, ImVec2 mn, ImVec2 mx, CodeGroupType_E group, bool isSelected);
+
+    void drawMDSelectCombo(mab::canId_t& id);
 };
