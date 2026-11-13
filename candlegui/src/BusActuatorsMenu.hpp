@@ -15,13 +15,6 @@ class BusActuatorMenu
     void drawBusActuatorMenu();
 
   private:
-    struct MDGroup_S
-    {
-        std::string               groupName;
-        std::vector<mab::canId_t> mdIds;
-        bool                      isSelected = false;
-    };
-
     enum class ActionType_E
     {
         NONE,

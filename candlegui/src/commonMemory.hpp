@@ -69,6 +69,13 @@ struct RecordSample_S
     float        mosfetTemp = NAN;
 };
 
+struct MDGroup_S
+{
+    std::string               groupName;
+    std::vector<mab::canId_t> mdIds;
+    bool                      isSelected = false;
+};
+
 struct commonMemory_S
 {
     enum class busType_E
