@@ -102,6 +102,33 @@ void GuiStyle::buttonInvisibleStyle()
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 4.0f));
 }
 
+void GuiStyle::buttonMotionStyle()
+{
+    ImGui::PushStyleColor(ImGuiCol_Button, buttonMotionColor);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, mabColor);
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, buttonColor);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, roundingFrameButton);
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 4.0f));
+}
+
+void GuiStyle::buttonControlStyle()
+{
+    ImGui::PushStyleColor(ImGuiCol_Button, buttonControlColor);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, mabColor);
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, buttonColor);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, roundingFrameButton);
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 4.0f));
+}
+
+void GuiStyle::buttonSetterStyle()
+{
+    ImGui::PushStyleColor(ImGuiCol_Button, buttonSetterColor);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, mabColor);
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, buttonColor);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, roundingFrameButton);
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 4.0f));
+}
+
 void GuiStyle::checkboxStyle()
 {
     ImGui::PushStyleColor(ImGuiCol_CheckMark, mabColor);
@@ -143,6 +170,22 @@ void GuiStyle::childOuterStyle()
                         ImVec2(GuiStyle::leftMenuPadding, GuiStyle::windowsPadding));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
                         ImVec2(GuiStyle::insideWindowPadding_x, GuiStyle::insideWindowPadding_y));
+}
+
+void GuiStyle::scriptSpaceStyle()
+{
+    ImVec2      minimum  = ImGui::GetItemRectMin();
+    ImVec2      maximum  = ImGui::GetItemRectMax();
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+    const float step = 20.0f;
+
+    drawList->AddRectFilled(minimum, maximum, bgColor);
+    for (float x = minimum.x; x < maximum.x; x += step)
+        drawList->AddLine(ImVec2(x, minimum.y), ImVec2(x, maximum.y), lineColor);
+    for (float y = minimum.y; y < maximum.y; y += step)
+        drawList->AddLine(ImVec2(minimum.x, y), ImVec2(maximum.x, y), lineColor);
+    drawList->AddRect(minimum, maximum, borderColor);
 }
 
 /*
