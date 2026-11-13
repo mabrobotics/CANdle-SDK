@@ -39,8 +39,7 @@ class BusActuatorMenu
                GuiStyle::largeButtonHeight);
 
     // Groups
-    std::vector<MDGroup_S> MDGroups;
-    mab::canId_t           idCopy = 0;
+    mab::canId_t idCopy = 0;
 
     // Add Group Popup
     char        newGroupName[64] = "";

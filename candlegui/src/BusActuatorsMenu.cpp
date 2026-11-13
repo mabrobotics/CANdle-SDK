@@ -1,5 +1,6 @@
 #include "BusActuatorsMenu.hpp"
 #include "GuiStyle.hpp"
+#include "commonMemory.hpp"
 #include "imgui.h"
 
 BusActuatorMenu::BusActuatorMenu(std::shared_ptr<commonMemory_S> commonMemory, ImGuiIO& io)
@@ -176,11 +177,11 @@ void BusActuatorMenu::drawTestGroupsMenu()
         GuiStyle::buttonStyle();
         if (ImGui::Button("Select All",
                           ImVec2(candleInfoButtonWidth.x, GuiStyle::mediumButtonHeight)))
-            for (auto& group : MDGroups)
+            for (MDGroup_S& group : m_data->MDGroups)
                 group.isSelected = true;
         ImGui::SameLine();
         if (ImGui::Button("Clear", ImVec2(candleInfoButtonWidth.x, GuiStyle::mediumButtonHeight)))
-            for (auto& group : MDGroups)
+            for (MDGroup_S& group : m_data->MDGroups)
                 group.isSelected = false;
         GuiStyle::endButtonStyle();
 
@@ -339,7 +340,7 @@ void BusActuatorMenu::drawAddToGroupMenu()
         {
             chosenGroupName = defaultGroupName;
         }
-        for (const MDGroup_S& group : MDGroups)
+        for (const MDGroup_S& group : m_data->MDGroups)
         {
             if (ImGui::Selectable(group.groupName.c_str()))
             {
@@ -369,7 +370,7 @@ void BusActuatorMenu::drawAddToGroupMenu()
         else
         {
             deleteFromGroup(idCopy);
-            for (MDGroup_S& group : MDGroups)
+            for (MDGroup_S& group : m_data->MDGroups)
             {
                 if (group.groupName == chosenGroupName)
                 {
@@ -444,9 +445,9 @@ void BusActuatorMenu::drawGroupButtons()
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, GuiStyle::roundingFrameButton);
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 4.0f));
 
-    for (size_t i = 0; i < MDGroups.size(); ++i)
+    for (size_t i = 0; i < m_data->MDGroups.size(); ++i)
     {
-        MDGroup_S& group = MDGroups[i];
+        MDGroup_S& group = m_data->MDGroups[i];
         ImGui::PushID(static_cast<int>(i));
 
         if (group.isSelected)
@@ -462,8 +463,8 @@ void BusActuatorMenu::drawGroupButtons()
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, GuiStyle::buttonColor);
         }
 
-        std::string labelForButton =
-            MDGroups[i].groupName + " (" + std::to_string(MDGroups[i].mdIds.size()) + ")";
+        std::string labelForButton = m_data->MDGroups[i].groupName + " (" +
+                                     std::to_string(m_data->MDGroups[i].mdIds.size()) + ")";
 
         if (ImGui::Button(labelForButton.c_str(),
                           ImVec2(GuiStyle::leftMenuWideButtonWidth, GuiStyle::largeButtonHeight)))
@@ -497,7 +498,7 @@ Helper Functions
 
 const std::string BusActuatorMenu::getGroupName(mab::canId_t id)
 {
-    for (const MDGroup_S& group : MDGroups)
+    for (const MDGroup_S& group : m_data->MDGroups)
     {
         const std::vector<mab::canId_t>& ids = group.mdIds;
         if (std::find(ids.begin(), ids.end(), id) != ids.end())
@@ -508,7 +509,7 @@ const std::string BusActuatorMenu::getGroupName(mab::canId_t id)
 
 void BusActuatorMenu::deleteFromGroup(mab::canId_t id)
 {
-    for (MDGroup_S& group : MDGroups)
+    for (MDGroup_S& group : m_data->MDGroups)
     {
         std::vector<mab::canId_t>& ids = group.mdIds;
         ids.erase(std::remove(ids.begin(), ids.end(), id), ids.end());
@@ -526,8 +527,8 @@ bool BusActuatorMenu::groupNameCheck(const std::string& rawName)
     const auto  last = rawName.find_last_not_of(" \t");
     std::string name = rawName.substr(first, last - first + 1);
 
-    bool exists = std::any_of(MDGroups.begin(),
-                              MDGroups.end(),
+    bool exists = std::any_of(m_data->MDGroups.begin(),
+                              m_data->MDGroups.end(),
                               [&](const MDGroup_S& group) { return group.groupName == name; });
     if (exists)
     {
@@ -535,7 +536,7 @@ bool BusActuatorMenu::groupNameCheck(const std::string& rawName)
         return false;
     }
 
-    MDGroups.push_back({name, {}});
+    m_data->MDGroups.push_back({name, {}});
     creatingGroupError.clear();
     return true;
 }

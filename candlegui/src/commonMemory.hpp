@@ -188,6 +188,7 @@ struct commonMemory_S
     // MAB
     std::atomic<mab::MdMode_E> currentMode{mab::MdMode_E::IDLE};
     std::vector<MDStatus_S>    mdStatus;
+    std::vector<MDGroup_S>     MDGroups;
     mab::canId_t               chosenID = 0;
     mab::CANdleDatarate_E      candleDatarate;
 
