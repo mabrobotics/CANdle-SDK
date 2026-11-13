@@ -64,7 +64,7 @@ void MonitorMenu::drawActuatorMenu()
 
         ImGui::Text("Actuators");
 
-        ImGui::PushFont(nullptr, 18.0f);
+        ImGui::PushFont(nullptr, GuiStyle::headerFontSize);
         float statusX = ImGui::GetFontSize() * 8.0f;
 
         if (!MonitorMenuMDStatus.empty())
@@ -126,7 +126,7 @@ void MonitorMenu::drawPlotsMenu()
         GuiStyle::childOuterStyle();
         if (ImGui::BeginChild("##Plot1", cellSize, ImGuiChildFlags_Borders))
         {
-            ImGui::PushFont(nullptr, 18.0f);
+            ImGui::PushFont(nullptr, GuiStyle::headerFontSize);
             ImGui::Text("Velocity");
             ImGui::PopFont();
             drawVelocityPlots();
@@ -137,7 +137,7 @@ void MonitorMenu::drawPlotsMenu()
 
         if (ImGui::BeginChild("##Plot2", cellSize, ImGuiChildFlags_Borders))
         {
-            ImGui::PushFont(nullptr, 18.0f);
+            ImGui::PushFont(nullptr, GuiStyle::headerFontSize);
             ImGui::Text("Position");
             ImGui::PopFont();
             drawPositionPlots();
@@ -146,7 +146,7 @@ void MonitorMenu::drawPlotsMenu()
 
         if (ImGui::BeginChild("##Plot3", cellSize, ImGuiChildFlags_Borders))
         {
-            ImGui::PushFont(nullptr, 18.0f);
+            ImGui::PushFont(nullptr, GuiStyle::headerFontSize);
             ImGui::Text("Torque");
             ImGui::PopFont();
             drawTorquePlots();
@@ -157,7 +157,7 @@ void MonitorMenu::drawPlotsMenu()
 
         if (ImGui::BeginChild("##Plot4", cellSize, ImGuiChildFlags_Borders))
         {
-            ImGui::PushFont(nullptr, 18.0f);
+            ImGui::PushFont(nullptr, GuiStyle::headerFontSize);
             ImGui::Text("MOSFET temperature");
             ImGui::PopFont();
             drawMosfetTempPlots();
@@ -239,7 +239,7 @@ void MonitorMenu::drawRecordDataMenu()
                           ImGuiChildFlags_Borders | ImGuiChildFlags_AutoResizeY,
                           GuiStyle::flagsBackMenu))
     {
-        ImGui::PushFont(nullptr, 18.0f);
+        ImGui::PushFont(nullptr, GuiStyle::headerFontSize);
         ImGui::Text("Record Data");
         ImGui::PopFont();
 

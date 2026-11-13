@@ -61,7 +61,7 @@ void BusActuatorMenu::drawCANdleInfoMenu()
         if (testOngoing)
             ImGui::BeginDisabled();
 
-        ImGui::PushFont(nullptr, 18.0f);
+        ImGui::PushFont(nullptr, GuiStyle::headerFontSize);
         ImGui::Text("CANdle");
         ImGui::PopFont();
 
@@ -165,7 +165,7 @@ void BusActuatorMenu::drawTestGroupsMenu()
         if (testOngoing)
             ImGui::BeginDisabled();
 
-        ImGui::PushFont(nullptr, 18.0f);
+        ImGui::PushFont(nullptr, GuiStyle::headerFontSize);
         ImGui::Text("Test Groups");
         ImGui::PopFont();
 
@@ -201,7 +201,7 @@ void BusActuatorMenu::drawFoundOnBusMenu()
                           ImGuiChildFlags_Borders,
                           GuiStyle::flagsBackMenu))
     {
-        ImGui::PushFont(nullptr, 18.0f);
+        ImGui::PushFont(nullptr, GuiStyle::headerFontSize);
         ImGui::Text("Found On the Bus");
         ImGui::PopFont();
 
@@ -296,7 +296,7 @@ void BusActuatorMenu::drawActionMenu()
     if (ImGui::BeginChild(
             "##Action Menu", ImVec2(0, 0), ImGuiChildFlags_Borders, GuiStyle::flagsBackMenu))
     {
-        ImGui::PushFont(nullptr, 18.0f);
+        ImGui::PushFont(nullptr, GuiStyle::headerFontSize);
         ImGui::Text("Action Menu");
         ImGui::PopFont();
 
