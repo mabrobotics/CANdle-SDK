@@ -172,10 +172,8 @@ void GuiStyle::childOuterStyle()
                         ImVec2(GuiStyle::insideWindowPadding_x, GuiStyle::insideWindowPadding_y));
 }
 
-void GuiStyle::scriptSpaceStyle()
+void GuiStyle::scriptSpaceStyle(ImVec2 minimum, ImVec2 maximum, float scrollY)
 {
-    ImVec2      minimum  = ImGui::GetItemRectMin();
-    ImVec2      maximum  = ImGui::GetItemRectMax();
     ImDrawList* drawList = ImGui::GetWindowDrawList();
 
     const float step = 20.0f;

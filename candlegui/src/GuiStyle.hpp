@@ -75,7 +75,7 @@ namespace GuiStyle
     void tableStyle();
     void childInnerStyle();
     void childOuterStyle();
-    void scriptSpaceStyle();
+    void scriptSpaceStyle(ImVec2 minimum, ImVec2 maximum, float scrollY);
 
     void endComboStyle();
     void endButtonStyle();
