@@ -6,17 +6,6 @@
 
 namespace mab
 {
-    /// @brief Firmware update of MD drives on the G5 bootloader (Bl3), CAN update protocol v1
-    ///
-    /// Every request gets one reply [command, status, ...]:
-    ///   [C0]                     IDENTIFY -> [C0, 0, protocol, deviceType, deviceRevision,
-    ///                                         blVersion u32, maxImageSize u32]
-    ///   [C1, header 56 B]        START    -> [C1, status]
-    ///   [C2, seq, n, n <= 61 B]  DATA     -> [C2, status, seq]
-    ///   [C3]                     END      -> [C3, status]
-    ///   [C4]                     BOOT     -> [C4, status]
-    /// A lost reply is recovered by sending the same request again: a repeated DATA seq gets the
-    /// stored reply and is not written twice, END and BOOT can be repeated.
     namespace bl3Loader
     {
         constexpr u8 PROTOCOL = 1;  // protocol version this loader speaks
@@ -32,7 +21,7 @@ namespace mab
 
         enum class Identify_E
         {
-            G5,        // Bl3 answered, the update session is open
+            BL3,       // Bl3 answered, the update session is open
             OTHER,     // a G4 bootloader answered ("NO")
             NO_REPLY,  // nothing usable came back
         };
@@ -56,5 +45,9 @@ namespace mab
                               canId_t              canId,
                               const MabFileParser& mabFile,
                               const Info&          info);
+
+        /// @brief Erase the config page (CAN ID back to 100 at the next start) and start the
+        /// application. identify() must have returned G5 before.
+        bool eraseConfig(Candle* candle, canId_t canId);
     }  // namespace bl3Loader
 }  // namespace mab

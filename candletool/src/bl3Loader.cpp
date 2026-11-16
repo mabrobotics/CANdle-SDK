@@ -14,16 +14,19 @@ namespace mab
             DATA     = 0xC2,
             END      = 0xC3,
             BOOT     = 0xC4,
+            ERASE    = 0xC5,
         };
 
-        constexpr u8  STATUS_OK     = 0;
-        constexpr u32 HEADER_SIZE   = 56;  // "MABF" | size | iv | sha256
-        constexpr u32 FRAME_SIZE    = 64;
-        constexpr u32 DATA_PAYLOAD  = FRAME_SIZE - 3;
-        constexpr u32 ATTEMPTS      = 5;    // per request, while the reply is lost
-        constexpr u32 IDENTIFY_MS   = 50;   // short: polled while the drive resets
-        constexpr u32 TIMEOUT_MS    = 250;  // page erase / SHA-256 of the image; u8 in CANdle
-        constexpr u32 PROGRESS_STEP = 64;   // DATA frames between progress updates
+        constexpr u8  STATUS_OK      = 0;
+        constexpr u32 HEADER_SIZE    = 56;  // "MABF" | size | iv | sha256
+        constexpr u32 FRAME_SIZE     = 64;
+        constexpr u32 DATA_PAYLOAD   = FRAME_SIZE - 3;
+        constexpr u32 ATTEMPTS       = 5;    // per request, while the reply is lost
+        constexpr u32 IDENTIFY_MS    = 50;   // short: polled while the drive resets
+        constexpr u32 TIMEOUT_MS     = 250;  // page erase / SHA-256 of the image; u8 in CANdle
+        constexpr u32 PROGRESS_STEP  = 64;   // DATA frames between progress updates
+        constexpr u32 CONFIG_ADDRESS = 0x0800C000;  // first Storage page, right after Bl3
+        constexpr u32 PAGE_SIZE      = 0x2000;      // one 8 KB page
 
         Logger log(Logger::ProgramLayer_E::LAYER_2, "BL3 LOADER");
 
@@ -36,7 +39,7 @@ namespace mab
                 case 1:
                     return "BAD_STATE (no session / download)";
                 case 2:
-                    return "REFUSED (file header)";
+                    return "REFUSED (file header, or erase range)";
                 case 3:
                     return "TOO_LONG (more bytes than the header says)";
                 case 4:
@@ -123,7 +126,7 @@ namespace mab
             info->deviceRevision = reply[4];
             info->blVersion      = readU32(&reply[5]);
             info->maxImageSize   = readU32(&reply[9]);
-            return Identify_E::G5;
+            return Identify_E::BL3;
         }
         return Identify_E::NO_REPLY;
     }
@@ -203,5 +206,23 @@ namespace mab
         }
         log.success("Flashing successful!");
         return Result_E::OK;
+    }
+
+    bool bl3Loader::eraseConfig(Candle* candle, canId_t canId)
+    {
+        std::vector<u8> frame = {ERASE};
+        frame.resize(9);
+        memcpy(&frame[1], &CONFIG_ADDRESS, sizeof(CONFIG_ADDRESS));
+        memcpy(&frame[5], &PAGE_SIZE, sizeof(PAGE_SIZE));
+        if (!step(candle, canId, frame, "ERASE"))
+            return false;
+
+        // BOOT: the application starts with a default config; the erase is done either way
+        u8 status = 0;
+        if (!request(candle, canId, {BOOT}, &status))
+            log.warn("BOOT: no reply from the bootloader");
+        else if (status != STATUS_OK)
+            log.warn("BOOT: %s, the drive stays in the bootloader", statusName(status));
+        return true;
     }
 }  // namespace mab

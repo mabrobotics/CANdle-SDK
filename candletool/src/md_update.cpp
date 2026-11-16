@@ -310,7 +310,7 @@ namespace mab
             bl3Loader::Info info;
             const bool      g5Drive =
                 bl3Loader::identify(candle, target.canId, wait ? 0 : IDENTIFY_ATTEMPTS, &info) ==
-                bl3Loader::Identify_E::G5;
+                bl3Loader::Identify_E::BL3;
             const bool g5File =
                 mabFile.m_fwEntry.targetDevice == MabFileParser::TargetDevice_E::MDG5;
 
@@ -541,20 +541,17 @@ namespace mab
         bool ok = target.drive == Drive_E::BOOTLOADER || resetDrive(target, candle);
         if (ok)
             candle = switchToBootloaderCandle(target, candle);
-        bool g5Drive = false;
         if (ok && candle != nullptr)
         {
-            // Bl3 has no erase command yet, Bl2 would never answer it "OK"
             bl3Loader::Info info;
-            g5Drive =
-                bl3Loader::identify(candle, target.canId, 0, &info) == bl3Loader::Identify_E::G5;
-            ok = !g5Drive && bl2Loader::eraseConfig(candle, target.canId);
+            if (bl3Loader::identify(candle, target.canId, 0, &info) == bl3Loader::Identify_E::BL3)
+                ok = bl3Loader::eraseConfig(candle, target.canId);
+            else
+                ok = bl2Loader::eraseConfig(candle, target.canId);
         }
         if (candle != nullptr)
             detachCandle(candle);
 
-        if (g5Drive)
-            log.error("Force-erase is not supported on G5 drives yet!");
         if (!ok)
         {
             log.error("Force-erase failed!");

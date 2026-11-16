@@ -48,6 +48,6 @@ namespace mab::mdUpdate
     /// @brief Firmware older than 3.0.0: downloads and runs its flasher executable (Linux only)
     bool flashLegacy(const Target& target, const std::string& version);
 
-    /// @brief Wipe the configuration, CAN ID back to 100. G4 drives only
+    /// @brief Wipe the configuration, CAN ID back to 100
     bool eraseConfig(const Target& target);
 }  // namespace mab::mdUpdate
