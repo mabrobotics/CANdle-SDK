@@ -38,8 +38,6 @@ namespace mab
         Candle*       mp_candle;
         Logger        m_log = Logger(Logger::ProgramLayer_E::LAYER_2, "CAN BOOTLOADER");
 
-        std::optional<u32> m_customReponseTimeoutMs;
-
       public:
         static constexpr u32 TRANSFER_SIZE = CHUNK_SIZE * CHUNKS_PER_TRANSFER;
 

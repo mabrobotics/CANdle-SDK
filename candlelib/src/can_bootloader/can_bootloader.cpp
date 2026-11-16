@@ -124,8 +124,8 @@ namespace mab
         if (sendCommand(Command_t::META, payload))
         {
             // old workaround for CANdle limitation, of having max timeout of ~250ish ms.
-            // META message does saveing in flash, so it takes slightly longer than that, and we must 
-            // send another frame to get *actual* response for the command.
+            // META message does saveing in flash, so it takes slightly longer than that, and we
+            // must send another frame to get *actual* response for the command.
             std::vector<u8> dummy;
             return sendFrame(dummy);
         }
@@ -163,8 +163,8 @@ namespace mab
             return Error_t::NOT_CONNNECTED;
 
         m_log.debug("Sending frame %d", frame.size());
-        auto result = mp_candle->transferCANFrame(
-            m_id, frame, DEFAULT_REPONSE.size(), m_customReponseTimeoutMs.value_or(DEFAULT_TIMOUT));
+        auto result =
+            mp_candle->transferCANFrame(m_id, frame, DEFAULT_REPONSE.size(), DEFAULT_TIMOUT);
         if (result.second != candleTypes::Error_t::OK)
         {
             m_log.debug("Failed to send frame!");
