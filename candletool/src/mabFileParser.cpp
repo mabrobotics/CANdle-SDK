@@ -39,7 +39,12 @@ MabFileParser::MabFileParser(std::string filePath, TargetDevice_E target)
         m_fwEntry.variant = Variant_E::MDCO;
 
     // validate
-    if (target != m_fwEntry.targetDevice || m_fwEntry.targetDevice == TargetDevice_E::INVALID)
+    // MD stands for both drive generations, the caller picks the loader from the bootloader the
+    // drive answers with. Older candletool versions reject "mdg5", so G4 drives never get it
+    const bool mdTarget =
+        target == TargetDevice_E::MD && m_fwEntry.targetDevice == TargetDevice_E::MDG5;
+    if ((target != m_fwEntry.targetDevice && !mdTarget) ||
+        m_fwEntry.targetDevice == TargetDevice_E::INVALID)
     {
         log.error("Error processing .mab file!");
         log.error("Device target mismatch. Expected: [%s], Read: [%s].",
@@ -89,6 +94,8 @@ std::string tagFromTargetDevice(MabFileParser::TargetDevice_E type)
             return "pds";
         case MabFileParser::TargetDevice_E::CANDLE:
             return "candle";
+        case MabFileParser::TargetDevice_E::MDG5:
+            return "mdg5";
         case MabFileParser::TargetDevice_E::INVALID:
             break;
     }
@@ -102,6 +109,8 @@ MabFileParser::TargetDevice_E parseTargetDevice(std::string tag)
         return MabFileParser::TargetDevice_E::CANDLE;
     else if (tag == "pds")
         return MabFileParser::TargetDevice_E::PDS;
+    else if (tag == "mdg5")
+        return MabFileParser::TargetDevice_E::MDG5;
     else
         return MabFileParser::TargetDevice_E::INVALID;
 }
