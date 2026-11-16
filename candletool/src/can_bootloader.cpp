@@ -3,7 +3,6 @@
 #include <span>
 #include <string_view>
 #include <vector>
-#include "candle_bootloader.hpp"
 #include "candle.hpp"
 
 namespace mab

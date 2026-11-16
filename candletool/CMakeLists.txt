@@ -34,6 +34,8 @@ set(CANDLETOOL_SOURCES
   src/candle_cli.cpp
   src/candletool_cli.cpp
   src/canLoader.cpp
+  src/can_bootloader.cpp
+  src/g5Loader.cpp
   src/web_file_module/curl_handler.cpp
   src/web_file_module/flasher.cpp
   src/md_cli.cpp
