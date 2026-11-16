@@ -16,7 +16,7 @@ class MabFileParser
         MD,
         CANDLE,
         PDS,
-        MDG5,  // MD on STM32G5 with the G5 bootloader (Bl3), flashed by g5Loader
+        MDG5,  // bl3 boards
         INVALID = 0xFF,
     };
 

@@ -1,4 +1,4 @@
-#include "canLoader.hpp"
+#include "bl2Loader.hpp"
 #include "candle.hpp"
 #include "mabFileParser.hpp"
 #include "mab_types.hpp"
@@ -357,8 +357,7 @@ void PdsCli::parse()
                 usleep(400'000);
             }
 
-            CanLoader canLoader(candle.value(), &mabFile, m_canId);
-            if (canLoader.flashAndBoot(m_recovery))
+            if (bl2Loader::flashAndBoot(candle.value(), m_canId, mabFile, m_recovery))
             {
                 m_log.success("Update complete for PDS @ %d", m_canId);
             }
@@ -370,6 +369,7 @@ void PdsCli::parse()
                 usleep(2'000'000);
                 pds.isBootloaderError(false);
             }
+            detachCandle(candle.value());
         }
 
         else if (m_discovery->parsed())
