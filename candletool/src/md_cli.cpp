@@ -1488,14 +1488,26 @@ namespace mab
                     md->writeRegister(md->m_mdRegisters.runTestAuxEncoderCmd);
                 }
 
-                f32 testTime = 6;
-                f32 dt       = 0.25;
-                for (f32 t = 0.f; t < testTime; t += dt)
+                // Wait testTime, then keep waiting while the "routine in progress" flag is set
+                constexpr u32 ROUTINE_BIT =
+                    1u << (u32)MDStatus::MiscStatusBits::WarnRoutineInProgress;
+                f32 testTime   = 12;
+                f32 maxWait    = 60;
+                f32 dt         = 0.25;
+                f32 t          = 0.f;
+                for (; t < maxWait; t += dt)
                 {
-                    m_logger.progress(t / testTime);
+                    m_logger.progress(t < testTime ? t / testTime : 1.f);
                     usleep(dt * 1'000'000);
+                    if (t < testTime)
+                        continue;
+                    if (md->readRegister(regs.miscStatus) != MD::Error_t::OK ||
+                        !(regs.miscStatus.value & ROUTINE_BIT))
+                        break;
                 }
                 m_logger.progress(1.);
+                if (t >= maxWait)
+                    m_logger.warn("Encoder test still in progress after %.0f s", maxWait);
                 md->disable();
                 if (testMain)
                     md->readRegisters(regs.calMainEncoderMaxE, regs.calMainEncoderStdDev);
