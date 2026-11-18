@@ -15,6 +15,7 @@ namespace mab
             END      = 0xC3,
             BOOT     = 0xC4,
             ERASE    = 0xC5,
+            READ     = 0xC6,
         };
 
         constexpr u8  STATUS_OK      = 0;
@@ -27,6 +28,8 @@ namespace mab
         constexpr u32 PROGRESS_STEP  = 64;   // DATA frames between progress updates
         constexpr u32 CONFIG_ADDRESS = 0x0800C000;  // first Storage page, right after Bl3
         constexpr u32 PAGE_SIZE      = 0x2000;      // one 8 KB page
+        constexpr u32 READ_HEADER    = 7;  // READ reply: command, status, offset u32, n
+        constexpr u32 READ_MAX       = FRAME_SIZE - READ_HEADER;
 
         Logger log(Logger::ProgramLayer_E::LAYER_2, "BL3 LOADER");
 
@@ -208,6 +211,52 @@ namespace mab
         }
         log.success("Flashing successful!");
         return Result_E::OK;
+    }
+
+    bool bl3Loader::readStorage(Candle* candle, canId_t canId, std::vector<u8>* out)
+    {
+        out->clear();
+        for (u32 offset = 0; offset < STORAGE_SIZE;)
+        {
+            const u8 n = STORAGE_SIZE - offset < READ_MAX ? STORAGE_SIZE - offset : READ_MAX;
+            std::vector<u8> frame = {READ, 0, 0, 0, 0, n};
+            memcpy(&frame[1], &offset, sizeof(offset));
+            frame.resize(FRAME_SIZE);
+
+            // A reply is for this READ when it repeats the offset; a late one is skipped
+            bool done = false;
+            for (u32 i = 0; i < ATTEMPTS && !done; i++)
+            {
+                auto [reply, err] = candle->transferCANFrame(canId, frame, FRAME_SIZE, TIMEOUT_MS);
+                if (err != candleTypes::Error_t::OK || reply.size() < READ_HEADER ||
+                    reply[0] != READ || readU32(&reply[2]) != offset)
+                    continue;
+                if (reply[1] != STATUS_OK)
+                {
+                    log.error("READ: %s", statusName(reply[1]));
+                    return false;
+                }
+                if (reply[6] != n || reply.size() < READ_HEADER + n)
+                    continue;
+                out->insert(out->end(), reply.begin() + READ_HEADER, reply.begin() + READ_HEADER + n);
+                done = true;
+            }
+            if (!done)
+            {
+                log.error("READ: no reply from the bootloader at offset %u", offset);
+                return false;
+            }
+            offset += n;
+            log.progress((double)offset / STORAGE_SIZE);
+        }
+
+        // BOOT: the application starts again, nothing was changed
+        u8 status = 0;
+        if (!request(candle, canId, {BOOT}, &status))
+            log.warn("BOOT: no reply from the bootloader");
+        else if (status != STATUS_OK)
+            log.warn("BOOT: %s, the drive stays in the bootloader", statusName(status));
+        return true;
     }
 
     bool bl3Loader::eraseConfig(Candle* candle, canId_t canId)

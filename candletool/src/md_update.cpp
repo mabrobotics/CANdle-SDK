@@ -560,4 +560,46 @@ namespace mab
         log.success("Force-erase complete for MD @ %d", target.canId);
         return true;
     }
+
+    bool mdUpdate::readStorage(const Target& target, const std::filesystem::path& file)
+    {
+        Candle* candle = buildAppCandle(target);
+        if (candle == nullptr)
+            return false;
+        bool ok = target.drive == Drive_E::BOOTLOADER || resetDrive(target, candle);
+        if (ok)
+            candle = switchToBootloaderCandle(target, candle);
+        std::vector<u8> storage;
+        if (ok && candle != nullptr)
+        {
+            bl3Loader::Info info;
+            if (bl3Loader::identify(candle, target.canId, 0, &info) == bl3Loader::Identify_E::BL3)
+                ok = bl3Loader::readStorage(candle, target.canId, &storage);
+            else
+            {
+                log.error("Reading the config storage not supported for this board!");
+                ok = false;
+            }
+        }
+        if (candle != nullptr)
+            detachCandle(candle);
+
+        if (ok)
+        {
+            FILE* f = fopen(file.string().c_str(), "wb");
+            ok = f != nullptr && fwrite(storage.data(), 1, storage.size(), f) == storage.size();
+            if (f != nullptr)
+                ok &= fclose(f) == 0;
+        }
+        if (!ok)
+        {
+            log.error("Reading the config storage failed!");
+            return false;
+        }
+        log.success("Config storage of MD @ %d saved to %s (%zu bytes)",
+                    target.canId,
+                    file.string().c_str(),
+                    storage.size());
+        return true;
+    }
 }  // namespace mab

@@ -8,7 +8,8 @@ namespace mab
 {
     namespace bl3Loader
     {
-        constexpr u8 PROTOCOL = 1;  // protocol version this loader speaks
+        constexpr u8  PROTOCOL     = 1;       // protocol version this loader speaks
+        constexpr u32 STORAGE_SIZE = 0x8000;  // Storage pages of the drive (config), MDG5_STORAGE_SIZE
 
         struct Info
         {
@@ -49,5 +50,10 @@ namespace mab
         /// @brief Erase the config page (CAN ID back to 100 at the next start) and start the
         /// application. identify() must have returned G5 before.
         bool eraseConfig(Candle* candle, canId_t canId);
+
+        /// @brief Read the Storage pages (config of the application and the bootloader), e.g. to
+        /// keep the config before the flash is erased, then start the application. identify() must
+        /// have returned BL3 before.
+        bool readStorage(Candle* candle, canId_t canId, std::vector<u8>* out);
     }  // namespace bl3Loader
 }  // namespace mab

@@ -1538,6 +1538,12 @@ namespace mab
                     candleBuilder,
                     *ctx.packageEtcPath};
 
+                if (!o.readStorage->empty())
+                {
+                    mdUpdate::readStorage(target, *o.readStorage);
+                    return;
+                }
+
                 if (*o.forceErase)
                 {
                     m_logger.info(

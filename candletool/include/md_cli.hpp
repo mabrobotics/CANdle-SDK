@@ -25,6 +25,7 @@ namespace mab
               pathToMabFile(std::make_shared<std::filesystem::path>("")),
               recovery(std::make_shared<bool>(false)),
               forceErase(std::make_shared<bool>(false)),
+              readStorage(std::make_shared<std::filesystem::path>("")),
               otherVariant(std::make_shared<bool>(false)),
               legacyMigration(std::make_shared<bool>(false))
         {
@@ -54,6 +55,13 @@ namespace mab
                      "-r,--recovery", *recovery, "Driver recovery after failed flashing")},
                 {"force_erase",
                  rootCli->add_flag("--force-erase", *forceErase, "Force full wipe of the driver")}};
+            optionsMap["read_storage"] =
+                rootCli
+                    ->add_option("--read-storage",
+                                 *readStorage,
+                                 "Save the config storage of a G5 drive to a file and start the "
+                                 "firmware again, nothing is flashed")
+                    ->excludes(optionsMap["force_erase"]);
 
             // Legacy drives may not report a usable firmware version, so they are reset into the
             // bootloader blindly and flashed as in recovery
@@ -72,6 +80,7 @@ namespace mab
         const std::shared_ptr<std::filesystem::path> pathToMabFile;
         const std::shared_ptr<bool>                  recovery;
         const std::shared_ptr<bool>                  forceErase;
+        const std::shared_ptr<std::filesystem::path> readStorage;
         const std::shared_ptr<bool>                  otherVariant;
         const std::shared_ptr<bool>                  legacyMigration;
         std::map<std::string, CLI::Option*>          optionsMap;

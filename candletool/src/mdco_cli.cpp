@@ -714,6 +714,12 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
             const mdUpdate::Target target = {
                 *mdCanId, drive, m_candleBuilder, *m_ctx.packageEtcPath};
 
+            if (!o.readStorage->empty())
+            {
+                mdUpdate::readStorage(target, *o.readStorage);
+                return;
+            }
+
             if (*o.forceErase)
             {
                 m_log.info(

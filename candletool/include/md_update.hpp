@@ -50,4 +50,7 @@ namespace mab::mdUpdate
 
     /// @brief Wipe the configuration, CAN ID back to 100
     bool eraseConfig(const Target& target);
+
+    /// @brief Save the Storage pages (config) of a G5 drive to a file, from its bootloader
+    bool readStorage(const Target& target, const std::filesystem::path& file);
 }  // namespace mab::mdUpdate
