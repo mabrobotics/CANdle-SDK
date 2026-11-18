@@ -50,6 +50,8 @@ namespace mab
                     return "FLASH_FAILED (erase, program or read back)";
                 case 7:
                     return "CORRUPT (SHA-256 of the flash does not match)";
+                case 8:
+                    return "NOT_AUTHENTIC (locked drive: authentication tag wrong or missing)";
                 case 0x80:
                     return "UNKNOWN command";
                 case 0x81:
