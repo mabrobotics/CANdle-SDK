@@ -52,8 +52,8 @@ namespace mab
         bool eraseConfig(Candle* candle, canId_t canId);
 
         /// @brief Read the Storage pages (config of the application and the bootloader), e.g. to
-        /// keep the config before the flash is erased, then start the application. identify() must
-        /// have returned BL3 before.
-        bool readStorage(Candle* candle, canId_t canId, std::vector<u8>* out);
+        /// keep the config before the flash is erased. identify() must have returned BL3 before.
+        /// @param startApp start the application afterwards (BOOT)
+        bool readStorage(Candle* candle, canId_t canId, std::vector<u8>* out, bool startApp);
     }  // namespace bl3Loader
 }  // namespace mab

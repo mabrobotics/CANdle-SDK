@@ -213,7 +213,7 @@ namespace mab
         return Result_E::OK;
     }
 
-    bool bl3Loader::readStorage(Candle* candle, canId_t canId, std::vector<u8>* out)
+    bool bl3Loader::readStorage(Candle* candle, canId_t canId, std::vector<u8>* out, bool startApp)
     {
         out->clear();
         for (u32 offset = 0; offset < STORAGE_SIZE;)
@@ -250,6 +250,8 @@ namespace mab
             log.progress((double)offset / STORAGE_SIZE);
         }
 
+        if (!startApp)
+            return true;
         // BOOT: the application starts again, nothing was changed
         u8 status = 0;
         if (!request(candle, canId, {BOOT}, &status))

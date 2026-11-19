@@ -44,9 +44,20 @@ namespace mab
         // Time the drive gets after the reset before its bootloader is called
         constexpr u32 RESET_US = 200'000;
         // IDENTIFY tries after the reset, ~50 ms each, before the drive is taken for a G4
-        constexpr u32 IDENTIFY_ATTEMPTS = 10;
+        constexpr u32 IDENTIFY_ATTEMPTS  = 10;
+        constexpr u32 BOOTLOADER_ADDRESS = 0x08000000;  // .mab start of a G5 bootloader
         // Time the application gets to start before it is asked whether it runs
         constexpr u32 APP_START_US = 500'000;
+
+        /// @brief Write data to file; false when it fails
+        bool writeFile(const std::filesystem::path& file, const std::vector<u8>& data)
+        {
+            FILE* f  = fopen(file.string().c_str(), "wb");
+            bool  ok = f != nullptr && fwrite(data.data(), 1, data.size(), f) == data.size();
+            if (f != nullptr)
+                ok &= fclose(f) == 0;
+            return ok;
+        }
 
         Logger log(Logger::ProgramLayer_E::TOP, "MD UPDATE");
 
@@ -325,8 +336,35 @@ namespace mab
             if (!g5Drive)
                 return bl2Loader::flashAndBoot(candle, target.canId, mabFile, wait);
 
+            // A new bootloader (its .mab starts at the bootloader): the drive keeps its config but
+            // has no firmware afterwards, the config is saved to a file first anyway
+            const bool newBootloader = mabFile.m_fwEntry.bootAddress == BOOTLOADER_ADDRESS;
+            if (newBootloader)
+            {
+                std::vector<u8>             storage;
+                const std::filesystem::path backup =
+                    "md" + std::to_string(target.canId) + "_storage_backup.bin";
+                if (!bl3Loader::readStorage(candle, target.canId, &storage, false) ||
+                    !writeFile(backup, storage))
+                {
+                    log.error("Could not save the config storage, the bootloader is not updated");
+                    return false;
+                }
+                log.info("Config storage saved to %s", backup.string().c_str());
+            }
+
             const bl3Loader::Result_E result =
                 bl3Loader::flashAndBoot(candle, target.canId, mabFile, info);
+            if (newBootloader)
+            {
+                if (result == bl3Loader::Result_E::FAILED)
+                    return false;
+                log.warn(
+                    "Bootloader replaced. The drive has no firmware now, upload it again: "
+                    "candletool md update -p <firmware.mab> -i %d -r",
+                    target.canId);
+                return true;
+            }
             if (result != bl3Loader::Result_E::BOOT_UNCONFIRMED)
                 return result == bl3Loader::Result_E::OK;
 
@@ -574,7 +612,7 @@ namespace mab
         {
             bl3Loader::Info info;
             if (bl3Loader::identify(candle, target.canId, 0, &info) == bl3Loader::Identify_E::BL3)
-                ok = bl3Loader::readStorage(candle, target.canId, &storage);
+                ok = bl3Loader::readStorage(candle, target.canId, &storage, true);
             else
             {
                 log.error("Reading the config storage not supported for this board!");
@@ -585,12 +623,7 @@ namespace mab
             detachCandle(candle);
 
         if (ok)
-        {
-            FILE* f = fopen(file.string().c_str(), "wb");
-            ok = f != nullptr && fwrite(storage.data(), 1, storage.size(), f) == storage.size();
-            if (f != nullptr)
-                ok &= fclose(f) == 0;
-        }
+            ok = writeFile(file, storage);
         if (!ok)
         {
             log.error("Reading the config storage failed!");
