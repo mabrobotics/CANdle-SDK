@@ -1,6 +1,5 @@
 #include "candle.hpp"
 
-#include <exception>
 #include <MD.hpp>
 #include <optional>
 #include "candle_types.hpp"
@@ -201,6 +200,7 @@ namespace mab
         }
         // frameDump(*data);
 
+        std::lock_guard<std::mutex> busLock(m_busMux);
         if (responseLength == 0)
         {
             I_CommunicationInterface::Error_t comError = m_bus->transfer(*data, timeoutMs);

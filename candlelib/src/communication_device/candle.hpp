@@ -135,6 +135,9 @@ namespace mab
         const bool   m_dontUseFDCANFrames = false;
         const size_t m_maxCANFrameSize    = 64;
 
+        // Held for a whole request + response, so blocking calls and the CF transfer thread
+        // cannot interleave on the bus and read each other's responses
+        mutable std::mutex                         m_busMux;
         mutable std::mutex                         m_cfSyncMux;
         std::shared_ptr<std::function<void(void)>> m_cfsync;
         CANdleFrameAdapter                         m_cfAdapter;
