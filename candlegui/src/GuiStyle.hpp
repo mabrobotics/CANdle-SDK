@@ -39,7 +39,7 @@ namespace GuiStyle
     inline ImVec4 buttonControlColor = ImVec4(0.809f, 0.597f, 0.173f, 1.000f);
     inline ImVec4 buttonSetterColor  = ImVec4(0.142f, 0.343f, 0.744f, 1.000f);
 
-    inline const ImVec4 redColor   = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+    inline const ImVec4 redColor   = ImVec4(0.70f, 0.25f, 0.25f, 1.0f);
     inline const ImVec4 greenColor = ImVec4(0.30f, 0.80f, 0.40f, 1.0f);
 
     inline const ImVec4 mabColor        = ImVec4(1.0f, 0.468f, 0.0f, 1.0f);
@@ -70,6 +70,7 @@ namespace GuiStyle
     void buttonMotionStyle();
     void buttonControlStyle();
     void buttonSetterStyle();
+    void buttonCloseStyle();
     void checkboxStyle();
     void popupStyle();
     void tableStyle();

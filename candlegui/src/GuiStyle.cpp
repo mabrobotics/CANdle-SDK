@@ -129,6 +129,15 @@ void GuiStyle::buttonSetterStyle()
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 4.0f));
 }
 
+void GuiStyle::buttonCloseStyle()
+{
+    ImGui::PushStyleColor(ImGuiCol_Button, redColor);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, mabColor);
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, buttonColor);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, roundingFrameButton);
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 4.0f));
+}
+
 void GuiStyle::checkboxStyle()
 {
     ImGui::PushStyleColor(ImGuiCol_CheckMark, mabColor);

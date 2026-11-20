@@ -496,7 +496,7 @@ void TestScript::drawAddMDsFunction(CodeBlock_S& block)
         drawMDSelectCombo(block.mdIds[id]);
 
         ImGui::SameLine();
-        GuiStyle::buttonStyle();
+        GuiStyle::buttonCloseStyle();
         if (ImGui::Button("x"))
             removeAt = id;
         GuiStyle::endButtonStyle();
@@ -523,7 +523,7 @@ void TestScript::drawSetModeFunction(CodeBlock_S& block)
     ImGui::Text("Set MD mode to");
 
     ImGui::SameLine();
-    GuiStyle::comboStyle(nullptr, blockComboHeight);
+    GuiStyle::comboStyle(nullptr, blockComboPadding_y);
     ImGui::SetNextItemWidth(130);
     if (ImGui::BeginCombo("##Select MD mode", getModeName(block.setMode).c_str()))
     {
@@ -738,7 +738,7 @@ void TestScript::drawRepeatShape(ImDrawList* dl,
 
 void TestScript::drawMDSelectCombo(mab::canId_t& id)
 {
-    GuiStyle::comboStyle(nullptr, blockComboHeight);
+    GuiStyle::comboStyle(nullptr, blockComboPadding_y);
     ImGui::SetNextItemWidth(70);
     if (ImGui::BeginCombo("##Select MD or Group", std::to_string(id).c_str()))
     {

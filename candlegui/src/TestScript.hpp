@@ -120,7 +120,7 @@ class TestScript
     int                      selected = -1;
 
     const float spacingBetweenBlocks = 8.0f;
-    const float blockComboHeight     = 6.0f;
+    const float blockComboPadding_y  = 4.0f;
     const float footerHeight         = 8.0f;
     const float indentInRepeatLoop   = 20.0f;
     const float gridMargin_x         = 10.0f;
