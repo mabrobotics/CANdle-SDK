@@ -16,6 +16,7 @@ class MabFileParser
         MD,
         CANDLE,
         PDS,
+        MDG5,  // bl3 boards
         INVALID = 0xFF,
     };
 

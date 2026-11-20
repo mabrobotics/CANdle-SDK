@@ -14,7 +14,6 @@
 #include <variant>
 #include "MDCO.hpp"
 #include "MDStatus.hpp"
-#include "canLoader.hpp"
 #include "candle.hpp"
 #include "logger.hpp"
 #include "mab_types.hpp"
@@ -1489,14 +1488,26 @@ namespace mab
                     md->writeRegister(md->m_mdRegisters.runTestAuxEncoderCmd);
                 }
 
-                f32 testTime = 6;
-                f32 dt       = 0.25;
-                for (f32 t = 0.f; t < testTime; t += dt)
+                // Wait testTime, then keep waiting while the "routine in progress" flag is set
+                constexpr u32 ROUTINE_BIT =
+                    1u << (u32)MDStatus::MiscStatusBits::WarnRoutineInProgress;
+                f32 testTime   = 12;
+                f32 maxWait    = 60;
+                f32 dt         = 0.25;
+                f32 t          = 0.f;
+                for (; t < maxWait; t += dt)
                 {
-                    m_logger.progress(t / testTime);
+                    m_logger.progress(t < testTime ? t / testTime : 1.f);
                     usleep(dt * 1'000'000);
+                    if (t < testTime)
+                        continue;
+                    if (md->readRegister(regs.miscStatus) != MD::Error_t::OK ||
+                        !(regs.miscStatus.value & ROUTINE_BIT))
+                        break;
                 }
                 m_logger.progress(1.);
+                if (t >= maxWait)
+                    m_logger.warn("Encoder test still in progress after %.0f s", maxWait);
                 md->disable();
                 if (testMain)
                     md->readRegisters(regs.calMainEncoderMaxE, regs.calMainEncoderStdDev);
@@ -1520,12 +1531,63 @@ namespace mab
         update->callback(
             [this, candleBuilder, mdCanId, updateOptions, ctx]()
             {
-                updateMd(updateOptions,
-                         UpdateReset_E::MD_PROTOCOL,
-                         mdCanId,
-                         candleBuilder,
-                         *ctx.packageEtcPath,
-                         m_logger);
+                const UpdateOptions&   o      = updateOptions;
+                const mdUpdate::Target target = {
+                    *mdCanId,
+                    *o.recovery ? mdUpdate::Drive_E::BOOTLOADER : mdUpdate::Drive_E::MD,
+                    candleBuilder,
+                    *ctx.packageEtcPath};
+
+                if (!o.readStorage->empty())
+                {
+                    mdUpdate::readStorage(target, *o.readStorage);
+                    return;
+                }
+
+                if (*o.forceErase)
+                {
+                    m_logger.info(
+                        "The force-erase will erase the whole configuration from the drive, "
+                        "including bootloader configuration. Drives' ID will be set default "
+                        "100 (0x64)! Proceed?");
+                    if (!userConfirm())
+                        return m_logger.error("Factory Reset aborted by user!");
+                    mdUpdate::eraseConfig(target);
+                    return;
+                }
+
+                std::filesystem::path file = *o.pathToMabFile;
+                if (!file.empty())
+                    m_logger.info("Overriding download of file. Using local provided path.");
+                else
+                {
+                    version_ut version = {.i = 0};
+                    const bool latest  = *o.fwVersion == "latest";
+                    if (!latest && !mdUpdate::parseVersion(*o.fwVersion, &version))
+                        return m_logger.error(
+                            "Please provide version of fw (X.Y.Z) or \"latest\" keyword in the "
+                            "argument! For example candletool md update latest");
+                    if (!latest && version.s.major < 3)
+                    {
+                        if (*o.otherVariant)
+                            return m_logger.error(
+                                "Switching between MD and MDCO firmware requires firmware >= "
+                                "3.0.0! Refer to "
+                                "https://mabrobotics.github.io/MD80-x-CANdle-Documentation "
+                                "Downloads section, for manual procedure of migration between MD "
+                                "Protocol and CANOpen.");
+                        mdUpdate::flashLegacy(target, *o.fwVersion);
+                        return;
+                    }
+                    auto downloaded =
+                        mdUpdate::download(*o.fwVersion,
+                                           *o.otherVariant ? MabFileParser::Variant_E::MDCO
+                                                           : MabFileParser::Variant_E::MD);
+                    if (!downloaded)
+                        return;
+                    file = *downloaded;
+                }
+                mdUpdate::flash(target, file);
             });
         // Version
         auto* version = mdCLi->add_subcommand("version", "Check version of the MD device.")

@@ -27,6 +27,7 @@
 #include "mab_types.hpp"
 #include "cfg_map.hpp"
 #include "MDObjects.hpp"
+#include "md_cli.hpp"
 #include "md_update.hpp"
 #include "mini/ini.h"
 
@@ -704,12 +705,67 @@ MdcoCli::MdcoCli(CLI::App& rootCli, CANdleToolCtx_S ctx) : m_rootCli(rootCli), m
     update->callback(
         [this, mdCanId, updateOptions]()
         {
-            updateMd(updateOptions,
-                     UpdateReset_E::CANOPEN,
-                     mdCanId,
-                     m_candleBuilder,
-                     *m_ctx.packageEtcPath,
-                     m_log);
+            const UpdateOptions& o     = updateOptions;
+            mdUpdate::Drive_E    drive = mdUpdate::Drive_E::MDCO;
+            if (*o.recovery)
+                drive = mdUpdate::Drive_E::BOOTLOADER;
+            else if (*o.legacyMigration)
+                drive = mdUpdate::Drive_E::MDCO_LEGACY;
+            const mdUpdate::Target target = {
+                *mdCanId, drive, m_candleBuilder, *m_ctx.packageEtcPath};
+
+            if (!o.readStorage->empty())
+            {
+                mdUpdate::readStorage(target, *o.readStorage);
+                return;
+            }
+
+            if (*o.forceErase)
+            {
+                m_log.info(
+                    "The force-erase will erase the whole configuration from the drive, "
+                    "including bootloader configuration. Drives' CAN ID will be set default 100 "
+                    "(0x64)! Proceed?");
+                if (!userConfirm())
+                    return m_log.error("Factory Reset aborted by user!");
+                mdUpdate::eraseConfig(target);
+                return;
+            }
+
+            std::filesystem::path file = *o.pathToMabFile;
+            if (!file.empty())
+                m_log.info("Overriding download of file. Using local provided path.");
+            else
+            {
+                version_ut version = {.i = 0};
+                const bool latest  = *o.fwVersion == "latest";
+                if (!latest && !mdUpdate::parseVersion(*o.fwVersion, &version))
+                    return m_log.error(
+                        "Please provide version of fw (X.Y.Z) or \"latest\" keyword in the "
+                        "argument! For example candletool mdco update latest");
+                if (!latest && version.s.major < 3)
+                {
+                    if (*o.legacyMigration)
+                        return m_log.error(
+                            "Legacy migration only installs firmware 3.0.0 or newer!");
+                    if (*o.otherVariant)
+                        return m_log.error(
+                            "Switching between MD and MDCO firmware requires firmware >= 3.0.0! "
+                            "Refer to https://mabrobotics.github.io/MD80-x-CANdle-Documentation "
+                            "Downloads section, for manual procedure of migration between MD "
+                            "Protocol and CANOpen.");
+                    mdUpdate::flashLegacy(target, *o.fwVersion);
+                    return;
+                }
+                auto downloaded =
+                    mdUpdate::download(*o.fwVersion,
+                                       *o.otherVariant ? MabFileParser::Variant_E::MD
+                                                       : MabFileParser::Variant_E::MDCO);
+                if (!downloaded)
+                    return;
+                file = *downloaded;
+            }
+            mdUpdate::flash(target, file);
         });
 
     // Calibration

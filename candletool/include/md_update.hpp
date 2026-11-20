@@ -1,104 +1,56 @@
 #pragma once
 
-#include "CLI/CLI.hpp"
 #include "candle.hpp"
-#include "logger.hpp"
+#include "mabFileParser.hpp"
 #include "mab_types.hpp"
 
 #include <filesystem>
-#include <map>
 #include <memory>
+#include <optional>
 #include <string>
 
-namespace mab
+/// @brief Firmware update of MD drives. Each function does one thing, the caller (CLI) decides
+/// which one from its arguments.
+namespace mab::mdUpdate
 {
-    /// @brief How the drive is put into the bootloader before the new firmware is sent
-    enum class UpdateReset_E
+    /// @brief What the drive runs now, decides how it is put into its bootloader
+    enum class Drive_E
     {
-        /// @brief drives running MD firmware, reset over the MD protocol
-        MD_PROTOCOL,
-        /// @brief drives running CANopen firmware, reset with an SDO write on a CAN 2.0 link
-        CANOPEN
+        MD,           // MD protocol firmware: version read + confirm, reset over MD protocol
+        MDCO,         // CANopen firmware: version read + confirm, reset over CANopen (CAN 2.0)
+        MDCO_LEGACY,  // CANopen firmware < 3.0.0: warning + confirm, reset over CANopen, version
+                      // not read
+        BOOTLOADER,   // already in the bootloader (recovery): no reset, waits until it answers
     };
 
-    /// @brief Arguments of the update command, shared by `md update` and `mdco update`
-    struct UpdateOptions
+    struct Target
     {
-        /// @param rootCli subcommand the arguments are added to
-        /// @param commandName name of the command the arguments belong to, quoted back in the
-        /// examples the help prints
-        UpdateOptions(CLI::App* rootCli, const std::string& commandName = "md")
-            : fwVersion(std::make_shared<std::string>("")),
-              pathToMabFile(std::make_shared<std::filesystem::path>("")),
-              recovery(std::make_shared<bool>(false)),
-              forceErase(std::make_shared<bool>(false)),
-              otherVariant(std::make_shared<bool>(false)),
-              legacyMigration(std::make_shared<bool>(false))
-        {
-            // Drives accept both MD and MDCO firmware, the flag downloads the variant opposite
-            // to the one the command resets the drive for
-            const bool        canOpen     = commandName == "mdco";
-            const std::string variantFlag = canOpen ? "--md" : "--mdco";
-            CLI::Option*      pathOption =
-                rootCli->add_option("-p,--path", *pathToMabFile, "Local path to .mab file");
-            optionsMap = std::map<std::string, CLI::Option*>{
-                {"version",
-                 rootCli->add_option("version",
-                                     *fwVersion,
-                                     "Version of fw to download (\"latest\" or X.X.X format). "
-                                     "For example:  candletool " +
-                                         commandName + " update latest")},
-                {"path", pathOption},
-                {"other_variant",
-                 rootCli
-                     ->add_flag(variantFlag,
-                                *otherVariant,
-                                std::string("Download ") + (canOpen ? "MD" : "MDCO") +
-                                    " firmware instead, switching the drive to it")
-                     ->excludes(pathOption)},
-                {"recovery",
-                 rootCli->add_flag(
-                     "-r,--recovery", *recovery, "Driver recovery after failed flashing")},
-                {"force_erase",
-                 rootCli->add_flag("--force-erase", *forceErase, "Force full wipe of the driver")}};
-
-            // Legacy drives may not report a usable firmware version, so they are reset into the
-            // bootloader blindly and flashed as in recovery
-            if (canOpen)
-                optionsMap["legacy_migration"] =
-                    rootCli
-                        ->add_flag("--legacy-migration",
-                                   *legacyMigration,
-                                   "Reset the drive and flash it in recovery mode, without reading "
-                                   "its firmware version. For drives running firmware older than "
-                                   "3.0.0")
-                        ->excludes(optionsMap["recovery"])
-                        ->excludes(optionsMap["force_erase"]);
-        }
-        const std::shared_ptr<std::string>           fwVersion;
-        const std::shared_ptr<std::filesystem::path> pathToMabFile;
-        const std::shared_ptr<bool>                  recovery;
-        const std::shared_ptr<bool>                  forceErase;
-        const std::shared_ptr<bool>                  otherVariant;
-        const std::shared_ptr<bool>                  legacyMigration;
-        std::map<std::string, CLI::Option*>          optionsMap;
+        canId_t                              canId;
+        Drive_E                              drive;
+        std::shared_ptr<const CandleBuilder> candleBuilder;  // Candle& once the frame format can
+                                                             // be switched at runtime
+        std::filesystem::path etcPath;  // package etc, candletool.ini points at the .eds (MDCO)
     };
 
-    /// @brief Carry out the update command
-    ///
-    /// The firmware is sent over the MD protocol either way - only the reset that puts the drive
-    /// into the bootloader depends on the firmware the drive is currently running.
-    ///
-    /// @param options arguments the command was called with
-    /// @param resetMode protocol the drive is reset with
-    /// @param mdCanId can node id of the drive to update
-    /// @param candleBuilder builder of the candle used for communication
-    /// @param packageEtcPath etc path of the package, holds candletool.ini
-    /// @param log logger of the calling cli
-    void updateMd(const UpdateOptions&                       options,
-                  UpdateReset_E                              resetMode,
-                  const std::shared_ptr<canId_t>             mdCanId,
-                  const std::shared_ptr<const CandleBuilder> candleBuilder,
-                  const std::filesystem::path&               packageEtcPath,
-                  const Logger&                              log);
-}  // namespace mab
+    /// @brief Parse "X.Y.Z" with optional suffix (e.g. "3.0.0_3b52568")
+    bool parseVersion(const std::string& str, version_ut* version);
+
+    /// @brief Flash a local .mab file: checks the file against the drive (G4/G5, MDCO >= 3.0.1),
+    /// confirms with the user, resets the drive and flashes it with bl2Loader / bl3Loader
+    bool flash(const Target& target, const std::filesystem::path& mabFile);
+
+    /// @brief Download a .mab file from the firmware server
+    /// @param version "latest" or "X.Y.Z", 3.0.0 or newer
+    /// @return local path of the file
+    std::optional<std::filesystem::path> download(const std::string&       version,
+                                                  MabFileParser::Variant_E variant);
+
+    /// @brief Firmware older than 3.0.0: downloads and runs its flasher executable (Linux only)
+    bool flashLegacy(const Target& target, const std::string& version);
+
+    /// @brief Wipe the configuration, CAN ID back to 100
+    bool eraseConfig(const Target& target);
+
+    /// @brief Save the Storage pages (config) of a G5 drive to a file, from its bootloader
+    bool readStorage(const Target& target, const std::filesystem::path& file);
+}  // namespace mab::mdUpdate

@@ -44,7 +44,6 @@ endif()
 target_sources(
   candle
   PRIVATE src/crc.cpp
-          src/can_bootloader/can_bootloader.cpp
           src/communication_device/candle.cpp
           src/communication_device/candle_frame_adapter.cpp
           src/communication_device/candle_bootloader.cpp
@@ -69,7 +68,6 @@ target_include_directories(
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
          ${CMAKE_CURRENT_SOURCE_DIR}/src/MD
          ${CMAKE_CURRENT_SOURCE_DIR}/src/pds
-         ${CMAKE_CURRENT_SOURCE_DIR}/src/can_bootloader
          ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_device
          ${CMAKE_CURRENT_SOURCE_DIR}/src/communication_interface
          ${CMAKE_CURRENT_SOURCE_DIR}/../commons/logger
