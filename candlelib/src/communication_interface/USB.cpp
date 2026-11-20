@@ -237,7 +237,7 @@ namespace mab
     {
         m_libusbDevice                = nullptr;
         libusb_device** deviceList    = nullptr;
-        s32             deviceListLen = libusb_get_device_list(NULL, &deviceList);
+        s32             deviceListLen = libusb_get_device_list(m_ctx, &deviceList);
         if (deviceListLen == 0)
             m_Log.error("No USB devices detected!");
         else if (deviceListLen < 0)

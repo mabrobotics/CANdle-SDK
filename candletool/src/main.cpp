@@ -105,8 +105,13 @@ int main(int argc, char** argv)
     candleToolCtx.candleBranchVec.push_back(canBranch);
     candleToolCtx.packageEtcPath = std::make_shared<std::filesystem::path>(getPackageEtcDir());
 
-    auto preBuildTask = [busType, datarate, &cmd]()
+    CandleBuilder* builder      = candleBuilder.get();  // raw, the builder owns this task
+    auto           preBuildTask = [busType, datarate, builder, &cmd]()
     {
+        // Device serial (USB) or path (SPI); cmd.variant outlives the builder
+        if (!cmd.variant.empty())
+            builder->pathOrId = cmd.variant;
+
         Logger log(Logger::ProgramLayer_E::TOP, "CANDLE_PREBUILD");
         log.debug("Running candle pre-build CLI parsing task...");
         // Parsing bus type
