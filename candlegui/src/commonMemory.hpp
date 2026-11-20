@@ -76,6 +76,49 @@ struct MDGroup_S
     bool                      isSelected = false;
 };
 
+enum CodeBlockType_E
+{
+    MOVE_TO_POSITION,  // 0
+    MOVE_VELOCITY,     // 1
+    MOVE_TORQUE,       // 2
+    REPEAT_N_TIMES,    // 3
+    REPEAT_END,        // 4
+    WAIT,              // 5
+    ADD_MDS,           // 6
+    SET_MODE,          // 7
+    SET_VALUE,         // 8
+    SET_GAINS,         // 9
+    COUNT
+};
+
+struct Task_S
+{
+    static const int MAX_TASKS = 256;
+
+    CodeBlockType_E type;
+    MDGroup_S       group;
+
+    std::vector<mab::canId_t> mdIds;
+    mab::canId_t              id;
+
+    // Wait time
+    float waitTime;
+
+    // SETTER PARAMETERS
+    mab::MdMode_E setMode;
+    float         setKp;
+    float         setKi;
+    float         setKd;
+
+    // MOVE PARAMETERS
+    float movePosition;
+    float moveVelocity;
+    float moveTorque;
+
+    // Repeat
+    int repeatNumber = 1;
+};
+
 struct commonMemory_S
 {
     enum class busType_E
@@ -192,8 +235,14 @@ struct commonMemory_S
     mab::canId_t               chosenID = 0;
     mab::CANdleDatarate_E      candleDatarate;
 
+    // Task handling
+    Task_S scriptTasks[Task_S::MAX_TASKS];
+    int    scriptTaskCounter;
+    int    currentTask = 0;
+
     // Logic
     std::atomic<bool> testStarted{false};
+    std::atomic<bool> instructionStarted{false};
 
     std::atomic<bool> buttonDiscoverMdPressed{false};
     std::atomic<bool> buttonSelectMdPressed{false};
@@ -206,6 +255,7 @@ struct commonMemory_S
     std::atomic<bool> selectedMD{false};
     std::atomic<bool> selectedMode{false};
     std::atomic<bool> testOngoing{false};
+    std::atomic<bool> instructionOngoing{false};
     std::atomic<bool> candleAvailable{false};
     std::atomic<bool> updatedVersion{true};
     std::atomic<bool> discoverOngoing{false};
