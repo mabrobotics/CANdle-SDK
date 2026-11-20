@@ -1,6 +1,9 @@
 #include "HardwareCandle.hpp"
 #include <chrono>
+#include <cstring>
 #include <memory>
+#include <mutex>
+#include "MD.hpp"
 #include "commonMemory.hpp"
 #include "mab_types.hpp"
 
@@ -60,6 +63,16 @@ bool HardwareCandle::readLiveValues(mab::MD& md, MDStatus_S& status)
 
     copyLiveValues(md, status);
     return true;
+}
+
+mab::MD* HardwareCandle::findMD(mab::canId_t id)
+{
+    for (int i = 0; i < (int)mds.size(); i++)
+    {
+        if (mds[i]->m_canId == id)
+            return mds[i].get();
+    }
+    return nullptr;
 }
 
 void HardwareCandle::testMD(mab::MD& md)
@@ -370,6 +383,70 @@ const char* HardwareCandle::errorToString(mab::candleTypes::Error_t error)
     }
 }
 
+void HardwareCandle::updateScript()
+{
+    Task_S& task = localTasks[tempTaskCounter];
+
+    if (!taskStarted)
+    {
+        startTask(task);
+        taskStarted = true;
+    }
+
+    if (isTaskDone(task))
+    {
+        tempTaskCounter++;
+        taskStarted = false;
+
+        if (tempTaskCounter >= localTaskCounter)
+        {
+            scriptRunning              = false;
+            m_data->instructionOngoing = false;
+        }
+    }
+}
+
+void HardwareCandle::startTask(Task_S& task)
+{
+    switch (task.type)
+    {
+        case CodeBlockType_E::ADD_MDS:
+        {
+            for (int i = 0; i < (int)task.mdIds.size(); i++)
+            {
+                mab::MD* md = findMD(task.mdIds[i]);
+
+                if (md == nullptr)
+                    continue;
+
+                md->init();
+            }
+            break;
+        }
+        case CodeBlockType_E::WAIT:
+        {
+            std::chrono::duration<float> waitTime(task.waitTime);
+            waitEndTime = std::chrono::steady_clock::now() +
+                          std::chrono::duration_cast<std::chrono::steady_clock::duration>(waitTime);
+            break;
+        }
+        default:
+            printf("     type %d not supported yet, skipping\n", task.type);
+            break;
+    }
+}
+
+bool HardwareCandle::isTaskDone(Task_S& task)
+{
+    switch (task.type)
+    {
+        case CodeBlockType_E::WAIT:
+            return std::chrono::steady_clock::now() >= waitEndTime;
+        default:
+            return true;
+    }
+}
+
 void HardwareCandle::init()
 {
     candle = nullptr;
@@ -405,6 +482,25 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
         bool buttonSelectMdPressed    = m_data->buttonSelectMdPressed.exchange(false);
         bool buttonClearErrorsPressed = m_data->buttonClearErrorsPressed.exchange(false);
         bool buttonSavePressed        = m_data->buttonSavePressed.exchange(false);
+
+        {
+            std::lock_guard<std::mutex> lock(m_data->mtx);
+
+            if (m_data->instructionStarted)
+            {
+                localTaskCounter = m_data->scriptTaskCounter;
+                for (int i = 0; i < localTaskCounter; i++)
+                    localTasks[i] = m_data->scriptTasks[i];
+
+                m_data->instructionStarted = false;
+
+                tempTaskCounter = 0;
+                taskStarted     = false;
+                scriptRunning   = (localTaskCounter > 0);
+            }
+            m_data->instructionOngoing = scriptRunning;
+            m_data->currentTask        = tempTaskCounter;
+        }
 
         std::chrono::steady_clock::time_point statusNow = std::chrono::steady_clock::now();
         bool refreshStatus = mdListChanged || (statusNow - lastStatusTime >= STATUS_PERIOD);
@@ -576,6 +672,9 @@ void HardwareCandle::candleLoop(std::atomic<bool>& isRunning)
                     max                     = 100;
                 }
             }
+
+            if (scriptRunning)
+                updateScript();
 
             if (refreshStatus)
                 mdStatusLocal.clear();

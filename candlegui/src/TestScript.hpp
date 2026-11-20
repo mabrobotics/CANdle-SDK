@@ -29,20 +29,6 @@ class TestScript
                                                               "Control",   // 2
                                                               "Setters"};  // 3
 
-    enum CodeBlockType_E
-    {
-        MOVE_TO_POSITION,  // 0
-        MOVE_VELOCITY,     // 1
-        MOVE_TORQUE,       // 2
-        REPEAT_N_TIMES,    // 3
-        REPEAT_END,        // 4
-        WAIT,              // 5
-        ADD_MDS,           // 6
-        SET_MODE,          // 7
-        SET_VALUE,         // 8
-        SET_GAINS,         // 9
-        COUNT
-    };
     const char* blockNames[CodeBlockType_E::COUNT] = {"Move to position",    // 0
                                                       "Move with velocity",  // 1
                                                       "Move with torque",    // 2
@@ -71,23 +57,10 @@ class TestScript
     {
         CodeBlockType_E type;
 
-        mab::canId_t              id;
-        MDGroup_S                 group;
-        std::vector<mab::canId_t> mdIds;
+        Task_S    task;
+        MDGroup_S group;
 
-        // SETTER PARAMETERS
-        mab::MdMode_E setMode = mab::MdMode_E::IDLE;
-        float         setKp   = 0.0f;
-        float         setKi   = 0.0f;
-        float         setKd   = 0.0f;
-
-        // MOVE PARAMETERS
-        float movePosition = 0.0f;
-        float moveVelocity = 0.0f;
-        float moveTorque   = 0.0f;
-
-        // REPEAT PARAMETERS
-        int n = 1;
+        mab::canId_t id;
 
         ImVec2 guiSize = ImVec2(0, 0);
     };
@@ -124,11 +97,15 @@ class TestScript
     const float footerHeight         = 8.0f;
     const float indentInRepeatLoop   = 20.0f;
     const float gridMargin_x         = 10.0f;
+    const float maxWaitTime          = 60.0f;
 
     // Test Script Draw Functions
     void drawSelectBlocksMenu();
     void drawMainScriptMenu();
     void drawCodeDetailsMenu();
+
+    // Button Draw Functions
+    void drawStartInstructionButton();
 
     // Block Draw Functions
     void drawBlockContent(CodeBlock_S& block, float footerWidth);
@@ -137,6 +114,7 @@ class TestScript
     void drawMoveWithVelFunction(CodeBlock_S& block);
     void drawMoveWithTrqFunction(CodeBlock_S& block);
     void drawRepeatNTimesFunction(CodeBlock_S& block);
+    void drawWaitFunction(CodeBlock_S& block);
     void drawControlFunction();
     void drawSetterFunction();
     void drawAddMDsFunction(CodeBlock_S& block);

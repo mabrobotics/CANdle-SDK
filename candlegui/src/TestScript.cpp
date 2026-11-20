@@ -1,7 +1,9 @@
 #include "TestScript.hpp"
 #include <cstddef>
+#include <mutex>
 #include <string>
 #include "GuiStyle.hpp"
+#include "commonMemory.hpp"
 #include "imgui.h"
 #include "mab_types.hpp"
 
@@ -92,17 +94,22 @@ void TestScript::drawMainScriptMenu()
                           ImGuiChildFlags_Borders,
                           GuiStyle::flagsBackMenu))
     {
-        bool testOngoing    = m_data->testOngoing;
-        bool clickedOnBlock = false;
+        bool testOngoing        = m_data->testOngoing;
+        bool instructionStarted = m_data->instructionOngoing;
+        bool discoverOngoing    = m_data->discoverOngoing;
+        bool clickedOnBlock     = false;
         int  moveFrom = -1, moveTo = -1, insertType = -1, insertAt = -1;
         int  hoverSlot = -1;
-
-        if (testOngoing)
-            ImGui::BeginDisabled();
 
         ImGui::PushFont(nullptr, GuiStyle::headerFontSize);
         ImGui::Text("Create Your Instruction");
         ImGui::PopFont();
+
+        if (testOngoing || instructionStarted || discoverOngoing)
+            ImGui::BeginDisabled();
+
+        ImGui::SameLine();
+        drawStartInstructionButton();
 
         if (ImGui::BeginChild(
                 "##ScriptBackground", ImGui::GetContentRegionAvail(), ImGuiChildFlags_None))
@@ -340,7 +347,7 @@ void TestScript::drawMainScriptMenu()
             selected = insertAt;
         }
 
-        if (testOngoing)
+        if (testOngoing || instructionStarted || discoverOngoing)
         {
             ImGui::EndDisabled();
         }
@@ -388,6 +395,36 @@ void TestScript::drawCodeDetailsMenu()
 
 /*
 
+Button Draw Functions
+
+*/
+
+void TestScript::drawStartInstructionButton()
+{
+    GuiStyle::buttonStyle();
+    if (ImGui::Button("Start Instruction", ImVec2(120.f, GuiStyle::mediumButtonHeight)))
+    {
+        std::lock_guard<std::mutex> lock(m_data->mtx);
+
+        int numberOfTasks = (int)script.size();
+        if (numberOfTasks > Task_S::MAX_TASKS)
+            numberOfTasks = Task_S::MAX_TASKS;
+
+        for (int i = 0; i < numberOfTasks; i++)
+        {
+            m_data->scriptTasks[i]      = script[i].task;
+            m_data->scriptTasks[i].type = script[i].type;
+        }
+
+        m_data->scriptTaskCounter  = numberOfTasks;
+        m_data->instructionStarted = true;
+    }
+
+    GuiStyle::endButtonStyle();
+}
+
+/*
+
 Block Draw Functions
 
 */
@@ -407,6 +444,9 @@ void TestScript::drawBlockContent(CodeBlock_S& block, float footerWidth)
             break;
         case CodeBlockType_E::REPEAT_N_TIMES:
             drawRepeatNTimesFunction(block);
+            break;
+        case CodeBlockType_E::WAIT:
+            drawWaitFunction(block);
             break;
         case CodeBlockType_E::REPEAT_END:
             ImGui::Dummy(ImVec2(footerWidth, footerHeight));
@@ -434,7 +474,7 @@ void TestScript::drawMoveToPosFunction(CodeBlock_S& block)
 
     ImGui::SameLine();
     ImGui::SetNextItemWidth(70);
-    ImGui::InputFloat("##pos", &block.movePosition, 0.0f, 0.0f, "%.2f");
+    ImGui::InputFloat("##pos", &block.task.movePosition, 0.0f, 0.0f, "%.2f");
 
     ImGui::SameLine();
     ImGui::Text("rad");
@@ -447,7 +487,7 @@ void TestScript::drawMoveWithVelFunction(CodeBlock_S& block)
 
     ImGui::SameLine();
     ImGui::SetNextItemWidth(70);
-    ImGui::InputFloat("##vel", &block.moveVelocity, 0.0f, 0.0f, "%.2f");
+    ImGui::InputFloat("##vel", &block.task.moveVelocity, 0.0f, 0.0f, "%.2f");
 
     ImGui::SameLine();
     ImGui::Text("rad/s");
@@ -460,7 +500,7 @@ void TestScript::drawMoveWithTrqFunction(CodeBlock_S& block)
 
     ImGui::SameLine();
     ImGui::SetNextItemWidth(70);
-    ImGui::InputFloat("##trq", &block.moveTorque, 0.0f, 0.0f, "%.2f");
+    ImGui::InputFloat("##trq", &block.task.moveTorque, 0.0f, 0.0f, "%.2f");
 
     ImGui::SameLine();
     ImGui::Text("Nm");
@@ -473,12 +513,29 @@ void TestScript::drawRepeatNTimesFunction(CodeBlock_S& block)
 
     ImGui::SameLine();
     ImGui::SetNextItemWidth(70);
-    ImGui::InputInt("##n_times", &block.n, 0.0f, 0.0f);
-    if (block.n < 1)
-        block.n = 1;
+    ImGui::InputInt("##n_times", &block.task.repeatNumber, 0.0f, 0.0f);
+    if (block.task.repeatNumber < 1)
+        block.task.repeatNumber = 1;
 
     ImGui::SameLine();
     ImGui::Text("times");
+}
+
+void TestScript::drawWaitFunction(CodeBlock_S& block)
+{
+    ImGui::AlignTextToFramePadding();
+    ImGui::Text("Wait for");
+
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(70);
+    ImGui::InputFloat("##n_times", &block.task.waitTime, 0.0f, 0.0f);
+    if (block.task.waitTime < 0.0f)
+        block.task.waitTime = 0.0f;
+    if (block.task.waitTime > maxWaitTime)
+        block.task.waitTime = maxWaitTime;
+
+    ImGui::SameLine();
+    ImGui::Text("seconds");
 }
 
 void TestScript::drawAddMDsFunction(CodeBlock_S& block)
@@ -488,12 +545,12 @@ void TestScript::drawAddMDsFunction(CodeBlock_S& block)
 
     int removeAt = -1;
 
-    for (int id = 0; id < (int)block.mdIds.size(); id++)
+    for (int id = 0; id < (int)block.task.mdIds.size(); id++)
     {
         ImGui::PushID(id);
 
         ImGui::SameLine();
-        drawMDSelectCombo(block.mdIds[id]);
+        drawMDSelectCombo(block.task.mdIds[id]);
 
         ImGui::SameLine();
         GuiStyle::buttonCloseStyle();
@@ -505,12 +562,12 @@ void TestScript::drawAddMDsFunction(CodeBlock_S& block)
     }
 
     if (removeAt >= 0)
-        block.mdIds.erase(block.mdIds.begin() + removeAt);
+        block.task.mdIds.erase(block.task.mdIds.begin() + removeAt);
 
     ImGui::SameLine();
     GuiStyle::buttonStyle();
     if (ImGui::Button("+ add"))
-        block.mdIds.push_back(0);
+        block.task.mdIds.push_back(0);
     GuiStyle::endButtonStyle();
 
     ImGui::SameLine();
@@ -525,12 +582,12 @@ void TestScript::drawSetModeFunction(CodeBlock_S& block)
     ImGui::SameLine();
     GuiStyle::comboStyle(nullptr, blockComboPadding_y);
     ImGui::SetNextItemWidth(130);
-    if (ImGui::BeginCombo("##Select MD mode", getModeName(block.setMode).c_str()))
+    if (ImGui::BeginCombo("##Select MD mode", getModeName(block.task.setMode).c_str()))
     {
         for (mab::MdMode_E mode : modes)
         {
-            if (ImGui::Selectable(getModeName(mode).c_str(), block.setMode == mode))
-                block.setMode = mode;
+            if (ImGui::Selectable(getModeName(mode).c_str(), block.task.setMode == mode))
+                block.task.setMode = mode;
         }
 
         ImGui::EndCombo();
@@ -545,21 +602,21 @@ void TestScript::drawSetGainsFunction(CodeBlock_S& block)
 
     ImGui::SameLine();
     ImGui::SetNextItemWidth(70);
-    ImGui::InputFloat("##kp_block", &block.setKp, 0.0f, 0.0f, "%.2f");
+    ImGui::InputFloat("##kp_block", &block.task.setKp, 0.0f, 0.0f, "%.2f");
 
     ImGui::SameLine();
     ImGui::Text("ki");
 
     ImGui::SameLine();
     ImGui::SetNextItemWidth(70);
-    ImGui::InputFloat("##ki_block", &block.setKi, 0.0f, 0.0f, "%.2f");
+    ImGui::InputFloat("##ki_block", &block.task.setKi, 0.0f, 0.0f, "%.2f");
 
     ImGui::SameLine();
     ImGui::Text("kd");
 
     ImGui::SameLine();
     ImGui::SetNextItemWidth(70);
-    ImGui::InputFloat("##kd_block", &block.setKd, 0.0f, 0.0f, "%.2f");
+    ImGui::InputFloat("##kd_block", &block.task.setKd, 0.0f, 0.0f, "%.2f");
 
     ImGui::SameLine();
     ImGui::Text("gains");
@@ -573,7 +630,7 @@ void TestScript::drawSetGainsFunction(CodeBlock_S& block)
 
 void TestScript::drawMoveDetails(CodeBlock_S& block)
 {
-    ImGui::Text("%s", std::to_string(block.movePosition).c_str());
+    ImGui::Text("%s", std::to_string(block.task.movePosition).c_str());
 }
 
 /*
