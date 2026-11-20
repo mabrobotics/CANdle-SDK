@@ -76,6 +76,12 @@ struct MDGroup_S
     bool                      isSelected = false;
 };
 
+/* WARNING
+    When adding new block type in CodeBlockType_E remember about:
+    const char* blockNames in TestScript.hpp
+    CodeGroupType_E blockGroup in TestScript.hpp
+*/
+
 enum CodeBlockType_E
 {
     MOVE_TO_POSITION,  // 0
