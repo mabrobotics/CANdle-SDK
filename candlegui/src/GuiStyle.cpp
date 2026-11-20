@@ -172,16 +172,16 @@ void GuiStyle::childOuterStyle()
                         ImVec2(GuiStyle::insideWindowPadding_x, GuiStyle::insideWindowPadding_y));
 }
 
-void GuiStyle::scriptSpaceStyle(ImVec2 minimum, ImVec2 maximum, float scrollY)
+void GuiStyle::scriptSpaceStyle(ImVec2 minimum, ImVec2 maximum)
 {
     ImDrawList* drawList = ImGui::GetWindowDrawList();
 
-    const float step = 20.0f;
+    const float gridHeight = 20.0f;
 
     drawList->AddRectFilled(minimum, maximum, bgColor);
-    for (float x = minimum.x; x < maximum.x; x += step)
+    for (float x = minimum.x; x < maximum.x; x += gridHeight)
         drawList->AddLine(ImVec2(x, minimum.y), ImVec2(x, maximum.y), lineColor);
-    for (float y = minimum.y; y < maximum.y; y += step)
+    for (float y = minimum.y; y < maximum.y; y += gridHeight)
         drawList->AddLine(ImVec2(minimum.x, y), ImVec2(maximum.x, y), lineColor);
     drawList->AddRect(minimum, maximum, borderColor);
 }
