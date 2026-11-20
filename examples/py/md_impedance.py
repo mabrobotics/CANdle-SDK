@@ -8,46 +8,56 @@ import pyCandle as pc
 # Initialize CANdle on the USB bus (SPI bus not supported yet)
 candle = pc.attachCandle(pc.CANdleDatarate_E.CAN_DATARATE_1M, pc.busTypes_t.USB)
 
-md_id = pc.discoverMDs(candle)[0]  # Discover MDs and take the first one
+# Look for MDs on the bus, stop at the first one found (only one is used)
+ids = pc.discoverMDs(candle, 10, 0x7FF, 1)
+if not ids:
+    raise SystemExit("No MDs found!")
 
-# Create virual MD representation
-md = pc.MD(md_id, candle)
+# Create virtual MD representation
+md = pc.MD(ids[0], candle)
 
 # Initialize it to see if it connects
 err = md.init()
-
 print(f"MD initialized with following status: {err}")
+if err != pc.MD_Error_t.OK:
+    raise SystemExit("Could not initialize MD!")
 
-if err == pc.MD_Error_t.OK:
-    # Zero out the drive position
-    md.zero()
+# Read the current position, the movement is planned relative to it
+start_pos, err = md.getPosition()
+if err != pc.MD_Error_t.OK:
+    raise SystemExit("Could not read MD position!")
+print(f"Start position: {round(start_pos, 3)} rad")
 
-    # Set motion mode of the MD
-    md.setMotionMode(pc.MotionMode_t.IMPEDANCE)
+# Set motion mode of the MD
+md.setMotionMode(pc.MotionMode_t.IMPEDANCE)
 
-    # Enable motor power
-    md.enable()
+# Hold the current position first, so the drive does not jump to a stale target when enabled
+md.setTargetPosition(start_pos)
 
-    # This loop is crucial as MD requires constant polling by any of its functions
-    # in order to keep the motor alive.
-    # The frequency of required polling can be adjusted via watchdog register in the MD.
-    for i in range(100):
-        t = i * 0.05
-        # Set desired position
-        md.setTargetPosition(t)
-        if i % 2 == 0:
-            # Recieve achieved position
-            pos, err = md.getPosition()
+# Enable motor power
+md.enable()
 
-            # Check exerted torque via a register
-            torque = pc.readRegisterFloat(md, "motorTorque")[0]
-            print(f"Exerting torque: {round(torque, 2)} Nm")
-            print(
-                f"Position: {round(pos, 2)}, Target position: {round(t, 2)} Error: {err}"
-            )
+DISTANCE = 5.0  # rad, relative to the start position
+STEPS = 100  # one step every 20 ms -> 2 s movement
 
-        # Sleep less than wdg timer
-        time.sleep(0.02)
+# This loop is crucial as MD requires constant polling by any of its functions
+# in order to keep the motor alive.
+# The frequency of required polling can be adjusted via watchdog register in the MD.
+for i in range(1, STEPS + 1):
+    target = start_pos + DISTANCE * i / STEPS
+    # Set desired position
+    md.setTargetPosition(target)
+    if i % 2 == 0:
+        # Receive achieved position
+        pos, err = md.getPosition()
 
-    # Disable motor power
-    md.disable()
+        # Check exerted torque via a register
+        torque = pc.readRegisterFloat(md, "motorTorque")[0]
+        print(f"Exerting torque: {round(torque, 2)} Nm")
+        print(f"Position: {round(pos, 2)}, Target position: {round(target, 2)} Error: {err}")
+
+    # Sleep less than wdg timer
+    time.sleep(0.02)
+
+# Disable motor power
+md.disable()

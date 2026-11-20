@@ -33,6 +33,12 @@ namespace mab
         constexpr version_ut MIN_CANOPEN_FW = {
             .s = {.tag = 0, .revision = 1, .minor = 0, .major = 3}};
 
+        // Firmware older than 3.0.0 sets this u8 register to 1 on drives that can not run
+        // firmware newer than MAX_LIMITED_FW, newer firmware does not have it
+        constexpr u16        LIMITED_FW_REGISTER = 0x820;
+        constexpr version_ut MAX_LIMITED_FW      = {
+                 .s = {.tag = 0, .revision = 4, .minor = 5, .major = 2}};
+
         std::unique_ptr<MD, std::function<void(MD*)>> connectMd(
             const std::shared_ptr<canId_t>             mdCanId,
             const std::shared_ptr<const CandleBuilder> candleBuilder,
@@ -187,8 +193,10 @@ namespace mab
                                  const std::shared_ptr<const CandleBuilder> candleBuilder,
                                  const std::filesystem::path&               packageEtcPath,
                                  const Logger&                              log,
-                                 version_ut*                                version)
+                                 version_ut*                                version,
+                                 bool*                                      limited)
         {
+            *limited = false;
             if (resetMode == UpdateReset_E::CANOPEN)
                 return overCanOpen(mdCanId, candleBuilder, packageEtcPath, log, version);
             auto md = connectMd(mdCanId, candleBuilder, log);
@@ -198,6 +206,15 @@ namespace mab
                 return false;
             }
             *version = getMdFirmwareVersion(*md);
+            if (version->s.major < 3)
+            {
+                // A drive without the register is not limited, its failed read is not an error
+                u8 flag = 0;
+                md->setLogLevel(Logger::LogLevel_E::SILENT);
+                *limited = md->readRegisterRaw(LIMITED_FW_REGISTER, &flag, sizeof(flag)) ==
+                               MD::Error_t::OK &&
+                           flag == 1;
+            }
             return true;
         }
 
@@ -228,9 +245,28 @@ namespace mab
                            const Logger&                              log)
         {
             version_ut currentVersion;
-            if (!readFirmwareVersion(
-                    resetMode, mdCanId, candleBuilder, packageEtcPath, log, &currentVersion))
+            bool       limited = false;
+            if (!readFirmwareVersion(resetMode,
+                                     mdCanId,
+                                     candleBuilder,
+                                     packageEtcPath,
+                                     log,
+                                     &currentVersion,
+                                     &limited))
                 return false;
+            if (limited && compareVersion(targetVersion, MAX_LIMITED_FW) > 0)
+            {
+                log.error("MD @ %d supports firmware up to v%d.%d.%d, v%d.%d.%d can not be "
+                          "installed!",
+                          *mdCanId,
+                          MAX_LIMITED_FW.s.major,
+                          MAX_LIMITED_FW.s.minor,
+                          MAX_LIMITED_FW.s.revision,
+                          targetVersion.s.major,
+                          targetVersion.s.minor,
+                          targetVersion.s.revision);
+                return false;
+            }
 
             int cmp = compareVersion(targetVersion, currentVersion);
             log.info("%s MD firmware v%d.%d.%d -> v%d.%d.%d",

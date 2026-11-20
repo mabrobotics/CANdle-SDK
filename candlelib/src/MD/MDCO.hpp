@@ -165,6 +165,13 @@ namespace mab
 
         std::pair<bool, Error_t> targetReached();
 
+        /// @brief Set logging verbosity for this MDCO instance
+        /// @param level log level, std::nullopt restores the default (global verbosity)
+        void setLogLevel(std::optional<Logger::LogLevel_E> level)
+        {
+            m_log.m_optionalLevel = level;
+        }
+
         Error_t readSDO(EDSEntry& edsEntry) const;
 
         Error_t writeSDO(EDSEntry& edsEntry) const;

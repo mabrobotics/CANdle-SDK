@@ -88,6 +88,10 @@ namespace mab
         explicit USB(const u16 vid, const u16 pid, const std::string serialNo = "");
         ~USB();
 
+        /// @brief List serial numbers of all connected devices with given vid and pid. Devices are
+        /// not claimed, so devices already in use are listed too.
+        static std::vector<std::string> listSerials(const u16 vid, const u16 pid);
+
         Error_t connect() override;
         Error_t disconnect() override;
 

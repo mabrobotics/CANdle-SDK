@@ -103,6 +103,7 @@ int main(int argc, char** argv)
 
     CANdleToolCtx_S candleToolCtx;
     candleToolCtx.candleBranchVec.push_back(canBranch);
+    candleToolCtx.packageEtcPath = std::make_shared<std::filesystem::path>(getPackageEtcDir());
 
     auto preBuildTask = [busType, datarate, &cmd]()
     {

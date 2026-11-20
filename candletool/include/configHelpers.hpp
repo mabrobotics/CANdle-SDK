@@ -13,15 +13,25 @@
 namespace mab
 {
 
-    inline std::filesystem::path getDefaultConfigDir()
+    /// @brief etc dir of the package, its config/ holds candletool.ini, motors and eds
+    inline std::filesystem::path getPackageEtcDir()
     {
 #ifdef WIN32
-        char path[256];
-        GetModuleFileName(NULL, path, 256);
-        return std::filesystem::path(path).remove_filename().string() + std::string("config\\");
+        char path[MAX_PATH];
+        GetModuleFileName(NULL, path, MAX_PATH);
+        const std::filesystem::path exeDir = std::filesystem::path(path).parent_path();
+        // Installed: <prefix>/bin/candletool.exe and <prefix>/etc/candletool, build dir: next to
+        // the exe
+        const std::filesystem::path installed = exeDir.parent_path() / "etc" / "candletool";
+        return std::filesystem::exists(installed) ? installed : exeDir;
 #else
-        return std::filesystem::path("/etc/candletool/config/");
+        return std::filesystem::path("/etc/candletool");
 #endif
+    }
+
+    inline std::filesystem::path getDefaultConfigDir()
+    {
+        return getPackageEtcDir() / "config" / "";
     }
 
     inline std::filesystem::path getMotorsConfigPath()

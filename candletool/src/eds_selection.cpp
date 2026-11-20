@@ -2,9 +2,11 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdlib>
 #include <system_error>
 #include <tuple>
 
+#include "curl_handler.hpp"
 #include "edsParser.hpp"
 #include "mini/ini.h"
 
@@ -32,15 +34,30 @@ namespace mab
             return digitSeen;
         }
 
-        /// @brief Read the version an .eds declares in its [FileInfo] section
-        std::string readEdsFileVersion(const std::filesystem::path& edsPath)
+        /// @brief Read the version and revision an .eds declares
+        BundledEds_S readEdsInfo(const std::filesystem::path& edsPath)
         {
+            BundledEds_S       info{edsPath, {}, 0};
             mINI::INIFile      edsFile(edsPath);
             mINI::INIStructure edsStruct;
             if (!edsFile.read(edsStruct))
-                return {};
+                return info;
 
-            return edsStruct["FileInfo"]["FileVersion"];
+            info.version = edsStruct["FileInfo"]["FileVersion"];
+            // Written in hex (0x00010003) by the firmware tooling, base 0 accepts decimal as well
+            info.revision =
+                (u32)std::strtoul(edsStruct["DeviceInfo"]["RevisionNumber"].c_str(), nullptr, 0);
+            return info;
+        }
+
+        u16 revisionMajor(u32 revision)
+        {
+            return (u16)(revision >> 16);
+        }
+
+        u16 revisionMinor(u32 revision)
+        {
+            return (u16)(revision & 0xFFFF);
         }
 
         /// @brief Check that a file candletool is told to use really is an object dictionary
@@ -159,11 +176,39 @@ namespace mab
                 result.second = MDCO::Error_t::REQUEST_INVALID;
             return result;
         }
+
+        // Relative .eds paths in candletool.ini are relative to its directory, so the same file
+        // works wherever the package is installed
+        std::filesystem::path iniEdsPath(const std::filesystem::path& configFilePath,
+                                         const std::string&           value)
+        {
+            if (value.empty())
+                return {};
+            return configFilePath.parent_path() / value;
+        }
     }  // namespace
 
     std::filesystem::path bundledEdsDir(const std::filesystem::path& configFilePath)
     {
         return configFilePath.parent_path() / "eds";
+    }
+
+    std::filesystem::path edsCacheDir()
+    {
+#ifdef _WIN32
+        const char* base = std::getenv("LOCALAPPDATA");
+        if (base != nullptr && *base != '\0')
+            return std::filesystem::path(base) / "candletool" / "eds";
+#else
+        const char* base = std::getenv("XDG_CACHE_HOME");
+        if (base != nullptr && *base != '\0')
+            return std::filesystem::path(base) / "candletool" / "eds";
+        const char* home = std::getenv("HOME");
+        if (home != nullptr && *home != '\0')
+            return std::filesystem::path(home) / ".cache" / "candletool" / "eds";
+#endif
+        std::error_code ec;
+        return std::filesystem::temp_directory_path(ec) / "candletool" / "eds";
     }
 
     std::vector<BundledEds_S> listBundledEds(const std::filesystem::path& edsDir)
@@ -187,7 +232,7 @@ namespace mab
             if (extension != ".eds")
                 continue;
 
-            bundled.push_back(BundledEds_S{entry.path(), readEdsFileVersion(entry.path())});
+            bundled.push_back(readEdsInfo(entry.path()));
         }
 
         std::sort(bundled.begin(),
@@ -254,8 +299,10 @@ namespace mab
         mINI::INIStructure configStruct;
         configFile.read(configStruct);
 
-        const std::string current = configStruct["eds"]["path"];
-        const std::string legacy  = configStruct["eds"]["legacy path"];
+        const std::string current =
+            iniEdsPath(configFilePath, configStruct["eds"]["path"]).string();
+        const std::string legacy =
+            iniEdsPath(configFilePath, configStruct["eds"]["legacy path"]).string();
 
         if (current.empty())
             log.warn("no .eds is configured in %s", configFilePath.c_str());
@@ -271,6 +318,17 @@ namespace mab
 
         const auto edsDir = bundledEdsDir(configFilePath);
         logBundledEds(listBundledEds(edsDir), edsDir, log);
+
+        const auto cached = listBundledEds(edsCacheDir());
+        if (!cached.empty())
+        {
+            log.info("Downloaded for newer drives:");
+            for (const auto& eds : cached)
+                log.info("- %u.%u (%s)",
+                         (unsigned)revisionMajor(eds.revision),
+                         (unsigned)revisionMinor(eds.revision),
+                         eds.path.c_str());
+        }
     }
     std::optional<EdsPaths_S> readEdsPaths(const std::filesystem::path& configFilePath,
                                            const Logger&                log)
@@ -289,7 +347,7 @@ namespace mab
         configFile.read(configStruct);
 
         EdsPaths_S paths;
-        paths.current = std::filesystem::path(configStruct["eds"]["path"]);
+        paths.current = iniEdsPath(configFilePath, configStruct["eds"]["path"]);
         if (paths.current.empty() || !std::filesystem::exists(paths.current))
         {
             log.error(
@@ -302,7 +360,7 @@ namespace mab
 
         // Older drives use a different object dictionary layout, which is only needed to put them
         // into the bootloader for a firmware update
-        paths.legacy = std::filesystem::path(configStruct["eds"]["legacy path"]);
+        paths.legacy = iniEdsPath(configFilePath, configStruct["eds"]["legacy path"]);
         if (!paths.legacy.empty() && !std::filesystem::exists(paths.legacy))
         {
             log.warn(
@@ -314,22 +372,24 @@ namespace mab
             paths.legacy.clear();
         }
 
-        paths.standard = bundledEdsDir(configFilePath) / STANDARD_EDS_FILE;
+        paths.bundledDir = bundledEdsDir(configFilePath);
+        paths.cacheDir   = edsCacheDir();
+
+        paths.standard = paths.bundledDir / STANDARD_EDS_FILE;
         if (!std::filesystem::exists(paths.standard))
             paths.standard.clear();
 
         return paths;
     }
 
-    bool useEdsMatchingFirmware(MDCO&                                md,
-                                std::shared_ptr<EDSObjectDictionary> od,
-                                const EdsPaths_S&                    paths,
-                                const Logger&                        log,
-                                bool                                 allowLegacy)
+    /// @brief Pick the dictionary by firmware version, for drives that report no interface
+    /// revision (0x1018:03 = 0, firmware 3.0.0 and older)
+    static bool useEdsMatchingFirmwareVersion(MDCO&                                md,
+                                              std::shared_ptr<EDSObjectDictionary> od,
+                                              const EdsPaths_S&                    paths,
+                                              const Logger&                        log,
+                                              bool                                 allowLegacy)
     {
-        if (od == nullptr)
-            return true;
-
         std::error_code ec;
         const bool usingStandard = !paths.standard.empty() &&
                                    std::filesystem::equivalent(paths.current, paths.standard, ec);
@@ -441,5 +501,232 @@ namespace mab
                 paths.current.filename().string().c_str(),
                 paths.legacy.filename().string().c_str());
         return true;
+    }
+
+    /// @brief Ask the drive which CANopen interface revision it implements (0x1018:03)
+    ///
+    /// The identity object is mandatory in CiA 301 and its address never changes, so it is read
+    /// without the loaded dictionary, which may not describe the drive yet
+    /// @return the revision, 0 when the drive predates it or did not answer
+    static u32 readDriveRevision(MDCO& md)
+    {
+        // The default value only satisfies the constructor, the value is read from the drive
+        EDSEntry entry(EDSEntry::EDSEntryMetaData{
+            .address         = {0x1018, u8{0x03}},
+            .parameterName   = "Revision Number",
+            .objectType      = EDSEntry::ObjectType_E::VALUE,
+            .storageLocation = EDSEntry::StorageLocation_E::RAM,
+            .edsValueMeta    = EDSEntry::EDSValueMetaData{.dataType =
+                                                           EDSEntry::DataType_E::UNSIGNED32,
+                                                       .accessType =
+                                                           EDSEntry::AccessRights_E::READ_ONLY,
+                                                       .PDOMapping      = false,
+                                                       .defaultValueStr = "0"},
+            .edsContainerMeta = std::nullopt});
+        if (md.readSDO(entry) != MDCO::Error_t::OK)
+            return 0;
+        return (u32)(u64)entry;
+    }
+
+    /// @brief Replace the loaded dictionary with the one in edsPath
+    /// @return false when the file could not be parsed, the dictionary is left unchanged then
+    static bool loadEdsInto(std::shared_ptr<EDSObjectDictionary> od,
+                            const std::filesystem::path&         edsPath,
+                            const Logger&                        log)
+    {
+        auto odPair = EDSParser::load(edsPath);
+        if (odPair.second != EDSParser::Error_t::OK || odPair.first == nullptr ||
+            odPair.first->size() == 0)
+        {
+            log.error("Could not load the .eds from %s", edsPath.c_str());
+            return false;
+        }
+        *od = std::move(*odPair.first);
+        return true;
+    }
+
+    /// @brief Download md_<major>.<minor>.eds from the firmware server into the cache
+    /// @return path of the cached file, nothing when the server has none or it is not usable
+    static std::optional<std::filesystem::path> downloadEds(u32                          revision,
+                                                            const std::filesystem::path& cacheDir,
+                                                            const Logger&                log)
+    {
+        const std::string fileName = "md_" + std::to_string(revisionMajor(revision)) + "." +
+                                     std::to_string(revisionMinor(revision)) + ".eds";
+
+        std::error_code ec;
+        std::filesystem::create_directories(cacheDir, ec);
+        if (ec)
+        {
+            log.debug("Could not create %s: %s", cacheDir.c_str(), ec.message().c_str());
+            return std::nullopt;
+        }
+
+        // Downloaded next to its final name and moved there only once it proved usable, so an
+        // interrupted or wrong download is never picked up by a later run
+        const auto partPath  = cacheDir / (fileName + ".part");
+        const auto finalPath = cacheDir / fileName;
+        std::filesystem::remove(partPath, ec);
+
+        const std::string url = std::string(CurlHandler::FW_SERVER_ROOT) + "eds/" + fileName;
+        log.info("Downloading %s for this drive...", fileName.c_str());
+        if (!CurlHandler::download(url, partPath, true))
+        {
+            log.debug("Could not download %s", url.c_str());
+            return std::nullopt;
+        }
+
+        const auto info   = readEdsInfo(partPath);
+        const auto odPair = EDSParser::load(partPath);
+        if (info.revision != revision || odPair.second != EDSParser::Error_t::OK ||
+            odPair.first == nullptr || odPair.first->size() == 0)
+        {
+            log.warn("Downloaded %s is not a usable .eds for revision %u.%u, discarding it",
+                     fileName.c_str(),
+                     (unsigned)revisionMajor(revision),
+                     (unsigned)revisionMinor(revision));
+            std::filesystem::remove(partPath, ec);
+            return std::nullopt;
+        }
+
+        std::filesystem::rename(partPath, finalPath, ec);
+        if (ec)
+        {
+            log.debug("Could not move %s into place: %s", partPath.c_str(), ec.message().c_str());
+            std::filesystem::remove(partPath, ec);
+            return std::nullopt;
+        }
+        log.success("Saved %s", finalPath.c_str());
+        return finalPath;
+    }
+
+    /// @brief Pick the dictionary by the interface revision the drive reports
+    static bool useEdsMatchingRevision(u32                                  revision,
+                                       std::shared_ptr<EDSObjectDictionary> od,
+                                       const EdsPaths_S&                    paths,
+                                       const Logger&                        log,
+                                       bool                                 allowLegacy)
+    {
+        const unsigned major = revisionMajor(revision);
+        const unsigned minor = revisionMinor(revision);
+
+        std::error_code ec;
+        const bool      selectedByUser =
+            !paths.standard.empty() && !std::filesystem::equivalent(paths.current, paths.standard, ec);
+
+        // An .eds chosen with "mdco eds" wins as long as it describes the same interface major
+        // revision, a minor revision only adds objects
+        if (selectedByUser)
+        {
+            const u32 selected = readEdsInfo(paths.current).revision;
+            if (revisionMajor(selected) == major)
+            {
+                if (selected != revision)
+                    log.warn("The selected %s describes CANopen interface %u.%u, the drive "
+                             "implements %u.%u - objects may be missing or not match",
+                             paths.current.filename().string().c_str(),
+                             (unsigned)revisionMajor(selected),
+                             (unsigned)revisionMinor(selected),
+                             major,
+                             minor);
+                return true;
+            }
+            log.warn("The selected %s does not describe the drive (CANopen interface %u.%u), "
+                     "choosing an .eds automatically",
+                     paths.current.filename().string().c_str(),
+                     major,
+                     minor);
+        }
+
+        std::vector<BundledEds_S> known = listBundledEds(paths.bundledDir);
+        const auto                cached = listBundledEds(paths.cacheDir);
+        known.insert(known.end(), cached.begin(), cached.end());
+
+        std::optional<std::filesystem::path> exact;
+        for (const auto& eds : known)
+            if (eds.revision == revision)
+            {
+                exact = eds.path;
+                break;
+            }
+
+        if (!exact.has_value())
+            exact = downloadEds(revision, paths.cacheDir, log);
+
+        if (exact.has_value())
+        {
+            if (std::filesystem::equivalent(exact.value(), paths.current, ec))
+            {
+                log.debug("Drive implements CANopen interface %u.%u, keeping %s",
+                          major,
+                          minor,
+                          paths.current.c_str());
+                return true;
+            }
+            if (loadEdsInto(od, exact.value(), log))
+            {
+                log.debug("Drive implements CANopen interface %u.%u, using %s",
+                          major,
+                          minor,
+                          exact.value().c_str());
+                return true;
+            }
+        }
+
+        // Closest older minor revision of the same major one describes every object the drive
+        // had back then, which covers everything this candletool uses
+        const BundledEds_S* closest = nullptr;
+        for (const auto& eds : known)
+            if (revisionMajor(eds.revision) == major && revisionMinor(eds.revision) < minor &&
+                (closest == nullptr || eds.revision > closest->revision))
+                closest = &eds;
+
+        if (closest != nullptr &&
+            (std::filesystem::equivalent(closest->path, paths.current, ec) ||
+             loadEdsInto(od, closest->path, log)))
+        {
+            log.warn("Drive implements CANopen interface %u.%u, the closest available .eds is "
+                     "%u.%u (%s) - objects added since are not available",
+                     major,
+                     minor,
+                     (unsigned)revisionMajor(closest->revision),
+                     (unsigned)revisionMinor(closest->revision),
+                     closest->path.filename().string().c_str());
+            log.warn("Update candletool, or select md_%u.%u.eds with: candletool mdco eds <path>",
+                     major,
+                     minor);
+            return true;
+        }
+
+        if (allowLegacy)
+        {
+            log.warn("No .eds describes CANopen interface %u.%u of the drive, keeping %s",
+                     major,
+                     minor,
+                     paths.current.filename().string().c_str());
+            return true;
+        }
+
+        log.error("No .eds describes CANopen interface %u.%u of the drive - update candletool, "
+                  "or select a matching .eds with: candletool mdco eds <path>",
+                  major,
+                  minor);
+        return false;
+    }
+
+    bool useEdsMatchingFirmware(MDCO&                                md,
+                                std::shared_ptr<EDSObjectDictionary> od,
+                                const EdsPaths_S&                    paths,
+                                const Logger&                        log,
+                                bool                                 allowLegacy)
+    {
+        if (od == nullptr)
+            return true;
+
+        const u32 revision = readDriveRevision(md);
+        if (revision != 0)
+            return useEdsMatchingRevision(revision, od, paths, log, allowLegacy);
+
+        return useEdsMatchingFirmwareVersion(md, od, paths, log, allowLegacy);
     }
 }  // namespace mab

@@ -10,15 +10,21 @@ namespace mab
     // made in 10 s or a transfer that stalls completely for 30 s.
     // An already downloaded file is fetched again only if the server has a newer one (-z), so
     // e.g. updating drives in series reuses it. -R keeps the server file time for that check.
-    bool CurlHandler::download(std::string_view url, const std::filesystem::path& outputPath)
+    bool CurlHandler::download(std::string_view             url,
+                               const std::filesystem::path& outputPath,
+                               bool                         quiet)
     {
         std::error_code   ec;
         std::stringstream command;
         command << "curl --fail -L -R --connect-timeout 10 --speed-time 30 ";
+        if (quiet)
+            command << "-s ";
         if (std::filesystem::exists(outputPath, ec))
             command << "-z \"" << outputPath.string() << "\" ";
         command << "-o \"" << outputPath.string() << "\" \"" << url << "\"";
-        if (executeCommand(command.str()))
+        const bool failed = quiet ? std::system(command.str().c_str()) != 0
+                                  : executeCommand(command.str());
+        if (failed)
         {
             // A partial file has local time, it would pass the -z check next time
             std::filesystem::remove(outputPath, ec);

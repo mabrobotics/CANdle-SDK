@@ -33,11 +33,15 @@ namespace mab
 
       private:
         std::string repoUrl = "https://api.github.com/repos/mabrobotics/CANdle-SDK/releases/latest";
+        std::string nightlyUrl =
+            "https://api.github.com/repos/mabrobotics/CANdle-SDK/releases/tags/nightly";
         std::optional<std::string> fetchUrl(const std::string& url);
         Logger                     m_logger = Logger(Logger::ProgramLayer_E::TOP, "CANDLETOOL_CLI");
 
         bool installPackage(const std::filesystem::path& path);
 
         bool m_assumeYes = false;  // update -y / --yes: skip confirmation prompts
+        bool m_nightly   = false;  // update --devel / --nightly: install the newest devel build
+        bool m_stable    = false;  // update --stable: install the latest release, even if older
     };
 }  // namespace mab

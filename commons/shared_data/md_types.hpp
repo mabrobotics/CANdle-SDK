@@ -36,6 +36,7 @@
     MD_REG(auxEncoderPosition, float, 0x024, RO)     \
     MD_REG(auxEncoderMode, u8, 0x025, RW)            \
     MD_REG(auxEncoderCalibrationMode, u8, 0x026, RW) \
+    MD_REG(dualEncoderAbsPosition, f32, 0x0027, RO)  \
                                                      \
     MD_REG(mainEncoder, u8, 0x002A, RW)              \
     MD_REG(mainEncoderDir, float, 0x002B, RW)        \

@@ -1,5 +1,6 @@
 #include "md_cli.hpp"
 
+#include "MD_strings.hpp"
 #include "eds_selection.hpp"
 #include <cstdint>
 #include <cstdio>
@@ -30,9 +31,190 @@
 #include "edsParser.hpp"
 #include "flasher.hpp"
 #include "md_update.hpp"
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <future>
 
 namespace mab
 {
+    /// @brief Run request LATENCY_SAMPLES times and log round trip time statistics
+    /// (host -> USB -> CANdle -> CAN -> MD and back)
+    template <typename F>
+    static void measureLatency(Logger& log, const char* name, F request)
+    {
+        constexpr u32 LATENCY_SAMPLES = 1000;
+        u32           samples[LATENCY_SAMPLES];  // us, successful transfers only
+        u32           n = 0;
+        for (u32 i = 0; i < LATENCY_SAMPLES; i++)
+        {
+            auto start = std::chrono::steady_clock::now();
+            bool ok    = request();
+            auto end   = std::chrono::steady_clock::now();
+            // Failed transfers end on timeout, so they are excluded and only counted
+            if (ok)
+                samples[n++] =
+                    std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+        }
+        if (n == 0)
+        {
+            log.error("%s: all %u transfers failed!", name, LATENCY_SAMPLES);
+            return;
+        }
+        if (n < LATENCY_SAMPLES)
+            log.warn("%s: %u of %u transfers failed, excluded from the results",
+                     name,
+                     LATENCY_SAMPLES - n,
+                     LATENCY_SAMPLES);
+
+        std::sort(samples, samples + n);
+        double sum = 0;
+        for (u32 i = 0; i < n; i++)
+            sum += samples[i];
+        double avg = sum / n;
+        double var = 0;
+        for (u32 i = 0; i < n; i++)
+            var += (samples[i] - avg) * (samples[i] - avg);
+        double stdDev = std::sqrt(var / n);
+        u32    median = samples[n / 2];
+        u32    p99    = samples[(n * 99 + 99) / 100 - 1];  // nearest-rank 99th percentile
+
+        log.info("%s:", name);
+        log.info("  avg %.0f us | median %u us | p99 %u us | min %u us | max %u us",
+                 avg,
+                 median,
+                 p99,
+                 samples[0],
+                 samples[n - 1]);
+        log.info("  jitter (std dev) %.1f us | rate @avg %.3f kHz | rate @p99 %.3f kHz",
+                 stdDev,
+                 avg > 0 ? 1'000.0 / avg : 0.0,
+                 p99 > 0 ? 1'000.0 / p99 : 0.0);
+    }
+
+    /// @brief Measure round trip time of 1 and 4 register reads, and 1 and 4 register
+    /// write + read cycles, the last one also with async API. Each sample sends the request to
+    /// every drive, so with multiple drives the result is a full bus cycle. Blocking API waits for
+    /// each drive's response before sending the next request, async API sends requests to all
+    /// drives first and then collects the responses. Writes use current register values, so the
+    /// drive state is not changed.
+    static void testLatency(std::vector<MD>& mds, Logger& log)
+    {
+        using Error_t = MD::Error_t;
+        std::vector<MDRegisters_S> regs(mds.size());  // separate buffer for each drive
+
+        // Run request for every drive, fail the sample if any drive fails
+        auto forAll = [&](auto request)
+        {
+            return [&, request]()
+            {
+                for (size_t i = 0; i < mds.size(); i++)
+                    if (!request(mds[i], regs[i]))
+                        return false;
+                return true;
+            };
+        };
+
+        // CANdle packs up to FRAME_BUFFER_SIZE frames into one USB transfer, more pending requests
+        // only wait for the next transfer and may time out, so collect responses at that limit
+        constexpr size_t MAX_IN_FLIGHT = CANdleFrameAdapter::FRAME_BUFFER_SIZE;
+        using Pending                  = std::vector<std::future<Error_t>>;
+        auto forAllAsync               = [&](auto submit)
+        {
+            return [&, submit]()
+            {
+                Pending pending;
+                pending.reserve(MAX_IN_FLIGHT);
+                bool ok    = true;
+                auto drain = [&]()
+                {
+                    for (auto& f : pending)
+                        ok = f.get() == Error_t::OK && ok;
+                    pending.clear();
+                };
+                for (size_t i = 0; i < mds.size(); i++)
+                {
+                    if (pending.size() + 2 > MAX_IN_FLIGHT)  // up to 2 requests per drive
+                        drain();
+                    submit(mds[i], regs[i], pending);
+                }
+                drain();
+                return ok;
+            };
+        };
+
+        // 1. Single register read
+        measureLatency(log,
+                       "1 register read",
+                       forAll([](MD& md, MDRegisters_S& r)
+                              { return md.readRegisters(r.mainEncoderPosition) == Error_t::OK; }));
+
+        // 2. Typical feedback read in one request
+        measureLatency(log,
+                       "4 register read",
+                       forAll(
+                           [](MD& md, MDRegisters_S& r)
+                           {
+                               return md.readRegisters(r.quickStatus,
+                                                       r.mainEncoderPosition,
+                                                       r.mainEncoderVelocity,
+                                                       r.motorTorque) == Error_t::OK;
+                           }));
+
+        // Write tests write back current values, so the drive state does not change
+        for (size_t i = 0; i < mds.size(); i++)
+        {
+            if (mds[i].readRegisters(regs[i].targetPosition,
+                                     regs[i].targetVelocity,
+                                     regs[i].targetTorque,
+                                     regs[i].motorImpPidKp) != Error_t::OK)
+            {
+                log.error("Could not read target registers of MD %u, skipping write tests!",
+                          mds[i].m_canId);
+                return;
+            }
+        }
+
+        // 3. Minimal control loop cycle: write 1 register, then read 1 (two requests)
+        measureLatency(log,
+                       "1 register write + 1 register read",
+                       forAll(
+                           [](MD& md, MDRegisters_S& r)
+                           {
+                               return md.writeRegisters(r.targetVelocity) == Error_t::OK &&
+                                      md.readRegisters(r.mainEncoderPosition) == Error_t::OK;
+                           }));
+
+        // 4. Typical control loop cycle: write 4 registers, then read 4 (two requests)
+        measureLatency(log,
+                       "4 register write + 4 register read",
+                       forAll(
+                           [](MD& md, MDRegisters_S& r)
+                           {
+                               return md.writeRegisters(r.targetPosition,
+                                                        r.targetVelocity,
+                                                        r.targetTorque,
+                                                        r.motorImpPidKp) == Error_t::OK &&
+                                      md.readRegisters(r.quickStatus,
+                                                       r.mainEncoderPosition,
+                                                       r.mainEncoderVelocity,
+                                                       r.motorTorque) == Error_t::OK;
+                           }));
+        measureLatency(
+            log,
+            "async 4 register write + 4 register read",
+            forAllAsync(
+                [](MD& md, MDRegisters_S& r, Pending& p)
+                {
+                    p.push_back(md.writeRegistersAsync(
+                        r.targetPosition, r.targetVelocity, r.targetTorque, r.motorImpPidKp));
+                    p.push_back(md.readRegistersAsync(r.quickStatus,
+                                                      r.mainEncoderPosition,
+                                                      r.mainEncoderVelocity,
+                                                      r.motorTorque));
+                }));
+    }
+
     MDCli::MDCli(CLI::App* rootCli, CANdleToolCtx_S ctx)
     {
         if (ctx.candleBranchVec.empty())
@@ -257,6 +439,33 @@ namespace mab
                 f32 calibrationTime = 40;  // seconds
                 if (isVersionAtLeast(getMdFirmwareVersion(*md), 3, 0, 0))
                     calibrationTime = 25;
+
+                // Wait up to calibrationTime, finish early once the "routine in progress" flag
+                // has been seen and then cleared (older firmware never sets it -> full wait)
+                auto waitForCalibration = [&]()
+                {
+                    constexpr u32 ROUTINE_BIT =
+                        1u << (u32)MDStatus::MiscStatusBits::WarnRoutineInProgress;
+                    bool seenRunning = false;
+                    f32  dt          = 0.25;
+                    // drive resets after calibration, failed reads are expected -> mute them
+                    md->setLogLevel(Logger::LogLevel_E::SILENT);
+                    for (f32 t = 0.; t < calibrationTime; t += dt)
+                    {
+                        m_logger.progress(t / (f32)calibrationTime);
+                        usleep(dt * 1'000'000);
+                        if (md->readRegister(registers.miscStatus) != MD::Error_t::OK)
+                            continue;
+                        bool running = registers.miscStatus.value & ROUTINE_BIT;
+                        if (running)
+                            seenRunning = true;
+                        else if (seenRunning)
+                            break;
+                    }
+                    md->setLogLevel(std::nullopt);
+                    m_logger.progress(1.0f);  // Ensure progress is at 100%
+                };
+
                 if (doOnMainEncoder)
                 {
                     m_logger.info("Starting main encoder calibration...");
@@ -264,13 +473,7 @@ namespace mab
                     if (md->writeRegister(registers.runCalibrateCmd) != MD::Error_t::OK)
                         m_logger.error("Main encoder calibration failed!");
 
-                    f32 dt = 0.25;
-                    for (f32 t = 0.; t < calibrationTime; t += dt)
-                    {
-                        m_logger.progress(t / (f32)calibrationTime);
-                        usleep(dt * 1'000'000);
-                    }
-                    m_logger.progress(1.0f);  // Ensure progress is at 100%
+                    waitForCalibration();
 
                     // Check if main encoder calibration was successful
                     auto mainEncoderStatus = md->getMainEncoderStatus();
@@ -305,13 +508,7 @@ namespace mab
                     if (md->writeRegister(registers.runCalibrateAuxEncoderCmd) != MD::Error_t::OK)
                         return;
 
-                    f32 dt = 0.25;
-                    for (f32 t = 0.; t < calibrationTime; t += dt)
-                    {
-                        m_logger.progress(t / (f32)calibrationTime);
-                        usleep(dt * 1'000'000);
-                    }
-                    m_logger.progress(1.0f);  // Ensure progress is at 100%
+                    waitForCalibration();
 
                     // Check if aux encoder calibration was successful
                     auto auxEncoderStatus = md->getOutputEncoderStatus();
@@ -491,13 +688,14 @@ namespace mab
                         // Legacy firmware reports MD20 as HD10 (5), every other board has 1 mOhm
                         MDRegisters_S regs;
                         if (md->readRegister(regs.legacyHardwareVersion) != MD::Error_t::OK)
-                            m_logger.warn("Could not read hardware version, shunt resistance "
-                                          "is not checked");
+                            m_logger.warn(
+                                "Could not read hardware version, shunt resistance "
+                                "is not checked");
                         else
                         {
                             const bool   isMd20   = regs.legacyHardwareVersion.value == 5;
                             const double expected = isMd20 ? 0.004 : 0.001;
-                            const double shunt = std::strtod(cfg.value[i].c_str(), nullptr);
+                            const double shunt    = std::strtod(cfg.value[i].c_str(), nullptr);
                             if (std::abs(shunt - expected) > 1e-6)
                             {
                                 m_logger.warn(
@@ -520,8 +718,7 @@ namespace mab
                     std::optional<std::string> raw = cfgToRaw(entry, cfg.value[i]);
                     if (!raw.has_value())
                     {
-                        m_logger.error(
-                            "Could not set value for %s.%s", entry.section, entry.key);
+                        m_logger.error("Could not set value for %s.%s", entry.section, entry.key);
                         return;
                     }
                     if (registerWrite(*md, entry.mdReg, raw.value(), true))
@@ -609,14 +806,26 @@ namespace mab
             });
 
         // candletool md discover
-        auto* discover = mdCLi
-                             ->add_subcommand("discover",
-                                              "Discover MD drives on the"
-                                              " network.")
-                             ->excludes(mdCanIdOption);
+        auto* discover      = mdCLi
+                                  ->add_subcommand("discover",
+                                                   "Discover MD drives on the"
+                                                   " network.")
+                                  ->excludes(mdCanIdOption);
+        auto  discoverMinId = std::make_shared<canId_t>(10);
+        auto  discoverMaxId = std::make_shared<canId_t>(1000);
+        discover->add_option("--min-id", *discoverMinId, "Lowest CAN ID to scan.")
+            ->capture_default_str()
+            ->check(CLI::Range(10, 0x7FF));
+        discover->add_option("--max-id", *discoverMaxId, "Highest CAN ID to scan (inclusive).")
+            ->capture_default_str()
+            ->check(CLI::Range(10, 0x7FF));
+        auto discoverExpected = std::make_shared<u32>(0);
+        discover->add_option("-e,--expected",
+                             *discoverExpected,
+                             "Stop scanning after N drives have been found (0 = scan all).");
 
         discover->callback(
-            [this, candleBuilder]()
+            [this, candleBuilder, discoverMinId, discoverMaxId, discoverExpected]()
             {
                 auto candleOpt = candleBuilder->build();
                 if (!candleOpt.has_value())
@@ -625,13 +834,95 @@ namespace mab
                     return;
                 }
                 Candle* candle = candleOpt.value();
-                auto    ids    = MD::discoverMDs(candle);
+                if (*discoverMinId > *discoverMaxId)
+                {
+                    m_logger.error("--min-id must not be greater than --max-id!");
+                    detachCandle(candle);
+                    return;
+                }
+
+                // Scan in batches aligned to multiples of BATCH so the user sees progress
+                constexpr u32 BATCH = 250;
+                std::string   datarate =
+                    datarateToStr(*(candleBuilder->datarate)).value_or("UNKNOWN");
+                std::vector<canId_t> ids;
+                for (u32 start = *discoverMinId; start <= *discoverMaxId;)
+                {
+                    u32 end = (start / BATCH + 1) * BATCH - 1;  // inclusive
+                    if (end + 1 >= *discoverMaxId)
+                        end = *discoverMaxId;
+                    m_logger.info(
+                        "Scanning ID range %u - %u at %s datarate", start, end, datarate.c_str());
+                    u32  remaining = *discoverExpected > 0 ? *discoverExpected - ids.size() : 0;
+                    auto found     = MD::discoverMDs(candle, start, end, remaining);
+                    if (found.empty())
+                        m_logger.info(" - None found");
+                    ids.insert(ids.end(), found.begin(), found.end());
+                    if (*discoverExpected > 0 && ids.size() >= *discoverExpected)
+                    {
+                        m_logger.info("Found %zu drive(s), stopping scan", ids.size());
+                        break;
+                    }
+                    start = end + 1;
+                }
 
                 if (ids.empty())
                     m_logger.error("No MD found on the bus for data %s",
                                    datarateToStr(*(candleBuilder->datarate))
                                        .value_or("NOT A DATARATE")
                                        .c_str());
+                detachCandle(candle);
+            });
+
+        // candletool md latency
+        auto* latency =
+            mdCLi
+                ->add_subcommand("latency",
+                                 "Measure communication round trip time of all drives on the bus "
+                                 "tested together.")
+                ->excludes(mdCanIdOption);
+        auto latencyExpected = std::make_shared<u32>(0);
+        latency->add_option("-e,--expected",
+                            *latencyExpected,
+                            "Stop scanning after N drives have been found (0 = scan all).");
+        latency->callback(
+            [this, candleBuilder, latencyExpected]()
+            {
+                auto candleOpt = candleBuilder->build();
+                if (!candleOpt.has_value())
+                {
+                    m_logger.error("Could not initialize Candle!");
+                    return;
+                }
+                Candle* candle = candleOpt.value();
+
+                m_logger.info("Scanning the bus for drives...");
+                std::vector<canId_t> ids = MD::discoverMDs(candle, 10, 0x7FF, *latencyExpected);
+                if (*latencyExpected > 0 && ids.size() < *latencyExpected)
+                    m_logger.warn("Expected %u drive(s), found %zu", *latencyExpected, ids.size());
+
+                std::vector<MD> mds;
+                mds.reserve(ids.size());
+                for (canId_t id : ids)
+                {
+                    mds.emplace_back(id, candle);
+                    if (mds.back().init() != MD::Error_t::OK)
+                    {
+                        m_logger.error("Could not initialize MD %u!", id);
+                        mds.pop_back();
+                    }
+                }
+                if (mds.empty())
+                {
+                    m_logger.error("No MD to test!");
+                    detachCandle(candle);
+                    return;
+                }
+
+                m_logger.info(
+                    "Measuring round trip time for %zu drive(s), 1000 samples per test...",
+                    mds.size());
+                testLatency(mds, m_logger);
                 detachCandle(candle);
             });
 
@@ -819,6 +1110,11 @@ namespace mab
                         m_logger << " - velocity: " << std::setprecision(1)
                                  << readableRegisters.auxEncoderVelocity.value << " rad/s"
                                  << std::endl;
+                        if (readableRegisters.auxEncoderMode.value ==
+                            MDAuxEncoderModeValue_S::toNumeric("DUAL"))
+                            m_logger << " - abs position: " << std::setprecision(2)
+                                     << readableRegisters.dualEncoderAbsPosition.value << " rad"
+                                     << std::endl;
                     }
                 }
 
@@ -880,9 +1176,14 @@ namespace mab
         auto regRead = reg->add_subcommand("read", "Read register value.");
 
         RegisterReadOption regReadOptions(regRead);
+        auto               regType = std::make_shared<std::string>();
+        regRead->add_option("-t,--type",
+                            *regType,
+                            "Type of a register not listed by candletool, read by its address: "
+                            "u8, i8, u16, i16, u32, i32, f32 or char[N] (eg. \"char[24]\")");
 
         regRead->callback(
-            [this, candleBuilder, mdCanId, regReadOptions]()
+            [this, candleBuilder, mdCanId, regReadOptions, regType]()
             {
                 std::string result      = "Failed to read";
                 auto        md          = getMd(mdCanId, candleBuilder);
@@ -895,12 +1196,27 @@ namespace mab
                 if (std::string("0x").compare(registerStr.substr(0, 2)) == 0)
                 {
                     address = std::stoll(registerStr, nullptr, 16);
-                    if (address != 0x0)
-                        result = registerRead(*md, address).value_or(result);
-                    else
+                    if (address == 0x0)
                     {
                         m_logger.error("Could not find provided register!");
                         return;
+                    }
+                    if (!regType->empty())
+                        result = registerReadRaw(*md, address, *regType).value_or(result);
+                    else
+                    {
+                        MDRegisters_S regs;
+                        bool          listed = false;
+                        regs.forEachRegister([&]<typename T>(MDRegisterEntry_S<T> reg)
+                                             { listed |= reg.m_regAddress == address; });
+                        if (!listed)
+                        {
+                            m_logger.error(
+                                "Register 0x%04X is not listed, provide its type with --type",
+                                address);
+                            return;
+                        }
+                        result = registerRead(*md, address).value_or(result);
                     }
                 }
                 else
@@ -1444,5 +1760,71 @@ namespace mab
         };
         regs.forEachRegister(getValueByAdress);
         return registerStringValue;
+    }
+
+    std::optional<std::string> MDCli::registerReadRaw(MD&                md,
+                                                      u16                regAdress,
+                                                      const std::string& type)
+    {
+        // Largest value fitting a CAN FD frame next to the header and the address, one more
+        // char keeps the string terminated
+        union
+        {
+            u8   u8v;
+            i8   i8v;
+            u16  u16v;
+            i16  i16v;
+            u32  u32v;
+            i32  i32v;
+            f32  f32v;
+            char str[61];
+        } value = {};
+
+        size_t       size   = 0;
+        unsigned int length = 0;
+        if (type == "u8" || type == "i8")
+            size = 1;
+        else if (type == "u16" || type == "i16")
+            size = 2;
+        else if (type == "u32" || type == "i32" || type == "f32")
+            size = 4;
+        else if (sscanf(type.c_str(), "char[%u]", &length) == 1 && length > 0 &&
+                 length < sizeof(value.str))
+            size = length;
+        else
+        {
+            m_logger.error(
+                "Unknown register type %s! Use u8, i8, u16, i16, u32, i32, f32 or "
+                "char[N] with N up to %u",
+                type.c_str(),
+                (unsigned int)sizeof(value.str) - 1);
+            return std::nullopt;
+        }
+
+        if (md.readRegisterRaw(regAdress, (u8*)&value, size) != MD::Error_t::OK)
+        {
+            m_logger.error("Failed to read register 0x%04X", regAdress);
+            return std::nullopt;
+        }
+
+        if (type == "u8")
+            return std::to_string(value.u8v);
+        if (type == "i8")
+            return std::to_string(value.i8v);
+        if (type == "u16")
+            return std::to_string(value.u16v);
+        if (type == "i16")
+            return std::to_string(value.i16v);
+        if (type == "u32")
+            return std::to_string(value.u32v);
+        if (type == "i32")
+            return std::to_string(value.i32v);
+        if (type == "f32")
+        {
+            char buffer[32];
+            std::snprintf(buffer, sizeof(buffer), "%.7g", (double)value.f32v);
+            return std::string(buffer);
+        }
+        return std::string(value.str);
     }
 }  // namespace mab

@@ -149,8 +149,13 @@ namespace mab
                         break;
                     }
                     m_log.debug("CF transfer thread sending frame");
-                    candleTypes::Error_t transferStatus = busTransfer(
-                        &packedFrame, packedFrame.size(), DEFAULT_CONFIGURATION_TIMEOUT.count());
+                    // CANdle handles up to FRAME_BUFFER_SIZE CAN frames one after another, each
+                    // waiting for its response, so a full packed frame takes several ms. Wait as
+                    // long as the frame owners do, otherwise the late response desyncs USB.
+                    candleTypes::Error_t transferStatus =
+                        busTransfer(&packedFrame,
+                                    packedFrame.size(),
+                                    CANdleFrameAdapter::READER_TIMEOUT.count());
                     if (transferStatus != candleTypes::Error_t::OK)
                     {
                         m_log.error("Candle transfer failed!");

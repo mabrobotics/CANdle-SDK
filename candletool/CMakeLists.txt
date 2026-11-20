@@ -102,6 +102,12 @@ add_custom_command(
 
 set(CANDLETOOL_CPACK_COMPONENTS candletool _configs)
 
+install(
+  FILES ${CMAKE_CURRENT_SOURCE_DIR}/../LICENSE.txt
+        ${CMAKE_CURRENT_SOURCE_DIR}/../THIRD_PARTY_NOTICES.txt
+  DESTINATION share/doc/candletool
+  COMPONENT candletool)
+
 if(WIN32)
   add_executable(candle-win-driver IMPORTED
     ${CMAKE_CURRENT_SOURCE_DIR}/tools/candlesdk-win-driver.exe)
@@ -140,10 +146,6 @@ if(WIN32)
     -static-libgcc
     -static
     logger)
-
-  add_compile_definitions(
-    DEFAULT_CANDLETOOL_CONFIG_DIR="${CMAKE_INSTALL_SYSCONFDIR}/candletool/config"
-  )
 elseif(UNIX)
   install(TARGETS candletool RUNTIME COMPONENT candletool)
 
@@ -193,7 +195,6 @@ elseif(UNIX)
     PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE WORLD_READ
     WORLD_WRITE
     EXCLUDE_FROM_ALL)
-  add_compile_definitions(DEFAULT_CANDLETOOL_CONFIG_DIR="/${CMAKE_INSTALL_SYSCONFDIR}/candletool")
   add_custom_target(install_rules
     COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_BINARY_DIR}" --component rules)
 else()

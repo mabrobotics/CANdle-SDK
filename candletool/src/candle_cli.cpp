@@ -96,6 +96,47 @@ namespace mab
                 m_logger.progress(1.0);
                 m_logger.success("CANdle firmware was updated succesffuly!");
             });
+        // Discover
+        auto* discover =
+            candleCli->add_subcommand("discover", "List CANdle devices connected via USB.");
+        discover->callback(
+            [this, candleBuilder]()
+            {
+                auto serials = USB::listSerials(Candle::CANDLE_VID, Candle::CANDLE_PID);
+                if (serials.empty())
+                {
+                    m_logger.error("No CANdle found!");
+                    return;
+                }
+                m_logger.info("Found %zu CANdle device(s):", serials.size());
+                for (const auto& serial : serials)
+                {
+                    // Connection logs are not useful here, only the summary is printed
+                    auto prevVerbosity    = Logger::g_m_verbosity;
+                    Logger::g_m_verbosity = Logger::Verbosity_E::SILENT;
+                    std::optional<version_ut> version;
+                    auto bus = std::make_unique<USB>(Candle::CANDLE_VID, Candle::CANDLE_PID, serial);
+                    if (bus->connect() == I_CommunicationInterface::Error_t::OK)
+                    {
+                        Candle candle(*candleBuilder->datarate, std::move(bus));
+                        if (candle.init() == candleTypes::Error_t::OK)
+                            version = candle.getCandleVersion();
+                    }
+                    Logger::g_m_verbosity = prevVerbosity;
+
+                    if (version.has_value())
+                        m_logger.info(" - serial: %s | firmware: %d.%d.%d(%c)",
+                                      serial.c_str(),
+                                      version->s.major,
+                                      version->s.minor,
+                                      version->s.revision,
+                                      version->s.tag);
+                    else
+                        m_logger.info(" - serial: %s | firmware: unknown (device busy?)",
+                                      serial.c_str());
+                }
+            });
+
         // Version
         auto* version = candleCli->add_subcommand("version", "Get CANdle device version.");
         version->callback(
